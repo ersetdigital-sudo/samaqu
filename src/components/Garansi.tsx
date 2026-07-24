@@ -1,6 +1,7 @@
 "use client";
 
 import { motion, Variants } from "framer-motion";
+import Image from "next/image";
 
 /* ─── Animation ─── */
 const containerVariants: Variants = {
@@ -26,180 +27,178 @@ const headerVariants: Variants = {
   },
 };
 
-/* ─── SVG Illustrations (SAMAQU brand) ─── */
-function ShieldIllustration() {
-  return (
-    <svg viewBox="0 0 240 170" fill="none" className="w-full h-full">
-      {/* Decorative circles */}
-      <circle cx="120" cy="85" r="60" fill="var(--sand-2)" opacity=".6" />
-      <circle cx="120" cy="85" r="42" fill="var(--cream)" stroke="var(--clay)" strokeWidth=".8" />
-      {/* Shield */}
-      <path
-        d="M120 48 L168 66 V100 C168 124 146 140 120 148 C94 140 72 124 72 100 V66 Z"
-        fill="white"
-        stroke="var(--espresso)"
-        strokeWidth="1.6"
-      />
-      <path
-        d="M120 58 L160 74 V100 C160 120 142 134 120 140 C98 134 80 120 80 100 V74 Z"
-        fill="var(--sand-2)"
-        stroke="var(--gold)"
-        strokeWidth="1"
-      />
-      {/* Checkmark */}
-      <path
-        d="M100 98 L114 112 L144 82"
-        stroke="var(--gold)"
-        strokeWidth="4.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="none"
-      />
-      {/* Sparkles */}
-      <circle cx="56" cy="48" r="3" fill="var(--gold)" opacity=".3" />
-      <circle cx="184" cy="48" r="3" fill="var(--gold)" opacity=".3" />
-      <circle cx="120" cy="30" r="2.5" fill="var(--gold)" opacity=".25" />
-      <path d="M52 72 L56 68 L60 72 L56 76 Z" fill="var(--gold)" opacity=".15" />
-      <path d="M180 72 L184 68 L188 72 L184 76 Z" fill="var(--gold)" opacity=".15" />
-    </svg>
-  );
-}
-
-function BoxIllustration() {
-  return (
-    <svg viewBox="0 0 240 170" fill="none" className="w-full h-full">
-      {/* Decorative circles */}
-      <circle cx="120" cy="85" r="60" fill="var(--sand-2)" opacity=".6" />
-      <circle cx="120" cy="85" r="42" fill="var(--cream)" stroke="var(--clay)" strokeWidth=".8" />
-      {/* Box body */}
-      <rect x="68" y="78" width="104" height="64" rx="3" fill="white" stroke="var(--espresso)" strokeWidth="1.4" />
-      {/* Box lid */}
-      <rect x="60" y="60" width="120" height="22" rx="3" fill="var(--sand-2)" stroke="var(--espresso)" strokeWidth="1.4" />
-      {/* Ribbon vertical */}
-      <rect x="114" y="60" width="12" height="82" fill="var(--gold)" opacity=".2" />
-      {/* Ribbon horizontal */}
-      <rect x="60" y="64" width="120" height="14" fill="var(--gold)" opacity=".12" />
-      {/* Bow center */}
-      <circle cx="120" cy="63" r="7" fill="var(--gold)" opacity=".4" />
-      {/* Bow loops */}
-      <path d="M112 60 Q106 48 120 52 Q110 44 108 56" fill="var(--gold)" opacity=".3" />
-      <path d="M128 60 Q134 48 120 52 Q130 44 132 56" fill="var(--gold)" opacity=".3" />
-      {/* Sparkles */}
-      <circle cx="52" cy="50" r="2.5" fill="var(--gold)" opacity=".3" />
-      <circle cx="188" cy="50" r="2.5" fill="var(--gold)" opacity=".3" />
-      <path d="M48 80 L52 76 L56 80 L52 84 Z" fill="var(--gold)" opacity=".15" />
-      <path d="M184 80 L188 76 L192 80 L188 84 Z" fill="var(--gold)" opacity=".15" />
-    </svg>
-  );
-}
-
-function ChatIllustration() {
-  return (
-    <svg viewBox="0 0 240 170" fill="none" className="w-full h-full">
-      {/* Decorative circles */}
-      <circle cx="120" cy="85" r="60" fill="var(--sand-2)" opacity=".6" />
-      <circle cx="120" cy="85" r="42" fill="var(--cream)" stroke="var(--clay)" strokeWidth=".8" />
-      {/* Chat bubble */}
-      <rect x="68" y="52" width="104" height="72" rx="14" fill="white" stroke="var(--espresso)" strokeWidth="1.4" />
-      {/* Bubble tail */}
-      <path d="M96 124 L108 140 L120 124" fill="white" stroke="var(--espresso)" strokeWidth="1.4" strokeLinejoin="round" />
-      <rect x="94" y="122" width="28" height="4" fill="white" />
-      {/* Lines in bubble */}
-      <rect x="88" y="70" width="64" height="4.5" rx="2.25" fill="var(--clay)" opacity=".3" />
-      <rect x="88" y="82" width="48" height="4.5" rx="2.25" fill="var(--clay)" opacity=".3" />
-      <rect x="88" y="94" width="56" height="4.5" rx="2.25" fill="var(--clay)" opacity=".3" />
-      {/* Heart */}
-      <path
-        d="M120 76 C120 70 112 66 108 72 C104 66 96 70 96 76 C96 84 108 90 108 90 C108 90 120 84 120 76Z"
-        fill="var(--gold)"
-        opacity=".45"
-        transform="translate(16, -4) scale(0.8)"
-      />
-      {/* Sparkles */}
-      <circle cx="56" cy="44" r="2.5" fill="var(--gold)" opacity=".3" />
-      <circle cx="184" cy="44" r="2.5" fill="var(--gold)" opacity=".3" />
-      <path d="M52 68 L56 64 L60 68 L56 72 Z" fill="var(--gold)" opacity=".15" />
-      <path d="M180 68 L184 64 L188 68 L184 72 Z" fill="var(--gold)" opacity=".15" />
-    </svg>
-  );
-}
-
-/* ─── Data ─── */
+/* ─── Feature cards data ─── */
 const guarantees = [
   {
     id: 1,
     title: "Kualitas Terjamin",
     desc: "Setiap produk melewati pengecekan jahitan dan bahan sebelum dikirim.",
-    Illustration: ShieldIllustration,
+    icon: (
+      <svg
+        className="h-7 w-7"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="var(--espresso)"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
+        <path stroke="var(--gold)" d="m9 12 2 2 4-4" />
+      </svg>
+    ),
   },
   {
     id: 2,
     title: "Pengiriman Aman",
     desc: "Dikemas rapi dan terlindungi agar sampai dalam kondisi sempurna.",
-    Illustration: BoxIllustration,
+    icon: (
+      <svg
+        className="h-7 w-7"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="var(--espresso)"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M20.5 7.3 12 12l-8.5-4.7" />
+        <path d="M12 12v9.2" />
+        <path d="M20.5 7.3 12 2.6 3.5 7.3v9.4L12 21.4l8.5-4.7V7.3Z" />
+        <path
+          d="m7.75 4.95 8.5 4.7v3.3"
+          stroke="var(--gold)"
+          strokeWidth="2"
+        />
+        <path
+          d="M14.6 11.15v3.25l1.65.9"
+          stroke="var(--gold)"
+          strokeWidth="2"
+        />
+      </svg>
+    ),
   },
   {
     id: 3,
     title: "Layanan Ramah",
     desc: "Admin siap membantu dari pemilihan size hingga setelah pembelian.",
-    Illustration: ChatIllustration,
+    icon: (
+      <svg
+        className="h-7 w-7"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="var(--espresso)"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z" />
+        <path stroke="var(--gold)" d="M8 10h.01M12 10h.01M16 10h.01" />
+      </svg>
+    ),
   },
 ];
 
-const trustBadges = ["100% Original", "Packing Aman", "Support Personal"];
+const trustBadges = [
+  {
+    label: "100% Original",
+    icon: (
+      <svg
+        className="h-[18px] w-[18px]"
+        style={{ color: "var(--gold)" }}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M12 2 4 5v6c0 5 3.4 7.8 8 9 4.6-1.2 8-4 8-9V5l-8-3Z" />
+        <path d="m9 12 2 2 4-4" />
+      </svg>
+    ),
+  },
+  {
+    label: "Packing Aman",
+    icon: (
+      <svg
+        className="h-[18px] w-[18px]"
+        style={{ color: "var(--gold)" }}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="m7.5 4.3 9 5.2v9L7.5 13V4.3Z" />
+        <path d="M16.5 9.5 21 7V16l-4.5 2.5" />
+        <path d="M3 7v9l4.5 2.5M3 7l4.5-2.7L12 7 7.5 9.5 3 7Z" />
+      </svg>
+    ),
+  },
+  {
+    label: "Support Personal",
+    icon: (
+      <svg
+        className="h-[18px] w-[18px]"
+        style={{ color: "var(--gold)" }}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M18 20a6 6 0 0 0-12 0" />
+        <circle cx="12" cy="9" r="4" />
+      </svg>
+    ),
+  },
+];
 
-/* ─── Card (BagUI feature-1 layout) ─── */
-function FeatureCard({
+/* ─── Feature card ─── */
+function GuaranteeCard({
   title,
   desc,
-  Illustration,
+  icon,
 }: {
   title: string;
   desc: string;
-  Illustration: React.FC;
+  icon: React.ReactNode;
 }) {
   return (
     <motion.div
       variants={cardVariants}
-      whileHover={{ y: -4, transition: { duration: 0.2 } }}
-      className="group bg-white rounded-sm overflow-hidden flex flex-col cursor-pointer"
+      className="g-card group relative rounded-3xl border bg-white/85 p-8 overflow-hidden"
       style={{
-        boxShadow: "0 2px 16px -6px rgba(43,38,32,.07)",
-        border: "1px solid rgba(201,183,156,.15)",
+        borderColor: "rgba(42,33,27,.10)",
       }}
     >
-      {/* Illustration area */}
+      {/* Icon */}
       <div
-        className="w-full h-[140px] sm:h-[160px] flex items-center justify-center p-4 border-b transition-colors duration-500 group-hover:bg-[var(--sand-2)]"
+        className="g-icon flex h-14 w-14 items-center justify-center rounded-2xl"
+        style={{ background: "var(--beige)" }}
+      >
+        {icon}
+      </div>
+
+      <h3
+        className="mt-6 text-[1.5rem] sm:text-[1.7rem] font-semibold leading-tight"
         style={{
-          background: "var(--cream)",
-          borderColor: "rgba(201,183,156,.12)",
+          fontFamily: "var(--font-cormorant), Georgia, serif",
+          color: "var(--espresso)",
         }}
       >
-        <Illustration />
-      </div>
+        {title}
+      </h3>
 
-      {/* Text */}
-      <div className="p-5 sm:p-6 flex flex-col gap-2">
-        <h3
-          className="text-[13px] sm:text-[14px] font-semibold tracking-[0.1em] uppercase font-ui"
-          style={{ color: "var(--espresso)" }}
-        >
-          {title}
-        </h3>
-        <p
-          className="text-[12.5px] sm:text-[13px] leading-[1.7] font-ui"
-          style={{ color: "var(--coffee)" }}
-        >
-          {desc}
-        </p>
-      </div>
-
-      {/* Bottom gold accent */}
-      <span
-        className="h-[2px] w-0 transition-all duration-500 group-hover:w-full"
-        style={{ background: "var(--gold)" }}
-      />
+      <p
+        className="mt-2 text-sm leading-relaxed font-ui"
+        style={{ color: "var(--text-secondary)" }}
+      >
+        {desc}
+      </p>
     </motion.div>
   );
 }
@@ -207,103 +206,285 @@ function FeatureCard({
 /* ─── Section ─── */
 export default function Garansi() {
   return (
-    <section className="relative py-24 sm:py-32 lg:py-36 overflow-hidden">
-      {/* Subtle dot pattern background */}
+    <section
+      id="jaminan"
+      className="relative w-full px-5 sm:px-8 pt-24 sm:pt-32 lg:pt-40 pb-20 sm:pb-28 flex justify-center overflow-hidden"
+      style={{
+        background:
+          "radial-gradient(1200px 600px at 50% -5%, #efe8de 0%, #f8f6f2 55%, #f8f6f2 100%)",
+      }}
+    >
+      {/* Dot grid pattern */}
       <div
-        className="absolute inset-0"
+        className="dot-grid absolute inset-0 opacity-50 pointer-events-none"
         style={{
-          background:
-            "radial-gradient(circle at 1px 1px, rgba(201,183,156,.1) 1px, transparent 0)",
-          backgroundSize: "24px 24px",
-          backgroundColor: "var(--sand-2)",
+          maskImage:
+            "radial-gradient(70% 60% at 50% 30%, black, transparent)",
+          WebkitMaskImage:
+            "radial-gradient(70% 60% at 50% 30%, black, transparent)",
         }}
       />
 
-      <div className="relative max-w-[1200px] mx-auto px-5 sm:px-8">
-        {/* ── Header ── */}
+      <div className="relative w-full max-w-6xl">
+        {/* ── Hero panel ── */}
         <motion.div
-          className="text-center max-w-2xl mx-auto mb-14 sm:mb-18 lg:mb-20"
+          className="relative overflow-hidden rounded-[36px] border px-6 sm:px-12 md:px-16 py-14 md:py-20"
+          style={{
+            borderColor: "rgba(42,33,27,.10)",
+            background:
+              "linear-gradient(to bottom right, #efe8de, #f8f6f2, #e9dfd1)",
+            boxShadow: "0 40px 90px -55px rgba(42,33,27,.4)",
+          }}
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-80px" }}
           variants={containerVariants}
         >
-          <motion.p
-            variants={headerVariants}
-            className="text-[11px] sm:text-[12px] tracking-[0.32em] uppercase mb-5 font-ui font-medium"
-            style={{ color: "var(--gold)" }}
-          >
-            Ketenangan Berbelanja
-          </motion.p>
-          <motion.h2
-            variants={headerVariants}
-            className="text-[2rem] sm:text-5xl lg:text-[3.5rem] font-semibold mb-6 leading-[1.1] tracking-tight"
-            style={{
-              fontFamily: "var(--font-cormorant), Georgia, serif",
-              color: "var(--espresso)",
-            }}
-          >
-            Jaminan SAMAQU
-          </motion.h2>
-          <motion.p
-            variants={headerVariants}
-            className="text-sm sm:text-base lg:text-[17px] leading-[1.75] font-ui max-w-lg mx-auto"
-            style={{ color: "var(--coffee)" }}
-          >
-            Kami menjaga kepercayaanmu di setiap pesanan — dari kualitas bahan
-            hingga pesanan sampai di tangan.
-          </motion.p>
+          {/* Decorative dot grids */}
+          <div
+            className="dot-grid absolute top-9 left-9 h-16 w-16 opacity-70 hidden sm:block"
+            aria-hidden="true"
+          />
+          <div
+            className="dot-grid absolute bottom-12 right-12 h-20 w-20 opacity-50 hidden sm:block"
+            aria-hidden="true"
+          />
+
+          <div className="relative grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-8 items-center">
+            {/* Left copy */}
+            <div>
+              <motion.span
+                variants={headerVariants}
+                className="inline-flex items-center gap-2 rounded-full border bg-white/70 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] font-ui"
+                style={{
+                  borderColor: "rgba(184,145,70,.5)",
+                  color: "var(--gold-deep)",
+                }}
+              >
+                <svg
+                  className="h-3.5 w-3.5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
+                </svg>
+                Ketenangan Berbelanja
+              </motion.span>
+
+              <motion.h2
+                variants={headerVariants}
+                className="mt-7 text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] leading-[0.92] font-semibold"
+                style={{
+                  fontFamily: "var(--font-cormorant), Georgia, serif",
+                  color: "var(--espresso)",
+                }}
+              >
+                Jaminan
+                <span className="block italic" style={{ color: "var(--gold)" }}>
+                  SAMAQU
+                </span>
+              </motion.h2>
+
+              <motion.p
+                variants={headerVariants}
+                className="mt-6 max-w-md text-base sm:text-lg leading-relaxed font-ui"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                Kami menjaga kepercayaanmu di setiap pesanan — dari kualitas
+                bahan hingga pelayanan yang tulus.
+              </motion.p>
+
+              {/* Inline mini features */}
+              <motion.div
+                variants={headerVariants}
+                className="mt-9 flex flex-wrap items-center gap-x-8 gap-y-4"
+              >
+                <div
+                  className="flex items-center gap-2 text-sm font-medium font-ui"
+                  style={{ color: "var(--espresso)" }}
+                >
+                  <svg
+                    className="h-[18px] w-[18px]"
+                    style={{ color: "var(--gold)" }}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
+                    <path d="m9 12 2 2 4-4" />
+                  </svg>
+                  100% Terjamin
+                </div>
+                <div
+                  className="flex items-center gap-2 text-sm font-medium font-ui"
+                  style={{ color: "var(--espresso)" }}
+                >
+                  <svg
+                    className="h-[18px] w-[18px]"
+                    style={{ color: "var(--gold)" }}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8Z" />
+                  </svg>
+                  Pengiriman Cepat
+                </div>
+                <div
+                  className="flex items-center gap-2 text-sm font-medium font-ui"
+                  style={{ color: "var(--espresso)" }}
+                >
+                  <svg
+                    className="h-[18px] w-[18px]"
+                    style={{ color: "var(--gold)" }}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z" />
+                    <path d="M8 10h.01M12 10h.01M16 10h.01" />
+                  </svg>
+                  Layanan Ramah
+                </div>
+              </motion.div>
+            </div>
+
+            {/* Right illustration */}
+            <motion.div
+              variants={headerVariants}
+              className="flex justify-center lg:justify-end"
+            >
+              <div className="float-anim w-64 sm:w-80 md:w-[26rem] h-auto">
+                <Image
+                  src="/images/b4af0f77-9ce8-484c-9dc2-b3df44eb1d86.png"
+                  alt="Ilustrasi perisai jaminan SAMAQU"
+                  width={600}
+                  height={600}
+                  className="w-full h-auto"
+                  style={{
+                    filter: "drop-shadow(0 28px 40px rgba(42,33,27,.2))",
+                  }}
+                />
+              </div>
+            </motion.div>
+          </div>
         </motion.div>
 
-        {/* ── Feature cards (BagUI layout: 3 cols) ── */}
+        {/* ── Feature cards ── */}
         <motion.div
-          className="grid sm:grid-cols-3 gap-4 sm:gap-5 mb-14 sm:mb-16"
+          className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-60px" }}
           variants={containerVariants}
         >
           {guarantees.map((g) => (
-            <FeatureCard key={g.id} {...g} />
+            <GuaranteeCard key={g.id} {...g} />
           ))}
         </motion.div>
 
-        {/* ── Trust badges ── */}
+        {/* ── Trust signals banner ── */}
         <motion.div
-          className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3"
+          className="mt-8 rounded-2xl border bg-white/60 px-6 py-5"
+          style={{
+            borderColor: "rgba(42,33,27,.10)",
+            background: "rgba(239,232,222,.6)",
+          }}
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-40px" }}
           variants={containerVariants}
         >
-          {trustBadges.map((badge) => (
-            <motion.div
-              key={badge}
-              variants={headerVariants}
-              className="flex items-center gap-2"
-            >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="var(--gold)"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+          <ul className="flex flex-wrap items-center justify-center gap-x-10 gap-y-3">
+            {trustBadges.map((badge, i) => (
+              <motion.li
+                key={badge.label}
+                variants={headerVariants}
+                className="flex items-center gap-2"
               >
-                <path d="M20 6L9 17l-5-5" />
-              </svg>
-              <span
-                className="text-[11px] sm:text-[12px] tracking-[0.14em] uppercase font-ui font-medium"
-                style={{ color: "var(--stone)" }}
-              >
-                {badge}
-              </span>
-            </motion.div>
-          ))}
+                {badge.icon}
+                <span
+                  className="text-sm font-medium font-ui"
+                  style={{ color: "var(--espresso)" }}
+                >
+                  {badge.label}
+                </span>
+                {/* Separator (hidden on last) */}
+                {i < trustBadges.length - 1 && (
+                  <span
+                    className="hidden sm:block h-4 w-px ml-10"
+                    style={{ background: "rgba(42,33,27,.10)" }}
+                    aria-hidden="true"
+                  />
+                )}
+              </motion.li>
+            ))}
+          </ul>
         </motion.div>
       </div>
+
+      <style jsx>{`
+        .dot-grid {
+          background-image: radial-gradient(
+            rgba(42, 33, 27, 0.13) 1.3px,
+            transparent 1.3px
+          );
+          background-size: 14px 14px;
+        }
+        .float-anim {
+          animation: floaty 6s ease-in-out infinite;
+        }
+        @keyframes floaty {
+          0%,
+          100% {
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(-14px);
+          }
+        }
+        .g-card {
+          transition: transform 0.4s ease, box-shadow 0.4s ease;
+        }
+        .g-card::after {
+          content: "";
+          position: absolute;
+          left: 0;
+          bottom: 0;
+          height: 3px;
+          width: 100%;
+          background: var(--gold);
+          transform: scaleX(0);
+          transform-origin: left;
+          transition: transform 0.45s ease;
+        }
+        .g-card:hover {
+          transform: translateY(-8px);
+          box-shadow: 0 26px 55px -26px rgba(42, 33, 27, 0.32);
+        }
+        .g-card:hover::after {
+          transform: scaleX(1);
+        }
+        .g-icon {
+          transition: transform 0.4s ease;
+        }
+        .g-card:hover .g-icon {
+          transform: scale(1.12);
+        }
+      `}</style>
     </section>
   );
 }
