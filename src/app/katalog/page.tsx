@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 import { SlidersHorizontal, X, ChevronDown, ArrowRight } from "lucide-react";
@@ -287,20 +287,6 @@ export default function KatalogPage() {
   const [sort, setSort] = useState<"newest" | "az" | "popular">("newest");
   const [showFilters, setShowFilters] = useState(false);
   const [visibleCount, setVisibleCount] = useState(12);
-  const [filterSticky, setFilterSticky] = useState(false);
-  const filterRef = useRef<HTMLDivElement>(null);
-
-  /* Sticky filter detection */
-  useEffect(() => {
-    const onScroll = () => {
-      if (filterRef.current) {
-        const rect = filterRef.current.getBoundingClientRect();
-        setFilterSticky(rect.top <= 84);
-      }
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
 
   /* Reset sub-filters when category changes */
   useEffect(() => {
@@ -397,19 +383,16 @@ export default function KatalogPage() {
         </div>
       </div>
 
-      {/* ── Filter Bar ── */}
-      <div ref={filterRef} className="sticky z-40 transition-shadow duration-300"
+      {/* ── Filter Bar (non-sticky) ── */}
+      <div
         style={{
-          top: "84px",
-          background: "rgba(248,245,241,.97)",
-          backdropFilter: "blur(12px)",
-          WebkitBackdropFilter: "blur(12px)",
-          borderBottom: "1px solid rgba(216,196,168,.25)",
+          background: "var(--cream)",
+          borderBottom: "1px solid rgba(216,196,168,.2)",
         }}
       >
         <div className="max-w-[1200px] mx-auto px-5 sm:px-8">
           {/* Category tabs + filter button */}
-          <div className="flex items-center gap-3 py-4 overflow-x-auto scrollbar-hide">
+          <div className="flex items-center gap-3 py-6 sm:py-8 overflow-x-auto scrollbar-hide">
             {/* Category pills */}
             <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
               {(["Semua", ...allCategories] as const).map((cat) => (
