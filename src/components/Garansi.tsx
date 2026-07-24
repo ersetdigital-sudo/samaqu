@@ -228,7 +228,7 @@ export default function Garansi() {
       <div className="relative w-full max-w-6xl">
         {/* ── Hero panel ── */}
         <motion.div
-          className="relative overflow-hidden rounded-[36px] border px-6 sm:px-12 md:px-16 py-14 md:py-20"
+          className="relative overflow-hidden rounded-2xl sm:rounded-[36px] border px-5 sm:px-12 md:px-16 py-10 sm:py-14 md:py-20"
           style={{
             borderColor: "rgba(42,33,27,.10)",
             background:
@@ -277,7 +277,7 @@ export default function Garansi() {
 
               <motion.h2
                 variants={headerVariants}
-                className="mt-7 text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] leading-[0.92] font-semibold"
+                className="mt-5 sm:mt-7 text-[2.5rem] sm:text-6xl md:text-7xl lg:text-[5.5rem] leading-[0.92] font-semibold"
                 style={{
                   fontFamily: "var(--font-cormorant), Georgia, serif",
                   color: "var(--espresso)",

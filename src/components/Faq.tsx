@@ -122,7 +122,7 @@ function FaqItem({
       >
         <div>
           <p
-            className="pb-8 pl-[3.75rem] pr-8 text-base leading-relaxed"
+            className="pb-6 sm:pb-8 pl-14 sm:pl-[3.75rem] pr-5 sm:pr-8 text-sm sm:text-base leading-relaxed"
             style={{ color: "rgba(42,33,27,.8)" }}
           >
             {item.a}
@@ -166,7 +166,7 @@ export default function Faq() {
               </span>
               <h2
                 id="faq-heading"
-                className="mt-5 text-6xl sm:text-7xl font-medium leading-[0.95]"
+                className="mt-4 sm:mt-5 text-5xl sm:text-6xl lg:text-7xl font-medium leading-[0.95]"
                 style={{
                   fontFamily: "var(--font-cormorant), Georgia, serif",
                   color: "var(--espresso)",
