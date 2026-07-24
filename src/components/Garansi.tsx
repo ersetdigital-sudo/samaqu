@@ -35,7 +35,7 @@ const guarantees = [
     desc: "Setiap produk melewati pengecekan jahitan dan bahan sebelum dikirim.",
     icon: (
       <svg
-        className="h-7 w-7"
+        className="h-5 w-5 sm:h-7 sm:w-7"
         viewBox="0 0 24 24"
         fill="none"
         stroke="var(--espresso)"
@@ -54,7 +54,7 @@ const guarantees = [
     desc: "Dikemas rapi dan terlindungi agar sampai dalam kondisi sempurna.",
     icon: (
       <svg
-        className="h-7 w-7"
+        className="h-5 w-5 sm:h-7 sm:w-7"
         viewBox="0 0 24 24"
         fill="none"
         stroke="var(--espresso)"
@@ -65,16 +65,8 @@ const guarantees = [
         <path d="M20.5 7.3 12 12l-8.5-4.7" />
         <path d="M12 12v9.2" />
         <path d="M20.5 7.3 12 2.6 3.5 7.3v9.4L12 21.4l8.5-4.7V7.3Z" />
-        <path
-          d="m7.75 4.95 8.5 4.7v3.3"
-          stroke="var(--gold)"
-          strokeWidth="2"
-        />
-        <path
-          d="M14.6 11.15v3.25l1.65.9"
-          stroke="var(--gold)"
-          strokeWidth="2"
-        />
+        <path d="m7.75 4.95 8.5 4.7v3.3" stroke="var(--gold)" strokeWidth="2" />
+        <path d="M14.6 11.15v3.25l1.65.9" stroke="var(--gold)" strokeWidth="2" />
       </svg>
     ),
   },
@@ -84,7 +76,7 @@ const guarantees = [
     desc: "Admin siap membantu dari pemilihan size hingga setelah pembelian.",
     icon: (
       <svg
-        className="h-7 w-7"
+        className="h-5 w-5 sm:h-7 sm:w-7"
         viewBox="0 0 24 24"
         fill="none"
         stroke="var(--espresso)"
@@ -104,7 +96,7 @@ const trustBadges = [
     label: "100% Original",
     icon: (
       <svg
-        className="h-[18px] w-[18px]"
+        className="h-4 w-4 sm:h-[18px] sm:w-[18px]"
         style={{ color: "var(--gold)" }}
         viewBox="0 0 24 24"
         fill="none"
@@ -122,7 +114,7 @@ const trustBadges = [
     label: "Packing Aman",
     icon: (
       <svg
-        className="h-[18px] w-[18px]"
+        className="h-4 w-4 sm:h-[18px] sm:w-[18px]"
         style={{ color: "var(--gold)" }}
         viewBox="0 0 24 24"
         fill="none"
@@ -141,7 +133,7 @@ const trustBadges = [
     label: "Support Personal",
     icon: (
       <svg
-        className="h-[18px] w-[18px]"
+        className="h-4 w-4 sm:h-[18px] sm:w-[18px]"
         style={{ color: "var(--gold)" }}
         viewBox="0 0 24 24"
         fill="none"
@@ -157,58 +149,12 @@ const trustBadges = [
   },
 ];
 
-/* ─── Feature card ─── */
-function GuaranteeCard({
-  title,
-  desc,
-  icon,
-}: {
-  title: string;
-  desc: string;
-  icon: React.ReactNode;
-}) {
-  return (
-    <motion.div
-      variants={cardVariants}
-      className="g-card group relative rounded-3xl border bg-white/85 p-8 overflow-hidden"
-      style={{
-        borderColor: "rgba(42,33,27,.10)",
-      }}
-    >
-      {/* Icon */}
-      <div
-        className="g-icon flex h-14 w-14 items-center justify-center rounded-2xl"
-        style={{ background: "var(--beige)" }}
-      >
-        {icon}
-      </div>
-
-      <h3
-        className="mt-6 text-[1.5rem] sm:text-[1.7rem] font-semibold leading-tight"
-        style={{
-          fontFamily: "var(--font-cormorant), Georgia, serif",
-          color: "var(--espresso)",
-        }}
-      >
-        {title}
-      </h3>
-
-      <p
-        className="mt-2 text-sm leading-relaxed font-ui"
-        style={{ color: "var(--text-secondary)" }}
-      >
-        {desc}
-      </p>
-    </motion.div>
-  );
-}
-
 /* ─── Section ─── */
 export default function Garansi() {
   return (
     <section
       id="jaminan"
-      className="relative w-full px-5 sm:px-8 pt-24 sm:pt-32 lg:pt-40 pb-20 sm:pb-28 flex justify-center overflow-hidden"
+      className="relative w-full px-5 sm:px-8 pt-16 sm:pt-32 lg:pt-40 pb-14 sm:pb-28 flex justify-center overflow-hidden"
       style={{
         background:
           "radial-gradient(1200px 600px at 50% -5%, #efe8de 0%, #f8f6f2 55%, #f8f6f2 100%)",
@@ -218,21 +164,18 @@ export default function Garansi() {
       <div
         className="dot-grid absolute inset-0 opacity-50 pointer-events-none"
         style={{
-          maskImage:
-            "radial-gradient(70% 60% at 50% 30%, black, transparent)",
-          WebkitMaskImage:
-            "radial-gradient(70% 60% at 50% 30%, black, transparent)",
+          maskImage: "radial-gradient(70% 60% at 50% 30%, black, transparent)",
+          WebkitMaskImage: "radial-gradient(70% 60% at 50% 30%, black, transparent)",
         }}
       />
 
       <div className="relative w-full max-w-6xl">
         {/* ── Hero panel ── */}
         <motion.div
-          className="relative overflow-hidden rounded-2xl sm:rounded-[36px] border px-5 sm:px-12 md:px-16 py-10 sm:py-14 md:py-20"
+          className="relative overflow-hidden rounded-2xl sm:rounded-[36px] border px-5 sm:px-12 md:px-16 py-8 sm:py-14 md:py-20"
           style={{
             borderColor: "rgba(42,33,27,.10)",
-            background:
-              "linear-gradient(to bottom right, #efe8de, #f8f6f2, #e9dfd1)",
+            background: "linear-gradient(to bottom right, #efe8de, #f8f6f2, #e9dfd1)",
             boxShadow: "0 40px 90px -55px rgba(42,33,27,.4)",
           }}
           initial="hidden"
@@ -241,35 +184,18 @@ export default function Garansi() {
           variants={containerVariants}
         >
           {/* Decorative dot grids */}
-          <div
-            className="dot-grid absolute top-9 left-9 h-16 w-16 opacity-70 hidden sm:block"
-            aria-hidden="true"
-          />
-          <div
-            className="dot-grid absolute bottom-12 right-12 h-20 w-20 opacity-50 hidden sm:block"
-            aria-hidden="true"
-          />
+          <div className="dot-grid absolute top-9 left-9 h-16 w-16 opacity-70 hidden sm:block" aria-hidden="true" />
+          <div className="dot-grid absolute bottom-12 right-12 h-20 w-20 opacity-50 hidden sm:block" aria-hidden="true" />
 
-          <div className="relative grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-8 items-center">
+          <div className="relative grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-center">
             {/* Left copy */}
             <div>
               <motion.span
                 variants={headerVariants}
-                className="inline-flex items-center gap-2 rounded-full border bg-white/70 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] font-ui"
-                style={{
-                  borderColor: "rgba(184,145,70,.5)",
-                  color: "var(--gold-deep)",
-                }}
+                className="inline-flex items-center gap-2 rounded-full border bg-white/70 px-3 sm:px-4 py-1 sm:py-1.5 text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.2em] font-ui"
+                style={{ borderColor: "rgba(184,145,70,.5)", color: "var(--gold-deep)" }}
               >
-                <svg
-                  className="h-3.5 w-3.5"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.4"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
+                <svg className="h-3 w-3 sm:h-3.5 sm:w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
                 </svg>
                 Ketenangan Berbelanja
@@ -277,158 +203,121 @@ export default function Garansi() {
 
               <motion.h2
                 variants={headerVariants}
-                className="mt-5 sm:mt-7 text-[2.5rem] sm:text-6xl md:text-7xl lg:text-[5.5rem] leading-[0.92] font-semibold"
-                style={{
-                  fontFamily: "var(--font-cormorant), Georgia, serif",
-                  color: "var(--espresso)",
-                }}
+                className="mt-4 sm:mt-7 text-[2rem] sm:text-6xl md:text-7xl lg:text-[5.5rem] leading-[0.92] font-semibold"
+                style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}
               >
                 Jaminan
-                <span className="block italic" style={{ color: "var(--gold)" }}>
-                  SAMAQU
-                </span>
+                <span className="block italic" style={{ color: "var(--gold)" }}>SAMAQU</span>
               </motion.h2>
 
               <motion.p
                 variants={headerVariants}
-                className="mt-6 max-w-md text-base sm:text-lg leading-relaxed font-ui"
+                className="mt-4 sm:mt-6 max-w-md text-sm sm:text-lg leading-relaxed font-ui"
                 style={{ color: "var(--text-secondary)" }}
               >
-                Kami menjaga kepercayaanmu di setiap pesanan — dari kualitas
-                bahan hingga pelayanan yang tulus.
+                Kami menjaga kepercayaanmu di setiap pesanan — dari kualitas bahan hingga pelayanan yang tulus.
               </motion.p>
 
               {/* Inline mini features */}
-              <motion.div
-                variants={headerVariants}
-                className="mt-9 flex flex-wrap items-center gap-x-8 gap-y-4"
-              >
-                <div
-                  className="flex items-center gap-2 text-sm font-medium font-ui"
-                  style={{ color: "var(--espresso)" }}
-                >
-                  <svg
-                    className="h-[18px] w-[18px]"
-                    style={{ color: "var(--gold)" }}
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.4"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
-                    <path d="m9 12 2 2 4-4" />
-                  </svg>
-                  100% Terjamin
-                </div>
-                <div
-                  className="flex items-center gap-2 text-sm font-medium font-ui"
-                  style={{ color: "var(--espresso)" }}
-                >
-                  <svg
-                    className="h-[18px] w-[18px]"
-                    style={{ color: "var(--gold)" }}
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.4"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8Z" />
-                  </svg>
-                  Pengiriman Cepat
-                </div>
-                <div
-                  className="flex items-center gap-2 text-sm font-medium font-ui"
-                  style={{ color: "var(--espresso)" }}
-                >
-                  <svg
-                    className="h-[18px] w-[18px]"
-                    style={{ color: "var(--gold)" }}
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.4"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z" />
-                    <path d="M8 10h.01M12 10h.01M16 10h.01" />
-                  </svg>
-                  Layanan Ramah
-                </div>
+              <motion.div variants={headerVariants} className="mt-6 sm:mt-9 flex flex-wrap items-center gap-x-6 sm:gap-x-8 gap-y-3 sm:gap-y-4">
+                {["100% Terjamin", "Pengiriman Cepat", "Layanan Ramah"].map((label) => (
+                  <div key={label} className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-medium font-ui" style={{ color: "var(--espresso)" }}>
+                    <svg className="h-3.5 w-3.5 sm:h-[18px] sm:w-[18px]" style={{ color: "var(--gold)" }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
+                      <path d="m9 12 2 2 4-4" />
+                    </svg>
+                    {label}
+                  </div>
+                ))}
               </motion.div>
             </div>
 
-            {/* Right illustration */}
-            <motion.div
-              variants={headerVariants}
-              className="flex justify-center lg:justify-end"
-            >
-              <div className="float-anim w-64 sm:w-80 md:w-[26rem] h-auto">
+            {/* Right illustration — smaller on mobile */}
+            <motion.div variants={headerVariants} className="flex justify-center lg:justify-end">
+              <div className="float-anim w-40 sm:w-80 md:w-[26rem] h-auto">
                 <Image
                   src="/images/b4af0f77-9ce8-484c-9dc2-b3df44eb1d86.png"
                   alt="Ilustrasi perisai jaminan SAMAQU"
                   width={600}
                   height={600}
                   className="w-full h-auto"
-                  style={{
-                    filter: "drop-shadow(0 28px 40px rgba(42,33,27,.2))",
-                  }}
+                  style={{ filter: "drop-shadow(0 28px 40px rgba(42,33,27,.2))" }}
                 />
               </div>
             </motion.div>
           </div>
         </motion.div>
 
-        {/* ── Feature cards ── */}
+        {/* ── Feature cards: horizontal scroll on mobile, grid on desktop ── */}
         <motion.div
-          className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-60px" }}
           variants={containerVariants}
         >
-          {guarantees.map((g) => (
-            <GuaranteeCard key={g.id} {...g} />
-          ))}
+          {/* Mobile: horizontal scroll */}
+          <div className="md:hidden flex overflow-x-auto snap-x snap-mandatory gap-4 mt-6 pb-2 -mx-5 px-5 scrollbar-hide">
+            {guarantees.map((g) => (
+              <motion.div
+                key={g.id}
+                variants={cardVariants}
+                className="g-card group relative shrink-0 w-[80%] snap-center rounded-xl border bg-white/85 p-5 overflow-hidden"
+                style={{ borderColor: "rgba(42,33,27,.10)" }}
+              >
+                <div className="g-icon flex h-10 w-10 items-center justify-center rounded-xl mb-3" style={{ background: "var(--beige)" }}>
+                  {g.icon}
+                </div>
+                <h3 className="text-[1.15rem] font-semibold leading-tight" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
+                  {g.title}
+                </h3>
+                <p className="mt-1.5 text-[13px] leading-relaxed font-ui" style={{ color: "var(--text-secondary)" }}>
+                  {g.desc}
+                </p>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Desktop: grid */}
+          <div className="hidden md:grid grid-cols-3 gap-6 mt-10">
+            {guarantees.map((g) => (
+              <motion.div
+                key={g.id}
+                variants={cardVariants}
+                className="g-card group relative rounded-3xl border bg-white/85 p-8 overflow-hidden"
+                style={{ borderColor: "rgba(42,33,27,.10)" }}
+              >
+                <div className="g-icon flex h-14 w-14 items-center justify-center rounded-2xl" style={{ background: "var(--beige)" }}>
+                  {g.icon}
+                </div>
+                <h3 className="mt-6 text-[1.7rem] font-semibold leading-tight" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
+                  {g.title}
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed font-ui" style={{ color: "var(--text-secondary)" }}>
+                  {g.desc}
+                </p>
+              </motion.div>
+            ))}
+          </div>
         </motion.div>
 
-        {/* ── Trust signals banner ── */}
+        {/* ── Trust badges: compact on mobile ── */}
         <motion.div
-          className="mt-8 rounded-2xl border bg-white/60 px-6 py-5"
-          style={{
-            borderColor: "rgba(42,33,27,.10)",
-            background: "rgba(239,232,222,.6)",
-          }}
+          className="mt-6 sm:mt-8 rounded-xl sm:rounded-2xl border bg-white/60 px-4 sm:px-6 py-3 sm:py-5"
+          style={{ borderColor: "rgba(42,33,27,.10)", background: "rgba(239,232,222,.6)" }}
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-40px" }}
           variants={containerVariants}
         >
-          <ul className="flex flex-wrap items-center justify-center gap-x-10 gap-y-3">
+          <ul className="flex flex-wrap items-center justify-center gap-x-4 sm:gap-x-10 gap-y-2 sm:gap-y-3">
             {trustBadges.map((badge, i) => (
-              <motion.li
-                key={badge.label}
-                variants={headerVariants}
-                className="flex items-center gap-2"
-              >
+              <motion.li key={badge.label} variants={headerVariants} className="flex items-center gap-1.5 sm:gap-2">
                 {badge.icon}
-                <span
-                  className="text-sm font-medium font-ui"
-                  style={{ color: "var(--espresso)" }}
-                >
+                <span className="text-xs sm:text-sm font-medium font-ui" style={{ color: "var(--espresso)" }}>
                   {badge.label}
                 </span>
-                {/* Separator (hidden on last) */}
                 {i < trustBadges.length - 1 && (
-                  <span
-                    className="hidden sm:block h-4 w-px ml-10"
-                    style={{ background: "rgba(42,33,27,.10)" }}
-                    aria-hidden="true"
-                  />
+                  <span className="hidden sm:block h-4 w-px ml-10" style={{ background: "rgba(42,33,27,.10)" }} aria-hidden="true" />
                 )}
               </motion.li>
             ))}
