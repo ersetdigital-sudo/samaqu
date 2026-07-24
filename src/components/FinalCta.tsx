@@ -20,36 +20,32 @@ const revealVariants: Variants = {
 export default function FinalCta() {
   return (
     <section className="cta-section relative overflow-hidden">
-      {/* Animated orbs */}
       <div className="orb orb-1" aria-hidden="true" />
       <div className="orb orb-2" aria-hidden="true" />
 
       <div className="relative z-10 mx-auto w-full max-w-6xl px-5 sm:px-6 py-24 sm:py-32 md:py-44">
-        {/* Glass card */}
         <motion.div
-          className="glass mx-auto max-w-4xl px-6 py-14 sm:px-14 sm:py-20 md:px-20 md:py-24"
+          className="cta-glass mx-auto max-w-4xl px-6 py-14 sm:px-14 sm:py-20 md:px-20 md:py-24"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-60px" }}
         >
           <div className="flex flex-col items-center text-center">
-            {/* Eyebrow */}
             <motion.div
               variants={revealVariants}
               custom={0}
               className="flex items-center gap-3 sm:gap-4"
             >
-              <span className="hairline" />
+              <span className="cta-hairline" />
               <p
                 className="font-ui text-[0.72rem] sm:text-[0.74rem] font-semibold uppercase tracking-[0.32em] sm:tracking-[0.38em]"
                 style={{ color: "var(--gold-light)" }}
               >
                 Siap Tampil Berkelas?
               </p>
-              <span className="hairline" />
+              <span className="cta-hairline" />
             </motion.div>
 
-            {/* Headline */}
             <motion.h2
               variants={revealVariants}
               custom={0.12}
@@ -76,7 +72,6 @@ export default function FinalCta() {
               </span>
             </motion.h2>
 
-            {/* Subheadline */}
             <motion.p
               variants={revealVariants}
               custom={0.24}
@@ -87,7 +82,6 @@ export default function FinalCta() {
               pemilihan hingga pesanan sampai di tangan.
             </motion.p>
 
-            {/* Buttons */}
             <div className="mt-10 sm:mt-11 flex w-full flex-col items-center justify-center gap-3.5 sm:flex-row sm:gap-4">
               <motion.a
                 variants={revealVariants}
@@ -95,7 +89,7 @@ export default function FinalCta() {
                 href={waHref}
                 target="_blank"
                 rel="noopener"
-                className="btn btn-primary w-full sm:w-auto"
+                className="cta-btn cta-btn-primary w-full sm:w-auto"
               >
                 <svg
                   width="19"
@@ -113,11 +107,11 @@ export default function FinalCta() {
                 variants={revealVariants}
                 custom={0.48}
                 href="#produk"
-                className="btn btn-outline w-full sm:w-auto"
+                className="cta-btn cta-btn-outline w-full sm:w-auto"
               >
                 <span>Lihat Katalog</span>
                 <svg
-                  className="arrow"
+                  className="cta-arrow"
                   width="18"
                   height="18"
                   viewBox="0 0 24 24"
@@ -136,237 +130,6 @@ export default function FinalCta() {
           </div>
         </motion.div>
       </div>
-
-      <style jsx>{`
-        .cta-section {
-          background: radial-gradient(
-              80% 60% at 15% 15%,
-              rgba(184, 145, 70, 0.18) 0%,
-              rgba(184, 145, 70, 0) 55%
-            ),
-            radial-gradient(
-              70% 60% at 90% 90%,
-              rgba(212, 165, 116, 0.12) 0%,
-              rgba(212, 165, 116, 0) 55%
-            ),
-            linear-gradient(160deg, #2a211b 0%, #221a15 55%, #1c1611 100%);
-        }
-        .cta-section::before {
-          content: "";
-          position: absolute;
-          inset: 0;
-          background-image: radial-gradient(
-            rgba(248, 246, 242, 0.045) 1px,
-            transparent 1px
-          );
-          background-size: 26px 26px;
-          opacity: 0.55;
-          pointer-events: none;
-        }
-
-        /* Floating orbs */
-        .orb {
-          position: absolute;
-          border-radius: 50%;
-          filter: blur(60px);
-          pointer-events: none;
-          opacity: 0.5;
-        }
-        .orb-1 {
-          width: 34vw;
-          max-width: 460px;
-          aspect-ratio: 1;
-          top: -8%;
-          left: -6%;
-          background: radial-gradient(
-            circle,
-            rgba(212, 165, 116, 0.5),
-            transparent 70%
-          );
-          animation: float1 14s ease-in-out infinite;
-        }
-        .orb-2 {
-          width: 30vw;
-          max-width: 420px;
-          aspect-ratio: 1;
-          bottom: -12%;
-          right: -8%;
-          background: radial-gradient(
-            circle,
-            rgba(184, 145, 70, 0.45),
-            transparent 70%
-          );
-          animation: float2 18s ease-in-out infinite;
-        }
-        @keyframes float1 {
-          0%,
-          100% {
-            transform: translate(0, 0);
-          }
-          50% {
-            transform: translate(30px, 26px);
-          }
-        }
-        @keyframes float2 {
-          0%,
-          100% {
-            transform: translate(0, 0);
-          }
-          50% {
-            transform: translate(-26px, -30px);
-          }
-        }
-
-        /* Hairline */
-        .hairline {
-          height: 1px;
-          width: 60px;
-          background: linear-gradient(
-            90deg,
-            transparent,
-            var(--gold),
-            transparent
-          );
-        }
-
-        /* Glass card */
-        .glass {
-          position: relative;
-          background: linear-gradient(
-            150deg,
-            rgba(248, 246, 242, 0.07),
-            rgba(248, 246, 242, 0.02)
-          );
-          border: 1px solid rgba(248, 246, 242, 0.12);
-          border-radius: 28px;
-          backdrop-filter: blur(10px);
-          -webkit-backdrop-filter: blur(10px);
-          box-shadow: 0 40px 90px -40px rgba(0, 0, 0, 0.7),
-            inset 0 1px 0 rgba(248, 246, 242, 0.08);
-        }
-        .glass::after {
-          content: "";
-          position: absolute;
-          inset: 0;
-          border-radius: 28px;
-          padding: 1px;
-          pointer-events: none;
-          background: linear-gradient(
-            140deg,
-            rgba(212, 165, 116, 0.5),
-            transparent 40%,
-            transparent 70%,
-            rgba(184, 145, 70, 0.3)
-          );
-          -webkit-mask: linear-gradient(#000 0 0) content-box,
-            linear-gradient(#000 0 0);
-          -webkit-mask-composite: xor;
-          mask-composite: exclude;
-        }
-
-        /* Buttons */
-        .btn {
-          position: relative;
-          overflow: hidden;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 0.6rem;
-          border-radius: 999px;
-          font-family: "Inter", system-ui, sans-serif;
-          font-weight: 600;
-          font-size: 0.82rem;
-          letter-spacing: 0.13em;
-          text-transform: uppercase;
-          padding: 1.05rem 2.2rem;
-          min-height: 56px;
-          cursor: pointer;
-          text-decoration: none;
-          white-space: nowrap;
-          transition: transform 0.35s cubic-bezier(0.22, 0.61, 0.36, 1),
-            background-color 0.35s ease, color 0.35s ease,
-            box-shadow 0.35s ease, border-color 0.35s ease;
-        }
-        .btn svg {
-          flex-shrink: 0;
-          position: relative;
-          z-index: 1;
-        }
-        .btn span {
-          position: relative;
-          z-index: 1;
-        }
-        /* Shine sweep */
-        .btn::before {
-          content: "";
-          position: absolute;
-          top: 0;
-          left: -120%;
-          width: 60%;
-          height: 100%;
-          z-index: 0;
-          background: linear-gradient(
-            100deg,
-            transparent,
-            rgba(255, 255, 255, 0.35),
-            transparent
-          );
-          transform: skewX(-20deg);
-          transition: left 0.6s ease;
-        }
-        .btn:hover::before {
-          left: 140%;
-        }
-
-        .btn-primary {
-          background: linear-gradient(
-            135deg,
-            var(--gold-light),
-            var(--gold)
-          );
-          color: var(--ivory);
-          box-shadow: 0 14px 36px -14px rgba(184, 145, 70, 0.7);
-        }
-        .btn-primary:hover {
-          background: linear-gradient(
-            135deg,
-            var(--gold),
-            var(--gold-dark)
-          );
-          transform: translateY(-3px) scale(1.035);
-          box-shadow: 0 22px 52px -14px rgba(184, 145, 70, 0.85),
-            0 0 0 1px rgba(212, 165, 116, 0.4);
-        }
-
-        .btn-outline {
-          background: transparent;
-          color: var(--ivory);
-          border: 1px solid rgba(248, 246, 242, 0.35);
-        }
-        .btn-outline:hover {
-          background: var(--ivory);
-          color: var(--espresso);
-          border-color: var(--ivory);
-          transform: translateY(-3px) scale(1.035);
-          box-shadow: 0 18px 44px -16px rgba(248, 246, 242, 0.35);
-        }
-        .btn-outline .arrow {
-          transition: transform 0.35s cubic-bezier(0.22, 0.61, 0.36, 1);
-        }
-        .btn-outline:hover .arrow {
-          transform: translateX(6px);
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-          .orb {
-            animation: none !important;
-          }
-          .btn,
-          .btn::before {
-            transition: none !important;
-          }
-        }
-      `}</style>
     </section>
   );
 }

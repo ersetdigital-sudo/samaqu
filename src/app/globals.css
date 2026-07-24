@@ -230,6 +230,156 @@ details[open] .faq-plus {
   animation: accordion-up 0.25s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
+/* ── CTA Section (FinalCta) ── */
+.cta-section {
+  background:
+    radial-gradient(80% 60% at 15% 15%, rgba(184,145,70,0.18) 0%, rgba(184,145,70,0) 55%),
+    radial-gradient(70% 60% at 90% 90%, rgba(212,165,116,0.12) 0%, rgba(212,165,116,0) 55%),
+    linear-gradient(160deg, #2a211b 0%, #221a15 55%, #1c1611 100%);
+}
+.cta-section::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(248,246,242,0.045) 1px, transparent 1px);
+  background-size: 26px 26px;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  pointer-events: none;
+  opacity: 0.5;
+}
+.orb-1 {
+  width: 34vw;
+  max-width: 460px;
+  aspect-ratio: 1;
+  top: -8%;
+  left: -6%;
+  background: radial-gradient(circle, rgba(212,165,116,0.5), transparent 70%);
+  animation: ctaFloat1 14s ease-in-out infinite;
+}
+.orb-2 {
+  width: 30vw;
+  max-width: 420px;
+  aspect-ratio: 1;
+  bottom: -12%;
+  right: -8%;
+  background: radial-gradient(circle, rgba(184,145,70,0.45), transparent 70%);
+  animation: ctaFloat2 18s ease-in-out infinite;
+}
+@keyframes ctaFloat1 {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(30px, 26px); }
+}
+@keyframes ctaFloat2 {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-26px, -30px); }
+}
+
+.cta-hairline {
+  height: 1px;
+  width: 60px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+}
+
+.cta-glass {
+  position: relative;
+  background: linear-gradient(150deg, rgba(248,246,242,0.07), rgba(248,246,242,0.02));
+  border: 1px solid rgba(248,246,242,0.12);
+  border-radius: 28px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 40px 90px -40px rgba(0,0,0,0.7), inset 0 1px 0 rgba(248,246,242,0.08);
+}
+.cta-glass::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 28px;
+  padding: 1px;
+  pointer-events: none;
+  background: linear-gradient(140deg, rgba(212,165,116,0.5), transparent 40%, transparent 70%, rgba(184,145,70,0.3));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+.cta-btn {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  border-radius: 999px;
+  font-family: "Inter", system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 0.82rem;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  padding: 1.05rem 2.2rem;
+  min-height: 56px;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: transform 0.35s cubic-bezier(0.22,0.61,0.36,1), background-color 0.35s ease, color 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease;
+}
+.cta-btn svg { flex-shrink: 0; position: relative; z-index: 1; }
+.cta-btn span { position: relative; z-index: 1; }
+.cta-btn::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -120%;
+  width: 60%;
+  height: 100%;
+  z-index: 0;
+  background: linear-gradient(100deg, transparent, rgba(255,255,255,0.35), transparent);
+  transform: skewX(-20deg);
+  transition: left 0.6s ease;
+}
+.cta-btn:hover::before { left: 140%; }
+
+.cta-btn-primary {
+  background: linear-gradient(135deg, var(--gold-light), var(--gold));
+  color: var(--ivory);
+  box-shadow: 0 14px 36px -14px rgba(184,145,70,0.7);
+}
+.cta-btn-primary:hover {
+  background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+  transform: translateY(-3px) scale(1.035);
+  box-shadow: 0 22px 52px -14px rgba(184,145,70,0.85), 0 0 0 1px rgba(212,165,116,0.4);
+}
+
+.cta-btn-outline {
+  background: transparent;
+  color: var(--ivory);
+  border: 1px solid rgba(248,246,242,0.35);
+}
+.cta-btn-outline:hover {
+  background: var(--ivory);
+  color: var(--espresso);
+  border-color: var(--ivory);
+  transform: translateY(-3px) scale(1.035);
+  box-shadow: 0 18px 44px -16px rgba(248,246,242,0.35);
+}
+.cta-btn-outline .cta-arrow {
+  transition: transform 0.35s cubic-bezier(0.22,0.61,0.36,1);
+}
+.cta-btn-outline:hover .cta-arrow {
+  transform: translateX(6px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orb { animation: none !important; }
+  .cta-btn, .cta-btn::before { transition: none !important; }
+}
+
 /* ── Drawer slide-in ── */
 
 /* ── FAQ accordion ── */
