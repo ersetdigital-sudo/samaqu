@@ -282,26 +282,6 @@ export default function CaraPemesanan() {
           </a>
         </motion.div>
       </div>
-
-      <style jsx>{`
-        .step:hover .marker {
-          border-color: var(--gold) !important;
-          box-shadow: 0 10px 30px rgba(184, 145, 70, 0.18);
-        }
-        @media (max-width: 767px) {
-          .timeline .grid {
-            gap: 2.5rem !important;
-          }
-        }
-        @media (max-width: 400px) {
-          .step-title {
-            font-size: 1.15rem;
-          }
-          .step-desc {
-            font-size: 0.85rem;
-          }
-        }
-      `}</style>
     </section>
   );
 }

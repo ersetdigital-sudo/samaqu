@@ -435,56 +435,6 @@ export default function Garansi() {
           </ul>
         </motion.div>
       </div>
-
-      <style jsx>{`
-        .dot-grid {
-          background-image: radial-gradient(
-            rgba(42, 33, 27, 0.13) 1.3px,
-            transparent 1.3px
-          );
-          background-size: 14px 14px;
-        }
-        .float-anim {
-          animation: floaty 6s ease-in-out infinite;
-        }
-        @keyframes floaty {
-          0%,
-          100% {
-            transform: translateY(0);
-          }
-          50% {
-            transform: translateY(-14px);
-          }
-        }
-        .g-card {
-          transition: transform 0.4s ease, box-shadow 0.4s ease;
-        }
-        .g-card::after {
-          content: "";
-          position: absolute;
-          left: 0;
-          bottom: 0;
-          height: 3px;
-          width: 100%;
-          background: var(--gold);
-          transform: scaleX(0);
-          transform-origin: left;
-          transition: transform 0.45s ease;
-        }
-        .g-card:hover {
-          transform: translateY(-8px);
-          box-shadow: 0 26px 55px -26px rgba(42, 33, 27, 0.32);
-        }
-        .g-card:hover::after {
-          transform: scaleX(1);
-        }
-        .g-icon {
-          transition: transform 0.4s ease;
-        }
-        .g-card:hover .g-icon {
-          transform: scale(1.12);
-        }
-      `}</style>
     </section>
   );
 }
