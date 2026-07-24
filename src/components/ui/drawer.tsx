@@ -45,16 +45,24 @@ export function MobileDrawer({
     >
       <DialogTrigger asChild>{trigger}</DialogTrigger>
 
+      {/* Backdrop — highest z-index */}
       <DialogBackdrop
-        className="fixed inset-0 z-[60] transition-opacity duration-300"
-        style={{ background: "rgba(45,33,27,.4)" }}
+        className="fixed inset-0 transition-opacity duration-300"
+        style={{
+          zIndex: 9998,
+          background: "rgba(42,33,27,.4)",
+        }}
       />
 
-      <DialogPositioner className="fixed inset-y-0 right-0 z-[70]">
+      {/* Positioner — above everything */}
+      <DialogPositioner
+        className="fixed inset-y-0 right-0"
+        style={{ zIndex: 9999 }}
+      >
         <DialogContent
           className="h-full w-[85vw] sm:w-[340px] flex flex-col outline-none"
           style={{
-            background: "var(--cream)",
+            background: "var(--ivory)",
             borderLeft: "1px solid rgba(201,183,156,.2)",
             boxShadow: "-8px 0 32px -8px rgba(45,33,27,.15)",
             animation: "drawerSlideIn 0.3s cubic-bezier(0.22, 1, 0.36, 1)",

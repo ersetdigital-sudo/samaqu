@@ -171,9 +171,9 @@ function DrawerNavContent({ onClose }: { onClose: () => void }) {
           <li key={link.href}>
             <a
               href={link.href}
-              className="flex items-center px-6 py-4 text-[13px] tracking-[0.18em] uppercase font-ui transition-colors duration-200 hover:bg-sand-2"
+              className="flex items-center px-6 py-4 text-[13px] tracking-[0.18em] uppercase font-ui transition-colors duration-200 hover:text-gold hover:bg-[var(--sand-2)]"
               style={{
-                color: "var(--coffee)",
+                color: "var(--espresso)",
                 borderBottom: "1px solid rgba(201,183,156,.12)",
               }}
               onClick={onClose}
