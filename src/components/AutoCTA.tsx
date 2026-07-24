@@ -25,13 +25,10 @@ export default function AutoCTA() {
   const scrollRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
-    // Check sessionStorage
     if (sessionStorage.getItem("samaqu_cta_closed") === "true") return;
 
-    // Timer trigger: show after 5s
     timerRef.current = setTimeout(() => setVisible(true), 5000);
 
-    // Scroll trigger: show at 30% scroll
     function onScroll() {
       const scrollPercent = window.scrollY / (document.body.scrollHeight - window.innerHeight);
       if (scrollPercent >= 0.3) {
@@ -47,7 +44,6 @@ export default function AutoCTA() {
     };
   }, []);
 
-  // Show tooltip 2s after visible
   useEffect(() => {
     if (!visible) return;
     scrollRef.current = setTimeout(() => setShowTooltip(true), 2000);
@@ -68,22 +64,27 @@ export default function AutoCTA() {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 20, scale: 0.9 }}
           transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-          className="fixed bottom-6 right-6 z-[90] flex items-center gap-3"
+          className="fixed bottom-6 right-4 sm:right-6 z-[90]"
         >
-          {/* Tooltip */}
+          {/* Tooltip — positioned above the FAB */}
           <AnimatePresence>
             {showTooltip && (
               <motion.div
-                initial={{ opacity: 0, x: 10, scale: 0.95 }}
-                animate={{ opacity: 1, x: 0, scale: 1 }}
-                exit={{ opacity: 0, x: 10, scale: 0.95 }}
+                initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 8, scale: 0.95 }}
                 transition={{ duration: 0.3 }}
-                className="relative px-4 py-2.5 rounded-lg max-w-[200px]"
+                className="absolute bottom-[calc(100%+10px)] right-0 px-4 py-2.5 rounded-lg w-max max-w-[220px]"
                 style={{
                   background: "var(--beige)",
                   boxShadow: "0 4px 20px -4px rgba(42,33,27,.15)",
                 }}
               >
+                {/* Arrow */}
+                <div
+                  className="absolute -bottom-1.5 right-5 w-3 h-3 rotate-45"
+                  style={{ background: "var(--beige)" }}
+                />
                 <button
                   onClick={handleClose}
                   className="absolute -top-2 -right-2 w-5 h-5 rounded-full flex items-center justify-center transition-opacity hover:opacity-70"
@@ -92,7 +93,7 @@ export default function AutoCTA() {
                 >
                   <X size={10} />
                 </button>
-                <p className="text-[12px] sm:text-[13px] font-ui leading-snug" style={{ color: "var(--espresso)" }}>
+                <p className="relative text-[12px] sm:text-[13px] font-ui leading-snug" style={{ color: "var(--espresso)" }}>
                   Butuh bantuan? <span className="font-medium">Chat Admin</span>
                 </p>
               </motion.div>
@@ -112,14 +113,9 @@ export default function AutoCTA() {
             }}
             aria-label="Chat Admin via WhatsApp"
           >
-            {/* Pulse ring */}
             <span
               className="absolute inset-0 rounded-full animate-ping"
-              style={{
-                background: "var(--gold)",
-                opacity: 0.2,
-                animationDuration: "2.5s",
-              }}
+              style={{ background: "var(--gold)", opacity: 0.2, animationDuration: "2.5s" }}
             />
             <WhatsAppIcon />
           </a>
