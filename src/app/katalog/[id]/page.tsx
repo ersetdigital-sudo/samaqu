@@ -4,6 +4,7 @@ import { useState, use, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Minus, Plus, MessageCircle, ChevronLeft, ChevronRight, Play } from "lucide-react";
+import ImageZoom from "@/components/ImageZoom";
 import { getProductById, colorMap, type Product, type MediaItem } from "@/lib/katalog-data";
 
 const sizes = ["S", "M", "L", "XL", "XXL"];
@@ -77,6 +78,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const [qty, setQty] = useState(1);
   const [notes, setNotes] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
+  const [zoomOpen, setZoomOpen] = useState(false);
 
   if (!product) {
     return (
@@ -125,8 +127,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             {media.map((item, i) => (
               <div
                 key={i}
-                className="relative shrink-0 w-[78vw] aspect-[3/4] rounded-xl overflow-hidden snap-center"
+                className="relative shrink-0 w-[78vw] aspect-[3/4] rounded-xl overflow-hidden snap-center cursor-zoom-in"
                 style={{ background: "#e8dfd1" }}
+                onClick={() => item.type === "image" && setZoomOpen(true)}
               >
                 <MediaDisplay item={item} className="absolute inset-0" />
                 {product.tag && i === 0 && (
@@ -270,7 +273,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 ))}
               </div>
             )}
-            <div className="relative flex-1 aspect-[3/4] rounded-2xl overflow-hidden" style={{ background: "#e8dfd1" }}>
+            <div className="relative flex-1 aspect-[3/4] rounded-2xl overflow-hidden cursor-zoom-in" style={{ background: "#e8dfd1" }} onClick={() => activeMedia.type === "image" && setZoomOpen(true)}>
               <AnimatePresence mode="wait">
                 <motion.div key={activeIndex} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }} className="absolute inset-0">
                   <MediaDisplay item={activeMedia} className="w-full h-full" />
@@ -379,6 +382,18 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           </motion.div>
         </div>
       </div>
+
+      {/* ═══════════════════════════════════════
+          IMAGE ZOOM LIGHTBOX
+      ═══════════════════════════════════════ */}
+      {activeMedia.type === "image" && (
+        <ImageZoom
+          src={activeMedia.src}
+          alt={product.name}
+          isOpen={zoomOpen}
+          onClose={() => setZoomOpen(false)}
+        />
+      )}
     </section>
   );
 }
