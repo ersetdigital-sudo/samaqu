@@ -70,7 +70,16 @@ function MediaDisplay({ item, className, style }: { item: MediaItem; className?:
     );
   }
 
-  return <div className={className} style={{ background: "#e8dfd1", ...style }} />;
+  return (
+    <div className={`relative ${className || ""}`} style={{ background: "#e8dfd1", ...style }}>
+      <img
+        src={item.src}
+        alt=""
+        className="w-full h-full object-cover"
+        loading="lazy"
+      />
+    </div>
+  );
 }
 
 export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
