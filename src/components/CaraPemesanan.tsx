@@ -1,8 +1,7 @@
 "use client";
 
-import { motion, Variants, useInView } from "framer-motion";
 import { useRef } from "react";
-import { Search, Ruler, MessageCircle, Crown } from "lucide-react";
+import { motion, useInView, Variants } from "framer-motion";
 
 /* ─── Data ─── */
 const steps = [
@@ -10,25 +9,46 @@ const steps = [
     num: "01",
     title: "Pilih Produk",
     desc: "Jelajahi katalog dan tentukan koleksi favoritmu — dari Thobe hingga Vest.",
-    icon: Search,
+    icon: (
+      <svg viewBox="0 0 24 24">
+        <path d="M12 5.2a1.7 1.7 0 1 1 1.2 1.63c-.5.16-.82.6-.82 1.12v.55" />
+        <path d="M12.38 8.5 4.3 14.1a1.2 1.2 0 0 0 .69 2.18h14.02a1.2 1.2 0 0 0 .69-2.18L11.62 8.5" />
+      </svg>
+    ),
   },
   {
     num: "02",
-    title: "Cek Size",
+    title: "Cek Ukuran",
     desc: "Gunakan panduan size kami agar potongan pas dan nyaman dikenakan.",
-    icon: Ruler,
+    icon: (
+      <svg viewBox="0 0 24 24">
+        <rect x="1.8" y="7.2" width="20.4" height="9.6" rx="2.4" transform="rotate(-45 12 12)" />
+        <path d="M8.4 9.1l1.3 1.3M11.2 11.9l1.3 1.3M14 14.7l1.3 1.3M9.8 7.7l.8.8M12.6 10.5l.8.8M15.4 13.3l.8.8" />
+      </svg>
+    ),
   },
   {
     num: "03",
     title: "Chat Admin",
     desc: "Hubungi admin via WhatsApp untuk konfirmasi ketersediaan dan pemesanan.",
-    icon: MessageCircle,
+    icon: (
+      <svg viewBox="0 0 24 24">
+        <path d="M20 5.8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8.4a2 2 0 0 0 2 2h1.8v3.2l3.9-3.2H18a2 2 0 0 0 2-2z" />
+        <path d="M8.6 10h.01M12 10h.01M15.4 10h.01" />
+      </svg>
+    ),
   },
   {
     num: "04",
     title: "Selesai",
     desc: "Bayar, pesanan diproses, dan busana pilihanmu segera dalam perjalanan.",
-    icon: Crown,
+    icon: (
+      <svg viewBox="0 0 24 24">
+        <path d="M20.5 15.3V8.7a1.8 1.8 0 0 0-.9-1.56l-6.7-3.83a1.8 1.8 0 0 0-1.8 0L4.4 7.14A1.8 1.8 0 0 0 3.5 8.7v6.6a1.8 1.8 0 0 0 .9 1.56l6.7 3.83a1.8 1.8 0 0 0 1.8 0" />
+        <path d="m3.75 7.55 8.25 4.7 8.25-4.7M12 21.5v-9.25" />
+        <path d="m15.4 17.6 1.9 1.9 3.5-3.7" />
+      </svg>
+    ),
   },
 ];
 
@@ -40,7 +60,7 @@ const waHref =
 
 /* ─── Animation ─── */
 const headerVariants: Variants = {
-  hidden: { opacity: 0, y: 20 },
+  hidden: { opacity: 0, y: 18 },
   visible: {
     opacity: 1,
     y: 0,
@@ -48,83 +68,63 @@ const headerVariants: Variants = {
   },
 };
 
-const containerVariants: Variants = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.15 } },
-};
-
 const stepVariants: Variants = {
-  hidden: { opacity: 0, y: 24 },
+  hidden: { opacity: 0, y: 22 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] },
+    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
   },
 };
 
-/* ─── Step card ─── */
-function StepCard({
+/* ─── Step ─── */
+function StepItem({
   step,
   index,
 }: {
   step: (typeof steps)[number];
   index: number;
 }) {
-  const Icon = step.icon;
-
   return (
     <motion.div
       variants={stepVariants}
-      className="group relative flex flex-col items-center text-center lg:flex-1"
+      className="step group relative z-10 text-center"
     >
-      {/* Step marker (number + icon) */}
-      <div className="relative mb-5 sm:mb-6">
-        {/* Outer ring — appears on hover */}
-        <div
-          className="absolute inset-[-8px] rounded-full border-2 border-transparent transition-all duration-500 group-hover:border-[var(--gold)] group-hover:inset-[-10px] opacity-0 group-hover:opacity-100"
-          style={{ borderColor: "var(--gold)" }}
-        />
-
-        {/* Circle */}
-        <div
-          className="relative w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-full flex items-center justify-center transition-all duration-500 group-hover:scale-105"
-          style={{
-            background: "white",
-            border: "1.5px solid rgba(201,183,156,.3)",
-            boxShadow: "0 2px 12px -4px rgba(43,38,32,.06)",
-          }}
-        >
-          {/* Number */}
-          <span
-            className="font-semibold text-lg transition-all duration-300 group-hover:opacity-0 group-hover:scale-75"
-            style={{
-              fontFamily: "var(--font-cormorant), Georgia, serif",
-              color: "var(--espresso)",
-            }}
-          >
-            {step.num}
-          </span>
-
-          {/* Icon — appears on hover */}
-          <Icon
-            size={26}
-            strokeWidth={1.4}
-            className="absolute opacity-0 scale-75 transition-all duration-300 group-hover:opacity-100 group-hover:scale-100"
-            style={{ color: "var(--gold)" }}
-          />
-        </div>
+      {/* Marker circle */}
+      <div className="marker mx-auto mb-5 sm:mb-6 w-[64px] h-[64px] sm:w-[78px] sm:h-[78px] rounded-full flex items-center justify-center transition-all duration-450 group-hover:scale-105 group-hover:shadow-lg"
+        style={{
+          background: "var(--bg-primary)",
+          border: "1.5px solid var(--warm-sand)",
+        }}
+      >
+        <span className="step-icon w-6 h-6 sm:w-7 sm:h-7 transition-colors duration-450 group-hover:text-gold" style={{ color: "var(--espresso)" }}>
+          {step.icon}
+        </span>
       </div>
 
-      {/* Text */}
+      {/* Number */}
+      <div
+        className="marker-num mb-2 text-[1.6rem] sm:text-[2rem] font-bold leading-none transition-colors duration-450 group-hover:text-gold"
+        style={{
+          fontFamily: "var(--font-cormorant), Georgia, serif",
+          color: "var(--warm-sand)",
+        }}
+      >
+        {step.num}
+      </div>
+
+      {/* Title */}
       <h3
-        className="text-[13px] sm:text-[14px] font-semibold tracking-[0.12em] uppercase mb-2 font-ui"
+        className="step-title text-[1.25rem] sm:text-[1.5rem] font-semibold mb-2 transition-colors duration-400 group-hover:text-gold"
         style={{ color: "var(--espresso)" }}
       >
         {step.title}
       </h3>
+
+      {/* Description */}
       <p
-        className="text-[12.5px] sm:text-[13px] leading-[1.7] font-ui max-w-[220px]"
-        style={{ color: "var(--coffee)" }}
+        className="step-desc text-[0.9rem] sm:text-[0.94rem] leading-[1.7] max-w-[15rem] mx-auto"
+        style={{ color: "rgba(42,33,27,.72)" }}
       >
         {step.desc}
       </p>
@@ -132,47 +132,46 @@ function StepCard({
   );
 }
 
-/* ─── Progress line (horizontal) ─── */
-function ProgressLine() {
+/* ─── Timeline Track ─── */
+function TimelineTrack() {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: "-100px" });
 
   return (
-    <div
-      ref={ref}
-      className="hidden lg:block absolute top-[36px] left-[12.5%] right-[12.5%] h-px"
-      style={{ background: "rgba(201,183,156,.25)" }}
-    >
-      <motion.div
-        className="h-full origin-left"
-        style={{ background: "var(--gold)" }}
-        initial={{ scaleX: 0 }}
-        animate={inView ? { scaleX: 1 } : { scaleX: 0 }}
-        transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1], delay: 0.3 }}
-      />
-    </div>
-  );
-}
+    <>
+      {/* Desktop horizontal */}
+      <div
+        ref={ref}
+        className="hidden md:block absolute top-[39px] left-[12.5%] right-[12.5%] h-[2px] rounded-full overflow-hidden z-0"
+        style={{ background: "rgba(216,196,168,.45)" }}
+      >
+        <motion.div
+          className="absolute inset-0 origin-left"
+          style={{
+            background: "linear-gradient(90deg, var(--gold), var(--gold-dark))",
+          }}
+          initial={{ scaleX: 0 }}
+          animate={inView ? { scaleX: 1 } : { scaleX: 0 }}
+          transition={{ duration: 1.6, ease: [0.22, 1, 0.36, 1] }}
+        />
+      </div>
 
-/* ─── Progress line (vertical) ─── */
-function VerticalProgressLine() {
-  const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { once: true, margin: "-60px" });
-
-  return (
-    <div
-      ref={ref}
-      className="lg:hidden absolute top-0 bottom-0 left-[31px] sm:left-[35px] w-px"
-      style={{ background: "rgba(201,183,156,.2)" }}
-    >
-      <motion.div
-        className="w-full origin-top"
-        style={{ background: "var(--gold)" }}
-        initial={{ scaleY: 0 }}
-        animate={inView ? { scaleY: 1 } : { scaleY: 0 }}
-        transition={{ duration: 1, ease: [0.22, 1, 0.36, 1], delay: 0.3 }}
-      />
-    </div>
+      {/* Mobile vertical */}
+      <div
+        className="md:hidden absolute top-[32px] bottom-[32px] left-[32px] w-[2px] rounded-full overflow-hidden z-0"
+        style={{ background: "rgba(216,196,168,.35)" }}
+      >
+        <motion.div
+          className="absolute inset-0 origin-top"
+          style={{
+            background: "linear-gradient(180deg, var(--gold), var(--gold-dark))",
+          }}
+          initial={{ scaleY: 0 }}
+          animate={inView ? { scaleY: 1 } : { scaleY: 0 }}
+          transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
+        />
+      </div>
+    </>
   );
 }
 
@@ -181,13 +180,17 @@ export default function CaraPemesanan() {
   return (
     <section
       id="cara-pesan"
-      className="py-24 sm:py-32 lg:py-36"
-      style={{ background: "var(--cream)" }}
+      className="relative px-5 sm:px-6 py-24 sm:py-32 lg:py-40 overflow-hidden"
+      style={{
+        background:
+          "radial-gradient(circle at 15% 10%, rgba(216,196,168,.14), transparent 45%), radial-gradient(circle at 85% 90%, rgba(184,145,70,.08), transparent 45%), var(--bg-primary)",
+      }}
+      aria-labelledby="cara-pesan-title"
     >
-      <div className="max-w-[1200px] mx-auto px-5 sm:px-8">
+      <div className="mx-auto max-w-6xl">
         {/* ── Header ── */}
         <motion.div
-          className="text-center max-w-2xl mx-auto mb-16 sm:mb-20"
+          className="text-center mb-14 sm:mb-20 lg:mb-24"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-80px" }}
@@ -198,25 +201,31 @@ export default function CaraPemesanan() {
         >
           <motion.p
             variants={headerVariants}
-            className="text-[11px] sm:text-[12px] tracking-[0.36em] uppercase mb-5 font-ui font-medium"
+            className="eyebrow inline-flex items-center gap-3 sm:gap-4 text-[0.72rem] font-medium uppercase tracking-[0.28em] font-ui"
             style={{ color: "var(--gold)" }}
           >
+            <span className="w-6 sm:w-[26px] h-px" style={{ background: "var(--warm-sand)" }} />
             Mudah &amp; Terarah
+            <span className="w-6 sm:w-[26px] h-px" style={{ background: "var(--warm-sand)" }} />
           </motion.p>
           <motion.h2
             variants={headerVariants}
-            className="text-[2rem] sm:text-5xl lg:text-[3.5rem] font-semibold mb-6 leading-[1.1] tracking-tight"
+            id="cara-pesan-title"
+            className="mt-5 text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-tight"
             style={{
               fontFamily: "var(--font-cormorant), Georgia, serif",
               color: "var(--espresso)",
             }}
           >
-            Cara Pemesanan
+            Cara{" "}
+            <em className="italic font-medium" style={{ color: "var(--gold)" }}>
+              Pemesanan
+            </em>
           </motion.h2>
           <motion.p
             variants={headerVariants}
-            className="text-sm sm:text-base lg:text-[17px] leading-[1.75] font-ui max-w-lg mx-auto"
-            style={{ color: "var(--coffee)" }}
+            className="mx-auto mt-5 max-w-xl text-base leading-relaxed font-ui"
+            style={{ color: "var(--text-secondary)" }}
           >
             Tanpa ribet. Empat langkah tenang dari melihat koleksi sampai
             pesanan dikonfirmasi admin kami.
@@ -224,102 +233,105 @@ export default function CaraPemesanan() {
         </motion.div>
 
         {/* ── Timeline ── */}
-        <div className="relative">
-          <ProgressLine />
-          <VerticalProgressLine />
+        <div className="timeline relative">
+          <TimelineTrack />
 
-          {/* Desktop: horizontal | Mobile: vertical */}
           <motion.div
-            className="relative flex flex-col gap-10 lg:flex-row lg:gap-0"
+            className="relative z-10 grid grid-cols-1 md:grid-cols-4 gap-10 md:gap-8 lg:gap-12"
+            role="list"
+            aria-label="Empat langkah cara pemesanan"
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-60px" }}
-            variants={containerVariants}
+            variants={{
+              hidden: {},
+              visible: { transition: { staggerChildren: 0.12 } },
+            }}
           >
-            {/* Mobile: left marker column | Desktop: full width */}
             {steps.map((step, i) => (
-              <div key={step.num} className="relative flex gap-5 lg:gap-0">
-                {/* Mobile timeline dot */}
-                <div
-                  className="lg:hidden shrink-0 w-[62px] sm:w-[70px] flex justify-center"
-                >
-                  <div
-                    className="w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-full flex items-center justify-center transition-all duration-500"
-                    style={{
-                      background: "white",
-                      border: "1.5px solid rgba(201,183,156,.3)",
-                      boxShadow: "0 2px 12px -4px rgba(43,38,32,.06)",
-                    }}
-                  >
-                    <span
-                      className="font-semibold text-lg"
-                      style={{
-                        fontFamily: "var(--font-cormorant), Georgia, serif",
-                        color: "var(--espresso)",
-                      }}
-                    >
-                      {step.num}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Mobile text */}
-                <div className="lg:hidden flex-1 pt-3 sm:pt-4">
-                  <h3
-                    className="text-[13px] sm:text-[14px] font-semibold tracking-[0.12em] uppercase mb-2 font-ui"
-                    style={{ color: "var(--espresso)" }}
-                  >
-                    {step.title}
-                  </h3>
-                  <p
-                    className="text-[12.5px] sm:text-[13px] leading-[1.7] font-ui"
-                    style={{ color: "var(--coffee)" }}
-                  >
-                    {step.desc}
-                  </p>
-                </div>
-
-                {/* Desktop card */}
-                <div className="hidden lg:block w-full">
-                  <StepCard step={step} index={i} />
-                </div>
-              </div>
+              <StepItem key={step.num} step={step} index={i} />
             ))}
           </motion.div>
         </div>
 
         {/* ── CTA ── */}
         <motion.div
-          className="text-center mt-16 sm:mt-20"
+          className="text-center mt-16 sm:mt-20 lg:mt-24"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-40px" }}
-          transition={{ duration: 0.5, delay: 0.6 }}
+          transition={{ duration: 0.5, delay: 0.5 }}
         >
           <a
+            className="cta group inline-flex items-center gap-2.5 rounded-full px-7 sm:px-9 py-3.5 sm:py-4 text-[0.85rem] sm:text-[0.9rem] font-semibold uppercase tracking-[0.08em] font-ui transition-all duration-350 hover:-translate-y-0.5 hover:scale-[1.02] hover:shadow-lg"
+            style={{
+              background: "var(--gold)",
+              color: "#fff",
+              boxShadow: "0 8px 24px rgba(184,145,70,.25)",
+            }}
             href={waHref}
             target="_blank"
             rel="noopener"
-            className="group inline-flex items-center gap-2.5 rounded-full px-8 sm:px-10 py-4 sm:py-[18px] text-[11px] sm:text-[12px] tracking-[0.16em] uppercase font-ui font-medium transition-all duration-300 hover:scale-[1.03] hover:shadow-lg"
-            style={{
-              background: "var(--gold)",
-              color: "white",
-              boxShadow: "0 4px 16px -4px rgba(184,145,70,.3)",
-            }}
+            aria-label="Mulai pesan sekarang via WhatsApp"
           >
             <svg
-              width="17"
-              height="17"
+              width="19"
+              height="19"
               viewBox="0 0 24 24"
               fill="currentColor"
-              className="transition-transform duration-300 group-hover:scale-110"
+              aria-hidden="true"
             >
-              <path d="M17.6 6.3A7.85 7.85 0 0 0 12 4a7.94 7.94 0 0 0-6.9 11.9L4 20l4.2-1.1A7.9 7.9 0 0 0 12 19.9 7.94 7.94 0 0 0 17.6 6.3ZM12 18.5a6.6 6.6 0 0 1-3.4-.9l-.24-.15-2.5.66.67-2.43-.16-.25A6.58 6.58 0 1 1 12 18.5Zm3.6-4.94c-.2-.1-1.17-.58-1.35-.64s-.31-.1-.44.1-.5.64-.62.77-.23.15-.43.05a5.4 5.4 0 0 1-1.59-.98 6 6 0 0 1-1.1-1.37c-.11-.2 0-.3.09-.4l.3-.35a1.36 1.36 0 0 0 .2-.33.37.37 0 0 0 0-.35c0-.1-.44-1.06-.6-1.45s-.32-.33-.44-.34h-.38a.72.72 0 0 0-.52.24 2.18 2.18 0 0 0-.68 1.62 3.79 3.79 0 0 0 .79 2 8.66 8.66 0 0 0 3.32 2.93c.46.2.83.32 1.11.41a2.68 2.68 0 0 0 1.23.08 2 2 0 0 0 1.32-.94 1.65 1.65 0 0 0 .11-.93c-.05-.09-.18-.14-.38-.24Z" />
+              <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2zm0 18.15h-.01a8.2 8.2 0 0 1-4.19-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.23 8.23 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.25-8.24 2.2 0 4.27.86 5.83 2.42a8.19 8.19 0 0 1 2.41 5.83c0 4.54-3.7 8.24-8.24 8.24zm4.52-6.17c-.25-.12-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.13-.16.25-.64.8-.79.97-.14.16-.29.18-.54.06-.25-.12-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.12-.14.16-.25.25-.41.08-.16.04-.31-.02-.43-.06-.12-.56-1.34-.76-1.84-.2-.48-.4-.42-.56-.43h-.48c-.16 0-.43.06-.66.31-.22.25-.87.85-.87 2.07 0 1.22.89 2.4 1.01 2.57.12.16 1.75 2.67 4.23 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.14-1.18-.06-.11-.22-.17-.47-.29z" />
             </svg>
             Mulai Pesan Sekarang
+            <svg
+              className="cta-arrow transition-transform duration-350 group-hover:translate-x-1"
+              width="19"
+              height="19"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <line x1="5" y1="12" x2="19" y2="12" />
+              <polyline points="12 5 19 12 12 19" />
+            </svg>
           </a>
         </motion.div>
       </div>
+
+      <style jsx>{`
+        .step-icon svg {
+          width: 100%;
+          height: 100%;
+          stroke: currentColor;
+          stroke-width: 1.25;
+          vector-effect: non-scaling-stroke;
+          fill: none;
+          stroke-linecap: round;
+          stroke-linejoin: round;
+        }
+        .step:hover .marker {
+          border-color: var(--gold) !important;
+          box-shadow: 0 10px 30px rgba(184, 145, 70, 0.18);
+        }
+        @media (max-width: 767px) {
+          .timeline .grid {
+            gap: 2.5rem !important;
+          }
+        }
+        @media (max-width: 400px) {
+          .step-title {
+            font-size: 1.15rem;
+          }
+          .step-desc {
+            font-size: 0.85rem;
+          }
+        }
+      `}</style>
     </section>
   );
 }

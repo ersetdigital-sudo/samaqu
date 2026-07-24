@@ -3,10 +3,13 @@
 /* ── Brand color tokens ── */
 :root {
   --sand: #d8c4a8;
+  --warm-sand: #d8c4a8;
   --sand-2: #f1e9dd;
   --cream: #f8f5f1;
   --cream-bright: #f8f6f2;
   --ivory: #f8f6f2;
+  --bg-primary: #f8f5f1;
+  --bg-secondary: #efe8e0;
   --beige: #efe8de;
   --clay: #c9b79c;
   --espresso: #2d211b;
@@ -16,6 +19,7 @@
   --gold: #b58c4a;
   --gold-bright: #b89146;
   --gold-deep: #96742f;
+  --gold-dark: #96712f;
   --text-secondary: #6b5d52;
   --text-muted: #9d8f86;
   --wa: #25D366;
