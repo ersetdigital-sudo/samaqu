@@ -23,6 +23,19 @@ export default function Hero() {
     return () => clearInterval(id);
   }, []);
 
+  useEffect(() => {
+    const reduce = window.matchMedia("(prefers-reduced-motion:reduce)").matches;
+    const lines = document.querySelectorAll(".hero-line");
+    if (reduce) {
+      lines.forEach((el) => ((el as HTMLElement).style.opacity = "1"));
+      return;
+    }
+    lines.forEach((el, idx) => {
+      (el as HTMLElement).style.animationDelay = (0.15 + idx * 0.15) + "s";
+      el.classList.add("hero-in");
+    });
+  }, []);
+
   return (
     <section
       id="hero"
