@@ -83,12 +83,12 @@ export default function FinalCta() {
             Mulai Perjalanan Gaya
             <br className="hidden sm:block" />
             Muslimmu Bersama{" "}
-            <img
-              src="/logo.svg"
-              alt="SAMAQU"
-              className="inline-block h-[0.75em] sm:h-[0.8em] w-auto align-baseline ml-1"
-              style={{ filter: "sepia(1) saturate(4) hue-rotate(10deg) brightness(0.7)" }}
-            />
+            <span
+              className="italic"
+              style={{ color: "var(--gold)" }}
+            >
+              SAMAQU.
+            </span>
           </motion.h2>
 
           {/* Subheadline */}
