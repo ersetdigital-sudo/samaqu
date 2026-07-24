@@ -79,6 +79,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const [activeIndex, setActiveIndex] = useState(0);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [zoomOpen, setZoomOpen] = useState(false);
+  const [zoomIndex, setZoomIndex] = useState(0);
   const carouselRef = useRef<HTMLDivElement>(null);
 
   const handleCarouselScroll = () => {
@@ -142,7 +143,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 key={i}
                 className="relative shrink-0 w-[80vw] aspect-[3/4] rounded-xl overflow-hidden cursor-zoom-in"
                 style={{ background: "#e8dfd1" }}
-                onClick={() => setZoomOpen(true)}
+                onClick={() => { setZoomIndex(i); setZoomOpen(true); }}
               >
                 <MediaDisplay item={item} className="absolute inset-0" />
                 {product.tag && i === 0 && (
@@ -286,7 +287,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 ))}
               </div>
             )}
-            <div className="relative flex-1 aspect-[3/4] rounded-2xl overflow-hidden cursor-zoom-in" style={{ background: "#e8dfd1" }} onClick={() => setZoomOpen(true)}>
+            <div className="relative flex-1 aspect-[3/4] rounded-2xl overflow-hidden cursor-zoom-in" style={{ background: "#e8dfd1" }} onClick={() => { setZoomIndex(activeIndex); setZoomOpen(true); }}>
               <AnimatePresence mode="wait">
                 <motion.div key={activeIndex} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }} className="absolute inset-0">
                   <MediaDisplay item={activeMedia} className="w-full h-full" />
@@ -400,11 +401,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           IMAGE/VIDEO ZOOM LIGHTBOX
       ═══════════════════════════════════════ */}
       <ImageZoom
-        src={activeMedia.src}
+        src={media[zoomIndex]?.src || activeMedia.src}
         alt={product.name}
         isOpen={zoomOpen}
         onClose={() => setZoomOpen(false)}
-        type={activeMedia.type}
+        type={media[zoomIndex]?.type || "image"}
       />
     </section>
   );
