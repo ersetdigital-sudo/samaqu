@@ -26,13 +26,6 @@ export default function Hero() {
     if (conn) {
       const effectiveType = conn.effectiveType as string;
       if (effectiveType === "slow-2g" || effectiveType === "2g") return;
-      // Listen for connection upgrade
-      const onChange = () => {
-        const t = (navigator as any).connection.effectiveType;
-        if (t !== "slow-2g" && t !== "2g") setShouldPlay(true);
-      };
-      conn.addEventListener("change", onChange);
-      return () => conn.removeEventListener("change", onChange);
     }
 
     setShouldPlay(true);
