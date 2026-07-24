@@ -222,6 +222,11 @@ export const allCategories: Category[] = [
   "Cover & Hanger",
 ];
 
+/* ── Get product by ID ── */
+export function getProductById(id: string): Product | undefined {
+  return products.find((p) => p.id === id);
+}
+
 /* ── Get unique kain for a category ── */
 export function getKainOptions(category: Category): string[] {
   return [...new Set(products.filter((p) => p.category === category).map((p) => p.kain).filter(Boolean))] as string[];

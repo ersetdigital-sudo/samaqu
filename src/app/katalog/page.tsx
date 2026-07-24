@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useRef, useEffect } from "react";
+import Link from "next/link";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 import { SlidersHorizontal, X, ChevronDown, ArrowRight } from "lucide-react";
 import {
@@ -57,12 +58,15 @@ function ProductCard({ product, index }: { product: Product; index: number }) {
       animate="visible"
       exit="exit"
       custom={index}
-      className="group relative bg-white rounded-sm overflow-hidden cursor-pointer"
-      style={{
-        boxShadow: "0 2px 12px -4px rgba(43,38,32,.06)",
-        border: "1px solid rgba(201,183,156,.12)",
-      }}
     >
+      <Link
+        href={`/katalog/${product.id}`}
+        className="group relative block bg-white rounded-sm overflow-hidden cursor-pointer"
+        style={{
+          boxShadow: "0 2px 12px -4px rgba(43,38,32,.06)",
+          border: "1px solid rgba(201,183,156,.12)",
+        }}
+      >
       {/* Image */}
       <div className="relative aspect-[4/5] overflow-hidden" style={{ background: "#e8dfd1" }}>
         <div
@@ -155,6 +159,7 @@ function ProductCard({ product, index }: { product: Product; index: number }) {
           <ArrowRight size={14} strokeWidth={1.5} />
         </span>
       </div>
+      </Link>
     </motion.div>
   );
 }
