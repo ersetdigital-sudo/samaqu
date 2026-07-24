@@ -187,17 +187,18 @@ details[open] .faq-plus {
   to { opacity: 1; transform: none; }
 }
 
-/* ── Desktop nav link underline hover ── */
+/* ── Desktop nav link underline hover (left → right) ── */
 .nav-desktop-link::after {
   content: "";
   position: absolute;
-  inset-inline: 0;
+  left: 0;
+  right: 0;
   bottom: 0;
   height: 1px;
   background: var(--gold);
   transform: scaleX(0);
-  transform-origin: center;
-  transition: transform 0.3s ease;
+  transform-origin: left;
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .nav-desktop-link:hover::after {
   transform: scaleX(1);

@@ -1,8 +1,9 @@
 "use client";
 
 import { motion, Variants } from "framer-motion";
+import { ShieldCheck, Package, Headphones } from "lucide-react";
 
-/* ─── Animation variants ─── */
+/* ─── Animation ─── */
 const containerVariants: Variants = {
   hidden: {},
   visible: { transition: { staggerChildren: 0.12 } },
@@ -19,231 +20,92 @@ const cardVariants: Variants = {
 
 const headerVariants: Variants = {
   hidden: { opacity: 0, y: 18 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.5, ease: "easeOut" },
+  },
 };
 
-/* ─── SVG Illustrations (SAMAQU brand) ─── */
-function ShieldSvg() {
-  return (
-    <svg
-      viewBox="0 0 240 170"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className="w-full h-full"
-    >
-      {/* Shield body */}
-      <path
-        d="M120 24 L192 52 V96 C192 132 158 154 120 164 C82 154 48 132 48 96 V52 Z"
-        fill="var(--sand-2)"
-        stroke="var(--clay)"
-        strokeWidth="1.4"
-      />
-      <path
-        d="M120 36 L180 60 V96 C180 126 150 146 120 155 C90 146 60 126 60 96 V60 Z"
-        fill="white"
-        stroke="var(--gold)"
-        strokeWidth="1.2"
-      />
-      {/* Checkmark */}
-      <path
-        d="M96 94 L112 110 L148 74"
-        stroke="var(--gold)"
-        strokeWidth="4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="none"
-      />
-      {/* Sparkle dots */}
-      <circle cx="60" cy="40" r="2.5" fill="var(--gold)" opacity=".4" />
-      <circle cx="180" cy="40" r="2.5" fill="var(--gold)" opacity=".4" />
-      <circle cx="120" cy="16" r="2" fill="var(--gold)" opacity=".3" />
-    </svg>
-  );
-}
-
-function BoxSvg() {
-  return (
-    <svg
-      viewBox="0 0 240 170"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className="w-full h-full"
-    >
-      {/* Box base */}
-      <rect
-        x="52"
-        y="72"
-        width="136"
-        height="80"
-        rx="4"
-        fill="var(--sand-2)"
-        stroke="var(--clay)"
-        strokeWidth="1.2"
-      />
-      {/* Box lid */}
-      <rect
-        x="44"
-        y="56"
-        width="152"
-        height="20"
-        rx="4"
-        fill="white"
-        stroke="var(--gold)"
-        strokeWidth="1.4"
-      />
-      {/* Ribbon vertical */}
-      <rect
-        x="114"
-        y="56"
-        width="12"
-        height="96"
-        fill="var(--gold)"
-        opacity=".2"
-      />
-      {/* Ribbon horizontal */}
-      <rect
-        x="44"
-        y="60"
-        width="152"
-        height="12"
-        fill="var(--gold)"
-        opacity=".15"
-      />
-      {/* Ribbon cross */}
-      <circle
-        cx="120"
-        cy="62"
-        r="8"
-        fill="var(--gold)"
-        opacity=".35"
-      />
-      {/* Bow */}
-      <path
-        d="M112 56 Q108 42 120 48 Q132 42 128 56"
-        stroke="var(--gold)"
-        strokeWidth="1.5"
-        fill="var(--sand-2)"
-      />
-      {/* Sparkle */}
-      <circle cx="72" cy="44" r="2" fill="var(--gold)" opacity=".3" />
-      <circle cx="168" cy="44" r="2" fill="var(--gold)" opacity=".3" />
-    </svg>
-  );
-}
-
-function HeartSvg() {
-  return (
-    <svg
-      viewBox="0 0 240 170"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className="w-full h-full"
-    >
-      {/* Chat bubble */}
-      <rect
-        x="56"
-        y="36"
-        width="128"
-        height="88"
-        rx="16"
-        fill="var(--sand-2)"
-        stroke="var(--clay)"
-        strokeWidth="1.2"
-      />
-      <path
-        d="M88 124 L104 144 L120 124"
-        fill="var(--sand-2)"
-        stroke="var(--clay)"
-        strokeWidth="1.2"
-        strokeLinejoin="round"
-      />
-      {/* Lines in bubble */}
-      <rect x="80" y="60" width="80" height="5" rx="2.5" fill="var(--clay)" opacity=".3" />
-      <rect x="80" y="74" width="56" height="5" rx="2.5" fill="var(--clay)" opacity=".3" />
-      <rect x="80" y="88" width="68" height="5" rx="2.5" fill="var(--clay)" opacity=".3" />
-      {/* Heart */}
-      <path
-        d="M120 76 C120 68 108 62 104 70 C100 62 88 68 88 76 C88 88 104 96 104 96 C104 96 120 88 120 76Z"
-        fill="var(--gold)"
-        opacity=".5"
-        transform="translate(28, -4) scale(0.9)"
-      />
-      {/* Sparkle */}
-      <circle cx="72" cy="28" r="2" fill="var(--gold)" opacity=".3" />
-      <circle cx="168" cy="28" r="2" fill="var(--gold)" opacity=".3" />
-    </svg>
-  );
-}
-
-/* ─── Features data ─── */
+/* ─── Data ─── */
 const guarantees = [
   {
-    id: 1,
+    icon: ShieldCheck,
     title: "Kualitas Terjamin",
     desc: "Setiap produk melewati pengecekan jahitan dan bahan sebelum dikirim.",
-    Illustration: ShieldSvg,
   },
   {
-    id: 2,
+    icon: Package,
     title: "Pengiriman Aman",
     desc: "Dikemas rapi dan terlindungi agar sampai dalam kondisi sempurna.",
-    Illustration: BoxSvg,
   },
   {
-    id: 3,
+    icon: Headphones,
     title: "Layanan Ramah",
     desc: "Admin siap membantu dari pemilihan size hingga setelah pembelian.",
-    Illustration: HeartSvg,
   },
 ];
 
+const trustBadges = [
+  "100% Original",
+  "Packing Aman",
+  "Support Personal",
+];
+
 /* ─── Card ─── */
-function FeatureCard({
+function GuaranteeCard({
+  icon: Icon,
   title,
   desc,
-  Illustration,
-}: {
-  title: string;
-  desc: string;
-  Illustration: React.FC;
-}) {
+}: (typeof guarantees)[number]) {
   return (
     <motion.div
       variants={cardVariants}
-      whileHover={{ y: -4, transition: { duration: 0.2 } }}
-      className="group bg-white rounded-sm overflow-hidden flex flex-col cursor-pointer"
-      style={{ boxShadow: "0 4px 24px -8px rgba(43,38,32,.08)" }}
+      className="group relative bg-white rounded-sm p-7 sm:p-9 flex flex-col items-center text-center transition-all duration-500 hover:-translate-y-1.5"
+      style={{
+        boxShadow: "0 2px 12px -4px rgba(43,38,32,.06)",
+      }}
+      onMouseEnter={(e) => {
+        (e.currentTarget as HTMLElement).style.boxShadow =
+          "0 12px 40px -12px rgba(43,38,32,.12)";
+      }}
+      onMouseLeave={(e) => {
+        (e.currentTarget as HTMLElement).style.boxShadow =
+          "0 2px 12px -4px rgba(43,38,32,.06)";
+      }}
     >
-      {/* Illustration area */}
+      {/* Icon */}
       <div
-        className="w-full h-[140px] sm:h-[160px] flex items-center justify-center p-4 border-b"
+        className="w-16 h-16 mb-6 rounded-full flex items-center justify-center transition-transform duration-500 group-hover:scale-110"
         style={{
-          background: "var(--cream)",
-          borderColor: "rgba(201,183,156,.15)",
+          background: "var(--sand-2)",
+          border: "1px solid rgba(201,183,156,.2)",
         }}
       >
-        <Illustration />
-      </div>
-
-      {/* Text */}
-      <div className="p-5 sm:p-6 flex flex-col gap-2">
-        <h3
-          className="text-[13px] sm:text-[14.5px] font-semibold tracking-[0.08em] uppercase font-ui"
+        <Icon
+          size={28}
+          strokeWidth={1.5}
           style={{ color: "var(--espresso)" }}
-        >
-          {title}
-        </h3>
-        <p
-          className="text-[12.5px] sm:text-[13px] leading-relaxed font-ui"
-          style={{ color: "var(--coffee)" }}
-        >
-          {desc}
-        </p>
+        />
       </div>
 
-      {/* Bottom accent */}
+      <h3
+        className="text-[13px] sm:text-[14px] font-semibold tracking-[0.12em] uppercase mb-3 font-ui"
+        style={{ color: "var(--espresso)" }}
+      >
+        {title}
+      </h3>
+
+      <p
+        className="text-[13px] sm:text-sm leading-[1.75] font-ui max-w-[260px]"
+        style={{ color: "var(--coffee)" }}
+      >
+        {desc}
+      </p>
+
+      {/* Bottom gold accent — hidden by default, visible on hover */}
       <span
-        className="h-[2px] w-0 transition-all duration-500 group-hover:w-full"
+        className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] w-0 transition-all duration-500 group-hover:w-12 rounded-full"
         style={{ background: "var(--gold)" }}
       />
     </motion.div>
@@ -253,14 +115,22 @@ function FeatureCard({
 /* ─── Section ─── */
 export default function Garansi() {
   return (
-    <section
-      className="py-20 sm:py-28 lg:py-32 px-4 sm:px-8"
-      style={{ background: "var(--cream)" }}
-    >
-      <div className="max-w-[1200px] mx-auto">
+    <section className="relative py-24 sm:py-32 lg:py-36 overflow-hidden">
+      {/* Subtle pattern background */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(circle at 1px 1px, rgba(201,183,156,.12) 1px, transparent 0)",
+          backgroundSize: "24px 24px",
+          backgroundColor: "var(--sand-2)",
+        }}
+      />
+
+      <div className="relative max-w-[1200px] mx-auto px-5 sm:px-8">
         {/* ── Header ── */}
         <motion.div
-          className="text-center max-w-xl mx-auto mb-12 sm:mb-16"
+          className="text-center max-w-2xl mx-auto mb-16 sm:mb-20"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-80px" }}
@@ -268,14 +138,14 @@ export default function Garansi() {
         >
           <motion.p
             variants={headerVariants}
-            className="text-[11px] sm:text-[12px] tracking-[0.32em] uppercase mb-4 font-ui"
+            className="text-[11px] sm:text-[12px] tracking-[0.32em] uppercase mb-5 font-ui"
             style={{ color: "var(--gold)" }}
           >
             Ketenangan Berbelanja
           </motion.p>
           <motion.h2
             variants={headerVariants}
-            className="text-3xl sm:text-4xl lg:text-5xl font-medium mb-5 leading-tight"
+            className="text-[2rem] sm:text-5xl lg:text-[3.5rem] font-semibold mb-6 leading-[1.1] tracking-tight"
             style={{
               fontFamily: "var(--font-cormorant), Georgia, serif",
               color: "var(--espresso)",
@@ -285,24 +155,60 @@ export default function Garansi() {
           </motion.h2>
           <motion.p
             variants={headerVariants}
-            className="text-sm sm:text-base leading-[1.75] font-ui"
+            className="text-sm sm:text-base lg:text-[17px] leading-[1.75] font-ui max-w-lg mx-auto"
             style={{ color: "var(--coffee)" }}
           >
-            Kami menjaga kepercayaanmu di setiap pesanan — dari kualitas
-            hingga pelayanan.
+            Kami menjaga kepercayaanmu di setiap pesanan — dari kualitas bahan
+            hingga pesanan sampai di tangan.
           </motion.p>
         </motion.div>
 
-        {/* ── Feature cards ── */}
+        {/* ── Cards ── */}
         <motion.div
-          className="grid sm:grid-cols-3 gap-4 sm:gap-6"
+          className="grid sm:grid-cols-3 gap-5 sm:gap-6 mb-14 sm:mb-16"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-60px" }}
           variants={containerVariants}
         >
           {guarantees.map((g) => (
-            <FeatureCard key={g.id} {...g} />
+            <GuaranteeCard key={g.title} {...g} />
+          ))}
+        </motion.div>
+
+        {/* ── Trust badges ── */}
+        <motion.div
+          className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-40px" }}
+          variants={containerVariants}
+        >
+          {trustBadges.map((badge) => (
+            <motion.div
+              key={badge}
+              variants={headerVariants}
+              className="flex items-center gap-2"
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="var(--gold)"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M20 6L9 17l-5-5" />
+              </svg>
+              <span
+                className="text-[11px] sm:text-[12px] tracking-[0.14em] uppercase font-ui font-medium"
+                style={{ color: "var(--stone)" }}
+              >
+                {badge}
+              </span>
+            </motion.div>
           ))}
         </motion.div>
       </div>

@@ -152,6 +152,12 @@ export default function Navbar() {
 }
 
 /* ── Drawer nav content ── */
+const waHref =
+  "https://wa.me/6281234567890?text=" +
+  encodeURIComponent(
+    "Halo Admin SAMAQU, saya tertarik dengan koleksi Anda dan ingin bertanya soal pemesanan."
+  );
+
 function DrawerNavContent({ onClose }: { onClose: () => void }) {
   return (
     <nav
@@ -165,7 +171,7 @@ function DrawerNavContent({ onClose }: { onClose: () => void }) {
           <li key={link.href}>
             <a
               href={link.href}
-              className="flex items-center px-6 py-4 text-[13px] tracking-[0.18em] uppercase font-ui transition-colors duration-200"
+              className="flex items-center px-6 py-4 text-[13px] tracking-[0.18em] uppercase font-ui transition-colors duration-200 hover:bg-sand-2"
               style={{
                 color: "var(--coffee)",
                 borderBottom: "1px solid rgba(201,183,156,.12)",
@@ -187,11 +193,27 @@ function DrawerNavContent({ onClose }: { onClose: () => void }) {
       {/* Spacer */}
       <div className="flex-1" />
 
-      {/* CTA */}
-      <div className="p-6 border-t" style={{ borderColor: "rgba(201,183,156,.15)" }}>
+      {/* CTA area */}
+      <div className="p-6 space-y-3 border-t" style={{ borderColor: "rgba(201,183,156,.15)" }}>
+        <a
+          href={waHref}
+          target="_blank"
+          rel="noopener"
+          className="flex items-center justify-center gap-2 w-full px-5 py-3.5 text-[11px] tracking-[0.16em] uppercase font-ui font-medium transition-all duration-300 hover:opacity-90 rounded-sm"
+          style={{
+            background: "var(--gold)",
+            color: "white",
+          }}
+          onClick={onClose}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M17.6 6.3A7.85 7.85 0 0 0 12 4a7.94 7.94 0 0 0-6.9 11.9L4 20l4.2-1.1A7.9 7.9 0 0 0 12 19.9 7.94 7.94 0 0 0 17.6 6.3Z" />
+          </svg>
+          Chat Admin
+        </a>
         <a
           href="#produk"
-          className="flex items-center justify-center gap-2 w-full px-5 py-3.5 text-[12px] tracking-[0.18em] uppercase font-ui transition-opacity duration-200 hover:opacity-90 rounded-sm"
+          className="flex items-center justify-center gap-2 w-full px-5 py-3.5 text-[11px] tracking-[0.16em] uppercase font-ui font-medium transition-opacity duration-200 hover:opacity-80 rounded-sm"
           style={{
             background: "var(--espresso)",
             color: "var(--cream)",
