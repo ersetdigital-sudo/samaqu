@@ -23,7 +23,7 @@ export default function FinalCta() {
       <div className="orb orb-1" aria-hidden="true" />
       <div className="orb orb-2" aria-hidden="true" />
 
-      <div className="relative z-10 mx-auto w-full max-w-6xl px-5 sm:px-6 py-24 sm:py-32 md:py-44">
+      <div className="relative z-10 mx-auto w-full max-w-6xl px-5 sm:px-6 py-28 sm:py-36 md:py-44 pb-32 sm:pb-40 md:pb-48">
         <motion.div
           className="cta-glass mx-auto max-w-4xl px-6 py-14 sm:px-14 sm:py-20 md:px-20 md:py-24"
           initial="hidden"
