@@ -14,7 +14,7 @@ import PanduanSize from "@/components/PanduanSize";
 import Faq from "@/components/Faq";
 import FinalCta from "@/components/FinalCta";
 import Footer from "@/components/Footer";
-import WhatsAppFloat from "@/components/WhatsAppFloat";
+import FloatingWhatsApp from "@/components/FloatingWhatsApp";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 
 export default function Home() {
@@ -38,7 +38,7 @@ export default function Home() {
         <FinalCta />
       </main>
       <Footer />
-      <WhatsAppFloat />
+      <FloatingWhatsApp />
     </>
   );
 }
