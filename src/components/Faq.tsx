@@ -1,102 +1,293 @@
 "use client";
 
-import {
-  Accordion,
-  AccordionItem,
-  AccordionTrigger,
-  AccordionContent,
-} from "@/components/ui/accordion";
+import { useState } from "react";
+import { motion, Variants } from "framer-motion";
+import { ChevronDown } from "lucide-react";
 
+/* ─── Data ─── */
 const faqs = [
   {
-    id: "faq-1",
     q: "Bagaimana cara memesan produk SAMAQU?",
     a: "Pilih produk dari katalog, cek panduan size, lalu klik tombol WhatsApp untuk menghubungi admin. Admin akan membantu konfirmasi ketersediaan hingga pembayaran.",
   },
   {
-    id: "faq-2",
     q: "Apakah bahan SAMAQU nyaman dan adem?",
-    a: "Ya. Kami memilih bahan premium yang adem, ringan, dan nyaman digunakan untuk ibadah maupun keseharian dalam waktu lama.",
+    a: "Sangat. Kami memilih bahan berkualitas yang adem, ringan, dan tidak panas saat dikenakan — nyaman untuk ibadah, keseharian, maupun acara istimewa dalam waktu lama.",
   },
   {
-    id: "faq-3",
     q: "Bagaimana jika saya ragu memilih ukuran?",
-    a: "Gunakan panduan size kami sebagai acuan. Jika masih ragu, chat admin dengan menyebutkan tinggi dan postur — kami bantu tentukan ukuran paling pas.",
+    a: "Gunakan panduan size kami sebagai acuan awal. Jika masih ragu, cukup chat admin dengan menyebutkan tinggi dan postur tubuhmu — kami bantu menentukan ukuran yang paling pas.",
   },
   {
-    id: "faq-4",
     q: "Apakah bisa pesan dalam jumlah banyak / grosir?",
-    a: "Tentu. Melalui fitur Create Your Price, kami menyusun penawaran khusus untuk pemesanan jumlah banyak, seragam komunitas, atau acara tertentu.",
+    a: "Tentu. Kami melayani pemesanan pribadi, keluarga, hingga komunitas. Untuk pembelian grosir tersedia penawaran khusus — ceritakan kebutuhanmu dan tim kami susun harga terbaik.",
   },
   {
-    id: "faq-5",
     q: "Apakah ada garansi untuk produk?",
-    a: "Setiap produk melewati quality check sebelum dikirim. Bila ada kendala pada pesananmu, hubungi admin dan kami akan bantu menyelesaikannya.",
+    a: "Setiap produk melewati pengecekan jahitan dan bahan sebelum dikirim. Bila ada ketidaksesuaian pada pesanan, hubungi admin kami dan akan kami bantu dengan sepenuh hati.",
   },
 ];
 
+/* ─── Animation ─── */
+const headerVariants: Variants = {
+  hidden: { opacity: 0, y: 18 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.5, ease: "easeOut" },
+  },
+};
+
+const containerVariants: Variants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.05 } },
+};
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 24 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
+  },
+};
+
+/* ─── FAQ Item ─── */
+function FaqItem({
+  index,
+  item,
+  isOpen,
+  onToggle,
+}: {
+  index: number;
+  item: (typeof faqs)[number];
+  isOpen: boolean;
+  onToggle: () => void;
+}) {
+  const num = String(index + 1).padStart(2, "0");
+  const panelId = `faq-panel-${index}`;
+  const btnId = `faq-btn-${index}`;
+
+  return (
+    <motion.div
+      variants={itemVariants}
+      className="faq-item relative"
+      data-open={isOpen || undefined}
+    >
+      <h3>
+        <button
+          type="button"
+          id={btnId}
+          className="faq-trigger group flex w-full items-center gap-5 py-7 pl-5 pr-2 text-left"
+          aria-expanded={isOpen}
+          aria-controls={panelId}
+          onClick={onToggle}
+        >
+          {/* Number */}
+          <span
+            className="faq-num font-medium tabular-nums text-2xl shrink-0"
+            style={{
+              fontFamily: "var(--font-cormorant), Georgia, serif",
+              color: isOpen ? "var(--gold)" : "rgba(216,196,168,.9)",
+            }}
+          >
+            {num}
+          </span>
+
+          {/* Question */}
+          <span
+            className="faq-question-text flex-1 text-lg sm:text-xl font-medium leading-snug"
+            style={{ color: "var(--espresso)" }}
+          >
+            {item.q}
+          </span>
+
+          {/* Chevron */}
+          <span style={{ color: isOpen ? "var(--gold)" : "var(--sand)" }}>
+            <ChevronDown
+              size={24}
+              strokeWidth={1.5}
+              className="faq-icon shrink-0"
+            />
+          </span>
+        </button>
+      </h3>
+
+      {/* Answer — grid-rows trick for smooth height */}
+      <div
+        id={panelId}
+        role="region"
+        aria-labelledby={btnId}
+        className="faq-answer"
+      >
+        <div>
+          <p
+            className="pb-8 pl-[3.75rem] pr-8 text-base leading-relaxed"
+            style={{ color: "rgba(42,33,27,.8)" }}
+          >
+            {item.a}
+          </p>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+/* ─── Section ─── */
 export default function Faq() {
+  const [openIndex, setOpenIndex] = useState<number | null>(0);
+
   return (
     <section
       id="faq"
-      className="py-20 sm:py-28 lg:py-32"
-      style={{ background: "var(--sand-2)" }}
+      aria-labelledby="faq-heading"
+      className="relative overflow-hidden py-24 sm:py-32"
+      style={{ background: "var(--beige)" }}
     >
-      <div className="max-w-[1200px] mx-auto px-5 sm:px-8">
-        <div className="max-w-2xl mx-auto">
-          {/* Header */}
-          <div className="text-center mb-12 sm:mb-14 fade-up">
-            <p
-              className="text-[11px] sm:text-[12px] tracking-[0.32em] uppercase mb-4 font-ui"
-              style={{ color: "var(--gold)" }}
+      <div className="mx-auto max-w-6xl px-6 sm:px-8 lg:px-12">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16">
+          {/* ── Left: sticky heading ── */}
+          <div className="lg:col-span-4">
+            <motion.div
+              className="lg:sticky lg:top-28"
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-80px" }}
+              variants={headerVariants}
             >
-              Pertanyaan Umum
-            </p>
-            <h2
-              className="text-3xl sm:text-4xl lg:text-5xl font-medium leading-tight"
-              style={{
-                fontFamily: "var(--font-cormorant), Georgia, serif",
-                color: "var(--espresso)",
-              }}
-            >
-              FAQ
-            </h2>
-          </div>
-
-          {/* Accordion */}
-          <Accordion
-            defaultValue={["faq-1"]}
-            className="fade-up space-y-2 sm:space-y-3"
-          >
-            {faqs.map((faq) => (
-              <AccordionItem
-                key={faq.id}
-                value={faq.id}
-                className="bg-white rounded-sm border-0 px-5 sm:px-6 data-[open]:shadow-md"
+              <span
+                className="block text-sm font-bold uppercase tracking-[0.35em]"
                 style={{
-                  boxShadow: "0 4px 20px -8px rgba(43,38,32,.08)",
+                  fontFamily: "var(--font-cormorant), Georgia, serif",
+                  color: "var(--gold)",
                 }}
               >
-                <AccordionTrigger
-                  className="py-4 sm:py-5 text-[14px] sm:text-[15px] font-medium leading-snug text-left hover:no-underline"
-                  style={{
-                    color: "var(--espresso)",
-                    fontFamily: "var(--font-inter), system-ui, sans-serif",
-                  }}
-                >
-                  {faq.q}
-                </AccordionTrigger>
-                <AccordionContent
-                  className="text-[13px] sm:text-sm leading-[1.75] pb-5"
-                  style={{ color: "var(--coffee)" }}
-                >
-                  {faq.a}
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
+                Pertanyaan Umum
+              </span>
+              <h2
+                id="faq-heading"
+                className="mt-5 text-6xl sm:text-7xl font-medium leading-[0.95]"
+                style={{
+                  fontFamily: "var(--font-cormorant), Georgia, serif",
+                  color: "var(--espresso)",
+                }}
+              >
+                FAQ
+              </h2>
+              <p
+                className="mt-6 max-w-xs text-base leading-relaxed"
+                style={{ color: "rgba(42,33,27,.7)" }}
+              >
+                Temukan jawaban untuk pertanyaan umum seputar produk dan
+                pemesanan.
+              </p>
+              <div
+                className="mt-8 h-px w-16"
+                style={{ background: "var(--sand)" }}
+              />
+              <p
+                className="mt-6 max-w-xs text-sm leading-relaxed"
+                style={{ color: "rgba(42,33,27,.55)" }}
+              >
+                Masih ada yang ingin ditanyakan? Tim kami dengan senang hati
+                membantu kapan pun kamu butuh.
+              </p>
+            </motion.div>
+          </div>
+
+          {/* ── Right: accordion list ── */}
+          <div className="lg:col-span-8">
+            <motion.div
+              className="divide-y"
+              style={{ borderColor: "rgba(216,196,168,.5)" }}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-60px" }}
+              variants={containerVariants}
+            >
+              {faqs.map((item, i) => (
+                <FaqItem
+                  key={i}
+                  index={i}
+                  item={item}
+                  isOpen={openIndex === i}
+                  onToggle={() =>
+                    setOpenIndex(openIndex === i ? null : i)
+                  }
+                />
+              ))}
+            </motion.div>
+          </div>
         </div>
       </div>
+
+      <style jsx>{`
+        .faq-answer {
+          display: grid;
+          grid-template-rows: 0fr;
+          transition: grid-template-rows 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .faq-item[data-open] .faq-answer {
+          grid-template-rows: 1fr;
+        }
+        .faq-answer > div {
+          overflow: hidden;
+        }
+
+        .faq-icon {
+          transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+            color 0.3s ease;
+        }
+        .faq-item[data-open] .faq-icon {
+          transform: rotate(180deg);
+        }
+
+        .faq-question-text {
+          transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+            color 0.3s ease;
+        }
+        .faq-trigger:hover .faq-question-text {
+          transform: translateX(6px);
+          color: var(--gold);
+        }
+
+        .faq-num {
+          transition: color 0.3s ease;
+        }
+
+        /* Left gold accent bar */
+        .faq-item {
+          position: relative;
+          transition: background-color 0.4s ease;
+        }
+        .faq-item::before {
+          content: "";
+          position: absolute;
+          left: 0;
+          top: 0;
+          bottom: 0;
+          width: 2px;
+          background: var(--gold);
+          transform: scaleY(0);
+          transform-origin: center;
+          transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .faq-item[data-open]::before {
+          transform: scaleY(1);
+        }
+        .faq-item[data-open] {
+          background-color: rgba(255, 255, 255, 0.55);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .faq-answer,
+          .faq-icon,
+          .faq-question-text,
+          .faq-item::before {
+            transition: none !important;
+          }
+        }
+      `}</style>
     </section>
   );
 }
