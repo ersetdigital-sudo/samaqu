@@ -2,9 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 
-/* ── Video sources (replace with actual files) ── */
-const HERO_VIDEO_DESKTOP = "/video/hero-desktop.mp4";
-const HERO_VIDEO_MOBILE = "/video/hero-mobile.mp4";
+/* ── Video sources ── */
+const HERO_VIDEO = "/video/Thobe%20Gabungan%20Imron%20dan%20Jiharkah%20Deep%20maroon%20B-02%20Ambience.mp4";
 const HERO_POSTER = "/images/e1ad0ea0-c5ce-460c-9181-c0b171351939.png";
 
 const waHref =
@@ -77,11 +76,11 @@ export default function Hero() {
           }}
         />
 
-        {/* Video — desktop */}
+        {/* Video */}
         {shouldPlay && (
           <video
             ref={videoRef}
-            className="hidden md:block absolute inset-0 w-full h-full object-cover"
+            className="absolute inset-0 w-full h-full object-cover"
             autoPlay
             muted
             loop
@@ -90,23 +89,7 @@ export default function Hero() {
             poster={HERO_POSTER}
             onCanPlay={() => setVideoLoaded(true)}
           >
-            <source src={HERO_VIDEO_DESKTOP} type="video/mp4" />
-          </video>
-        )}
-
-        {/* Video — mobile (720p, smaller file) */}
-        {shouldPlay && (
-          <video
-            className="md:hidden absolute inset-0 w-full h-full object-cover"
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="metadata"
-            poster={HERO_POSTER}
-            onCanPlay={() => setVideoLoaded(true)}
-          >
-            <source src={HERO_VIDEO_MOBILE} type="video/mp4" />
+            <source src={HERO_VIDEO} type="video/mp4" />
           </video>
         )}
       </div>
