@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from "react";
 
 /* ── Video sources ── */
 const HERO_VIDEO = "/video/Thobe%20Gabungan%20Imron%20dan%20Jiharkah%20Deep%20maroon%20B-02%20Ambience.mp4";
-const HERO_POSTER = "/images/e1ad0ea0-c5ce-460c-9181-c0b171351939.png";
 
 const waHref =
   "https://wa.me/6281234567890?text=" +
@@ -15,7 +14,6 @@ const waHref =
 export default function Hero() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [shouldPlay, setShouldPlay] = useState(false);
-  const [videoLoaded, setVideoLoaded] = useState(false);
 
   useEffect(() => {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -57,18 +55,6 @@ export default function Hero() {
     >
       {/* ── Video background ── */}
       <div className="absolute inset-0">
-        {/* Poster image (always visible, fades out when video loads) */}
-        <img
-          src={HERO_POSTER}
-          alt=""
-          aria-hidden="true"
-          className="absolute inset-0 w-full h-full object-cover transition-opacity duration-700"
-          style={{
-            objectPosition: "62% 24%",
-            opacity: videoLoaded ? 0 : 1,
-          }}
-        />
-
         {/* Video */}
         {shouldPlay && (
           <video
@@ -78,9 +64,7 @@ export default function Hero() {
             muted
             loop
             playsInline
-            preload="metadata"
-            poster={HERO_POSTER}
-            onCanPlay={() => setVideoLoaded(true)}
+            preload="auto"
           >
             <source src={HERO_VIDEO} type="video/mp4" />
           </video>
