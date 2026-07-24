@@ -21,39 +21,74 @@ function WhatsAppIcon() {
 export default function AutoCTA() {
   const [visible, setVisible] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const scrollRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const showTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const hideTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const tooltipTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const lastScrollY = useRef(0);
+  const dismissedRef = useRef(false);
 
+  /* ── Initial trigger: 5s timer OR 30% scroll ── */
   useEffect(() => {
-    if (sessionStorage.getItem("samaqu_cta_closed") === "true") return;
-
-    timerRef.current = setTimeout(() => setVisible(true), 5000);
+    showTimerRef.current = setTimeout(() => setVisible(true), 5000);
 
     function onScroll() {
+      if (visible) return;
       const scrollPercent = window.scrollY / (document.body.scrollHeight - window.innerHeight);
       if (scrollPercent >= 0.3) {
         setVisible(true);
-        window.removeEventListener("scroll", onScroll);
       }
     }
     window.addEventListener("scroll", onScroll, { passive: true });
 
     return () => {
-      clearTimeout(timerRef.current);
+      clearTimeout(showTimerRef.current);
       window.removeEventListener("scroll", onScroll);
     };
-  }, []);
-
-  useEffect(() => {
-    if (!visible) return;
-    scrollRef.current = setTimeout(() => setShowTooltip(true), 2000);
-    return () => clearTimeout(scrollRef.current);
   }, [visible]);
+
+  /* ── Show tooltip 2s after visible ── */
+  useEffect(() => {
+    if (!visible) {
+      setShowTooltip(false);
+      return;
+    }
+    tooltipTimerRef.current = setTimeout(() => setShowTooltip(true), 2000);
+    return () => clearTimeout(tooltipTimerRef.current);
+  }, [visible]);
+
+  /* ── Reappear triggers after dismiss ── */
+  useEffect(() => {
+    if (!dismissedRef.current) return;
+
+    // Trigger 1: 10s timer
+    showTimerRef.current = setTimeout(() => {
+      dismissedRef.current = false;
+      setVisible(true);
+    }, 10000);
+
+    // Trigger 2: scroll up 200px
+    function onScroll() {
+      if (lastScrollY.current - window.scrollY > 200) {
+        dismissedRef.current = false;
+        setVisible(true);
+        window.removeEventListener("scroll", onScroll);
+      }
+      lastScrollY.current = window.scrollY;
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    lastScrollY.current = window.scrollY;
+
+    return () => {
+      clearTimeout(showTimerRef.current);
+      window.removeEventListener("scroll", onScroll);
+    };
+  }, [dismissedRef.current]); // eslint-disable-line
 
   function handleClose() {
     setVisible(false);
     setShowTooltip(false);
-    sessionStorage.setItem("samaqu_cta_closed", "true");
+    dismissedRef.current = true;
+    lastScrollY.current = window.scrollY;
   }
 
   return (
@@ -66,7 +101,7 @@ export default function AutoCTA() {
           transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
           className="fixed bottom-6 right-4 sm:right-6 z-[90]"
         >
-          {/* Tooltip — positioned above the FAB */}
+          {/* Tooltip — above the FAB */}
           <AnimatePresence>
             {showTooltip && (
               <motion.div
@@ -80,7 +115,6 @@ export default function AutoCTA() {
                   boxShadow: "0 4px 20px -4px rgba(42,33,27,.15)",
                 }}
               >
-                {/* Arrow */}
                 <div
                   className="absolute -bottom-1.5 right-5 w-3 h-3 rotate-45"
                   style={{ background: "var(--beige)" }}
