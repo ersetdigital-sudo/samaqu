@@ -39,15 +39,15 @@ export default function Footer() {
           className="flex flex-col md:flex-row md:items-center md:justify-between gap-8 pb-10 border-b"
           style={{ borderColor: "rgba(201,183,156,.12)" }}
         >
-          <div>
+          <div className="text-center md:text-left">
             <img
               src="/logo.svg"
               alt="SAMAQU"
-              className="h-10 sm:h-12 w-auto mb-4"
+              className="h-10 sm:h-12 w-auto mb-4 mx-auto md:mx-0"
               style={{ filter: "invert(1) brightness(0.9)" }}
             />
             <p
-              className="text-sm max-w-xs leading-[1.75] font-ui"
+              className="text-sm max-w-xs leading-[1.75] font-ui mx-auto md:mx-0"
               style={{ color: "var(--sand)" }}
             >
               Busana muslim pria premium. Kualitas terbaik, harga yang Anda tentukan sendiri.
@@ -55,7 +55,7 @@ export default function Footer() {
           </div>
           <nav
             aria-label="Menu footer"
-            className="flex flex-wrap gap-x-10 gap-y-3 text-[13px] tracking-[0.18em] uppercase font-ui"
+            className="flex flex-wrap justify-center md:justify-start gap-x-10 gap-y-3 text-[13px] tracking-[0.18em] uppercase font-ui"
             style={{ color: "rgba(248,246,242,.7)" }}
           >
             {links.map((link) => (
@@ -72,7 +72,7 @@ export default function Footer() {
           </nav>
         </div>
         <div
-          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-8 text-xs font-ui"
+          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-8 text-xs font-ui text-center md:text-left"
           style={{ color: "rgba(216,196,168,.5)" }}
         >
           <p>&copy; 2024 SAMAQU. Semua hak cipta dilindungi.</p>

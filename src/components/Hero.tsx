@@ -62,14 +62,19 @@ export default function Hero() {
         ))}
       </div>
 
-      {/* Dark gradient overlay */}
+      {/* Dark gradient overlay — desktop */}
       <div
-        className="absolute inset-0 pointer-events-none"
+        className="hidden md:block absolute inset-0 pointer-events-none"
         style={{ background: "linear-gradient(100deg,rgba(0,0,0,.72) 0%,rgba(0,0,0,.6) 30%,rgba(0,0,0,.42) 48%,rgba(0,0,0,.12) 62%,transparent 78%)" }}
       />
       <div
-        className="absolute inset-0 pointer-events-none"
+        className="hidden md:block absolute inset-0 pointer-events-none"
         style={{ background: "linear-gradient(0deg,rgba(0,0,0,.7) 0%,rgba(0,0,0,.28) 34%,transparent 56%)" }}
+      />
+      {/* Dark gradient overlay — mobile (stronger for readability) */}
+      <div
+        className="md:hidden absolute inset-0 pointer-events-none"
+        style={{ background: "linear-gradient(180deg,rgba(0,0,0,.55) 0%,rgba(0,0,0,.65) 40%,rgba(0,0,0,.75) 100%)" }}
       />
 
       {/* Content */}
@@ -89,13 +94,13 @@ export default function Hero() {
 
             <h1 className="mb-5 sm:mb-6" style={{ color: "var(--cream)" }}>
               <span
-                className="hero-anim hero-line block font-semibold tracking-[-0.02em] leading-[1.05] text-[9.5vw] sm:text-[3.4rem] lg:text-[3.6rem] xl:text-[3.9rem]"
+                className="hero-anim hero-line block font-semibold tracking-[-0.02em] leading-[1.08] text-[8.5vw] sm:text-[3.4rem] lg:text-[3.6rem] xl:text-[3.9rem]"
                 style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}
               >
                 Busana yang Layak
               </span>
               <span
-                className="hero-anim hero-line block font-semibold tracking-[-0.02em] leading-[1.05] text-[9.5vw] sm:text-[3.4rem] lg:text-[3.6rem] xl:text-[3.9rem]"
+                className="hero-anim hero-line block font-semibold tracking-[-0.02em] leading-[1.08] text-[8.5vw] sm:text-[3.4rem] lg:text-[3.6rem] xl:text-[3.9rem]"
                 style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "#e0b563" }}
               >
                 Menemani Setiap Momen.
@@ -125,7 +130,7 @@ export default function Hero() {
               <a
                 href="#produk"
                 className="group inline-flex items-center gap-2.5 sm:gap-3 rounded-lg px-6 sm:px-8 py-3.5 sm:py-4 text-[11px] sm:text-[12px] tracking-[0.16em] sm:tracking-[0.18em] uppercase transition hover:opacity-95 w-full sm:w-auto justify-center"
-                style={{ background: "var(--cream)", color: "var(--espresso)" }}
+                style={{ background: "var(--gold)", color: "white" }}
               >
                 Lihat Koleksi
                 <svg className="transition-transform duration-500 group-hover:translate-x-1" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
@@ -136,7 +141,7 @@ export default function Hero() {
                 href={waHref}
                 target="_blank"
                 rel="noopener"
-                className="group inline-flex items-center gap-2 py-3.5 sm:py-4 text-[11px] sm:text-[12px] tracking-[0.16em] sm:tracking-[0.18em] uppercase transition"
+                className="group inline-flex items-center gap-2 py-3.5 sm:py-4 text-[11px] sm:text-[12px] tracking-[0.16em] sm:tracking-[0.18em] capitalize sm:uppercase transition"
                 style={{ color: "var(--cream)" }}
               >
                 Hubungi Admin
