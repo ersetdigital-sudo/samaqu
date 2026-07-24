@@ -13,6 +13,7 @@ export interface Product {
   kain?: string;
   series?: string;
   colors: string[];
+  price: number;
   tag?: "Baru" | "Eksklusif";
   note?: string;
   image: string;
@@ -61,6 +62,15 @@ function ph(category: Category): string {
 }
 
 /* ── All products ── */
+const priceMap: Record<Category, number> = {
+  Thobe: 389000,
+  Kandora: 349000,
+  Koko: 289000,
+  Vest: 249000,
+  Kabak: 189000,
+  "Cover & Hanger": 89000,
+};
+
 export const products: Product[] = [
   // ── THOBE B-01 ──
   ...(["Jiharkah", "Imron", "Bayati", "Nahawand", "Karim", "Imalah"] as const).map(
@@ -71,6 +81,7 @@ export const products: Product[] = [
       kain: "B-01",
       series,
       colors: ["Superblack", "Broken White", "Latte", "Grey Indigo", "Mint", "Navy"],
+      price: priceMap.Thobe,
       image: `/images/products/thobe-b01-${i + 1}.jpg`,
     })
   ),
@@ -82,6 +93,7 @@ export const products: Product[] = [
     category: "Thobe",
     kain: "B-02",
     colors: ["Coffee Brown", "Deep Maroon"],
+    price: priceMap.Thobe,
     image: "/images/products/thobe-b02-1.jpg",
   },
   {
@@ -90,6 +102,7 @@ export const products: Product[] = [
     category: "Thobe",
     kain: "B-02",
     colors: ["Coffee Brown", "Deep Maroon"],
+    price: priceMap.Thobe,
     image: "/images/products/thobe-b02-2.jpg",
   },
 
@@ -100,6 +113,7 @@ export const products: Product[] = [
     category: "Thobe",
     kain: "A-02",
     colors: ["Charcoal Grey", "Soft Grey"],
+    price: priceMap.Thobe,
     image: "/images/products/thobe-a02-1.jpg",
   },
   {
@@ -108,6 +122,7 @@ export const products: Product[] = [
     category: "Thobe",
     kain: "A-02",
     colors: ["Charcoal Grey", "Soft Grey"],
+    price: priceMap.Thobe,
     image: "/images/products/thobe-a02-2.jpg",
   },
 
@@ -119,6 +134,7 @@ export const products: Product[] = [
       category: "Thobe" as Category,
       kain: "C-01",
       colors: [color],
+      price: priceMap.Thobe,
       tag: i < 2 ? ("Baru" as const) : undefined,
       image: `/images/products/thobe-c01-${i + 1}.jpg`,
     })
@@ -132,6 +148,7 @@ export const products: Product[] = [
       category: "Kandora" as Category,
       kain: "B-01",
       colors: [color],
+      price: priceMap.Kandora,
       image: `/images/products/kandora-${i + 1}.jpg`,
     })
   ),
@@ -144,6 +161,7 @@ export const products: Product[] = [
       category: "Koko" as Category,
       series: "Zahwan",
       colors: [color],
+      price: priceMap.Koko,
       image: `/images/products/koko-${i + 1}.jpg`,
     })
   ),
@@ -156,6 +174,7 @@ export const products: Product[] = [
       category: "Vest" as Category,
       series: "Duha",
       colors: [color],
+      price: priceMap.Vest,
       tag: i === 0 ? ("Eksklusif" as const) : undefined,
       image: `/images/products/vest-${i + 1}.jpg`,
     })
@@ -167,6 +186,7 @@ export const products: Product[] = [
     name: `Kabak ${String(n).padStart(2, "0")}`,
     category: "Kabak" as Category,
     colors: [],
+    price: priceMap.Kabak,
     note: "Include box / Box only",
     image: `/images/products/kabak-${n}.jpg`,
   })),
@@ -177,6 +197,7 @@ export const products: Product[] = [
     name: "Cover Thobe",
     category: "Cover & Hanger",
     colors: [],
+    price: priceMap["Cover & Hanger"],
     note: "Cover + Hanger / Cover only",
     image: "/images/products/cover-thobe.jpg",
   },
@@ -185,6 +206,7 @@ export const products: Product[] = [
     name: "Cover Koko",
     category: "Cover & Hanger",
     colors: [],
+    price: priceMap["Cover & Hanger"],
     note: "Cover + Hanger / Cover only / Hanger only",
     image: "/images/products/cover-koko.jpg",
   },
