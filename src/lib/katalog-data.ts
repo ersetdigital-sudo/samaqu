@@ -6,6 +6,11 @@ export type Category =
   | "Kabak"
   | "Cover & Hanger";
 
+export interface MediaItem {
+  src: string;
+  type: "image" | "video";
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -18,6 +23,7 @@ export interface Product {
   note?: string;
   image: string;
   images: string[];
+  media: MediaItem[];
 }
 
 /* ── Color hex map ── */
@@ -72,9 +78,9 @@ const priceMap: Record<Category, number> = {
   "Cover & Hanger": 89000,
 };
 
-/* ── Helper: generate images array from single image ── */
-function withImages(image: string): { image: string; images: string[] } {
-  return { image, images: [image] };
+/* ── Helper: generate images/media arrays from single image ── */
+function withImages(image: string): { image: string; images: string[]; media: MediaItem[] } {
+  return { image, images: [image], media: [{ src: image, type: "image" }] };
 }
 
 export const products: Product[] = [

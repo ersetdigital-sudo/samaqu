@@ -1,13 +1,12 @@
 "use client";
 
-import { useState, use } from "react";
+import { useState, use, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Minus, Plus, MessageCircle, ChevronLeft, ChevronRight } from "lucide-react";
-import { getProductById, colorMap, type Product } from "@/lib/katalog-data";
+import { ArrowLeft, Minus, Plus, MessageCircle, ChevronLeft, ChevronRight, Play } from "lucide-react";
+import { getProductById, colorMap, type Product, type MediaItem } from "@/lib/katalog-data";
 
 const sizes = ["S", "M", "L", "XL", "XXL"];
-
 const waBase = "https://wa.me/6281234567890?text=";
 
 function waLink(product: Product, size: string, color: string, qty: number, notes: string) {
@@ -27,6 +26,53 @@ function getDescription(product: Product): string {
   return map[product.category] || "";
 }
 
+/* ── Media renderer (image or video) ── */
+function MediaDisplay({ item, className, style }: { item: MediaItem; className?: string; style?: React.CSSProperties }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [playing, setPlaying] = useState(false);
+
+  if (item.type === "video") {
+    return (
+      <div className={`relative ${className || ""}`} style={style}>
+        <video
+          ref={videoRef}
+          src={item.src}
+          className="w-full h-full object-cover"
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          onClick={() => {
+            if (videoRef.current) {
+              if (playing) {
+                videoRef.current.pause();
+              } else {
+                videoRef.current.play();
+              }
+              setPlaying(!playing);
+            }
+          }}
+        />
+        {!playing && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div
+              className="w-14 h-14 rounded-full flex items-center justify-center transition-transform duration-200 hover:scale-110"
+              style={{
+                background: "rgba(0,0,0,.4)",
+                backdropFilter: "blur(8px)",
+              }}
+            >
+              <Play size={24} fill="white" stroke="none" className="ml-1" />
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return <div className={className} style={{ background: "#e8dfd1", ...style }} />;
+}
+
 export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
@@ -36,7 +82,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const [selectedSize, setSelectedSize] = useState("M");
   const [qty, setQty] = useState(1);
   const [notes, setNotes] = useState("");
-  const [activeImage, setActiveImage] = useState(0);
+  const [activeIndex, setActiveIndex] = useState(0);
 
   if (!product) {
     return (
@@ -53,11 +99,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     );
   }
 
-  const images = product.images.length > 0 ? product.images : [product.image];
+  const media = product.media.length > 0 ? product.media : [{ src: product.image, type: "image" as const }];
+  const activeMedia = media[activeIndex];
 
   return (
     <section className="min-h-screen" style={{ background: "var(--cream)" }}>
-      {/* ── Back button (always visible) ── */}
+      {/* Back button */}
       <div className="fixed top-20 left-4 sm:left-6 z-30">
         <button
           onClick={() => router.back()}
@@ -77,25 +124,30 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 sm:pt-20 pb-32">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-14">
 
-          {/* ═══════════════════════════════════════
-              LEFT: Gallery (mobile: full width, desktop: sticky-ish)
-          ═══════════════════════════════════════ */}
+          {/* ═══════ LEFT: Gallery ═══════ */}
           <div>
             {/* Mobile: horizontal swipeable carousel */}
             <div className="md:hidden relative">
               <div className="flex overflow-x-auto snap-x snap-mandatory gap-2 scrollbar-hide -mx-4 px-4">
-                {images.map((img, i) => (
+                {media.map((item, i) => (
                   <div
                     key={i}
                     className="relative shrink-0 w-[85vw] aspect-[3/4] rounded-xl overflow-hidden snap-center"
                     style={{ background: "#e8dfd1" }}
                   >
-                    <div
+                    <MediaDisplay
+                      item={item}
                       className="absolute inset-0"
-                      style={{
-                        background: `linear-gradient(135deg, ${colorMap[product.colors[0]] || "#e8dfd1"}22, ${colorMap[product.colors[1]] || "#d4c5a9"}22)`,
-                      }}
                     />
+                    {/* Color tint overlay for images */}
+                    {item.type === "image" && (
+                      <div
+                        className="absolute inset-0 pointer-events-none"
+                        style={{
+                          background: `linear-gradient(135deg, ${colorMap[product.colors[0]] || "#e8dfd1"}22, ${colorMap[product.colors[1]] || "#d4c5a9"}22)`,
+                        }}
+                      />
+                    )}
                     {/* Tag */}
                     {product.tag && i === 0 && (
                       <span
@@ -105,19 +157,29 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                         {product.tag}
                       </span>
                     )}
+                    {/* Video badge */}
+                    {item.type === "video" && (
+                      <span
+                        className="absolute top-3 right-3 px-2 py-1 text-[9px] tracking-[0.1em] uppercase font-ui font-medium rounded-sm z-10"
+                        style={{ background: "rgba(0,0,0,.5)", color: "white" }}
+                      >
+                        Video
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>
               {/* Dots */}
-              {images.length > 1 && (
+              {media.length > 1 && (
                 <div className="flex justify-center gap-1.5 mt-3">
-                  {images.map((_, i) => (
+                  {media.map((_, i) => (
                     <span
                       key={i}
-                      className="w-1.5 h-1.5 rounded-full transition-all duration-300"
+                      className="rounded-full transition-all duration-300"
                       style={{
                         background: i === 0 ? "var(--gold)" : "rgba(201,183,156,.4)",
                         width: i === 0 ? "16px" : "6px",
+                        height: "6px",
                       }}
                     />
                   ))}
@@ -126,46 +188,63 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             </div>
 
             {/* Desktop: main image + thumbnails */}
-            <div className="hidden md:flex gap-4">
+            <div className="hidden md:flex gap-3">
               {/* Thumbnails (vertical) */}
-              {images.length > 1 && (
-                <div className="flex flex-col gap-2.5 shrink-0">
-                  {images.map((img, i) => (
+              {media.length > 1 && (
+                <div className="flex flex-col gap-2 shrink-0">
+                  {media.map((item, i) => (
                     <button
                       key={i}
-                      onClick={() => setActiveImage(i)}
-                      className="relative w-[72px] aspect-[3/4] rounded-lg overflow-hidden transition-all duration-200"
+                      onClick={() => setActiveIndex(i)}
+                      className="relative w-[68px] aspect-[3/4] rounded-lg overflow-hidden transition-all duration-200 shrink-0"
                       style={{
-                        border: activeImage === i ? "2px solid var(--gold)" : "1px solid rgba(201,183,156,.25)",
-                        opacity: activeImage === i ? 1 : 0.6,
+                        border: activeIndex === i ? "2px solid var(--gold)" : "1px solid rgba(201,183,156,.25)",
+                        opacity: activeIndex === i ? 1 : 0.55,
                       }}
-                      aria-label={`Foto ${i + 1}`}
+                      aria-label={`${item.type === "video" ? "Video" : "Foto"} ${i + 1}`}
                     >
-                      <div
-                        className="absolute inset-0"
-                        style={{
-                          background: `linear-gradient(135deg, ${colorMap[product.colors[0]] || "#e8dfd1"}22, ${colorMap[product.colors[1]] || "#d4c5a9"}22)`,
-                        }}
-                      />
+                      {item.type === "video" ? (
+                        <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(0,0,0,.06)" }}>
+                          <Play size={14} fill="var(--espresso)" stroke="none" style={{ opacity: 0.6 }} />
+                        </div>
+                      ) : (
+                        <div
+                          className="absolute inset-0"
+                          style={{
+                            background: `linear-gradient(135deg, ${colorMap[product.colors[0]] || "#e8dfd1"}22, ${colorMap[product.colors[1]] || "#d4c5a9"}22)`,
+                          }}
+                        />
+                      )}
                     </button>
                   ))}
                 </div>
               )}
 
-              {/* Main image */}
+              {/* Main display */}
               <div className="relative flex-1 aspect-[3/4] rounded-2xl overflow-hidden" style={{ background: "#e8dfd1" }}>
                 <AnimatePresence mode="wait">
                   <motion.div
-                    key={activeImage}
+                    key={activeIndex}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.3 }}
                     className="absolute inset-0"
-                    style={{
-                      background: `linear-gradient(135deg, ${colorMap[product.colors[0]] || "#e8dfd1"}33, ${colorMap[product.colors[1]] || "#d4c5a9"}33)`,
-                    }}
-                  />
+                  >
+                    <MediaDisplay
+                      item={activeMedia}
+                      className="w-full h-full"
+                    />
+                    {/* Color tint for images */}
+                    {activeMedia.type === "image" && (
+                      <div
+                        className="absolute inset-0 pointer-events-none"
+                        style={{
+                          background: `linear-gradient(135deg, ${colorMap[product.colors[0]] || "#e8dfd1"}33, ${colorMap[product.colors[1]] || "#d4c5a9"}33)`,
+                        }}
+                      />
+                    )}
+                  </motion.div>
                 </AnimatePresence>
 
                 {/* Tag */}
@@ -178,22 +257,32 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                   </span>
                 )}
 
+                {/* Video badge */}
+                {activeMedia.type === "video" && (
+                  <span
+                    className="absolute top-4 right-4 px-2.5 py-1 text-[10px] tracking-[0.1em] uppercase font-ui font-medium rounded-sm z-10"
+                    style={{ background: "rgba(0,0,0,.5)", color: "white" }}
+                  >
+                    Video
+                  </span>
+                )}
+
                 {/* Nav arrows */}
-                {images.length > 1 && (
+                {media.length > 1 && (
                   <>
                     <button
-                      onClick={() => setActiveImage((i) => (i - 1 + images.length) % images.length)}
+                      onClick={() => setActiveIndex((i) => (i - 1 + media.length) % media.length)}
                       className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105 z-10"
                       style={{ background: "rgba(248,246,242,.85)", backdropFilter: "blur(6px)" }}
-                      aria-label="Foto sebelumnya"
+                      aria-label="Media sebelumnya"
                     >
                       <ChevronLeft size={18} style={{ color: "var(--espresso)" }} />
                     </button>
                     <button
-                      onClick={() => setActiveImage((i) => (i + 1) % images.length)}
+                      onClick={() => setActiveIndex((i) => (i + 1) % media.length)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105 z-10"
                       style={{ background: "rgba(248,246,242,.85)", backdropFilter: "blur(6px)" }}
-                      aria-label="Foto berikutnya"
+                      aria-label="Media berikutnya"
                     >
                       <ChevronRight size={18} style={{ color: "var(--espresso)" }} />
                     </button>
@@ -203,62 +292,40 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             </div>
           </div>
 
-          {/* ═══════════════════════════════════════
-              RIGHT: Product Info (sticky on desktop)
-          ═══════════════════════════════════════ */}
+          {/* ═══════ RIGHT: Product Info (sticky on desktop) ═══════ */}
           <motion.div
             className="md:sticky md:top-24 h-fit"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
           >
-            {/* Category */}
-            <p
-              className="text-[11px] tracking-[0.14em] uppercase font-ui mb-3"
-              style={{ color: "var(--stone)" }}
-            >
+            <p className="text-[11px] tracking-[0.14em] uppercase font-ui mb-3" style={{ color: "var(--stone)" }}>
               {product.category}
               {product.kain && ` — Kain ${product.kain}`}
               {product.series && ` — ${product.series}`}
             </p>
 
-            {/* Title */}
             <h1
               className="text-[2rem] sm:text-[2.5rem] lg:text-[2.8rem] font-semibold leading-tight mb-3"
-              style={{
-                fontFamily: "var(--font-cormorant), Georgia, serif",
-                color: "var(--espresso)",
-              }}
+              style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}
             >
               {product.name}
             </h1>
 
-            {/* Price */}
-            <p
-              className="text-[20px] sm:text-[22px] font-ui font-semibold mb-6"
-              style={{ color: "var(--gold)" }}
-            >
+            <p className="text-[20px] sm:text-[22px] font-ui font-semibold mb-6" style={{ color: "var(--gold)" }}>
               Rp {product.price.toLocaleString("id-ID")}
             </p>
 
-            {/* Description */}
-            <p
-              className="text-sm sm:text-[15px] leading-relaxed font-ui mb-8"
-              style={{ color: "rgba(42,33,27,.8)" }}
-            >
+            <p className="text-sm sm:text-[15px] leading-relaxed font-ui mb-8" style={{ color: "rgba(42,33,27,.8)" }}>
               {getDescription(product)}
             </p>
 
-            {/* Divider */}
             <div className="h-px mb-7" style={{ background: "rgba(201,183,156,.2)" }} />
 
             {/* Color Selection */}
             {product.colors.length > 0 && (
               <div className="mb-7">
-                <p
-                  className="text-[11px] sm:text-[12px] tracking-[0.12em] uppercase font-ui font-medium mb-3"
-                  style={{ color: "var(--espresso)" }}
-                >
+                <p className="text-[11px] sm:text-[12px] tracking-[0.12em] uppercase font-ui font-medium mb-3" style={{ color: "var(--espresso)" }}>
                   Warna — <span style={{ color: "var(--gold)" }}>{selectedColor}</span>
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -273,10 +340,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                         border: `1px solid ${selectedColor === c ? "var(--espresso)" : "rgba(201,183,156,.3)"}`,
                       }}
                     >
-                      <span
-                        className="w-3 h-3 rounded-full shrink-0"
-                        style={{ background: colorMap[c] || "#ccc", border: "1px solid rgba(42,33,27,.1)" }}
-                      />
+                      <span className="w-3 h-3 rounded-full shrink-0" style={{ background: colorMap[c] || "#ccc", border: "1px solid rgba(42,33,27,.1)" }} />
                       {c}
                     </button>
                   ))}
@@ -286,10 +350,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
             {/* Size Selection */}
             <div className="mb-7">
-              <p
-                className="text-[11px] sm:text-[12px] tracking-[0.12em] uppercase font-ui font-medium mb-3"
-                style={{ color: "var(--espresso)" }}
-              >
+              <p className="text-[11px] sm:text-[12px] tracking-[0.12em] uppercase font-ui font-medium mb-3" style={{ color: "var(--espresso)" }}>
                 Ukuran
               </p>
               <div className="flex flex-wrap gap-2">
@@ -312,10 +373,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
             {/* Notes */}
             <div className="mb-7">
-              <p
-                className="text-[11px] sm:text-[12px] tracking-[0.12em] uppercase font-ui font-medium mb-3"
-                style={{ color: "var(--espresso)" }}
-              >
+              <p className="text-[11px] sm:text-[12px] tracking-[0.12em] uppercase font-ui font-medium mb-3" style={{ color: "var(--espresso)" }}>
                 Catatan (Opsional)
               </p>
               <input
@@ -324,56 +382,29 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Misal: minta packing khusus, tambah nama, dll."
                 className="w-full px-4 py-3 text-sm font-ui rounded-sm outline-none transition-all duration-200 focus:border-[var(--gold)]"
-                style={{
-                  background: "transparent",
-                  border: "1px solid rgba(201,183,156,.3)",
-                  color: "var(--espresso)",
-                }}
+                style={{ background: "transparent", border: "1px solid rgba(201,183,156,.3)", color: "var(--espresso)" }}
               />
             </div>
 
             {/* Quantity */}
             <div className="flex items-center justify-between mb-8">
-              <p
-                className="text-[11px] sm:text-[12px] tracking-[0.12em] uppercase font-ui font-medium"
-                style={{ color: "var(--espresso)" }}
-              >
+              <p className="text-[11px] sm:text-[12px] tracking-[0.12em] uppercase font-ui font-medium" style={{ color: "var(--espresso)" }}>
                 Jumlah
               </p>
               <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setQty((q) => Math.max(1, q - 1))}
-                  className="w-9 h-9 flex items-center justify-center rounded-sm transition-all duration-200 hover:scale-105"
-                  style={{ border: "1px solid rgba(201,183,156,.3)", color: "var(--espresso)" }}
-                  aria-label="Kurangi jumlah"
-                >
-                  <Minus size={14} />
-                </button>
-                <span className="w-8 text-center text-sm font-ui font-medium" style={{ color: "var(--espresso)" }}>
-                  {qty}
-                </span>
-                <button
-                  onClick={() => setQty((q) => q + 1)}
-                  className="w-9 h-9 flex items-center justify-center rounded-sm transition-all duration-200 hover:scale-105"
-                  style={{ border: "1px solid rgba(201,183,156,.3)", color: "var(--espresso)" }}
-                  aria-label="Tambah jumlah"
-                >
-                  <Plus size={14} />
-                </button>
+                <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="w-9 h-9 flex items-center justify-center rounded-sm transition-all duration-200 hover:scale-105" style={{ border: "1px solid rgba(201,183,156,.3)", color: "var(--espresso)" }} aria-label="Kurangi jumlah"><Minus size={14} /></button>
+                <span className="w-8 text-center text-sm font-ui font-medium" style={{ color: "var(--espresso)" }}>{qty}</span>
+                <button onClick={() => setQty((q) => q + 1)} className="w-9 h-9 flex items-center justify-center rounded-sm transition-all duration-200 hover:scale-105" style={{ border: "1px solid rgba(201,183,156,.3)", color: "var(--espresso)" }} aria-label="Tambah jumlah"><Plus size={14} /></button>
               </div>
             </div>
 
-            {/* CTA Button (inline on desktop, replaces sticky footer) */}
+            {/* CTA */}
             <a
               href={waLink(product, selectedSize, selectedColor, qty, notes)}
               target="_blank"
               rel="noopener"
               className="flex items-center justify-center gap-3 w-full py-4 rounded-sm text-[13px] tracking-[0.1em] uppercase font-ui font-semibold transition-all duration-300 hover:scale-[1.01] hover:shadow-lg"
-              style={{
-                background: "var(--gold)",
-                color: "white",
-                boxShadow: "0 8px 28px -8px rgba(184,145,70,.45)",
-              }}
+              style={{ background: "var(--gold)", color: "white", boxShadow: "0 8px 28px -8px rgba(184,145,70,.45)" }}
             >
               <MessageCircle size={18} strokeWidth={1.5} />
               <span>Pesan via WhatsApp</span>
