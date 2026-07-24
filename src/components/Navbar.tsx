@@ -5,7 +5,7 @@ import { MobileDrawer, MobileDrawerCtx } from "@/components/ui/drawer";
 
 /* ── Nav data ── */
 const navLinks = [
-  { href: "#produk", label: "Produk" },
+  { href: "/katalog", label: "Katalog" },
   { href: "#tentang", label: "Tentang" },
   { href: "#size", label: "Panduan Size" },
   { href: "#cara-pesan", label: "Cara Pemesanan" },
@@ -107,7 +107,7 @@ export default function Navbar() {
               {/* Right: CTA + hamburger */}
               <div className="flex items-center gap-4">
                 <a
-                  href="#produk"
+                  href="/katalog"
                   className="hidden sm:inline-flex items-center gap-2 text-[11px] tracking-[0.18em] uppercase transition-colors duration-500 font-ui group"
                   style={{ color: ctaColor }}
                 >
@@ -212,7 +212,7 @@ function DrawerNavContent({ onClose }: { onClose: () => void }) {
           Chat Admin
         </a>
         <a
-          href="#produk"
+          href="/katalog"
           className="flex items-center justify-center gap-2 w-full px-5 py-3.5 text-[11px] tracking-[0.16em] uppercase font-ui font-medium transition-opacity duration-200 hover:opacity-80 rounded-sm"
           style={{
             background: "var(--espresso)",

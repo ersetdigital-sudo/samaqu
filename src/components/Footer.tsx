@@ -1,5 +1,5 @@
 const links = [
-  { href: "#produk", label: "Produk" },
+  { href: "/katalog", label: "Katalog" },
   { href: "#cara-pesan", label: "Cara Pesan" },
   { href: "#tentang", label: "Tentang" },
   { href: "#faq", label: "FAQ" },
