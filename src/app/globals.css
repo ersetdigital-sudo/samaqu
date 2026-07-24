@@ -214,6 +214,10 @@ details[open] .faq-plus {
   transform: scaleX(1);
 }
 
+/* ── Scrollbar hide ── */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
 /* ── Accordion animations ── */
 @keyframes accordion-down {
   from { height: 0; }
