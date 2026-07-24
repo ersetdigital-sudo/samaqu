@@ -17,6 +17,7 @@ export interface Product {
   tag?: "Baru" | "Eksklusif";
   note?: string;
   image: string;
+  images: string[];
 }
 
 /* ── Color hex map ── */
@@ -71,6 +72,11 @@ const priceMap: Record<Category, number> = {
   "Cover & Hanger": 89000,
 };
 
+/* ── Helper: generate images array from single image ── */
+function withImages(image: string): { image: string; images: string[] } {
+  return { image, images: [image] };
+}
+
 export const products: Product[] = [
   // ── THOBE B-01 ──
   ...(["Jiharkah", "Imron", "Bayati", "Nahawand", "Karim", "Imalah"] as const).map(
@@ -82,7 +88,7 @@ export const products: Product[] = [
       series,
       colors: ["Superblack", "Broken White", "Latte", "Grey Indigo", "Mint", "Navy"],
       price: priceMap.Thobe,
-      image: `/images/products/thobe-b01-${i + 1}.jpg`,
+      ...withImages(`/images/products/thobe-b01-${i + 1}.jpg`),
     })
   ),
 
@@ -94,7 +100,7 @@ export const products: Product[] = [
     kain: "B-02",
     colors: ["Coffee Brown", "Deep Maroon"],
     price: priceMap.Thobe,
-    image: "/images/products/thobe-b02-1.jpg",
+    ...withImages("/images/products/thobe-b02-1.jpg"),
   },
   {
     id: "thobe-b02-maroon",
@@ -103,7 +109,7 @@ export const products: Product[] = [
     kain: "B-02",
     colors: ["Coffee Brown", "Deep Maroon"],
     price: priceMap.Thobe,
-    image: "/images/products/thobe-b02-2.jpg",
+    ...withImages("/images/products/thobe-b02-2.jpg"),
   },
 
   // ── THOBE A-02 ──
@@ -114,7 +120,7 @@ export const products: Product[] = [
     kain: "A-02",
     colors: ["Charcoal Grey", "Soft Grey"],
     price: priceMap.Thobe,
-    image: "/images/products/thobe-a02-1.jpg",
+    ...withImages("/images/products/thobe-a02-1.jpg"),
   },
   {
     id: "thobe-a02-softgrey",
@@ -123,7 +129,7 @@ export const products: Product[] = [
     kain: "A-02",
     colors: ["Charcoal Grey", "Soft Grey"],
     price: priceMap.Thobe,
-    image: "/images/products/thobe-a02-2.jpg",
+    ...withImages("/images/products/thobe-a02-2.jpg"),
   },
 
   // ── THOBE C-01 ──
@@ -136,7 +142,7 @@ export const products: Product[] = [
       colors: [color],
       price: priceMap.Thobe,
       tag: i < 2 ? ("Baru" as const) : undefined,
-      image: `/images/products/thobe-c01-${i + 1}.jpg`,
+      ...withImages(`/images/products/thobe-c01-${i + 1}.jpg`),
     })
   ),
 
@@ -149,7 +155,7 @@ export const products: Product[] = [
       kain: "B-01",
       colors: [color],
       price: priceMap.Kandora,
-      image: `/images/products/kandora-${i + 1}.jpg`,
+      ...withImages(`/images/products/kandora-${i + 1}.jpg`),
     })
   ),
 
@@ -162,7 +168,7 @@ export const products: Product[] = [
       series: "Zahwan",
       colors: [color],
       price: priceMap.Koko,
-      image: `/images/products/koko-${i + 1}.jpg`,
+      ...withImages(`/images/products/koko-${i + 1}.jpg`),
     })
   ),
 
@@ -176,7 +182,7 @@ export const products: Product[] = [
       colors: [color],
       price: priceMap.Vest,
       tag: i === 0 ? ("Eksklusif" as const) : undefined,
-      image: `/images/products/vest-${i + 1}.jpg`,
+      ...withImages(`/images/products/vest-${i + 1}.jpg`),
     })
   ),
 
@@ -188,7 +194,7 @@ export const products: Product[] = [
     colors: [],
     price: priceMap.Kabak,
     note: "Include box / Box only",
-    image: `/images/products/kabak-${n}.jpg`,
+    ...withImages(`/images/products/kabak-${n}.jpg`),
   })),
 
   // ── COVER & HANGER ──
@@ -199,7 +205,7 @@ export const products: Product[] = [
     colors: [],
     price: priceMap["Cover & Hanger"],
     note: "Cover + Hanger / Cover only",
-    image: "/images/products/cover-thobe.jpg",
+    ...withImages("/images/products/cover-thobe.jpg"),
   },
   {
     id: "cover-koko",
@@ -208,7 +214,7 @@ export const products: Product[] = [
     colors: [],
     price: priceMap["Cover & Hanger"],
     note: "Cover + Hanger / Cover only / Hanger only",
-    image: "/images/products/cover-koko.jpg",
+    ...withImages("/images/products/cover-koko.jpg"),
   },
 ];
 
