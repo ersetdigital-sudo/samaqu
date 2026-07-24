@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useState, useEffect, useCallback } from "react";
 import { MobileDrawer, MobileDrawerCtx } from "@/components/ui/drawer";
 
@@ -74,14 +73,15 @@ export default function Navbar() {
                 className="inline-flex items-center leading-none shrink-0"
                 aria-label="SAMAQU — kembali ke atas"
               >
-                <Image
-                  src="/images/2191f072-7662-46be-9482-6958f6635adc.png"
+                <img
+                  src="/logo.svg"
                   alt="SAMAQU"
-                  width={120}
-                  height={44}
-                  className="h-9 sm:h-11 w-auto transition-[filter] duration-500"
-                  style={{ filter: scrolled ? "brightness(0.15)" : "none" }}
-                  priority
+                  className="h-8 sm:h-10 w-auto transition-[filter] duration-500"
+                  style={{
+                    filter: scrolled
+                      ? "none"
+                      : "invert(1) brightness(0.95)",
+                  }}
                 />
               </a>
 

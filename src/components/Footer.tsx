@@ -1,5 +1,3 @@
-import Image from "next/image";
-
 const links = [
   { href: "#produk", label: "Produk" },
   { href: "#cara-pesan", label: "Cara Pesan" },
@@ -42,13 +40,11 @@ export default function Footer() {
           style={{ borderColor: "rgba(201,183,156,.12)" }}
         >
           <div>
-            <Image
-              src="/images/2191f072-7662-46be-9482-6958f6635adc.png"
+            <img
+              src="/logo.svg"
               alt="SAMAQU"
-              width={120}
-              height={48}
               className="h-10 sm:h-12 w-auto mb-4"
-              style={{ filter: "brightness(0.9)" }}
+              style={{ filter: "invert(1) brightness(0.9)" }}
             />
             <p
               className="text-sm max-w-xs leading-[1.75] font-ui"
