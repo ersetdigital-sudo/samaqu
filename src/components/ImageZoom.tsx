@@ -9,9 +9,10 @@ interface ImageZoomProps {
   alt: string;
   isOpen: boolean;
   onClose: () => void;
+  type?: "image" | "video";
 }
 
-export default function ImageZoom({ src, alt, isOpen, onClose }: ImageZoomProps) {
+export default function ImageZoom({ src, alt, isOpen, onClose, type = "image" }: ImageZoomProps) {
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -122,39 +123,43 @@ export default function ImageZoom({ src, alt, isOpen, onClose }: ImageZoomProps)
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 shrink-0">
             <p
-              className="text-[12px] font-ui tracking-wide"
+              className="text-[12px] font-ui tracking-wide truncate max-w-[60%]"
               style={{ color: "rgba(248,246,242,.6)" }}
             >
               {alt}
             </p>
             <div className="flex items-center gap-2">
-              <button
-                onClick={zoomOut}
-                className="w-9 h-9 rounded-full flex items-center justify-center transition-colors duration-200 hover:bg-white/10"
-                style={{ color: "var(--ivory)" }}
-                aria-label="Zoom out"
-              >
-                <ZoomOut size={18} />
-              </button>
-              <span className="text-[11px] font-ui w-10 text-center" style={{ color: "rgba(248,246,242,.5)" }}>
-                {Math.round(scale * 100)}%
-              </span>
-              <button
-                onClick={zoomIn}
-                className="w-9 h-9 rounded-full flex items-center justify-center transition-colors duration-200 hover:bg-white/10"
-                style={{ color: "var(--ivory)" }}
-                aria-label="Zoom in"
-              >
-                <ZoomIn size={18} />
-              </button>
-              <button
-                onClick={resetZoom}
-                className="w-9 h-9 rounded-full flex items-center justify-center transition-colors duration-200 hover:bg-white/10"
-                style={{ color: "var(--ivory)" }}
-                aria-label="Reset zoom"
-              >
-                <RotateCcw size={16} />
-              </button>
+              {type === "image" && (
+                <>
+                  <button
+                    onClick={zoomOut}
+                    className="w-9 h-9 rounded-full flex items-center justify-center transition-colors duration-200 hover:bg-white/10"
+                    style={{ color: "var(--ivory)" }}
+                    aria-label="Zoom out"
+                  >
+                    <ZoomOut size={18} />
+                  </button>
+                  <span className="text-[11px] font-ui w-10 text-center" style={{ color: "rgba(248,246,242,.5)" }}>
+                    {Math.round(scale * 100)}%
+                  </span>
+                  <button
+                    onClick={zoomIn}
+                    className="w-9 h-9 rounded-full flex items-center justify-center transition-colors duration-200 hover:bg-white/10"
+                    style={{ color: "var(--ivory)" }}
+                    aria-label="Zoom in"
+                  >
+                    <ZoomIn size={18} />
+                  </button>
+                  <button
+                    onClick={resetZoom}
+                    className="w-9 h-9 rounded-full flex items-center justify-center transition-colors duration-200 hover:bg-white/10"
+                    style={{ color: "var(--ivory)" }}
+                    aria-label="Reset zoom"
+                  >
+                    <RotateCcw size={16} />
+                  </button>
+                </>
+              )}
               <button
                 onClick={onClose}
                 className="w-9 h-9 rounded-full flex items-center justify-center transition-colors duration-200 hover:bg-white/10 ml-1"
@@ -180,16 +185,30 @@ export default function ImageZoom({ src, alt, isOpen, onClose }: ImageZoomProps)
               }
             }}
           >
-            <motion.img
-              src={src}
-              alt={alt}
-              className="max-w-full max-h-full object-contain select-none"
-              style={{
-                transform: `scale(${scale}) translate(${position.x / scale}px, ${position.y / scale}px)`,
-                transition: isDragging ? "none" : "transform 0.3s cubic-bezier(0.22, 1, 0.36, 1)",
-              }}
-              draggable={false}
-            />
+            {type === "video" ? (
+              <video
+                src={src}
+                className="max-w-full max-h-full object-contain select-none"
+                style={{
+                  transform: `scale(${scale}) translate(${position.x / scale}px, ${position.y / scale}px)`,
+                  transition: isDragging ? "none" : "transform 0.3s cubic-bezier(0.22, 1, 0.36, 1)",
+                }}
+                controls
+                loop
+                playsInline
+              />
+            ) : (
+              <motion.img
+                src={src}
+                alt={alt}
+                className="max-w-full max-h-full object-contain select-none"
+                style={{
+                  transform: `scale(${scale}) translate(${position.x / scale}px, ${position.y / scale}px)`,
+                  transition: isDragging ? "none" : "transform 0.3s cubic-bezier(0.22, 1, 0.36, 1)",
+                }}
+                draggable={false}
+              />
+            )}
           </div>
         </motion.div>
       )}

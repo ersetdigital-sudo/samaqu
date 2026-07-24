@@ -39,10 +39,9 @@ function MediaDisplay({ item, className, style }: { item: MediaItem; className?:
           ref={videoRef}
           src={item.src}
           className="w-full h-full object-cover"
-          muted
           loop
           playsInline
-          preload="metadata"
+          preload="auto"
           onClick={() => {
             if (videoRef.current) {
               playing ? videoRef.current.pause() : videoRef.current.play();
@@ -78,7 +77,17 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const [qty, setQty] = useState(1);
   const [notes, setNotes] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
+  const [currentSlide, setCurrentSlide] = useState(0);
   const [zoomOpen, setZoomOpen] = useState(false);
+  const carouselRef = useRef<HTMLDivElement>(null);
+
+  const handleCarouselScroll = () => {
+    if (!carouselRef.current) return;
+    const scrollLeft = carouselRef.current.scrollLeft;
+    const itemWidth = carouselRef.current.scrollWidth / media.length;
+    const index = Math.round(scrollLeft / itemWidth);
+    setCurrentSlide(Math.min(index, media.length - 1));
+  };
 
   if (!product) {
     return (
@@ -123,13 +132,17 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       <div className="md:hidden">
         {/* Gallery carousel */}
         <div className="relative pt-14 pb-4">
-          <div className="flex overflow-x-auto snap-x snap-mandatory gap-2 scrollbar-hide px-4">
+          <div
+            ref={carouselRef}
+            className="flex overflow-x-auto gap-3 scrollbar-hide px-4 scroll-smooth"
+            onScroll={handleCarouselScroll}
+          >
             {media.map((item, i) => (
               <div
                 key={i}
-                className="relative shrink-0 w-[78vw] aspect-[3/4] rounded-xl overflow-hidden snap-center cursor-zoom-in"
+                className="relative shrink-0 w-[80vw] aspect-[3/4] rounded-xl overflow-hidden cursor-zoom-in"
                 style={{ background: "#e8dfd1" }}
-                onClick={() => item.type === "image" && setZoomOpen(true)}
+                onClick={() => setZoomOpen(true)}
               >
                 <MediaDisplay item={item} className="absolute inset-0" />
                 {product.tag && i === 0 && (
@@ -152,7 +165,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             <div className="flex justify-center gap-1.5 mt-3">
               {media.map((_, i) => (
                 <span key={i} className="rounded-full transition-all duration-300"
-                  style={{ background: i === 0 ? "var(--gold)" : "rgba(201,183,156,.4)", width: i === 0 ? "16px" : "6px", height: "6px" }} />
+                  style={{ background: i === currentSlide ? "var(--gold)" : "rgba(201,183,156,.4)", width: i === currentSlide ? "16px" : "6px", height: "6px" }} />
               ))}
             </div>
           )}
@@ -273,7 +286,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 ))}
               </div>
             )}
-            <div className="relative flex-1 aspect-[3/4] rounded-2xl overflow-hidden cursor-zoom-in" style={{ background: "#e8dfd1" }} onClick={() => activeMedia.type === "image" && setZoomOpen(true)}>
+            <div className="relative flex-1 aspect-[3/4] rounded-2xl overflow-hidden cursor-zoom-in" style={{ background: "#e8dfd1" }} onClick={() => setZoomOpen(true)}>
               <AnimatePresence mode="wait">
                 <motion.div key={activeIndex} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }} className="absolute inset-0">
                   <MediaDisplay item={activeMedia} className="w-full h-full" />
@@ -384,16 +397,15 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       </div>
 
       {/* ═══════════════════════════════════════
-          IMAGE ZOOM LIGHTBOX
+          IMAGE/VIDEO ZOOM LIGHTBOX
       ═══════════════════════════════════════ */}
-      {activeMedia.type === "image" && (
-        <ImageZoom
-          src={activeMedia.src}
-          alt={product.name}
-          isOpen={zoomOpen}
-          onClose={() => setZoomOpen(false)}
-        />
-      )}
+      <ImageZoom
+        src={activeMedia.src}
+        alt={product.name}
+        isOpen={zoomOpen}
+        onClose={() => setZoomOpen(false)}
+        type={activeMedia.type}
+      />
     </section>
   );
 }
