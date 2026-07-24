@@ -212,12 +212,58 @@ export default function CaraPemesanan() {
           </motion.p>
         </motion.div>
 
-        {/* ── Timeline ── */}
-        <div className="timeline relative">
+        {/* ── Mobile: 2x2 compact grid ── */}
+        <motion.div
+          className="md:hidden grid grid-cols-2 gap-3"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-60px" }}
+          variants={{
+            hidden: {},
+            visible: { transition: { staggerChildren: 0.08 } },
+          }}
+        >
+          {steps.map((step) => (
+            <motion.div
+              key={step.num}
+              variants={stepVariants}
+              className="group relative rounded-xl border bg-white/80 p-3.5 overflow-hidden transition-all duration-300 hover:shadow-md"
+              style={{ borderColor: "rgba(216,196,168,.25)" }}
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <step.Icon size={20} weight="light" style={{ color: "var(--gold)" }} />
+                <span
+                  className="text-[1.3rem] font-bold leading-none"
+                  style={{
+                    fontFamily: "var(--font-cormorant), Georgia, serif",
+                    color: "var(--espresso)",
+                  }}
+                >
+                  {step.num}
+                </span>
+              </div>
+              <h3
+                className="text-sm font-semibold mb-1 font-ui"
+                style={{ color: "var(--espresso)" }}
+              >
+                {step.title}
+              </h3>
+              <p
+                className="text-[11px] leading-snug font-ui"
+                style={{ color: "rgba(42,33,27,.65)" }}
+              >
+                {step.desc}
+              </p>
+            </motion.div>
+          ))}
+        </motion.div>
+
+        {/* ── Desktop: horizontal timeline ── */}
+        <div className="hidden md:block timeline relative">
           <TimelineTrack />
 
           <motion.div
-            className="relative z-10 grid grid-cols-1 md:grid-cols-4 gap-10 md:gap-8 lg:gap-12"
+            className="relative z-10 grid grid-cols-4 gap-8 lg:gap-12"
             role="list"
             aria-label="Empat langkah cara pemesanan"
             initial="hidden"

@@ -2,14 +2,15 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { MobileDrawer, MobileDrawerCtx } from "@/components/ui/drawer";
+import { Storefront, BookOpen, Ruler, ListChecks, Question } from "@phosphor-icons/react";
 
 /* ── Nav data ── */
 const navLinks = [
-  { href: "/katalog", label: "Katalog" },
-  { href: "#tentang", label: "Tentang" },
-  { href: "#size", label: "Panduan Size" },
-  { href: "#cara-pesan", label: "Cara Pemesanan" },
-  { href: "#faq", label: "FAQ" },
+  { href: "/katalog", label: "Katalog", Icon: Storefront },
+  { href: "#tentang", label: "Tentang", Icon: BookOpen },
+  { href: "#size", label: "Panduan Size", Icon: Ruler },
+  { href: "#cara-pesan", label: "Cara Pemesanan", Icon: ListChecks },
+  { href: "#faq", label: "FAQ", Icon: Question },
 ];
 
 export default function Navbar() {
@@ -153,20 +154,18 @@ function DrawerNavContent({ onClose }: { onClose: () => void }) {
     <nav className="flex flex-col h-full" role="navigation" aria-label="Menu mobile">
       {/* Links */}
       <ul className="flex flex-col" role="list">
-        {navLinks.map((link, i) => (
+        {navLinks.map((link) => (
           <li key={link.href}>
             <a
               href={link.href}
-              className="flex items-center px-6 py-4 text-[13px] tracking-[0.18em] uppercase font-ui transition-colors duration-200 hover:text-gold hover:bg-[var(--sand-2)]"
+              className="flex items-center gap-4 px-6 py-4 text-[13px] tracking-[0.18em] uppercase font-ui transition-colors duration-200 hover:text-gold hover:bg-[var(--sand-2)]"
               style={{
                 color: "var(--espresso)",
                 borderBottom: "1px solid rgba(201,183,156,.12)",
               }}
               onClick={onClose}
             >
-              <span className="w-5 text-[11px] mr-4" style={{ color: "var(--gold)" }}>
-                {String(i + 1).padStart(2, "0")}
-              </span>
+              <link.Icon size={22} weight="light" style={{ color: "var(--gold)" }} />
               {link.label}
             </a>
           </li>
