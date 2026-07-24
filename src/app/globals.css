@@ -1,0 +1,141 @@
+@import "tailwindcss";
+
+/* ── Brand color tokens ── */
+:root {
+  --sand: #d8c4a8;
+  --sand-2: #f1e9dd;
+  --cream: #f8f5f1;
+  --cream-bright: #f8f6f2;
+  --clay: #c9b79c;
+  --espresso: #2d211b;
+  --espresso-deep: #2a211b;
+  --coffee: #4a4136;
+  --stone: #8a7f6d;
+  --gold: #b58c4a;
+  --gold-bright: #b89146;
+  --wa: #25D366;
+}
+
+/* ── Tailwind v4 theme extension ── */
+@theme inline {
+  --color-sand: var(--sand);
+  --color-sand-2: var(--sand-2);
+  --color-cream: var(--cream);
+  --color-clay: var(--clay);
+  --color-espresso: var(--espresso);
+  --color-coffee: var(--coffee);
+  --color-stone: var(--stone);
+  --color-gold: var(--gold);
+  --color-wa: var(--wa);
+  --font-display: var(--font-cormorant);
+  --font-ui: var(--font-inter);
+}
+
+/* ── Ken Burns slow zoom ── */
+@keyframes kenBurns {
+  from { transform: scale(1); }
+  to { transform: scale(1.05); }
+}
+
+/* ── Hero crossfade slider ── */
+.hero-slide {
+  opacity: 0;
+  transition: opacity 1.6s ease-in-out;
+}
+.hero-slide.is-active {
+  opacity: 1;
+}
+.hero-slide.is-active .hero-media {
+  animation: kenBurns 11s ease-out both;
+}
+
+/* ── Staggered entrance for hero content ── */
+@keyframes heroRise {
+  from { opacity: 0; transform: translateY(34px); }
+  to { opacity: 1; transform: none; }
+}
+.hero-anim {
+  opacity: 0;
+}
+.hero-in {
+  animation: heroRise 0.85s cubic-bezier(0.16, 0.7, 0.3, 1) both;
+}
+
+/* ── Scroll indicator dot ── */
+@keyframes scrollDot {
+  0% { opacity: 0; transform: translateY(0); }
+  30% { opacity: 1; }
+  80% { opacity: 0; transform: translateY(11px); }
+  100% { opacity: 0; transform: translateY(11px); }
+}
+.scroll-dot {
+  animation: scrollDot 2.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* ── Base styles ── */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--cream);
+  color: var(--espresso);
+  font-family: var(--font-inter), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* ── Scroll reveal ── */
+.fade-up {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+.fade-up.in {
+  opacity: 1;
+  transform: none;
+}
+
+/* ── Hover lift ── */
+.hover-lift {
+  transition: transform 0.5s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.5s ease;
+}
+.hover-lift:hover {
+  transform: translateY(-6px);
+}
+
+/* ── Card image zoom on hover ── */
+.card-img {
+  transition: transform 0.9s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.group:hover .card-img {
+  transform: scale(1.06);
+}
+
+/* ── FAQ accordion ── */
+details[open] .faq-plus {
+  transform: rotate(45deg);
+}
+.faq-plus {
+  transition: transform 0.3s ease;
+}
+
+/* ── Marquee ── */
+.marquee {
+  animation: scroll 38s linear infinite;
+}
+@keyframes scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  .hero-slide.is-active .hero-media { animation: none; }
+  .hero-anim { opacity: 1; }
+  .hero-in { animation: none; }
+  .scroll-dot { animation: none; opacity: 1; }
+  .fade-up { opacity: 1; transform: none; transition: none; }
+  .marquee { animation: none; }
+  html { scroll-behavior: auto; }
+}
