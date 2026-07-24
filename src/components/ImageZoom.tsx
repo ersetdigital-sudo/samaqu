@@ -129,37 +129,33 @@ export default function ImageZoom({ src, alt, isOpen, onClose, type = "image" }:
               {alt}
             </p>
             <div className="flex items-center gap-2">
-              {type === "image" && (
-                <>
-                  <button
-                    onClick={zoomOut}
-                    className="w-9 h-9 rounded-full flex items-center justify-center transition-colors duration-200 hover:bg-white/10"
-                    style={{ color: "var(--ivory)" }}
-                    aria-label="Zoom out"
-                  >
-                    <ZoomOut size={18} />
-                  </button>
-                  <span className="text-[11px] font-ui w-10 text-center" style={{ color: "rgba(248,246,242,.5)" }}>
-                    {Math.round(scale * 100)}%
-                  </span>
-                  <button
-                    onClick={zoomIn}
-                    className="w-9 h-9 rounded-full flex items-center justify-center transition-colors duration-200 hover:bg-white/10"
-                    style={{ color: "var(--ivory)" }}
-                    aria-label="Zoom in"
-                  >
-                    <ZoomIn size={18} />
-                  </button>
-                  <button
-                    onClick={resetZoom}
-                    className="w-9 h-9 rounded-full flex items-center justify-center transition-colors duration-200 hover:bg-white/10"
-                    style={{ color: "var(--ivory)" }}
-                    aria-label="Reset zoom"
-                  >
-                    <RotateCcw size={16} />
-                  </button>
-                </>
-              )}
+              <button
+                onClick={zoomOut}
+                className="w-9 h-9 rounded-full flex items-center justify-center transition-colors duration-200 hover:bg-white/10"
+                style={{ color: "var(--ivory)" }}
+                aria-label="Zoom out"
+              >
+                <ZoomOut size={18} />
+              </button>
+              <span className="text-[11px] font-ui w-10 text-center" style={{ color: "rgba(248,246,242,.5)" }}>
+                {Math.round(scale * 100)}%
+              </span>
+              <button
+                onClick={zoomIn}
+                className="w-9 h-9 rounded-full flex items-center justify-center transition-colors duration-200 hover:bg-white/10"
+                style={{ color: "var(--ivory)" }}
+                aria-label="Zoom in"
+              >
+                <ZoomIn size={18} />
+              </button>
+              <button
+                onClick={resetZoom}
+                className="w-9 h-9 rounded-full flex items-center justify-center transition-colors duration-200 hover:bg-white/10"
+                style={{ color: "var(--ivory)" }}
+                aria-label="Reset zoom"
+              >
+                <RotateCcw size={16} />
+              </button>
               <button
                 onClick={onClose}
                 className="w-9 h-9 rounded-full flex items-center justify-center transition-colors duration-200 hover:bg-white/10 ml-1"
