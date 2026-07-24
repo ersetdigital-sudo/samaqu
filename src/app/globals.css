@@ -203,6 +203,22 @@ details[open] .faq-plus {
   transform: scaleX(1);
 }
 
+/* ── Accordion animations ── */
+@keyframes accordion-down {
+  from { height: 0; }
+  to { height: var(--accordion-panel-height); }
+}
+@keyframes accordion-up {
+  from { height: var(--accordion-panel-height); }
+  to { height: 0; }
+}
+.animate-accordion-down {
+  animation: accordion-down 0.25s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+.animate-accordion-up {
+  animation: accordion-up 0.25s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
 /* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
   .hero-slide.is-active .hero-media { animation: none; }
