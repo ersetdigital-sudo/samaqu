@@ -1,12 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import {
-  useState,
-  useEffect,
-  useCallback,
-  useRef,
-} from "react";
+import { useState, useEffect, useCallback } from "react";
+import { MobileDrawer, MobileDrawerCtx } from "@/components/ui/drawer";
 
 /* ── Nav data ── */
 const navLinks = [
@@ -20,8 +16,6 @@ const navLinks = [
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const toggleRef = useRef<HTMLButtonElement>(null);
 
   /* ── Scroll: transparent over hero → solid after hero ── */
   const onScroll = useCallback(() => {
@@ -39,68 +33,6 @@ export default function Navbar() {
       window.removeEventListener("resize", onScroll);
     };
   }, [onScroll]);
-
-  /* ── Lock body scroll when mobile menu open ── */
-  useEffect(() => {
-    if (!menuOpen) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [menuOpen]);
-
-  /* ── Focus trap inside mobile menu ── */
-  useEffect(() => {
-    if (!menuOpen || !menuRef.current) return;
-
-    const container = menuRef.current;
-    const focusable = () =>
-      container.querySelectorAll<HTMLElement>(
-        'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
-      );
-
-    // Focus first link on open
-    const first = focusable()[0];
-    first?.focus();
-
-    function handleKey(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        closeMenu();
-        return;
-      }
-      if (e.key !== "Tab") return;
-
-      const items = focusable();
-      const firstEl = items[0];
-      const lastEl = items[items.length - 1];
-
-      if (e.shiftKey) {
-        if (document.activeElement === firstEl) {
-          e.preventDefault();
-          lastEl?.focus();
-        }
-      } else {
-        if (document.activeElement === lastEl) {
-          e.preventDefault();
-          firstEl?.focus();
-        }
-      }
-    }
-
-    document.addEventListener("keydown", handleKey);
-    return () => document.removeEventListener("keydown", handleKey);
-  }, [menuOpen]);
-
-  function closeMenu() {
-    setMenuOpen(false);
-    toggleRef.current?.focus();
-  }
-
-  function toggleMenu() {
-    setMenuOpen((v) => !v);
-  }
 
   /* ── Styles ── */
   const shellStyle = scrolled
@@ -126,166 +58,169 @@ export default function Navbar() {
   const ctaColor = scrolled ? "var(--espresso)" : "var(--cream)";
 
   return (
-    <header id="top" className="fixed top-0 inset-x-0 z-50">
-      {/* ── Main bar ── */}
-      <div className="transition-all duration-500" style={shellStyle}>
-        <div className="max-w-[1200px] mx-auto px-6 sm:px-10 lg:px-14">
-          <nav
-            className="flex items-center justify-between gap-4 h-[72px] sm:h-[84px]"
-            role="navigation"
-            aria-label="Navigasi utama"
-          >
-            {/* Logo */}
-            <a
-              href="#top"
-              className="inline-flex items-center leading-none shrink-0"
-              aria-label="SAMAQU — kembali ke atas"
+    <MobileDrawerCtx.Provider value={{ open: menuOpen, setOpen: setMenuOpen }}>
+      <header id="top" className="fixed top-0 inset-x-0 z-50">
+        {/* ── Main bar ── */}
+        <div className="transition-all duration-500" style={shellStyle}>
+          <div className="max-w-[1200px] mx-auto px-6 sm:px-10 lg:px-14">
+            <nav
+              className="flex items-center justify-between gap-4 h-[72px] sm:h-[84px]"
+              role="navigation"
+              aria-label="Navigasi utama"
             >
-              <Image
-                src="/images/2191f072-7662-46be-9482-6958f6635adc.png"
-                alt="SAMAQU"
-                width={120}
-                height={44}
-                className="h-9 sm:h-11 w-auto transition-[filter] duration-500"
-                style={{ filter: scrolled ? "brightness(0.15)" : "none" }}
-                priority
-              />
-            </a>
-
-            {/* Desktop links */}
-            <ul
-              className="hidden lg:flex items-center gap-9 text-[11px] tracking-[0.18em] uppercase transition-colors duration-500 font-ui"
-              style={{ color: linkColor }}
-              role="list"
-            >
-              {navLinks.map((link) => (
-                <li key={link.href}>
-                  <a
-                    href={link.href}
-                    className="nav-desktop-link relative py-1 transition-colors duration-300 hover:text-gold"
-                    style={{ color: "inherit" }}
-                  >
-                    {link.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-
-            {/* Right: CTA + hamburger */}
-            <div className="flex items-center gap-4">
+              {/* Logo */}
               <a
-                href="#produk"
-                className="hidden sm:inline-flex items-center gap-2 text-[11px] tracking-[0.18em] uppercase transition-colors duration-500 font-ui group"
-                style={{ color: ctaColor }}
+                href="#top"
+                className="inline-flex items-center leading-none shrink-0"
+                aria-label="SAMAQU — kembali ke atas"
               >
-                Lihat Koleksi
-                <span
-                  className="w-6 h-px transition-all duration-500 group-hover:w-9"
-                  style={{ background: "var(--gold)" }}
+                <Image
+                  src="/images/2191f072-7662-46be-9482-6958f6635adc.png"
+                  alt="SAMAQU"
+                  width={120}
+                  height={44}
+                  className="h-9 sm:h-11 w-auto transition-[filter] duration-500"
+                  style={{ filter: scrolled ? "brightness(0.15)" : "none" }}
+                  priority
                 />
               </a>
 
-              <button
-                ref={toggleRef}
-                className="lg:hidden grid place-items-center w-10 h-10 -mr-2 transition-colors duration-500"
-                style={{ color: scrolled ? "var(--espresso)" : "var(--cream)" }}
-                aria-label={menuOpen ? "Tutup menu" : "Buka menu"}
-                aria-expanded={menuOpen}
-                aria-controls="mobile-menu"
-                onClick={toggleMenu}
+              {/* Desktop links */}
+              <ul
+                className="hidden lg:flex items-center gap-9 text-[11px] tracking-[0.18em] uppercase transition-colors duration-500 font-ui"
+                style={{ color: linkColor }}
+                role="list"
               >
-                <span
-                  className="nav-hamburger"
-                  data-open={menuOpen || undefined}
+                {navLinks.map((link) => (
+                  <li key={link.href}>
+                    <a
+                      href={link.href}
+                      className="nav-desktop-link relative py-1 transition-colors duration-300 hover:text-gold"
+                      style={{ color: "inherit" }}
+                    >
+                      {link.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+
+              {/* Right: CTA + hamburger */}
+              <div className="flex items-center gap-4">
+                <a
+                  href="#produk"
+                  className="hidden sm:inline-flex items-center gap-2 text-[11px] tracking-[0.18em] uppercase transition-colors duration-500 font-ui group"
+                  style={{ color: ctaColor }}
                 >
-                  <span />
-                  <span />
-                  <span />
-                </span>
-              </button>
-            </div>
-          </nav>
-        </div>
-      </div>
+                  Lihat Koleksi
+                  <span
+                    className="w-6 h-px transition-all duration-500 group-hover:w-9"
+                    style={{ background: "var(--gold)" }}
+                  />
+                </a>
 
-      {/* ── Mobile menu (always mounted, animated via CSS) ── */}
-      <div
-        id="mobile-menu"
-        ref={menuRef}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Menu navigasi mobile"
-        className="lg:hidden nav-mobile-panel"
-        data-open={menuOpen || undefined}
-      >
-        <div className="max-w-[1200px] mx-auto px-4 sm:px-6 mt-1">
-          <nav
-            className="rounded-sm border flex flex-col text-[13px] tracking-[0.18em] uppercase font-ui"
-            style={{
-              background: "rgba(248,245,241,.97)",
-              backdropFilter: "blur(20px)",
-              WebkitBackdropFilter: "blur(20px)",
-              borderColor: "rgba(201,183,156,.25)",
-              color: "var(--coffee)",
-              boxShadow: "0 24px 50px -24px rgba(0,0,0,.35)",
-            }}
-          >
-            {navLinks.map((link, i) => (
-              <a
-                key={link.href}
-                href={link.href}
-                className="nav-mobile-link px-5 py-4 transition-colors duration-300 hover:bg-sand-2 hover:text-gold"
-                style={{
-                  animationDelay: menuOpen ? `${i * 0.05}s` : "0s",
-                  borderBottom:
-                    i < navLinks.length - 1
-                      ? "1px solid rgba(201,183,156,.15)"
-                      : "none",
-                }}
-                onClick={closeMenu}
-              >
-                {link.label}
-              </a>
-            ))}
+                {/* Mobile drawer trigger */}
+                <MobileDrawer
+                  title="Menu"
+                  trigger={
+                    <button
+                      className="lg:hidden grid place-items-center w-10 h-10 -mr-2 transition-colors duration-500"
+                      style={{
+                        color: scrolled ? "var(--espresso)" : "var(--cream)",
+                      }}
+                      aria-label="Buka menu"
+                    >
+                      <span
+                        className="nav-hamburger"
+                        data-open={menuOpen || undefined}
+                      >
+                        <span />
+                        <span />
+                        <span />
+                      </span>
+                    </button>
+                  }
+                >
+                  <DrawerNavContent onClose={() => setMenuOpen(false)} />
+                </MobileDrawer>
+              </div>
+            </nav>
+          </div>
+        </div>
+      </header>
+    </MobileDrawerCtx.Provider>
+  );
+}
+
+/* ── Drawer nav content ── */
+function DrawerNavContent({ onClose }: { onClose: () => void }) {
+  return (
+    <nav
+      className="flex flex-col h-full"
+      role="navigation"
+      aria-label="Menu mobile"
+    >
+      {/* Links */}
+      <ul className="flex flex-col" role="list">
+        {navLinks.map((link, i) => (
+          <li key={link.href}>
             <a
-              href="#produk"
-              className="nav-mobile-link mt-1 inline-flex items-center justify-center gap-2 px-5 py-4 transition-colors duration-300 hover:opacity-90"
+              href={link.href}
+              className="flex items-center px-6 py-4 text-[13px] tracking-[0.18em] uppercase font-ui transition-colors duration-200"
               style={{
-                background: "var(--espresso)",
-                color: "var(--cream)",
-                animationDelay: menuOpen
-                  ? `${navLinks.length * 0.05}s`
-                  : "0s",
+                color: "var(--coffee)",
+                borderBottom: "1px solid rgba(201,183,156,.12)",
               }}
-              onClick={closeMenu}
+              onClick={onClose}
             >
-              Lihat Koleksi
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="var(--gold)"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+              <span
+                className="w-5 text-[11px] mr-4"
+                style={{ color: "var(--gold)" }}
               >
-                <path d="M5 12h14M13 6l6 6-6 6" />
-              </svg>
+                {String(i + 1).padStart(2, "0")}
+              </span>
+              {link.label}
             </a>
-          </nav>
-        </div>
-      </div>
+          </li>
+        ))}
+      </ul>
 
-      {/* Backdrop overlay when menu open */}
-      {menuOpen && (
-        <div
-          className="lg:hidden fixed inset-0 z-[-1]"
-          style={{ background: "rgba(45,33,27,.3)" }}
-          aria-hidden="true"
-          onClick={closeMenu}
-        />
-      )}
-    </header>
+      {/* Spacer */}
+      <div className="flex-1" />
+
+      {/* CTA */}
+      <div className="p-6 border-t" style={{ borderColor: "rgba(201,183,156,.15)" }}>
+        <a
+          href="#produk"
+          className="flex items-center justify-center gap-2 w-full px-5 py-3.5 text-[12px] tracking-[0.18em] uppercase font-ui transition-opacity duration-200 hover:opacity-90 rounded-sm"
+          style={{
+            background: "var(--espresso)",
+            color: "var(--cream)",
+          }}
+          onClick={onClose}
+        >
+          Lihat Koleksi
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="var(--gold)"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M5 12h14M13 6l6 6-6 6" />
+          </svg>
+        </a>
+
+        {/* Brand mark */}
+        <p
+          className="text-center text-[10px] tracking-[0.2em] uppercase mt-4 font-ui"
+          style={{ color: "var(--stone)" }}
+        >
+          SAMAQU — Busana Muslim Premium
+        </p>
+      </div>
+    </nav>
   );
 }

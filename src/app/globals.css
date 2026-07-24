@@ -219,6 +219,12 @@ details[open] .faq-plus {
   animation: accordion-up 0.25s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
+/* ── Drawer slide-in ── */
+@keyframes drawerSlideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
 /* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
   .hero-slide.is-active .hero-media { animation: none; }

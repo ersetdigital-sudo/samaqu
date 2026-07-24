@@ -10,7 +10,7 @@ export default function WhatsAppFloat() {
       rel="noopener"
       aria-label="Chat via WhatsApp"
       className="fixed bottom-5 right-5 z-50 inline-flex items-center gap-2 rounded-full px-4 py-3.5 shadow-xl text-white transition hover:scale-105"
-      style={{ background: "var(--wa)", boxShadow: "0 12px 30px -8px rgba(37,211,102,.6)" }}
+      style={{ background: "var(--gold)", boxShadow: "0 12px 30px -8px rgba(184,145,70,.4)" }}
     >
       <WhatsAppIcon />
       <span className="hidden sm:inline text-[12px] tracking-[0.18em] uppercase">Chat Admin</span>
