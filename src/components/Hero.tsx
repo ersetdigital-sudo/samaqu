@@ -128,7 +128,7 @@ export default function Hero() {
 
             <div className="hero-anim hero-line flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-3 sm:gap-x-6 sm:gap-y-3 mb-8 sm:mb-10">
               <a
-                href="#produk"
+                href="/katalog"
                 className="group inline-flex items-center gap-2.5 sm:gap-3 rounded-lg px-6 sm:px-8 py-3.5 sm:py-4 text-[11px] sm:text-[12px] tracking-[0.16em] sm:tracking-[0.18em] uppercase transition hover:opacity-95 w-full sm:w-auto justify-center"
                 style={{ background: "var(--gold)", color: "white" }}
               >

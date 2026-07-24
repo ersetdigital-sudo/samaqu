@@ -140,7 +140,7 @@ export default function FinalCta() {
             <motion.a
               variants={revealVariants}
               custom={0.48}
-              href="#produk"
+              href="/katalog"
               className="inline-flex items-center gap-2 rounded-full px-7 sm:px-9 py-3.5 sm:py-4 text-[0.82rem] sm:text-[0.9rem] font-semibold uppercase tracking-[0.1em] font-ui border transition-all duration-350 hover:-translate-y-0.5 hover:shadow-md group w-full sm:w-auto justify-center"
               style={{
                 borderColor: "var(--clay)",
