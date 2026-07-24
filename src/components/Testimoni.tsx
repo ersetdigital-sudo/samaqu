@@ -1,42 +1,66 @@
 "use client";
 
+import { motion, Variants } from "framer-motion";
+
+/* ─── Data ─── */
 const reviews = [
   {
-    initial: "A",
-    name: "Ahmad R.",
-    city: "Jakarta",
+    id: 1,
     quote:
       "Bahannya adem dan jahitannya rapi banget. Dipakai untuk shalat Jumat maupun acara terasa berkelas. Adminnya juga fast response.",
-    rating: 5,
+    name: "Ahmad R.",
+    city: "Jakarta",
+    initial: "A",
   },
   {
-    initial: "F",
-    name: "Fauzan H.",
-    city: "Bandung",
+    id: 2,
     quote:
       "Pesan Thobe untuk keluarga, semuanya puas. Kualitas sesuai harga premiumnya. Packaging rapi dan pengiriman cepat.",
-    rating: 5,
+    name: "Fauzan H.",
+    city: "Bandung",
+    initial: "F",
   },
   {
-    initial: "I",
-    name: "Irfan S.",
-    city: "Surabaya",
+    id: 3,
     quote:
       "Proses order gampang, tinggal chat admin dan dibimbing pilih size. Hasilnya pas dan nyaman. Pasti langganan.",
-    rating: 5,
+    name: "Irfan S.",
+    city: "Surabaya",
+    initial: "I",
   },
 ];
 
-function StarRating({ count }: { count: number }) {
+/* ─── Animation variants ─── */
+const containerVariants: Variants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.14 } },
+};
+
+const cardVariants: Variants = {
+  hidden: { opacity: 0, y: 32 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] },
+  },
+};
+
+const headerVariants: Variants = {
+  hidden: { opacity: 0, y: 18 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
+};
+
+/* ─── Star rating ─── */
+function StarRating() {
   return (
-    <div className="flex gap-0.5 mb-5" aria-label={`${count} dari 5 bintang`}>
+    <div className="flex gap-0.5 mb-5" aria-label="5 dari 5 bintang">
       {Array.from({ length: 5 }).map((_, i) => (
         <svg
           key={i}
-          width="16"
-          height="16"
+          width="15"
+          height="15"
           viewBox="0 0 24 24"
-          fill={i < count ? "var(--gold)" : "none"}
+          fill="var(--gold)"
           stroke="var(--gold)"
           strokeWidth="1.5"
         >
@@ -47,22 +71,94 @@ function StarRating({ count }: { count: number }) {
   );
 }
 
+/* ─── Card ─── */
+function TestimonialCard({ t }: { t: (typeof reviews)[number] }) {
+  return (
+    <motion.div
+      variants={cardVariants}
+      whileHover={{ y: -4, transition: { duration: 0.2 } }}
+      className="group relative bg-white rounded-sm p-6 sm:p-8 flex flex-col justify-between h-full"
+      style={{ boxShadow: "0 4px 24px -8px rgba(43,38,32,.08)" }}
+    >
+      {/* Gold accent bar */}
+      <span
+        className="absolute top-0 left-6 sm:left-8 w-8 h-[2px] transition-all duration-500 group-hover:w-12"
+        style={{ background: "var(--gold)" }}
+      />
+
+      <div>
+        <StarRating />
+        <p
+          className="text-[14px] sm:text-[15px] leading-[1.75] font-ui flex-1"
+          style={{ color: "var(--coffee)" }}
+        >
+          &ldquo;{t.quote}&rdquo;
+        </p>
+      </div>
+
+      {/* Divider */}
+      <div
+        className="my-6 h-px"
+        style={{ background: "rgba(201,183,156,.2)" }}
+      />
+
+      {/* Author */}
+      <div className="flex items-center gap-3">
+        <div
+          className="w-10 h-10 shrink-0 rounded-full flex items-center justify-center text-sm font-medium"
+          style={{
+            fontFamily: "var(--font-cormorant), Georgia, serif",
+            background: "var(--sand-2)",
+            color: "var(--espresso)",
+            border: "1px solid rgba(201,183,156,.3)",
+          }}
+        >
+          {t.initial}
+        </div>
+        <div>
+          <p
+            className="text-sm font-semibold font-ui leading-tight"
+            style={{ color: "var(--espresso)" }}
+          >
+            {t.name}
+          </p>
+          <p
+            className="text-[10px] sm:text-[11px] tracking-[0.18em] uppercase font-ui mt-0.5"
+            style={{ color: "var(--stone)" }}
+          >
+            {t.city}
+          </p>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+/* ─── Section ─── */
 export default function Testimoni() {
   return (
     <section
-      className="py-20 sm:py-28 lg:py-32"
+      className="py-20 sm:py-28 lg:py-32 px-4 sm:px-8"
       style={{ background: "var(--cream)" }}
     >
-      <div className="max-w-[1200px] mx-auto px-5 sm:px-8">
-        {/* Header */}
-        <div className="text-center max-w-xl mx-auto mb-12 sm:mb-16 fade-up">
-          <p
+      <div className="max-w-[1200px] mx-auto">
+        {/* ── Header ── */}
+        <motion.div
+          className="text-center max-w-xl mx-auto mb-12 sm:mb-16"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-80px" }}
+          variants={containerVariants}
+        >
+          <motion.p
+            variants={headerVariants}
             className="text-[11px] sm:text-[12px] tracking-[0.32em] uppercase mb-4 font-ui"
             style={{ color: "var(--gold)" }}
           >
             Kata Mereka
-          </p>
-          <h2
+          </motion.p>
+          <motion.h2
+            variants={headerVariants}
             className="text-3xl sm:text-4xl lg:text-5xl font-medium mb-5 leading-tight"
             style={{
               fontFamily: "var(--font-cormorant), Georgia, serif",
@@ -70,71 +166,29 @@ export default function Testimoni() {
             }}
           >
             Dipercaya Pelanggan
-          </h2>
-          <p
+          </motion.h2>
+          <motion.p
+            variants={headerVariants}
             className="text-sm sm:text-base leading-[1.75] font-ui"
             style={{ color: "var(--coffee)" }}
           >
             Cerita nyata dari mereka yang telah merasakan kualitas dan
             pelayanan SAMAQU.
-          </p>
-        </div>
+          </motion.p>
+        </motion.div>
 
-        {/* Cards */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          {reviews.map((r) => (
-            <figure
-              key={r.name}
-              className="fade-up group relative bg-white rounded-sm p-6 sm:p-8 transition-all duration-500 hover:-translate-y-1"
-              style={{
-                boxShadow: "0 4px 24px -8px rgba(43,38,32,.08)",
-              }}
-            >
-              {/* Gold accent bar top */}
-              <span
-                className="absolute top-0 left-6 sm:left-8 w-8 h-[2px] transition-all duration-500 group-hover:w-12"
-                style={{ background: "var(--gold)" }}
-              />
-
-              <StarRating count={r.rating} />
-
-              <blockquote
-                className="text-[14px] sm:text-[15px] leading-[1.75] mb-6 font-ui"
-                style={{ color: "var(--coffee)" }}
-              >
-                &ldquo;{r.quote}&rdquo;
-              </blockquote>
-
-              <figcaption className="flex items-center gap-3 pt-5 border-t" style={{ borderColor: "rgba(201,183,156,.2)" }}>
-                <span
-                  className="w-10 h-10 shrink-0 rounded-full flex items-center justify-center text-sm font-medium"
-                  style={{
-                    fontFamily: "var(--font-cormorant), Georgia, serif",
-                    background: "var(--sand-2)",
-                    color: "var(--espresso)",
-                    border: "1px solid rgba(201,183,156,.3)",
-                  }}
-                >
-                  {r.initial}
-                </span>
-                <div>
-                  <p
-                    className="text-sm font-medium font-ui"
-                    style={{ color: "var(--espresso)" }}
-                  >
-                    {r.name}
-                  </p>
-                  <p
-                    className="text-[10px] sm:text-[11px] tracking-[0.18em] uppercase font-ui"
-                    style={{ color: "var(--stone)" }}
-                  >
-                    {r.city}
-                  </p>
-                </div>
-              </figcaption>
-            </figure>
+        {/* ── Cards ── */}
+        <motion.div
+          className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-60px" }}
+          variants={containerVariants}
+        >
+          {reviews.map((t) => (
+            <TestimonialCard key={t.id} t={t} />
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   );
