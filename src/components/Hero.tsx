@@ -14,6 +14,7 @@ const waHref =
 export default function Hero() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [shouldPlay, setShouldPlay] = useState(false);
+  const [muted, setMuted] = useState(true);
 
   useEffect(() => {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -33,6 +34,15 @@ export default function Hero() {
     if (!shouldPlay || !videoRef.current) return;
     videoRef.current.play().catch(() => {});
   }, [shouldPlay]);
+
+  useEffect(() => {
+    if (!videoRef.current) return;
+    videoRef.current.muted = muted;
+  }, [muted]);
+
+  function toggleMute() {
+    setMuted((v) => !v);
+  }
 
   useEffect(() => {
     const reduce = window.matchMedia("(prefers-reduced-motion:reduce)").matches;
@@ -61,7 +71,7 @@ export default function Hero() {
             ref={videoRef}
             className="absolute inset-0 w-full h-full object-cover"
             autoPlay
-            muted
+            muted={muted}
             loop
             playsInline
             preload="auto"
@@ -197,6 +207,34 @@ export default function Hero() {
           </div>
         </div>
       </div>
+
+      {/* Mute/Unmute toggle */}
+      {shouldPlay && (
+        <button
+          onClick={toggleMute}
+          className="absolute bottom-6 right-5 sm:right-8 z-10 flex items-center justify-center w-10 h-10 rounded-full transition-all duration-300 hover:scale-110"
+          style={{
+            background: "rgba(0,0,0,.35)",
+            backdropFilter: "blur(8px)",
+            border: "1px solid rgba(248,245,241,.15)",
+          }}
+          aria-label={muted ? "Nyalakan suara" : "Matikan suara"}
+        >
+          {muted ? (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(248,245,241,.8)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M11 5L6 9H2v6h4l5 4V5z" />
+              <line x1="23" y1="9" x2="17" y2="15" />
+              <line x1="17" y1="9" x2="23" y2="15" />
+            </svg>
+          ) : (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(248,245,241,.8)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M11 5L6 9H2v6h4l5 4V5z" />
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+            </svg>
+          )}
+        </button>
+      )}
 
       {/* Scroll indicator */}
       <a
