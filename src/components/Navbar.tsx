@@ -50,16 +50,13 @@ export default function Navbar() {
         boxShadow: "none",
       };
 
-  const linkColor = scrolled
-    ? "var(--espresso)"
-    : "rgba(248,245,241,.78)";
-
+  const linkColor = scrolled ? "var(--espresso)" : "rgba(248,245,241,.78)";
   const ctaColor = scrolled ? "var(--espresso)" : "var(--cream)";
 
   return (
     <MobileDrawerCtx.Provider value={{ open: menuOpen, setOpen: setMenuOpen }}>
+      {/* ── Navbar: fixed, z-50 ── */}
       <header id="top" className="fixed top-0 inset-x-0 z-50">
-        {/* ── Main bar ── */}
         <div className="transition-all duration-500" style={shellStyle}>
           <div className="max-w-[1200px] mx-auto px-6 sm:px-10 lg:px-14">
             <nav
@@ -78,9 +75,7 @@ export default function Navbar() {
                   alt="SAMAQU"
                   className="h-8 sm:h-10 w-auto transition-[filter] duration-500"
                   style={{
-                    filter: scrolled
-                      ? "none"
-                      : "invert(1) brightness(0.95)",
+                    filter: scrolled ? "none" : "invert(1) brightness(0.95)",
                   }}
                 />
               </a>
@@ -118,35 +113,30 @@ export default function Navbar() {
                   />
                 </a>
 
-                {/* Mobile drawer trigger */}
-                <MobileDrawer
-                  title="Menu"
-                  trigger={
-                    <button
-                      className="lg:hidden grid place-items-center w-10 h-10 -mr-2 transition-colors duration-500"
-                      style={{
-                        color: scrolled ? "var(--espresso)" : "var(--cream)",
-                      }}
-                      aria-label="Buka menu"
-                    >
-                      <span
-                        className="nav-hamburger"
-                        data-open={menuOpen || undefined}
-                      >
-                        <span />
-                        <span />
-                        <span />
-                      </span>
-                    </button>
-                  }
+                {/* Hamburger — opens drawer */}
+                <button
+                  className="lg:hidden grid place-items-center w-10 h-10 -mr-2 transition-colors duration-500"
+                  style={{ color: scrolled ? "var(--espresso)" : "var(--cream)" }}
+                  aria-label="Buka menu"
+                  aria-expanded={menuOpen}
+                  onClick={() => setMenuOpen(true)}
                 >
-                  <DrawerNavContent onClose={() => setMenuOpen(false)} />
-                </MobileDrawer>
+                  <span className="nav-hamburger" data-open={menuOpen || undefined}>
+                    <span />
+                    <span />
+                    <span />
+                  </span>
+                </button>
               </div>
             </nav>
           </div>
         </div>
       </header>
+
+      {/* ── Drawer: renders at body level via portal, z-9999 ── */}
+      <MobileDrawer title="Menu">
+        <DrawerNavContent onClose={() => setMenuOpen(false)} />
+      </MobileDrawer>
     </MobileDrawerCtx.Provider>
   );
 }
@@ -160,11 +150,7 @@ const waHref =
 
 function DrawerNavContent({ onClose }: { onClose: () => void }) {
   return (
-    <nav
-      className="flex flex-col h-full"
-      role="navigation"
-      aria-label="Menu mobile"
-    >
+    <nav className="flex flex-col h-full" role="navigation" aria-label="Menu mobile">
       {/* Links */}
       <ul className="flex flex-col" role="list">
         {navLinks.map((link, i) => (
@@ -178,10 +164,7 @@ function DrawerNavContent({ onClose }: { onClose: () => void }) {
               }}
               onClick={onClose}
             >
-              <span
-                className="w-5 text-[11px] mr-4"
-                style={{ color: "var(--gold)" }}
-              >
+              <span className="w-5 text-[11px] mr-4" style={{ color: "var(--gold)" }}>
                 {String(i + 1).padStart(2, "0")}
               </span>
               {link.label}
@@ -200,10 +183,7 @@ function DrawerNavContent({ onClose }: { onClose: () => void }) {
           target="_blank"
           rel="noopener"
           className="flex items-center justify-center gap-2 w-full px-5 py-3.5 text-[11px] tracking-[0.16em] uppercase font-ui font-medium transition-all duration-300 hover:opacity-90 rounded-sm"
-          style={{
-            background: "var(--gold)",
-            color: "white",
-          }}
+          style={{ background: "var(--gold)", color: "white" }}
           onClick={onClose}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
@@ -214,32 +194,15 @@ function DrawerNavContent({ onClose }: { onClose: () => void }) {
         <a
           href="/katalog"
           className="flex items-center justify-center gap-2 w-full px-5 py-3.5 text-[11px] tracking-[0.16em] uppercase font-ui font-medium transition-opacity duration-200 hover:opacity-80 rounded-sm"
-          style={{
-            background: "var(--espresso)",
-            color: "var(--cream)",
-          }}
+          style={{ background: "var(--espresso)", color: "var(--cream)" }}
           onClick={onClose}
         >
           Lihat Koleksi
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="var(--gold)"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <path d="M5 12h14M13 6l6 6-6 6" />
           </svg>
         </a>
-
-        {/* Brand mark */}
-        <p
-          className="text-center text-[10px] tracking-[0.2em] uppercase mt-4 font-ui"
-          style={{ color: "var(--stone)" }}
-        >
+        <p className="text-center text-[10px] tracking-[0.2em] uppercase mt-4 font-ui" style={{ color: "var(--stone)" }}>
           SAMAQU — Busana Muslim Premium
         </p>
       </div>
