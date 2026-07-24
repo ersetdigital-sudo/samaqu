@@ -86,16 +86,39 @@ function withImages(image: string): { image: string; images: string[]; media: Me
 export const products: Product[] = [
   // ── THOBE B-01 ──
   ...(["Jiharkah", "Imron", "Bayati", "Nahawand", "Karim", "Imalah"] as const).map(
-    (series, i) => ({
-      id: `thobe-b01-${series.toLowerCase()}`,
-      name: `Thobe ${series}`,
-      category: "Thobe" as Category,
-      kain: "B-01",
-      series,
-      colors: ["Superblack", "Broken White", "Latte", "Grey Indigo", "Mint", "Navy"],
-      price: priceMap.Thobe,
-      ...withImages(`/images/products/thobe-b01-${i + 1}.jpg`),
-    })
+    (series, i) => {
+      const isJiharkah = series === "Jiharkah";
+      const jiharkahMedia: MediaItem[] = [
+        { src: "/products/jiharkah/15.jpg", type: "image" },
+        { src: "/products/jiharkah/16.jpg", type: "image" },
+        { src: "/products/jiharkah/17.jpg", type: "image" },
+        { src: "/products/jiharkah/18.jpg", type: "image" },
+        { src: "/products/jiharkah/19.jpg", type: "image" },
+        { src: "/products/jiharkah/20.jpg", type: "image" },
+        { src: "/products/jiharkah/21.jpg", type: "image" },
+        { src: "/products/jiharkah/22.jpg", type: "image" },
+        { src: "/products/jiharkah/23.jpg", type: "image" },
+        { src: "/products/jiharkah/video%20(1).mp4", type: "video" },
+        { src: "/products/jiharkah/video%20(2).mp4", type: "video" },
+      ];
+      const fallbackMedia = withImages(`/images/products/thobe-b01-${i + 1}.jpg`);
+      return {
+        id: `thobe-b01-${series.toLowerCase()}`,
+        name: `Thobe ${series}`,
+        category: "Thobe" as Category,
+        kain: "B-01",
+        series,
+        colors: ["Superblack", "Broken White", "Latte", "Grey Indigo", "Mint", "Navy"],
+        price: priceMap.Thobe,
+        ...(isJiharkah
+          ? {
+              image: "/products/jiharkah/15.jpg",
+              images: jiharkahMedia.map((m) => m.src),
+              media: jiharkahMedia,
+            }
+          : fallbackMedia),
+      };
+    }
   ),
 
   // ── THOBE B-02 ──
