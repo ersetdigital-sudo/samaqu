@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, use, useRef, useEffect } from "react";
+import { useState, use, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Minus, Plus, MessageCircle, ChevronLeft, ChevronRight, Play } from "lucide-react";
@@ -26,7 +26,7 @@ function getDescription(product: Product): string {
   return map[product.category] || "";
 }
 
-/* ── Media renderer (image or video) ── */
+/* ── Media renderer ── */
 function MediaDisplay({ item, className, style }: { item: MediaItem; className?: string; style?: React.CSSProperties }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(false);
@@ -44,25 +44,15 @@ function MediaDisplay({ item, className, style }: { item: MediaItem; className?:
           preload="metadata"
           onClick={() => {
             if (videoRef.current) {
-              if (playing) {
-                videoRef.current.pause();
-              } else {
-                videoRef.current.play();
-              }
+              playing ? videoRef.current.pause() : videoRef.current.play();
               setPlaying(!playing);
             }
           }}
         />
         {!playing && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div
-              className="w-14 h-14 rounded-full flex items-center justify-center transition-transform duration-200 hover:scale-110"
-              style={{
-                background: "rgba(0,0,0,.4)",
-                backdropFilter: "blur(8px)",
-              }}
-            >
-              <Play size={24} fill="white" stroke="none" className="ml-1" />
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center" style={{ background: "rgba(0,0,0,.4)", backdropFilter: "blur(8px)" }}>
+              <Play size={22} fill="white" stroke="none" className="ml-0.5" />
             </div>
           </div>
         )}
@@ -72,12 +62,7 @@ function MediaDisplay({ item, className, style }: { item: MediaItem; className?:
 
   return (
     <div className={`relative ${className || ""}`} style={{ background: "#e8dfd1", ...style }}>
-      <img
-        src={item.src}
-        alt=""
-        className="w-full h-full object-cover"
-        loading="lazy"
-      />
+      <img src={item.src} alt="" className="w-full h-full object-cover" loading="lazy" />
     </div>
   );
 }
@@ -96,7 +81,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   if (!product) {
     return (
       <section className="min-h-screen flex items-center justify-center" style={{ background: "var(--cream)" }}>
-        <div className="text-center">
+        <div className="text-center px-6">
           <p className="text-lg font-medium mb-4" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
             Produk tidak ditemukan
           </p>
@@ -113,225 +98,228 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
   return (
     <section className="min-h-screen" style={{ background: "var(--cream)" }}>
-      {/* Back button */}
-      <div className="fixed top-20 left-4 sm:left-6 z-30">
-        <button
-          onClick={() => router.back()}
-          className="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105"
-          style={{
-            background: "rgba(248,246,242,.85)",
-            backdropFilter: "blur(8px)",
-            boxShadow: "0 2px 8px rgba(0,0,0,.08)",
-            border: "1px solid rgba(201,183,156,.2)",
-          }}
-          aria-label="Kembali"
-        >
-          <ArrowLeft size={18} style={{ color: "var(--espresso)" }} />
-        </button>
-      </div>
+      {/* ═══════════════════════════════════════
+          BACK BUTTON
+      ═══════════════════════════════════════ */}
+      <button
+        onClick={() => router.back()}
+        className="fixed top-4 left-4 sm:top-20 sm:left-6 z-30 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105"
+        style={{
+          background: "rgba(248,246,242,.85)",
+          backdropFilter: "blur(8px)",
+          boxShadow: "0 2px 8px rgba(0,0,0,.08)",
+          border: "1px solid rgba(201,183,156,.2)",
+        }}
+        aria-label="Kembali"
+      >
+        <ArrowLeft size={18} style={{ color: "var(--espresso)" }} />
+      </button>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 sm:pt-20 pb-32">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-14">
-
-          {/* ═══════ LEFT: Gallery ═══════ */}
-          <div>
-            {/* Mobile: horizontal swipeable carousel */}
-            <div className="md:hidden relative">
-              <div className="flex overflow-x-auto snap-x snap-mandatory gap-2 scrollbar-hide -mx-4 px-4">
-                {media.map((item, i) => (
-                  <div
-                    key={i}
-                    className="relative shrink-0 w-[85vw] aspect-[3/4] rounded-xl overflow-hidden snap-center"
-                    style={{ background: "#e8dfd1" }}
-                  >
-                    <MediaDisplay
-                      item={item}
-                      className="absolute inset-0"
-                    />
-                    {/* Color tint overlay for images */}
-                    {item.type === "image" && (
-                      <div
-                        className="absolute inset-0 pointer-events-none"
-                        style={{
-                          background: `linear-gradient(135deg, ${colorMap[product.colors[0]] || "#e8dfd1"}22, ${colorMap[product.colors[1]] || "#d4c5a9"}22)`,
-                        }}
-                      />
-                    )}
-                    {/* Tag */}
-                    {product.tag && i === 0 && (
-                      <span
-                        className="absolute top-3 left-3 px-2.5 py-1 text-[10px] tracking-[0.12em] uppercase font-ui font-medium rounded-sm z-10"
-                        style={{ border: "1px solid var(--gold)", color: "var(--gold)", background: "rgba(248,246,242,.9)" }}
-                      >
-                        {product.tag}
-                      </span>
-                    )}
-                    {/* Video badge */}
-                    {item.type === "video" && (
-                      <span
-                        className="absolute top-3 right-3 px-2 py-1 text-[9px] tracking-[0.1em] uppercase font-ui font-medium rounded-sm z-10"
-                        style={{ background: "rgba(0,0,0,.5)", color: "white" }}
-                      >
-                        Video
-                      </span>
-                    )}
-                  </div>
-                ))}
-              </div>
-              {/* Dots */}
-              {media.length > 1 && (
-                <div className="flex justify-center gap-1.5 mt-3">
-                  {media.map((_, i) => (
-                    <span
-                      key={i}
-                      className="rounded-full transition-all duration-300"
-                      style={{
-                        background: i === 0 ? "var(--gold)" : "rgba(201,183,156,.4)",
-                        width: i === 0 ? "16px" : "6px",
-                        height: "6px",
-                      }}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Desktop: main image + thumbnails */}
-            <div className="hidden md:flex gap-3">
-              {/* Thumbnails (vertical) */}
-              {media.length > 1 && (
-                <div className="flex flex-col gap-2 shrink-0">
-                  {media.map((item, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setActiveIndex(i)}
-                      className="relative w-[68px] aspect-[3/4] rounded-lg overflow-hidden transition-all duration-200 shrink-0"
-                      style={{
-                        border: activeIndex === i ? "2px solid var(--gold)" : "1px solid rgba(201,183,156,.25)",
-                        opacity: activeIndex === i ? 1 : 0.55,
-                      }}
-                      aria-label={`${item.type === "video" ? "Video" : "Foto"} ${i + 1}`}
-                    >
-                      {item.type === "video" ? (
-                        <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(0,0,0,.06)" }}>
-                          <Play size={14} fill="var(--espresso)" stroke="none" style={{ opacity: 0.6 }} />
-                        </div>
-                      ) : (
-                        <div
-                          className="absolute inset-0"
-                          style={{
-                            background: `linear-gradient(135deg, ${colorMap[product.colors[0]] || "#e8dfd1"}22, ${colorMap[product.colors[1]] || "#d4c5a9"}22)`,
-                          }}
-                        />
-                      )}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {/* Main display */}
-              <div className="relative flex-1 aspect-[3/4] rounded-2xl overflow-hidden" style={{ background: "#e8dfd1" }}>
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={activeIndex}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="absolute inset-0"
-                  >
-                    <MediaDisplay
-                      item={activeMedia}
-                      className="w-full h-full"
-                    />
-                    {/* Color tint for images */}
-                    {activeMedia.type === "image" && (
-                      <div
-                        className="absolute inset-0 pointer-events-none"
-                        style={{
-                          background: `linear-gradient(135deg, ${colorMap[product.colors[0]] || "#e8dfd1"}33, ${colorMap[product.colors[1]] || "#d4c5a9"}33)`,
-                        }}
-                      />
-                    )}
-                  </motion.div>
-                </AnimatePresence>
-
-                {/* Tag */}
-                {product.tag && (
-                  <span
-                    className="absolute top-4 left-4 px-3 py-1.5 text-[10px] tracking-[0.12em] uppercase font-ui font-medium rounded-sm z-10"
-                    style={{ border: "1px solid var(--gold)", color: "var(--gold)", background: "rgba(248,246,242,.9)" }}
-                  >
+      {/* ═══════════════════════════════════════
+          MOBILE LAYOUT (max-md)
+      ═══════════════════════════════════════ */}
+      <div className="md:hidden">
+        {/* Gallery carousel */}
+        <div className="relative pt-14 pb-4">
+          <div className="flex overflow-x-auto snap-x snap-mandatory gap-2 scrollbar-hide px-4">
+            {media.map((item, i) => (
+              <div
+                key={i}
+                className="relative shrink-0 w-[78vw] aspect-[3/4] rounded-xl overflow-hidden snap-center"
+                style={{ background: "#e8dfd1" }}
+              >
+                <MediaDisplay item={item} className="absolute inset-0" />
+                {product.tag && i === 0 && (
+                  <span className="absolute top-3 left-3 px-2.5 py-1 text-[10px] tracking-[0.12em] uppercase font-ui font-medium rounded-sm z-10"
+                    style={{ border: "1px solid var(--gold)", color: "var(--gold)", background: "rgba(248,246,242,.9)" }}>
                     {product.tag}
                   </span>
                 )}
-
-                {/* Video badge */}
-                {activeMedia.type === "video" && (
-                  <span
-                    className="absolute top-4 right-4 px-2.5 py-1 text-[10px] tracking-[0.1em] uppercase font-ui font-medium rounded-sm z-10"
-                    style={{ background: "rgba(0,0,0,.5)", color: "white" }}
-                  >
+                {item.type === "video" && (
+                  <span className="absolute top-3 right-3 px-2 py-1 text-[9px] tracking-[0.1em] uppercase font-ui font-medium rounded-sm z-10"
+                    style={{ background: "rgba(0,0,0,.5)", color: "white" }}>
                     Video
                   </span>
                 )}
-
-                {/* Nav arrows */}
-                {media.length > 1 && (
-                  <>
-                    <button
-                      onClick={() => setActiveIndex((i) => (i - 1 + media.length) % media.length)}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105 z-10"
-                      style={{ background: "rgba(248,246,242,.85)", backdropFilter: "blur(6px)" }}
-                      aria-label="Media sebelumnya"
-                    >
-                      <ChevronLeft size={18} style={{ color: "var(--espresso)" }} />
-                    </button>
-                    <button
-                      onClick={() => setActiveIndex((i) => (i + 1) % media.length)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105 z-10"
-                      style={{ background: "rgba(248,246,242,.85)", backdropFilter: "blur(6px)" }}
-                      aria-label="Media berikutnya"
-                    >
-                      <ChevronRight size={18} style={{ color: "var(--espresso)" }} />
-                    </button>
-                  </>
-                )}
               </div>
+            ))}
+          </div>
+          {/* Dots */}
+          {media.length > 1 && (
+            <div className="flex justify-center gap-1.5 mt-3">
+              {media.map((_, i) => (
+                <span key={i} className="rounded-full transition-all duration-300"
+                  style={{ background: i === 0 ? "var(--gold)" : "rgba(201,183,156,.4)", width: i === 0 ? "16px" : "6px", height: "6px" }} />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Content card */}
+        <div className="relative -mt-4 mx-4 px-5 py-6 rounded-t-2xl" style={{ background: "var(--cream)", boxShadow: "0 -4px 20px -8px rgba(42,33,27,.08)" }}>
+          <p className="text-[10px] tracking-[0.12em] uppercase font-ui mb-1.5" style={{ color: "var(--stone)" }}>
+            {product.category}{product.kain && ` — Kain ${product.kain}`}{product.series && ` — ${product.series}`}
+          </p>
+          <h1 className="text-[1.5rem] sm:text-[1.8rem] font-semibold leading-tight mb-2"
+            style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
+            {product.name}
+          </h1>
+          <p className="text-lg font-ui font-semibold mb-4" style={{ color: "var(--gold)" }}>
+            Rp {product.price.toLocaleString("id-ID")}
+          </p>
+          <p className="text-[13px] leading-relaxed font-ui mb-5" style={{ color: "rgba(42,33,27,.8)" }}>
+            {getDescription(product)}
+          </p>
+
+          <div className="h-px mb-5" style={{ background: "rgba(201,183,156,.2)" }} />
+
+          {/* Colors */}
+          {product.colors.length > 0 && (
+            <div className="mb-5">
+              <p className="text-[10px] tracking-[0.1em] uppercase font-ui font-medium mb-2.5" style={{ color: "var(--espresso)" }}>
+                Warna — <span style={{ color: "var(--gold)" }}>{selectedColor}</span>
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {product.colors.map((c) => (
+                  <button key={c} onClick={() => setSelectedColor(c)}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-ui rounded-sm transition-all duration-200"
+                    style={{ background: selectedColor === c ? "var(--espresso)" : "transparent", color: selectedColor === c ? "var(--cream)" : "var(--coffee)", border: `1px solid ${selectedColor === c ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
+                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: colorMap[c] || "#ccc", border: "1px solid rgba(42,33,27,.1)" }} />
+                    {c}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Sizes */}
+          <div className="mb-5">
+            <p className="text-[10px] tracking-[0.1em] uppercase font-ui font-medium mb-2.5" style={{ color: "var(--espresso)" }}>Ukuran</p>
+            <div className="flex gap-1.5">
+              {sizes.map((s) => (
+                <button key={s} onClick={() => setSelectedSize(s)}
+                  className="w-10 h-10 flex items-center justify-center text-[12px] font-ui font-medium rounded-sm transition-all duration-200"
+                  style={{ background: selectedSize === s ? "var(--espresso)" : "transparent", color: selectedSize === s ? "var(--cream)" : "var(--coffee)", border: `1px solid ${selectedSize === s ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
+                  {s}
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* ═══════ RIGHT: Product Info (sticky on desktop) ═══════ */}
-          <motion.div
-            className="md:sticky md:top-24 h-fit"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <p className="text-[11px] tracking-[0.14em] uppercase font-ui mb-3" style={{ color: "var(--stone)" }}>
-              {product.category}
-              {product.kain && ` — Kain ${product.kain}`}
-              {product.series && ` — ${product.series}`}
-            </p>
+          {/* Notes */}
+          <div className="mb-5">
+            <p className="text-[10px] tracking-[0.1em] uppercase font-ui font-medium mb-2.5" style={{ color: "var(--espresso)" }}>Catatan (Opsional)</p>
+            <input type="text" value={notes} onChange={(e) => setNotes(e.target.value)}
+              placeholder="Minta packing khusus, tambah nama, dll."
+              className="w-full px-3 py-2.5 text-[13px] font-ui rounded-sm outline-none transition-all duration-200 focus:border-[var(--gold)]"
+              style={{ background: "transparent", border: "1px solid rgba(201,183,156,.3)", color: "var(--espresso)" }} />
+          </div>
 
-            <h1
-              className="text-[2rem] sm:text-[2.5rem] lg:text-[2.8rem] font-semibold leading-tight mb-3"
-              style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}
-            >
+          {/* Quantity */}
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] tracking-[0.1em] uppercase font-ui font-medium" style={{ color: "var(--espresso)" }}>Jumlah</p>
+            <div className="flex items-center gap-2.5">
+              <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="w-9 h-9 flex items-center justify-center rounded-sm transition-all duration-200 active:scale-95" style={{ border: "1px solid rgba(201,183,156,.3)", color: "var(--espresso)" }} aria-label="Kurangi jumlah">
+                <Minus size={14} />
+              </button>
+              <span className="w-7 text-center text-sm font-ui font-medium" style={{ color: "var(--espresso)" }}>{qty}</span>
+              <button onClick={() => setQty((q) => q + 1)} className="w-9 h-9 flex items-center justify-center rounded-sm transition-all duration-200 active:scale-95" style={{ border: "1px solid rgba(201,183,156,.3)", color: "var(--espresso)" }} aria-label="Tambah jumlah">
+                <Plus size={14} />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ═══════════════════════════════════════
+          MOBILE STICKY FOOTER
+      ═══════════════════════════════════════ */}
+      <div className="md:hidden fixed bottom-0 inset-x-0 z-40 px-4 pb-4 pt-3" style={{ background: "linear-gradient(to top, var(--cream) 70%, transparent)" }}>
+        <a href={waLink(product, selectedSize, selectedColor, qty, notes)} target="_blank" rel="noopener"
+          className="flex items-center justify-center gap-2.5 w-full py-3.5 rounded-xl text-[12px] tracking-[0.08em] uppercase font-ui font-semibold transition-all duration-300 active:scale-[0.98]"
+          style={{ background: "var(--gold)", color: "white", boxShadow: "0 6px 20px -6px rgba(184,145,70,.4)" }}>
+          <MessageCircle size={16} strokeWidth={1.5} />
+          <span>Pesan via WhatsApp</span>
+          <span className="mx-1.5 w-px h-3.5" style={{ background: "rgba(255,255,255,.3)" }} />
+          <span>Rp {(product.price * qty).toLocaleString("id-ID")}</span>
+        </a>
+      </div>
+
+      {/* ═══════════════════════════════════════
+          DESKTOP LAYOUT (md+)
+      ═══════════════════════════════════════ */}
+      <div className="hidden md:block max-w-7xl mx-auto px-6 lg:px-8 pt-20 pb-20">
+        <div className="grid grid-cols-2 gap-10 lg:gap-14">
+          {/* Gallery */}
+          <div className="flex gap-3">
+            {media.length > 1 && (
+              <div className="flex flex-col gap-2 shrink-0">
+                {media.map((item, i) => (
+                  <button key={i} onClick={() => setActiveIndex(i)}
+                    className="relative w-[68px] aspect-[3/4] rounded-lg overflow-hidden transition-all duration-200 shrink-0"
+                    style={{ border: activeIndex === i ? "2px solid var(--gold)" : "1px solid rgba(201,183,156,.25)", opacity: activeIndex === i ? 1 : 0.55 }}
+                    aria-label={`${item.type === "video" ? "Video" : "Foto"} ${i + 1}`}>
+                    {item.type === "video" ? (
+                      <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(0,0,0,.06)" }}>
+                        <Play size={14} fill="var(--espresso)" stroke="none" style={{ opacity: 0.6 }} />
+                      </div>
+                    ) : (
+                      <img src={item.src} alt="" className="w-full h-full object-cover" loading="lazy" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className="relative flex-1 aspect-[3/4] rounded-2xl overflow-hidden" style={{ background: "#e8dfd1" }}>
+              <AnimatePresence mode="wait">
+                <motion.div key={activeIndex} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }} className="absolute inset-0">
+                  <MediaDisplay item={activeMedia} className="w-full h-full" />
+                </motion.div>
+              </AnimatePresence>
+              {product.tag && (
+                <span className="absolute top-4 left-4 px-3 py-1.5 text-[10px] tracking-[0.12em] uppercase font-ui font-medium rounded-sm z-10"
+                  style={{ border: "1px solid var(--gold)", color: "var(--gold)", background: "rgba(248,246,242,.9)" }}>
+                  {product.tag}
+                </span>
+              )}
+              {activeMedia.type === "video" && (
+                <span className="absolute top-4 right-4 px-2.5 py-1 text-[10px] tracking-[0.1em] uppercase font-ui font-medium rounded-sm z-10"
+                  style={{ background: "rgba(0,0,0,.5)", color: "white" }}>Video</span>
+              )}
+              {media.length > 1 && (
+                <>
+                  <button onClick={() => setActiveIndex((i) => (i - 1 + media.length) % media.length)}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105 z-10"
+                    style={{ background: "rgba(248,246,242,.85)", backdropFilter: "blur(6px)" }} aria-label="Sebelumnya">
+                    <ChevronLeft size={18} style={{ color: "var(--espresso)" }} />
+                  </button>
+                  <button onClick={() => setActiveIndex((i) => (i + 1) % media.length)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105 z-10"
+                    style={{ background: "rgba(248,246,242,.85)", backdropFilter: "blur(6px)" }} aria-label="Berikutnya">
+                    <ChevronRight size={18} style={{ color: "var(--espresso)" }} />
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Info */}
+          <motion.div className="sticky top-24 h-fit" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}>
+            <p className="text-[11px] tracking-[0.14em] uppercase font-ui mb-3" style={{ color: "var(--stone)" }}>
+              {product.category}{product.kain && ` — Kain ${product.kain}`}{product.series && ` — ${product.series}`}
+            </p>
+            <h1 className="text-[2rem] sm:text-[2.5rem] lg:text-[2.8rem] font-semibold leading-tight mb-3"
+              style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
               {product.name}
             </h1>
-
             <p className="text-[20px] sm:text-[22px] font-ui font-semibold mb-6" style={{ color: "var(--gold)" }}>
               Rp {product.price.toLocaleString("id-ID")}
             </p>
-
             <p className="text-sm sm:text-[15px] leading-relaxed font-ui mb-8" style={{ color: "rgba(42,33,27,.8)" }}>
               {getDescription(product)}
             </p>
-
             <div className="h-px mb-7" style={{ background: "rgba(201,183,156,.2)" }} />
 
-            {/* Color Selection */}
             {product.colors.length > 0 && (
               <div className="mb-7">
                 <p className="text-[11px] sm:text-[12px] tracking-[0.12em] uppercase font-ui font-medium mb-3" style={{ color: "var(--espresso)" }}>
@@ -339,16 +327,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {product.colors.map((c) => (
-                    <button
-                      key={c}
-                      onClick={() => setSelectedColor(c)}
+                    <button key={c} onClick={() => setSelectedColor(c)}
                       className="flex items-center gap-2 px-3 py-2 text-[12px] font-ui rounded-sm transition-all duration-200"
-                      style={{
-                        background: selectedColor === c ? "var(--espresso)" : "transparent",
-                        color: selectedColor === c ? "var(--cream)" : "var(--coffee)",
-                        border: `1px solid ${selectedColor === c ? "var(--espresso)" : "rgba(201,183,156,.3)"}`,
-                      }}
-                    >
+                      style={{ background: selectedColor === c ? "var(--espresso)" : "transparent", color: selectedColor === c ? "var(--cream)" : "var(--coffee)", border: `1px solid ${selectedColor === c ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
                       <span className="w-3 h-3 rounded-full shrink-0" style={{ background: colorMap[c] || "#ccc", border: "1px solid rgba(42,33,27,.1)" }} />
                       {c}
                     </button>
@@ -357,49 +338,29 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               </div>
             )}
 
-            {/* Size Selection */}
             <div className="mb-7">
-              <p className="text-[11px] sm:text-[12px] tracking-[0.12em] uppercase font-ui font-medium mb-3" style={{ color: "var(--espresso)" }}>
-                Ukuran
-              </p>
+              <p className="text-[11px] sm:text-[12px] tracking-[0.12em] uppercase font-ui font-medium mb-3" style={{ color: "var(--espresso)" }}>Ukuran</p>
               <div className="flex flex-wrap gap-2">
                 {sizes.map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => setSelectedSize(s)}
+                  <button key={s} onClick={() => setSelectedSize(s)}
                     className="w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center text-[13px] font-ui font-medium rounded-sm transition-all duration-200"
-                    style={{
-                      background: selectedSize === s ? "var(--espresso)" : "transparent",
-                      color: selectedSize === s ? "var(--cream)" : "var(--coffee)",
-                      border: `1px solid ${selectedSize === s ? "var(--espresso)" : "rgba(201,183,156,.3)"}`,
-                    }}
-                  >
+                    style={{ background: selectedSize === s ? "var(--espresso)" : "transparent", color: selectedSize === s ? "var(--cream)" : "var(--coffee)", border: `1px solid ${selectedSize === s ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
                     {s}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Notes */}
             <div className="mb-7">
-              <p className="text-[11px] sm:text-[12px] tracking-[0.12em] uppercase font-ui font-medium mb-3" style={{ color: "var(--espresso)" }}>
-                Catatan (Opsional)
-              </p>
-              <input
-                type="text"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
+              <p className="text-[11px] sm:text-[12px] tracking-[0.12em] uppercase font-ui font-medium mb-3" style={{ color: "var(--espresso)" }}>Catatan (Opsional)</p>
+              <input type="text" value={notes} onChange={(e) => setNotes(e.target.value)}
                 placeholder="Misal: minta packing khusus, tambah nama, dll."
                 className="w-full px-4 py-3 text-sm font-ui rounded-sm outline-none transition-all duration-200 focus:border-[var(--gold)]"
-                style={{ background: "transparent", border: "1px solid rgba(201,183,156,.3)", color: "var(--espresso)" }}
-              />
+                style={{ background: "transparent", border: "1px solid rgba(201,183,156,.3)", color: "var(--espresso)" }} />
             </div>
 
-            {/* Quantity */}
             <div className="flex items-center justify-between mb-8">
-              <p className="text-[11px] sm:text-[12px] tracking-[0.12em] uppercase font-ui font-medium" style={{ color: "var(--espresso)" }}>
-                Jumlah
-              </p>
+              <p className="text-[11px] sm:text-[12px] tracking-[0.12em] uppercase font-ui font-medium" style={{ color: "var(--espresso)" }}>Jumlah</p>
               <div className="flex items-center gap-3">
                 <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="w-9 h-9 flex items-center justify-center rounded-sm transition-all duration-200 hover:scale-105" style={{ border: "1px solid rgba(201,183,156,.3)", color: "var(--espresso)" }} aria-label="Kurangi jumlah"><Minus size={14} /></button>
                 <span className="w-8 text-center text-sm font-ui font-medium" style={{ color: "var(--espresso)" }}>{qty}</span>
@@ -407,14 +368,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               </div>
             </div>
 
-            {/* CTA */}
-            <a
-              href={waLink(product, selectedSize, selectedColor, qty, notes)}
-              target="_blank"
-              rel="noopener"
+            <a href={waLink(product, selectedSize, selectedColor, qty, notes)} target="_blank" rel="noopener"
               className="flex items-center justify-center gap-3 w-full py-4 rounded-sm text-[13px] tracking-[0.1em] uppercase font-ui font-semibold transition-all duration-300 hover:scale-[1.01] hover:shadow-lg"
-              style={{ background: "var(--gold)", color: "white", boxShadow: "0 8px 28px -8px rgba(184,145,70,.45)" }}
-            >
+              style={{ background: "var(--gold)", color: "white", boxShadow: "0 8px 28px -8px rgba(184,145,70,.45)" }}>
               <MessageCircle size={18} strokeWidth={1.5} />
               <span>Pesan via WhatsApp</span>
               <span className="mx-2 w-px h-4" style={{ background: "rgba(255,255,255,.3)" }} />
