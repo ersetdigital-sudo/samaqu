@@ -109,7 +109,7 @@ function ProductCard({ product, index }: { product: Product; index: number }) {
 
         {/* Name */}
         <h3
-          className="text-[1rem] sm:text-[1.1rem] font-medium leading-snug mb-2"
+          className="text-[1rem] sm:text-[1.1rem] font-medium leading-snug mb-1"
           style={{
             fontFamily: "var(--font-cormorant), Georgia, serif",
             color: "var(--espresso)",
@@ -117,6 +117,14 @@ function ProductCard({ product, index }: { product: Product; index: number }) {
         >
           {product.name}
         </h3>
+
+        {/* Price */}
+        <p
+          className="text-[15px] sm:text-base font-ui font-medium mb-2"
+          style={{ color: "var(--gold)" }}
+        >
+          Rp {product.price.toLocaleString("id-ID")}
+        </p>
 
         {/* Color swatches */}
         {product.colors.length > 0 && (
@@ -385,12 +393,13 @@ export default function KatalogPage() {
       </div>
 
       {/* ── Filter Bar ── */}
-      <div ref={filterRef} className="sticky z-30 transition-shadow duration-300"
+      <div ref={filterRef} className="sticky z-40 transition-shadow duration-300"
         style={{
           top: "84px",
-          background: filterSticky ? "rgba(248,245,241,.95)" : "var(--cream)",
-          backdropFilter: filterSticky ? "blur(12px)" : "none",
-          borderBottom: filterSticky ? "1px solid rgba(201,183,156,.2)" : "1px solid transparent",
+          background: "rgba(248,245,241,.97)",
+          backdropFilter: "blur(12px)",
+          WebkitBackdropFilter: "blur(12px)",
+          borderBottom: "1px solid rgba(216,196,168,.25)",
         }}
       >
         <div className="max-w-[1200px] mx-auto px-5 sm:px-8">
