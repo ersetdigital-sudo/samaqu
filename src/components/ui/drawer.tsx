@@ -2,7 +2,6 @@
 
 import {
   DialogRoot,
-  DialogTrigger,
   DialogBackdrop,
   DialogPositioner,
   DialogContent,
@@ -25,15 +24,10 @@ export const MobileDrawerCtx = createContext<DrawerCtx>({
 /* ── Props ── */
 interface MobileDrawerProps {
   children: ReactNode;
-  trigger: ReactNode;
   title?: string;
 }
 
-export function MobileDrawer({
-  children,
-  trigger,
-  title = "Menu",
-}: MobileDrawerProps) {
+export function MobileDrawer({ children, title = "Menu" }: MobileDrawerProps) {
   const { open, setOpen } = useContext(MobileDrawerCtx);
 
   return (
@@ -43,9 +37,7 @@ export function MobileDrawer({
       lazyMount
       unmountOnExit
     >
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
-
-      {/* Backdrop — highest z-index */}
+      {/* Backdrop — above everything */}
       <DialogBackdrop
         className="fixed inset-0 transition-opacity duration-300"
         style={{
