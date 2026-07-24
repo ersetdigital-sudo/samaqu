@@ -146,7 +146,8 @@ export default function Navbar() {
                 alt="SAMAQU"
                 width={120}
                 height={44}
-                className="h-9 sm:h-11 w-auto"
+                className="h-9 sm:h-11 w-auto transition-[filter] duration-500"
+                style={{ filter: scrolled ? "brightness(0.15)" : "none" }}
                 priority
               />
             </a>
