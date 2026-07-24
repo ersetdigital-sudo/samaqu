@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import { motion, useInView, Variants } from "framer-motion";
+import { CoatHanger, Ruler, ChatCircle, Package } from "@phosphor-icons/react";
 
 /* ─── Data ─── */
 const steps = [
@@ -9,46 +10,25 @@ const steps = [
     num: "01",
     title: "Pilih Produk",
     desc: "Jelajahi katalog dan tentukan koleksi favoritmu — dari Thobe hingga Vest.",
-    icon: (
-      <svg viewBox="0 0 24 24">
-        <path d="M12 5.2a1.7 1.7 0 1 1 1.2 1.63c-.5.16-.82.6-.82 1.12v.55" />
-        <path d="M12.38 8.5 4.3 14.1a1.2 1.2 0 0 0 .69 2.18h14.02a1.2 1.2 0 0 0 .69-2.18L11.62 8.5" />
-      </svg>
-    ),
+    Icon: CoatHanger,
   },
   {
     num: "02",
     title: "Cek Ukuran",
     desc: "Gunakan panduan size kami agar potongan pas dan nyaman dikenakan.",
-    icon: (
-      <svg viewBox="0 0 24 24">
-        <rect x="1.8" y="7.2" width="20.4" height="9.6" rx="2.4" transform="rotate(-45 12 12)" />
-        <path d="M8.4 9.1l1.3 1.3M11.2 11.9l1.3 1.3M14 14.7l1.3 1.3M9.8 7.7l.8.8M12.6 10.5l.8.8M15.4 13.3l.8.8" />
-      </svg>
-    ),
+    Icon: Ruler,
   },
   {
     num: "03",
     title: "Chat Admin",
     desc: "Hubungi admin via WhatsApp untuk konfirmasi ketersediaan dan pemesanan.",
-    icon: (
-      <svg viewBox="0 0 24 24">
-        <path d="M20 5.8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8.4a2 2 0 0 0 2 2h1.8v3.2l3.9-3.2H18a2 2 0 0 0 2-2z" />
-        <path d="M8.6 10h.01M12 10h.01M15.4 10h.01" />
-      </svg>
-    ),
+    Icon: ChatCircle,
   },
   {
     num: "04",
     title: "Selesai",
     desc: "Bayar, pesanan diproses, dan busana pilihanmu segera dalam perjalanan.",
-    icon: (
-      <svg viewBox="0 0 24 24">
-        <path d="M20.5 15.3V8.7a1.8 1.8 0 0 0-.9-1.56l-6.7-3.83a1.8 1.8 0 0 0-1.8 0L4.4 7.14A1.8 1.8 0 0 0 3.5 8.7v6.6a1.8 1.8 0 0 0 .9 1.56l6.7 3.83a1.8 1.8 0 0 0 1.8 0" />
-        <path d="m3.75 7.55 8.25 4.7 8.25-4.7M12 21.5v-9.25" />
-        <path d="m15.4 17.6 1.9 1.9 3.5-3.7" />
-      </svg>
-    ),
+    Icon: Package,
   },
 ];
 
@@ -97,8 +77,8 @@ function StepItem({
           border: "1.5px solid var(--warm-sand)",
         }}
       >
-        <span className="step-icon w-6 h-6 sm:w-7 sm:h-7 transition-colors duration-450 group-hover:text-gold" style={{ color: "var(--espresso)" }}>
-          {step.icon}
+        <span className="step-icon w-6 h-6 sm:w-7 sm:h-7 transition-all duration-450 group-hover:scale-110" style={{ color: "var(--espresso)" }}>
+          <step.Icon size={28} weight="light" />
         </span>
       </div>
 
@@ -304,16 +284,6 @@ export default function CaraPemesanan() {
       </div>
 
       <style jsx>{`
-        .step-icon svg {
-          width: 100%;
-          height: 100%;
-          stroke: currentColor;
-          stroke-width: 1.25;
-          vector-effect: non-scaling-stroke;
-          fill: none;
-          stroke-linecap: round;
-          stroke-linejoin: round;
-        }
         .step:hover .marker {
           border-color: var(--gold) !important;
           box-shadow: 0 10px 30px rgba(184, 145, 70, 0.18);
