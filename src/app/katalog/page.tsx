@@ -69,10 +69,21 @@ function ProductCard({ product, index }: { product: Product; index: number }) {
       >
       {/* Image */}
       <div className="relative aspect-[4/5] overflow-hidden" style={{ background: "#e8dfd1" }}>
+        {/* Color gradient fallback (visible if image fails) */}
         <div
           className="absolute inset-0 transition-transform duration-500 group-hover:scale-[1.03]"
           style={{
             background: `linear-gradient(135deg, ${colorMap[product.colors[0]] || "#e8dfd1"}44, ${colorMap[product.colors[1]] || "#d4c5a9"}44)`,
+          }}
+        />
+        {/* Actual product image */}
+        <img
+          src={product.media[0]?.src || product.image}
+          alt={product.name}
+          className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+          loading="lazy"
+          onError={(e) => {
+            (e.target as HTMLImageElement).style.display = "none";
           }}
         />
         {/* Tag */}
