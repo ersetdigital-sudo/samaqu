@@ -287,6 +287,7 @@ export default function KatalogPage() {
   const [sort, setSort] = useState<"newest" | "az" | "popular">("newest");
   const [showFilters, setShowFilters] = useState(false);
   const [visibleCount, setVisibleCount] = useState(12);
+  const [searchQuery, setSearchQuery] = useState("");
 
   /* Reset sub-filters when category changes */
   useEffect(() => {
@@ -311,28 +312,40 @@ export default function KatalogPage() {
     if (selectedSeries) {
       result = result.filter((p) => p.series === selectedSeries);
     }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(
+        (p) =>
+          p.name.toLowerCase().includes(q) ||
+          p.category.toLowerCase().includes(q) ||
+          (p.kain && p.kain.toLowerCase().includes(q)) ||
+          (p.series && p.series.toLowerCase().includes(q))
+      );
+    }
 
     if (sort === "az") {
       result.sort((a, b) => a.name.localeCompare(b.name));
     }
 
     return result;
-  }, [category, selectedKain, selectedColor, selectedSeries, sort]);
+  }, [category, selectedKain, selectedColor, selectedSeries, sort, searchQuery]);
 
   const visible = filtered.slice(0, visibleCount);
   const hasMore = visibleCount < filtered.length;
 
   const activeFilters = [
+    searchQuery.trim() && { type: "search" as const, label: `"${searchQuery}"`, clear: () => { setSearchQuery(""); setVisibleCount(12); } },
     selectedKain && { type: "kain" as const, label: `Kain: ${selectedKain}`, clear: () => setSelectedKain(null) },
     selectedColor && { type: "color" as const, label: selectedColor, clear: () => setSelectedColor(null) },
     selectedSeries && { type: "series" as const, label: `Series: ${selectedSeries}`, clear: () => setSelectedSeries(null) },
-  ].filter((f): f is { type: "kain" | "color" | "series"; label: string; clear: () => void } => Boolean(f));
+  ].filter((f): f is { type: "search" | "kain" | "color" | "series"; label: string; clear: () => void } => Boolean(f));
 
   function resetAll() {
     setCategory("Semua");
     setSelectedKain(null);
     setSelectedColor(null);
     setSelectedSeries(null);
+    setSearchQuery("");
     setVisibleCount(12);
   }
 
@@ -380,6 +393,49 @@ export default function KatalogPage() {
               Temukan busana muslim premium yang sesuai dengan gaya dan kebutuhan Anda.
             </motion.p>
           </motion.div>
+        </div>
+      </div>
+
+      {/* ── Search Bar ── */}
+      <div className="max-w-[1200px] mx-auto px-5 sm:px-8 mb-6">
+        <div className="max-w-md ml-auto relative">
+          <div className="absolute left-0 top-1/2 -translate-y-1/2 pointer-events-none">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke={searchQuery ? "var(--gold)" : "var(--warm-sand)"}
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="transition-colors duration-200"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <path d="M21 21l-4.35-4.35" />
+            </svg>
+          </div>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setVisibleCount(12);
+            }}
+            placeholder="Cari jubah, thobe, koko..."
+            className="w-full pl-9 pr-4 py-3 text-[14px] font-ui outline-none transition-all duration-200"
+            style={{
+              background: "transparent",
+              borderBottom: "1px solid rgba(216,196,168,.4)",
+              color: "var(--espresso)",
+            }}
+            onFocus={(e) => {
+              e.currentTarget.style.borderBottomColor = "var(--gold)";
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.borderBottomColor = "rgba(216,196,168,.4)";
+            }}
+          />
         </div>
       </div>
 
