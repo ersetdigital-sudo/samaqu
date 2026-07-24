@@ -50,7 +50,7 @@ export default function Footer() {
               className="text-sm max-w-xs leading-[1.75] font-ui"
               style={{ color: "var(--sand)" }}
             >
-              Busana muslim pria premium — anggun dalam kesederhanaan.
+              Busana muslim pria premium. Kualitas terbaik, harga yang Anda tentukan sendiri.
             </p>
           </div>
           <nav
