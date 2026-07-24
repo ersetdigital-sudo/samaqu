@@ -284,12 +284,9 @@ export default function Garansi() {
                 }}
               >
                 Jaminan
-                <img
-                  src="/logo.svg"
-                  alt="SAMAQU"
-                  className="block mt-1 h-[0.5em] sm:h-[0.55em] w-auto"
-                  style={{ filter: "sepia(1) saturate(4) hue-rotate(10deg) brightness(0.7)" }}
-                />
+                <span className="block italic" style={{ color: "var(--gold)" }}>
+                  SAMAQU
+                </span>
               </motion.h2>
 
               <motion.p
