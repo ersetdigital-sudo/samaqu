@@ -391,10 +391,10 @@ export default function KatalogPage() {
   return (
     <section className="min-h-screen" style={{ background: "var(--cream)" }}>
       {/* ── Page Header ── */}
-      <div className="pt-28 sm:pt-32 lg:pt-36 pb-10 sm:pb-14">
+      <div className="pt-28 sm:pt-32 lg:pt-36 pb-12 sm:pb-16">
         <div className="max-w-[1200px] mx-auto px-5 sm:px-8">
           {/* Breadcrumb */}
-          <nav className="mb-6 sm:mb-8" aria-label="Breadcrumb">
+          <nav className="mb-8 sm:mb-10" aria-label="Breadcrumb">
             <ol className="flex items-center gap-2 text-[12px] font-ui" style={{ color: "var(--stone)" }}>
               <li><a href="/" className="hover:text-gold transition-colors">Home</a></li>
               <li>/</li>
@@ -436,7 +436,7 @@ export default function KatalogPage() {
       </div>
 
       {/* ── Search Bar ── */}
-      <div className="max-w-[1200px] mx-auto px-5 sm:px-8 mb-6">
+      <div className="max-w-[1200px] mx-auto px-5 sm:px-8 mb-8 sm:mb-10">
         <div className="max-w-md ml-auto relative">
           <div className="absolute left-0 top-1/2 -translate-y-1/2 pointer-events-none">
             <svg
@@ -486,10 +486,9 @@ export default function KatalogPage() {
         }}
       >
         <div className="max-w-[1200px] mx-auto px-5 sm:px-8">
-          {/* Category tabs + filter button */}
-          <div className="flex items-center gap-3 py-6 sm:py-8 overflow-x-auto scrollbar-hide">
-            {/* Category pills */}
-            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          {/* Row 1: Category pills — scrollable */}
+          <div className="py-5 sm:py-6 overflow-x-auto scrollbar-hide">
+            <div className="flex items-center gap-2.5 sm:gap-3">
               {(["Semua", ...allCategories] as const).map((cat) => (
                 <button
                   key={cat}
@@ -497,7 +496,7 @@ export default function KatalogPage() {
                     setCategory(cat);
                     setVisibleCount(12);
                   }}
-                  className="relative px-3.5 sm:px-4 py-2 text-[12px] sm:text-[13px] tracking-[0.06em] font-ui font-medium rounded-full transition-all duration-300 whitespace-nowrap"
+                  className="relative px-4 sm:px-5 py-2.5 text-[12px] sm:text-[13px] tracking-[0.06em] font-ui font-medium rounded-full transition-all duration-300 whitespace-nowrap"
                   style={{
                     background: category === cat ? "var(--espresso)" : "transparent",
                     color: category === cat ? "var(--cream)" : "var(--coffee)",
@@ -508,14 +507,14 @@ export default function KatalogPage() {
                 </button>
               ))}
             </div>
+          </div>
 
-            {/* Spacer */}
-            <div className="flex-1" />
-
+          {/* Row 2: Filter + Sort — always visible, no scroll */}
+          <div className="flex items-center justify-between pb-5 sm:pb-6">
             {/* Filter button */}
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2 px-3.5 py-2 text-[12px] font-ui rounded-full transition-all duration-200 shrink-0"
+              className="flex items-center gap-2 px-4 py-2.5 text-[12px] font-ui rounded-full transition-all duration-200"
               style={{
                 border: `1px solid ${showFilters ? "var(--espresso)" : "rgba(201,183,156,.3)"}`,
                 background: showFilters ? "var(--espresso)" : "transparent",
@@ -527,11 +526,11 @@ export default function KatalogPage() {
             </button>
 
             {/* Sort */}
-            <div className="relative shrink-0">
+            <div className="relative">
               <select
                 value={sort}
                 onChange={(e) => setSort(e.target.value as typeof sort)}
-                className="appearance-none px-3.5 py-2 pr-8 text-[12px] font-ui rounded-full cursor-pointer transition-all duration-200"
+                className="appearance-none px-4 py-2.5 pr-9 text-[12px] font-ui rounded-full cursor-pointer transition-all duration-200"
                 style={{
                   border: "1px solid rgba(201,183,156,.3)",
                   background: "transparent",
@@ -542,7 +541,7 @@ export default function KatalogPage() {
                 <option value="az">Nama A-Z</option>
                 <option value="popular">Terpopuler</option>
               </select>
-              <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--stone)" }} />
+              <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--stone)" }} />
             </div>
           </div>
 
