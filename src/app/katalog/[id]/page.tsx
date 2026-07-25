@@ -255,26 +255,41 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       </div>
 
       {/* ═══════════════════════════════════════
-          MOBILE STICKY FOOTER
+          MOBILE STICKY BOTTOM BAR
       ═══════════════════════════════════════ */}
-      <div className="md:hidden fixed bottom-0 inset-x-0 z-40 px-4 pb-4 pt-3" style={{ background: "linear-gradient(to top, var(--cream) 70%, transparent)" }}>
-        <div className="flex gap-2">
-          <a href={checkoutLink(product, selectedSize, selectedColor, qty, notes)}
-            className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl text-[11px] tracking-[0.06em] uppercase font-ui font-semibold transition-all duration-300 active:scale-[0.98]"
-            style={{ background: "var(--espresso)", color: "white", boxShadow: "0 6px 20px -6px rgba(45,33,27,.3)" }}>
-            <ShoppingBag size={15} strokeWidth={1.5} />
-            <span>Beli Sekarang</span>
-          </a>
-          <a href={waLink(product, selectedSize, selectedColor, qty, notes)} target="_blank" rel="noopener"
-            className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl text-[11px] tracking-[0.06em] uppercase font-ui font-semibold transition-all duration-300 active:scale-[0.98]"
-            style={{ background: "var(--gold)", color: "white", boxShadow: "0 6px 20px -6px rgba(184,145,70,.4)" }}>
-            <MessageCircle size={15} strokeWidth={1.5} />
-            <span>WhatsApp</span>
-          </a>
+      <div className="md:hidden fixed bottom-0 inset-x-0 z-40"
+        style={{ background: "var(--cream)", borderTop: "1px solid rgba(201,183,156,.18)", boxShadow: "0 -6px 24px -6px rgba(42,33,27,.1)" }}>
+        <div className="px-4 pt-3 pb-4">
+          {/* Price row */}
+          <div className="flex items-end justify-between mb-3">
+            <div>
+              <p className="text-[10px] font-ui tracking-wide uppercase" style={{ color: "var(--stone)" }}>Total</p>
+              <p className="text-[1.4rem] font-semibold leading-tight"
+                style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--gold)" }}>
+                Rp {(product.price * qty).toLocaleString("id-ID")}
+              </p>
+            </div>
+            <p className="text-[10px] font-ui" style={{ color: "var(--stone)" }}>
+              {selectedSize}{selectedColor !== "-" && ` / ${selectedColor}`}
+              {qty > 1 && ` × ${qty}`}
+            </p>
+          </div>
+          {/* Action buttons */}
+          <div className="flex gap-2">
+            <a href={checkoutLink(product, selectedSize, selectedColor, qty, notes)}
+              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[11px] tracking-[0.06em] uppercase font-ui font-semibold transition-all duration-300 active:scale-[0.98]"
+              style={{ background: "var(--espresso)", color: "white" }}>
+              <ShoppingBag size={15} strokeWidth={1.5} />
+              <span>Beli Sekarang</span>
+            </a>
+            <a href={waLink(product, selectedSize, selectedColor, qty, notes)} target="_blank" rel="noopener"
+              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[11px] tracking-[0.06em] uppercase font-ui font-semibold transition-all duration-300 active:scale-[0.98]"
+              style={{ background: "var(--gold)", color: "white" }}>
+              <MessageCircle size={15} strokeWidth={1.5} />
+              <span>WhatsApp</span>
+            </a>
+          </div>
         </div>
-        <p className="text-center text-[11px] font-ui font-semibold mt-2" style={{ color: "var(--gold)" }}>
-          Rp {(product.price * qty).toLocaleString("id-ID")}
-        </p>
       </div>
 
       {/* ═══════════════════════════════════════
