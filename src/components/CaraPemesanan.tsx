@@ -1,36 +1,19 @@
 "use client";
 
-import { useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, useInView, Variants } from "framer-motion";
 import { CoatHanger, Ruler, ChatCircle, Package } from "@phosphor-icons/react";
+import { supabase } from "@/lib/supabase";
 
-/* ─── Data ─── */
-const steps = [
-  {
-    num: "01",
-    title: "Pilih Produk",
-    desc: "Jelajahi katalog dan tentukan koleksi favoritmu — dari Thobe hingga Vest.",
-    Icon: CoatHanger,
-  },
-  {
-    num: "02",
-    title: "Cek Ukuran",
-    desc: "Gunakan panduan size kami agar potongan pas dan nyaman dikenakan.",
-    Icon: Ruler,
-  },
-  {
-    num: "03",
-    title: "Chat Admin",
-    desc: "Hubungi admin via WhatsApp untuk konfirmasi ketersediaan dan pemesanan.",
-    Icon: ChatCircle,
-  },
-  {
-    num: "04",
-    title: "Selesai",
-    desc: "Bayar, pesanan diproses, dan busana pilihanmu segera dalam perjalanan.",
-    Icon: Package,
-  },
+/* ─── Default Data ─── */
+const DEFAULT_STEPS = [
+  { title: "Pilih Produk", desc: "Jelajahi katalog dan tentukan koleksi favoritmu — dari Thobe hingga Vest.", Icon: CoatHanger },
+  { title: "Cek Ukuran", desc: "Gunakan panduan size kami agar potongan pas dan nyaman dikenakan.", Icon: Ruler },
+  { title: "Chat Admin", desc: "Hubungi admin via WhatsApp untuk konfirmasi ketersediaan dan pemesanan.", Icon: ChatCircle },
+  { title: "Selesai", desc: "Bayar, pesanan diproses, dan busana pilihanmu segera dalam perjalanan.", Icon: Package },
 ];
+
+const STEP_ICONS = [CoatHanger, Ruler, ChatCircle, Package];
 
 const waHref =
   "https://wa.me/6281234567890?text=" +
@@ -157,6 +140,24 @@ function TimelineTrack() {
 
 /* ─── Section ─── */
 export default function CaraPemesanan() {
+  const [steps, setSteps] = useState(DEFAULT_STEPS);
+
+  useEffect(() => {
+    async function fetchSteps() {
+      try {
+        const { data } = await supabase.from("order_steps").select("*").eq("is_active", true).order("step_number");
+        if (data && data.length > 0) {
+          setSteps(data.map((s: { title: string; description: string }, i: number) => ({
+            title: s.title,
+            desc: s.description,
+            Icon: STEP_ICONS[i] || Package,
+          })));
+        }
+      } catch { /* use defaults */ }
+    }
+    fetchSteps();
+  }, []);
+
   return (
     <section
       id="cara-pesan"
