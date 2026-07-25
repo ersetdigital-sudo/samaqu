@@ -169,6 +169,19 @@ export default function AdminPage() {
     setActivePanel("dashboard");
   }
 
+  async function handleDeleteProduct(id: string, name: string) {
+    if (!confirm(`Yakin ingin menghapus "${name}"?\n\nTindakan ini tidak bisa dibatalkan.`)) return;
+    try {
+      await supabase.from("product_images").delete().eq("product_id", id);
+      await supabase.from("product_variants").delete().eq("product_id", id);
+      await supabase.from("products").delete().eq("id", id);
+      setProducts((prev) => prev.filter((p) => p.id !== id));
+    } catch (err) {
+      console.error("Delete error:", err);
+      alert("Gagal menghapus produk");
+    }
+  }
+
   function go(panel: Panel) {
     setActivePanel(panel);
     setSidebarOpen(false);
@@ -525,10 +538,11 @@ export default function AdminPage() {
                         </div>
                         <div className="p-4">
                           <h3 className="font-semibold text-sm leading-snug">{p.name}</h3>
-                          <p className="italic text-lg mt-2" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--gold)" }}>{money(p.price)}</p>
+                          <p className="text-[15px] sm:text-base font-ui font-medium mt-2" style={{ color: "var(--gold)" }}>Rp {p.price.toLocaleString("id-ID")}</p>
                           <div className="flex gap-2 mt-3">
                             <a href={`/admin/produk/edit/${p.id}`} className="flex-1 text-xs font-semibold py-2 rounded-lg text-center" style={{ border: "1px solid rgba(64,50,37,.15)" }}>Edit</a>
                             <a href={`/admin/produk/detail/${p.id}`} className="flex-1 text-xs font-semibold py-2 rounded-lg text-center text-white" style={{ background: "var(--gold)" }}>Detail</a>
+                            <button onClick={() => handleDeleteProduct(p.id, p.name)} className="flex-1 text-xs font-semibold py-2 rounded-lg text-center" style={{ border: "1px solid rgba(231,76,60,.3)", color: "#e74c3c" }}>Hapus</button>
                           </div>
                         </div>
                       </div>
