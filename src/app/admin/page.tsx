@@ -10,7 +10,7 @@ import {
 import { supabase } from "@/lib/supabase";
 import type { User } from "@supabase/supabase-js";
 import ConfirmModal from "@/components/ConfirmModal";
-import { ToastProvider, useToast } from "@/components/AdminToast";
+import { useToast } from "@/components/AdminToast";
 
 type Panel = "dashboard" | "orders" | "products" | "customers" | "content" | "settings";
 
@@ -725,9 +725,5 @@ function StatCard({ icon, label, value, badge, badgeColor }: { icon: React.React
 }
 
 export default function AdminPage() {
-  return (
-    <ToastProvider>
-      <AdminPageInner />
-    </ToastProvider>
-  );
+  return <AdminPageInner />;
 }
