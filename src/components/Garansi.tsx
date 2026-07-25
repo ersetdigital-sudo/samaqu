@@ -1,7 +1,9 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion, Variants } from "framer-motion";
 import Image from "next/image";
+import { supabase } from "@/lib/supabase";
 
 /* ─── Animation ─── */
 const containerVariants: Variants = {
@@ -149,8 +151,34 @@ const trustBadges = [
   },
 ];
 
+/* ─── Default data ─── */
+const DEFAULT_GUARANTEES = [
+  { title: "Kualitas Terjamin", description: "Setiap produk melewati pengecekan jahitan dan bahan sebelum dikirim." },
+  { title: "Pengiriman Aman", description: "Dikemas rapi dan terlindungi agar sampai dalam kondisi sempurna." },
+  { title: "Layanan Ramah", description: "Admin siap membantu dari pemilihan size hingga setelah pembelian." },
+];
+
+const DEFAULT_BADGES = ["100% Original", "Packing Aman", "Support Personal"];
+
 /* ─── Section ─── */
 export default function Garansi() {
+  const [guarantees, setGuarantees] = useState(DEFAULT_GUARANTEES);
+  const [badges, setBadges] = useState(DEFAULT_BADGES);
+
+  useEffect(() => {
+    async function fetch() {
+      try {
+        const [gRes, bRes] = await Promise.all([
+          supabase.from("garansi_items").select("*").eq("is_active", true).order("display_order"),
+          supabase.from("trust_badges").select("*").eq("is_active", true).order("display_order"),
+        ]);
+        if (gRes.data && gRes.data.length > 0) setGuarantees(gRes.data.map((g: { title: string; description: string }) => ({ title: g.title, description: g.description })));
+        if (bRes.data && bRes.data.length > 0) setBadges(bRes.data.map((b: { label: string }) => b.label));
+      } catch { /* use defaults */ }
+    }
+    fetch();
+  }, []);
+
   return (
     <section
       id="jaminan"
