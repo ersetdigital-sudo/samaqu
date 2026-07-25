@@ -78,55 +78,28 @@ export default function AdminPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Check if user is admin by querying admins table
-  const checkAdminRole = useCallback(async (userId: string): Promise<string | null> => {
-    try {
-      const { data, error } = await supabase
-        .from("admins")
-        .select("role")
-        .eq("user_id", userId)
-        .single();
-      if (error || !data) return null;
-      return data.role;
-    } catch {
-      return null;
-    }
-  }, []);
-
-  // Listen to auth state changes
+  // Check session once on mount
   useEffect(() => {
     let mounted = true;
-
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!mounted) return;
-      const u = session?.user ?? null;
-      setUser(u);
-      if (u) {
-        const r = await checkAdminRole(u.id);
-        if (mounted) setRole(r);
-      } else {
-        if (mounted) setRole(null);
+    async function init() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!mounted) return;
+        const u = session?.user ?? null;
+        setUser(u);
+        if (u) {
+          const { data } = await supabase.from("admins").select("role").eq("user_id", u.id).single();
+          if (mounted) setRole(data?.role || null);
+        }
+      } catch (err) {
+        console.error("Auth init error:", err);
+      } finally {
+        if (mounted) setAuthLoading(false);
       }
-      if (mounted) setAuthLoading(false);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (!mounted) return;
-      const u = session?.user ?? null;
-      setUser(u);
-      if (u) {
-        const r = await checkAdminRole(u.id);
-        if (mounted) setRole(r);
-      } else {
-        if (mounted) setRole(null);
-      }
-    });
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
-  }, [checkAdminRole]);
+    }
+    init();
+    return () => { mounted = false; };
+  }, []);
 
   // Fetch data when authenticated
   useEffect(() => {
@@ -151,13 +124,24 @@ export default function AdminPage() {
   async function handleAuth(e: React.FormEvent) {
     e.preventDefault();
     setAuthError("");
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) setAuthError(error.message);
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      setAuthError(error.message);
+      return;
+    }
+    // Set user and check role
+    const u = data.user;
+    setUser(u);
+    const { data: adminData } = await supabase.from("admins").select("role").eq("user_id", u.id).single();
+    setRole(adminData?.role || null);
   }
 
   async function handleLogout() {
     await supabase.auth.signOut();
     setUser(null);
+    setRole(null);
+    setOrders([]);
+    setProducts([]);
     setActivePanel("dashboard");
   }
 
