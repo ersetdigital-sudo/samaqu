@@ -162,15 +162,14 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         <ArrowLeft size={18} style={{ color: "var(--espresso)" }} />
       </button>
 
-      {/* ═══ BREADCRUMB (mobile + desktop) ═══ */}
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-2 sm:pt-6 sm:pb-3 lg:pt-8 lg:pb-4">
-        <Breadcrumb extra={[{ label: product.name }]} />
-      </div>
-
       {/* ═══════════════════════════════════════
           MOBILE LAYOUT (max-md)
       ═══════════════════════════════════════ */}
       <div className="md:hidden">
+        {/* Breadcrumb mobile */}
+        <div className="max-w-7xl mx-auto px-4 pt-4 pb-2">
+          <Breadcrumb extra={[{ label: product.name }]} />
+        </div>
         {/* Gallery carousel */}
         <div className="relative pt-2 pb-4">
           <div
@@ -329,8 +328,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       {/* ═══════════════════════════════════════
           DESKTOP LAYOUT (md+)
       ═══════════════════════════════════════ */}
-      <div className="hidden md:block max-w-7xl mx-auto px-6 lg:px-8 pt-8 pb-20">
-        <div className="grid grid-cols-2 gap-10 lg:gap-14">
+      <div className="hidden md:block max-w-7xl mx-auto px-6 lg:px-8 pt-24 pb-20">
+        <Breadcrumb extra={[{ label: product.name }]} />
+        <div className="mt-8 grid grid-cols-2 gap-10 lg:gap-14">
           {/* Gallery */}
           <div className="flex gap-3">
             {media.length > 1 && (
