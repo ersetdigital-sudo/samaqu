@@ -78,6 +78,7 @@ export default function AdminPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   // All useMemo/useCallback hooks
   const stats = useMemo(() => ({
@@ -334,19 +335,15 @@ export default function AdminPage() {
           ))}
         </nav>
 
-        <div className="px-4 pb-6 space-y-3">
+        <div className="px-4 pb-6">
           <div className="rounded-xl p-4" style={{ background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.08)" }}>
             <p className="text-sm font-semibold" style={{ color: "var(--cream)" }}>Butuh bantuan?</p>
             <p className="text-xs mt-1 leading-relaxed" style={{ color: "#9f9690" }}>Hubungi tim support SAMAQU untuk panduan pengelolaan.</p>
             <button className="mt-3 w-full text-sm font-semibold py-2 rounded-lg text-white" style={{ background: "linear-gradient(135deg, var(--gold), #96742f)" }}>Pusat Bantuan</button>
           </div>
-          <div className="px-1">
-            <p className="text-xs mb-0.5 font-medium" style={{ color: "#d4ccc2" }}>{role === "admin" ? "Admin" : "User"}</p>
-            <p className="text-xs mb-2 truncate" style={{ color: "#9f9690" }}>{user.email}</p>
-            <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 text-sm font-medium py-2.5 rounded-lg transition-all hover:bg-[rgba(255,255,255,.08)]" style={{ color: "#d4ccc2", border: "1px solid rgba(255,255,255,.1)" }}>
-              <LogOut size={16} strokeWidth={1.6} />
-              Keluar
-            </button>
+          <div className="mt-3 px-1">
+            <p className="text-xs font-medium" style={{ color: "#d4ccc2" }}>{role === "admin" ? "Admin" : "User"}</p>
+            <p className="text-xs truncate" style={{ color: "#9f9690" }}>{user.email}</p>
           </div>
         </div>
       </aside>
@@ -375,17 +372,31 @@ export default function AdminPage() {
                 <Bell size={20} strokeWidth={1.7} style={{ color: "var(--espresso)" }} />
                 <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full" style={{ background: "var(--gold)" }} />
               </button>
-              <div className="flex items-center gap-2.5 pl-2">
-                <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-semibold text-sm" style={{ background: "linear-gradient(135deg, var(--gold), #96742f)" }}>
-                  {user.email?.charAt(0).toUpperCase() || "A"}
-                </div>
-                <div className="hidden sm:block leading-tight">
-                  <p className="text-sm font-semibold" style={{ color: "var(--espresso)" }}>{user.email?.split("@")[0] || "Admin"}</p>
-                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>{role === "admin" ? "Admin" : "User"} · {user.email}</p>
-                </div>
-                <button onClick={handleLogout} className="p-2 rounded-lg transition-colors hover:bg-[var(--bg-tertiary)]" title="Keluar">
-                  <LogOut size={18} strokeWidth={1.6} style={{ color: "var(--text-muted)" }} />
+              <div className="relative">
+                <button onClick={() => setProfileOpen(!profileOpen)} className="flex items-center gap-2.5 pl-2 cursor-pointer">
+                  <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-semibold text-sm" style={{ background: "linear-gradient(135deg, var(--gold), #96742f)" }}>
+                    {user.email?.charAt(0).toUpperCase() || "A"}
+                  </div>
+                  <div className="hidden sm:block leading-tight text-left">
+                    <p className="text-sm font-semibold" style={{ color: "var(--espresso)" }}>{user.email?.split("@")[0] || "Admin"}</p>
+                    <p className="text-xs" style={{ color: "var(--text-muted)" }}>{role === "admin" ? "Admin" : "User"}</p>
+                  </div>
                 </button>
+                {profileOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setProfileOpen(false)} />
+                    <div className="absolute right-0 top-full mt-2 w-64 rounded-xl z-50 overflow-hidden" style={{ background: "white", border: "1px solid rgba(64,50,37,.1)", boxShadow: "0 12px 40px -8px rgba(45,33,27,.2)" }}>
+                      <div className="px-4 py-3" style={{ borderBottom: "1px solid rgba(64,50,37,.06)" }}>
+                        <p className="text-sm font-semibold" style={{ color: "var(--espresso)" }}>{user.email?.split("@")[0] || "Admin"}</p>
+                        <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>{user.email}</p>
+                      </div>
+                      <button onClick={handleLogout} className="w-full flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors hover:bg-[var(--bg-secondary)]" style={{ color: "var(--espresso)" }}>
+                        <LogOut size={16} strokeWidth={1.6} />
+                        Keluar
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
