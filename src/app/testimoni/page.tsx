@@ -249,7 +249,6 @@ export default function TestimoniPage() {
                   border: "1px solid #d4ccc0",
                   background: "white",
                   color: "#5a4a3f",
-                  focusRingColor: "rgba(181,140,74,.4)",
                 }}
               >
                 <option value="all">Semua Produk</option>
