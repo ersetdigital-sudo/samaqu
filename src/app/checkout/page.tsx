@@ -206,28 +206,58 @@ function CheckoutContent() {
       {/* ═══ 2-COLUMN LAYOUT (desktop) / SINGLE COLUMN (mobile) ═══ */}
       <div className="max-w-6xl mx-auto px-4 lg:px-12 xl:px-16 pt-6 pb-28 lg:pb-12">
         {/* ── Step Indicator ── */}
-        <div className="flex items-center justify-center lg:justify-start gap-0 mb-8 lg:mb-12 px-1">
-          {steps.map((s, i) => (
-            <div key={s.num} className="flex items-center">
-              <div className="flex flex-col items-center">
-                <div className="w-7 h-7 lg:w-10 lg:h-10 rounded-full flex items-center justify-center text-[10px] lg:text-[12px] font-ui font-semibold transition-all duration-500"
-                  style={{
-                    background: step >= s.num ? "var(--gold)" : "transparent",
-                    color: step >= s.num ? "white" : "var(--stone)",
-                    border: `1.5px solid ${step >= s.num ? "var(--gold)" : "rgba(201,183,156,.35)"}`,
-                    boxShadow: step === s.num ? "0 4px 18px -3px rgba(184,145,70,.45), 0 0 0 4px rgba(181,140,74,.1)" : "none",
-                  }}>
-                  {step > s.num ? <Check size={13} strokeWidth={2.5} /> : s.num}
+        <div className="flex items-center justify-center lg:justify-start gap-0 mb-8 lg:mb-12 lg:pl-2">
+          {steps.map((s, i) => {
+            const isCompleted = step > s.num;
+            const isActive = step === s.num;
+            const isPending = step < s.num;
+            return (
+              <div key={s.num} className="flex items-center">
+                <div className="flex flex-col items-center">
+                  {/* Circle */}
+                  <div
+                    className="relative w-7 h-7 lg:w-10 lg:h-10 rounded-full flex items-center justify-center text-[10px] lg:text-[12px] font-ui font-semibold transition-all duration-300"
+                    style={{
+                      background: isCompleted ? "var(--gold)" : isActive ? "var(--gold)" : "transparent",
+                      color: isCompleted || isActive ? "white" : "rgba(201,183,156,.55)",
+                      border: `1.5px solid ${isCompleted || isActive ? "var(--gold)" : "rgba(201,183,156,.3)"}`,
+                      boxShadow: isActive
+                        ? "0 4px 18px -3px rgba(184,145,70,.5), 0 0 0 4px rgba(181,140,74,.12)"
+                        : isCompleted
+                        ? "0 2px 8px -2px rgba(184,145,70,.25)"
+                        : "none",
+                    }}>
+                    {/* Glow ring for active */}
+                    {isActive && (
+                      <span className="absolute inset-0 rounded-full animate-pulse" style={{ boxShadow: "0 0 0 6px rgba(181,140,74,.08)" }} />
+                    )}
+                    {isCompleted ? <Check size={14} strokeWidth={2.5} /> : s.num}
+                  </div>
+                  {/* Label */}
+                  <span
+                    className="text-[8px] lg:text-[10px] font-ui mt-1.5 whitespace-nowrap hidden sm:block transition-colors duration-300"
+                    style={{ color: isCompleted ? "rgba(181,140,74,.65)" : isActive ? "var(--gold)" : "rgba(201,183,156,.5)" }}>
+                    {s.label}
+                  </span>
                 </div>
-                <span className="text-[8px] lg:text-[10px] font-ui mt-1.5 whitespace-nowrap hidden sm:block"
-                  style={{ color: step >= s.num ? "var(--gold)" : "var(--stone)" }}>{s.label}</span>
+                {/* Connector line */}
+                {i < steps.length - 1 && (
+                  <div className="relative w-5 lg:w-14 h-px mx-0.5 lg:mx-2 mt-0 lg:-mt-4">
+                    {/* Background (always visible) */}
+                    <div className="absolute inset-0 rounded-full" style={{ background: "rgba(201,183,156,.2)" }} />
+                    {/* Fill (animated progress) */}
+                    <div
+                      className="absolute inset-y-0 left-0 rounded-full transition-all duration-500 ease-out"
+                      style={{
+                        background: "var(--gold)",
+                        width: isCompleted ? "100%" : isActive ? "50%" : "0%",
+                      }}
+                    />
+                  </div>
+                )}
               </div>
-              {i < steps.length - 1 && (
-                <div className="w-5 lg:w-12 h-px mx-0.5 lg:mx-1.5 mt-0 lg:-mt-4 transition-all duration-500"
-                  style={{ background: step > s.num ? "var(--gold)" : "rgba(201,183,156,.25)" }} />
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* ── Grid: Left (content) + Right (summary, desktop only) ── */}
