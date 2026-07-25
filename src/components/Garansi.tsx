@@ -299,7 +299,7 @@ export default function Garansi() {
                   {g.title}
                 </h3>
                 <p className="mt-1.5 text-[13px] leading-relaxed font-ui" style={{ color: "var(--text-secondary)" }}>
-                  {g.desc}
+                  {g.description}
                 </p>
               </motion.div>
             ))}
@@ -321,7 +321,7 @@ export default function Garansi() {
                   {g.title}
                 </h3>
                 <p className="mt-2 text-sm leading-relaxed font-ui" style={{ color: "var(--text-secondary)" }}>
-                  {g.desc}
+                  {g.description}
                 </p>
               </motion.div>
             ))}
