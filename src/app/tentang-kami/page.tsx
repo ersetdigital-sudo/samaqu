@@ -73,12 +73,12 @@ export default function TentangKamiPage() {
       </div>
 
       {/* ═══ BREADCRUMB ═══ */}
-      <div className="max-w-[1200px] mx-auto px-5 sm:px-8 lg:px-14 py-6 sm:py-8">
+      <div className="max-w-[1200px] mx-auto px-5 sm:px-8 lg:px-14" style={{ paddingTop: "40px", paddingBottom: "32px" }}>
         <Breadcrumb />
       </div>
 
       {/* ═══ CERITA BRAND ═══ */}
-      <div className="mt-2 sm:mt-4 py-16 sm:py-24 lg:py-28">
+      <div className="py-16 sm:py-24 lg:py-28">
         <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-14">
           <div className="grid md:grid-cols-2 gap-10 md:gap-16 items-center">
             {/* Image */}

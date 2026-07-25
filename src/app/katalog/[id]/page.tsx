@@ -167,11 +167,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       ═══════════════════════════════════════ */}
       <div className="md:hidden">
         {/* Breadcrumb mobile */}
-        <div className="max-w-7xl mx-auto px-4 pt-4 pb-2">
+        <div className="max-w-7xl mx-auto px-4" style={{ paddingTop: "40px", marginBottom: "32px" }}>
           <Breadcrumb extra={[{ label: product.name }]} />
         </div>
         {/* Gallery carousel */}
-        <div className="relative pt-2 pb-4">
+        <div className="relative pb-4">
           <div
             ref={carouselRef}
             className="flex overflow-x-auto gap-3 scrollbar-hide px-4 scroll-smooth"
@@ -328,9 +328,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       {/* ═══════════════════════════════════════
           DESKTOP LAYOUT (md+)
       ═══════════════════════════════════════ */}
-      <div className="hidden md:block max-w-7xl mx-auto px-6 lg:px-8 pt-24 pb-20">
-        <Breadcrumb extra={[{ label: product.name }]} />
-        <div className="mt-8 grid grid-cols-2 gap-10 lg:gap-14">
+      <div className="hidden md:block max-w-7xl mx-auto px-6 lg:px-8 pb-20" style={{ paddingTop: "40px" }}>
+        <div style={{ marginBottom: "32px" }}>
+          <Breadcrumb extra={[{ label: product.name }]} />
+        </div>
+        <div className="grid grid-cols-2 gap-10 lg:gap-14">
           {/* Gallery */}
           <div className="flex gap-3">
             {media.length > 1 && (
