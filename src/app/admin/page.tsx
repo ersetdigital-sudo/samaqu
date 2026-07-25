@@ -80,13 +80,17 @@ export default function AdminPage() {
 
   // Check if user is admin by querying admins table
   async function checkAdminRole(userId: string): Promise<string | null> {
-    const { data, error } = await supabase
-      .from("admins")
-      .select("role")
-      .eq("user_id", userId)
-      .single();
-    if (error || !data) return null;
-    return data.role;
+    try {
+      const { data, error } = await supabase
+        .from("admins")
+        .select("role")
+        .eq("user_id", userId)
+        .single();
+      if (error || !data) return null;
+      return data.role;
+    } catch {
+      return null;
+    }
   }
 
   // Listen to auth state changes
@@ -119,18 +123,23 @@ export default function AdminPage() {
 
   // Fetch data when authenticated
   useEffect(() => {
-    if (!user) return;
+    if (!user || role !== "admin") return;
     async function fetchData() {
-      const [ordersRes, productsRes] = await Promise.all([
-        supabase.from("orders").select("*, order_items(product_name, quantity)").order("created_at", { ascending: false }).limit(50),
-        supabase.from("products").select("*").order("created_at", { ascending: true }),
-      ]);
-      if (ordersRes.data) setOrders(ordersRes.data as Order[]);
-      if (productsRes.data) setProducts(productsRes.data as Product[]);
-      setLoading(false);
+      try {
+        const [ordersRes, productsRes] = await Promise.all([
+          supabase.from("orders").select("*, order_items(product_name, quantity)").order("created_at", { ascending: false }).limit(50),
+          supabase.from("products").select("*").order("created_at", { ascending: true }),
+        ]);
+        if (ordersRes.data) setOrders(ordersRes.data as Order[]);
+        if (productsRes.data) setProducts(productsRes.data as Product[]);
+      } catch (err) {
+        console.error("Error fetching data:", err);
+      } finally {
+        setLoading(false);
+      }
     }
     fetchData();
-  }, [user]);
+  }, [user, role]);
 
   async function handleAuth(e: React.FormEvent) {
     e.preventDefault();
