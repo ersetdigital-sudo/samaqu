@@ -206,7 +206,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
             {product.name}
           </h1>
-          <p className="text-[1.3rem] font-semibold mb-4" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--gold)" }}>
+          <p className="text-[1.3rem] font-ui font-semibold mb-4" style={{ color: "var(--gold)" }}>
             Rp {product.price.toLocaleString("id-ID")}
           </p>
           <p className="text-[13px] leading-relaxed font-ui mb-5" style={{ color: "rgba(42,33,27,.8)" }}>
@@ -283,8 +283,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           <div className="flex items-end justify-between mb-3">
             <div>
               <p className="text-[10px] font-ui tracking-wide uppercase" style={{ color: "var(--stone)" }}>Total</p>
-              <p className="text-[1.4rem] font-semibold leading-tight"
-                style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--gold)" }}>
+              <p className="text-[1.4rem] font-ui font-semibold leading-tight"
+                style={{ color: "var(--gold)" }}>
                 Rp {(product.price * qty).toLocaleString("id-ID")}
               </p>
             </div>
@@ -378,7 +378,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
               {product.name}
             </h1>
-            <p className="text-[20px] sm:text-[22px] font-semibold mb-6" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--gold)" }}>
+            <p className="text-[20px] sm:text-[22px] font-ui font-semibold mb-6" style={{ color: "var(--gold)" }}>
               Rp {product.price.toLocaleString("id-ID")}
             </p>
             <p className="text-sm sm:text-[15px] leading-relaxed font-ui mb-8" style={{ color: "rgba(42,33,27,.8)" }}>

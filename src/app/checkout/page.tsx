@@ -507,26 +507,21 @@ function Field({ label, required, error, children }: { label: string; required?:
   );
 }
 
-/* Serif font for price numbers */
+/* Sans-serif font for price numbers */
 function PriceText({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <span className={className} style={{ fontFamily: "var(--font-cormorant), Georgia, serif", fontWeight: 600, color: "var(--gold)" }}>{children}</span>;
+  return <span className={`${className} font-ui`} style={{ fontWeight: 600, color: "var(--gold)" }}>{children}</span>;
 }
 
 /* Inline price (within text) */
 function PriceInline({ children }: { children: React.ReactNode }) {
-  return <span style={{ fontFamily: "var(--font-cormorant), Georgia, serif", fontWeight: 600, color: "var(--gold)" }}>{children}</span>;
+  return <span className="font-ui" style={{ fontWeight: 600, color: "var(--gold)" }}>{children}</span>;
 }
 
 function SummaryLine({ label, value, bold, italic, valueColor }: { label: string; value: string; bold?: boolean; italic?: boolean; valueColor?: string }) {
-  const isPrice = value.startsWith("Rp");
   return (
     <div className="flex justify-between">
       <span className="text-[12px] font-ui" style={{ color: "var(--coffee)" }}>{label}</span>
-      {isPrice ? (
-        <span className="text-[12px]" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", fontWeight: bold ? 700 : 500, color: valueColor || (bold ? "var(--gold)" : "var(--espresso)"), fontStyle: italic ? "italic" : "normal" }}>{value}</span>
-      ) : (
-        <span className="text-[12px] font-ui" style={{ color: valueColor || (bold ? "var(--gold)" : "var(--espresso)"), fontWeight: bold ? 700 : 500, fontStyle: italic ? "italic" : "normal" }}>{value}</span>
-      )}
+      <span className="text-[12px] font-ui" style={{ color: valueColor || (bold ? "var(--gold)" : "var(--espresso)"), fontWeight: bold ? 700 : 500, fontStyle: italic ? "italic" : "normal" }}>{value}</span>
     </div>
   );
 }
