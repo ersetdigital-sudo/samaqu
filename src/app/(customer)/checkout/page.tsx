@@ -1,21 +1,23 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Minus, Plus, Lock, ShieldCheck } from "lucide-react";
+import { Minus, Plus, Lock } from "lucide-react";
 import { getProductById } from "@/lib/katalog-data";
 import { useCart } from "@/lib/cart-context";
+import { supabase } from "@/lib/supabase";
 
 const shippingOptions = [
   { id: "reguler", label: "Reguler", estimate: "3–5 hari kerja", price: 25000 },
   { id: "express", label: "Ekspres", estimate: "1–2 hari kerja", price: 45000 },
 ];
 
-const paymentOptions = [
-  { id: "bank", label: "Transfer Bank (BCA / Mandiri / BSI)", icon: "bank" },
-  { id: "qris", label: "QRIS / E-Wallet (GoPay, OVO, Dana)", icon: "qris" },
-  { id: "cod", label: "Bayar di Tempat (COD)", icon: "cod" },
-];
+interface PaymentMethod {
+  id: string;
+  bank_name: string;
+  account_name: string;
+  account_number: string;
+}
 
 function PaymentIcon({ type }: { type: string }) {
   if (type === "bank") return <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2" /><line x1="2" y1="10" x2="22" y2="10" /></svg>;
@@ -54,6 +56,14 @@ function CheckoutContent() {
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderNumber, setOrderNumber] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+
+  // Fetch payment methods from Supabase
+  useEffect(() => {
+    supabase.from("payment_methods").select("*").eq("is_active", true).order("display_order").then(({ data }) => {
+      if (data && data.length > 0) setPaymentMethods(data);
+    }).catch(() => {});
+  }, []);
 
   if (!product) {
     return (
@@ -131,8 +141,8 @@ function CheckoutContent() {
       }
 
       clearCart();
-      setOrderNumber(data.orderNumber || generateOrderNumber());
-      setOrderPlaced(true);
+      const orderNum = data.orderNumber || generateOrderNumber();
+      router.push(`/checkout/success?order=${orderNum}`);
     } catch (err) {
       console.error("Checkout error:", err);
       setErrors({ submit: "Terjadi kesalahan. Silakan coba lagi." });
@@ -142,23 +152,7 @@ function CheckoutContent() {
   }
 
   if (orderPlaced) {
-    return (
-      <section className="min-h-screen flex items-center justify-center" style={{ background: "var(--cream)" }}>
-        <div className="text-center max-w-md mx-auto px-6">
-          <div className="w-20 h-20 rounded-full mx-auto mb-6 flex items-center justify-center" style={{ background: "rgba(181,140,74,.1)", border: "2px solid var(--gold)" }}>
-            <ShieldCheck size={36} style={{ color: "var(--gold)" }} />
-          </div>
-          <h1 className="text-[1.8rem] font-semibold mb-2" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>Pesanan Terkirim!</h1>
-          <p className="text-sm font-ui mb-6" style={{ color: "var(--stone)" }}>Pesanan Anda sedang menunggu verifikasi admin.</p>
-          <div className="inline-block px-6 py-3 rounded-xl mb-6" style={{ background: "rgba(181,140,74,.08)", border: "1px dashed rgba(181,140,74,.3)" }}>
-            <p className="text-[10px] tracking-[0.15em] uppercase font-ui mb-0.5" style={{ color: "var(--stone)" }}>Nomor Order</p>
-            <p className="text-[18px] font-ui font-bold tracking-wider" style={{ color: "var(--gold)" }}>{orderNumber}</p>
-          </div>
-          <p className="text-[13px] font-ui mb-8" style={{ color: "var(--stone)" }}>Admin akan memverifikasi pesanan Anda dalam <span className="font-semibold" style={{ color: "var(--gold)" }}>1×24 jam</span> pada hari kerja.</p>
-          <button onClick={() => router.push("/katalog")} className="w-full py-3.5 rounded-xl text-[12px] tracking-[0.08em] uppercase font-ui font-semibold transition-all duration-300 hover:scale-[1.01]" style={{ background: "var(--gold)", color: "white", boxShadow: "0 6px 20px -6px rgba(184,145,74,.4)" }}>Lanjut Belanja</button>
-        </div>
-      </section>
-    );
+    return null; // Redirect to success page handled in handleSubmit
   }
 
   return (
@@ -282,16 +276,41 @@ function CheckoutContent() {
               <h2 className="text-xl sm:text-2xl italic" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Metode Pembayaran</h2>
             </div>
             <div className="space-y-3">
-              {paymentOptions.map((opt) => (
-                <label key={opt.id} className="pay-option relative rounded-xl p-4 flex items-center gap-3 cursor-pointer transition-all" style={{ border: `1.5px solid ${payment === opt.id ? "var(--gold)" : "rgba(64,50,37,.25)"}`, background: payment === opt.id ? "white" : "transparent" }}>
-                  <input type="radio" name="pay" value={opt.id} checked={payment === opt.id} onChange={() => setPayment(opt.id)} className="sr-only" />
-                  <span className="relative w-4 h-4 rounded-full border-2 flex-shrink-0" style={{ borderColor: payment === opt.id ? "var(--gold)" : "var(--text-muted)" }}>
-                    {payment === opt.id && <span className="absolute inset-[3px] rounded-full" style={{ background: "var(--gold)" }} />}
+              {paymentMethods.length > 0 ? paymentMethods.map((pm) => (
+                <label key={pm.id} className="pay-option relative rounded-xl p-4 flex items-center gap-3 cursor-pointer transition-all" style={{ border: `1.5px solid ${payment === pm.id ? "var(--gold)" : "rgba(64,50,37,.25)"}`, background: payment === pm.id ? "white" : "transparent" }}>
+                  <input type="radio" name="pay" value={pm.id} checked={payment === pm.id} onChange={() => setPayment(pm.id)} className="sr-only" />
+                  <span className="relative w-4 h-4 rounded-full border-2 flex-shrink-0" style={{ borderColor: payment === pm.id ? "var(--gold)" : "var(--text-muted)" }}>
+                    {payment === pm.id && <span className="absolute inset-[3px] rounded-full" style={{ background: "var(--gold)" }} />}
                   </span>
-                  <span className="text-[13px] sm:text-sm font-ui font-medium flex-1" style={{ color: "var(--espresso)" }}>{opt.label}</span>
-                  <PaymentIcon type={opt.icon} />
+                  <span className="text-[13px] sm:text-sm font-ui font-medium flex-1" style={{ color: "var(--espresso)" }}>Transfer Bank ({pm.bank_name})</span>
+                  <PaymentIcon type="bank" />
                 </label>
-              ))}
+              )) : (
+                <label className="pay-option relative rounded-xl p-4 flex items-center gap-3 cursor-pointer transition-all" style={{ border: `1.5px solid ${payment === "bank" ? "var(--gold)" : "rgba(64,50,37,.25)"}`, background: payment === "bank" ? "white" : "transparent" }}>
+                  <input type="radio" name="pay" value="bank" checked={payment === "bank"} onChange={() => setPayment("bank")} className="sr-only" />
+                  <span className="relative w-4 h-4 rounded-full border-2 flex-shrink-0" style={{ borderColor: payment === "bank" ? "var(--gold)" : "var(--text-muted)" }}>
+                    {payment === "bank" && <span className="absolute inset-[3px] rounded-full" style={{ background: "var(--gold)" }} />}
+                  </span>
+                  <span className="text-[13px] sm:text-sm font-ui font-medium flex-1" style={{ color: "var(--espresso)" }}>Transfer Bank</span>
+                  <PaymentIcon type="bank" />
+                </label>
+              )}
+              <label className="pay-option relative rounded-xl p-4 flex items-center gap-3 cursor-pointer transition-all" style={{ border: `1.5px solid ${payment === "qris" ? "var(--gold)" : "rgba(64,50,37,.25)"}`, background: payment === "qris" ? "white" : "transparent" }}>
+                <input type="radio" name="pay" value="qris" checked={payment === "qris"} onChange={() => setPayment("qris")} className="sr-only" />
+                <span className="relative w-4 h-4 rounded-full border-2 flex-shrink-0" style={{ borderColor: payment === "qris" ? "var(--gold)" : "var(--text-muted)" }}>
+                  {payment === "qris" && <span className="absolute inset-[3px] rounded-full" style={{ background: "var(--gold)" }} />}
+                </span>
+                <span className="text-[13px] sm:text-sm font-ui font-medium flex-1" style={{ color: "var(--espresso)" }}>QRIS / E-Wallet</span>
+                <PaymentIcon type="qris" />
+              </label>
+              <label className="pay-option relative rounded-xl p-4 flex items-center gap-3 cursor-pointer transition-all" style={{ border: `1.5px solid ${payment === "cod" ? "var(--gold)" : "rgba(64,50,37,.25)"}`, background: payment === "cod" ? "white" : "transparent" }}>
+                <input type="radio" name="pay" value="cod" checked={payment === "cod"} onChange={() => setPayment("cod")} className="sr-only" />
+                <span className="relative w-4 h-4 rounded-full border-2 flex-shrink-0" style={{ borderColor: payment === "cod" ? "var(--gold)" : "var(--text-muted)" }}>
+                  {payment === "cod" && <span className="absolute inset-[3px] rounded-full" style={{ background: "var(--gold)" }} />}
+                </span>
+                <span className="text-[13px] sm:text-sm font-ui font-medium flex-1" style={{ color: "var(--espresso)" }}>Bayar di Tempat (COD)</span>
+                <PaymentIcon type="cod" />
+              </label>
             </div>
           </section>
 
@@ -305,7 +324,7 @@ function CheckoutContent() {
           {/* Submit (mobile) */}
           <div className="lg:hidden">
             <button type="submit" disabled={submitting} className="btn-primary w-full rounded-xl py-4 text-sm font-ui font-medium tracking-wide transition-all" style={{ background: "var(--espresso)", color: "var(--cream)" }}>
-              {submitting ? "Memproses…" : "Selesaikan Pesanan"}
+              {submitting ? "Memproses…" : "Buat Pesanan"}
             </button>
           </div>
         </form>
@@ -361,7 +380,7 @@ function CheckoutContent() {
 
             {/* Submit (desktop) */}
             <button onClick={handleSubmit} disabled={submitting} className="btn-primary hidden lg:block w-full mt-5 sm:mt-6 rounded-xl py-4 text-sm font-ui font-medium tracking-wide transition-all" style={{ background: "var(--espresso)", color: "var(--cream)" }}>
-              {submitting ? "Memproses…" : "Selesaikan Pesanan"}
+              {submitting ? "Memproses…" : "Buat Pesanan"}
             </button>
 
             <div className="flex items-center justify-center gap-2 mt-3 sm:mt-4 text-[11px] sm:text-xs font-ui" style={{ color: "var(--text-muted)" }}>
