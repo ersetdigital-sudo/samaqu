@@ -6,7 +6,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft,
   User,
-  Phone,
   MapPin,
   Truck,
   CreditCard,
@@ -19,6 +18,10 @@ import {
   FileImage,
   X,
   ChevronDown,
+  Minus,
+  Plus,
+  Tag,
+  Trash2,
 } from "lucide-react";
 import { getProductById, colorMap } from "@/lib/katalog-data";
 
@@ -47,8 +50,6 @@ const bankInfo = {
   number: "1234567890123",
   name: "PT Samaqu Digital",
 };
-
-const qrisPlaceholder = "/images/qris-samaqu.png";
 
 /* ── Generate order number ── */
 function generateOrderNumber(): string {
@@ -95,7 +96,13 @@ function CheckoutContent() {
   const [step, setStep] = useState(1);
   const [direction, setDirection] = useState(1);
 
-  /* ── Step 1 state ── */
+  /* ── Step 1 state (Cart) ── */
+  const [qty, setQty] = useState(qtyParam || 1);
+  const [promoCode, setPromoCode] = useState("");
+  const [promoApplied, setPromoApplied] = useState(false);
+  const [promoError, setPromoError] = useState("");
+
+  /* ── Step 2 state (Data Pemesan) ── */
   const [nama, setNama] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [alamat, setAlamat] = useState("");
@@ -103,20 +110,23 @@ function CheckoutContent() {
   const [provinsiVal, setProvinsiVal] = useState("");
   const [kodepos, setKodepos] = useState("");
   const [shipping, setShipping] = useState("reguler");
-  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  /* ── Step 2 state ── */
+  /* ── Step 3 state (Pembayaran) ── */
   const [copied, setCopied] = useState(false);
+  const [copiedRek, setCopiedRek] = useState(false);
 
-  /* ── Step 3 state ── */
+  /* ── Step 4 state (Upload) ── */
   const [buktiFile, setBuktiFile] = useState<File | null>(null);
   const [buktiPreview, setBuktiPreview] = useState<string>("");
   const [catatanTambahan, setCatatanTambahan] = useState("");
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  /* ── Step 4 state ── */
+  /* ── Step 5 state (Konfirmasi) ── */
   const [orderNumber] = useState(generateOrderNumber);
+
+  /* ── Validation errors ── */
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   if (!product) {
     return (
@@ -135,14 +145,14 @@ function CheckoutContent() {
 
   const selectedColor = colorParam || product.colors[0] || "-";
   const selectedSize = sizeParam;
-  const qty = qtyParam || 1;
   const notes = notesParam;
   const shippingCost = shippingOptions.find((s) => s.id === shipping)?.price || 0;
   const subtotal = product.price * qty;
-  const total = subtotal + shippingCost;
+  const discount = promoApplied ? Math.round(subtotal * 0.1) : 0;
+  const total = subtotal - discount + shippingCost;
 
   /* ── Validation ── */
-  function validateStep1(): boolean {
+  function validateStep2(): boolean {
     const e: Record<string, string> = {};
     if (!nama.trim()) e.nama = "Nama lengkap wajib diisi";
     if (!whatsapp.trim()) e.whatsapp = "No. WhatsApp wajib diisi";
@@ -155,7 +165,7 @@ function CheckoutContent() {
     return Object.keys(e).length === 0;
   }
 
-  function validateStep3(): boolean {
+  function validateStep4(): boolean {
     if (!buktiFile) {
       setErrors({ bukti: "Bukti bayar wajib diupload" });
       return false;
@@ -166,10 +176,10 @@ function CheckoutContent() {
 
   /* ── Navigation ── */
   function nextStep() {
-    if (step === 1 && !validateStep1()) return;
-    if (step === 3 && !validateStep3()) return;
+    if (step === 2 && !validateStep2()) return;
+    if (step === 4 && !validateStep4()) return;
     setDirection(1);
-    setStep((s) => Math.min(s + 1, 4));
+    setStep((s) => Math.min(s + 1, 5));
   }
 
   function prevStep() {
@@ -177,11 +187,35 @@ function CheckoutContent() {
     setStep((s) => Math.max(s - 1, 1));
   }
 
-  /* ── Copy nominal ── */
+  /* ── Promo code ── */
+  function applyPromo() {
+    const code = promoCode.trim().toUpperCase();
+    if (code === "SAMAQU10" || code === "DISC10") {
+      setPromoApplied(true);
+      setPromoError("");
+    } else {
+      setPromoApplied(false);
+      setPromoError("Kode promo tidak valid");
+    }
+  }
+
+  function removePromo() {
+    setPromoCode("");
+    setPromoApplied(false);
+    setPromoError("");
+  }
+
+  /* ── Copy helpers ── */
   function copyNominal() {
     navigator.clipboard.writeText(total.toLocaleString("id-ID"));
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  }
+
+  function copyRekening() {
+    navigator.clipboard.writeText(bankInfo.number);
+    setCopiedRek(true);
+    setTimeout(() => setCopiedRek(false), 2000);
   }
 
   /* ── File handling ── */
@@ -212,10 +246,11 @@ function CheckoutContent() {
   }
 
   const steps = [
-    { num: 1, label: "Data & Pengiriman" },
-    { num: 2, label: "Ringkasan & Bayar" },
-    { num: 3, label: "Upload Bukti" },
-    { num: 4, label: "Konfirmasi" },
+    { num: 1, label: "Ringkasan" },
+    { num: 2, label: "Data & Alamat" },
+    { num: 3, label: "Bayar" },
+    { num: 4, label: "Upload Bukti" },
+    { num: 5, label: "Selesai" },
   ];
 
   return (
@@ -239,27 +274,27 @@ function CheckoutContent() {
 
       <div className="max-w-2xl mx-auto px-4 pt-4 pb-28">
         {/* ═══ PROGRESS INDICATOR ═══ */}
-        <div className="flex items-center justify-center gap-0 mb-8 px-2">
+        <div className="flex items-center justify-center gap-0 mb-8 px-1">
           {steps.map((s, i) => (
             <div key={s.num} className="flex items-center">
               <div className="flex flex-col items-center">
                 <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-ui font-semibold transition-all duration-500"
+                  className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-[10px] sm:text-[11px] font-ui font-semibold transition-all duration-500"
                   style={{
                     background: step >= s.num ? "var(--gold)" : "transparent",
                     color: step >= s.num ? "white" : "var(--stone)",
                     border: `1.5px solid ${step >= s.num ? "var(--gold)" : "rgba(201,183,156,.35)"}`,
                     boxShadow: step === s.num ? "0 4px 14px -3px rgba(184,145,70,.35)" : "none",
                   }}>
-                  {step > s.num ? <Check size={14} strokeWidth={2.5} /> : s.num}
+                  {step > s.num ? <Check size={13} strokeWidth={2.5} /> : s.num}
                 </div>
-                <span className="text-[9px] font-ui mt-1.5 whitespace-nowrap hidden sm:block"
+                <span className="text-[8px] sm:text-[9px] font-ui mt-1 whitespace-nowrap hidden sm:block"
                   style={{ color: step >= s.num ? "var(--gold)" : "var(--stone)" }}>
                   {s.label}
                 </span>
               </div>
               {i < steps.length - 1 && (
-                <div className="w-8 sm:w-12 h-px mx-1 mt-0 sm:-mt-4 transition-all duration-500"
+                <div className="w-5 sm:w-10 h-px mx-0.5 sm:mx-1 mt-0 sm:-mt-4 transition-all duration-500"
                   style={{ background: step > s.num ? "var(--gold)" : "rgba(201,183,156,.25)" }} />
               )}
             </div>
@@ -277,30 +312,179 @@ function CheckoutContent() {
             exit="exit"
             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}>
 
-            {/* ── STEP 1: Data Pemesan & Pengiriman ── */}
+            {/* ══════════════════════════════════════
+                STEP 1: RINGKASAN PESANAN (CART)
+            ══════════════════════════════════════ */}
             {step === 1 && (
+              <div>
+                {/* Title */}
+                <div className="mb-5">
+                  <h2 className="text-[1.4rem] font-semibold"
+                    style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
+                    Ringkasan Pesanan
+                  </h2>
+                  <p className="text-[12px] font-ui mt-0.5" style={{ color: "var(--stone)" }}>1 produk</p>
+                </div>
+
+                {/* ── Cart Item Card (wireframe: cart-item) ── */}
+                <div className="p-3 sm:p-4 rounded-xl mb-4"
+                  style={{ background: "rgba(255,255,255,.65)", border: "1px solid rgba(201,183,156,.15)", boxShadow: "0 1px 3px rgba(42,33,27,.04)" }}>
+                  <div className="flex gap-3">
+                    {/* Product image */}
+                    <div className="w-[72px] h-[72px] sm:w-20 sm:h-20 rounded-xl overflow-hidden shrink-0" style={{ background: "#e8dfd1" }}>
+                      <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                    </div>
+                    {/* Details */}
+                    <div className="flex-1 min-w-0">
+                      {/* Title row: name + delete */}
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-[13px] sm:text-[14px] font-ui font-semibold leading-tight truncate"
+                          style={{ color: "var(--espresso)" }}>
+                          {product.name}
+                        </p>
+                        <button onClick={() => router.push("/katalog")}
+                          className="shrink-0 p-1 rounded transition-all hover:scale-110" style={{ color: "var(--stone)" }}>
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                      {/* Color & size */}
+                      <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                        {selectedColor !== "-" && (
+                          <span className="flex items-center gap-1 text-[11px] font-ui" style={{ color: "var(--coffee)" }}>
+                            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: colorMap[selectedColor] || "#ccc", border: "1px solid rgba(42,33,27,.1)" }} />
+                            {selectedColor}
+                          </span>
+                        )}
+                        {selectedColor !== "-" && <span className="text-[10px]" style={{ color: "var(--clay)" }}>|</span>}
+                        <span className="text-[11px] font-ui" style={{ color: "var(--coffee)" }}>UK {selectedSize}</span>
+                      </div>
+                      {/* Unit price */}
+                      <p className="text-[11px] font-ui mt-0.5" style={{ color: "var(--stone)" }}>
+                        Rp {product.price.toLocaleString("id-ID")} / pcs
+                      </p>
+                      {/* Qty controls + subtotal row */}
+                      <div className="flex items-center justify-between mt-2">
+                        {/* Qty pill (wireframe: qty-controls) */}
+                        <div className="inline-flex items-center gap-0 rounded-full"
+                          style={{ background: "var(--cream)", border: "1px solid rgba(201,183,156,.2)", padding: "2px 4px" }}>
+                          <button onClick={() => setQty((q) => Math.max(1, q - 1))}
+                            className="w-7 h-7 rounded-full flex items-center justify-center transition-all active:scale-90"
+                            style={{ color: "var(--espresso)" }}>
+                            <Minus size={13} />
+                          </button>
+                          <span className="w-7 text-center text-[13px] font-ui font-semibold" style={{ color: "var(--espresso)" }}>
+                            {qty}
+                          </span>
+                          <button onClick={() => setQty((q) => q + 1)}
+                            className="w-7 h-7 rounded-full flex items-center justify-center transition-all active:scale-90"
+                            style={{ color: "var(--espresso)" }}>
+                            <Plus size={13} />
+                          </button>
+                        </div>
+                        {/* Subtotal */}
+                        <p className="text-[14px] font-ui font-bold" style={{ color: "var(--gold)" }}>
+                          Rp {(product.price * qty).toLocaleString("id-ID")}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Notes */}
+                  {notes && (
+                    <div className="mt-2 pt-2" style={{ borderTop: "1px solid rgba(201,183,156,.1)" }}>
+                      <p className="text-[11px] font-ui italic" style={{ color: "var(--text-muted)" }}>
+                        &ldquo;{notes}&rdquo;
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* ── Promo Code (wireframe: promo-code-section) ── */}
+                <div className="p-4 rounded-xl mb-5"
+                  style={{ background: "rgba(255,255,255,.65)", border: "1px solid rgba(201,183,156,.15)" }}>
+                  {promoApplied ? (
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "rgba(181,140,74,.1)" }}>
+                          <Tag size={16} style={{ color: "var(--gold)" }} />
+                        </div>
+                        <div>
+                          <p className="text-[11px] font-ui" style={{ color: "var(--stone)" }}>Kode Promo</p>
+                          <p className="text-[13px] font-ui font-semibold" style={{ color: "var(--gold)" }}>{promoCode.toUpperCase()}</p>
+                        </div>
+                      </div>
+                      <button onClick={removePromo}
+                        className="text-[12px] font-ui font-medium px-3 py-1.5 rounded-full transition-all hover:scale-105"
+                        style={{ color: "var(--gold)", border: "1px solid rgba(181,140,74,.3)" }}>
+                        Hapus
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 flex items-center gap-2 px-3 py-2.5 rounded-lg"
+                        style={{ border: `1px solid ${promoError ? "#e74c3c" : "rgba(201,183,156,.25)"}`, background: "rgba(248,245,241,.5)" }}>
+                        <Tag size={15} style={{ color: "var(--clay)" }} />
+                        <input type="text" value={promoCode} onChange={(e) => { setPromoCode(e.target.value); setPromoError(""); }}
+                          placeholder="Masukkan kode promo"
+                          className="flex-1 text-[13px] font-ui bg-transparent outline-none"
+                          style={{ color: "var(--espresso)" }} />
+                      </div>
+                      <button onClick={applyPromo}
+                        className="px-4 py-2.5 rounded-lg text-[12px] font-ui font-semibold transition-all duration-200 hover:scale-105 shrink-0"
+                        style={{ background: "var(--espresso)", color: "white" }}>
+                        Pakai
+                      </button>
+                    </div>
+                  )}
+                  {promoError && (
+                    <p className="text-[11px] font-ui mt-1.5 ml-1" style={{ color: "#e74c3c" }}>{promoError}</p>
+                  )}
+                </div>
+
+                {/* ── Order Summary (wireframe: order-summary + total-section) ── */}
+                <div className="rounded-xl p-4 sm:p-5"
+                  style={{ background: "rgba(255,255,255,.5)", border: "1px solid rgba(201,183,156,.12)" }}>
+                  <div className="space-y-2.5">
+                    <SummaryLine label="Subtotal" value={`Rp ${subtotal.toLocaleString("id-ID")}`} />
+                    {promoApplied && (
+                      <SummaryLine label={`Diskon (${promoCode.toUpperCase()})`} value={`- Rp ${discount.toLocaleString("id-ID")}`} valueColor="var(--gold)" />
+                    )}
+                    <SummaryLine label={`Pengiriman ${shippingOptions.find((s) => s.id === shipping)?.label || "Reguler"}`} value={`Rp ${shippingCost.toLocaleString("id-ID")}`} />
+                  </div>
+                  <div className="h-px my-3.5" style={{ background: "rgba(201,183,156,.2)" }} />
+                  <div className="flex justify-between items-end">
+                    <span className="text-[11px] font-ui" style={{ color: "var(--stone)" }}>Total Pembayaran</span>
+                    <span className="text-[18px] sm:text-[20px] font-ui font-bold" style={{ color: "var(--gold)" }}>
+                      Rp {total.toLocaleString("id-ID")}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ══════════════════════════════════════
+                STEP 2: DATA PEMESAN & ALAMAT
+            ══════════════════════════════════════ */}
+            {step === 2 && (
               <div>
                 <SectionTitle icon={<User size={16} />} title="Data Pemesan" />
 
-                {/* Nama */}
                 <Field label="Nama Lengkap" required error={errors.nama}>
                   <input type="text" value={nama} onChange={(e) => setNama(e.target.value)}
                     placeholder="Masukkan nama lengkap"
-                    className="w-full px-4 py-3 text-[13px] font-ui rounded-sm outline-none transition-all duration-200 focus:border-[var(--gold)]"
-                    style={{ background: "transparent", border: `1px solid ${errors.nama ? "#e74c3c" : "rgba(201,183,156,.3)"}`, color: "var(--espresso)" }} />
+                    className="w-full px-4 py-3 text-[13px] font-ui rounded-lg outline-none transition-all duration-200 focus:border-[var(--gold)]"
+                    style={{ background: "rgba(255,255,255,.5)", border: `1px solid ${errors.nama ? "#e74c3c" : "rgba(201,183,156,.25)"}`, color: "var(--espresso)" }} />
                 </Field>
 
-                {/* WhatsApp */}
                 <Field label="No. WhatsApp" required error={errors.whatsapp}>
                   <div className="flex">
-                    <span className="px-3 py-3 text-[13px] font-ui rounded-l-sm shrink-0 flex items-center"
-                      style={{ background: "rgba(201,183,156,.08)", border: `1px solid ${errors.whatsapp ? "#e74c3c" : "rgba(201,183,156,.3)"}`, borderRight: "none", color: "var(--stone)" }}>
+                    <span className="px-3 py-3 text-[13px] font-ui rounded-l-lg shrink-0 flex items-center"
+                      style={{ background: "rgba(201,183,156,.06)", border: `1px solid ${errors.whatsapp ? "#e74c3c" : "rgba(201,183,156,.25)"}`, borderRight: "none", color: "var(--stone)" }}>
                       +62
                     </span>
                     <input type="tel" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)}
                       placeholder="81234567890"
-                      className="w-full px-4 py-3 text-[13px] font-ui rounded-r-sm outline-none transition-all duration-200 focus:border-[var(--gold)]"
-                      style={{ background: "transparent", border: `1px solid ${errors.whatsapp ? "#e74c3c" : "rgba(201,183,156,.3)"}`, color: "var(--espresso)" }} />
+                      className="w-full px-4 py-3 text-[13px] font-ui rounded-r-lg outline-none transition-all duration-200 focus:border-[var(--gold)]"
+                      style={{ background: "rgba(255,255,255,.5)", border: `1px solid ${errors.whatsapp ? "#e74c3c" : "rgba(201,183,156,.25)"}`, color: "var(--espresso)" }} />
                   </div>
                 </Field>
 
@@ -308,44 +492,42 @@ function CheckoutContent() {
 
                 <SectionTitle icon={<MapPin size={16} />} title="Alamat Pengiriman" />
 
-                {/* Alamat */}
                 <Field label="Alamat Lengkap" required error={errors.alamat}>
                   <textarea value={alamat} onChange={(e) => setAlamat(e.target.value)}
                     placeholder="Jalan, No. RT/RW, Kelurahan"
                     rows={3}
-                    className="w-full px-4 py-3 text-[13px] font-ui rounded-sm outline-none transition-all duration-200 focus:border-[var(--gold)] resize-none"
-                    style={{ background: "transparent", border: `1px solid ${errors.alamat ? "#e74c3c" : "rgba(201,183,156,.3)"}`, color: "var(--espresso)" }} />
+                    className="w-full px-4 py-3 text-[13px] font-ui rounded-lg outline-none transition-all duration-200 focus:border-[var(--gold)] resize-none"
+                    style={{ background: "rgba(255,255,255,.5)", border: `1px solid ${errors.alamat ? "#e74c3c" : "rgba(201,183,156,.25)"}`, color: "var(--espresso)" }} />
                 </Field>
 
-                {/* Kota */}
                 <Field label="Kota / Kabupaten" required error={errors.kota}>
                   <input type="text" value={kota} onChange={(e) => setKota(e.target.value)}
                     placeholder="Contoh: Kota Bandung"
-                    className="w-full px-4 py-3 text-[13px] font-ui rounded-sm outline-none transition-all duration-200 focus:border-[var(--gold)]"
-                    style={{ background: "transparent", border: `1px solid ${errors.kota ? "#e74c3c" : "rgba(201,183,156,.3)"}`, color: "var(--espresso)" }} />
+                    className="w-full px-4 py-3 text-[13px] font-ui rounded-lg outline-none transition-all duration-200 focus:border-[var(--gold)]"
+                    style={{ background: "rgba(255,255,255,.5)", border: `1px solid ${errors.kota ? "#e74c3c" : "rgba(201,183,156,.25)"}`, color: "var(--espresso)" }} />
                 </Field>
 
-                {/* Provinsi */}
-                <Field label="Provinsi" required error={errors.provinsi}>
-                  <div className="relative">
-                    <select value={provinsiVal} onChange={(e) => setProvinsiVal(e.target.value)}
-                      className="w-full px-4 py-3 text-[13px] font-ui rounded-sm outline-none appearance-none transition-all duration-200 focus:border-[var(--gold)]"
-                      style={{ background: "transparent", border: `1px solid ${errors.provinsi ? "#e74c3c" : "rgba(201,183,156,.3)"}`, color: provinsiVal ? "var(--espresso)" : "var(--stone)" }}>
-                      <option value="">Pilih provinsi</option>
-                      {provinsi.map((p) => <option key={p} value={p}>{p}</option>)}
-                    </select>
-                    <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--stone)" }} />
-                  </div>
-                </Field>
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Provinsi" required error={errors.provinsi}>
+                    <div className="relative">
+                      <select value={provinsiVal} onChange={(e) => setProvinsiVal(e.target.value)}
+                        className="w-full px-4 py-3 text-[13px] font-ui rounded-lg outline-none appearance-none transition-all duration-200 focus:border-[var(--gold)]"
+                        style={{ background: "rgba(255,255,255,.5)", border: `1px solid ${errors.provinsi ? "#e74c3c" : "rgba(201,183,156,.25)"}`, color: provinsiVal ? "var(--espresso)" : "var(--stone)" }}>
+                        <option value="">Pilih</option>
+                        {provinsi.map((p) => <option key={p} value={p}>{p}</option>)}
+                      </select>
+                      <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--stone)" }} />
+                    </div>
+                  </Field>
 
-                {/* Kode Pos */}
-                <Field label="Kode Pos" error={errors.kodepos}>
-                  <input type="text" value={kodepos} onChange={(e) => setKodepos(e.target.value.replace(/\D/g, "").slice(0, 5))}
-                    placeholder="12345"
-                    maxLength={5}
-                    className="w-full px-4 py-3 text-[13px] font-ui rounded-sm outline-none transition-all duration-200 focus:border-[var(--gold)]"
-                    style={{ background: "transparent", border: `1px solid ${errors.kodepos ? "#e74c3c" : "rgba(201,183,156,.3)"}`, color: "var(--espresso)" }} />
-                </Field>
+                  <Field label="Kode Pos" error={errors.kodepos}>
+                    <input type="text" value={kodepos} onChange={(e) => setKodepos(e.target.value.replace(/\D/g, "").slice(0, 5))}
+                      placeholder="12345"
+                      maxLength={5}
+                      className="w-full px-4 py-3 text-[13px] font-ui rounded-lg outline-none transition-all duration-200 focus:border-[var(--gold)]"
+                      style={{ background: "rgba(255,255,255,.5)", border: `1px solid ${errors.kodepos ? "#e74c3c" : "rgba(201,183,156,.25)"}`, color: "var(--espresso)" }} />
+                  </Field>
+                </div>
 
                 <div className="h-px my-6" style={{ background: "rgba(201,183,156,.15)" }} />
 
@@ -354,10 +536,10 @@ function CheckoutContent() {
                 <div className="flex flex-col gap-3">
                   {shippingOptions.map((opt) => (
                     <button key={opt.id} onClick={() => setShipping(opt.id)}
-                      className="w-full flex items-center gap-4 px-4 py-4 rounded-sm text-left transition-all duration-200"
+                      className="w-full flex items-center gap-4 px-4 py-4 rounded-xl text-left transition-all duration-200"
                       style={{
-                        border: `1.5px solid ${shipping === opt.id ? "var(--gold)" : "rgba(201,183,156,.25)"}`,
-                        background: shipping === opt.id ? "rgba(181,140,74,.04)" : "transparent",
+                        border: `1.5px solid ${shipping === opt.id ? "var(--gold)" : "rgba(201,183,156,.2)"}`,
+                        background: shipping === opt.id ? "rgba(181,140,74,.04)" : "rgba(255,255,255,.4)",
                       }}>
                       <div className="w-4 h-4 rounded-full shrink-0 flex items-center justify-center"
                         style={{ border: `2px solid ${shipping === opt.id ? "var(--gold)" : "rgba(201,183,156,.4)"}` }}>
@@ -376,130 +558,78 @@ function CheckoutContent() {
               </div>
             )}
 
-            {/* ── STEP 2: Ringkasan & Pembayaran ── */}
-            {step === 2 && (
+            {/* ══════════════════════════════════════
+                STEP 3: PEMBAYARAN
+            ══════════════════════════════════════ */}
+            {step === 3 && (
               <div>
-                <SectionTitle icon={<Package size={16} />} title="Ringkasan Pesanan" />
-
-                {/* Product card */}
-                <div className="flex gap-4 p-4 rounded-sm mb-4"
-                  style={{ background: "rgba(255,255,255,.6)", border: "1px solid rgba(201,183,156,.15)" }}>
-                  <div className="w-20 h-24 rounded-sm overflow-hidden shrink-0" style={{ background: "#e8dfd1" }}>
-                    <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[10px] tracking-[0.1em] uppercase font-ui mb-0.5" style={{ color: "var(--stone)" }}>
-                      {product.category}
-                    </p>
-                    <p className="text-[14px] font-ui font-semibold truncate" style={{ color: "var(--espresso)" }}>
-                      {product.name}
-                    </p>
-                    <div className="flex items-center gap-2 mt-1">
-                      {selectedColor !== "-" && (
-                        <span className="flex items-center gap-1 text-[11px] font-ui" style={{ color: "var(--coffee)" }}>
-                          <span className="w-2.5 h-2.5 rounded-full" style={{ background: colorMap[selectedColor] || "#ccc", border: "1px solid rgba(42,33,27,.1)" }} />
-                          {selectedColor}
-                        </span>
-                      )}
-                      <span className="text-[11px] font-ui" style={{ color: "var(--coffee)" }}>|</span>
-                      <span className="text-[11px] font-ui" style={{ color: "var(--coffee)" }}>UK {selectedSize}</span>
-                    </div>
-                    <p className="text-[11px] font-ui mt-0.5" style={{ color: "var(--stone)" }}>Qty: {qty}</p>
-                    {notes && <p className="text-[11px] font-ui mt-0.5 italic" style={{ color: "var(--text-muted)" }}>&ldquo;{notes}&rdquo;</p>}
-                  </div>
-                  <p className="text-[13px] font-ui font-semibold shrink-0" style={{ color: "var(--gold)" }}>
-                    Rp {subtotal.toLocaleString("id-ID")}
-                  </p>
-                </div>
-
-                {/* Cost breakdown */}
-                <div className="p-4 rounded-sm mb-6" style={{ background: "rgba(255,255,255,.4)", border: "1px solid rgba(201,183,156,.12)" }}>
-                  <div className="flex justify-between mb-2">
-                    <span className="text-[12px] font-ui" style={{ color: "var(--coffee)" }}>Subtotal</span>
-                    <span className="text-[12px] font-ui" style={{ color: "var(--espresso)" }}>Rp {subtotal.toLocaleString("id-ID")}</span>
-                  </div>
-                  <div className="flex justify-between mb-3">
-                    <span className="text-[12px] font-ui" style={{ color: "var(--coffee)" }}>
-                      Pengiriman {shippingOptions.find((s) => s.id === shipping)?.label}
-                    </span>
-                    <span className="text-[12px] font-ui" style={{ color: "var(--espresso)" }}>Rp {shippingCost.toLocaleString("id-ID")}</span>
-                  </div>
-                  <div className="h-px mb-3" style={{ background: "rgba(201,183,156,.2)" }} />
-                  <div className="flex justify-between items-center">
-                    <span className="text-[13px] font-ui font-semibold" style={{ color: "var(--espresso)" }}>Total</span>
-                    <span className="text-[16px] font-ui font-bold" style={{ color: "var(--gold)" }}>
-                      Rp {total.toLocaleString("id-ID")}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="h-px my-6" style={{ background: "rgba(201,183,156,.15)" }} />
-
                 <SectionTitle icon={<CreditCard size={16} />} title="Pembayaran" />
 
-                {/* Bank transfer */}
-                <div className="p-4 rounded-sm mb-4"
-                  style={{ background: "rgba(255,255,255,.6)", border: "1px solid rgba(201,183,156,.15)" }}>
-                  <p className="text-[10px] tracking-[0.1em] uppercase font-ui font-medium mb-3" style={{ color: "var(--stone)" }}>
+                {/* Bank transfer card */}
+                <div className="p-5 rounded-xl mb-4"
+                  style={{ background: "rgba(255,255,255,.65)", border: "1px solid rgba(201,183,156,.15)" }}>
+                  <p className="text-[10px] tracking-[0.12em] uppercase font-ui font-medium mb-4" style={{ color: "var(--stone)" }}>
                     Transfer Bank
                   </p>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <div className="flex justify-between">
                       <span className="text-[12px] font-ui" style={{ color: "var(--coffee)" }}>Bank</span>
-                      <span className="text-[12px] font-ui font-medium" style={{ color: "var(--espresso)" }}>{bankInfo.bank}</span>
+                      <span className="text-[13px] font-ui font-semibold" style={{ color: "var(--espresso)" }}>{bankInfo.bank}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-[12px] font-ui" style={{ color: "var(--coffee)" }}>No. Rekening</span>
                       <div className="flex items-center gap-2">
-                        <span className="text-[13px] font-ui font-semibold tracking-wide" style={{ color: "var(--espresso)" }}>{bankInfo.number}</span>
-                        <button onClick={() => { navigator.clipboard.writeText(bankInfo.number); }}
-                          className="w-6 h-6 rounded flex items-center justify-center transition-all hover:scale-110"
-                          style={{ color: "var(--gold)" }}>
-                          <Copy size={12} />
+                        <span className="text-[14px] font-ui font-bold tracking-wide" style={{ color: "var(--espresso)" }}>{bankInfo.number}</span>
+                        <button onClick={copyRekening}
+                          className="w-7 h-7 rounded-lg flex items-center justify-center transition-all hover:scale-110"
+                          style={{ background: copiedRek ? "var(--espresso)" : "rgba(181,140,74,.1)", color: copiedRek ? "white" : "var(--gold)" }}>
+                          {copiedRek ? <Check size={12} /> : <Copy size={12} />}
                         </button>
                       </div>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-[12px] font-ui" style={{ color: "var(--coffee)" }}>Atas Nama</span>
-                      <span className="text-[12px] font-ui font-medium" style={{ color: "var(--espresso)" }}>{bankInfo.name}</span>
+                      <span className="text-[13px] font-ui font-semibold" style={{ color: "var(--espresso)" }}>{bankInfo.name}</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Total highlight + copy */}
-                <div className="p-4 rounded-sm text-center"
-                  style={{ background: "rgba(181,140,74,.06)", border: "1px dashed rgba(181,140,74,.3)" }}>
-                  <p className="text-[11px] font-ui mb-1" style={{ color: "var(--stone)" }}>Total yang harus dibayar</p>
-                  <p className="text-[22px] font-ui font-bold mb-3" style={{ color: "var(--gold)" }}>
-                    Rp {total.toLocaleString("id-ID")}
-                  </p>
-                  <button onClick={copyNominal}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 text-[11px] font-ui font-medium rounded-sm transition-all duration-200 hover:scale-105"
-                    style={{ background: copied ? "var(--espresso)" : "var(--gold)", color: "white" }}>
-                    {copied ? <Check size={12} /> : <Copy size={12} />}
-                    {copied ? "Tersalin!" : "Copy Nominal"}
-                  </button>
-                </div>
-
-                {/* QRIS placeholder */}
-                <div className="mt-4 p-4 rounded-sm text-center"
+                {/* QRIS */}
+                <div className="p-5 rounded-xl text-center mb-5"
                   style={{ background: "rgba(255,255,255,.5)", border: "1px solid rgba(201,183,156,.12)" }}>
-                  <p className="text-[10px] tracking-[0.1em] uppercase font-ui font-medium mb-3" style={{ color: "var(--stone)" }}>
+                  <p className="text-[10px] tracking-[0.12em] uppercase font-ui font-medium mb-3" style={{ color: "var(--stone)" }}>
                     Atau Bayar via QRIS
                   </p>
-                  <div className="w-40 h-40 mx-auto rounded-lg flex items-center justify-center"
-                    style={{ background: "rgba(201,183,156,.08)", border: "1px dashed rgba(201,183,156,.25)" }}>
+                  <div className="w-36 h-36 mx-auto rounded-xl flex items-center justify-center"
+                    style={{ background: "rgba(201,183,156,.06)", border: "1px dashed rgba(201,183,156,.25)" }}>
                     <div className="text-center">
                       <FileImage size={28} style={{ color: "var(--clay)", margin: "0 auto" }} />
                       <p className="text-[10px] font-ui mt-1.5" style={{ color: "var(--stone)" }}>QRIS SAMAQU</p>
                     </div>
                   </div>
                 </div>
+
+                {/* Total highlight + copy */}
+                <div className="p-5 rounded-xl text-center"
+                  style={{ background: "rgba(181,140,74,.05)", border: "1.5px dashed rgba(181,140,74,.3)" }}>
+                  <p className="text-[11px] font-ui mb-1" style={{ color: "var(--stone)" }}>Total yang harus dibayar</p>
+                  <p className="text-[22px] sm:text-[24px] font-ui font-bold mb-3" style={{ color: "var(--gold)" }}>
+                    Rp {total.toLocaleString("id-ID")}
+                  </p>
+                  <button onClick={copyNominal}
+                    className="inline-flex items-center gap-1.5 px-5 py-2.5 text-[12px] font-ui font-semibold rounded-lg transition-all duration-200 hover:scale-105"
+                    style={{ background: copied ? "var(--espresso)" : "var(--gold)", color: "white" }}>
+                    {copied ? <Check size={13} /> : <Copy size={13} />}
+                    {copied ? "Tersalin!" : "Copy Nominal"}
+                  </button>
+                </div>
               </div>
             )}
 
-            {/* ── STEP 3: Upload Bukti Bayar ── */}
-            {step === 3 && (
+            {/* ══════════════════════════════════════
+                STEP 4: UPLOAD BUKTI BAYAR
+            ══════════════════════════════════════ */}
+            {step === 4 && (
               <div>
                 <SectionTitle icon={<Upload size={16} />} title="Upload Bukti Bayar" />
 
@@ -509,7 +639,7 @@ function CheckoutContent() {
                   onDragOver={handleDragOver}
                   onDragLeave={() => setDragActive(false)}
                   onClick={() => !buktiFile && fileInputRef.current?.click()}
-                  className="relative rounded-sm transition-all duration-200 cursor-pointer"
+                  className="relative rounded-xl transition-all duration-200 cursor-pointer"
                   style={{
                     border: `2px dashed ${errors.bukti ? "#e74c3c" : dragActive ? "var(--gold)" : "rgba(201,183,156,.3)"}`,
                     background: dragActive ? "rgba(181,140,74,.04)" : "rgba(255,255,255,.4)",
@@ -519,7 +649,7 @@ function CheckoutContent() {
 
                   {buktiPreview ? (
                     <div className="relative p-4">
-                      <div className="relative w-full max-w-xs mx-auto rounded-lg overflow-hidden" style={{ border: "1px solid rgba(201,183,156,.2)" }}>
+                      <div className="relative w-full max-w-xs mx-auto rounded-xl overflow-hidden" style={{ border: "1px solid rgba(201,183,156,.2)" }}>
                         <img src={buktiPreview} alt="Bukti bayar" className="w-full object-contain max-h-64" />
                         <button onClick={(e) => { e.stopPropagation(); removeFile(); }}
                           className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center transition-all hover:scale-110"
@@ -549,20 +679,22 @@ function CheckoutContent() {
 
                 {/* Catatan tambahan */}
                 <div className="mt-6">
-                  <p className="text-[11px] tracking-[0.1em] uppercase font-ui font-medium mb-2" style={{ color: "var(--espresso)" }}>
+                  <p className="text-[11px] tracking-[0.08em] uppercase font-ui font-medium mb-2" style={{ color: "var(--espresso)" }}>
                     Catatan Tambahan (Opsional)
                   </p>
                   <textarea value={catatanTambahan} onChange={(e) => setCatatanTambahan(e.target.value)}
                     placeholder="Contoh: Saya sudah transfer via Mandiri Mobile, nominal tepat."
                     rows={3}
-                    className="w-full px-4 py-3 text-[13px] font-ui rounded-sm outline-none transition-all duration-200 focus:border-[var(--gold)] resize-none"
-                    style={{ background: "transparent", border: "1px solid rgba(201,183,156,.3)", color: "var(--espresso)" }} />
+                    className="w-full px-4 py-3 text-[13px] font-ui rounded-lg outline-none transition-all duration-200 focus:border-[var(--gold)] resize-none"
+                    style={{ background: "rgba(255,255,255,.5)", border: "1px solid rgba(201,183,156,.25)", color: "var(--espresso)" }} />
                 </div>
               </div>
             )}
 
-            {/* ── STEP 4: Konfirmasi Order ── */}
-            {step === 4 && (
+            {/* ══════════════════════════════════════
+                STEP 5: KONFIRMASI ORDER
+            ══════════════════════════════════════ */}
+            {step === 5 && (
               <div className="text-center">
                 {/* Success icon */}
                 <motion.div
@@ -583,7 +715,7 @@ function CheckoutContent() {
                 </p>
 
                 {/* Order number */}
-                <div className="inline-block px-6 py-3 rounded-sm mb-6"
+                <div className="inline-block px-6 py-3 rounded-xl mb-6"
                   style={{ background: "rgba(181,140,74,.08)", border: "1px dashed rgba(181,140,74,.3)" }}>
                   <p className="text-[10px] tracking-[0.15em] uppercase font-ui mb-0.5" style={{ color: "var(--stone)" }}>Nomor Order</p>
                   <p className="text-[18px] font-ui font-bold tracking-wider" style={{ color: "var(--gold)" }}>{orderNumber}</p>
@@ -598,7 +730,7 @@ function CheckoutContent() {
                 </div>
 
                 {/* Estimasi */}
-                <div className="p-4 rounded-sm mb-6 text-left"
+                <div className="p-4 rounded-xl mb-6 text-left"
                   style={{ background: "rgba(255,255,255,.5)", border: "1px solid rgba(201,183,156,.12)" }}>
                   <p className="text-[11px] tracking-[0.1em] uppercase font-ui font-medium mb-2" style={{ color: "var(--stone)" }}>
                     Estimasi Verifikasi
@@ -610,27 +742,28 @@ function CheckoutContent() {
                 </div>
 
                 {/* Order summary */}
-                <div className="p-4 rounded-sm text-left mb-6"
+                <div className="p-4 rounded-xl text-left mb-6"
                   style={{ background: "rgba(255,255,255,.5)", border: "1px solid rgba(201,183,156,.12)" }}>
                   <p className="text-[11px] tracking-[0.1em] uppercase font-ui font-medium mb-3" style={{ color: "var(--stone)" }}>
                     Ringkasan Order
                   </p>
                   <div className="space-y-1.5">
-                    <SummaryRow label="Produk" value={product.name} />
-                    <SummaryRow label="Warna" value={selectedColor} />
-                    <SummaryRow label="Ukuran" value={selectedSize} />
-                    <SummaryRow label="Jumlah" value={`${qty} pcs`} />
-                    <SummaryRow label="Subtotal" value={`Rp ${subtotal.toLocaleString("id-ID")}`} />
-                    <SummaryRow label="Pengiriman" value={`Rp ${shippingCost.toLocaleString("id-ID")}`} />
+                    <SummaryLine label="Produk" value={product.name} />
+                    <SummaryLine label="Warna" value={selectedColor} />
+                    <SummaryLine label="Ukuran" value={selectedSize} />
+                    <SummaryLine label="Jumlah" value={`${qty} pcs`} />
+                    <SummaryLine label="Subtotal" value={`Rp ${subtotal.toLocaleString("id-ID")}`} />
+                    {promoApplied && <SummaryLine label="Diskon" value={`- Rp ${discount.toLocaleString("id-ID")}`} valueColor="var(--gold)" />}
+                    <SummaryLine label="Pengiriman" value={`Rp ${shippingCost.toLocaleString("id-ID")}`} />
                     <div className="h-px my-2" style={{ background: "rgba(201,183,156,.2)" }} />
-                    <SummaryRow label="Total" value={`Rp ${total.toLocaleString("id-ID")}`} bold />
-                    {notes && <SummaryRow label="Catatan" value={notes} italic />}
+                    <SummaryLine label="Total" value={`Rp ${total.toLocaleString("id-ID")}`} bold />
+                    {notes && <SummaryLine label="Catatan" value={notes} italic />}
                   </div>
                 </div>
 
                 {/* Back to shop */}
                 <button onClick={() => router.push("/katalog")}
-                  className="w-full py-3.5 rounded-sm text-[12px] tracking-[0.08em] uppercase font-ui font-semibold transition-all duration-300 hover:scale-[1.01]"
+                  className="w-full py-3.5 rounded-xl text-[12px] tracking-[0.08em] uppercase font-ui font-semibold transition-all duration-300 hover:scale-[1.01]"
                   style={{ background: "var(--gold)", color: "white", boxShadow: "0 6px 20px -6px rgba(184,145,74,.4)" }}>
                   Lanjut Belanja
                 </button>
@@ -641,14 +774,15 @@ function CheckoutContent() {
       </div>
 
       {/* ═══ FIXED BOTTOM BUTTON ═══ */}
-      {step < 4 && (
+      {step < 5 && (
         <div className="fixed bottom-0 inset-x-0 z-40 px-4 pb-4 pt-3" style={{ background: "linear-gradient(to top, var(--cream) 70%, transparent)" }}>
           <button onClick={nextStep}
-            className="w-full py-3.5 rounded-sm text-[12px] tracking-[0.08em] uppercase font-ui font-semibold transition-all duration-300 active:scale-[0.98]"
+            className="w-full py-3.5 rounded-xl text-[12px] tracking-[0.08em] uppercase font-ui font-semibold transition-all duration-300 active:scale-[0.98]"
             style={{ background: "var(--gold)", color: "white", boxShadow: "0 6px 20px -6px rgba(184,145,74,.4)" }}>
-            {step === 1 && "Lanjut ke Ringkasan"}
-            {step === 2 && "Lanjut ke Upload Bukti"}
-            {step === 3 && "Konfirmasi Pesanan"}
+            {step === 1 && "Lanjut ke Data Pemesan"}
+            {step === 2 && "Lanjut ke Pembayaran"}
+            {step === 3 && "Lanjut ke Upload Bukti"}
+            {step === 4 && "Konfirmasi Pesanan"}
           </button>
         </div>
       )}
@@ -683,11 +817,11 @@ function Field({ label, required, error, children }: { label: string; required?:
   );
 }
 
-function SummaryRow({ label, value, bold, italic }: { label: string; value: string; bold?: boolean; italic?: boolean }) {
+function SummaryLine({ label, value, bold, italic, valueColor }: { label: string; value: string; bold?: boolean; italic?: boolean; valueColor?: string }) {
   return (
     <div className="flex justify-between">
       <span className="text-[12px] font-ui" style={{ color: "var(--coffee)" }}>{label}</span>
-      <span className="text-[12px] font-ui" style={{ color: bold ? "var(--gold)" : "var(--espresso)", fontWeight: bold ? 700 : 500, fontStyle: italic ? "italic" : "normal" }}>
+      <span className="text-[12px] font-ui" style={{ color: valueColor || (bold ? "var(--gold)" : "var(--espresso)"), fontWeight: bold ? 700 : 500, fontStyle: italic ? "italic" : "normal" }}>
         {value}
       </span>
     </div>
