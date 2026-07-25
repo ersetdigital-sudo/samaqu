@@ -216,27 +216,36 @@ export default function TestimoniPage() {
           background-repeat: no-repeat;
           background-position: right 0.75rem center;
         }
+
+        .hero-label {
+          letter-spacing: 0.15em;
+          word-break: break-word;
+          overflow-wrap: break-word;
+        }
+        @media (min-width: 640px) {
+          .hero-label { letter-spacing: 0.28em; }
+        }
       `}</style>
 
       <section className="min-h-screen" style={{ background: "#f8f5f1" }}>
         {/* ═══ HERO ═══ */}
         <div className="relative overflow-hidden" style={{ background: "#2d211b", color: "#f8f5f1" }}>
           <div className="absolute inset-0 opacity-[.12]" style={{ background: "radial-gradient(circle at 30% 20%, #b89146 0, transparent 45%), radial-gradient(circle at 80% 90%, #9d7a3a 0, transparent 40%)" }} />
-          <div className="relative max-w-4xl mx-auto px-5 sm:px-8 py-16 sm:py-24 lg:py-28 text-center">
-            <p className="text-[11px] sm:text-sm uppercase mb-4 sm:mb-5" style={{ letterSpacing: ".28em", color: "#b89146" }}>Testimoni Pelanggan</p>
-            <h1 className="text-[2.2rem] sm:text-6xl lg:text-7xl font-medium leading-[1.05]" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>
+          <div className="relative max-w-4xl mx-auto px-4 sm:px-8 py-12 sm:py-24 lg:py-28 text-center">
+            <p className="hero-label text-[10px] sm:text-sm uppercase mb-3 sm:mb-5" style={{ color: "#b89146" }}>Testimoni Pelanggan</p>
+            <h1 className="text-[1.8rem] sm:text-6xl lg:text-7xl font-medium leading-[1.05]" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>
               Apa Kata Mereka
             </h1>
-            <p className="mt-4 sm:mt-6 text-[15px] sm:text-lg max-w-2xl mx-auto" style={{ color: "#d4c5b5" }}>
+            <p className="mt-3 sm:mt-6 text-[14px] sm:text-lg max-w-2xl mx-auto px-2 sm:px-0" style={{ color: "#d4c5b5" }}>
               Kepercayaan dari pelanggan yang sudah merasakan kualitas SAMAQU.
             </p>
-            <div className="mt-7 sm:mt-9 inline-flex flex-col sm:flex-row items-center gap-3 sm:gap-5 rounded-2xl px-5 sm:px-7 py-3.5 sm:py-4" style={{ border: "1px solid #5a4a3f", background: "rgba(61,47,38,.5)" }}>
-              <div className="flex items-center gap-2">
-                <span className="text-3xl sm:text-4xl font-semibold leading-none" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "#b89146" }}>4.9</span>
-                <div className="flex">{Array.from({ length: 5 }, (_, i) => <Star key={i} size={18} fill="#b89146" stroke="#b89146" />)}</div>
+            <div className="mt-5 sm:mt-9 inline-flex flex-col sm:flex-row items-center gap-2.5 sm:gap-5 rounded-xl sm:rounded-2xl px-4 sm:px-7 py-3 sm:py-4" style={{ border: "1px solid #5a4a3f", background: "rgba(61,47,38,.5)" }}>
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <span className="text-[1.6rem] sm:text-4xl font-semibold leading-none" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "#b89146" }}>4.9</span>
+                <div className="flex">{Array.from({ length: 5 }, (_, i) => <Star key={i} size={15} className="sm:w-[18px] sm:h-[18px]" fill="#b89146" stroke="#b89146" />)}</div>
               </div>
               <span className="hidden sm:block h-8 w-px" style={{ background: "#5a4a3f" }} />
-              <p className="text-[13px] sm:text-sm" style={{ color: "#d4c5b5" }}>
+              <p className="text-[12px] sm:text-sm" style={{ color: "#d4c5b5" }}>
                 dari <span className="font-semibold" style={{ color: "#f8f5f1" }}>500+ ulasan</span> pelanggan
               </p>
             </div>
