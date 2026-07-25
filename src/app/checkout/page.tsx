@@ -151,8 +151,8 @@ function CheckoutContent() {
   /* ── Shared: Order Summary Sidebar ── */
   const orderSummary = (
     <div className="lg:sticky lg:top-28">
-      <div className="p-5 rounded-xl" style={{ background: "rgba(255,255,255,.55)", border: "1px solid rgba(201,183,156,.12)" }}>
-        <p className="text-[11px] tracking-[0.12em] uppercase font-ui font-medium mb-4" style={{ color: "var(--stone)" }}>Ringkasan Pesanan</p>
+      <div className="p-5 lg:p-6 rounded-2xl" style={{ background: "rgba(255,255,255,.7)", border: "1px solid rgba(201,183,156,.12)", boxShadow: "0 4px 24px -8px rgba(42,33,27,.08)" }}>
+        <p className="text-[11px] tracking-[0.18em] uppercase font-ui font-medium mb-5" style={{ color: "var(--stone)" }}>Ringkasan Pesanan</p>
         {/* Product */}
         <div className="flex gap-3 mb-4 pb-4" style={{ borderBottom: "1px solid rgba(201,183,156,.12)" }}>
           <div className="w-16 h-16 rounded-lg overflow-hidden shrink-0" style={{ background: "#e8dfd1" }}>
@@ -180,7 +180,7 @@ function CheckoutContent() {
           {promoApplied && <SummaryLine label={`Diskon (${promoCode.toUpperCase()})`} value={`- Rp ${discount.toLocaleString("id-ID")}`} valueColor="var(--gold)" />}
           <SummaryLine label={`Pengiriman ${shippingOptions.find((s) => s.id === shipping)?.label || "Reguler"}`} value={`Rp ${shippingCost.toLocaleString("id-ID")}`} />
         </div>
-        <div className="h-px my-3" style={{ background: "rgba(201,183,156,.15)" }} />
+        <div className="h-px my-3.5" style={{ background: "linear-gradient(90deg, rgba(181,140,74,.2), rgba(201,183,156,.12), rgba(181,140,74,.2))" }} />
         <div className="flex justify-between items-end">
           <span className="text-[12px] font-ui" style={{ color: "var(--stone)" }}>Total</span>
           <PriceText className="text-[18px]">Rp {total.toLocaleString("id-ID")}</PriceText>
@@ -204,22 +204,22 @@ function CheckoutContent() {
       </div>
 
       {/* ═══ 2-COLUMN LAYOUT (desktop) / SINGLE COLUMN (mobile) ═══ */}
-      <div className="max-w-6xl mx-auto px-4 lg:px-8 pt-6 pb-28 lg:pb-12">
+      <div className="max-w-6xl mx-auto px-4 lg:px-12 xl:px-16 pt-6 pb-28 lg:pb-12">
         {/* ── Step Indicator ── */}
-        <div className="flex items-center justify-center lg:justify-start gap-0 mb-8 lg:mb-10 px-1">
+        <div className="flex items-center justify-center lg:justify-start gap-0 mb-8 lg:mb-12 px-1">
           {steps.map((s, i) => (
             <div key={s.num} className="flex items-center">
               <div className="flex flex-col items-center">
-                <div className="w-7 h-7 lg:w-9 lg:h-9 rounded-full flex items-center justify-center text-[10px] lg:text-[12px] font-ui font-semibold transition-all duration-500"
+                <div className="w-7 h-7 lg:w-10 lg:h-10 rounded-full flex items-center justify-center text-[10px] lg:text-[12px] font-ui font-semibold transition-all duration-500"
                   style={{
                     background: step >= s.num ? "var(--gold)" : "transparent",
                     color: step >= s.num ? "white" : "var(--stone)",
                     border: `1.5px solid ${step >= s.num ? "var(--gold)" : "rgba(201,183,156,.35)"}`,
-                    boxShadow: step === s.num ? "0 4px 14px -3px rgba(184,145,70,.35)" : "none",
+                    boxShadow: step === s.num ? "0 4px 18px -3px rgba(184,145,70,.45), 0 0 0 4px rgba(181,140,74,.1)" : "none",
                   }}>
                   {step > s.num ? <Check size={13} strokeWidth={2.5} /> : s.num}
                 </div>
-                <span className="text-[8px] lg:text-[10px] font-ui mt-1 whitespace-nowrap hidden sm:block"
+                <span className="text-[8px] lg:text-[10px] font-ui mt-1.5 whitespace-nowrap hidden sm:block"
                   style={{ color: step >= s.num ? "var(--gold)" : "var(--stone)" }}>{s.label}</span>
               </div>
               {i < steps.length - 1 && (
@@ -231,7 +231,7 @@ function CheckoutContent() {
         </div>
 
         {/* ── Grid: Left (content) + Right (summary, desktop only) ── */}
-        <div className="lg:grid lg:grid-cols-[1fr_340px] lg:gap-10 xl:gap-14">
+        <div className="lg:grid lg:grid-cols-[1fr_360px] lg:gap-12 xl:gap-16">
           {/* LEFT COLUMN: Step Content */}
           <div>
             <AnimatePresence mode="wait" custom={direction}>
@@ -242,11 +242,11 @@ function CheckoutContent() {
                 {/* STEP 1: Ringkasan */}
                 {step === 1 && (
                   <div>
-                    <div className="mb-5">
-                      <h2 className="text-[1.4rem] font-semibold" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>Ringkasan Pesanan</h2>
+                    <div className="mb-6 lg:mb-8">
+                      <h2 className="text-[1.4rem] lg:text-[1.6rem] font-semibold" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>Ringkasan Pesanan</h2>
                       <p className="text-[12px] font-ui mt-0.5" style={{ color: "var(--stone)" }}>1 produk</p>
                     </div>
-                    <div className="p-3 sm:p-4 rounded-xl mb-4" style={{ background: "rgba(255,255,255,.65)", border: "1px solid rgba(201,183,156,.15)" }}>
+                    <div className="p-4 lg:p-5 rounded-2xl mb-5 lg:mb-6" style={{ background: "rgba(255,255,255,.7)", border: "1px solid rgba(201,183,156,.12)", boxShadow: "0 2px 12px -4px rgba(42,33,27,.06)" }}>
                       <div className="flex gap-3">
                         <div className="w-[72px] h-[72px] sm:w-20 sm:h-20 rounded-xl overflow-hidden shrink-0" style={{ background: "#e8dfd1" }}>
                           <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
@@ -254,7 +254,7 @@ function CheckoutContent() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2">
                             <p className="text-[13px] sm:text-[14px] font-ui font-semibold leading-tight truncate" style={{ color: "var(--espresso)" }}>{product.name}</p>
-                            <button onClick={() => router.push("/katalog")} className="shrink-0 p-1 rounded transition-all hover:scale-110" style={{ color: "var(--stone)" }}><Trash2 size={14} /></button>
+                            <button onClick={() => router.push("/katalog")} className="shrink-0 p-1.5 rounded-lg transition-all duration-200 hover:scale-110 hover:bg-red-50" style={{ color: "var(--stone)" }}><Trash2 size={14} /></button>
                           </div>
                           <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                             {selectedColor !== "-" && <span className="flex items-center gap-1 text-[11px] font-ui" style={{ color: "var(--coffee)" }}><span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: colorMap[selectedColor] || "#ccc", border: "1px solid rgba(42,33,27,.1)" }} />{selectedColor}</span>}
@@ -264,9 +264,9 @@ function CheckoutContent() {
                           <p className="text-[11px] font-ui mt-0.5" style={{ color: "var(--stone)" }}><PriceInline>Rp {product.price.toLocaleString("id-ID")}</PriceInline> / pcs</p>
                           <div className="flex items-center justify-between mt-2">
                             <div className="inline-flex items-center rounded-full" style={{ background: "var(--cream)", border: "1px solid rgba(201,183,156,.2)", padding: "2px 4px" }}>
-                              <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="w-7 h-7 rounded-full flex items-center justify-center transition-all active:scale-90" style={{ color: "var(--espresso)" }}><Minus size={13} /></button>
+                              <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200 hover:bg-white active:scale-90" style={{ color: "var(--espresso)" }}><Minus size={13} /></button>
                               <span className="w-7 text-center text-[13px] font-ui font-semibold" style={{ color: "var(--espresso)" }}>{qty}</span>
-                              <button onClick={() => setQty((q) => q + 1)} className="w-7 h-7 rounded-full flex items-center justify-center transition-all active:scale-90" style={{ color: "var(--espresso)" }}><Plus size={13} /></button>
+                              <button onClick={() => setQty((q) => q + 1)} className="w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200 hover:bg-white active:scale-90" style={{ color: "var(--espresso)" }}><Plus size={13} /></button>
                             </div>
                             <PriceText className="text-[14px]">Rp {(product.price * qty).toLocaleString("id-ID")}</PriceText>
                           </div>
@@ -275,7 +275,7 @@ function CheckoutContent() {
                       {notes && <div className="mt-2 pt-2" style={{ borderTop: "1px solid rgba(201,183,156,.1)" }}><p className="text-[11px] font-ui italic" style={{ color: "var(--text-muted)" }}>&ldquo;{notes}&rdquo;</p></div>}
                     </div>
                     {/* Promo */}
-                    <div className="p-4 rounded-xl mb-5" style={{ background: "rgba(255,255,255,.65)", border: "1px solid rgba(201,183,156,.15)" }}>
+                    <div className="p-4 lg:p-5 rounded-2xl mb-5 lg:mb-6" style={{ background: "rgba(255,255,255,.7)", border: "1px solid rgba(201,183,156,.12)", boxShadow: "0 2px 12px -4px rgba(42,33,27,.06)" }}>
                       {promoApplied ? (
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
@@ -459,8 +459,8 @@ function CheckoutContent() {
 
             {/* Desktop action button (inside left column) */}
             {step < 5 && (
-              <div className="hidden lg:block mt-8">
-                <button onClick={nextStep} className="w-full py-4 rounded-xl text-[12px] tracking-[0.08em] uppercase font-ui font-semibold transition-all duration-300 active:scale-[0.98]" style={{ background: "var(--gold)", color: "white", boxShadow: "0 6px 20px -6px rgba(184,145,74,.4)" }}>
+              <div className="hidden lg:block mt-10">
+                <button onClick={nextStep} className="w-full py-4 rounded-xl text-[12px] tracking-[0.08em] uppercase font-ui font-semibold transition-all duration-200 hover:shadow-lg hover:scale-[1.01] active:scale-[0.98]" style={{ background: "var(--gold)", color: "white", boxShadow: "0 6px 20px -6px rgba(184,145,74,.4)" }}>
                   {step === 1 && "Lanjut ke Data Pemesan"}{step === 2 && "Lanjut ke Pembayaran"}{step === 3 && "Lanjut ke Upload Bukti"}{step === 4 && "Konfirmasi Pesanan"}
                 </button>
               </div>
