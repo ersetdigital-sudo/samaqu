@@ -31,19 +31,25 @@ export default function Hero() {
 
   // Fetch hero content from Supabase
   useEffect(() => {
-    supabase.from("hero_content").select("*").eq("id", 1).single().then(({ data }) => {
-      if (data && data.is_active) {
-        setHeroData({
-          eyebrow_text: data.eyebrow_text || DEFAULTS.eyebrow_text,
-          title_line1: data.title_line1 || DEFAULTS.title_line1,
-          title_line2: data.title_line2 || DEFAULTS.title_line2,
-          description: data.description || DEFAULTS.description,
-          feature1: data.feature1 || DEFAULTS.feature1,
-          feature2: data.feature2 || DEFAULTS.feature2,
-          feature3: data.feature3 || DEFAULTS.feature3,
-        });
+    async function fetchHero() {
+      try {
+        const { data } = await supabase.from("hero_content").select("*").eq("id", 1).single();
+        if (data && data.is_active) {
+          setHeroData({
+            eyebrow_text: data.eyebrow_text || DEFAULTS.eyebrow_text,
+            title_line1: data.title_line1 || DEFAULTS.title_line1,
+            title_line2: data.title_line2 || DEFAULTS.title_line2,
+            description: data.description || DEFAULTS.description,
+            feature1: data.feature1 || DEFAULTS.feature1,
+            feature2: data.feature2 || DEFAULTS.feature2,
+            feature3: data.feature3 || DEFAULTS.feature3,
+          });
+        }
+      } catch {
+        // Silent fail - use defaults
       }
-    }).catch(() => {}); // Silent fail - use defaults
+    }
+    fetchHero();
   }, []);
 
   useEffect(() => {
