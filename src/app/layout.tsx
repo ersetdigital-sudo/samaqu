@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import Providers from "@/components/Providers";
 import "./globals.css";
 
 const inter = localFont({
@@ -49,7 +50,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="id" className={`${inter.variable} ${cormorant.variable}`}>
-      <body>{children}</body>
+      <body>
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }
