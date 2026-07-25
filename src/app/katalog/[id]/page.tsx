@@ -3,7 +3,7 @@
 import { useState, use, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Minus, Plus, ChevronLeft, ChevronRight, Play, ShoppingBag, ShoppingCart } from "lucide-react";
+import { Minus, Plus, ChevronLeft, ChevronRight, Play, ShoppingBag, ShoppingCart } from "lucide-react";
 import ImageZoom from "@/components/ImageZoom";
 import Breadcrumb from "@/components/Breadcrumb";
 import { getProductById, colorMap, type Product, type MediaItem } from "@/lib/katalog-data";
@@ -145,23 +145,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
   return (
     <section className="min-h-screen" style={{ background: "var(--cream)" }}>
-      {/* ═══════════════════════════════════════
-          BACK BUTTON
-      ═══════════════════════════════════════ */}
-      <button
-        onClick={() => router.back()}
-        className="fixed top-4 left-4 sm:top-20 sm:left-6 z-30 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105"
-        style={{
-          background: "rgba(248,246,242,.85)",
-          backdropFilter: "blur(8px)",
-          boxShadow: "0 2px 8px rgba(0,0,0,.08)",
-          border: "1px solid rgba(201,183,156,.2)",
-        }}
-        aria-label="Kembali"
-      >
-        <ArrowLeft size={18} style={{ color: "var(--espresso)" }} />
-      </button>
-
       {/* ═══════════════════════════════════════
           MOBILE LAYOUT (max-md)
       ═══════════════════════════════════════ */}
