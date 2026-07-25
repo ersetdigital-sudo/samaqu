@@ -163,7 +163,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       </button>
 
       {/* ═══ BREADCRUMB (mobile + desktop) ═══ */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-2 sm:pt-6 sm:pb-3 lg:pt-8 lg:pb-4">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-2 sm:pt-6 sm:pb-3 lg:pt-8 lg:pb-4">
         <Breadcrumb extra={[{ label: product.name }]} />
       </div>
 
