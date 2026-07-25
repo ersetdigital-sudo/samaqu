@@ -82,7 +82,7 @@ function ProductCard({ product, index }: { product: Product; index: number }) {
     >
       <Link
         href={`/katalog/${product.id}`}
-        className="group relative block bg-white rounded-sm overflow-hidden cursor-pointer"
+        className="group relative flex flex-col h-full bg-white rounded-sm overflow-hidden cursor-pointer"
         style={{
           boxShadow: "0 2px 12px -4px rgba(43,38,32,.06)",
           border: "1px solid rgba(201,183,156,.12)",
@@ -140,10 +140,10 @@ function ProductCard({ product, index }: { product: Product; index: number }) {
       </div>
 
       {/* Info */}
-      <div className="p-4 sm:p-5">
-        {/* Category + Kain */}
+      <div className="p-4 sm:p-5 flex flex-col flex-1">
+        {/* Category + Kain — fixed 2-line height */}
         <p
-          className="text-[10px] sm:text-[11px] tracking-[0.14em] uppercase font-ui mb-1.5"
+          className="text-[10px] sm:text-[11px] tracking-[0.14em] uppercase font-ui mb-1.5 line-clamp-2 min-h-[2.5em]"
           style={{ color: "var(--stone)" }}
         >
           {product.category}
@@ -151,9 +151,9 @@ function ProductCard({ product, index }: { product: Product; index: number }) {
           {product.series && ` — ${product.series}`}
         </p>
 
-        {/* Name */}
+        {/* Name — max 1 line */}
         <h3
-          className="text-[1rem] sm:text-[1.1rem] font-medium leading-snug mb-1"
+          className="text-[1rem] sm:text-[1.1rem] font-medium leading-snug mb-1 line-clamp-1"
           style={{
             fontFamily: "var(--font-cormorant), Georgia, serif",
             color: "var(--espresso)",
@@ -170,29 +170,33 @@ function ProductCard({ product, index }: { product: Product; index: number }) {
           Rp {product.price.toLocaleString("id-ID")}
         </p>
 
-        {/* Color swatches */}
-        {product.colors.length > 0 && (
-          <div className="flex items-center gap-1.5 mb-3">
-            {product.colors.slice(0, 5).map((c) => (
-              <Swatch key={c} color={c} />
-            ))}
-            {product.colors.length > 5 && (
-              <span className="text-[11px] font-ui" style={{ color: "var(--stone)" }}>
-                +{product.colors.length - 5}
-              </span>
-            )}
-          </div>
-        )}
+        {/* Color swatches — fixed min-height */}
+        <div className="flex items-center gap-1.5 mb-3 min-h-[18px]">
+          {product.colors.length > 0 ? (
+            <>
+              {product.colors.slice(0, 5).map((c) => (
+                <Swatch key={c} color={c} />
+              ))}
+              {product.colors.length > 5 && (
+                <span className="text-[11px] font-ui" style={{ color: "var(--stone)" }}>
+                  +{product.colors.length - 5}
+                </span>
+              )}
+            </>
+          ) : null}
+        </div>
 
-        {/* Note */}
-        {product.note && (
-          <p className="text-[11px] font-ui mb-3" style={{ color: "var(--stone)" }}>
-            {product.note}
-          </p>
-        )}
+        {/* Note — fixed min-height */}
+        <div className="min-h-[18px] mb-3">
+          {product.note && (
+            <p className="text-[11px] font-ui" style={{ color: "var(--stone)" }}>
+              {product.note}
+            </p>
+          )}
+        </div>
 
-        {/* Link */}
-        <span className="inline-flex items-center gap-1.5 text-[12px] tracking-[0.08em] uppercase font-ui font-medium group-hover:gap-2.5 transition-all duration-300"
+        {/* Link — pushed to bottom */}
+        <span className="mt-auto inline-flex items-center gap-1.5 text-[12px] tracking-[0.08em] uppercase font-ui font-medium group-hover:gap-2.5 transition-all duration-300"
           style={{ color: "var(--gold)" }}
         >
           Lihat Detail
