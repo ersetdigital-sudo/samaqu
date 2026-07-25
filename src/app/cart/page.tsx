@@ -150,7 +150,7 @@ export default function CartPage() {
                               <Plus size={13} />
                             </button>
                           </div>
-                          <p className="text-[14px] font-ui font-bold" style={{ color: "var(--gold)" }}>
+                          <p className="text-[14px] font-semibold" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--gold)" }}>
                             Rp {(item.price * item.qty).toLocaleString("id-ID")}
                           </p>
                         </div>
@@ -216,7 +216,7 @@ export default function CartPage() {
               <div className="h-px my-3.5" style={{ background: "rgba(201,183,156,.2)" }} />
               <div className="flex justify-between items-end">
                 <span className="text-[11px] font-ui" style={{ color: "var(--stone)" }}>Total Pembayaran</span>
-                <span className="text-[18px] sm:text-[20px] font-ui font-bold" style={{ color: "var(--gold)" }}>
+                <span className="text-[18px] sm:text-[20px] font-semibold" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--gold)" }}>
                   Rp {total.toLocaleString("id-ID")}
                 </span>
               </div>
@@ -240,10 +240,15 @@ export default function CartPage() {
 }
 
 function SummaryLine({ label, value, valueColor }: { label: string; value: string; valueColor?: string }) {
+  const isPrice = value.startsWith("Rp");
   return (
     <div className="flex justify-between">
       <span className="text-[12px] font-ui" style={{ color: "var(--coffee)" }}>{label}</span>
-      <span className="text-[12px] font-ui font-medium" style={{ color: valueColor || "var(--espresso)" }}>{value}</span>
+      {isPrice ? (
+        <span className="text-[12px] font-medium" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: valueColor || "var(--espresso)" }}>{value}</span>
+      ) : (
+        <span className="text-[12px] font-ui font-medium" style={{ color: valueColor || "var(--espresso)" }}>{value}</span>
+      )}
     </div>
   );
 }
