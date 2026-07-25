@@ -527,8 +527,8 @@ export default function AdminPage() {
                           <h3 className="font-semibold text-sm leading-snug">{p.name}</h3>
                           <p className="italic text-lg mt-2" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--gold)" }}>{money(p.price)}</p>
                           <div className="flex gap-2 mt-3">
-                            <button className="flex-1 text-xs font-semibold py-2 rounded-lg" style={{ border: "1px solid rgba(64,50,37,.15)" }}>Edit</button>
-                            <button className="flex-1 text-xs font-semibold py-2 rounded-lg text-white" style={{ background: "var(--gold)" }}>Detail</button>
+                            <a href={`/admin/produk/edit/${p.id}`} className="flex-1 text-xs font-semibold py-2 rounded-lg text-center" style={{ border: "1px solid rgba(64,50,37,.15)" }}>Edit</a>
+                            <a href={`/admin/produk/detail/${p.id}`} className="flex-1 text-xs font-semibold py-2 rounded-lg text-center text-white" style={{ background: "var(--gold)" }}>Detail</a>
                           </div>
                         </div>
                       </div>
