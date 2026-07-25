@@ -6,7 +6,6 @@ import { motion, AnimatePresence, Variants } from "framer-motion";
 import { SlidersHorizontal, X, ChevronDown, ArrowRight, ShoppingCart } from "lucide-react";
 import Breadcrumb from "@/components/Breadcrumb";
 import {
-  products,
   allCategories,
   colorMap,
   getKainOptions,
@@ -15,6 +14,7 @@ import {
   type Category,
   type Product,
 } from "@/lib/katalog-data";
+import { getProducts } from "@/lib/db";
 import { useCart } from "@/lib/cart-context";
 import { useToast } from "@/components/Toast";
 import FilterDrawer, { applyFilters, type FilterState } from "@/components/FilterDrawer";
@@ -225,6 +225,16 @@ export default function KatalogPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
   const [drawerFilters, setDrawerFilters] = useState<FilterState>({ sizes: [], colors: [], priceRange: null });
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  /* Fetch products from database */
+  useEffect(() => {
+    getProducts().then((data) => {
+      setProducts(data);
+      setLoading(false);
+    });
+  }, []);
 
   /* Reset sub-filters when category changes */
   useEffect(() => {

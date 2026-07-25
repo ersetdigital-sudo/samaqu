@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, use, useRef } from "react";
+import { useState, use, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Minus, Plus, ChevronLeft, ChevronRight, Play, ShoppingBag, ShoppingCart } from "lucide-react";
 import ImageZoom from "@/components/ImageZoom";
 import Breadcrumb from "@/components/Breadcrumb";
-import { getProductById, colorMap, type Product, type MediaItem } from "@/lib/katalog-data";
+import { colorMap, type Product, type MediaItem } from "@/lib/katalog-data";
+import { getProductById } from "@/lib/db";
 import { useCart } from "@/lib/cart-context";
 import { useToast } from "@/components/Toast";
 
@@ -88,9 +89,10 @@ function MediaDisplay({ item, poster, className, style }: { item: MediaItem; pos
 export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
-  const product = getProductById(id);
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const [selectedColor, setSelectedColor] = useState(product?.colors[0] || "");
+  const [selectedColor, setSelectedColor] = useState("");
   const [selectedSize, setSelectedSize] = useState("M");
   const [qty, setQty] = useState(1);
   const [notes, setNotes] = useState("");
@@ -101,6 +103,14 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const carouselRef = useRef<HTMLDivElement>(null);
   const { addItem } = useCart();
   const toast = useToast();
+
+  useEffect(() => {
+    getProductById(id).then((p) => {
+      setProduct(p);
+      if (p) setSelectedColor(p.colors[0] || "");
+      setLoading(false);
+    });
+  }, [id]);
 
   function handleAddToCart() {
     if (!product) return;
@@ -124,6 +134,14 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     const index = Math.round(scrollLeft / itemWidth);
     setCurrentSlide(Math.min(index, media.length - 1));
   };
+
+  if (loading) {
+    return (
+      <section className="min-h-screen flex items-center justify-center" style={{ background: "var(--cream)" }}>
+        <div className="w-6 h-6 border-2 rounded-full animate-spin" style={{ borderColor: "rgba(201,183,156,.3)", borderTopColor: "var(--gold)" }} />
+      </section>
+    );
+  }
 
   if (!product) {
     return (

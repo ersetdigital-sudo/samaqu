@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Star, CheckCircle, MessageCircle, Play, ChevronDown, Loader2 } from "lucide-react";
 import Breadcrumb from "@/components/Breadcrumb";
+import { getTestimonials, type DbTestimonial } from "@/lib/db";
 import {
-  testimoniData,
   testimoniCategories,
   type Testimoni,
   type TestimoniType,
@@ -116,12 +116,32 @@ export default function TestimoniPage() {
   const [filterCat, setFilterCat] = useState<TestimoniCat | "all">("all");
   const [shown, setShown] = useState(PAGE);
   const [loading, setLoading] = useState(false);
+  const [testimoniData, setTestimoniData] = useState<Testimoni[]>([]);
+
+  /* Fetch testimonials from database */
+  useEffect(() => {
+    getTestimonials().then((data) => {
+      const mapped: Testimoni[] = data.map((t) => ({
+        name: t.customer_name,
+        type: t.type as TestimoniType,
+        cat: t.category as TestimoniCat,
+        rating: t.rating,
+        verified: t.verified,
+        date: new Date(t.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }),
+        img: t.image_url || undefined,
+        yt: t.video_url || undefined,
+        cap: t.caption || undefined,
+        text: t.content,
+      }));
+      setTestimoniData(mapped);
+    });
+  }, []);
 
   const filtered = useMemo(() => testimoniData.filter((t) => {
     const okType = filterType === "all" || t.type === filterType;
     const okCat = filterCat === "all" || t.cat === filterCat;
     return okType && okCat;
-  }), [filterType, filterCat]);
+  }), [filterType, filterCat, testimoniData]);
 
   const visible = useMemo(() => filtered.slice(0, shown), [filtered, shown]);
   const hasMore = shown < filtered.length;
