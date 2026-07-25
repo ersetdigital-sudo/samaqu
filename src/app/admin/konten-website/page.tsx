@@ -116,12 +116,15 @@ export default function KontenWebsitePage() {
   function openGaransiEdit() { setEditGaransi([...garansi]); setEditBadges([...badges]); setEditModal("garansi"); }
   async function saveGaransi() {
     setSaving(true);
-    await supabase.from("garansi_items").delete().neq("id", "");
+    // Delete all existing rows first
+    const { data: existingG } = await supabase.from("garansi_items").select("id");
+    if (existingG) for (const row of existingG) await supabase.from("garansi_items").delete().eq("id", row.id);
     const rows = editGaransi.map((g, i) => ({ title: g.title, description: g.description, display_order: i, is_active: true }));
     if (rows.length > 0) await supabase.from("garansi_items").insert(rows);
     setGaransi(rows.map((r, i) => ({ id: String(i), ...r })));
 
-    await supabase.from("trust_badges").delete().neq("id", "");
+    const { data: existingB } = await supabase.from("trust_badges").select("id");
+    if (existingB) for (const row of existingB) await supabase.from("trust_badges").delete().eq("id", row.id);
     const bRows = editBadges.map((b, i) => ({ label: b.label, display_order: i, is_active: true }));
     if (bRows.length > 0) await supabase.from("trust_badges").insert(bRows);
     setBadges(bRows.map((r, i) => ({ id: String(i), ...r })));
@@ -134,7 +137,9 @@ export default function KontenWebsitePage() {
   function openFaqEdit() { setEditFaqs([...faqs]); setEditModal("faq"); }
   async function saveFaq() {
     setSaving(true);
-    await supabase.from("faq_items").delete().neq("id", "");
+    // Delete all existing rows first
+    const { data: existingF } = await supabase.from("faq_items").select("id");
+    if (existingF) for (const row of existingF) await supabase.from("faq_items").delete().eq("id", row.id);
     const rows = editFaqs.map((f, i) => ({ question: f.question, answer: f.answer, display_order: i, is_active: true }));
     if (rows.length > 0) await supabase.from("faq_items").insert(rows);
     setFaqs(rows.map((r, i) => ({ id: String(i), ...r })));
@@ -146,12 +151,26 @@ export default function KontenWebsitePage() {
   function openMarqueeEdit() { setEditMarquee([...marquee]); setEditModal("marquee"); }
   async function saveMarquee() {
     setSaving(true);
-    await supabase.from("marquee_items").delete().neq("id", "");
+    // Delete all existing rows first
+    const { data: existingM } = await supabase.from("marquee_items").select("id");
+    if (existingM) for (const row of existingM) await supabase.from("marquee_items").delete().eq("id", row.id);
     const rows = editMarquee.map((m, i) => ({ label: m.label, display_order: i, is_active: true }));
     if (rows.length > 0) await supabase.from("marquee_items").insert(rows);
     setMarquee(rows.map((r, i) => ({ id: String(i), ...r })));
     setSaving(false); setEditModal(null);
     toast.showToast("success", "Trust marquee berhasil disimpan");
+  }
+
+  // ── Reset to defaults ──
+  function resetFaqToDefault() {
+    if (!confirm("Reset FAQ ke pertanyaan default?\n\nSemua perubahan akan hilang.")) return;
+    setEditFaqs([
+      { id: "d1", question: "Bagaimana cara memesan produk SAMAQU?", answer: "Pilih produk dari katalog, cek panduan size, lalu klik tombol WhatsApp untuk menghubungi admin. Admin akan membantu konfirmasi ketersediaan hingga pembayaran.", display_order: 0 },
+      { id: "d2", question: "Apakah bahan SAMAQU nyaman dan adem?", answer: "Sangat. Kami memilih bahan berkualitas yang adem, ringan, dan tidak panas saat dikenakan — nyaman untuk ibadah, keseharian, maupun acara istimewa dalam waktu lama.", display_order: 1 },
+      { id: "d3", question: "Bagaimana jika saya ragu memilih ukuran?", answer: "Gunakan panduan size kami sebagai acuan awal. Jika masih ragu, cukup chat admin dengan menyebutkan tinggi dan postur tubuhmu — kami bantu menentukan ukuran yang paling pas.", display_order: 2 },
+      { id: "d4", question: "Apakah bisa pesan dalam jumlah banyak / grosir?", answer: "Tentu. Kami melayani pemesanan pribadi, keluarga, hingga komunitas. Untuk pembelian grosir tersedia penawaran khusus — ceritakan kebutuhanmu dan tim kami susun harga terbaik.", display_order: 3 },
+      { id: "d5", question: "Apakah ada garansi untuk produk?", answer: "Setiap produk melewati pengecekan jahitan dan bahan sebelum dikirim. Bila ada ketidaksesuaian pada pesanan, hubungi admin kami dan akan kami bantu dengan sepenuh hati.", display_order: 4 },
+    ]);
   }
 
   // ── Helpers ──
@@ -365,6 +384,7 @@ export default function KontenWebsitePage() {
               </div>
               {editFaqs.length < 8 && <button onClick={() => setEditFaqs([...editFaqs, { id: String(Date.now()), question: "", answer: "", display_order: editFaqs.length }])} className="flex items-center gap-1.5 text-sm font-medium mb-4" style={{ color: "var(--gold)" }}><Plus size={14} /> Tambah FAQ</button>}
               <div className="flex gap-3">
+                <button onClick={resetFaqToDefault} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium" style={{ border: "1px solid rgba(64,50,37,.15)", color: "var(--text-secondary)" }}><RotateCcw size={14} /> Reset</button>
                 <button onClick={() => setEditModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-medium" style={{ border: "1px solid rgba(64,50,37,.15)" }}>Batal</button>
                 <button onClick={saveFaq} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: "var(--gold)" }}>{saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null} Simpan</button>
               </div>
