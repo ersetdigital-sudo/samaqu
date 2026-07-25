@@ -285,9 +285,9 @@ export default function Garansi() {
         >
           {/* Mobile: horizontal scroll */}
           <div className="md:hidden flex overflow-x-auto snap-x snap-mandatory gap-4 mt-6 pb-2 -mx-5 px-5 scrollbar-hide">
-            {guarantees.map((g) => (
+            {guarantees.map((g, i) => (
               <motion.div
-                key={g.id}
+                key={i}
                 variants={cardVariants}
                 className="g-card group relative shrink-0 w-[80%] snap-center rounded-xl border bg-white/85 p-5 overflow-hidden"
                 style={{ borderColor: "rgba(42,33,27,.10)" }}
@@ -307,9 +307,9 @@ export default function Garansi() {
 
           {/* Desktop: grid */}
           <div className="hidden md:grid grid-cols-3 gap-6 mt-10">
-            {guarantees.map((g) => (
+            {guarantees.map((g, i) => (
               <motion.div
-                key={g.id}
+                key={i}
                 variants={cardVariants}
                 className="g-card group relative rounded-3xl border bg-white/85 p-8 overflow-hidden"
                 style={{ borderColor: "rgba(42,33,27,.10)" }}
