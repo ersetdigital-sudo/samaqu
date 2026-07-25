@@ -167,7 +167,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       ═══════════════════════════════════════ */}
       <div className="md:hidden">
         {/* Breadcrumb mobile */}
-        <div className="max-w-7xl mx-auto px-4" style={{ paddingTop: "40px", marginBottom: "32px" }}>
+        <div className="max-w-7xl mx-auto px-4" style={{ paddingTop: "80px", marginBottom: "32px" }}>
           <Breadcrumb extra={[{ label: product.name }]} />
         </div>
         {/* Gallery carousel */}
@@ -328,7 +328,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       {/* ═══════════════════════════════════════
           DESKTOP LAYOUT (md+)
       ═══════════════════════════════════════ */}
-      <div className="hidden md:block max-w-7xl mx-auto px-6 lg:px-8 pb-20" style={{ paddingTop: "40px" }}>
+      <div className="hidden md:block max-w-7xl mx-auto px-6 lg:px-8 pb-20" style={{ paddingTop: "100px" }}>
         <div style={{ marginBottom: "32px" }}>
           <Breadcrumb extra={[{ label: product.name }]} />
         </div>
