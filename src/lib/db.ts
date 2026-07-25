@@ -31,19 +31,20 @@ export interface DbTestimonial {
 }
 
 function dbProductToProduct(db: DbProduct): Product {
+  const images = Array.isArray(db.images) ? db.images : [];
   return {
     id: db.id,
     name: db.name,
     category: db.category as Product["category"],
     kain: db.kain || undefined,
     series: db.series || undefined,
-    colors: db.colors,
+    colors: Array.isArray(db.colors) ? db.colors : [],
     price: db.price,
     tag: (db.tag as Product["tag"]) || undefined,
     note: db.note || undefined,
-    image: db.image,
-    images: db.images,
-    media: db.images.map((src) => ({
+    image: db.image || "",
+    images,
+    media: images.map((src) => ({
       src,
       type: src.match(/\.(mp4|webm|ogg)$/i) ? "video" as const : "image" as const,
     })),
@@ -51,23 +52,34 @@ function dbProductToProduct(db: DbProduct): Product {
 }
 
 export async function getProducts(category?: string): Promise<Product[]> {
-  let query = supabase
-    .from("products")
-    .select("*")
-    .order("created_at", { ascending: true });
+  try {
+    let query = supabase
+      .from("products")
+      .select("*")
+      .order("created_at", { ascending: true });
 
-  if (category && category !== "Semua") {
-    query = query.eq("category", category);
-  }
+    if (category && category !== "Semua") {
+      query = query.eq("category", category);
+    }
 
-  const { data, error } = await query;
+    const { data, error } = await query;
 
-  if (error) {
-    console.error("Error fetching products:", error);
+    if (error) {
+      console.error("[getProducts] Supabase error:", error.message, error);
+      return [];
+    }
+
+    if (!data) {
+      console.warn("[getProducts] No data returned");
+      return [];
+    }
+
+    console.log(`[getProducts] Fetched ${data.length} products`);
+    return (data as DbProduct[]).map(dbProductToProduct);
+  } catch (err) {
+    console.error("[getProducts] Unexpected error:", err);
     return [];
   }
-
-  return (data as DbProduct[]).map(dbProductToProduct);
 }
 
 export async function getProductById(id: string): Promise<Product | null> {

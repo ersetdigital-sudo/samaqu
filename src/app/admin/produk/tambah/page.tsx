@@ -341,6 +341,12 @@ export default function TambahProdukPage() {
                   <p className="text-sm font-medium" style={{ color: "var(--espresso)" }}>
                     Ukuran untuk <span style={{ color: "var(--gold)" }}>{activeColor}</span>
                   </p>
+                  <div className="flex items-center gap-3 text-[11px] font-medium" style={{ color: "var(--text-muted)" }}>
+                    <span className="w-[60px]">Ukuran</span>
+                    <span className="w-20">Stok</span>
+                    <span className="w-36">Harga Khusus</span>
+                    <span className="w-28">SKU</span>
+                  </div>
                   {activeVariant.sizes.map((s, i) => (
                     <div key={i} className="flex items-center gap-3 flex-wrap">
                       <select value={s.size} onChange={(e) => updateSizeField(activeColor!, i, "size", e.target.value)}
@@ -350,7 +356,7 @@ export default function TambahProdukPage() {
                       <input type="number" value={s.stock || ""} onChange={(e) => updateSizeField(activeColor!, i, "stock", parseInt(e.target.value) || 0)}
                         placeholder="Stok" className="w-20 rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
                       <input value={s.priceOverride} onChange={(e) => updateSizeField(activeColor!, i, "priceOverride", e.target.value)}
-                        placeholder="Harga override" className="w-32 rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
+                        placeholder="Kosongkan jika sama" className="w-36 rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
                       <input value={s.sku} onChange={(e) => updateSizeField(activeColor!, i, "sku", e.target.value)}
                         placeholder="SKU" className="w-28 rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
                       {activeVariant.sizes.length > 1 && (
