@@ -5,9 +5,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard, ShoppingBag, Package, Users, FileText, Settings,
   Search, Bell, Menu, X, ChevronDown, Plus, TrendingUp, Eye, Edit,
-  DollarSign, ShoppingCart, UserPlus, Box, LogOut,
+  DollarSign, ShoppingCart, UserPlus, Box, LogOut, Lock, Mail,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import type { User } from "@supabase/supabase-js";
 
 type Panel = "dashboard" | "orders" | "products" | "customers" | "content" | "settings";
 
@@ -65,13 +66,35 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export default function AdminPage() {
+  const [user, setUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [authError, setAuthError] = useState("");
+  const [isSignUp, setIsSignUp] = useState(false);
   const [activePanel, setActivePanel] = useState<Panel>("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Listen to auth state changes
   useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setAuthLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Fetch data when authenticated
+  useEffect(() => {
+    if (!user) return;
     async function fetchData() {
       const [ordersRes, productsRes] = await Promise.all([
         supabase.from("orders").select("*, order_items(product_name, quantity)").order("created_at", { ascending: false }).limit(50),
@@ -82,7 +105,126 @@ export default function AdminPage() {
       setLoading(false);
     }
     fetchData();
-  }, []);
+  }, [user]);
+
+  async function handleAuth(e: React.FormEvent) {
+    e.preventDefault();
+    setAuthError("");
+
+    if (isSignUp) {
+      const { error } = await supabase.auth.signUp({ email, password });
+      if (error) setAuthError(error.message);
+      else setAuthError("Cek email kamu untuk verifikasi!");
+    } else {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) setAuthError(error.message);
+    }
+  }
+
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    setUser(null);
+    setActivePanel("dashboard");
+  }
+
+  const stats = useMemo(() => ({
+    revenue: orders.reduce((sum, o) => sum + o.total, 0),
+    totalOrders: orders.length,
+    pendingOrders: orders.filter((o) => o.status === "pending").length,
+    totalProducts: products.length,
+  }), [orders, products]);
+
+  const topProducts = useMemo(() => {
+    const counts: Record<string, { name: string; count: number }> = {};
+    orders.forEach((o) => {
+      o.order_items?.forEach((item) => {
+        if (!counts[item.product_name]) counts[item.product_name] = { name: item.product_name, count: 0 };
+        counts[item.product_name].count += item.quantity;
+      });
+    });
+    return Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 5);
+  }, [orders]);
+
+  // Loading state
+  if (authLoading) {
+    return (
+      <section className="min-h-screen flex items-center justify-center" style={{ background: "var(--cream)" }}>
+        <div className="w-6 h-6 border-2 rounded-full animate-spin" style={{ borderColor: "rgba(201,183,156,.3)", borderTopColor: "var(--gold)" }} />
+      </section>
+    );
+  }
+
+  // Login screen
+  if (!user) {
+    return (
+      <section className="min-h-screen flex items-center justify-center" style={{ background: "var(--cream)" }}>
+        <div className="w-full max-w-sm mx-auto px-6">
+          <div className="text-center mb-8">
+            <span className="text-3xl tracking-[0.2em] font-medium" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>SAMAQU</span>
+            <p className="text-[11px] tracking-[0.28em] uppercase mt-2" style={{ color: "var(--text-muted)" }}>Admin Panel</p>
+          </div>
+          <form onSubmit={handleAuth} className="card p-6">
+            <div className="flex items-center gap-2 mb-5">
+              <Lock size={18} style={{ color: "var(--gold)" }} />
+              <h2 className="text-lg font-semibold" style={{ color: "var(--espresso)" }}>{isSignUp ? "Daftar Akun Admin" : "Masuk ke Dashboard"}</h2>
+            </div>
+            <div className="space-y-3">
+              <div className="relative">
+                <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: "var(--text-muted)" }} />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Email admin"
+                  className="w-full rounded-xl pl-10 pr-4 py-3 text-sm outline-none"
+                  style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }}
+                  required
+                />
+              </div>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Password"
+                className="w-full rounded-xl px-4 py-3 text-sm outline-none"
+                style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }}
+                required
+                minLength={6}
+              />
+            </div>
+            {authError && (
+              <p className="text-[12px] mt-2" style={{ color: authError.includes("verifikasi") ? "var(--gold)" : "#e74c3c" }}>{authError}</p>
+            )}
+            <button type="submit" className="w-full mt-4 py-3 rounded-xl text-sm font-semibold text-white" style={{ background: "var(--espresso)" }}>
+              {isSignUp ? "Daftar" : "Masuk"}
+            </button>
+            <button type="button" onClick={() => { setIsSignUp(!isSignUp); setAuthError(""); }} className="w-full mt-3 py-2 text-[13px]" style={{ color: "var(--gold)" }}>
+              {isSignUp ? "Sudah punya akun? Masuk" : "Belum punya akun? Daftar"}
+            </button>
+          </form>
+        </div>
+      </section>
+    );
+  }
+
+  function go(panel: Panel) {
+    setActivePanel(panel);
+    setSidebarOpen(false);
+  }
+
+  useEffect(() => {
+    if (!user) return;
+    async function fetchData() {
+      const [ordersRes, productsRes] = await Promise.all([
+        supabase.from("orders").select("*, order_items(product_name, quantity)").order("created_at", { ascending: false }).limit(50),
+        supabase.from("products").select("*").order("created_at", { ascending: true }),
+      ]);
+      if (ordersRes.data) setOrders(ordersRes.data as Order[]);
+      if (productsRes.data) setProducts(productsRes.data as Product[]);
+      setLoading(false);
+    }
+    fetchData();
+  }, [user]);
 
   const stats = useMemo(() => ({
     revenue: orders.reduce((sum, o) => sum + o.total, 0),
@@ -150,11 +292,18 @@ export default function AdminPage() {
           ))}
         </nav>
 
-        <div className="px-4 pb-6">
+        <div className="px-4 pb-6 space-y-3">
           <div className="rounded-xl p-4" style={{ background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.08)" }}>
             <p className="text-sm font-semibold" style={{ color: "var(--cream)" }}>Butuh bantuan?</p>
             <p className="text-xs mt-1 leading-relaxed" style={{ color: "#9f9690" }}>Hubungi tim support SAMAQU untuk panduan pengelolaan.</p>
             <button className="mt-3 w-full text-sm font-semibold py-2 rounded-lg text-white" style={{ background: "linear-gradient(135deg, var(--gold), #96742f)" }}>Pusat Bantuan</button>
+          </div>
+          <div className="px-1">
+            <p className="text-xs mb-2 truncate" style={{ color: "#9f9690" }}>{user.email}</p>
+            <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 text-sm font-medium py-2.5 rounded-lg transition-all hover:bg-[rgba(255,255,255,.08)]" style={{ color: "#d4ccc2", border: "1px solid rgba(255,255,255,.1)" }}>
+              <LogOut size={16} strokeWidth={1.6} />
+              Keluar
+            </button>
           </div>
         </div>
       </aside>
@@ -184,11 +333,16 @@ export default function AdminPage() {
                 <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full" style={{ background: "var(--gold)" }} />
               </button>
               <div className="flex items-center gap-2.5 pl-2">
-                <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-semibold text-sm" style={{ background: "linear-gradient(135deg, var(--gold), #96742f)" }}>SA</div>
-                <div className="hidden sm:block leading-tight">
-                  <p className="text-sm font-semibold" style={{ color: "var(--espresso)" }}>Admin SAMAQU</p>
-                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>Pemilik Toko</p>
+                <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-semibold text-sm" style={{ background: "linear-gradient(135deg, var(--gold), #96742f)" }}>
+                  {user.email?.charAt(0).toUpperCase() || "A"}
                 </div>
+                <div className="hidden sm:block leading-tight">
+                  <p className="text-sm font-semibold" style={{ color: "var(--espresso)" }}>{user.email?.split("@")[0] || "Admin"}</p>
+                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>{user.email}</p>
+                </div>
+                <button onClick={handleLogout} className="p-2 rounded-lg transition-colors hover:bg-[var(--bg-tertiary)]" title="Keluar">
+                  <LogOut size={18} strokeWidth={1.6} style={{ color: "var(--text-muted)" }} />
+                </button>
               </div>
             </div>
           </div>
