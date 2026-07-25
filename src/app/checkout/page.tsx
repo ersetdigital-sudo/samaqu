@@ -148,14 +148,18 @@ function CheckoutContent() {
       {/* Breadcrumb + Title */}
       <div className="max-w-6xl mx-auto px-5 sm:px-8 pt-8 sm:pt-10 pb-2">
         <nav className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm font-ui" style={{ color: "var(--text-muted)" }}>
-          <span>Keranjang</span>
+          <span style={{ color: orderPlaced ? "var(--text-muted)" : "var(--text-muted)" }}>Keranjang</span>
           <span style={{ color: "rgba(64,50,37,.3)" }}>/</span>
-          <span className="font-medium" style={{ color: "var(--gold)" }}>Checkout</span>
+          <span className="font-medium" style={{ color: orderPlaced ? "var(--text-muted)" : "var(--gold)" }}>Checkout</span>
           <span style={{ color: "rgba(64,50,37,.3)" }}>/</span>
-          <span>Selesai</span>
+          <span className="font-medium" style={{ color: orderPlaced ? "var(--gold)" : "var(--text-muted)" }}>Selesai</span>
         </nav>
-        <h1 className="text-3xl sm:text-4xl lg:text-5xl italic mt-3 sm:mt-4" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>Detail Pemesanan</h1>
-        <p className="mt-2 max-w-xl text-[13px] sm:text-sm font-ui leading-relaxed" style={{ color: "var(--text-secondary)" }}>Lengkapi data di bawah untuk menyelesaikan pesanan Anda. Tim kami siap membantu konsultasi ukuran bila diperlukan.</p>
+        <h1 className="text-3xl sm:text-4xl lg:text-5xl italic mt-3 sm:mt-4" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
+          {orderPlaced ? "Pesanan Terkirim" : "Detail Pemesanan"}
+        </h1>
+        <p className="mt-2 max-w-xl text-[13px] sm:text-sm font-ui leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+          {orderPlaced ? "Pesanan Anda sedang menunggu verifikasi admin." : "Lengkapi data di bawah untuk menyelesaikan pesanan Anda. Tim kami siap membantu konsultasi ukuran bila diperlukan."}
+        </p>
       </div>
 
       {/* Main: 2-column */}
