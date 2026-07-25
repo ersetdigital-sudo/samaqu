@@ -3,12 +3,18 @@
 import { useState, use, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Minus, Plus, MessageCircle, ChevronLeft, ChevronRight, Play } from "lucide-react";
+import { ArrowLeft, Minus, Plus, MessageCircle, ChevronLeft, ChevronRight, Play, ShoppingBag } from "lucide-react";
 import ImageZoom from "@/components/ImageZoom";
 import { getProductById, colorMap, type Product, type MediaItem } from "@/lib/katalog-data";
 
 const sizes = ["S", "M", "L", "XL", "XXL"];
 const waBase = "https://wa.me/6281234567890?text=";
+
+function checkoutLink(product: Product, size: string, color: string, qty: number, notes: string) {
+  const params = new URLSearchParams({ id: product.id, color, size, qty: String(qty) });
+  if (notes) params.set("notes", notes);
+  return `/checkout?${params.toString()}`;
+}
 
 function waLink(product: Product, size: string, color: string, qty: number, notes: string) {
   const msg = `Halo Admin SAMAQU, saya ingin memesan:\n\nProduk: ${product.name}\nKain: ${product.kain || "-"}\nWarna: ${color}\nUkuran: ${size}\nJumlah: ${qty}\n${notes ? `Catatan: ${notes}\n` : ""}\nTotal: Rp ${(product.price * qty).toLocaleString("id-ID")}\n\nMohon konfirmasi ketersediaan. Terima kasih!`;
@@ -252,14 +258,23 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           MOBILE STICKY FOOTER
       ═══════════════════════════════════════ */}
       <div className="md:hidden fixed bottom-0 inset-x-0 z-40 px-4 pb-4 pt-3" style={{ background: "linear-gradient(to top, var(--cream) 70%, transparent)" }}>
-        <a href={waLink(product, selectedSize, selectedColor, qty, notes)} target="_blank" rel="noopener"
-          className="flex items-center justify-center gap-2.5 w-full py-3.5 rounded-xl text-[12px] tracking-[0.08em] uppercase font-ui font-semibold transition-all duration-300 active:scale-[0.98]"
-          style={{ background: "var(--gold)", color: "white", boxShadow: "0 6px 20px -6px rgba(184,145,70,.4)" }}>
-          <MessageCircle size={16} strokeWidth={1.5} />
-          <span>Pesan via WhatsApp</span>
-          <span className="mx-1.5 w-px h-3.5" style={{ background: "rgba(255,255,255,.3)" }} />
-          <span>Rp {(product.price * qty).toLocaleString("id-ID")}</span>
-        </a>
+        <div className="flex gap-2">
+          <a href={checkoutLink(product, selectedSize, selectedColor, qty, notes)}
+            className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl text-[11px] tracking-[0.06em] uppercase font-ui font-semibold transition-all duration-300 active:scale-[0.98]"
+            style={{ background: "var(--espresso)", color: "white", boxShadow: "0 6px 20px -6px rgba(45,33,27,.3)" }}>
+            <ShoppingBag size={15} strokeWidth={1.5} />
+            <span>Beli Sekarang</span>
+          </a>
+          <a href={waLink(product, selectedSize, selectedColor, qty, notes)} target="_blank" rel="noopener"
+            className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl text-[11px] tracking-[0.06em] uppercase font-ui font-semibold transition-all duration-300 active:scale-[0.98]"
+            style={{ background: "var(--gold)", color: "white", boxShadow: "0 6px 20px -6px rgba(184,145,70,.4)" }}>
+            <MessageCircle size={15} strokeWidth={1.5} />
+            <span>WhatsApp</span>
+          </a>
+        </div>
+        <p className="text-center text-[11px] font-ui font-semibold mt-2" style={{ color: "var(--gold)" }}>
+          Rp {(product.price * qty).toLocaleString("id-ID")}
+        </p>
       </div>
 
       {/* ═══════════════════════════════════════
@@ -385,14 +400,20 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               </div>
             </div>
 
-            <a href={waLink(product, selectedSize, selectedColor, qty, notes)} target="_blank" rel="noopener"
-              className="flex items-center justify-center gap-3 w-full py-4 rounded-sm text-[13px] tracking-[0.1em] uppercase font-ui font-semibold transition-all duration-300 hover:scale-[1.01] hover:shadow-lg"
-              style={{ background: "var(--gold)", color: "white", boxShadow: "0 8px 28px -8px rgba(184,145,70,.45)" }}>
-              <MessageCircle size={18} strokeWidth={1.5} />
-              <span>Pesan via WhatsApp</span>
-              <span className="mx-2 w-px h-4" style={{ background: "rgba(255,255,255,.3)" }} />
-              <span>Rp {(product.price * qty).toLocaleString("id-ID")}</span>
-            </a>
+            <div className="flex gap-3">
+              <a href={checkoutLink(product, selectedSize, selectedColor, qty, notes)}
+                className="flex-1 flex items-center justify-center gap-2.5 py-4 rounded-sm text-[12px] tracking-[0.08em] uppercase font-ui font-semibold transition-all duration-300 hover:scale-[1.01] hover:shadow-lg"
+                style={{ background: "var(--espresso)", color: "white", boxShadow: "0 8px 28px -8px rgba(45,33,27,.35)" }}>
+                <ShoppingBag size={16} strokeWidth={1.5} />
+                <span>Beli Sekarang</span>
+              </a>
+              <a href={waLink(product, selectedSize, selectedColor, qty, notes)} target="_blank" rel="noopener"
+                className="flex-1 flex items-center justify-center gap-2.5 py-4 rounded-sm text-[12px] tracking-[0.08em] uppercase font-ui font-semibold transition-all duration-300 hover:scale-[1.01] hover:shadow-lg"
+                style={{ background: "var(--gold)", color: "white", boxShadow: "0 8px 28px -8px rgba(184,145,70,.45)" }}>
+                <MessageCircle size={16} strokeWidth={1.5} />
+                <span>WhatsApp</span>
+              </a>
+            </div>
           </motion.div>
         </div>
       </div>
