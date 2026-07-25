@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { supabase } from "@/lib/supabase";
 
 /* ── Video sources ── */
 const HERO_VIDEO = "/video/Thobe%20Gabungan%20Imron%20dan%20Jiharkah%20Deep%20maroon%20B-02%20Ambience.mp4";
@@ -11,10 +12,39 @@ const waHref =
     "Halo Admin SAMAQU, saya tertarik dengan koleksi Anda dan ingin bertanya soal pemesanan."
   );
 
+/* ── Default values (match database defaults) ── */
+const DEFAULTS = {
+  eyebrow_text: "Premium Muslim Menswear",
+  title_line1: "Busana yang Layak",
+  title_line2: "Menemani Setiap Momen.",
+  description: "Dirancang dengan material pilihan, potongan yang presisi, dan detail yang dibuat untuk kenyamanan dalam setiap aktivitas.",
+  feature1: "6 Koleksi Eksklusif",
+  feature2: "Berbagai Jenis Kain",
+  feature3: "Panduan Size Lengkap",
+};
+
 export default function Hero() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [shouldPlay, setShouldPlay] = useState(false);
   const [muted, setMuted] = useState(true);
+  const [heroData, setHeroData] = useState(DEFAULTS);
+
+  // Fetch hero content from Supabase
+  useEffect(() => {
+    supabase.from("hero_content").select("*").eq("id", 1).single().then(({ data }) => {
+      if (data && data.is_active) {
+        setHeroData({
+          eyebrow_text: data.eyebrow_text || DEFAULTS.eyebrow_text,
+          title_line1: data.title_line1 || DEFAULTS.title_line1,
+          title_line2: data.title_line2 || DEFAULTS.title_line2,
+          description: data.description || DEFAULTS.description,
+          feature1: data.feature1 || DEFAULTS.feature1,
+          feature2: data.feature2 || DEFAULTS.feature2,
+          feature3: data.feature3 || DEFAULTS.feature3,
+        });
+      }
+    }).catch(() => {}); // Silent fail - use defaults
+  }, []);
 
   useEffect(() => {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -127,7 +157,7 @@ export default function Hero() {
                 className="w-6 sm:w-8 h-px"
                 style={{ background: "var(--gold)" }}
               />
-              Premium Muslim Menswear
+              {heroData.eyebrow_text}
             </p>
 
             <h1 className="mb-5 sm:mb-6" style={{ color: "var(--cream)" }}>
@@ -137,7 +167,7 @@ export default function Hero() {
                   fontFamily: "var(--font-cormorant), Georgia, serif",
                 }}
               >
-                Busana yang Layak
+                {heroData.title_line1}
               </span>
               <span
                 className="hero-anim hero-line block font-semibold tracking-[-0.02em] leading-[1.08] text-[8.5vw] sm:text-[3.4rem] lg:text-[3.6rem] xl:text-[3.9rem]"
@@ -146,7 +176,7 @@ export default function Hero() {
                   color: "#e0b563",
                 }}
               >
-                Menemani Setiap Momen.
+                {heroData.title_line2}
               </span>
             </h1>
 
@@ -154,8 +184,7 @@ export default function Hero() {
               className="hero-anim hero-line text-[14px] sm:text-[15px] lg:text-base leading-relaxed max-w-md sm:max-w-lg mb-5 sm:mb-6"
               style={{ color: "rgba(248,245,241,.85)" }}
             >
-              Dirancang dengan material pilihan, potongan yang presisi, dan
-              detail yang dibuat untuk kenyamanan dalam setiap aktivitas.
+              {heroData.description}
             </p>
 
             <ul
@@ -164,15 +193,15 @@ export default function Hero() {
             >
               <li className="flex items-center gap-2 sm:gap-2.5">
                 <CheckIcon />
-                6 Koleksi Eksklusif
+                {heroData.feature1}
               </li>
               <li className="flex items-center gap-2 sm:gap-2.5">
                 <CheckIcon />
-                Berbagai Jenis Kain
+                {heroData.feature2}
               </li>
               <li className="flex items-center gap-2 sm:gap-2.5">
                 <CheckIcon />
-                Panduan Size Lengkap
+                {heroData.feature3}
               </li>
             </ul>
 
