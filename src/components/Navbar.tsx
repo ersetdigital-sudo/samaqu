@@ -12,7 +12,7 @@ import CartDrawer from "@/components/CartDrawer";
 const navLinks = [
   { href: "/katalog", label: "Katalog", Icon: Storefront },
   { href: "/testimoni", label: "Testimoni", Icon: MessageCircle },
-  { href: "#tentang", label: "Tentang", Icon: BookOpen },
+  { href: "/tentang-kami", label: "Tentang Kami", Icon: BookOpen },
   { href: "#size", label: "Panduan Size", Icon: Ruler },
   { href: "#cara-pesan", label: "Cara Pemesanan", Icon: ListChecks },
   { href: "#faq", label: "FAQ", Icon: Question },
