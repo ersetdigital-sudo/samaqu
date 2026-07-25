@@ -154,7 +154,7 @@ export default function AdminPage() {
                 Dashboard admin untuk mengelola pesanan, produk, pelanggan, dan konten website SAMAQU.
               </p>
             </div>
-            <p className="text-xs" style={{ color: "rgba(212,197,181,.4)" }}>© 2024 SAMAQU. Busana yang Layak Menemani Setiap Momen.</p>
+            <p className="text-xs" style={{ color: "rgba(212,197,181,.4)" }}>© 2026 SAMAQU. Semua hak cipta dilindungi.</p>
           </div>
         </div>
 
