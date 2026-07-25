@@ -278,7 +278,7 @@ export default function KatalogPage() {
     }
 
     return result;
-  }, [category, selectedKain, selectedColor, selectedSeries, sort, searchQuery, drawerFilters]);
+  }, [products, category, selectedKain, selectedColor, selectedSeries, sort, searchQuery, drawerFilters]);
 
   const visible = filtered.slice(0, visibleCount);
   const hasMore = visibleCount < filtered.length;
