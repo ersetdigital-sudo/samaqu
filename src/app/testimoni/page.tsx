@@ -171,8 +171,8 @@ export default function TestimoniPage() {
         {/* ═══ HERO ═══ */}
         <div className="relative overflow-hidden" style={{ background: "#2d211b", color: "#f8f5f1" }}>
           <div className="absolute inset-0 opacity-10" style={{ background: "radial-gradient(circle at 30% 20%, #b89146 0, transparent 45%), radial-gradient(circle at 80% 90%, #9d7a3a 0, transparent 40%)" }} />
-          <div className="relative text-center px-4 py-10 sm:px-8 sm:py-20 lg:py-28 max-w-4xl mx-auto">
-            <p className="uppercase font-medium mb-2.5 sm:mb-5 text-[9px] sm:text-sm" style={{ color: "#b89146", letterSpacing: "0.12em", wordBreak: "break-word" }}>Testimoni Pelanggan</p>
+          <div className="relative text-center px-4 pt-14 pb-10 sm:px-8 sm:py-20 lg:py-28 max-w-4xl mx-auto">
+            <p className="uppercase font-medium mb-2.5 sm:mb-5 text-[9px] sm:text-sm" style={{ color: "#b89146", letterSpacing: "0.12em" }}>Testimoni Pelanggan</p>
             <h1 className="font-medium text-[1.5rem] sm:text-6xl lg:text-7xl leading-tight sm:leading-[1.05]" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>
               Apa Kata Mereka
             </h1>
