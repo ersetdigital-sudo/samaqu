@@ -75,7 +75,7 @@ export default function Footer() {
           className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-8 text-xs font-ui text-center md:text-left"
           style={{ color: "rgba(216,196,168,.5)" }}
         >
-          <p>&copy; 2024 SAMAQU. Semua hak cipta dilindungi.</p>
+          <p>&copy; 2026 SAMAQU. Semua hak cipta dilindungi.</p>
           <p>Dibuat dengan ketelitian &amp; hati.</p>
         </div>
       </div>
