@@ -35,7 +35,7 @@ function CheckoutContent() {
   const colorParam = searchParams.get("color") || "";
   const sizeParam = searchParams.get("size") || "M";
   const qtyParam = parseInt(searchParams.get("qty") || "1", 10);
-  const product = getProductById(productId);
+  const product = getProductById(productId)!;
   const { items, clearCart } = useCart();
 
   const [qty, setQty] = useState(qtyParam || 1);
