@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Plus, X, Upload, Image as ImageIcon, Video, Loader2, Trash2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { colorMap } from "@/lib/katalog-data";
+import AdminShell from "@/components/AdminShell";
 
 const CATEGORIES = ["Thobe", "Kandora", "Koko", "Vest", "Kabak", "Cover & Hanger"] as const;
 const SIZES = ["S", "M", "L", "XL", "XXL"] as const;
@@ -230,13 +231,14 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
   }
 
   if (loading) {
-    return <section className="min-h-screen flex items-center justify-center" style={{ background: "var(--cream)" }}><Loader2 size={24} className="animate-spin" style={{ color: "var(--gold)" }} /></section>;
+    return <AdminShell><section className="min-h-screen flex items-center justify-center" style={{ background: "var(--cream)" }}><Loader2 size={24} className="animate-spin" style={{ color: "var(--gold)" }} /></section></AdminShell>;
   }
 
   const activeVariant = variants.find((v) => v.color === activeColor);
   const activeMedia = media.filter((m) => m.color === activeColor);
 
   return (
+    <AdminShell>
     <section className="min-h-screen" style={{ background: "var(--cream)" }}>
       <div className="sticky top-0 z-20 backdrop-blur" style={{ background: "rgba(248,245,241,.8)", borderBottom: "1px solid rgba(64,50,37,.06)" }}>
         <div className="max-w-6xl mx-auto px-5 lg:px-8 py-4 flex items-center gap-4">
@@ -375,5 +377,6 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
 
       <style jsx global>{`.card { background: #fffdfb; border: 1px solid rgba(64,50,37,.06); border-radius: 1rem; box-shadow: 0 1px 2px rgba(64,50,37,.03); }`}</style>
     </section>
+    </AdminShell>
   );
 }

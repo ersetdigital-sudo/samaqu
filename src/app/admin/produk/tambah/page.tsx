@@ -8,6 +8,7 @@ import {
   ChevronDown, Check, Loader2, Trash2,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import AdminShell from "@/components/AdminShell";
 import { colorMap } from "@/lib/katalog-data";
 
 const CATEGORIES = ["Thobe", "Kandora", "Koko", "Vest", "Kabak", "Cover & Hanger"] as const;
@@ -248,6 +249,7 @@ export default function TambahProdukPage() {
   const activeMedia = media.filter((m) => m.color === activeColor);
 
   return (
+    <AdminShell>
     <section className="min-h-screen" style={{ background: "var(--cream)" }}>
       {/* Header */}
       <div className="sticky top-0 z-20 backdrop-blur" style={{ background: "rgba(248,245,241,.8)", borderBottom: "1px solid rgba(64,50,37,.06)" }}>
@@ -469,5 +471,6 @@ export default function TambahProdukPage() {
         .card { background: #fffdfb; border: 1px solid rgba(64,50,37,.06); border-radius: 1rem; box-shadow: 0 1px 2px rgba(64,50,37,.03); }
       `}</style>
     </section>
+    </AdminShell>
   );
 }
