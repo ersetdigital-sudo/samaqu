@@ -3,9 +3,11 @@
 import { useState, use, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Minus, Plus, MessageCircle, ChevronLeft, ChevronRight, Play, ShoppingBag } from "lucide-react";
+import { ArrowLeft, Minus, Plus, ChevronLeft, ChevronRight, Play, ShoppingBag, ShoppingCart } from "lucide-react";
 import ImageZoom from "@/components/ImageZoom";
 import { getProductById, colorMap, type Product, type MediaItem } from "@/lib/katalog-data";
+import { useCart } from "@/lib/cart-context";
+import { useToast } from "@/components/Toast";
 
 const sizes = ["S", "M", "L", "XL", "XXL"];
 const waBase = "https://wa.me/6281234567890?text=";
@@ -87,6 +89,23 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const [zoomOpen, setZoomOpen] = useState(false);
   const [zoomIndex, setZoomIndex] = useState(0);
   const carouselRef = useRef<HTMLDivElement>(null);
+  const { addItem } = useCart();
+  const toast = useToast();
+
+  function handleAddToCart() {
+    if (!product) return;
+    addItem({
+      id: product.id,
+      name: product.name,
+      image: product.image,
+      price: product.price,
+      color: selectedColor || product.colors[0] || "-",
+      size: selectedSize,
+      qty,
+      notes: notes || undefined,
+    });
+    toast.show("Ditambahkan ke keranjang");
+  }
 
   const handleCarouselScroll = () => {
     if (!carouselRef.current) return;
@@ -276,17 +295,17 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           </div>
           {/* Action buttons */}
           <div className="flex gap-2">
+            <button onClick={handleAddToCart}
+              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[11px] tracking-[0.06em] uppercase font-ui font-semibold transition-all duration-300 active:scale-[0.98]"
+              style={{ background: "transparent", color: "var(--gold)", border: "1.5px solid var(--gold)" }}>
+              <ShoppingCart size={15} strokeWidth={1.5} />
+              <span>Keranjang</span>
+            </button>
             <a href={checkoutLink(product, selectedSize, selectedColor, qty, notes)}
               className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[11px] tracking-[0.06em] uppercase font-ui font-semibold transition-all duration-300 active:scale-[0.98]"
               style={{ background: "var(--espresso)", color: "white" }}>
               <ShoppingBag size={15} strokeWidth={1.5} />
               <span>Beli Sekarang</span>
-            </a>
-            <a href={waLink(product, selectedSize, selectedColor, qty, notes)} target="_blank" rel="noopener"
-              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[11px] tracking-[0.06em] uppercase font-ui font-semibold transition-all duration-300 active:scale-[0.98]"
-              style={{ background: "var(--gold)", color: "white" }}>
-              <MessageCircle size={15} strokeWidth={1.5} />
-              <span>WhatsApp</span>
             </a>
           </div>
         </div>
@@ -416,17 +435,17 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             </div>
 
             <div className="flex gap-3">
+              <button onClick={handleAddToCart}
+                className="flex-1 flex items-center justify-center gap-2.5 py-4 rounded-sm text-[12px] tracking-[0.08em] uppercase font-ui font-semibold transition-all duration-300 hover:scale-[1.01]"
+                style={{ background: "transparent", color: "var(--gold)", border: "1.5px solid var(--gold)" }}>
+                <ShoppingCart size={16} strokeWidth={1.5} />
+                <span>Keranjang</span>
+              </button>
               <a href={checkoutLink(product, selectedSize, selectedColor, qty, notes)}
                 className="flex-1 flex items-center justify-center gap-2.5 py-4 rounded-sm text-[12px] tracking-[0.08em] uppercase font-ui font-semibold transition-all duration-300 hover:scale-[1.01] hover:shadow-lg"
                 style={{ background: "var(--espresso)", color: "white", boxShadow: "0 8px 28px -8px rgba(45,33,27,.35)" }}>
                 <ShoppingBag size={16} strokeWidth={1.5} />
                 <span>Beli Sekarang</span>
-              </a>
-              <a href={waLink(product, selectedSize, selectedColor, qty, notes)} target="_blank" rel="noopener"
-                className="flex-1 flex items-center justify-center gap-2.5 py-4 rounded-sm text-[12px] tracking-[0.08em] uppercase font-ui font-semibold transition-all duration-300 hover:scale-[1.01] hover:shadow-lg"
-                style={{ background: "var(--gold)", color: "white", boxShadow: "0 8px 28px -8px rgba(184,145,70,.45)" }}>
-                <MessageCircle size={16} strokeWidth={1.5} />
-                <span>WhatsApp</span>
               </a>
             </div>
           </motion.div>

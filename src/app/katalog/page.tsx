@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence, Variants } from "framer-motion";
-import { SlidersHorizontal, X, ChevronDown, ArrowRight } from "lucide-react";
+import { SlidersHorizontal, X, ChevronDown, ArrowRight, ShoppingCart } from "lucide-react";
 import {
   products,
   allCategories,
@@ -14,6 +14,8 @@ import {
   type Category,
   type Product,
 } from "@/lib/katalog-data";
+import { useCart } from "@/lib/cart-context";
+import { useToast } from "@/components/Toast";
 
 /* ── Animation ── */
 const cardVariants: Variants = {
@@ -50,6 +52,24 @@ function Swatch({ color, size = 16 }: { color: string; size?: number }) {
 
 /* ── Product Card ── */
 function ProductCard({ product, index }: { product: Product; index: number }) {
+  const { addItem } = useCart();
+  const toast = useToast();
+
+  function handleAddToCart(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    addItem({
+      id: product.id,
+      name: product.name,
+      image: product.image,
+      price: product.price,
+      color: product.colors[0] || "-",
+      size: "M",
+      qty: 1,
+    });
+    toast.show("Ditambahkan ke keranjang");
+  }
+
   return (
     <motion.div
       layout
@@ -99,6 +119,14 @@ function ProductCard({ product, index }: { product: Product; index: number }) {
             {product.tag}
           </span>
         )}
+        {/* Quick Add to Cart button */}
+        <button
+          onClick={handleAddToCart}
+          className="absolute bottom-3 right-3 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 opacity-0 group-hover:opacity-100 hover:scale-110 active:scale-95 z-10"
+          style={{ background: "var(--gold)", color: "white", boxShadow: "0 4px 12px -2px rgba(181,140,74,.4)" }}
+          aria-label="Tambah ke keranjang">
+          <ShoppingCart size={15} strokeWidth={1.8} />
+        </button>
         {/* Quick View pill */}
         <div className="absolute bottom-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
           <span

@@ -3,6 +3,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { MobileDrawer, MobileDrawerCtx } from "@/components/ui/drawer";
 import { Storefront, BookOpen, Ruler, ListChecks, Question } from "@phosphor-icons/react";
+import { ShoppingBag } from "lucide-react";
+import { useCart } from "@/lib/cart-context";
+import Link from "next/link";
 
 /* ── Nav data ── */
 const navLinks = [
@@ -100,7 +103,7 @@ export default function Navbar() {
                 ))}
               </ul>
 
-              {/* Right: CTA + hamburger */}
+              {/* Right: CTA + cart + hamburger */}
               <div className="flex items-center gap-4">
                 <a
                   href="/katalog"
@@ -113,6 +116,15 @@ export default function Navbar() {
                     style={{ background: "var(--gold)" }}
                   />
                 </a>
+
+                {/* Cart icon */}
+                <Link href="/cart"
+                  className="relative grid place-items-center w-10 h-10 transition-colors duration-500"
+                  style={{ color: scrolled ? "var(--espresso)" : "var(--cream)" }}
+                  aria-label="Keranjang belanja">
+                  <ShoppingBag size={20} strokeWidth={1.5} />
+                  <CartBadge />
+                </Link>
 
                 {/* Hamburger — opens drawer */}
                 <button
@@ -140,6 +152,43 @@ export default function Navbar() {
       </MobileDrawer>
     </MobileDrawerCtx.Provider>
   );
+}
+
+/* ── Cart badge with bounce animation ── */
+function CartBadge() {
+  const { totalItems } = useCart();
+  const [bump, setBump] = useState(false);
+  const prev = usePrevious(totalItems);
+
+  useEffect(() => {
+    if (prev !== undefined && totalItems > prev) {
+      setBump(true);
+      const t = setTimeout(() => setBump(false), 400);
+      return () => clearTimeout(t);
+    }
+  }, [totalItems, prev]);
+
+  if (totalItems === 0) return null;
+
+  return (
+    <span
+      className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-[10px] font-ui font-bold"
+      style={{
+        background: "var(--gold)",
+        color: "white",
+        transform: bump ? "scale(1.3)" : "scale(1)",
+        transition: "transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
+      }}>
+      {totalItems}
+    </span>
+  );
+}
+
+function usePrevious<T>(value: T): T | undefined {
+  const ref = useState<T | undefined>(undefined);
+  const current = ref[0];
+  ref[0] = value as T;
+  return current;
 }
 
 /* ── Drawer nav content ── */
