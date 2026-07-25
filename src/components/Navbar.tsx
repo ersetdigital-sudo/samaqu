@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { usePathname } from "next/navigation";
 import { MobileDrawer, MobileDrawerCtx } from "@/components/ui/drawer";
 import { Storefront, BookOpen, Ruler, ListChecks, Question } from "@phosphor-icons/react";
 import { ShoppingBag } from "lucide-react";
@@ -17,16 +18,19 @@ const navLinks = [
 ];
 
 export default function Navbar() {
+  const pathname = usePathname();
+  const isHome = pathname === "/";
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
 
   /* ── Scroll: transparent over hero → solid after hero ── */
   const onScroll = useCallback(() => {
+    if (!isHome) { setScrolled(true); return; }
     const hero = document.getElementById("hero");
     const threshold = hero ? hero.offsetHeight - 90 : 200;
     setScrolled(window.scrollY > threshold);
-  }, []);
+  }, [isHome]);
 
   useEffect(() => {
     onScroll();
@@ -80,7 +84,7 @@ export default function Navbar() {
                   alt="SAMAQU"
                   className="h-8 sm:h-10 w-auto transition-[filter] duration-500"
                   style={{
-                    filter: scrolled ? "none" : "invert(1) brightness(0.95)",
+                    filter: !isHome || scrolled ? "none" : "invert(1) brightness(0.95)",
                   }}
                 />
               </a>
