@@ -66,6 +66,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export default function AdminPage() {
+  // ALL hooks must be declared BEFORE any early returns
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -78,7 +79,26 @@ export default function AdminPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Check session once on mount
+  // All useMemo/useCallback hooks
+  const stats = useMemo(() => ({
+    revenue: orders.reduce((sum, o) => sum + o.total, 0),
+    totalOrders: orders.length,
+    pendingOrders: orders.filter((o) => o.status === "pending").length,
+    totalProducts: products.length,
+  }), [orders, products]);
+
+  const topProducts = useMemo(() => {
+    const counts: Record<string, { name: string; count: number; total: number }> = {};
+    orders.forEach((o) => {
+      o.order_items?.forEach((item) => {
+        if (!counts[item.product_name]) counts[item.product_name] = { name: item.product_name, count: 0, total: 0 };
+        counts[item.product_name].count += item.quantity;
+      });
+    });
+    return Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 5);
+  }, [orders]);
+
+  // All useEffect hooks
   useEffect(() => {
     let mounted = true;
     async function init() {
@@ -101,26 +121,30 @@ export default function AdminPage() {
     return () => { mounted = false; };
   }, []);
 
-  // Fetch data when authenticated
   useEffect(() => {
     if (!user || role !== "admin") return;
+    let mounted = true;
     async function fetchData() {
       try {
         const [ordersRes, productsRes] = await Promise.all([
           supabase.from("orders").select("*, order_items(product_name, quantity)").order("created_at", { ascending: false }).limit(50),
           supabase.from("products").select("*").order("created_at", { ascending: true }),
         ]);
-        if (ordersRes.data) setOrders(ordersRes.data as Order[]);
-        if (productsRes.data) setProducts(productsRes.data as Product[]);
+        if (mounted) {
+          if (ordersRes.data) setOrders(ordersRes.data as Order[]);
+          if (productsRes.data) setProducts(productsRes.data as Product[]);
+        }
       } catch (err) {
         console.error("Error fetching data:", err);
       } finally {
-        setLoading(false);
+        if (mounted) setLoading(false);
       }
     }
     fetchData();
+    return () => { mounted = false; };
   }, [user, role]);
 
+  // Handler functions (not hooks)
   async function handleAuth(e: React.FormEvent) {
     e.preventDefault();
     setAuthError("");
@@ -129,7 +153,6 @@ export default function AdminPage() {
       setAuthError(error.message);
       return;
     }
-    // Set user and check role
     const u = data.user;
     setUser(u);
     const { data: adminData } = await supabase.from("admins").select("role").eq("user_id", u.id).single();
@@ -145,7 +168,12 @@ export default function AdminPage() {
     setActivePanel("dashboard");
   }
 
-  // Loading state
+  function go(panel: Panel) {
+    setActivePanel(panel);
+    setSidebarOpen(false);
+  }
+
+  // NOW early returns are safe (all hooks already called)
   if (authLoading) {
     return (
       <section className="min-h-screen flex items-center justify-center" style={{ background: "var(--cream)" }}>
@@ -154,7 +182,6 @@ export default function AdminPage() {
     );
   }
 
-  // Access denied for non-admin users
   if (user && role !== "admin") {
     return (
       <section className="min-h-screen flex items-center justify-center" style={{ background: "var(--cream)" }}>
@@ -175,7 +202,6 @@ export default function AdminPage() {
     );
   }
 
-  // Login screen
   if (!user) {
     return (
       <section className="min-h-screen flex" style={{ background: "#f0f2f5" }}>
@@ -263,43 +289,6 @@ export default function AdminPage() {
         </div>
       </section>
     );
-  }
-
-  useEffect(() => {
-    if (!user) return;
-    async function fetchData() {
-      const [ordersRes, productsRes] = await Promise.all([
-        supabase.from("orders").select("*, order_items(product_name, quantity)").order("created_at", { ascending: false }).limit(50),
-        supabase.from("products").select("*").order("created_at", { ascending: true }),
-      ]);
-      if (ordersRes.data) setOrders(ordersRes.data as Order[]);
-      if (productsRes.data) setProducts(productsRes.data as Product[]);
-      setLoading(false);
-    }
-    fetchData();
-  }, [user]);
-
-  const stats = useMemo(() => ({
-    revenue: orders.reduce((sum, o) => sum + o.total, 0),
-    totalOrders: orders.length,
-    pendingOrders: orders.filter((o) => o.status === "pending").length,
-    totalProducts: products.length,
-  }), [orders, products]);
-
-  const topProducts = useMemo(() => {
-    const counts: Record<string, { name: string; count: number; total: number }> = {};
-    orders.forEach((o) => {
-      o.order_items?.forEach((item) => {
-        if (!counts[item.product_name]) counts[item.product_name] = { name: item.product_name, count: 0, total: 0 };
-        counts[item.product_name].count += item.quantity;
-      });
-    });
-    return Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 5);
-  }, [orders]);
-
-  function go(panel: Panel) {
-    setActivePanel(panel);
-    setSidebarOpen(false);
   }
 
   return (
