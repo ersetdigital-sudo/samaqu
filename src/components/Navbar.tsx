@@ -120,7 +120,7 @@ export default function Navbar() {
                 {/* Cart icon */}
                 <button
                   onClick={() => setCartOpen(true)}
-                  className="relative grid place-items-center w-10 h-10 transition-colors duration-500"
+                  className="relative grid place-items-center w-10 h-10 transition-colors duration-500 cursor-pointer"
                   style={{ color: scrolled ? "var(--espresso)" : "var(--cream)" }}
                   aria-label="Keranjang belanja">
                   <ShoppingBag size={20} strokeWidth={1.5} />
