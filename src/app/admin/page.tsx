@@ -84,22 +84,28 @@ function AdminPageInner() {
 
   // All useMemo/useCallback hooks
   const stats = useMemo(() => ({
-    revenue: orders.reduce((sum, o) => sum + o.total, 0),
+    revenue: orders.filter((o) => o.status !== "pending").reduce((sum, o) => sum + o.total, 0),
     totalOrders: orders.length,
     pendingOrders: orders.filter((o) => o.status === "pending").length,
     totalProducts: products.length,
   }), [orders, products]);
 
   const topProducts = useMemo(() => {
-    const counts: Record<string, { name: string; count: number; total: number }> = {};
+    const counts: Record<string, { name: string; count: number; image: string }> = {};
     orders.forEach((o) => {
       o.order_items?.forEach((item) => {
-        if (!counts[item.product_name]) counts[item.product_name] = { name: item.product_name, count: 0, total: 0 };
+        if (!counts[item.product_name]) counts[item.product_name] = { name: item.product_name, count: 0, image: "" };
         counts[item.product_name].count += item.quantity;
       });
     });
-    return Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 5);
-  }, [orders]);
+    // Match product images
+    const result = Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 5);
+    result.forEach((item) => {
+      const product = products.find((p) => p.name === item.name);
+      if (product) item.image = product.image;
+    });
+    return result;
+  }, [orders, products]);
 
   // All useEffect hooks
   useEffect(() => {
@@ -471,7 +477,13 @@ function AdminPageInner() {
                       <div className="space-y-4">
                         {topProducts.map((p, i) => (
                           <div key={i} className="flex items-center gap-3">
-                            <div className="w-11 h-11 rounded-lg shrink-0" style={{ background: `linear-gradient(135deg, ${["#c8b18a,#8b6f42", "#e0d3bd,#b58c4a", "#9c8468,#403225", "#d4a574,#8b6f42", "#bfa789,#6b5d50"][i]})` }} />
+                            <div className="w-11 h-11 rounded-lg shrink-0 overflow-hidden" style={{ background: "#e8dfd1" }}>
+                              {p.image ? (
+                                <img src={p.image} alt={p.name} className="w-full h-full object-cover" loading="lazy" />
+                              ) : (
+                                <div className="w-full h-full" style={{ background: `linear-gradient(135deg, ${["#c8b18a,#8b6f42", "#e0d3bd,#b58c4a", "#9c8468,#403225", "#d4a574,#8b6f42", "#bfa789,#6b5d50"][i]})` }} />
+                              )}
+                            </div>
                             <div className="min-w-0 flex-1">
                               <p className="text-sm font-semibold truncate">{p.name}</p>
                               <p className="text-xs" style={{ color: "var(--text-muted)" }}>{p.count} terjual</p>

@@ -60,9 +60,13 @@ function CheckoutContent() {
 
   // Fetch payment methods from Supabase
   useEffect(() => {
-    supabase.from("payment_methods").select("*").eq("is_active", true).order("display_order").then(({ data }) => {
-      if (data && data.length > 0) setPaymentMethods(data);
-    }).catch(() => {});
+    async function fetchPayment() {
+      try {
+        const { data } = await supabase.from("payment_methods").select("*").eq("is_active", true).order("display_order");
+        if (data && data.length > 0) setPaymentMethods(data);
+      } catch { /* silent */ }
+    }
+    fetchPayment();
   }, []);
 
   if (!product) {
