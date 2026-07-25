@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Edit, Trash2, X, Star, Loader2, CheckCircle } from "lucide-react";
+import { Plus, Edit, Trash2, X, Star, Loader2, CheckCircle, Upload } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/AdminToast";
 import ConfirmModal from "@/components/ConfirmModal";
@@ -43,8 +43,41 @@ export default function AdminTestimoniPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(DEFAULT_FORM);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [confirmModal, setConfirmModal] = useState<{ open: boolean; onConfirm: () => void }>({ open: false, onConfirm: () => {} });
   const toast = useToast();
+
+  const CLOUDINARY_CLOUD = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD || "dgtixuop0";
+  const CLOUDINARY_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_PRESET || "samaqu_unsigned";
+
+  async function handleMediaUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const isVideo = file.type.startsWith("video/");
+    const maxSize = isVideo ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
+    if (file.size > maxSize) { toast.showToast("error", `File terlalu besar. Maks: ${isVideo ? "50MB" : "10MB"}`); return; }
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("upload_preset", CLOUDINARY_PRESET);
+      const endpoint = isVideo ? "video" : "image";
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/${endpoint}/upload`, { method: "POST", body: formData });
+      if (!res.ok) throw new Error("Upload gagal");
+      const data = await res.json();
+      if (isVideo) setForm({ ...form, video_url: data.secure_url, image_url: "", type: "video" });
+      else setForm({ ...form, image_url: data.secure_url, video_url: "", type: "photo" });
+      toast.showToast("success", "Media berhasil diupload");
+    } catch {
+      toast.showToast("error", "Gagal upload media");
+    }
+    setUploading(false);
+    e.target.value = "";
+  }
+
+  function removeMedia() {
+    setForm({ ...form, image_url: "", video_url: "", type: "text" });
+  }
 
   useEffect(() => {
     fetchTestimonials();
@@ -211,6 +244,43 @@ export default function AdminTestimoniPage() {
                     </select>
                   </div>
                 </div>
+
+                {/* Media upload */}
+                <div>
+                  <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Foto / Video (opsional)</label>
+                  {(form.image_url || form.video_url) ? (
+                    <div className="relative rounded-xl overflow-hidden" style={{ border: "1px solid rgba(64,50,37,.15)" }}>
+                      {form.video_url ? (
+                        <video src={form.video_url} className="w-full max-h-48 object-cover" muted />
+                      ) : (
+                        <img src={form.image_url} alt="" className="w-full max-h-48 object-cover" />
+                      )}
+                      <button onClick={removeMedia} className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center" style={{ background: "rgba(0,0,0,.6)", color: "white" }}>
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="block rounded-xl p-6 text-center cursor-pointer transition-all hover:border-[var(--gold)]" style={{ border: "2px dashed rgba(201,183,156,.3)", background: "rgba(255,255,255,.5)" }}>
+                      {uploading ? (
+                        <Loader2 size={24} className="animate-spin mx-auto" style={{ color: "var(--gold)" }} />
+                      ) : (
+                        <>
+                          <Upload size={24} className="mx-auto mb-2" style={{ color: "var(--text-muted)" }} />
+                          <p className="text-sm font-medium" style={{ color: "var(--espresso)" }}>Upload foto atau video</p>
+                          <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>JPG, PNG (10MB) · MP4 (50MB)</p>
+                        </>
+                      )}
+                      <input type="file" accept="image/jpeg,image/png,video/mp4" onChange={handleMediaUpload} className="hidden" />
+                    </label>
+                  )}
+                </div>
+
+                {/* Caption */}
+                <div>
+                  <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Caption media (opsional)</label>
+                  <input value={form.caption} onChange={(e) => setForm({ ...form, caption: e.target.value })} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="Contoh: Koko harian favorit" />
+                </div>
+
                 <div className="flex items-center justify-between">
                   <span className="text-sm" style={{ color: "var(--text-secondary)" }}>Terverifikasi</span>
                   <button onClick={() => setForm({ ...form, verified: !form.verified })} style={{ color: form.verified ? "var(--gold)" : "var(--text-muted)" }}>
