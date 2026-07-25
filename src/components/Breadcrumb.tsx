@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 
 interface BreadcrumbItem {
   label: string;
@@ -38,7 +39,6 @@ export default function Breadcrumb({ extra, items, className }: BreadcrumbProps)
     const segments = pathname.split("/").filter(Boolean);
     crumbs = [{ label: "Home", href: "/" }];
 
-    /* If extra provided, skip last segment (it's the dynamic route, replaced by extra) */
     const segCount = extra?.length ? segments.length - 1 : segments.length;
     let path = "";
     for (let i = 0; i < segCount; i++) {
@@ -51,22 +51,19 @@ export default function Breadcrumb({ extra, items, className }: BreadcrumbProps)
     }
   }
 
-  /* Mobile: collapse middle items if > 3 */
   const isLong = crumbs.length > 3;
-  const mobileCrumbs = isLong
-    ? [crumbs[0], ...crumbs.slice(-2)]
-    : crumbs;
+  const mobileCrumbs = isLong ? [crumbs[0], ...crumbs.slice(-2)] : crumbs;
   const desktopCrumbs = crumbs;
 
   return (
     <nav aria-label="Breadcrumb" className={className}>
       {/* Mobile */}
-      <ol className="flex sm:hidden items-center text-[11px] font-ui flex-nowrap overflow-hidden" style={{ color: "var(--stone)", gap: "0.25rem" }}>
+      <ol className="flex sm:hidden items-center text-xs font-ui flex-nowrap overflow-hidden" style={{ color: "var(--stone)", gap: "0.375rem" }}>
         {mobileCrumbs.map((crumb, i) => {
           const isLast = i === mobileCrumbs.length - 1;
           return (
-            <li key={i} className="flex items-center shrink-0" style={{ gap: "0.25rem" }}>
-              {i > 0 && <span style={{ color: "rgba(201,183,156,.4)" }}>/</span>}
+            <li key={i} className="flex items-center shrink-0" style={{ gap: "0.375rem" }}>
+              {i > 0 && <ChevronRight size={12} style={{ color: "rgba(201,183,156,.5)" }} aria-hidden />}
               {i === 0 && isLong ? (
                 <span className="truncate max-w-[2rem]" style={{ color: "var(--stone)" }}>…</span>
               ) : crumb.href ? (
@@ -74,7 +71,7 @@ export default function Breadcrumb({ extra, items, className }: BreadcrumbProps)
                   {crumb.label}
                 </Link>
               ) : (
-                <span className="truncate" style={{ color: "var(--espresso)", fontWeight: 500, maxWidth: "10rem" }}>{crumb.label}</span>
+                <span className="truncate font-medium" style={{ color: "var(--espresso)", maxWidth: "10rem" }}>{crumb.label}</span>
               )}
             </li>
           );
@@ -82,18 +79,18 @@ export default function Breadcrumb({ extra, items, className }: BreadcrumbProps)
       </ol>
 
       {/* Desktop */}
-      <ol className="hidden sm:flex items-center text-[13px] lg:text-[14px] font-ui flex-wrap" style={{ color: "var(--stone)", gap: "0.5rem" }}>
+      <ol className="hidden sm:flex items-center text-sm font-ui flex-wrap" style={{ color: "var(--stone)", gap: "0.375rem" }}>
         {desktopCrumbs.map((crumb, i) => {
           const isLast = i === desktopCrumbs.length - 1;
           return (
             <li key={i} className="flex items-center" style={{ gap: "0.375rem" }}>
-              {i > 0 && <span style={{ color: "rgba(201,183,156,.4)" }}>/</span>}
+              {i > 0 && <ChevronRight size={14} style={{ color: "rgba(201,183,156,.5)" }} aria-hidden />}
               {crumb.href ? (
                 <Link href={crumb.href} className="transition-colors duration-200 hover:opacity-80 whitespace-nowrap" style={{ color: "var(--stone)" }}>
                   {crumb.label}
                 </Link>
               ) : (
-                <span className="whitespace-nowrap" style={{ color: "var(--espresso)", fontWeight: 500 }}>{crumb.label}</span>
+                <span className="whitespace-nowrap font-medium" style={{ color: "var(--espresso)" }}>{crumb.label}</span>
               )}
             </li>
           );
