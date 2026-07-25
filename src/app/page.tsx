@@ -1,6 +1,5 @@
 "use client";
 
-import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import TrustMarquee from "@/components/TrustMarquee";
 import CaraPemesanan from "@/components/CaraPemesanan";
@@ -22,7 +21,6 @@ export default function Home() {
 
   return (
     <>
-      <Navbar />
       <main>
         <Hero />
         <TrustMarquee />
