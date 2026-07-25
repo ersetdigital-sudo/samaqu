@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Edit, Package, TrendingUp, ShoppingCart } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { colorMap } from "@/lib/katalog-data";
+import AdminShell from "@/components/AdminShell";
 
 interface ProductData {
   id: string;
@@ -82,11 +83,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   }, [id]);
 
   if (loading) {
-    return <section className="min-h-screen flex items-center justify-center" style={{ background: "var(--cream)" }}><div className="w-6 h-6 border-2 rounded-full animate-spin" style={{ borderColor: "rgba(201,183,156,.3)", borderTopColor: "var(--gold)" }} /></section>;
+    return <AdminShell><section className="min-h-screen flex items-center justify-center" style={{ background: "var(--cream)" }}><div className="w-6 h-6 border-2 rounded-full animate-spin" style={{ borderColor: "rgba(201,183,156,.3)", borderTopColor: "var(--gold)" }} /></section></AdminShell>;
   }
 
   if (!product) {
-    return <section className="min-h-screen flex items-center justify-center" style={{ background: "var(--cream)" }}><p>Produk tidak ditemukan</p></section>;
+    return <AdminShell><section className="min-h-screen flex items-center justify-center" style={{ background: "var(--cream)" }}><p>Produk tidak ditemukan</p></section></AdminShell>;
   }
 
   const uniqueColors = [...new Set(variants.map((v) => v.color))];
@@ -97,6 +98,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const lowStockVariants = variants.filter((v) => v.stock > 0 && v.stock < 5);
 
   return (
+    <AdminShell>
     <section className="min-h-screen" style={{ background: "var(--cream)" }}>
       {/* Header */}
       <div className="sticky top-0 z-20 backdrop-blur" style={{ background: "rgba(248,245,241,.8)", borderBottom: "1px solid rgba(64,50,37,.06)" }}>
@@ -239,5 +241,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
       <style jsx global>{`.card { background: #fffdfb; border: 1px solid rgba(64,50,37,.06); border-radius: 1rem; box-shadow: 0 1px 2px rgba(64,50,37,.03); } .badge { font-size: .72rem; font-weight: 600; padding: .2rem .6rem; border-radius: 999px; white-space: nowrap; }`}</style>
     </section>
+    </AdminShell>
   );
 }
