@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { ShieldCheck, Copy, Check, Clock, MessageCircle, ArrowLeft } from "lucide-react";
@@ -26,7 +26,7 @@ interface OrderData {
   order_items: { product_name: string; color: string; size: string; quantity: number; price: number }[];
 }
 
-export default function CheckoutSuccessPage() {
+function CheckoutSuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const orderId = searchParams.get("order");
@@ -317,5 +317,13 @@ export default function CheckoutSuccessPage() {
         .grain { background-image: radial-gradient(circle at 1px 1px, rgba(64,50,37,0.05) 1px, transparent 0); background-size: 24px 24px; }
       `}</style>
     </section>
+  );
+}
+
+export default function CheckoutSuccessPage() {
+  return (
+    <Suspense fallback={<section className="min-h-screen flex items-center justify-center" style={{ background: "var(--cream)" }}><div className="w-6 h-6 border-2 rounded-full animate-spin" style={{ borderColor: "rgba(201,183,156,.3)", borderTopColor: "var(--gold)" }} /></section>}>
+      <CheckoutSuccessContent />
+    </Suspense>
   );
 }
