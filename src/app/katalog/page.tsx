@@ -99,7 +99,7 @@ function ProductCard({ product, index }: { product: Product; index: number }) {
         />
         {/* Actual product image */}
         <img
-          src={product.media[0]?.src || product.image}
+          src={product.media.find((m) => m.type === "image")?.src || product.image}
           alt={product.name}
           className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
           loading="lazy"
