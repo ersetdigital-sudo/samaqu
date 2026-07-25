@@ -67,6 +67,7 @@ function StatusBadge({ status }: { status: string }) {
 
 export default function AdminPage() {
   const [user, setUser] = useState<User | null>(null);
+  const [role, setRole] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -80,12 +81,16 @@ export default function AdminPage() {
   // Listen to auth state changes
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
+      const u = session?.user ?? null;
+      setUser(u);
+      setRole(u?.app_metadata?.role || u?.user_metadata?.role || null);
       setAuthLoading(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+      const u = session?.user ?? null;
+      setUser(u);
+      setRole(u?.app_metadata?.role || u?.user_metadata?.role || null);
     });
 
     return () => subscription.unsubscribe();
@@ -124,6 +129,27 @@ export default function AdminPage() {
     return (
       <section className="min-h-screen flex items-center justify-center" style={{ background: "var(--cream)" }}>
         <div className="w-6 h-6 border-2 rounded-full animate-spin" style={{ borderColor: "rgba(201,183,156,.3)", borderTopColor: "var(--gold)" }} />
+      </section>
+    );
+  }
+
+  // Access denied for non-admin users
+  if (user && role !== "admin") {
+    return (
+      <section className="min-h-screen flex items-center justify-center" style={{ background: "var(--cream)" }}>
+        <div className="text-center px-6 max-w-sm">
+          <div className="w-16 h-16 rounded-full mx-auto mb-5 flex items-center justify-center" style={{ background: "rgba(231,76,60,.1)", border: "2px solid rgba(231,76,60,.3)" }}>
+            <Lock size={28} style={{ color: "#e74c3c" }} />
+          </div>
+          <h1 className="text-2xl font-medium mb-2" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>Akses Ditolak</h1>
+          <p className="text-sm mb-6" style={{ color: "var(--text-muted)" }}>
+            Akun Anda tidak memiliki akses ke dashboard admin. Hubungi pemilik toko untuk mendapatkan akses.
+          </p>
+          <p className="text-xs mb-6" style={{ color: "var(--text-muted)" }}>Login sebagai: {user.email}</p>
+          <button onClick={handleLogout} className="px-6 py-2.5 rounded-xl text-sm font-semibold" style={{ border: "1px solid rgba(64,50,37,.2)", color: "var(--espresso)" }}>
+            Keluar & Login Ulang
+          </button>
+        </div>
       </section>
     );
   }
@@ -305,6 +331,7 @@ export default function AdminPage() {
             <button className="mt-3 w-full text-sm font-semibold py-2 rounded-lg text-white" style={{ background: "linear-gradient(135deg, var(--gold), #96742f)" }}>Pusat Bantuan</button>
           </div>
           <div className="px-1">
+            <p className="text-xs mb-0.5 font-medium" style={{ color: "#d4ccc2" }}>{role === "admin" ? "Admin" : "User"}</p>
             <p className="text-xs mb-2 truncate" style={{ color: "#9f9690" }}>{user.email}</p>
             <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 text-sm font-medium py-2.5 rounded-lg transition-all hover:bg-[rgba(255,255,255,.08)]" style={{ color: "#d4ccc2", border: "1px solid rgba(255,255,255,.1)" }}>
               <LogOut size={16} strokeWidth={1.6} />
@@ -344,7 +371,7 @@ export default function AdminPage() {
                 </div>
                 <div className="hidden sm:block leading-tight">
                   <p className="text-sm font-semibold" style={{ color: "var(--espresso)" }}>{user.email?.split("@")[0] || "Admin"}</p>
-                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>{user.email}</p>
+                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>{role === "admin" ? "Admin" : "User"} · {user.email}</p>
                 </div>
                 <button onClick={handleLogout} className="p-2 rounded-lg transition-colors hover:bg-[var(--bg-tertiary)]" title="Keluar">
                   <LogOut size={18} strokeWidth={1.6} style={{ color: "var(--text-muted)" }} />
