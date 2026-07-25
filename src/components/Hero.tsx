@@ -96,6 +96,13 @@ export default function Hero() {
             "linear-gradient(0deg,rgba(0,0,0,.7) 0%,rgba(0,0,0,.28) 34%,transparent 56%)",
         }}
       />
+      {/* Top-down gradient — ensures navbar readability over any video frame (desktop) */}
+      <div
+        className="hidden lg:block absolute inset-x-0 top-0 h-[200px] pointer-events-none"
+        style={{
+          background: "linear-gradient(180deg, rgba(0,0,0,.45) 0%, rgba(0,0,0,.18) 50%, transparent 100%)",
+        }}
+      />
       {/* Dark gradient overlay — mobile */}
       <div
         className="md:hidden absolute inset-0 pointer-events-none"

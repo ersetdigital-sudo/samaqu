@@ -16,6 +16,7 @@ import {
 } from "@/lib/katalog-data";
 import { useCart } from "@/lib/cart-context";
 import { useToast } from "@/components/Toast";
+import FilterDrawer, { applyFilters, type FilterState } from "@/components/FilterDrawer";
 
 /* ── Animation ── */
 const cardVariants: Variants = {
@@ -203,117 +204,7 @@ function ProductCard({ product, index }: { product: Product; index: number }) {
   );
 }
 
-/* ── Filter Panel ── */
-function FilterPanel({
-  category,
-  selectedKain,
-  selectedColor,
-  selectedSeries,
-  onKainChange,
-  onColorChange,
-  onSeriesChange,
-  onClose,
-}: {
-  category: Category;
-  selectedKain: string | null;
-  selectedColor: string | null;
-  selectedSeries: string | null;
-  onKainChange: (v: string | null) => void;
-  onColorChange: (v: string | null) => void;
-  onSeriesChange: (v: string | null) => void;
-  onClose: () => void;
-}) {
-  const kainOptions = getKainOptions(category);
-  const colorOptions = getColorOptions(category);
-  const seriesOptions = getSeriesOptions(category);
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, height: 0 }}
-      animate={{ opacity: 1, height: "auto" }}
-      exit={{ opacity: 0, height: 0 }}
-      className="overflow-hidden"
-    >
-      <div className="py-5 px-1 flex flex-wrap gap-6 sm:gap-8">
-        {/* Kain */}
-        {kainOptions.length > 1 && (
-          <div>
-            <p className="text-[11px] tracking-[0.14em] uppercase font-ui font-medium mb-2.5" style={{ color: "var(--stone)" }}>
-              Jenis Kain
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {kainOptions.map((k) => (
-                <button
-                  key={k}
-                  onClick={() => onKainChange(selectedKain === k ? null : k)}
-                  className="px-3 py-1.5 text-[12px] font-ui rounded-sm transition-all duration-200"
-                  style={{
-                    background: selectedKain === k ? "var(--espresso)" : "transparent",
-                    color: selectedKain === k ? "var(--cream)" : "var(--coffee)",
-                    border: `1px solid ${selectedKain === k ? "var(--espresso)" : "rgba(201,183,156,.3)"}`,
-                  }}
-                >
-                  {k}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Colors */}
-        {colorOptions.length > 0 && (
-          <div>
-            <p className="text-[11px] tracking-[0.14em] uppercase font-ui font-medium mb-2.5" style={{ color: "var(--stone)" }}>
-              Warna
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {colorOptions.map((c) => (
-                <button
-                  key={c}
-                  onClick={() => onColorChange(selectedColor === c ? null : c)}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-[12px] font-ui rounded-sm transition-all duration-200"
-                  style={{
-                    background: selectedColor === c ? "var(--espresso)" : "transparent",
-                    color: selectedColor === c ? "var(--cream)" : "var(--coffee)",
-                    border: `1px solid ${selectedColor === c ? "var(--espresso)" : "rgba(201,183,156,.3)"}`,
-                  }}
-                >
-                  <Swatch color={c} size={12} />
-                  {c}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Series */}
-        {seriesOptions.length > 0 && (
-          <div>
-            <p className="text-[11px] tracking-[0.14em] uppercase font-ui font-medium mb-2.5" style={{ color: "var(--stone)" }}>
-              Series
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {seriesOptions.map((s) => (
-                <button
-                  key={s}
-                  onClick={() => onSeriesChange(selectedSeries === s ? null : s)}
-                  className="px-3 py-1.5 text-[12px] font-ui rounded-sm transition-all duration-200"
-                  style={{
-                    background: selectedSeries === s ? "var(--espresso)" : "transparent",
-                    color: selectedSeries === s ? "var(--cream)" : "var(--coffee)",
-                    border: `1px solid ${selectedSeries === s ? "var(--espresso)" : "rgba(201,183,156,.3)"}`,
-                  }}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    </motion.div>
-  );
-}
+/* ── Filter Panel (legacy inline — kept for reference, replaced by FilterDrawer) ── */
 
 /* ══════════════════════════════════════════
    MAIN PAGE
@@ -327,6 +218,8 @@ export default function KatalogPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [visibleCount, setVisibleCount] = useState(12);
   const [searchQuery, setSearchQuery] = useState("");
+  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
+  const [drawerFilters, setDrawerFilters] = useState<FilterState>({ sizes: [], colors: [], priceRange: null });
 
   /* Reset sub-filters when category changes */
   useEffect(() => {
@@ -362,12 +255,15 @@ export default function KatalogPage() {
       );
     }
 
+    // Apply drawer filters
+    result = applyFilters(result, drawerFilters);
+
     if (sort === "az") {
       result.sort((a, b) => a.name.localeCompare(b.name));
     }
 
     return result;
-  }, [category, selectedKain, selectedColor, selectedSeries, sort, searchQuery]);
+  }, [category, selectedKain, selectedColor, selectedSeries, sort, searchQuery, drawerFilters]);
 
   const visible = filtered.slice(0, visibleCount);
   const hasMore = visibleCount < filtered.length;
@@ -377,7 +273,12 @@ export default function KatalogPage() {
     selectedKain && { type: "kain" as const, label: `Kain: ${selectedKain}`, clear: () => setSelectedKain(null) },
     selectedColor && { type: "color" as const, label: selectedColor, clear: () => setSelectedColor(null) },
     selectedSeries && { type: "series" as const, label: `Series: ${selectedSeries}`, clear: () => setSelectedSeries(null) },
-  ].filter((f): f is { type: "search" | "kain" | "color" | "series"; label: string; clear: () => void } => Boolean(f));
+    ...drawerFilters.sizes.map((s) => ({ type: "size" as const, label: `UK ${s}`, clear: () => setDrawerFilters((f) => ({ ...f, sizes: f.sizes.filter((x) => x !== s) })) })),
+    ...drawerFilters.colors.map((c) => ({ type: "dcolor" as const, label: c, clear: () => setDrawerFilters((f) => ({ ...f, colors: f.colors.filter((x) => x !== c) })) })),
+    drawerFilters.priceRange && { type: "price" as const, label: drawerFilters.priceRange === "under300" ? "< 300rb" : drawerFilters.priceRange === "300to500" ? "300-500rb" : "> 500rb", clear: () => setDrawerFilters((f) => ({ ...f, priceRange: null })) },
+  ].filter(Boolean) as { type: string; label: string; clear: () => void }[];
+
+  const drawerFilterCount = drawerFilters.sizes.length + drawerFilters.colors.length + (drawerFilters.priceRange ? 1 : 0);
 
   function resetAll() {
     setCategory("Semua");
@@ -385,6 +286,7 @@ export default function KatalogPage() {
     setSelectedColor(null);
     setSelectedSeries(null);
     setSearchQuery("");
+    setDrawerFilters({ sizes: [], colors: [], priceRange: null });
     setVisibleCount(12);
   }
 
@@ -502,16 +404,22 @@ export default function KatalogPage() {
           </div>
           <div className="flex items-center justify-between pb-4">
             <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2 px-4 py-2.5 text-[12px] font-ui rounded-full transition-all duration-200"
+              onClick={() => setFilterDrawerOpen(true)}
+              className="relative flex items-center gap-2 px-4 py-2.5 text-[12px] font-ui rounded-full transition-all duration-200"
               style={{
-                border: `1px solid ${showFilters ? "var(--espresso)" : "rgba(201,183,156,.3)"}`,
-                background: showFilters ? "var(--espresso)" : "transparent",
-                color: showFilters ? "var(--cream)" : "var(--coffee)",
+                border: `1px solid ${drawerFilterCount > 0 ? "var(--gold)" : "rgba(201,183,156,.3)"}`,
+                background: drawerFilterCount > 0 ? "rgba(181,140,74,.08)" : "transparent",
+                color: drawerFilterCount > 0 ? "var(--gold)" : "var(--coffee)",
               }}
             >
               <SlidersHorizontal size={14} strokeWidth={1.5} />
               Filter
+              {drawerFilterCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-[10px] font-ui font-bold"
+                  style={{ background: "var(--gold)", color: "white" }}>
+                  {drawerFilterCount}
+                </span>
+              )}
             </button>
             <div className="relative">
               <select
@@ -549,16 +457,22 @@ export default function KatalogPage() {
           </div>
           <div className="flex items-center gap-3">
             <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2 px-4 py-2.5 text-[12px] font-ui rounded-full transition-all duration-200"
+              onClick={() => setFilterDrawerOpen(true)}
+              className="relative flex items-center gap-2 px-4 py-2.5 text-[12px] font-ui rounded-full transition-all duration-200"
               style={{
-                border: `1px solid ${showFilters ? "var(--espresso)" : "rgba(201,183,156,.3)"}`,
-                background: showFilters ? "var(--espresso)" : "transparent",
-                color: showFilters ? "var(--cream)" : "var(--coffee)",
+                border: `1px solid ${drawerFilterCount > 0 ? "var(--gold)" : "rgba(201,183,156,.3)"}`,
+                background: drawerFilterCount > 0 ? "rgba(181,140,74,.08)" : "transparent",
+                color: drawerFilterCount > 0 ? "var(--gold)" : "var(--coffee)",
               }}
             >
               <SlidersHorizontal size={14} strokeWidth={1.5} />
               Filter
+              {drawerFilterCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-[10px] font-ui font-bold"
+                  style={{ background: "var(--gold)", color: "white" }}>
+                  {drawerFilterCount}
+                </span>
+              )}
             </button>
             <div className="relative">
               <select
@@ -575,22 +489,6 @@ export default function KatalogPage() {
             </div>
           </div>
         </div>
-
-        {/* Sub-filter panel */}
-        <AnimatePresence>
-          {showFilters && category !== "Semua" && (
-            <FilterPanel
-              category={category}
-              selectedKain={selectedKain}
-              selectedColor={selectedColor}
-              selectedSeries={selectedSeries}
-              onKainChange={(v) => { setSelectedKain(v); setVisibleCount(12); }}
-              onColorChange={(v) => { setSelectedColor(v); setVisibleCount(12); }}
-              onSeriesChange={(v) => { setSelectedSeries(v); setVisibleCount(12); }}
-              onClose={() => setShowFilters(false)}
-            />
-          )}
-        </AnimatePresence>
 
         {/* Active filter chips */}
         {activeFilters.length > 0 && (
@@ -666,6 +564,15 @@ export default function KatalogPage() {
           </>
         )}
       </div>
+
+      {/* Filter Drawer */}
+      <FilterDrawer
+        open={filterDrawerOpen}
+        onClose={() => setFilterDrawerOpen(false)}
+        initial={drawerFilters}
+        onApply={setDrawerFilters}
+        activeCount={drawerFilterCount}
+      />
     </section>
   );
 }
