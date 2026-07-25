@@ -189,11 +189,6 @@ export default function AdminPage() {
     );
   }
 
-  function go(panel: Panel) {
-    setActivePanel(panel);
-    setSidebarOpen(false);
-  }
-
   useEffect(() => {
     if (!user) return;
     async function fetchData() {
