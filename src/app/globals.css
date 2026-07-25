@@ -95,6 +95,11 @@ body {
   overflow-x: hidden;
 }
 
+/* ── Anchor scroll offset (navbar height) ── */
+section[id] {
+  scroll-margin-top: 100px;
+}
+
 /* ── Scroll reveal ── */
 .fade-up {
   opacity: 0;

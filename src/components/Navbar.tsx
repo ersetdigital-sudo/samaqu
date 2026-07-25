@@ -17,6 +17,12 @@ const navLinks = [
   { href: "#faq", label: "FAQ", Icon: Question },
 ];
 
+/* ── Resolve anchor href: if not on home, prefix with / ── */
+function anchorHref(href: string, isHome: boolean): string {
+  if (href.startsWith("#")) return isHome ? href : `/${href}`;
+  return href;
+}
+
 export default function Navbar() {
   const pathname = usePathname();
   const isHome = pathname === "/";
@@ -98,7 +104,7 @@ export default function Navbar() {
                 {navLinks.map((link) => (
                   <li key={link.href}>
                     <a
-                      href={link.href}
+                      href={anchorHref(link.href, isHome)}
                       className="nav-desktop-link relative py-1 transition-colors duration-300 hover:text-gold"
                       style={{ color: "inherit" }}
                     >
@@ -208,6 +214,8 @@ const waHref =
   );
 
 function DrawerNavContent({ onClose }: { onClose: () => void }) {
+  const pathname = usePathname();
+  const isHome = pathname === "/";
   return (
     <nav className="flex flex-col h-full" role="navigation" aria-label="Menu mobile">
       {/* Links */}
@@ -215,7 +223,7 @@ function DrawerNavContent({ onClose }: { onClose: () => void }) {
         {navLinks.map((link) => (
           <li key={link.href}>
             <a
-              href={link.href}
+              href={anchorHref(link.href, isHome)}
               className="flex items-center gap-4 px-6 py-4 text-[13px] tracking-[0.18em] uppercase font-ui transition-colors duration-200 hover:text-gold hover:bg-[var(--sand-2)]"
               style={{
                 color: "var(--espresso)",
