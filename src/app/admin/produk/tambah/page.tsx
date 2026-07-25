@@ -14,8 +14,8 @@ const CATEGORIES = ["Thobe", "Kandora", "Koko", "Vest", "Kabak", "Cover & Hanger
 const SIZES = ["S", "M", "L", "XL", "XXL"] as const;
 const COLORS = Object.keys(colorMap);
 
-const CLOUDINARY_CLOUD = "dqxqjqjqx"; // Ganti dengan cloud name kamu
-const CLOUDINARY_PRESET = "samaqu_unsigned"; // Ganti dengan unsigned upload preset
+const CLOUDINARY_CLOUD = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD || "dgtixuop0";
+const CLOUDINARY_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_PRESET || "samaqu_unsigned";
 
 interface Variant {
   color: string;
