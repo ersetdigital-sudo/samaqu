@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, Suspense } from "react";
+import { useState, useRef, useCallback, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -8,6 +8,7 @@ import {
   Copy, Check, Clock, FileImage, X, ChevronDown, Minus, Plus, Tag, Trash2,
 } from "lucide-react";
 import { getProductById, colorMap } from "@/lib/katalog-data";
+import { useCart } from "@/lib/cart-context";
 
 const provinsi = [
   "Aceh","Sumatera Utara","Sumatera Barat","Riau","Jambi","Sumatera Selatan",
@@ -52,6 +53,7 @@ function CheckoutContent() {
   const qtyParam = parseInt(searchParams.get("qty") || "1", 10);
   const notesParam = searchParams.get("notes") || "";
   const product = getProductById(productId);
+  const { clearCart } = useCart();
 
   const [step, setStep] = useState(1);
   const [direction, setDirection] = useState(1);
@@ -75,6 +77,10 @@ function CheckoutContent() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [orderNumber] = useState(generateOrderNumber);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (step === 5) clearCart();
+  }, [step, clearCart]);
 
   if (!product) {
     return (
@@ -413,11 +419,11 @@ function CheckoutContent() {
                         <div className="text-center"><FileImage size={28} style={{ color: "var(--clay)", margin: "0 auto" }} /><p className="text-[10px] font-ui mt-1.5" style={{ color: "var(--stone)" }}>QRIS SAMAQU</p></div>
                       </div>
                     </div>
-                    <div className="p-5 rounded-xl text-center" style={{ background: "rgba(181,140,74,.05)", border: "1.5px dashed rgba(181,140,74,.3)" }}>
-                      <p className="text-[11px] font-ui mb-1" style={{ color: "var(--stone)" }}>Total yang harus dibayar</p>
-                      <PriceText className="text-[22px] sm:text-[24px] mb-3">Rp {total.toLocaleString("id-ID")}</PriceText>
-                      <button onClick={copyNominal} className="inline-flex items-center gap-1.5 px-5 py-2.5 text-[12px] font-ui font-semibold rounded-lg transition-all duration-200 hover:scale-105" style={{ background: copied ? "var(--espresso)" : "var(--gold)", color: "white" }}>
-                        {copied ? <Check size={13} /> : <Copy size={13} />}{copied ? "Tersalin!" : "Copy Nominal"}
+                    <div className="p-5 rounded-xl" style={{ background: "rgba(181,140,74,.05)", border: "1.5px dashed rgba(181,140,74,.3)" }}>
+                      <p className="text-[11px] font-ui mb-3 text-center" style={{ color: "var(--stone)" }}>Total yang harus dibayar</p>
+                      <p className="text-center text-[28px] sm:text-[32px] mb-4 leading-tight" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", fontWeight: 700, color: "var(--gold)" }}>Rp {total.toLocaleString("id-ID")}</p>
+                      <button onClick={copyNominal} className="w-full flex items-center justify-center gap-1.5 px-5 py-2.5 text-[12px] font-ui font-semibold rounded-lg transition-all duration-200 hover:scale-[1.02]" style={{ background: copied ? "var(--espresso)" : "var(--gold)", color: "white" }}>
+                        {copied ? <Check size={13} /> : <Copy size={13} />}{copied ? "Tersalin!" : "Salin Nominal"}
                       </button>
                     </div>
                   </div>
