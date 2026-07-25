@@ -300,7 +300,7 @@ export default function KatalogPage() {
       {/* ── Page Header ── */}
       <div className="pt-28 sm:pt-32 lg:pt-36 pb-12 sm:pb-16">
         <div className="max-w-[1200px] mx-auto px-5 sm:px-8 lg:px-14">
-          <Breadcrumb className="mb-8 sm:mb-10 lg:mb-12" />
+          <Breadcrumb className="mb-6 sm:mb-8 lg:mb-10" />
 
           <motion.div
             initial="hidden"
