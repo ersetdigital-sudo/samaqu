@@ -173,7 +173,7 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
                                   <Plus size={11} />
                                 </button>
                               </div>
-                              <p className="text-[13px] font-semibold" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--gold)" }}>
+                              <p className="text-[13px] font-ui font-semibold" style={{ color: "var(--gold)" }}>
                                 Rp {(item.price * item.qty).toLocaleString("id-ID")}
                               </p>
                             </div>
@@ -221,7 +221,7 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
                     <div className="h-px my-2.5" style={{ background: "rgba(201,183,156,.15)" }} />
                     <div className="flex justify-between items-end">
                       <span className="text-[11px] font-ui" style={{ color: "var(--stone)" }}>Total</span>
-                      <span className="text-[17px] font-semibold" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--gold)" }}>
+                      <span className="text-[17px] font-ui font-semibold" style={{ color: "var(--gold)" }}>
                         Rp {total.toLocaleString("id-ID")}
                       </span>
                     </div>
