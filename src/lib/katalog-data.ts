@@ -89,6 +89,8 @@ export const products: Product[] = [
     (series, i) => {
       const isJiharkah = series === "Jiharkah";
       const jiharkahMedia: MediaItem[] = [
+        { src: "/products/jiharkah/video%20(1).mp4", type: "video" },
+        { src: "/products/jiharkah/video%20(2).mp4", type: "video" },
         { src: "/products/jiharkah/15.jpg", type: "image" },
         { src: "/products/jiharkah/16.jpg", type: "image" },
         { src: "/products/jiharkah/17.jpg", type: "image" },
@@ -98,8 +100,6 @@ export const products: Product[] = [
         { src: "/products/jiharkah/21.jpg", type: "image" },
         { src: "/products/jiharkah/22.jpg", type: "image" },
         { src: "/products/jiharkah/23.jpg", type: "image" },
-        { src: "/products/jiharkah/video%20(1).mp4", type: "video" },
-        { src: "/products/jiharkah/video%20(2).mp4", type: "video" },
       ];
       const fallbackMedia = withImages(`/images/products/thobe-b01-${i + 1}.jpg`);
       return {

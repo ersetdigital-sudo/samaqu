@@ -36,33 +36,42 @@ function getDescription(product: Product): string {
 }
 
 /* ── Media renderer ── */
-function MediaDisplay({ item, className, style }: { item: MediaItem; className?: string; style?: React.CSSProperties }) {
+function MediaDisplay({ item, poster, className, style }: { item: MediaItem; poster?: string; className?: string; style?: React.CSSProperties }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(false);
 
   if (item.type === "video") {
     return (
       <div className={`relative ${className || ""}`} style={style}>
-        <video
-          ref={videoRef}
-          src={item.src}
-          className="w-full h-full object-cover"
-          loop
-          playsInline
-          preload="auto"
-          onClick={() => {
-            if (videoRef.current) {
-              playing ? videoRef.current.pause() : videoRef.current.play();
-              setPlaying(!playing);
-            }
-          }}
-        />
-        {!playing && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center" style={{ background: "rgba(0,0,0,.4)", backdropFilter: "blur(8px)" }}>
-              <Play size={22} fill="white" stroke="none" className="ml-0.5" />
-            </div>
-          </div>
+        {playing ? (
+          <video
+            ref={videoRef}
+            src={item.src}
+            className="w-full h-full object-cover"
+            loop
+            playsInline
+            preload="auto"
+            autoPlay
+            onClick={() => {
+              if (videoRef.current) {
+                videoRef.current.pause();
+                setPlaying(false);
+              }
+            }}
+          />
+        ) : (
+          <>
+            <img src={poster || item.src} alt="" className="w-full h-full object-cover" />
+            <button
+              onClick={(e) => { e.stopPropagation(); setPlaying(true); }}
+              className="absolute inset-0 flex items-center justify-center z-10 cursor-pointer"
+              style={{ background: "rgba(0,0,0,.08)" }}
+            >
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center transition-transform hover:scale-110" style={{ background: "rgba(184,145,70,.85)", backdropFilter: "blur(8px)" }}>
+                <Play size={24} fill="white" stroke="none" className="ml-1" />
+              </div>
+            </button>
+          </>
         )}
       </div>
     );
@@ -170,7 +179,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 style={{ background: "#e8dfd1" }}
                 onClick={() => { setZoomIndex(i); setZoomOpen(true); }}
               >
-                <MediaDisplay item={item} className="absolute inset-0" />
+                <MediaDisplay item={item} poster={product.image} className="absolute inset-0" />
                 {product.tag && i === 0 && (
                   <span className="absolute top-3 left-3 px-2.5 py-1 text-[10px] tracking-[0.12em] uppercase font-ui font-medium rounded-sm z-10"
                     style={{ border: "1px solid var(--gold)", color: "var(--gold)", background: "rgba(248,246,242,.9)" }}>
@@ -326,9 +335,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                     style={{ border: activeIndex === i ? "2px solid var(--gold)" : "1px solid rgba(201,183,156,.25)", opacity: activeIndex === i ? 1 : 0.55 }}
                     aria-label={`${item.type === "video" ? "Video" : "Foto"} ${i + 1}`}>
                     {item.type === "video" ? (
-                      <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(0,0,0,.06)" }}>
-                        <Play size={14} fill="var(--espresso)" stroke="none" style={{ opacity: 0.6 }} />
-                      </div>
+                      <>
+                        <img src={product.image} alt="" className="w-full h-full object-cover" loading="lazy" />
+                        <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(0,0,0,.15)" }}>
+                          <Play size={14} fill="var(--gold)" stroke="none" />
+                        </div>
+                      </>
                     ) : (
                       <img src={item.src} alt="" className="w-full h-full object-cover" loading="lazy" />
                     )}
@@ -339,7 +351,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             <div className="relative flex-1 aspect-[3/4] rounded-2xl overflow-hidden cursor-zoom-in" style={{ background: "#e8dfd1" }} onClick={() => { setZoomIndex(activeIndex); setZoomOpen(true); }}>
               <AnimatePresence mode="wait">
                 <motion.div key={activeIndex} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }} className="absolute inset-0">
-                  <MediaDisplay item={activeMedia} className="w-full h-full" />
+                  <MediaDisplay item={activeMedia} poster={product.image} className="w-full h-full" />
                 </motion.div>
               </AnimatePresence>
               {product.tag && (
