@@ -634,9 +634,12 @@ function AdminPageInner() {
 
               {/* SETTINGS */}
               {activePanel === "settings" && (
-                <div>
-                  <h2 className="text-2xl italic mb-5" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Pengaturan Toko</h2>
+                <div className="space-y-6">
+                  <h2 className="text-2xl italic" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Pengaturan Toko</h2>
+
+                  {/* Store Info */}
                   <div className="card p-6 max-w-2xl space-y-5">
+                    <h3 className="text-lg font-semibold" style={{ color: "var(--espresso)" }}>Informasi Toko</h3>
                     <div>
                       <label className="text-sm font-semibold" style={{ color: "var(--espresso)" }}>Nama Toko</label>
                       <input defaultValue="SAMAQU" className="mt-1.5 w-full rounded-xl px-4 py-2.5 bg-white text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.1)" }} />
@@ -660,6 +663,9 @@ function AdminPageInner() {
                       <button className="text-sm font-semibold px-5 py-2.5 rounded-xl" style={{ border: "1px solid rgba(64,50,37,.15)" }}>Batal</button>
                     </div>
                   </div>
+
+                  {/* Payment Methods */}
+                  <PaymentMethodsSection />
                 </div>
               )}
 
@@ -707,6 +713,99 @@ function AdminPageInner() {
         .scrollbar-thin::-webkit-scrollbar-thumb { background: rgba(64,50,37,.2); border-radius: 999px; }
         .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
       `}</style>
+    </div>
+  );
+}
+
+function PaymentMethodsSection() {
+  const [banks, setBanks] = useState<{ id: string; bank_name: string; account_name: string; account_number: string; is_active: boolean }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const toast = useToast();
+
+  useEffect(() => {
+    supabase.from("payment_methods").select("*").order("display_order").then(({ data }) => {
+      if (data) setBanks(data);
+      setLoading(false);
+    });
+  }, []);
+
+  async function addBank() {
+    const { data, error } = await supabase.from("payment_methods").insert({
+      bank_name: "",
+      account_name: "",
+      account_number: "",
+      is_active: true,
+      display_order: banks.length,
+    }).select().single();
+    if (!error && data) {
+      setBanks([...banks, data]);
+      toast.showToast("success", "Rekening baru ditambahkan");
+    }
+  }
+
+  async function updateBank(id: string, field: string, value: string) {
+    setBanks(banks.map((b) => b.id === id ? { ...b, [field]: value } : b));
+    await supabase.from("payment_methods").update({ [field]: value }).eq("id", id);
+  }
+
+  async function toggleBank(id: string, active: boolean) {
+    setBanks(banks.map((b) => b.id === id ? { ...b, is_active: active } : b));
+    await supabase.from("payment_methods").update({ is_active: active }).eq("id", id);
+    toast.showToast("success", active ? "Rekening diaktifkan" : "Rekening dinonaktifkan");
+  }
+
+  async function deleteBank(id: string) {
+    if (!confirm("Hapus rekening ini?")) return;
+    await supabase.from("payment_methods").delete().eq("id", id);
+    setBanks(banks.filter((b) => b.id !== id));
+    toast.showToast("success", "Rekening berhasil dihapus");
+  }
+
+  if (loading) return <div className="card p-6"><Loader2 size={20} className="animate-spin" style={{ color: "var(--gold)" }} /></div>;
+
+  return (
+    <div className="card p-6 max-w-2xl">
+      <div className="flex items-center justify-between mb-5">
+        <div>
+          <h3 className="text-lg font-semibold" style={{ color: "var(--espresso)" }}>Metode Pembayaran</h3>
+          <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Rekening bank untuk transfer pembayaran</p>
+        </div>
+        <button onClick={addBank} className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-xl" style={{ border: "1px solid rgba(64,50,37,.15)", color: "var(--gold)" }}>
+          <Plus size={14} /> Tambah Rekening
+        </button>
+      </div>
+
+      <div className="space-y-4">
+        {banks.map((bank) => (
+          <div key={bank.id} className="p-4 rounded-xl" style={{ border: "1px solid rgba(64,50,37,.1)", background: bank.is_active ? "rgba(255,255,255,.5)" : "rgba(200,200,200,.1)" }}>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-medium" style={{ color: bank.is_active ? "var(--gold)" : "var(--text-muted)" }}>{bank.is_active ? "Aktif" : "Nonaktif"}</span>
+              <div className="flex items-center gap-2">
+                <button onClick={() => toggleBank(bank.id, !bank.is_active)} className="text-xs px-2 py-1 rounded" style={{ border: "1px solid rgba(64,50,37,.15)", color: bank.is_active ? "var(--text-muted)" : "var(--gold)" }}>
+                  {bank.is_active ? "Nonaktifkan" : "Aktifkan"}
+                </button>
+                <button onClick={() => deleteBank(bank.id)} className="p-1 rounded hover:bg-red-50" style={{ color: "#e74c3c" }}>
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>Nama Bank</label>
+                <input value={bank.bank_name} onChange={(e) => updateBank(bank.id, "bank_name", e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="Bank Mandiri" />
+              </div>
+              <div>
+                <label className="block text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>Nama Pemilik</label>
+                <input value={bank.account_name} onChange={(e) => updateBank(bank.id, "account_name", e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="PT Samaqu Digital" />
+              </div>
+              <div>
+                <label className="block text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>Nomor Rekening</label>
+                <input value={bank.account_number} onChange={(e) => updateBank(bank.id, "account_number", e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="1234567890123" />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
