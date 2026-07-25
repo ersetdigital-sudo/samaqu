@@ -75,9 +75,9 @@ export default function Navbar() {
             >
               {/* Logo */}
               <a
-                href="#top"
-                className="inline-flex items-center leading-none shrink-0"
-                aria-label="SAMAQU — kembali ke atas"
+                href="/"
+                className="inline-flex items-center leading-none shrink-0 cursor-pointer"
+                aria-label="SAMAQU — kembali ke beranda"
               >
                 <img
                   src="/logo.svg"
