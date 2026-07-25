@@ -296,7 +296,7 @@ export default function AdminPage() {
     <div id="admin-root" className="flex min-h-screen" style={{ background: "var(--cream)" }}>
       {/* Sidebar */}
       <aside
-        className={`fixed lg:sticky z-40 top-0 left-0 h-screen lg:self-start w-72 shrink-0 transition-transform duration-300 flex flex-col overflow-y-auto scrollbar-thin ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}
+        className={`fixed lg:sticky z-40 top-0 left-0 h-screen lg:self-start w-72 shrink-0 transition-transform duration-300 flex flex-col overflow-y-auto admin-sidebar ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}
         style={{ background: "var(--espresso)" }}
       >
         <div className="flex flex-col gap-2 px-6 py-6" style={{ borderBottom: "1px solid rgba(255,255,255,.08)" }}>
@@ -340,10 +340,6 @@ export default function AdminPage() {
             <p className="text-sm font-semibold" style={{ color: "var(--cream)" }}>Butuh bantuan?</p>
             <p className="text-xs mt-1 leading-relaxed" style={{ color: "#9f9690" }}>Hubungi tim support SAMAQU untuk panduan pengelolaan.</p>
             <button className="mt-3 w-full text-sm font-semibold py-2 rounded-lg text-white" style={{ background: "linear-gradient(135deg, var(--gold), #96742f)" }}>Pusat Bantuan</button>
-          </div>
-          <div className="mt-3 px-1">
-            <p className="text-xs font-medium" style={{ color: "#d4ccc2" }}>{role === "admin" ? "Admin" : "User"}</p>
-            <p className="text-xs truncate" style={{ color: "#9f9690" }}>{user.email}</p>
           </div>
         </div>
       </aside>
@@ -651,6 +647,14 @@ export default function AdminPage() {
         #admin-root [role="button"],
         #admin-root select {
           cursor: pointer;
+        }
+        /* Hidden scrollbar - keeps scroll functionality, hides visual scrollbar */
+        .admin-sidebar {
+          scrollbar-width: none; /* Firefox */
+          -ms-overflow-style: none; /* IE/Edge */
+        }
+        .admin-sidebar::-webkit-scrollbar {
+          display: none; /* Chrome, Safari, Opera */
         }
         .sidebar-link {
           display: flex; align-items: center; gap: 0.75rem;
