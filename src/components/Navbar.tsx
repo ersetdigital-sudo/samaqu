@@ -5,7 +5,7 @@ import { MobileDrawer, MobileDrawerCtx } from "@/components/ui/drawer";
 import { Storefront, BookOpen, Ruler, ListChecks, Question } from "@phosphor-icons/react";
 import { ShoppingBag } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
-import Link from "next/link";
+import CartDrawer from "@/components/CartDrawer";
 
 /* ── Nav data ── */
 const navLinks = [
@@ -19,6 +19,7 @@ const navLinks = [
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [cartOpen, setCartOpen] = useState(false);
 
   /* ── Scroll: transparent over hero → solid after hero ── */
   const onScroll = useCallback(() => {
@@ -118,13 +119,14 @@ export default function Navbar() {
                 </a>
 
                 {/* Cart icon */}
-                <Link href="/cart"
+                <button
+                  onClick={() => setCartOpen(true)}
                   className="relative grid place-items-center w-10 h-10 transition-colors duration-500"
                   style={{ color: scrolled ? "var(--espresso)" : "var(--cream)" }}
                   aria-label="Keranjang belanja">
                   <ShoppingBag size={20} strokeWidth={1.5} />
                   <CartBadge />
-                </Link>
+                </button>
 
                 {/* Hamburger — opens drawer */}
                 <button
@@ -150,6 +152,9 @@ export default function Navbar() {
       <MobileDrawer title="Menu">
         <DrawerNavContent onClose={() => setMenuOpen(false)} />
       </MobileDrawer>
+
+      {/* ── Cart Drawer ── */}
+      <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
     </MobileDrawerCtx.Provider>
   );
 }
