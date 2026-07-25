@@ -584,23 +584,13 @@ export default function AdminPage() {
                 <div>
                   <h2 className="text-2xl italic mb-1" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Konten Website</h2>
                   <p className="text-sm mb-5" style={{ color: "var(--text-muted)" }}>Kelola bagian yang tampil di samaqu.vercel.app</p>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                    {[
-                      { title: "Hero / Banner Utama", desc: '"Busana yang Layak Menemani Setiap Momen"', status: "Aktif" },
-                      { title: "Koleksi Pilihan", desc: "6 produk ditampilkan di beranda", status: "Aktif" },
-                      { title: "Cara Pemesanan", desc: "4 langkah pemesanan", status: "Aktif" },
-                      { title: "Testimoni Pelanggan", desc: `${orders.length} testimoni terkumpul`, status: "Aktif" },
-                    ].map((item, i) => (
-                      <div key={i} className="card p-5">
-                        <div className="flex items-center justify-between">
-                          <h3 className="font-semibold">{item.title}</h3>
-                          <span className="badge" style={{ background: "#e7ecdf", color: "#5b6b45" }}>{item.status}</span>
-                        </div>
-                        <p className="text-sm mt-2" style={{ color: "var(--text-muted)" }}>{item.desc}</p>
-                        <button className="mt-4 text-sm font-semibold px-3 py-2 rounded-lg" style={{ border: "1px solid rgba(64,50,37,.15)", color: "var(--gold)" }}>Edit Bagian</button>
-                      </div>
-                    ))}
-                  </div>
+                  <a href="/admin/konten-website" className="card p-5 flex items-center justify-between hover:shadow-md transition-shadow" style={{ cursor: "pointer" }}>
+                    <div>
+                      <h3 className="font-semibold mb-1" style={{ color: "var(--espresso)" }}>Kelola Konten Halaman</h3>
+                      <p className="text-sm" style={{ color: "var(--text-muted)" }}>Edit Hero, Koleksi Pilihan, Cara Pemesanan, Testimoni</p>
+                    </div>
+                    <span className="text-sm font-semibold" style={{ color: "var(--gold)" }}>Buka →</span>
+                  </a>
                 </div>
               )}
 
