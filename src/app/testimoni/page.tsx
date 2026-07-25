@@ -172,12 +172,12 @@ export default function TestimoniPage() {
       </div>
 
       {/* ═══ BREADCRUMB ═══ */}
-      <div className="max-w-[1200px] mx-auto px-5 sm:px-8 lg:px-14 pt-6 sm:pt-8 lg:pt-10 pb-2 sm:pb-3 lg:pb-4">
+      <div className="max-w-[1200px] mx-auto px-5 sm:px-8 lg:px-14 pt-6 sm:pt-8">
         <Breadcrumb />
       </div>
 
       {/* ═══ FILTER TABS ═══ */}
-      <div className="max-w-[1200px] mx-auto px-5 sm:px-8 lg:px-14">
+      <div className="max-w-[1200px] mx-auto px-5 sm:px-8 lg:px-14 mt-4 sm:mt-6">
         {/* Mobile: scrollable chips + dropdown */}
         <div className="lg:hidden">
           <div className="py-4 overflow-x-auto scrollbar-hide">
