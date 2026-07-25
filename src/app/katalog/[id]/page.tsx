@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Minus, Plus, ChevronLeft, ChevronRight, Play, ShoppingBag, ShoppingCart } from "lucide-react";
 import ImageZoom from "@/components/ImageZoom";
+import Breadcrumb from "@/components/Breadcrumb";
 import { getProductById, colorMap, type Product, type MediaItem } from "@/lib/katalog-data";
 import { useCart } from "@/lib/cart-context";
 import { useToast } from "@/components/Toast";
@@ -324,6 +325,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           DESKTOP LAYOUT (md+)
       ═══════════════════════════════════════ */}
       <div className="hidden md:block max-w-7xl mx-auto px-6 lg:px-8 pt-20 pb-20">
+        <Breadcrumb extra={[{ label: product.name }]} className="mb-6" />
         <div className="grid grid-cols-2 gap-10 lg:gap-14">
           {/* Gallery */}
           <div className="flex gap-3">

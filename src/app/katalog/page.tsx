@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 import { SlidersHorizontal, X, ChevronDown, ArrowRight, ShoppingCart } from "lucide-react";
+import Breadcrumb from "@/components/Breadcrumb";
 import {
   products,
   allCategories,
@@ -299,14 +300,7 @@ export default function KatalogPage() {
       {/* ── Page Header ── */}
       <div className="pt-28 sm:pt-32 lg:pt-36 pb-12 sm:pb-16">
         <div className="max-w-[1200px] mx-auto px-5 sm:px-8 lg:px-14">
-          {/* Breadcrumb */}
-          <nav className="mb-8 sm:mb-10" aria-label="Breadcrumb">
-            <ol className="flex items-center gap-2 text-[12px] font-ui" style={{ color: "var(--stone)" }}>
-              <li><a href="/" className="hover:text-gold transition-colors">Home</a></li>
-              <li>/</li>
-              <li style={{ color: "var(--espresso)" }}>Katalog</li>
-            </ol>
-          </nav>
+          <Breadcrumb className="mb-8 sm:mb-10" />
 
           <motion.div
             initial="hidden"

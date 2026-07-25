@@ -3,6 +3,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Star, CheckCircle, MessageCircle, Play, ChevronDown, Loader2 } from "lucide-react";
+import Breadcrumb from "@/components/Breadcrumb";
 import {
   testimoniData,
   testimoniCategories,
@@ -168,6 +169,11 @@ export default function TestimoniPage() {
             </motion.div>
           </div>
         </div>
+      </div>
+
+      {/* ═══ BREADCRUMB ═══ */}
+      <div className="max-w-[1200px] mx-auto px-5 sm:px-8 lg:px-14 pt-6 sm:pt-8">
+        <Breadcrumb />
       </div>
 
       {/* ═══ FILTER TABS ═══ */}

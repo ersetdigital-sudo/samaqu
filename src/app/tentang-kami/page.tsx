@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { ShieldCheck, Scissors, Ruler, MessageCircle } from "lucide-react";
+import Breadcrumb from "@/components/Breadcrumb";
 
 const headerVariants = {
   hidden: { opacity: 0, y: 18 },
@@ -69,6 +70,11 @@ export default function TentangKamiPage() {
             </motion.div>
           </div>
         </div>
+      </div>
+
+      {/* ═══ BREADCRUMB ═══ */}
+      <div className="max-w-[1200px] mx-auto px-5 sm:px-8 lg:px-14 pt-6 sm:pt-8">
+        <Breadcrumb />
       </div>
 
       {/* ═══ CERITA BRAND ═══ */}
