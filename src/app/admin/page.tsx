@@ -78,19 +78,40 @@ export default function AdminPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Check if user is admin by querying admins table
+  async function checkAdminRole(userId: string): Promise<string | null> {
+    const { data, error } = await supabase
+      .from("admins")
+      .select("role")
+      .eq("user_id", userId)
+      .single();
+    if (error || !data) return null;
+    return data.role;
+  }
+
   // Listen to auth state changes
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       const u = session?.user ?? null;
       setUser(u);
-      setRole(u?.app_metadata?.role || u?.user_metadata?.role || null);
+      if (u) {
+        const r = await checkAdminRole(u.id);
+        setRole(r);
+      } else {
+        setRole(null);
+      }
       setAuthLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       const u = session?.user ?? null;
       setUser(u);
-      setRole(u?.app_metadata?.role || u?.user_metadata?.role || null);
+      if (u) {
+        const r = await checkAdminRole(u.id);
+        setRole(r);
+      } else {
+        setRole(null);
+      }
     });
 
     return () => subscription.unsubscribe();
