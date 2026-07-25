@@ -52,7 +52,7 @@ function CheckoutContent() {
   const [payment, setPayment] = useState("bank");
   const [submitting, setSubmitting] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
-  const [orderNumber] = useState(generateOrderNumber);
+  const [orderNumber, setOrderNumber] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   if (!product) {
@@ -83,7 +83,7 @@ function CheckoutContent() {
     return /^(\+62|62|0)8[1-9][0-9]{6,10}$/.test(p.replace(/[\s-]/g, ""));
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     const e: Record<string, string> = {};
     if (!nama.trim()) e.nama = "Nama lengkap wajib diisi";
     if (!whatsapp.trim()) e.whatsapp = "No. WhatsApp wajib diisi";
@@ -94,7 +94,6 @@ function CheckoutContent() {
 
     if (Object.keys(e).length > 0) {
       setErrors(e);
-      /* Scroll to first error */
       const firstKey = Object.keys(e)[0];
       const el = document.querySelector(`[data-field="${firstKey}"]`);
       if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -103,11 +102,43 @@ function CheckoutContent() {
 
     setErrors({});
     setSubmitting(true);
-    setTimeout(() => {
+
+    try {
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customer: { name: nama, email, whatsapp },
+          shipping: { address: alamat, city: kota, postalCode: kodepos, notes: catatanKurir, method: shipping },
+          paymentMethod: payment,
+          discount,
+          items: [{
+            productId: product.id,
+            name: product.name,
+            image: product.image,
+            color: selectedColor,
+            size: selectedSize,
+            quantity: qty,
+            price: product.price,
+          }],
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Gagal membuat pesanan");
+      }
+
       clearCart();
+      setOrderNumber(data.orderNumber || generateOrderNumber());
       setOrderPlaced(true);
+    } catch (err) {
+      console.error("Checkout error:", err);
+      setErrors({ submit: "Terjadi kesalahan. Silakan coba lagi." });
+    } finally {
       setSubmitting(false);
-    }, 1200);
+    }
   }
 
   if (orderPlaced) {
@@ -263,6 +294,13 @@ function CheckoutContent() {
               ))}
             </div>
           </section>
+
+          {/* Submit error */}
+          {errors.submit && (
+            <div className="rounded-lg p-3 text-sm font-ui" style={{ background: "rgba(231,76,60,.1)", color: "#e74c3c", border: "1px solid rgba(231,76,60,.2)" }}>
+              {errors.submit}
+            </div>
+          )}
 
           {/* Submit (mobile) */}
           <div className="lg:hidden">
