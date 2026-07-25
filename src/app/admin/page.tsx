@@ -71,7 +71,6 @@ export default function AdminPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [authError, setAuthError] = useState("");
-  const [isSignUp, setIsSignUp] = useState(false);
   const [activePanel, setActivePanel] = useState<Panel>("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -110,15 +109,8 @@ export default function AdminPage() {
   async function handleAuth(e: React.FormEvent) {
     e.preventDefault();
     setAuthError("");
-
-    if (isSignUp) {
-      const { error } = await supabase.auth.signUp({ email, password });
-      if (error) setAuthError(error.message);
-      else setAuthError("Cek email kamu untuk verifikasi!");
-    } else {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) setAuthError(error.message);
-    }
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) setAuthError(error.message);
   }
 
   async function handleLogout() {
@@ -139,51 +131,88 @@ export default function AdminPage() {
   // Login screen
   if (!user) {
     return (
-      <section className="min-h-screen flex items-center justify-center" style={{ background: "var(--cream)" }}>
-        <div className="w-full max-w-sm mx-auto px-6">
-          <div className="text-center mb-8">
-            <span className="text-3xl tracking-[0.2em] font-medium" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>SAMAQU</span>
-            <p className="text-[11px] tracking-[0.28em] uppercase mt-2" style={{ color: "var(--text-muted)" }}>Admin Panel</p>
-          </div>
-          <form onSubmit={handleAuth} className="card p-6">
-            <div className="flex items-center gap-2 mb-5">
-              <Lock size={18} style={{ color: "var(--gold)" }} />
-              <h2 className="text-lg font-semibold" style={{ color: "var(--espresso)" }}>{isSignUp ? "Daftar Akun Admin" : "Masuk ke Dashboard"}</h2>
+      <section className="min-h-screen flex" style={{ background: "#f0f2f5" }}>
+        {/* Desktop: slanted dark left panel */}
+        <div className="hidden lg:flex lg:w-[55%] relative overflow-hidden" style={{ background: "var(--espresso)" }}>
+          <div className="absolute inset-0" style={{
+            clipPath: "polygon(0 0, 100% 0, 88% 100%, 0 100%)",
+            background: "linear-gradient(135deg, rgba(181,140,74,.15) 0%, rgba(45,33,27,.95) 50%, rgba(45,33,27,1) 100%)",
+          }} />
+          <div className="absolute inset-0 opacity-20" style={{
+            background: "radial-gradient(circle at 30% 40%, rgba(181,140,74,.4) 0%, transparent 50%), radial-gradient(circle at 70% 80%, rgba(157,122,58,.3) 0%, transparent 40%)",
+          }} />
+          <div className="relative z-10 flex flex-col justify-between p-12 lg:p-16 w-full">
+            <div>
+              <span className="text-3xl tracking-[0.2em] font-medium" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--cream)" }}>SAMAQU</span>
+              <p className="text-[11px] tracking-[0.28em] uppercase mt-2" style={{ color: "rgba(212,197,181,.6)" }}>Admin Panel</p>
             </div>
-            <div className="space-y-3">
-              <div className="relative">
-                <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: "var(--text-muted)" }} />
+            <div className="max-w-md">
+              <h1 className="text-4xl lg:text-5xl font-medium leading-tight mb-4" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--cream)" }}>
+                Kelola Toko<br /><em style={{ color: "#d4a86a" }}>SAMAQU</em> Anda
+              </h1>
+              <p className="text-sm leading-relaxed" style={{ color: "rgba(212,197,181,.7)" }}>
+                Dashboard admin untuk mengelola pesanan, produk, pelanggan, dan konten website SAMAQU.
+              </p>
+            </div>
+            <p className="text-xs" style={{ color: "rgba(212,197,181,.4)" }}>© 2024 SAMAQU. Busana yang Layak Menemani Setiap Momen.</p>
+          </div>
+        </div>
+
+        {/* Right: form panel */}
+        <div className="flex-1 flex items-center justify-center px-6 py-12 lg:px-16">
+          <div className="w-full max-w-sm">
+            {/* Mobile: brand header */}
+            <div className="lg:hidden text-center mb-10">
+              <span className="text-3xl tracking-[0.2em] font-medium" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>SAMAQU</span>
+              <p className="text-[11px] tracking-[0.28em] uppercase mt-2" style={{ color: "var(--text-muted)" }}>Admin Panel</p>
+            </div>
+
+            <div className="hidden lg:block mb-8">
+              <h2 className="text-2xl font-medium mb-2" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>Selamat Datang</h2>
+              <p className="text-sm" style={{ color: "var(--text-muted)" }}>Masuk ke dashboard admin SAMAQU</p>
+            </div>
+
+            <form onSubmit={handleAuth} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--espresso)" }}>Email</label>
+                <div className="relative">
+                  <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: "var(--text-muted)" }} />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="admin@samaqu.id"
+                    className="w-full rounded-xl pl-10 pr-4 py-3.5 text-sm outline-none transition-all focus:ring-2"
+                    style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)", "--tw-ring-color": "var(--gold)" } as React.CSSProperties}
+                    required
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--espresso)" }}>Password</label>
                 <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Email admin"
-                  className="w-full rounded-xl pl-10 pr-4 py-3 text-sm outline-none"
-                  style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }}
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Masukkan password"
+                  className="w-full rounded-xl px-4 py-3.5 text-sm outline-none transition-all focus:ring-2"
+                  style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)", "--tw-ring-color": "var(--gold)" } as React.CSSProperties}
                   required
+                  minLength={6}
                 />
               </div>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password"
-                className="w-full rounded-xl px-4 py-3 text-sm outline-none"
-                style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }}
-                required
-                minLength={6}
-              />
-            </div>
-            {authError && (
-              <p className="text-[12px] mt-2" style={{ color: authError.includes("verifikasi") ? "var(--gold)" : "#e74c3c" }}>{authError}</p>
-            )}
-            <button type="submit" className="w-full mt-4 py-3 rounded-xl text-sm font-semibold text-white" style={{ background: "var(--espresso)" }}>
-              {isSignUp ? "Daftar" : "Masuk"}
-            </button>
-            <button type="button" onClick={() => { setIsSignUp(!isSignUp); setAuthError(""); }} className="w-full mt-3 py-2 text-[13px]" style={{ color: "var(--gold)" }}>
-              {isSignUp ? "Sudah punya akun? Masuk" : "Belum punya akun? Daftar"}
-            </button>
-          </form>
+              {authError && (
+                <p className="text-[13px]" style={{ color: "#e74c3c" }}>{authError}</p>
+              )}
+              <button type="submit" className="w-full py-3.5 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90 active:scale-[0.98]" style={{ background: "var(--espresso)", boxShadow: "0 4px 14px -4px rgba(45,33,27,.4)" }}>
+                Masuk
+              </button>
+            </form>
+
+            <p className="mt-8 text-center text-xs" style={{ color: "var(--text-muted)" }}>
+              Butuh akses? Hubungi pemilik toko.
+            </p>
+          </div>
         </div>
       </section>
     );
