@@ -82,7 +82,7 @@ export default function Breadcrumb({ extra, items, className }: BreadcrumbProps)
       </ol>
 
       {/* Desktop */}
-      <ol className="hidden sm:flex items-center text-[12px] font-ui flex-wrap" style={{ color: "var(--stone)", gap: "0.375rem" }}>
+      <ol className="hidden sm:flex items-center text-[13px] lg:text-[14px] font-ui flex-wrap" style={{ color: "var(--stone)", gap: "0.5rem" }}>
         {desktopCrumbs.map((crumb, i) => {
           const isLast = i === desktopCrumbs.length - 1;
           return (

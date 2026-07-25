@@ -172,7 +172,7 @@ export default function TestimoniPage() {
       </div>
 
       {/* ═══ BREADCRUMB ═══ */}
-      <div className="max-w-[1200px] mx-auto px-5 sm:px-8 lg:px-14 pt-6 sm:pt-8">
+      <div className="max-w-[1200px] mx-auto px-5 sm:px-8 lg:px-14 pt-6 sm:pt-8 lg:pt-10 pb-2 sm:pb-3 lg:pb-4">
         <Breadcrumb />
       </div>
 

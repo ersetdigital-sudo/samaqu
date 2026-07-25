@@ -325,7 +325,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           DESKTOP LAYOUT (md+)
       ═══════════════════════════════════════ */}
       <div className="hidden md:block max-w-7xl mx-auto px-6 lg:px-8 pt-20 pb-20">
-        <Breadcrumb extra={[{ label: product.name }]} className="mb-6" />
+        <Breadcrumb extra={[{ label: product.name }]} className="mb-8 lg:mb-10" />
         <div className="grid grid-cols-2 gap-10 lg:gap-14">
           {/* Gallery */}
           <div className="flex gap-3">
