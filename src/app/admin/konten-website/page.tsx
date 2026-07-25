@@ -7,6 +7,7 @@ import { X, Loader2, ToggleLeft, ToggleRight, Plus, Trash2, RotateCcw } from "lu
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/AdminToast";
 import ConfirmModal from "@/components/ConfirmModal";
+import AdminShell from "@/components/AdminShell";
 import type { Product } from "@/lib/katalog-data";
 
 /* ── Defaults ── */
@@ -171,6 +172,7 @@ export default function KontenWebsitePage() {
   ];
 
   return (
+    <AdminShell>
     <section className="min-h-screen" style={{ background: "var(--cream)" }}>
       <div className="max-w-4xl mx-auto px-5 lg:px-8 py-6">
         <div className="mb-6">
@@ -401,5 +403,6 @@ export default function KontenWebsitePage() {
 
       <style jsx global>{`.card { background: #fffdfb; border: 1px solid rgba(64,50,37,.06); border-radius: 1rem; box-shadow: 0 1px 2px rgba(64,50,37,.03); } .badge { font-size: .72rem; font-weight: 600; padding: .2rem .6rem; border-radius: 999px; white-space: nowrap; }`}</style>
     </section>
+    </AdminShell>
   );
 }

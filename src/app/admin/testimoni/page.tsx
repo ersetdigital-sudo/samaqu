@@ -6,6 +6,7 @@ import { Plus, Edit, Trash2, X, Star, Loader2, CheckCircle } from "lucide-react"
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/AdminToast";
 import ConfirmModal from "@/components/ConfirmModal";
+import AdminShell from "@/components/AdminShell";
 
 const CATEGORIES = ["Thobe", "Kandora", "Koko", "Vest", "Kabak", "Cover & Hanger"] as const;
 
@@ -131,10 +132,11 @@ export default function AdminTestimoniPage() {
   }
 
   if (loading) {
-    return <section className="min-h-screen flex items-center justify-center" style={{ background: "var(--cream)" }}><Loader2 size={24} className="animate-spin" style={{ color: "var(--gold)" }} /></section>;
+    return <AdminShell><section className="min-h-screen flex items-center justify-center" style={{ background: "var(--cream)" }}><Loader2 size={24} className="animate-spin" style={{ color: "var(--gold)" }} /></section></AdminShell>;
   }
 
   return (
+    <AdminShell>
     <section className="min-h-screen" style={{ background: "var(--cream)" }}>
       <div className="max-w-5xl mx-auto px-5 lg:px-8 py-6">
         <div className="flex items-center justify-between mb-6">
@@ -231,5 +233,6 @@ export default function AdminTestimoniPage() {
 
       <style jsx global>{`.card { background: #fffdfb; border: 1px solid rgba(64,50,37,.06); border-radius: 1rem; box-shadow: 0 1px 2px rgba(64,50,37,.03); }`}</style>
     </section>
+    </AdminShell>
   );
 }
