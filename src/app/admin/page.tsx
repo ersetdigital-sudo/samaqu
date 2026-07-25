@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { User } from "@supabase/supabase-js";
+import ConfirmModal from "@/components/ConfirmModal";
+import { ToastProvider, useToast } from "@/components/AdminToast";
 
 type Panel = "dashboard" | "orders" | "products" | "customers" | "content" | "settings";
 
@@ -65,7 +67,7 @@ function StatusBadge({ status }: { status: string }) {
   return <span className="badge" style={{ background: s.bg, color: s.color }}>{status}</span>;
 }
 
-export default function AdminPage() {
+function AdminPageInner() {
   // ALL hooks must be declared BEFORE any early returns
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<string | null>(null);
@@ -169,17 +171,26 @@ export default function AdminPage() {
     setActivePanel("dashboard");
   }
 
+  const toast = useToast();
+  const [confirmModal, setConfirmModal] = useState<{ open: boolean; title: string; message: string; onConfirm: () => void }>({ open: false, title: "", message: "", onConfirm: () => {} });
+
+  function showConfirm(title: string, message: string, onConfirm: () => void) {
+    setConfirmModal({ open: true, title, message, onConfirm });
+  }
+
   async function handleDeleteProduct(id: string, name: string) {
-    if (!confirm(`Yakin ingin menghapus "${name}"?\n\nTindakan ini tidak bisa dibatalkan.`)) return;
-    try {
-      await supabase.from("product_images").delete().eq("product_id", id);
-      await supabase.from("product_variants").delete().eq("product_id", id);
-      await supabase.from("products").delete().eq("id", id);
-      setProducts((prev) => prev.filter((p) => p.id !== id));
-    } catch (err) {
-      console.error("Delete error:", err);
-      alert("Gagal menghapus produk");
-    }
+    showConfirm("Hapus Produk?", `Yakin ingin menghapus "${name}"? Tindakan ini tidak bisa dibatalkan.`, async () => {
+      try {
+        await supabase.from("product_images").delete().eq("product_id", id);
+        await supabase.from("product_variants").delete().eq("product_id", id);
+        await supabase.from("products").delete().eq("id", id);
+        setProducts((prev) => prev.filter((p) => p.id !== id));
+        toast.showToast("success", "Produk berhasil dihapus");
+      } catch (err) {
+        console.error("Delete error:", err);
+        toast.showToast("error", "Gagal menghapus produk, coba lagi");
+      }
+    });
   }
 
   function go(panel: Panel) {
@@ -644,6 +655,14 @@ export default function AdminPage() {
         </main>
       </div>
 
+      <ConfirmModal
+        open={confirmModal.open}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        onConfirm={() => { confirmModal.onConfirm(); setConfirmModal((prev) => ({ ...prev, open: false })); }}
+        onCancel={() => setConfirmModal((prev) => ({ ...prev, open: false }))}
+      />
+
       <style jsx global>{`
         /* All interactive elements in admin dashboard */
         #admin-root button,
@@ -690,5 +709,13 @@ function StatCard({ icon, label, value, badge, badgeColor }: { icon: React.React
       <p className="text-sm mt-4" style={{ color: "var(--text-muted)" }}>{label}</p>
       <p className="text-2xl font-bold mt-1" style={{ color: "var(--espresso)" }}>{value}</p>
     </div>
+  );
+}
+
+export default function AdminPage() {
+  return (
+    <ToastProvider>
+      <AdminPageInner />
+    </ToastProvider>
   );
 }
