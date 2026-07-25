@@ -115,20 +115,8 @@ export default function Navbar() {
                 ))}
               </ul>
 
-              {/* Right: CTA + cart + hamburger */}
+              {/* Right: cart + hamburger */}
               <div className="flex items-center gap-4">
-                <a
-                  href="/katalog"
-                  className="hidden sm:inline-flex items-center gap-2 text-[11px] tracking-[0.18em] uppercase transition-colors duration-500 font-ui group"
-                  style={{ color: ctaColor }}
-                >
-                  Lihat Koleksi
-                  <span
-                    className="w-6 h-px transition-all duration-500 group-hover:w-9"
-                    style={{ background: "var(--gold)" }}
-                  />
-                </a>
-
                 {/* Cart icon */}
                 <button
                   onClick={() => setCartOpen(true)}
@@ -256,17 +244,6 @@ function DrawerNavContent({ onClose }: { onClose: () => void }) {
             <path d="M17.6 6.3A7.85 7.85 0 0 0 12 4a7.94 7.94 0 0 0-6.9 11.9L4 20l4.2-1.1A7.9 7.9 0 0 0 12 19.9 7.94 7.94 0 0 0 17.6 6.3Z" />
           </svg>
           Chat Admin
-        </a>
-        <a
-          href="/katalog"
-          className="flex items-center justify-center gap-2 w-full px-5 py-3.5 text-[11px] tracking-[0.16em] uppercase font-ui font-medium transition-opacity duration-200 hover:opacity-80 rounded-sm"
-          style={{ background: "var(--espresso)", color: "var(--cream)" }}
-          onClick={onClose}
-        >
-          Lihat Koleksi
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M5 12h14M13 6l6 6-6 6" />
-          </svg>
         </a>
         <p className="text-center text-[10px] tracking-[0.2em] uppercase mt-4 font-ui" style={{ color: "var(--stone)" }}>
           SAMAQU — Busana Muslim Premium
