@@ -127,24 +127,6 @@ export default function AdminPage() {
     setActivePanel("dashboard");
   }
 
-  const stats = useMemo(() => ({
-    revenue: orders.reduce((sum, o) => sum + o.total, 0),
-    totalOrders: orders.length,
-    pendingOrders: orders.filter((o) => o.status === "pending").length,
-    totalProducts: products.length,
-  }), [orders, products]);
-
-  const topProducts = useMemo(() => {
-    const counts: Record<string, { name: string; count: number }> = {};
-    orders.forEach((o) => {
-      o.order_items?.forEach((item) => {
-        if (!counts[item.product_name]) counts[item.product_name] = { name: item.product_name, count: 0 };
-        counts[item.product_name].count += item.quantity;
-      });
-    });
-    return Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 5);
-  }, [orders]);
-
   // Loading state
   if (authLoading) {
     return (
