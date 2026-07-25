@@ -392,7 +392,7 @@ export default function KatalogPage() {
     <section className="min-h-screen" style={{ background: "var(--cream)" }}>
       {/* ── Page Header ── */}
       <div className="pt-28 sm:pt-32 lg:pt-36 pb-12 sm:pb-16">
-        <div className="max-w-[1200px] mx-auto px-5 sm:px-8">
+        <div className="max-w-[1200px] mx-auto px-5 sm:px-8 lg:px-14">
           {/* Breadcrumb */}
           <nav className="mb-8 sm:mb-10" aria-label="Breadcrumb">
             <ol className="flex items-center gap-2 text-[12px] font-ui" style={{ color: "var(--stone)" }}>
@@ -435,68 +435,60 @@ export default function KatalogPage() {
         </div>
       </div>
 
-      {/* ── Search Bar ── */}
-      <div className="max-w-[1200px] mx-auto px-5 sm:px-8 mb-8 sm:mb-10">
-        <div className="max-w-md ml-auto relative">
-          <div className="absolute left-0 top-1/2 -translate-y-1/2 pointer-events-none">
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke={searchQuery ? "var(--gold)" : "var(--warm-sand)"}
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="transition-colors duration-200"
-            >
-              <circle cx="11" cy="11" r="8" />
-              <path d="M21 21l-4.35-4.35" />
-            </svg>
+      {/* ── Controls: Search + Filter + Sort (desktop unified, mobile 2-row) ── */}
+      <div className="max-w-[1200px] mx-auto px-5 sm:px-8 lg:px-14">
+        {/* Row 1: Search bar */}
+        <div className="mb-6 lg:mb-8">
+          <div className="lg:max-w-none lg:ml-0 max-w-md ml-auto relative">
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 pointer-events-none">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke={searchQuery ? "var(--gold)" : "var(--warm-sand)"}
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="transition-colors duration-200"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <path d="M21 21l-4.35-4.35" />
+              </svg>
+            </div>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setVisibleCount(12);
+              }}
+              placeholder="Cari jubah, thobe, koko..."
+              className="w-full pl-9 pr-4 py-3 text-[14px] font-ui outline-none transition-all duration-200"
+              style={{
+                background: "transparent",
+                borderBottom: "1px solid rgba(216,196,168,.4)",
+                color: "var(--espresso)",
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderBottomColor = "var(--gold)";
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderBottomColor = "rgba(216,196,168,.4)";
+              }}
+            />
           </div>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setVisibleCount(12);
-            }}
-            placeholder="Cari jubah, thobe, koko..."
-            className="w-full pl-9 pr-4 py-3 text-[14px] font-ui outline-none transition-all duration-200"
-            style={{
-              background: "transparent",
-              borderBottom: "1px solid rgba(216,196,168,.4)",
-              color: "var(--espresso)",
-            }}
-            onFocus={(e) => {
-              e.currentTarget.style.borderBottomColor = "var(--gold)";
-            }}
-            onBlur={(e) => {
-              e.currentTarget.style.borderBottomColor = "rgba(216,196,168,.4)";
-            }}
-          />
         </div>
-      </div>
 
-      {/* ── Filter Bar (non-sticky) ── */}
-      <div
-        style={{
-          background: "var(--cream)",
-          borderBottom: "1px solid rgba(216,196,168,.2)",
-        }}
-      >
-        <div className="max-w-[1200px] mx-auto px-5 sm:px-8">
-          {/* Row 1: Category pills — scrollable */}
-          <div className="py-5 sm:py-6 overflow-x-auto scrollbar-hide">
-            <div className="flex items-center gap-2.5 sm:gap-3">
+        {/* Row 2 (mobile): Category chips scrollable + Filter/Sort — mobile only */}
+        <div className="lg:hidden">
+          <div className="py-4 overflow-x-auto scrollbar-hide">
+            <div className="flex items-center gap-2.5">
               {(["Semua", ...allCategories] as const).map((cat) => (
                 <button
                   key={cat}
-                  onClick={() => {
-                    setCategory(cat);
-                    setVisibleCount(12);
-                  }}
-                  className="relative px-4 sm:px-5 py-2.5 text-[12px] sm:text-[13px] tracking-[0.06em] font-ui font-medium rounded-full transition-all duration-300 whitespace-nowrap"
+                  onClick={() => { setCategory(cat); setVisibleCount(12); }}
+                  className="relative px-4 py-2.5 text-[12px] tracking-[0.06em] font-ui font-medium rounded-full transition-all duration-300 whitespace-nowrap"
                   style={{
                     background: category === cat ? "var(--espresso)" : "transparent",
                     color: category === cat ? "var(--cream)" : "var(--coffee)",
@@ -508,10 +500,7 @@ export default function KatalogPage() {
               ))}
             </div>
           </div>
-
-          {/* Row 2: Filter + Sort — always visible, no scroll */}
-          <div className="flex items-center justify-between pb-5 sm:pb-6">
-            {/* Filter button */}
+          <div className="flex items-center justify-between pb-4">
             <button
               onClick={() => setShowFilters(!showFilters)}
               className="flex items-center gap-2 px-4 py-2.5 text-[12px] font-ui rounded-full transition-all duration-200"
@@ -524,18 +513,12 @@ export default function KatalogPage() {
               <SlidersHorizontal size={14} strokeWidth={1.5} />
               Filter
             </button>
-
-            {/* Sort */}
             <div className="relative">
               <select
                 value={sort}
                 onChange={(e) => setSort(e.target.value as typeof sort)}
                 className="appearance-none px-4 py-2.5 pr-9 text-[12px] font-ui rounded-full cursor-pointer transition-all duration-200"
-                style={{
-                  border: "1px solid rgba(201,183,156,.3)",
-                  background: "transparent",
-                  color: "var(--coffee)",
-                }}
+                style={{ border: "1px solid rgba(201,183,156,.3)", background: "transparent", color: "var(--coffee)" }}
               >
                 <option value="newest">Terbaru</option>
                 <option value="az">Nama A-Z</option>
@@ -544,55 +527,99 @@ export default function KatalogPage() {
               <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--stone)" }} />
             </div>
           </div>
-
-          {/* Sub-filter panel */}
-          <AnimatePresence>
-            {showFilters && category !== "Semua" && (
-              <FilterPanel
-                category={category}
-                selectedKain={selectedKain}
-                selectedColor={selectedColor}
-                selectedSeries={selectedSeries}
-                onKainChange={(v) => { setSelectedKain(v); setVisibleCount(12); }}
-                onColorChange={(v) => { setSelectedColor(v); setVisibleCount(12); }}
-                onSeriesChange={(v) => { setSelectedSeries(v); setVisibleCount(12); }}
-                onClose={() => setShowFilters(false)}
-              />
-            )}
-          </AnimatePresence>
-
-          {/* Active filter chips */}
-          {activeFilters.length > 0 && (
-            <div className="flex items-center gap-2 pb-3 flex-wrap">
-              {activeFilters.map((f) => (
-                <span
-                  key={f!.label}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-ui rounded-full"
-                  style={{
-                    background: "var(--espresso)",
-                    color: "var(--cream)",
-                  }}
-                >
-                  {f!.label}
-                  <button onClick={f!.clear} className="hover:opacity-70 transition-opacity">
-                    <X size={12} />
-                  </button>
-                </span>
-              ))}
-              <button
-                onClick={resetAll}
-                className="text-[11px] font-ui underline transition-colors hover:text-gold"
-                style={{ color: "var(--stone)" }}
-              >
-                Reset Filter
-              </button>
-            </div>
-          )}
         </div>
+
+        {/* Row 2 (desktop): Category chips left + Filter/Sort right — single line */}
+        <div className="hidden lg:flex items-center justify-between py-5 border-b" style={{ borderColor: "rgba(216,196,168,.2)" }}>
+          <div className="flex items-center gap-3">
+            {(["Semua", ...allCategories] as const).map((cat) => (
+              <button
+                key={cat}
+                onClick={() => { setCategory(cat); setVisibleCount(12); }}
+                className="relative px-5 py-2.5 text-[13px] tracking-[0.06em] font-ui font-medium rounded-full transition-all duration-300 whitespace-nowrap"
+                style={{
+                  background: category === cat ? "var(--espresso)" : "transparent",
+                  color: category === cat ? "var(--cream)" : "var(--coffee)",
+                  border: `1px solid ${category === cat ? "var(--espresso)" : "rgba(201,183,156,.3)"}`,
+                }}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="flex items-center gap-2 px-4 py-2.5 text-[12px] font-ui rounded-full transition-all duration-200"
+              style={{
+                border: `1px solid ${showFilters ? "var(--espresso)" : "rgba(201,183,156,.3)"}`,
+                background: showFilters ? "var(--espresso)" : "transparent",
+                color: showFilters ? "var(--cream)" : "var(--coffee)",
+              }}
+            >
+              <SlidersHorizontal size={14} strokeWidth={1.5} />
+              Filter
+            </button>
+            <div className="relative">
+              <select
+                value={sort}
+                onChange={(e) => setSort(e.target.value as typeof sort)}
+                className="appearance-none px-4 py-2.5 pr-9 text-[12px] font-ui rounded-full cursor-pointer transition-all duration-200"
+                style={{ border: "1px solid rgba(201,183,156,.3)", background: "transparent", color: "var(--coffee)" }}
+              >
+                <option value="newest">Terbaru</option>
+                <option value="az">Nama A-Z</option>
+                <option value="popular">Terpopuler</option>
+              </select>
+              <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--stone)" }} />
+            </div>
+          </div>
+        </div>
+
+        {/* Sub-filter panel */}
+        <AnimatePresence>
+          {showFilters && category !== "Semua" && (
+            <FilterPanel
+              category={category}
+              selectedKain={selectedKain}
+              selectedColor={selectedColor}
+              selectedSeries={selectedSeries}
+              onKainChange={(v) => { setSelectedKain(v); setVisibleCount(12); }}
+              onColorChange={(v) => { setSelectedColor(v); setVisibleCount(12); }}
+              onSeriesChange={(v) => { setSelectedSeries(v); setVisibleCount(12); }}
+              onClose={() => setShowFilters(false)}
+            />
+          )}
+        </AnimatePresence>
+
+        {/* Active filter chips */}
+        {activeFilters.length > 0 && (
+          <div className="flex items-center gap-2 py-3 flex-wrap">
+            {activeFilters.map((f) => (
+              <span
+                key={f!.label}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-ui rounded-full"
+                style={{ background: "var(--espresso)", color: "var(--cream)" }}
+              >
+                {f!.label}
+                <button onClick={f!.clear} className="hover:opacity-70 transition-opacity">
+                  <X size={12} />
+                </button>
+              </span>
+            ))}
+            <button
+              onClick={resetAll}
+              className="text-[11px] font-ui underline transition-colors hover:text-gold"
+              style={{ color: "var(--stone)" }}
+            >
+              Reset Filter
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ── Product Grid ── */}
-      <div className="max-w-[1200px] mx-auto px-5 sm:px-8 py-8 sm:py-12">
+      <div className="max-w-[1200px] mx-auto px-5 sm:px-8 lg:px-14 py-8 sm:py-12">
         {filtered.length === 0 ? (
           /* Empty State */
           <div className="text-center py-20">
