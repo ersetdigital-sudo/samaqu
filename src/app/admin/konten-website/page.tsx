@@ -104,7 +104,9 @@ export default function KontenWebsitePage() {
   function openStepsEdit() { setEditSteps([...steps]); setEditModal("steps"); }
   async function saveSteps() {
     setSaving(true);
-    await supabase.from("order_steps").delete().neq("id", "");
+    // Delete all existing rows first
+    const { data: existingS } = await supabase.from("order_steps").select("id");
+    if (existingS) for (const row of existingS) await supabase.from("order_steps").delete().eq("id", row.id);
     const rows = editSteps.map((s, i) => ({ step_number: i + 1, title: s.title, description: s.description, is_active: true }));
     if (rows.length > 0) await supabase.from("order_steps").insert(rows);
     setSteps(rows.map((r, i) => ({ id: String(i), ...r })));
