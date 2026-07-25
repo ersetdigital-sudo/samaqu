@@ -293,7 +293,7 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="flex min-h-screen" style={{ background: "var(--cream)" }}>
+    <div id="admin-root" className="flex min-h-screen" style={{ background: "var(--cream)" }}>
       {/* Sidebar */}
       <aside
         className={`fixed lg:sticky z-40 top-0 left-0 h-screen lg:self-start w-72 shrink-0 transition-transform duration-300 flex flex-col overflow-y-auto scrollbar-thin ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}
@@ -645,6 +645,13 @@ export default function AdminPage() {
       </div>
 
       <style jsx global>{`
+        /* All interactive elements in admin dashboard */
+        #admin-root button,
+        #admin-root a,
+        #admin-root [role="button"],
+        #admin-root select {
+          cursor: pointer;
+        }
         .sidebar-link {
           display: flex; align-items: center; gap: 0.75rem;
           padding: 0.7rem 0.9rem; border-radius: 0.7rem;
