@@ -53,6 +53,7 @@ function CheckoutContent() {
   const [submitting, setSubmitting] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderNumber] = useState(generateOrderNumber);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   if (!product) {
     return (
@@ -78,7 +79,29 @@ function CheckoutContent() {
     }
   }
 
+  function validatePhone(p: string): boolean {
+    return /^(\+62|62|0)8[1-9][0-9]{6,10}$/.test(p.replace(/[\s-]/g, ""));
+  }
+
   function handleSubmit() {
+    const e: Record<string, string> = {};
+    if (!nama.trim()) e.nama = "Nama lengkap wajib diisi";
+    if (!whatsapp.trim()) e.whatsapp = "No. WhatsApp wajib diisi";
+    else if (!validatePhone(whatsapp)) e.whatsapp = "Nomor WhatsApp tidak valid";
+    if (!alamat.trim()) e.alamat = "Alamat lengkap wajib diisi";
+    if (!kota.trim()) e.kota = "Kota/Kabupaten wajib diisi";
+    if (kodepos && !/^\d{5}$/.test(kodepos)) e.kodepos = "Kode pos harus 5 digit";
+
+    if (Object.keys(e).length > 0) {
+      setErrors(e);
+      /* Scroll to first error */
+      const firstKey = Object.keys(e)[0];
+      const el = document.querySelector(`[data-field="${firstKey}"]`);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+
+    setErrors({});
     setSubmitting(true);
     setTimeout(() => {
       clearCart();
@@ -146,17 +169,19 @@ function CheckoutContent() {
               <h2 className="text-xl sm:text-2xl italic" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Informasi Kontak</h2>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-              <div className="sm:col-span-2">
-                <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: "var(--text-secondary)" }}>Nama Lengkap</label>
-                <input type="text" value={nama} onChange={(e) => setNama(e.target.value)} className="field w-full rounded-lg px-4 py-3 text-sm font-ui" style={{ background: "white", border: "1px solid rgba(64,50,37,.25)", color: "var(--espresso)", outline: "none" }} placeholder="Contoh: Ahmad Fauzi" />
+              <div className="sm:col-span-2" data-field="nama">
+                <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: errors.nama ? "#e74c3c" : "var(--text-secondary)" }}>Nama Lengkap <span style={{ color: "var(--gold)" }}>*</span></label>
+                <input type="text" value={nama} onChange={(e) => { setNama(e.target.value); setErrors((p) => ({ ...p, nama: "" })); }} className="field w-full rounded-lg px-4 py-3 text-sm font-ui" style={{ background: "white", border: `1px solid ${errors.nama ? "#e74c3c" : "rgba(64,50,37,.25)"}`, color: "var(--espresso)", outline: "none" }} placeholder="Contoh: Ahmad Fauzi" />
+                {errors.nama && <p className="text-[11px] font-ui mt-1" style={{ color: "#e74c3c" }}>{errors.nama}</p>}
               </div>
               <div>
                 <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: "var(--text-secondary)" }}>Email</label>
                 <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="field w-full rounded-lg px-4 py-3 text-sm font-ui" style={{ background: "white", border: "1px solid rgba(64,50,37,.25)", color: "var(--espresso)", outline: "none" }} placeholder="nama@email.com" />
               </div>
-              <div>
-                <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: "var(--text-secondary)" }}>Nomor WhatsApp</label>
-                <input type="tel" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} className="field w-full rounded-lg px-4 py-3 text-sm font-ui" style={{ background: "white", border: "1px solid rgba(64,50,37,.25)", color: "var(--espresso)", outline: "none" }} placeholder="0812 3456 7890" />
+              <div data-field="whatsapp">
+                <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: errors.whatsapp ? "#e74c3c" : "var(--text-secondary)" }}>Nomor WhatsApp <span style={{ color: "var(--gold)" }}>*</span></label>
+                <input type="tel" value={whatsapp} onChange={(e) => { setWhatsapp(e.target.value); setErrors((p) => ({ ...p, whatsapp: "" })); }} className="field w-full rounded-lg px-4 py-3 text-sm font-ui" style={{ background: "white", border: `1px solid ${errors.whatsapp ? "#e74c3c" : "rgba(64,50,37,.25)"}`, color: "var(--espresso)", outline: "none" }} placeholder="0812 3456 7890" />
+                {errors.whatsapp && <p className="text-[11px] font-ui mt-1" style={{ color: "#e74c3c" }}>{errors.whatsapp}</p>}
               </div>
             </div>
           </section>
@@ -168,17 +193,20 @@ function CheckoutContent() {
               <h2 className="text-xl sm:text-2xl italic" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Alamat Pengiriman</h2>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-              <div className="sm:col-span-2">
-                <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: "var(--text-secondary)" }}>Alamat Lengkap</label>
-                <textarea rows={3} value={alamat} onChange={(e) => setAlamat(e.target.value)} className="field w-full rounded-lg px-4 py-3 text-sm font-ui resize-none" style={{ background: "white", border: "1px solid rgba(64,50,37,.25)", color: "var(--espresso)", outline: "none" }} placeholder="Jalan, nomor rumah, RT/RW, kelurahan" />
+              <div className="sm:col-span-2" data-field="alamat">
+                <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: errors.alamat ? "#e74c3c" : "var(--text-secondary)" }}>Alamat Lengkap <span style={{ color: "var(--gold)" }}>*</span></label>
+                <textarea rows={3} value={alamat} onChange={(e) => { setAlamat(e.target.value); setErrors((p) => ({ ...p, alamat: "" })); }} className="field w-full rounded-lg px-4 py-3 text-sm font-ui resize-none" style={{ background: "white", border: `1px solid ${errors.alamat ? "#e74c3c" : "rgba(64,50,37,.25)"}`, color: "var(--espresso)", outline: "none" }} placeholder="Jalan, nomor rumah, RT/RW, kelurahan" />
+                {errors.alamat && <p className="text-[11px] font-ui mt-1" style={{ color: "#e74c3c" }}>{errors.alamat}</p>}
               </div>
-              <div>
-                <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: "var(--text-secondary)" }}>Kota / Kabupaten</label>
-                <input type="text" value={kota} onChange={(e) => setKota(e.target.value)} className="field w-full rounded-lg px-4 py-3 text-sm font-ui" style={{ background: "white", border: "1px solid rgba(64,50,37,.25)", color: "var(--espresso)", outline: "none" }} placeholder="Contoh: Bandung" />
+              <div data-field="kota">
+                <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: errors.kota ? "#e74c3c" : "var(--text-secondary)" }}>Kota / Kabupaten <span style={{ color: "var(--gold)" }}>*</span></label>
+                <input type="text" value={kota} onChange={(e) => { setKota(e.target.value); setErrors((p) => ({ ...p, kota: "" })); }} className="field w-full rounded-lg px-4 py-3 text-sm font-ui" style={{ background: "white", border: `1px solid ${errors.kota ? "#e74c3c" : "rgba(64,50,37,.25)"}`, color: "var(--espresso)", outline: "none" }} placeholder="Contoh: Bandung" />
+                {errors.kota && <p className="text-[11px] font-ui mt-1" style={{ color: "#e74c3c" }}>{errors.kota}</p>}
               </div>
-              <div>
-                <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: "var(--text-secondary)" }}>Kode Pos</label>
-                <input type="text" value={kodepos} onChange={(e) => setKodepos(e.target.value)} className="field w-full rounded-lg px-4 py-3 text-sm font-ui" style={{ background: "white", border: "1px solid rgba(64,50,37,.25)", color: "var(--espresso)", outline: "none" }} placeholder="40123" />
+              <div data-field="kodepos">
+                <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: errors.kodepos ? "#e74c3c" : "var(--text-secondary)" }}>Kode Pos</label>
+                <input type="text" value={kodepos} onChange={(e) => { setKodepos(e.target.value); setErrors((p) => ({ ...p, kodepos: "" })); }} className="field w-full rounded-lg px-4 py-3 text-sm font-ui" style={{ background: "white", border: `1px solid ${errors.kodepos ? "#e74c3c" : "rgba(64,50,37,.25)"}`, color: "var(--espresso)", outline: "none" }} placeholder="40123" />
+                {errors.kodepos && <p className="text-[11px] font-ui mt-1" style={{ color: "#e74c3c" }}>{errors.kodepos}</p>}
               </div>
               <div className="sm:col-span-2">
                 <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: "var(--text-secondary)" }}>Catatan untuk Kurir (opsional)</label>
