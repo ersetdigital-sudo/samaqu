@@ -293,7 +293,7 @@ export default function Garansi() {
                 style={{ borderColor: "rgba(42,33,27,.10)" }}
               >
                 <div className="g-icon flex h-10 w-10 items-center justify-center rounded-xl mb-3" style={{ background: "var(--beige)" }}>
-                  {g.icon}
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--espresso)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" /><path stroke="var(--gold)" d="m9 12 2 2 4-4" /></svg>
                 </div>
                 <h3 className="text-[1.15rem] font-semibold leading-tight" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
                   {g.title}
@@ -315,7 +315,7 @@ export default function Garansi() {
                 style={{ borderColor: "rgba(42,33,27,.10)" }}
               >
                 <div className="g-icon flex h-14 w-14 items-center justify-center rounded-2xl" style={{ background: "var(--beige)" }}>
-                  {g.icon}
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--espresso)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" /><path stroke="var(--gold)" d="m9 12 2 2 4-4" /></svg>
                 </div>
                 <h3 className="mt-6 text-[1.7rem] font-semibold leading-tight" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
                   {g.title}
