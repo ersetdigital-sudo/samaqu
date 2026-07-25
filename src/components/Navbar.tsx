@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import { MobileDrawer, MobileDrawerCtx } from "@/components/ui/drawer";
-import { Storefront, BookOpen, Ruler, ListChecks, Question } from "@phosphor-icons/react";
+import { Storefront, BookOpen, Ruler, ListChecks, Question, ChatCircle as MessageCircle } from "@phosphor-icons/react";
 import { ShoppingBag } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import CartDrawer from "@/components/CartDrawer";
@@ -11,6 +11,7 @@ import CartDrawer from "@/components/CartDrawer";
 /* ── Nav data ── */
 const navLinks = [
   { href: "/katalog", label: "Katalog", Icon: Storefront },
+  { href: "/testimoni", label: "Testimoni", Icon: MessageCircle },
   { href: "#tentang", label: "Tentang", Icon: BookOpen },
   { href: "#size", label: "Panduan Size", Icon: Ruler },
   { href: "#cara-pesan", label: "Cara Pemesanan", Icon: ListChecks },
