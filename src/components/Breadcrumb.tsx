@@ -2,7 +2,6 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
 
 interface BreadcrumbItem {
   label: string;
@@ -63,7 +62,7 @@ export default function Breadcrumb({ extra, items, className }: BreadcrumbProps)
           const isLast = i === mobileCrumbs.length - 1;
           return (
             <li key={i} className="flex items-center shrink-0" style={{ gap: "0.375rem" }}>
-              {i > 0 && <ChevronRight size={12} style={{ color: "rgba(201,183,156,.5)" }} aria-hidden />}
+              {i > 0 && <span style={{ color: "rgba(201,183,156,.5)" }}>/</span>}
               {i === 0 && isLong ? (
                 <span className="truncate max-w-[2rem]" style={{ color: "var(--stone)" }}>…</span>
               ) : crumb.href ? (
@@ -84,7 +83,7 @@ export default function Breadcrumb({ extra, items, className }: BreadcrumbProps)
           const isLast = i === desktopCrumbs.length - 1;
           return (
             <li key={i} className="flex items-center" style={{ gap: "0.375rem" }}>
-              {i > 0 && <ChevronRight size={14} style={{ color: "rgba(201,183,156,.5)" }} aria-hidden />}
+              {i > 0 && <span style={{ color: "rgba(201,183,156,.5)" }}>/</span>}
               {crumb.href ? (
                 <Link href={crumb.href} className="transition-colors duration-200 hover:opacity-80 whitespace-nowrap" style={{ color: "var(--stone)" }}>
                   {crumb.label}
