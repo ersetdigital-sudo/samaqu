@@ -2,16 +2,46 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Save, Loader2, ToggleLeft, ToggleRight, GripVertical, Plus, Trash2, Image as ImageIcon } from "lucide-react";
+import { X, Loader2, ToggleLeft, ToggleRight, Plus, Trash2, RotateCcw } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { Product } from "@/lib/katalog-data";
 
-interface HeroContent { tagline: string; is_active: boolean; }
+/* ── Default values (match database + Hero component) ── */
+const HERO_DEFAULTS = {
+  eyebrow_text: "Premium Muslim Menswear",
+  title_line1: "Busana yang Layak",
+  title_line2: "Menemani Setiap Momen.",
+  description: "Dirancang dengan material pilihan, potongan yang presisi, dan detail yang dibuat untuk kenyamanan dalam setiap aktivitas.",
+  feature1: "6 Koleksi Eksklusif",
+  feature2: "Berbagai Jenis Kain",
+  feature3: "Panduan Size Lengkap",
+  is_active: true,
+};
+
+interface HeroContent {
+  eyebrow_text: string;
+  title_line1: string;
+  title_line2: string;
+  description: string;
+  feature1: string;
+  feature2: string;
+  feature3: string;
+  is_active: boolean;
+}
+
 interface FeaturedProduct { id: string; product_id: string; display_order: number; is_active: boolean; }
 interface OrderStep { id: string; step_number: number; title: string; description: string; is_active: boolean; }
 
+const CHAR_LIMITS = {
+  eyebrow_text: 40,
+  title_line1: 30,
+  title_line2: 30,
+  description: 150,
+  feature: 30,
+};
+
 export default function KontenWebsitePage() {
-  const [hero, setHero] = useState<HeroContent | null>(null);
+  const [hero, setHero] = useState<HeroContent>(HERO_DEFAULTS);
   const [featured, setFeatured] = useState<FeaturedProduct[]>([]);
   const [steps, setSteps] = useState<OrderStep[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -19,9 +49,8 @@ export default function KontenWebsitePage() {
   const [editModal, setEditModal] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  // Form states
-  const [heroTagline, setHeroTagline] = useState("");
-  const [heroActive, setHeroActive] = useState(true);
+  // Hero form states
+  const [heroForm, setHeroForm] = useState<HeroContent>(HERO_DEFAULTS);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [editSteps, setEditSteps] = useState<OrderStep[]>([]);
 
@@ -33,7 +62,20 @@ export default function KontenWebsitePage() {
         supabase.from("order_steps").select("*").order("step_number"),
         supabase.from("products").select("*").order("name"),
       ]);
-      if (heroRes.data) setHero(heroRes.data);
+      if (heroRes.data) {
+        const h = heroRes.data;
+        const heroData: HeroContent = {
+          eyebrow_text: h.eyebrow_text || HERO_DEFAULTS.eyebrow_text,
+          title_line1: h.title_line1 || HERO_DEFAULTS.title_line1,
+          title_line2: h.title_line2 || HERO_DEFAULTS.title_line2,
+          description: h.description || HERO_DEFAULTS.description,
+          feature1: h.feature1 || HERO_DEFAULTS.feature1,
+          feature2: h.feature2 || HERO_DEFAULTS.feature2,
+          feature3: h.feature3 || HERO_DEFAULTS.feature3,
+          is_active: h.is_active ?? true,
+        };
+        setHero(heroData);
+      }
       if (featuredRes.data) setFeatured(featuredRes.data);
       if (stepsRes.data) setSteps(stepsRes.data);
       if (productsRes.data) setProducts(productsRes.data);
@@ -43,27 +85,34 @@ export default function KontenWebsitePage() {
   }, []);
 
   function openHeroEdit() {
-    setHeroTagline(hero?.tagline || "");
-    setHeroActive(hero?.is_active ?? true);
+    setHeroForm({ ...hero });
     setEditModal("hero");
+  }
+
+  function updateHeroField(field: keyof HeroContent, value: string | boolean) {
+    setHeroForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  async function saveHero() {
+    setSaving(true);
+    await supabase.from("hero_content").upsert({
+      id: 1,
+      ...heroForm,
+      updated_at: new Date().toISOString(),
+    });
+    setHero(heroForm);
+    setSaving(false);
+    setEditModal(null);
+  }
+
+  function resetHeroToDefault() {
+    if (!confirm("Reset semua field Hero ke nilai default?\n\nPerubahan yang belum disimpan akan hilang.")) return;
+    setHeroForm({ ...HERO_DEFAULTS });
   }
 
   function openKoleksiEdit() {
     setSelectedProducts(featured.map((f) => f.product_id));
     setEditModal("koleksi");
-  }
-
-  function openStepsEdit() {
-    setEditSteps([...steps]);
-    setEditModal("steps");
-  }
-
-  async function saveHero() {
-    setSaving(true);
-    await supabase.from("hero_content").upsert({ id: 1, tagline: heroTagline, is_active: heroActive, updated_at: new Date().toISOString() });
-    setHero({ tagline: heroTagline, is_active: heroActive });
-    setSaving(false);
-    setEditModal(null);
   }
 
   async function saveKoleksi() {
@@ -74,6 +123,11 @@ export default function KontenWebsitePage() {
     setFeatured(rows.map((r, i) => ({ id: String(i), ...r })));
     setSaving(false);
     setEditModal(null);
+  }
+
+  function openStepsEdit() {
+    setEditSteps([...steps]);
+    setEditModal("steps");
   }
 
   async function saveSteps() {
@@ -100,12 +154,20 @@ export default function KontenWebsitePage() {
     setEditSteps(updated);
   }
 
+  function CharCounter({ current, max }: { current: number; max: number }) {
+    return (
+      <p className="text-[10px] mt-0.5" style={{ color: current > max * 0.9 ? "#8a6f42" : "var(--text-muted)" }}>
+        {current}/{max} karakter
+      </p>
+    );
+  }
+
   if (loading) {
     return <section className="min-h-screen flex items-center justify-center" style={{ background: "var(--cream)" }}><Loader2 size={24} className="animate-spin" style={{ color: "var(--gold)" }} /></section>;
   }
 
   const sections = [
-    { key: "hero", title: "Hero / Banner Utama", desc: hero?.tagline || "Tagline di homepage", status: hero?.is_active ? "Aktif" : "Nonaktif", active: hero?.is_active ?? true, edit: openHeroEdit },
+    { key: "hero", title: "Hero / Banner Utama", desc: hero.title_line1 + " " + hero.title_line2, status: hero.is_active ? "Aktif" : "Nonaktif", active: hero.is_active, edit: openHeroEdit },
     { key: "koleksi", title: "Koleksi Pilihan", desc: `${featured.length} produk ditampilkan di beranda`, status: featured.length > 0 ? "Aktif" : "Kosong", active: featured.length > 0, edit: openKoleksiEdit },
     { key: "steps", title: "Cara Pemesanan", desc: `${steps.length} langkah pemesanan`, status: steps.length > 0 ? "Aktif" : "Kosong", active: steps.length > 0, edit: openStepsEdit },
     { key: "testimoni", title: "Testimoni Pelanggan", desc: "Dikelola dari halaman Testimoni", status: "Aktif", active: true, edit: () => {} },
@@ -139,29 +201,62 @@ export default function KontenWebsitePage() {
         </div>
       </div>
 
-      {/* Hero Edit Modal */}
+      {/* ═══ Hero Edit Modal ═══ */}
       <AnimatePresence>
         {editModal === "hero" && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.4)" }}>
-            <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }} className="card p-6 w-full max-w-md">
+            <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }} className="card p-6 w-full max-w-lg max-h-[85vh] overflow-y-auto">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-serif italic text-xl" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Edit Hero</h3>
                 <button onClick={() => setEditModal(null)} className="p-1"><X size={20} style={{ color: "var(--text-muted)" }} /></button>
               </div>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Tagline</label>
-                  <input value={heroTagline} onChange={(e) => setHeroTagline(e.target.value.slice(0, 60))} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
-                  <p className="text-[11px] mt-1" style={{ color: heroTagline.length > 55 ? "#8a6f42" : "var(--text-muted)" }}>{heroTagline.length}/60 karakter</p>
+                  <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Eyebrow Text</label>
+                  <input value={heroForm.eyebrow_text} onChange={(e) => updateHeroField("eyebrow_text", e.target.value.slice(0, CHAR_LIMITS.eyebrow_text))} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
+                  <CharCounter current={heroForm.eyebrow_text.length} max={CHAR_LIMITS.eyebrow_text} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Judul Baris 1</label>
+                  <input value={heroForm.title_line1} onChange={(e) => updateHeroField("title_line1", e.target.value.slice(0, CHAR_LIMITS.title_line1))} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
+                  <CharCounter current={heroForm.title_line1.length} max={CHAR_LIMITS.title_line1} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Judul Baris 2</label>
+                  <input value={heroForm.title_line2} onChange={(e) => updateHeroField("title_line2", e.target.value.slice(0, CHAR_LIMITS.title_line2))} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
+                  <CharCounter current={heroForm.title_line2.length} max={CHAR_LIMITS.title_line2} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Deskripsi</label>
+                  <textarea value={heroForm.description} onChange={(e) => updateHeroField("description", e.target.value.slice(0, CHAR_LIMITS.description))} rows={3} className="w-full rounded-xl px-4 py-3 text-sm outline-none resize-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
+                  <CharCounter current={heroForm.description.length} max={CHAR_LIMITS.description} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Fitur 1</label>
+                  <input value={heroForm.feature1} onChange={(e) => updateHeroField("feature1", e.target.value.slice(0, CHAR_LIMITS.feature))} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
+                  <CharCounter current={heroForm.feature1.length} max={CHAR_LIMITS.feature} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Fitur 2</label>
+                  <input value={heroForm.feature2} onChange={(e) => updateHeroField("feature2", e.target.value.slice(0, CHAR_LIMITS.feature))} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
+                  <CharCounter current={heroForm.feature2.length} max={CHAR_LIMITS.feature} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Fitur 3</label>
+                  <input value={heroForm.feature3} onChange={(e) => updateHeroField("feature3", e.target.value.slice(0, CHAR_LIMITS.feature))} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
+                  <CharCounter current={heroForm.feature3.length} max={CHAR_LIMITS.feature} />
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm" style={{ color: "var(--text-secondary)" }}>Tampilkan di homepage</span>
-                  <button onClick={() => setHeroActive(!heroActive)} style={{ color: heroActive ? "var(--gold)" : "var(--text-muted)" }}>
-                    {heroActive ? <ToggleRight size={28} /> : <ToggleLeft size={28} />}
+                  <button onClick={() => updateHeroField("is_active", !heroForm.is_active)} style={{ color: heroForm.is_active ? "var(--gold)" : "var(--text-muted)" }}>
+                    {heroForm.is_active ? <ToggleRight size={28} /> : <ToggleLeft size={28} />}
                   </button>
                 </div>
               </div>
               <div className="flex gap-3 mt-6">
+                <button onClick={resetHeroToDefault} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium" style={{ border: "1px solid rgba(64,50,37,.15)", color: "var(--text-secondary)" }}>
+                  <RotateCcw size={14} /> Reset
+                </button>
                 <button onClick={() => setEditModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-medium" style={{ border: "1px solid rgba(64,50,37,.15)" }}>Batal</button>
                 <button onClick={saveHero} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: "var(--gold)" }}>
                   {saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null} Simpan
@@ -172,7 +267,7 @@ export default function KontenWebsitePage() {
         )}
       </AnimatePresence>
 
-      {/* Koleksi Edit Modal */}
+      {/* ═══ Koleksi Edit Modal ═══ */}
       <AnimatePresence>
         {editModal === "koleksi" && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.4)" }}>
@@ -211,7 +306,7 @@ export default function KontenWebsitePage() {
         )}
       </AnimatePresence>
 
-      {/* Steps Edit Modal */}
+      {/* ═══ Steps Edit Modal ═══ */}
       <AnimatePresence>
         {editModal === "steps" && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.4)" }}>
@@ -227,10 +322,10 @@ export default function KontenWebsitePage() {
                       <span className="text-xs font-semibold" style={{ color: "var(--gold)" }}>Langkah {i + 1}</span>
                       {editSteps.length > 1 && <button onClick={() => removeStep(i)} className="p-1 hover:bg-red-50 rounded"><Trash2 size={14} style={{ color: "#e74c3c" }} /></button>}
                     </div>
-                    <input value={s.title} onChange={(e) => updateStep(i, "title", e.target.value.slice(0, 30))} placeholder="Judul langkah" className="w-full rounded-lg px-3 py-2 text-sm outline-none mb-2" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
-                    <p className="text-[10px] mb-2" style={{ color: s.title.length > 25 ? "#8a6f42" : "var(--text-muted)" }}>{s.title.length}/30</p>
-                    <textarea value={s.description} onChange={(e) => updateStep(i, "description", e.target.value.slice(0, 100))} placeholder="Deskripsi langkah" rows={2} className="w-full rounded-lg px-3 py-2 text-sm outline-none resize-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
-                    <p className="text-[10px] mt-1" style={{ color: s.description.length > 90 ? "#8a6f42" : "var(--text-muted)" }}>{s.description.length}/100</p>
+                    <input value={s.title} onChange={(e) => updateStep(i, "title", e.target.value.slice(0, 30))} placeholder="Judul langkah" className="w-full rounded-lg px-3 py-2 text-sm outline-none mb-1" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
+                    <CharCounter current={s.title.length} max={30} />
+                    <textarea value={s.description} onChange={(e) => updateStep(i, "description", e.target.value.slice(0, 100))} placeholder="Deskripsi langkah" rows={2} className="w-full rounded-lg px-3 py-2 text-sm outline-none resize-none mt-2" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
+                    <CharCounter current={s.description.length} max={100} />
                   </div>
                 ))}
               </div>
