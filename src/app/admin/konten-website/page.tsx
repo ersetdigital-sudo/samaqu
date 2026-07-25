@@ -170,6 +170,9 @@ export default function KontenWebsitePage() {
     { key: "hero", title: "Hero / Banner Utama", desc: hero.title_line1 + " " + hero.title_line2, status: hero.is_active ? "Aktif" : "Nonaktif", active: hero.is_active, edit: openHeroEdit },
     { key: "koleksi", title: "Koleksi Pilihan", desc: `${featured.length} produk ditampilkan di beranda`, status: featured.length > 0 ? "Aktif" : "Kosong", active: featured.length > 0, edit: openKoleksiEdit },
     { key: "steps", title: "Cara Pemesanan", desc: `${steps.length} langkah pemesanan`, status: steps.length > 0 ? "Aktif" : "Kosong", active: steps.length > 0, edit: openStepsEdit },
+    { key: "garansi", title: "Jaminan SAMAQU", desc: "3 kartu jaminan + trust badges", status: "Aktif", active: true, edit: () => {} },
+    { key: "faq", title: "FAQ", desc: "Pertanyaan yang sering diajukan", status: "Aktif", active: true, edit: () => {} },
+    { key: "marquee", title: "Trust Marquee", desc: "Teks scrolling di homepage", status: "Aktif", active: true, edit: () => {} },
     { key: "testimoni", title: "Testimoni Pelanggan", desc: "Dikelola dari halaman Testimoni", status: "Aktif", active: true, edit: () => {} },
   ];
 

@@ -1,5 +1,22 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
+
+const DEFAULT_ITEMS = ["Material Premium", "Jahitan Presisi", "Nyaman Dipakai", "Desain Modern"];
+
 export default function TrustMarquee() {
-  const items = ["Material Premium", "Jahitan Presisi", "Nyaman Dipakai", "Desain Modern"];
+  const [items, setItems] = useState(DEFAULT_ITEMS);
+
+  useEffect(() => {
+    async function fetch() {
+      try {
+        const { data } = await supabase.from("marquee_items").select("*").eq("is_active", true).order("display_order");
+        if (data && data.length > 0) setItems(data.map((m: { label: string }) => m.label));
+      } catch { /* use defaults */ }
+    }
+    fetch();
+  }, []);
 
   return (
     <div
