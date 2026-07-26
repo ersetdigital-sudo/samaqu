@@ -1,17 +1,12 @@
 "use client";
 
 import { MessageCircle } from "lucide-react";
-
-const waHref =
-  "https://wa.me/6281234567890?text=" +
-  encodeURIComponent(
-    "Halo Admin SAMAQU, saya tertarik dengan koleksi Anda dan ingin bertanya soal pemesanan."
-  );
+import { getWhatsAppLink } from "@/lib/store-settings";
 
 export default function WhatsAppFloat() {
   return (
     <a
-      href={waHref}
+      href={getWhatsAppLink("Halo Admin SAMAQU, saya tertarik dengan koleksi Anda dan ingin bertanya soal pemesanan.")}
       target="_blank"
       rel="noopener"
       aria-label="Butuh bantuan? Chat Admin SAMAQU via WhatsApp"

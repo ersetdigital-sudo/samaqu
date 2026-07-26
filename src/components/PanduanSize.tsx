@@ -6,9 +6,7 @@ const sizes = [
   { size: "XXL", tinggi: "184–189", dada: "64", panjang: "160" },
 ];
 
-const waHref =
-  "https://wa.me/6281234567890?text=" +
-  encodeURIComponent("Halo Admin SAMAQU, saya tertarik dengan koleksi Anda dan ingin bertanya soal pemesanan.");
+import { getWhatsAppLink } from "@/lib/store-settings";
 
 export default function PanduanSize() {
   return (
@@ -29,7 +27,7 @@ export default function PanduanSize() {
               Temukan ukuran yang paling pas untukmu. Ragu memilih? Admin kami siap membantu menentukan size ideal sesuai tinggi dan postur tubuhmu.
             </p>
             <a
-              href={waHref}
+              href={getWhatsAppLink("Halo Admin SAMAQU, saya tertarik dengan koleksi Anda dan ingin bertanya soal pemesanan.")}
               target="_blank"
               rel="noopener"
               className="inline-flex items-center gap-2 rounded-full px-7 py-4 text-[12px] tracking-[0.18em] uppercase text-white transition hover:opacity-90"

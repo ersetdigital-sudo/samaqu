@@ -1,6 +1,4 @@
-const waHref =
-  "https://wa.me/6281234567890?text=" +
-  encodeURIComponent("Halo Admin SAMAQU, saya tertarik dengan koleksi Anda dan ingin bertanya soal pemesanan.");
+import { getWhatsAppLink } from "@/lib/store-settings";
 
 export default function CreateYourPrice() {
   return (
@@ -31,7 +29,7 @@ export default function CreateYourPrice() {
             </li>
           </ul>
           <a
-            href={waHref}
+            href={getWhatsAppLink("Halo Admin SAMAQU, saya tertarik dengan koleksi Anda dan ingin bertanya soal pemesanan.")}
             target="_blank"
             rel="noopener"
             className="inline-flex items-center gap-2 rounded-full px-7 py-4 text-[12px] tracking-[0.18em] uppercase transition hover:opacity-90"

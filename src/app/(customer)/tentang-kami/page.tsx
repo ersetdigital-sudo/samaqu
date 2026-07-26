@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { ShieldCheck, Scissors, Ruler, MessageCircle } from "lucide-react";
 import Breadcrumb from "@/components/Breadcrumb";
+import { getWhatsAppLink } from "@/lib/store-settings";
 
 const headerVariants = {
   hidden: { opacity: 0, y: 18 },
@@ -235,7 +236,7 @@ export default function TentangKamiPage() {
                 Lihat Katalog
                 <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M4 9h10M10 4l5 5-5 5" /></svg>
               </a>
-              <a href="https://wa.me/6281234567890?text=Halo%20Admin%20SAMAQU%2C%20saya%20tertarik%20dengan%20koleksi%20Anda%20dan%20ingin%20bertanya%20soal%20pemesanan." className="inline-flex items-center gap-2 rounded-full px-7 sm:px-8 py-3 sm:py-3.5 text-[12px] sm:text-sm tracking-[0.08em] uppercase font-ui font-semibold transition-all duration-300 w-full sm:w-auto justify-center" style={{ border: "1px solid rgba(255,255,255,.25)", color: "var(--cream)" }}>
+              <a href={getWhatsAppLink("Halo Admin SAMAQU, saya tertarik dengan koleksi Anda dan ingin bertanya soal pemesanan.")} className="inline-flex items-center gap-2 rounded-full px-7 sm:px-8 py-3 sm:py-3.5 text-[12px] sm:text-sm tracking-[0.08em] uppercase font-ui font-semibold transition-all duration-300 w-full sm:w-auto justify-center" style={{ border: "1px solid rgba(255,255,255,.25)", color: "var(--cream)" }}>
                 Hubungi Admin
               </a>
             </div>

@@ -6,6 +6,7 @@ import { Minus, Plus, Lock } from "lucide-react";
 import { getProductById } from "@/lib/katalog-data";
 import { useCart } from "@/lib/cart-context";
 import { supabase } from "@/lib/supabase";
+import { getWhatsAppLink } from "@/lib/store-settings";
 
 const shippingOptions = [
   { id: "reguler", label: "Reguler", estimate: "3–5 hari kerja", price: 25000 },
@@ -394,7 +395,7 @@ function CheckoutContent() {
           </div>
 
           <p className="text-center text-[11px] sm:text-xs font-ui mt-4 sm:mt-5" style={{ color: "var(--text-muted)" }}>
-            Butuh bantuan ukuran? <a href="https://wa.me/6281234567890" className="underline" style={{ color: "var(--gold)" }}>Konsultasi gratis</a> dengan tim kami.
+            Butuh bantuan ukuran? <a href={getWhatsAppLink("Halo Admin SAMAQU, saya butuh bantuan ukuran.")} className="underline" style={{ color: "var(--gold)" }}>Konsultasi gratis</a> dengan tim kami.
           </p>
         </aside>
       </main>

@@ -2,15 +2,10 @@
 
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
+import { getWhatsAppLink } from "@/lib/store-settings";
 
 /* ── Video sources ── */
 const HERO_VIDEO = "/video/Thobe%20Gabungan%20Imron%20dan%20Jiharkah%20Deep%20maroon%20B-02%20Ambience.mp4";
-
-const waHref =
-  "https://wa.me/6281234567890?text=" +
-  encodeURIComponent(
-    "Halo Admin SAMAQU, saya tertarik dengan koleksi Anda dan ingin bertanya soal pemesanan."
-  );
 
 /* ── Default values (match database defaults) ── */
 const DEFAULTS = {
@@ -233,7 +228,7 @@ export default function Hero() {
                 </svg>
               </a>
               <a
-                href={waHref}
+                href={getWhatsAppLink("Halo Admin SAMAQU, saya tertarik dengan koleksi Anda dan ingin bertanya soal pemesanan.")}
                 target="_blank"
                 rel="noopener"
                 className="group inline-flex items-center gap-2 py-3.5 sm:py-4 text-[11px] sm:text-[12px] tracking-[0.16em] sm:tracking-[0.18em] capitalize sm:uppercase transition"

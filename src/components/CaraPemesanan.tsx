@@ -15,11 +15,7 @@ const DEFAULT_STEPS = [
 
 const STEP_ICONS = [CoatHanger, Ruler, ChatCircle, Package];
 
-const waHref =
-  "https://wa.me/6281234567890?text=" +
-  encodeURIComponent(
-    "Halo Admin SAMAQU, saya tertarik dengan koleksi Anda dan ingin bertanya soal pemesanan."
-  );
+import { getWhatsAppLink } from "@/lib/store-settings";
 
 /* ─── Animation ─── */
 const headerVariants: Variants = {
@@ -296,7 +292,7 @@ export default function CaraPemesanan() {
               color: "#fff",
               boxShadow: "0 8px 24px rgba(184,145,70,.25)",
             }}
-            href={waHref}
+            href={getWhatsAppLink("Halo Admin SAMAQU, saya tertarik dengan koleksi Anda dan ingin bertanya soal pemesanan.")}
             target="_blank"
             rel="noopener"
             aria-label="Mulai pesan sekarang via WhatsApp"

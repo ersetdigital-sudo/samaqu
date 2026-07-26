@@ -46,11 +46,7 @@ const products = [
   },
 ];
 
-const waHref =
-  "https://wa.me/6281234567890?text=" +
-  encodeURIComponent(
-    "Halo Admin SAMAQU, saya tertarik dengan koleksi Anda dan ingin bertanya soal pemesanan."
-  );
+import { getWhatsAppLink } from "@/lib/store-settings";
 
 export default function Koleksi() {
   return (
@@ -95,7 +91,7 @@ export default function Koleksi() {
               /* ── Feature card (large) ── */
               <a
                 key={product.name}
-                href={waHref}
+                href={getWhatsAppLink("Halo Admin SAMAQU, saya tertarik dengan koleksi Anda dan ingin bertanya soal pemesanan.")}
                 target="_blank"
                 rel="noopener"
                 className="group relative col-span-2 lg:col-span-2 lg:row-span-2 overflow-hidden rounded-xl sm:rounded-2xl border transition-all duration-500 hover:shadow-xl"
@@ -142,7 +138,7 @@ export default function Koleksi() {
               /* ── Regular card ── */
               <a
                 key={product.name}
-                href={waHref}
+                href={getWhatsAppLink("Halo Admin SAMAQU, saya tertarik dengan koleksi Anda dan ingin bertanya soal pemesanan.")}
                 target="_blank"
                 rel="noopener"
                 className="group relative overflow-hidden rounded-xl sm:rounded-2xl border transition-all duration-500 hover:shadow-lg"
@@ -180,7 +176,7 @@ export default function Koleksi() {
         {/* CTA */}
         <div className="text-center mt-12 fade-up">
           <a
-            href={waHref}
+            href={getWhatsAppLink("Halo Admin SAMAQU, saya tertarik dengan koleksi Anda dan ingin bertanya soal pemesanan.")}
             target="_blank"
             rel="noopener"
             className="inline-flex items-center gap-2 rounded-full px-7 py-4 text-[12px] tracking-[0.18em] uppercase font-ui text-white transition-all duration-300 hover:opacity-90 hover:shadow-lg"

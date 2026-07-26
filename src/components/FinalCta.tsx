@@ -1,12 +1,7 @@
 "use client";
 
 import { motion, Variants } from "framer-motion";
-
-const waHref =
-  "https://wa.me/6281234567890?text=" +
-  encodeURIComponent(
-    "Halo Admin SAMAQU, saya tertarik dengan koleksi Anda dan ingin bertanya soal pemesanan."
-  );
+import { getWhatsAppLink } from "@/lib/store-settings";
 
 const revealVariants: Variants = {
   hidden: { opacity: 0, y: 24 },
@@ -115,7 +110,7 @@ export default function FinalCta() {
             <motion.a
               variants={revealVariants}
               custom={0.36}
-              href={waHref}
+              href={getWhatsAppLink("Halo Admin SAMAQU, saya tertarik dengan koleksi Anda dan ingin bertanya soal pemesanan.")}
               target="_blank"
               rel="noopener"
               className="inline-flex items-center gap-2.5 rounded-full px-7 sm:px-9 py-3.5 sm:py-4 text-[0.82rem] sm:text-[0.9rem] font-semibold uppercase tracking-[0.1em] font-ui transition-all duration-350 hover:-translate-y-0.5 hover:scale-[1.02] hover:shadow-lg w-full sm:w-auto justify-center"
