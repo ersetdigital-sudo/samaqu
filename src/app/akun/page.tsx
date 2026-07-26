@@ -273,7 +273,7 @@ export default function DashboardPage() {
           {/* ── Size & Consult ── */}
           {activeNav === "beranda" || activeNav === "ukuran" ? (
             <section className="grid gap-4 lg:grid-cols-3">
-              <div className="lg:col-span-2 rounded-2xl p-6" style={{ background: "var(--bg-secondary, #f0ebe5)", border: "1px solid rgba(64,50,37,.09)" }}>
+              <div className="lg:col-span-3 rounded-2xl p-6" style={{ background: "var(--bg-secondary, #f0ebe5)", border: "1px solid rgba(64,50,37,.09)" }}>
                 <h3 className="text-2xl italic mb-1" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>Ukuran Saya</h3>
                 <p className="text-sm mb-5" style={{ color: "var(--text-muted)" }}>Tersimpan untuk pemesanan lebih cepat</p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -292,11 +292,6 @@ export default function DashboardPage() {
                   ))}
                 </div>
                 <button className="mt-5 rounded-full px-5 py-2.5 text-sm font-medium transition-colors" style={{ border: "1px solid rgba(64,50,37,.25)", color: "var(--espresso)" }}>Perbarui Ukuran</button>
-              </div>
-              <div className="rounded-2xl p-6 flex flex-col text-white" style={{ background: "linear-gradient(135deg, #403225, #2d211b, #1c1511)" }}>
-                <h3 className="text-2xl italic mb-2" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Butuh Bantuan?</h3>
-                <p className="text-sm mb-6" style={{ color: "rgba(248,245,241,.7)" }}>Konsultasi ukuran gratis untuk pesanan pribadi, keluarga, maupun komunitas.</p>
-                <a href={getWhatsAppLink("Halo, saya butuh bantuan konsultasi ukuran.")} target="_blank" rel="noopener noreferrer" className="mt-auto block text-center rounded-full text-sm font-medium py-3 transition-colors" style={{ background: "#b58c4a", color: "white" }}>Chat Konsultan</a>
               </div>
             </section>
           ) : null}
