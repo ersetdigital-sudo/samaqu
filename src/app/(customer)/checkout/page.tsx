@@ -412,12 +412,23 @@ function CheckoutContent() {
             )}
 
             {/* Promo */}
-            <div className="flex gap-2 mt-5 sm:mt-6">
-              <input type="text" value={promoCode} onChange={(e) => { setPromoCode(e.target.value); setPromoError(""); }} className="field flex-1 rounded-lg px-3.5 py-2.5 text-sm font-ui" style={{ background: "white", border: "1px solid rgba(64,50,37,.25)", color: "var(--espresso)", outline: "none" }} placeholder="Kode promo" />
-              <button onClick={applyPromo} className="rounded-lg px-4 text-sm font-ui font-medium" style={{ background: "#e8e2da", color: "var(--espresso)" }}>Terapkan</button>
-            </div>
-            {promoError && <p className="text-[11px] mt-1.5 font-ui" style={{ color: "#e74c3c" }}>{promoError}</p>}
-            {promoApplied && <p className="text-[11px] mt-1.5 font-ui" style={{ color: "#4b7a4e" }}>Kode promo berhasil diterapkan!</p>}
+            {promoApplied ? (
+              <div className="flex items-center justify-between mt-5 sm:mt-6 rounded-xl px-4 py-3" style={{ background: "rgba(75,122,78,.06)", border: "1px solid rgba(75,122,78,.15)" }}>
+                <div className="flex items-center gap-2.5">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="#4b7a4e" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+                  <span className="text-sm font-ui font-medium" style={{ color: "var(--espresso)" }}>{voucherCode}</span>
+                </div>
+                <button onClick={() => { setPromoApplied(false); setPromoCode(""); setDiscount(0); setVoucherCode(""); setVoucherId(""); }} className="text-xs font-ui font-medium" style={{ color: "#8b6f42" }}>Ganti</button>
+              </div>
+            ) : (
+              <>
+                <div className="flex gap-2 mt-5 sm:mt-6">
+                  <input type="text" value={promoCode} onChange={(e) => { setPromoCode(e.target.value); setPromoError(""); }} className="field flex-1 rounded-lg px-3.5 py-2.5 text-sm font-ui" style={{ background: "white", border: "1px solid rgba(64,50,37,.25)", color: "var(--espresso)", outline: "none" }} placeholder="Kode promo" />
+                  <button onClick={applyPromo} className="rounded-lg px-4 text-sm font-ui font-medium" style={{ background: "#e8e2da", color: "var(--espresso)" }}>Terapkan</button>
+                </div>
+                {promoError && <p className="text-[11px] mt-1.5 font-ui" style={{ color: "#e74c3c" }}>{promoError}</p>}
+              </>
+            )}
 
             {/* Totals */}
             <div className="mt-5 sm:mt-6 pt-4 sm:pt-5 space-y-2 sm:space-y-2.5 text-sm font-ui" style={{ borderTop: "1px solid rgba(64,50,37,.15)" }}>
