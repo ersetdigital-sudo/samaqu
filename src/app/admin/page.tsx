@@ -719,33 +719,67 @@ function AdminPageInner() {
 
 function PaymentMethodsSection() {
   const [banks, setBanks] = useState<{ id: string; bank_name: string; account_name: string; account_number: string; is_active: boolean }[]>([]);
+  const [originalBanks, setOriginalBanks] = useState<typeof banks>([]);
   const [loading, setLoading] = useState(true);
+  const [savingId, setSavingId] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Record<string, Record<string, boolean>>>({});
   const toast = useToast();
 
   useEffect(() => {
     supabase.from("payment_methods").select("*").order("display_order").then(({ data }) => {
-      if (data) setBanks(data);
+      if (data) { setBanks(data); setOriginalBanks(JSON.parse(JSON.stringify(data))); }
       setLoading(false);
     });
   }, []);
 
-  async function addBank() {
-    const { data, error } = await supabase.from("payment_methods").insert({
-      bank_name: "",
-      account_name: "",
-      account_number: "",
-      is_active: true,
-      display_order: banks.length,
-    }).select().single();
-    if (!error && data) {
-      setBanks([...banks, data]);
-      toast.showToast("success", "Rekening baru ditambahkan");
-    }
+  function isDirty(bank: typeof banks[0]) {
+    const orig = originalBanks.find((b) => b.id === bank.id);
+    if (!orig) return true; // new bank
+    return orig.bank_name !== bank.bank_name || orig.account_name !== bank.account_name || orig.account_number !== bank.account_number;
   }
 
-  async function updateBank(id: string, field: string, value: string) {
+  function updateField(id: string, field: string, value: string) {
     setBanks(banks.map((b) => b.id === id ? { ...b, [field]: value } : b));
-    await supabase.from("payment_methods").update({ [field]: value }).eq("id", id);
+    setErrors((prev) => ({ ...prev, [id]: { ...prev[id], [field]: false } }));
+  }
+
+  async function saveBank(bank: typeof banks[0]) {
+    const e: Record<string, boolean> = {};
+    if (!bank.bank_name.trim()) e.bank_name = true;
+    if (!bank.account_name.trim()) e.account_name = true;
+    if (!bank.account_number.trim()) e.account_number = true;
+    if (Object.keys(e).length > 0) { setErrors((prev) => ({ ...prev, [bank.id]: e })); return; }
+
+    setSavingId(bank.id);
+    const isNew = !originalBanks.find((b) => b.id === bank.id);
+
+    if (isNew) {
+      const { data, error } = await supabase.from("payment_methods").insert({
+        bank_name: bank.bank_name, account_name: bank.account_name, account_number: bank.account_number,
+        is_active: true, display_order: banks.indexOf(bank),
+      }).select().single();
+      if (!error && data) {
+        setBanks(banks.map((b) => b.id === bank.id ? data : b));
+        setOriginalBanks([...originalBanks, data]);
+        toast.showToast("success", "Rekening berhasil disimpan");
+      }
+    } else {
+      await supabase.from("payment_methods").update({
+        bank_name: bank.bank_name, account_name: bank.account_name, account_number: bank.account_number,
+      }).eq("id", bank.id);
+      setOriginalBanks(originalBanks.map((b) => b.id === bank.id ? { ...b, ...bank } : b));
+      toast.showToast("success", "Rekening berhasil disimpan");
+    }
+    setSavingId(null);
+  }
+
+  function addBank() {
+    const tempId = "new-" + Date.now();
+    setBanks([...banks, { id: tempId, bank_name: "", account_name: "", account_number: "", is_active: true }]);
+  }
+
+  function cancelNew(id: string) {
+    setBanks(banks.filter((b) => b.id !== id));
   }
 
   async function toggleBank(id: string, active: boolean) {
@@ -758,6 +792,7 @@ function PaymentMethodsSection() {
     if (!confirm("Hapus rekening ini?")) return;
     await supabase.from("payment_methods").delete().eq("id", id);
     setBanks(banks.filter((b) => b.id !== id));
+    setOriginalBanks(originalBanks.filter((b) => b.id !== id));
     toast.showToast("success", "Rekening berhasil dihapus");
   }
 
@@ -776,35 +811,54 @@ function PaymentMethodsSection() {
       </div>
 
       <div className="space-y-4">
-        {banks.map((bank) => (
-          <div key={bank.id} className="p-4 rounded-xl" style={{ border: "1px solid rgba(64,50,37,.1)", background: bank.is_active ? "rgba(255,255,255,.5)" : "rgba(200,200,200,.1)" }}>
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-medium" style={{ color: bank.is_active ? "var(--gold)" : "var(--text-muted)" }}>{bank.is_active ? "Aktif" : "Nonaktif"}</span>
-              <div className="flex items-center gap-2">
-                <button onClick={() => toggleBank(bank.id, !bank.is_active)} className="text-xs px-2 py-1 rounded" style={{ border: "1px solid rgba(64,50,37,.15)", color: bank.is_active ? "var(--text-muted)" : "var(--gold)" }}>
-                  {bank.is_active ? "Nonaktifkan" : "Aktifkan"}
-                </button>
-                <button onClick={() => deleteBank(bank.id)} className="p-1 rounded hover:bg-red-50" style={{ color: "#e74c3c" }}>
-                  <Trash2 size={14} />
-                </button>
+        {banks.map((bank) => {
+          const isNew = !originalBanks.find((b) => b.id === bank.id);
+          const dirty = isDirty(bank);
+          const bankErrors = errors[bank.id] || {};
+
+          return (
+            <div key={bank.id} className="p-4 rounded-xl" style={{ border: "1px solid rgba(64,50,37,.1)", background: bank.is_active ? "rgba(255,255,255,.5)" : "rgba(200,200,200,.1)" }}>
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-medium" style={{ color: bank.is_active ? "var(--gold)" : "var(--text-muted)" }}>{isNew ? "Baru" : bank.is_active ? "Aktif" : "Nonaktif"}</span>
+                <div className="flex items-center gap-2">
+                  {!isNew && (
+                    <button onClick={() => toggleBank(bank.id, !bank.is_active)} className="text-xs px-2 py-1 rounded" style={{ border: "1px solid rgba(64,50,37,.15)", color: bank.is_active ? "var(--text-muted)" : "var(--gold)" }}>
+                      {bank.is_active ? "Nonaktifkan" : "Aktifkan"}
+                    </button>
+                  )}
+                  {dirty && (
+                    <button onClick={() => saveBank(bank)} disabled={savingId === bank.id} className="text-xs px-3 py-1 rounded font-semibold" style={{ background: "var(--gold)", color: "white" }}>
+                      {savingId === bank.id ? "..." : "Simpan"}
+                    </button>
+                  )}
+                  {isNew ? (
+                    <button onClick={() => cancelNew(bank.id)} className="p-1 rounded hover:bg-red-50" style={{ color: "#e74c3c" }}>
+                      <X size={14} />
+                    </button>
+                  ) : (
+                    <button onClick={() => deleteBank(bank.id)} className="p-1 rounded hover:bg-red-50" style={{ color: "#e74c3c" }}>
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-[11px] font-medium mb-1" style={{ color: bankErrors.bank_name ? "#e74c3c" : "var(--text-muted)" }}>Nama Bank *</label>
+                  <input value={bank.bank_name} onChange={(e) => updateField(bank.id, "bank_name", e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: `1px solid ${bankErrors.bank_name ? "#e74c3c" : "rgba(64,50,37,.15)"}`, background: "white", color: "var(--espresso)" }} placeholder="Bank Mandiri" />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-medium mb-1" style={{ color: bankErrors.account_name ? "#e74c3c" : "var(--text-muted)" }}>Nama Pemilik *</label>
+                  <input value={bank.account_name} onChange={(e) => updateField(bank.id, "account_name", e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: `1px solid ${bankErrors.account_name ? "#e74c3c" : "rgba(64,50,37,.15)"}`, background: "white", color: "var(--espresso)" }} placeholder="PT Samaqu Digital" />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-medium mb-1" style={{ color: bankErrors.account_number ? "#e74c3c" : "var(--text-muted)" }}>Nomor Rekening *</label>
+                  <input value={bank.account_number} onChange={(e) => updateField(bank.id, "account_number", e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: `1px solid ${bankErrors.account_number ? "#e74c3c" : "rgba(64,50,37,.15)"}`, background: "white", color: "var(--espresso)" }} placeholder="1234567890123" />
+                </div>
               </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div>
-                <label className="block text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>Nama Bank</label>
-                <input value={bank.bank_name} onChange={(e) => updateBank(bank.id, "bank_name", e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="Bank Mandiri" />
-              </div>
-              <div>
-                <label className="block text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>Nama Pemilik</label>
-                <input value={bank.account_name} onChange={(e) => updateBank(bank.id, "account_name", e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="PT Samaqu Digital" />
-              </div>
-              <div>
-                <label className="block text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>Nomor Rekening</label>
-                <input value={bank.account_number} onChange={(e) => updateBank(bank.id, "account_number", e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="1234567890123" />
-              </div>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
