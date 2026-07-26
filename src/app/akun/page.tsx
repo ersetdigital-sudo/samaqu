@@ -58,14 +58,11 @@ export default function DashboardPage() {
       setCustomer(c);
       const [ordersData, productsData, wishlistData] = await Promise.all([
         getCustomerOrders(c.id),
-        supabase.from("featured_products").select("products(*)").order("display_order").limit(6),
+        supabase.from("products").select("id, name, category, price, image, colors").order("created_at", { ascending: false }).limit(6),
         supabase.from("wishlists").select("product_id").eq("customer_id", c.id),
       ]);
       setOrders(ordersData as Order[]);
-      if (productsData.data) {
-        const fp = productsData.data.map((r: any) => r.products).filter(Boolean);
-        setProducts(fp as Product[]);
-      }
+      if (productsData.data) setProducts(productsData.data as Product[]);
       if (wishlistData.data && wishlistData.data.length > 0) {
         const ids = wishlistData.data.map((w) => w.product_id);
         const { data: wProducts } = await supabase.from("products").select("*").in("id", ids);
