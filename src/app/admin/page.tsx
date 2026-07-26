@@ -13,7 +13,7 @@ import type { User } from "@supabase/supabase-js";
 import ConfirmModal from "@/components/ConfirmModal";
 import { useToast } from "@/components/AdminToast";
 
-type Panel = "dashboard" | "orders" | "products" | "customers" | "content" | "settings";
+type Panel = "dashboard" | "orders" | "products" | "customers" | "content" | "featured" | "settings";
 
 interface Order {
   id: string;
@@ -50,6 +50,7 @@ const navItems = [
   { id: "products" as Panel, label: "Produk", icon: Package },
   { id: "customers" as Panel, label: "Pelanggan", icon: Users },
   { id: "content" as Panel, label: "Konten Website", icon: FileText },
+  { id: "featured" as Panel, label: "Produk Pilihan", icon: Package },
   { id: "settings" as Panel, label: "Pengaturan", icon: Settings },
 ];
 
@@ -59,6 +60,7 @@ const panelTitles: Record<Panel, { title: string; sub: string }> = {
   products: { title: "Produk", sub: "Kelola katalog dan stok koleksi." },
   customers: { title: "Pelanggan", sub: "Data dan riwayat belanja pelanggan." },
   content: { title: "Konten Website", sub: "Atur tampilan halaman publik SAMAQU." },
+  featured: { title: "Produk Pilihan Customer", sub: "Pilih produk yang tampil di dashboard customer." },
   settings: { title: "Pengaturan", sub: "Konfigurasi informasi toko." },
 };
 
@@ -690,8 +692,12 @@ function AdminPageInner() {
                   {/* Payment Methods */}
                   <PaymentMethodsSection />
                   <QrisEwalletSection />
+                </div>
+              )}
 
-                  {/* Customer Featured Products (separate from CMS Koleksi Pilihan) */}
+              {/* PRODUCTS PRIORITY */}
+              {activePanel === "featured" && (
+                <div className="space-y-6">
                   <CustomerProductsSection />
                 </div>
               )}
