@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import Providers from "@/components/Providers";
-import { SITE_URL } from "@/lib/site-config";
+import { SITE_URL, SITE_NAME, SITE_DESCRIPTION } from "@/lib/site-config";
 import "./globals.css";
 
 const inter = localFont({
@@ -78,6 +78,34 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="id" className={`${inter.variable} ${cormorant.variable}`}>
+      <head>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+          "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@type": "Organization",
+              "@id": `${SITE_URL}#organization`,
+              name: SITE_NAME,
+              description: SITE_DESCRIPTION,
+              url: SITE_URL,
+              logo: { "@type": "ImageObject", url: `${SITE_URL}/logo.svg` },
+              contactPoint: { "@type": "ContactPoint", telephone: "+62-85212150100", contactType: "customer service", availableLanguage: "Indonesian" },
+            },
+            {
+              "@type": "WebSite",
+              "@id": `${SITE_URL}#website`,
+              name: SITE_NAME,
+              url: SITE_URL,
+              publisher: { "@id": `${SITE_URL}#organization` },
+              potentialAction: {
+                "@type": "SearchAction",
+                target: { "@type": "EntryPoint", urlTemplate: `${SITE_URL}/katalog?q={search_term_string}` },
+                "query-input": "required name=search_term_string",
+              },
+            },
+          ],
+        }) }} />
+      </head>
       <body>
         <Providers>
           {children}
