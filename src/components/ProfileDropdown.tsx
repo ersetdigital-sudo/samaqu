@@ -16,7 +16,7 @@ import {
 
 export default function ProfileDropdown() {
   const router = useRouter();
-  const [customer, setCustomer] = useState<{ name: string; whatsapp: string } | null>(null);
+  const [customer, setCustomer] = useState<{ name: string; email: string; whatsapp: string } | null>(null);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -28,7 +28,7 @@ export default function ProfileDropdown() {
       }
       if (session?.user) {
         supabase.from("customers").select("name, whatsapp").eq("id", session.user.id).single().then(({ data: c }) => {
-          setCustomer(c);
+          setCustomer(c ? { ...c, email: session.user.email || "" } : null);
           setReady(true);
         });
       } else {
@@ -53,27 +53,8 @@ export default function ProfileDropdown() {
         {customer ? (
           <>
             <div className="px-3 py-2.5 mb-1">
-              <p className="text-sm font-semibold" style={{ color: "var(--espresso)" }}>{customer.name}</p>
+              <p className="text-[11px] font-medium" style={{ color: "var(--text-muted)" }}>{customer.email}</p>
             </div>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link href="/akun" className="gap-2.5">
-                <User size={16} style={{ color: "var(--text-muted)" }} />
-                <span style={{ color: "var(--espresso)" }}>Dashboard Saya</span>
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href="/akun" className="gap-2.5">
-                <ShoppingBag size={16} style={{ color: "var(--text-muted)" }} />
-                <span style={{ color: "var(--espresso)" }}>Pesanan Saya</span>
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <a href={getWhatsAppLink("Halo, saya butuh bantuan.")} target="_blank" rel="noopener noreferrer" className="gap-2.5">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="var(--text-muted)" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.07-.963 4.189.107 1.112 1.069 1.136 2.794.036 3.864-.428.415-.87.789-1.319 1.127M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" /></svg>
-                <span style={{ color: "var(--espresso)" }}>Bantuan</span>
-              </a>
-            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={async () => { setCustomer(null); await supabase.auth.signOut(); router.push("/"); }} className="gap-2.5 text-red-500 focus:text-red-600 focus:bg-red-50">
               <LogOut size={16} />
