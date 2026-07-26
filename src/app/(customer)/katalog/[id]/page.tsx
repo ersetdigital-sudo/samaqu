@@ -93,6 +93,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const [selectedSize, setSelectedSize] = useState("M");
   const [availableSizes, setAvailableSizes] = useState<string[]>(FALLBACK_SIZES);
   const [variantPrice, setVariantPrice] = useState<number | null>(null);
+  const [stock, setStock] = useState<number | null>(null);
   const [qty, setQty] = useState(1);
   const [notes, setNotes] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
@@ -125,9 +126,10 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   }, [id, selectedColor]);
 
   useEffect(() => {
-    if (!id || !selectedColor || !selectedSize) { setVariantPrice(null); return; }
-    supabase.from("product_variants").select("price_override").eq("product_id", id).eq("color", selectedColor).eq("size", selectedSize).single().then(({ data }) => {
+    if (!id || !selectedColor || !selectedSize) { setVariantPrice(null); setStock(null); return; }
+    supabase.from("product_variants").select("price_override, stock").eq("product_id", id).eq("color", selectedColor).eq("size", selectedSize).single().then(({ data }) => {
       setVariantPrice(data?.price_override ?? null);
+      setStock(data?.stock ?? null);
     });
   }, [id, selectedColor, selectedSize]);
 
@@ -293,6 +295,17 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           <p className="text-[1.3rem] font-ui font-semibold mb-4" style={{ color: "var(--gold)" }}>
             Rp {currentPrice.toLocaleString("id-ID")}
           </p>
+          {stock !== null && (
+            <div className="mb-4">
+              {stock === 0 ? (
+                <span className="inline-flex items-center gap-1 text-[11px] font-ui font-medium px-2.5 py-1 rounded-full" style={{ background: "#fde8e8", color: "#c0392b" }}>Habis</span>
+              ) : stock <= 5 ? (
+                <span className="inline-flex items-center gap-1 text-[11px] font-ui font-medium px-2.5 py-1 rounded-full" style={{ background: "#fef3cd", color: "#856404" }}>Stok Menipis — Tersisa {stock}</span>
+              ) : (
+                <span className="inline-flex items-center gap-1 text-[11px] font-ui font-medium px-2.5 py-1 rounded-full" style={{ background: "#e7ecdf", color: "#5b6b45" }}>Tersedia</span>
+              )}
+            </div>
+          )}
           <p className="text-[13px] leading-relaxed font-ui mb-5" style={{ color: "rgba(42,33,27,.8)" }}>
             {getDescription(product)}
           </p>
@@ -468,9 +481,20 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
               {product.name}
             </h1>
-            <p className="text-[20px] sm:text-[22px] font-ui font-semibold mb-6" style={{ color: "var(--gold)" }}>
+            <p className="text-[20px] sm:text-[22px] font-ui font-semibold mb-4" style={{ color: "var(--gold)" }}>
               Rp {currentPrice.toLocaleString("id-ID")}
             </p>
+            {stock !== null && (
+              <div className="mb-5">
+                {stock === 0 ? (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-ui font-medium px-2.5 py-1 rounded-full" style={{ background: "#fde8e8", color: "#c0392b" }}>Habis</span>
+                ) : stock <= 5 ? (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-ui font-medium px-2.5 py-1 rounded-full" style={{ background: "#fef3cd", color: "#856404" }}>Stok Menipis — Tersisa {stock}</span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-ui font-medium px-2.5 py-1 rounded-full" style={{ background: "#e7ecdf", color: "#5b6b45" }}>Tersedia</span>
+                )}
+              </div>
+            )}
             <p className="text-sm sm:text-[15px] leading-relaxed font-ui mb-8" style={{ color: "rgba(42,33,27,.8)" }}>
               {getDescription(product)}
             </p>
