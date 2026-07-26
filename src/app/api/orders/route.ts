@@ -69,11 +69,18 @@ export async function POST(request: NextRequest) {
       // Order already created, just log the error
     }
 
-    // Increment voucher used_count
+    // Increment voucher used_count + save usage
     if (body.voucherCode) {
       const { data: vData } = await supabase.from("vouchers").select("used_count").eq("code", body.voucherCode).single();
       if (vData) {
         await supabase.from("vouchers").update({ used_count: vData.used_count + 1 }).eq("code", body.voucherCode);
+      }
+      if (body.voucherId) {
+        await supabase.from("voucher_usages").insert({
+          voucher_id: body.voucherId,
+          whatsapp_number: customer.whatsapp.replace(/[^0-9]/g, ""),
+          order_id: order.id,
+        });
       }
     }
 
