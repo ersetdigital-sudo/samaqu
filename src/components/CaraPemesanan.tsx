@@ -226,7 +226,7 @@ export default function CaraPemesanan() {
         >
           {steps.map((step) => (
             <motion.div
-              key={step.num}
+              key={i}
               variants={stepVariants}
               className="group relative rounded-xl border bg-white/80 p-3.5 overflow-hidden transition-all duration-300 hover:shadow-md"
               style={{ borderColor: "rgba(216,196,168,.25)" }}
@@ -276,7 +276,7 @@ export default function CaraPemesanan() {
             }}
           >
             {steps.map((step, i) => (
-              <StepItem key={step.num} step={step} index={i} />
+              <StepItem key={i} step={step} index={i} />
             ))}
           </motion.div>
         </div>
