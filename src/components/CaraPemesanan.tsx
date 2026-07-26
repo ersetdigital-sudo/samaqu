@@ -73,7 +73,7 @@ function StepItem({
           color: "var(--warm-sand)",
         }}
       >
-        {step.num}
+        {String(index + 1).padStart(2, "0")}
       </div>
 
       {/* Title */}
@@ -240,7 +240,7 @@ export default function CaraPemesanan() {
                     color: "var(--espresso)",
                   }}
                 >
-                  {step.num}
+                  {String(index + 1).padStart(2, "0")}
                 </span>
               </div>
               <h3
