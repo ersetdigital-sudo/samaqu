@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Loader2, Plus, Trash2, Upload, Image as ImageIcon } from "lucide-react";
 import { supabase } from "@/lib/supabase";
@@ -37,12 +37,26 @@ export default function KontenWebsitePage() {
   // Edit states
   const [editHero, setEditHero] = useState<HeroContent>(HERO_DEFAULTS);
   const [editSteps, setEditSteps] = useState<OrderStep[]>([]);
+  const editStepsRef = useRef<OrderStep[]>([]);
   const [editGaransi, setEditGaransi] = useState<GaransiItem[]>([]);
+  const editGaransiRef = useRef<GaransiItem[]>([]);
   const [editBadges, setEditBadges] = useState<TrustBadge[]>([]);
+  const editBadgesRef = useRef<TrustBadge[]>([]);
   const [editFaqs, setEditFaqs] = useState<FaqItem[]>([]);
+  const editFaqsRef = useRef<FaqItem[]>([]);
   const [editMarquee, setEditMarquee] = useState<MarqueeItem[]>([]);
+  const editMarqueeRef = useRef<MarqueeItem[]>([]);
   const [editCategories, setEditCategories] = useState<CategoryImage[]>([]);
+  const editCategoriesRef = useRef<CategoryImage[]>([]);
   const [uploadingId, setUploadingId] = useState<string | null>(null);
+
+  // Keep refs in sync with state
+  editCategoriesRef.current = editCategories;
+  editStepsRef.current = editSteps;
+  editGaransiRef.current = editGaransi;
+  editBadgesRef.current = editBadges;
+  editFaqsRef.current = editFaqs;
+  editMarqueeRef.current = editMarquee;
 
   useEffect(() => {
     loadData();
@@ -82,15 +96,10 @@ export default function KontenWebsitePage() {
   function openCategoryEdit() { setEditCategories(categories.map((c) => ({ ...c }))); setEditModal("kategori"); }
   async function saveCategories() {
     setSaving(true);
-    // Fetch existing IDs first, then delete by ID (not neq which is a no-op on UUID)
-    const { data: existing } = await supabase.from("category_images").select("id");
-    if (existing && existing.length > 0) {
-      for (const row of existing) {
-        await supabase.from("category_images").delete().eq("id", row.id);
-      }
-    }
-    if (editCategories.length > 0) {
-      await supabase.from("category_images").insert(editCategories.map((c, i) => ({ name: c.name, description: c.description, image_url: c.image_url, display_order: i })));
+    const latestCats = editCategoriesRef.current; // Always read latest
+    await safeDeleteAll("category_images");
+    if (latestCats.length > 0) {
+      await supabase.from("category_images").insert(latestCats.map((c, i) => ({ name: c.name, description: c.description, image_url: c.image_url, display_order: i })));
     }
     // Refetch from DB to ensure state matches
     const { data: refetched } = await supabase.from("category_images").select("*").order("display_order");
@@ -126,11 +135,11 @@ export default function KontenWebsitePage() {
   function openStepsEdit() { setEditSteps(steps.map((s) => ({ ...s }))); setEditModal("steps"); }
   async function saveSteps() {
     setSaving(true);
+    const latest = editStepsRef.current;
     await safeDeleteAll("order_steps");
-    if (editSteps.length > 0) {
-      await supabase.from("order_steps").insert(editSteps.map((s, i) => ({ step_number: i + 1, title: s.title, description: s.description })));
-    }
-    setSteps(editSteps); setEditModal(null); setSaving(false);
+    if (latest.length > 0) await supabase.from("order_steps").insert(latest.map((s, i) => ({ step_number: i + 1, title: s.title, description: s.description })));
+    const { data: refetched } = await supabase.from("order_steps").select("*").order("step_number");
+    setSteps(refetched || []); setEditModal(null); setSaving(false);
     toast.showToast("success", "Cara Pemesanan berhasil disimpan");
   }
 
@@ -138,11 +147,18 @@ export default function KontenWebsitePage() {
   function openGaransiEdit() { setEditGaransi(garansi.map((g) => ({ ...g }))); setEditBadges(badges.map((b) => ({ ...b }))); setEditModal("garansi"); }
   async function saveGaransi() {
     setSaving(true);
+    const latestG = editGaransiRef.current;
+    const latestB = editBadgesRef.current;
     await safeDeleteAll("garansi_items");
-    if (editGaransi.length > 0) await supabase.from("garansi_items").insert(editGaransi.map((g, i) => ({ title: g.title, description: g.description, display_order: i })));
+    if (latestG.length > 0) await supabase.from("garansi_items").insert(latestG.map((g, i) => ({ title: g.title, description: g.description, display_order: i })));
     await safeDeleteAll("trust_badges");
-    if (editBadges.length > 0) await supabase.from("trust_badges").insert(editBadges.map((b, i) => ({ label: b.label, display_order: i })));
-    setGaransi(editGaransi); setBadges(editBadges); setEditModal(null); setSaving(false);
+    if (latestB.length > 0) await supabase.from("trust_badges").insert(latestB.map((b, i) => ({ label: b.label, display_order: i })));
+    const [gRefetch, bRefetch] = await Promise.all([
+      supabase.from("garansi_items").select("*").order("display_order"),
+      supabase.from("trust_badges").select("*").order("display_order"),
+    ]);
+    setGaransi(gRefetch.data || []); setBadges(bRefetch.data || []);
+    setEditModal(null); setSaving(false);
     toast.showToast("success", "Jaminan berhasil disimpan");
   }
 
@@ -150,9 +166,11 @@ export default function KontenWebsitePage() {
   function openFaqEdit() { setEditFaqs(faqs.map((f) => ({ ...f }))); setEditModal("faq"); }
   async function saveFaqs() {
     setSaving(true);
+    const latest = editFaqsRef.current;
     await safeDeleteAll("faq_items");
-    if (editFaqs.length > 0) await supabase.from("faq_items").insert(editFaqs.map((f, i) => ({ question: f.question, answer: f.answer, display_order: i })));
-    setFaqs(editFaqs); setEditModal(null); setSaving(false);
+    if (latest.length > 0) await supabase.from("faq_items").insert(latest.map((f, i) => ({ question: f.question, answer: f.answer, display_order: i })));
+    const { data: refetched } = await supabase.from("faq_items").select("*").order("display_order");
+    setFaqs(refetched || []); setEditModal(null); setSaving(false);
     toast.showToast("success", "FAQ berhasil disimpan");
   }
 
@@ -160,9 +178,11 @@ export default function KontenWebsitePage() {
   function openMarqueeEdit() { setEditMarquee(marquee.map((m) => ({ ...m }))); setEditModal("marquee"); }
   async function saveMarquee() {
     setSaving(true);
+    const latest = editMarqueeRef.current;
     await safeDeleteAll("marquee_items");
-    if (editMarquee.length > 0) await supabase.from("marquee_items").insert(editMarquee.map((m, i) => ({ label: m.label, display_order: i })));
-    setMarquee(editMarquee); setEditModal(null); setSaving(false);
+    if (latest.length > 0) await supabase.from("marquee_items").insert(latest.map((m, i) => ({ label: m.label, display_order: i })));
+    const { data: refetched } = await supabase.from("marquee_items").select("*").order("display_order");
+    setMarquee(refetched || []); setEditModal(null); setSaving(false);
     toast.showToast("success", "Marquee berhasil disimpan");
   }
 
