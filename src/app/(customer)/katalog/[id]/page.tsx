@@ -15,8 +15,8 @@ import { supabase } from "@/lib/supabase";
 
 const FALLBACK_SIZES = ["S", "M", "L", "XL", "XXL"];
 
-function waLink(product: Product, size: string, color: string, qty: number, notes: string) {
-  const msg = `Halo Admin SAMAQU, saya ingin memesan:\n\nProduk: ${product.name}\nKain: ${product.kain || "-"}\nWarna: ${color}\nUkuran: ${size}\nJumlah: ${qty}\n${notes ? `Catatan: ${notes}\n` : ""}\nTotal: Rp ${(product.price * qty).toLocaleString("id-ID")}\n\nMohon konfirmasi ketersediaan. Terima kasih!`;
+function waLink(product: Product, size: string, color: string, qty: number, notes: string, price: number) {
+  const msg = `Halo Admin SAMAQU, saya ingin memesan:\n\nProduk: ${product.name}\nKain: ${product.kain || "-"}\nWarna: ${color}\nUkuran: ${size}\nJumlah: ${qty}\n${notes ? `Catatan: ${notes}\n` : ""}\nTotal: Rp ${(price * qty).toLocaleString("id-ID")}\n\nMohon konfirmasi ketersediaan. Terima kasih!`;
   return getWhatsAppLink(msg);
 }
 
@@ -91,6 +91,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const [selectedColor, setSelectedColor] = useState("");
   const [selectedSize, setSelectedSize] = useState("M");
   const [availableSizes, setAvailableSizes] = useState<string[]>(FALLBACK_SIZES);
+  const [variantPrice, setVariantPrice] = useState<number | null>(null);
   const [qty, setQty] = useState(1);
   const [notes, setNotes] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
@@ -111,7 +112,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
   useEffect(() => {
     if (!id || !selectedColor) return;
-    supabase.from("product_variants").select("size").eq("product_id", id).eq("color", selectedColor).order("size").then(({ data }) => {
+    supabase.from("product_variants").select("size, price_override").eq("product_id", id).eq("color", selectedColor).order("size").then(({ data }) => {
       if (data && data.length > 0) {
         const sizes = data.map((d) => d.size);
         setAvailableSizes(sizes);
@@ -122,13 +123,22 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     });
   }, [id, selectedColor]);
 
+  useEffect(() => {
+    if (!id || !selectedColor || !selectedSize) { setVariantPrice(null); return; }
+    supabase.from("product_variants").select("price_override").eq("product_id", id).eq("color", selectedColor).eq("size", selectedSize).single().then(({ data }) => {
+      setVariantPrice(data?.price_override ?? null);
+    });
+  }, [id, selectedColor, selectedSize]);
+
+  const currentPrice = variantPrice ?? product?.price ?? 0;
+
   function handleAddToCart() {
     if (!product) return;
     addItem({
       id: product.id,
       name: product.name,
       image: product.image,
-      price: product.price,
+      price: currentPrice,
       color: selectedColor || product.colors[0] || "-",
       size: selectedSize,
       qty,
@@ -141,7 +151,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     if (!product) return;
     if (!selectedSize) { toast.show("Pilih ukuran terlebih dahulu"); return; }
     const color = selectedColor || product.colors[0] || "-";
-    let msg = `Halo, saya mau pesan produk:\n${product.name} - ${color} - Ukuran ${selectedSize}\nJumlah: ${qty}`;
+    let msg = `Halo, saya mau pesan produk:\n${product.name} - ${color} - Ukuran ${selectedSize}\nHarga: Rp ${currentPrice.toLocaleString("id-ID")}\nJumlah: ${qty}`;
     if (notes) msg += `\nCatatan: ${notes}`;
     window.open(getWhatsAppLink(msg), "_blank");
   }
@@ -241,7 +251,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             {product.name}
           </h1>
           <p className="text-[1.3rem] font-ui font-semibold mb-4" style={{ color: "var(--gold)" }}>
-            Rp {product.price.toLocaleString("id-ID")}
+            Rp {currentPrice.toLocaleString("id-ID")}
           </p>
           <p className="text-[13px] leading-relaxed font-ui mb-5" style={{ color: "rgba(42,33,27,.8)" }}>
             {getDescription(product)}
@@ -319,7 +329,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               <p className="text-[10px] font-ui tracking-wide uppercase" style={{ color: "var(--stone)" }}>Total</p>
               <p className="text-[1.4rem] font-ui font-semibold leading-tight"
                 style={{ color: "var(--gold)" }}>
-                Rp {(product.price * qty).toLocaleString("id-ID")}
+                Rp {(currentPrice * qty).toLocaleString("id-ID")}
               </p>
             </div>
             <p className="text-[10px] font-ui" style={{ color: "var(--stone)" }}>
@@ -419,7 +429,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               {product.name}
             </h1>
             <p className="text-[20px] sm:text-[22px] font-ui font-semibold mb-6" style={{ color: "var(--gold)" }}>
-              Rp {product.price.toLocaleString("id-ID")}
+              Rp {currentPrice.toLocaleString("id-ID")}
             </p>
             <p className="text-sm sm:text-[15px] leading-relaxed font-ui mb-8" style={{ color: "rgba(42,33,27,.8)" }}>
               {getDescription(product)}
