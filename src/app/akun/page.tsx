@@ -122,9 +122,17 @@ export default function DashboardPage() {
           SIDEBAR (desktop)
       ═══════════════════════════════════ */}
       <aside className="hidden lg:flex lg:flex-col lg:w-64 xl:w-72 shrink-0 px-6 py-8 sticky top-0 h-screen" style={{ borderRight: "1px solid rgba(64,50,37,.09)", background: "var(--bg-secondary, #f0ebe5)" }}>
-        <div className="mb-10">
-          <img src="/logo.svg" alt="SAMAQU" className="h-10 w-auto" />
+        {/* Profile card */}
+        <div className="flex items-center gap-3 mb-8 px-3 py-3 rounded-xl" style={{ background: "rgba(255,255,255,.5)", border: "1px solid rgba(64,50,37,.06)" }}>
+          <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold text-white shrink-0" style={{ background: "linear-gradient(135deg, var(--gold), #96742f)" }}>
+            {customer?.name?.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) || "U"}
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold truncate" style={{ color: "var(--espresso)" }}>{customer?.name || "Pelanggan"}</p>
+            <p className="text-[11px] truncate" style={{ color: "var(--text-muted)" }}>{customer?.whatsapp || ""}</p>
+          </div>
         </div>
+
         <nav className="flex flex-col gap-1 text-sm">
           {navItems.map((item) => (
             <button key={item.id} onClick={() => setActiveNav(item.id)} className="flex items-center gap-3 rounded-xl px-4 py-3 font-medium transition-colors cursor-pointer" style={{ background: activeNav === item.id ? "var(--espresso)" : "transparent", color: activeNav === item.id ? "#f8f5f1" : "var(--text-secondary)" }}>
