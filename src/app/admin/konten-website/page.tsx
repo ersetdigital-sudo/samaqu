@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Loader2, Plus, Trash2, Upload } from "lucide-react";
+import { X, Loader2, Plus, Trash2, Upload, Image as ImageIcon } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/AdminToast";
 import AdminShell from "@/components/AdminShell";
