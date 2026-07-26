@@ -4,7 +4,7 @@ import { SITE_URL, SITE_NAME, SITE_DESCRIPTION } from "@/lib/site-config";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
-  const { data: product } = await supabase.from("products").select("name, description, category, image, price").eq("id", id).single();
+  const { data: product } = await supabase.from("products").select("id, name, description, category, image, price, colors").eq("id", id).single();
 
   if (!product) {
     return { title: "Produk Tidak Ditemukan — SAMAQU" };
