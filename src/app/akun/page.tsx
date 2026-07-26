@@ -39,13 +39,14 @@ interface CustomerData {
   sleeve_size?: number;
 }
 
-type NavSection = "beranda" | "pesanan" | "koleksi" | "ukuran";
+type NavSection = "beranda" | "pesanan" | "koleksi" | "ukuran" | "wishlist";
 
 export default function DashboardPage() {
   const router = useRouter();
   const [customer, setCustomer] = useState<CustomerData | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [wishlistProducts, setWishlistProducts] = useState<Product[]>([]);
   const [activeNav, setActiveNav] = useState<NavSection>("beranda");
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -55,16 +56,29 @@ export default function DashboardPage() {
       const c = await getCurrentCustomer();
       if (!c) { router.push("/akun/login"); return; }
       setCustomer(c);
-      const [ordersData, productsData] = await Promise.all([
+      const [ordersData, productsData, wishlistData] = await Promise.all([
         getCustomerOrders(c.id),
         supabase.from("products").select("*").order("created_at", { ascending: false }).limit(6),
+        supabase.from("wishlists").select("product_id").eq("customer_id", c.id),
       ]);
       setOrders(ordersData as Order[]);
       if (productsData.data) setProducts(productsData.data as Product[]);
+      if (wishlistData.data && wishlistData.data.length > 0) {
+        const ids = wishlistData.data.map((w) => w.product_id);
+        const { data: wProducts } = await supabase.from("products").select("*").in("id", ids);
+        if (wProducts) setWishlistProducts(wProducts as Product[]);
+      }
       setLoading(false);
     }
     init();
   }, [router]);
+
+  async function handleRemoveWishlist(productId: string) {
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData.user) return;
+    await supabase.from("wishlists").delete().eq("customer_id", userData.user.id).eq("product_id", productId);
+    setWishlistProducts((prev) => prev.filter((p) => p.id !== productId));
+  }
 
   async function handleLogout() {
     await logoutCustomer();
@@ -88,6 +102,7 @@ export default function DashboardPage() {
     { id: "pesanan", label: "Pesanan Saya", icon: "▤" },
     { id: "koleksi", label: "Koleksi", icon: "❖" },
     { id: "ukuran", label: "Ukuran Saya", icon: "↔" },
+    { id: "wishlist", label: "Wishlist", icon: "♡" },
   ];
 
   if (loading) {
@@ -293,6 +308,50 @@ export default function DashboardPage() {
                 </div>
                 <button className="mt-5 rounded-full px-5 py-2.5 text-sm font-medium transition-colors" style={{ border: "1px solid rgba(64,50,37,.25)", color: "var(--espresso)" }}>Perbarui Ukuran</button>
               </div>
+            </section>
+          ) : null}
+
+          {/* ── Wishlist ── */}
+          {activeNav === "beranda" || activeNav === "wishlist" ? (
+            <section className="space-y-4">
+              <div className="flex items-end justify-between">
+                <div>
+                  <h2 className="text-2xl sm:text-3xl italic" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>Wishlist Saya</h2>
+                  <p className="text-sm" style={{ color: "var(--text-muted)" }}>{wishlistProducts.length} produk tersimpan</p>
+                </div>
+                {wishlistProducts.length > 0 && (
+                  <Link href="/katalog" className="text-sm shrink-0" style={{ color: "#8b6f42" }}>Jelajahi Koleksi</Link>
+                )}
+              </div>
+              {wishlistProducts.length > 0 ? (
+                <div className="flex gap-4 overflow-x-auto pb-1 lg:grid lg:grid-cols-3 xl:grid-cols-4 lg:overflow-visible" style={{ scrollbarWidth: "none" }}>
+                  {wishlistProducts.map((p) => (
+                    <div key={p.id} className="shrink-0 w-56 sm:w-auto rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg group" style={{ background: "var(--bg-secondary, #f0ebe5)", border: "1px solid rgba(64,50,37,.09)" }}>
+                      <Link href={`/katalog/${p.id}`} className="block">
+                        <div className="aspect-square overflow-hidden relative" style={{ background: "var(--bg-tertiary, #e8e1d9)" }}>
+                          <img src={p.image} alt={p.name} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        </div>
+                      </Link>
+                      <div className="p-4">
+                        <p className="text-xs mb-1" style={{ color: "var(--text-muted)" }}>{p.category}</p>
+                        <p className="font-medium text-sm mb-2" style={{ color: "var(--espresso)" }}>{p.name}</p>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-semibold" style={{ color: "#b58c4a" }}>Rp {p.price.toLocaleString("id-ID")}</span>
+                          <button onClick={() => handleRemoveWishlist(p.id)} className="text-xs px-3 py-1.5 rounded-full transition-colors" style={{ border: "1px solid rgba(231,76,60,.2)", color: "#e74c3c" }}>Hapus</button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-2xl p-10 text-center" style={{ background: "var(--bg-secondary, #f0ebe5)", border: "1px solid rgba(64,50,37,.09)" }}>
+                  <p className="text-4xl mb-3">♡</p>
+                  <p className="text-sm mb-1" style={{ color: "var(--text-secondary)" }}>Belum ada wishlist</p>
+                  <p className="text-xs mb-4" style={{ color: "var(--text-muted)" }}>Klik ikon hati pada produk favorit Anda</p>
+                  <Link href="/katalog" className="inline-block rounded-full px-6 py-2.5 text-sm font-medium text-white" style={{ background: "var(--espresso)" }}>Jelajahi Katalog</Link>
+                </div>
+              )}
             </section>
           ) : null}
 
