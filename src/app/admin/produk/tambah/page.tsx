@@ -431,29 +431,62 @@ export default function TambahProdukPage() {
           {/* Right: Preview sidebar */}
           <div className="hidden lg:block sticky top-24">
             <div className="card p-5">
-              <h3 className="font-serif italic text-lg mb-4" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Preview</h3>
-              <div className="aspect-[4/5] rounded-xl overflow-hidden mb-4" style={{ background: "#e8dfd1" }}>
-                {media.find((m) => m.url) ? (
-                  media.find((m) => m.url && !m.isVideo) ? (
-                    <img src={media.find((m) => m.url && !m.isVideo)?.url} alt="" className="w-full h-full object-cover" />
+              <h3 className="font-serif italic text-lg mb-4" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>Preview Produk</h3>
+
+              {/* Main image / video */}
+              <div className="aspect-[4/5] rounded-xl overflow-hidden mb-3" style={{ background: "#e8dfd1" }}>
+                {activeMedia.length > 0 ? (
+                  activeMedia[0].isVideo ? (
+                    <video src={activeMedia[0].url || activeMedia[0].preview} className="w-full h-full object-cover" muted loop playsInline onMouseEnter={(e) => (e.target as HTMLVideoElement).play()} onMouseLeave={(e) => { (e.target as HTMLVideoElement).pause(); (e.target as HTMLVideoElement).currentTime = 0; }} />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center"><ImageIcon size={32} style={{ color: "var(--text-muted)" }} /></div>
+                    <img src={activeMedia[0].url || activeMedia[0].preview} alt="" className="w-full h-full object-cover" />
                   )
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center"><ImageIcon size={32} style={{ color: "var(--text-muted)" }} /></div>
+                  <div className="w-full h-full flex items-center justify-center">
+                    <ImageIcon size={32} style={{ color: "var(--text-muted)" }} />
+                  </div>
                 )}
               </div>
-              <p className="text-sm font-medium" style={{ color: "var(--espresso)" }}>{name || "Nama Produk"}</p>
-              <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>{category || "Kategori"}</p>
-              <p className="text-lg font-serif italic mt-2" style={{ color: "var(--gold)" }}>
-                {basePrice ? `Rp ${parseInt(basePrice).toLocaleString("id-ID")}` : "Rp 0"}
-              </p>
-              {variants.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  {variants.map((v) => (
-                    <span key={v.color} className="w-5 h-5 rounded-full" style={{ background: colorMap[v.color] || "#ccc", border: "1px solid rgba(42,33,27,.1)" }} title={v.color} />
+
+              {/* Thumbnail strip */}
+              {activeMedia.length > 1 && (
+                <div className="flex gap-1.5 overflow-x-auto mb-3 pb-1">
+                  {activeMedia.map((m, i) => (
+                    <button key={m.id} className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0" style={{ border: i === 0 ? "2px solid var(--gold)" : "1px solid rgba(64,50,37,.1)" }}>
+                      {m.isVideo ? (
+                        <div className="w-full h-full relative">
+                          <video src={m.url || m.preview} className="w-full h-full object-cover" muted />
+                          <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(0,0,0,.3)" }}>
+                            <Video size={12} color="white" />
+                          </div>
+                        </div>
+                      ) : (
+                        <img src={m.url || m.preview} alt="" className="w-full h-full object-cover" />
+                      )}
+                    </button>
                   ))}
                 </div>
+              )}
+
+              {/* Product info */}
+              <p className="text-sm font-medium" style={{ color: "var(--espresso)" }}>{name || "Nama Produk"}</p>
+              <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{category || "Kategori"}</p>
+              <p className="text-lg font-serif italic mt-1.5" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--gold)" }}>
+                {basePrice ? `Rp ${parseInt(basePrice).toLocaleString("id-ID")}` : "Rp 0"}
+              </p>
+
+              {/* Color swatches */}
+              {variants.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {variants.map((v) => (
+                    <button key={v.color} onClick={() => setActiveColor(v.color)} className="w-6 h-6 rounded-full transition-transform" style={{ background: colorMap[v.color] || "#ccc", border: activeColor === v.color ? "2px solid var(--gold)" : "1px solid rgba(42,33,27,.15)", transform: activeColor === v.color ? "scale(1.15)" : "scale(1)" }} title={v.color} />
+                  ))}
+                </div>
+              )}
+
+              {/* Active color label */}
+              {activeColor && (
+                <p className="text-[11px] mt-2 font-medium" style={{ color: "var(--text-muted)" }}>{activeColor}</p>
               )}
             </div>
           </div>
