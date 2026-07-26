@@ -241,7 +241,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       ═══════════════════════════════════════ */}
       <div className="md:hidden">
         {/* Breadcrumb mobile */}
-        <div className="max-w-7xl mx-auto px-4" style={{ paddingTop: "80px", marginBottom: "32px" }}>
+        <div className="max-w-7xl mx-auto px-4 pt-4 pb-2">
           <Breadcrumb extra={[{ label: product.name }]} />
         </div>
         {/* Gallery carousel */}
@@ -254,7 +254,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           )}
           <div
             ref={carouselRef}
-            className="flex overflow-x-auto gap-3 scrollbar-hide px-4 scroll-smooth"
+            className="flex overflow-x-auto gap-0 scrollbar-hide scroll-smooth"
             onScroll={handleCarouselScroll}
           >
             {media.map((item, i) => (
@@ -292,7 +292,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         </div>
 
         {/* Content card */}
-        <div className="relative -mt-4 mx-4 px-5 py-6 rounded-t-2xl" style={{ background: "var(--cream)", boxShadow: "0 -4px 20px -8px rgba(42,33,27,.08)" }}>
+        <div className="relative -mt-6 px-5 py-6 rounded-t-3xl" style={{ background: "var(--cream)" }}>
           <p className="text-[10px] tracking-[0.12em] uppercase font-ui mb-1.5" style={{ color: "var(--stone)" }}>
             {product.category}{product.kain && ` — Kain ${product.kain}`}{product.series && ` — ${product.series}`}
           </p>
