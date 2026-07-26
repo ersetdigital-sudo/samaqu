@@ -690,9 +690,6 @@ function AdminPageInner() {
                   {/* Payment Methods */}
                   <PaymentMethodsSection />
                   <QrisEwalletSection />
-
-                  {/* Customer Featured Products */}
-                  <CustomerProductsSection />
                 </div>
               )}
 
