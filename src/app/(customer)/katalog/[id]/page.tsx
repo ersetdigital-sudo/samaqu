@@ -192,6 +192,45 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
   return (
     <section className="min-h-screen" style={{ background: "var(--cream)" }}>
+      {/* JSON-LD Structured Data */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "Product",
+        name: product.name,
+        description: getDescription(product),
+        image: product.image,
+        sku: product.id,
+        brand: { "@type": "Brand", name: "SAMAQU" },
+        category: product.category,
+        color: product.colors.join(", "),
+        offers: {
+          "@type": "Offer",
+          url: `https://samaqu.vercel.app/katalog/${product.id}`,
+          priceCurrency: "IDR",
+          price: currentPrice,
+          availability: "https://schema.org/InStock",
+          seller: { "@type": "Organization", name: "SAMAQU" },
+          itemCondition: "https://schema.org/NewCondition",
+          shippingDetails: {
+            "@type": "OfferShippingDetails",
+            shippingDestination: { "@type": "DefinedRegion", addressCountry: "ID" },
+            shippingRate: { "@type": "MonetaryAmount", value: "25000", currency: "IDR" },
+            deliveryTime: {
+              "@type": "ShippingDeliveryTime",
+              handlingTime: { "@type": "QuantitativeValue", minValue: 1, maxValue: 2, unitCode: "DAY" },
+              transitTime: { "@type": "QuantitativeValue", minValue: 1, maxValue: 3, unitCode: "DAY" },
+            },
+          },
+        },
+        breadcrumb: {
+          "@type": "BreadcrumbList",
+          itemListElement: [
+            { "@type": "ListItem", position: 1, name: "Beranda", item: "https://samaqu.vercel.app" },
+            { "@type": "ListItem", position: 2, name: "Katalog", item: "https://samaqu.vercel.app/katalog" },
+            { "@type": "ListItem", position: 3, name: product.name },
+          ],
+        },
+      }) }} />
       {/* ═══════════════════════════════════════
           MOBILE LAYOUT (max-md)
       ═══════════════════════════════════════ */}

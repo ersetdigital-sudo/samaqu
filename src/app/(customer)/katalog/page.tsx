@@ -307,6 +307,23 @@ export default function KatalogPage() {
 
   return (
     <section className="min-h-screen" style={{ background: "var(--cream)" }}>
+      {/* CollectionPage JSON-LD */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "CollectionPage",
+        name: "Katalog Produk SAMAQU",
+        description: "Koleksi busana pria muslim premium — Thobe, Kandora, Koko, Vest, Kabak, Cover Hanger.",
+        url: "https://samaqu.vercel.app/katalog",
+        mainEntity: {
+          "@type": "ItemList",
+          numberOfItems: products.length,
+          itemListElement: products.slice(0, 50).map((p, i) => ({
+            "@type": "ListItem",
+            position: i + 1,
+            item: { "@type": "Product", name: p.name, sku: p.id, category: p.category, image: p.image, offers: { "@type": "Offer", priceCurrency: "IDR", price: p.price, availability: "https://schema.org/InStock" } },
+          })),
+        },
+      }) }} />
       {/* ── Page Header ── */}
       <div className="pt-28 sm:pt-32 lg:pt-36 pb-12 sm:pb-16">
         <div className="max-w-[1200px] mx-auto px-5 sm:px-8 lg:px-14">
