@@ -443,7 +443,7 @@ function CheckoutContent() {
               {submitting ? "Memproses…" : "Buat Pesanan"}
             </button>
 
-            <div className="hidden lg:flex items-center justify-center gap-2 mt-3 sm:mt-4 text-[11px] sm:text-xs font-ui" style={{ color: "var(--text-muted)" }}>
+            <div className="flex items-center justify-center gap-2 mt-3 sm:mt-4 text-[11px] sm:text-xs font-ui" style={{ color: "var(--text-muted)" }}>
               <Lock size={13} strokeWidth={1.6} />
               <span>Transaksi Anda dienkripsi & aman</span>
             </div>
