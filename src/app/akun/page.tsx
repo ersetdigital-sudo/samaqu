@@ -5,11 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { supabase } from "@/lib/supabase";
-import { getCurrentCustomer, getCustomerOrders, logoutCustomer } from "@/lib/customer-auth";
+import { getCurrentCustomer, getCustomerOrders } from "@/lib/customer-auth";
 import { getWhatsAppLink } from "@/lib/store-settings";
 import { SITE_URL } from "@/lib/site-config";
 import type { Product } from "@/lib/katalog-data";
-import { Search, Bell, LogOut, Package } from "lucide-react";
+import { Search, Bell, Package } from "lucide-react";
 import ProfileDropdown from "@/components/ProfileDropdown";
 
 interface OrderItem {
@@ -84,11 +84,6 @@ export default function DashboardPage() {
     setWishlistProducts((prev) => prev.filter((p) => p.id !== productId));
   }
 
-  async function handleLogout() {
-    await logoutCustomer();
-    router.push("/akun/login");
-  }
-
   const totalOrders = orders.length;
   const processingOrders = orders.filter((o) => o.status === "diproses" || o.status === "pending").length;
   const firstName = customer?.name?.split(" ")[0] || "Pelanggan";
@@ -143,9 +138,6 @@ export default function DashboardPage() {
               <span>{item.icon}</span> {item.label}
             </button>
           ))}
-          <button onClick={handleLogout} className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm transition-colors mt-1 cursor-pointer" style={{ color: "var(--text-secondary)" }}>
-            <LogOut size={16} /> Keluar
-          </button>
         </nav>
         <div className="mt-auto rounded-2xl p-5 text-white" style={{ background: "linear-gradient(135deg, #403225, #2d211b, #1c1511)" }}>
           <p className="italic text-lg mb-1" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Konsultasi Ukuran</p>
