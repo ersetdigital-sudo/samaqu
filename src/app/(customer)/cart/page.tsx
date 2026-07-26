@@ -38,15 +38,7 @@ export default function CartPage() {
 
   function checkoutAll() {
     if (items.length === 0) return;
-    const first = items[0];
-    const params = new URLSearchParams({
-      id: first.id,
-      color: first.color,
-      size: first.size,
-      qty: String(first.qty),
-    });
-    if (first.notes) params.set("notes", first.notes);
-    router.push(`/checkout?${params.toString()}`);
+    router.push("/checkout");
   }
 
   return (

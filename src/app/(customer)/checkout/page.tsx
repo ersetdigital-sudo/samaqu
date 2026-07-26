@@ -38,8 +38,9 @@ function CheckoutContent() {
   const colorParam = searchParams.get("color") || "";
   const sizeParam = searchParams.get("size") || "M";
   const qtyParam = parseInt(searchParams.get("qty") || "1", 10);
-  const product = getProductById(productId)!;
+  const product = productId ? getProductById(productId) : null;
   const { items, clearCart } = useCart();
+  const isCartMode = !productId && items.length > 0;
 
   const [qty, setQty] = useState(qtyParam || 1);
   const [promoCode, setPromoCode] = useState("");
@@ -74,7 +75,7 @@ function CheckoutContent() {
     fetchPayment();
   }, []);
 
-  if (!product) {
+  if (!product && !isCartMode) {
     return (
       <section className="min-h-screen flex items-center justify-center" style={{ background: "var(--cream)" }}>
         <div className="text-center px-6">
@@ -85,10 +86,11 @@ function CheckoutContent() {
     );
   }
 
-  const selectedColor = colorParam || product.colors[0] || "-";
+  const selectedColor = colorParam || product?.colors?.[0] || "-";
   const selectedSize = sizeParam;
   const shippingCost = shippingOptions.find((s) => s.id === shipping)?.price || 0;
-  const subtotal = product.price * qty;
+  const cartSubtotal = isCartMode ? items.reduce((sum, item) => sum + item.price * item.qty, 0) : (product?.price || 0) * qty;
+  const subtotal = cartSubtotal;
   const total = subtotal - discount + shippingCost;
 
   async function applyPromo() {
@@ -157,15 +159,25 @@ function CheckoutContent() {
           discount,
           voucherCode: promoApplied ? voucherCode : null,
           voucherId: promoApplied ? voucherId : null,
-          items: [{
-            productId: product.id,
-            name: product.name,
-            image: product.image,
-            color: selectedColor,
-            size: selectedSize,
-            quantity: qty,
-            price: product.price,
-          }],
+          items: isCartMode
+            ? items.map((item) => ({
+                productId: item.id,
+                name: item.name,
+                image: item.image,
+                color: item.color,
+                size: item.size,
+                quantity: item.qty,
+                price: item.price,
+              }))
+            : [{
+                productId: product!.id,
+                name: product!.name,
+                image: product!.image,
+                color: selectedColor,
+                size: selectedSize,
+                quantity: qty,
+                price: product!.price,
+              }],
         }),
       });
 
@@ -369,24 +381,41 @@ function CheckoutContent() {
           <div className="rounded-2xl p-5 sm:p-7" style={{ background: "var(--bg-secondary, #f0ebe5)", border: "1px solid rgba(64,50,37,.08)" }}>
             <h2 className="text-xl sm:text-2xl italic mb-4 sm:mb-5" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Ringkasan Pesanan</h2>
 
-            {/* Item */}
-            <div className="flex gap-3 sm:gap-4">
-              <div className="w-16 h-20 sm:w-20 sm:h-24 rounded-lg flex-shrink-0 overflow-hidden" style={{ background: "#e8dfd1" }}>
-                <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[13px] sm:text-sm font-ui font-medium leading-snug" style={{ color: "var(--espresso)" }}>{product.name}</p>
-                <p className="text-[11px] sm:text-xs font-ui mt-0.5" style={{ color: "var(--text-muted)" }}>Warna: {selectedColor} · Ukuran: {selectedSize}</p>
-                <div className="flex items-center justify-between mt-2 sm:mt-2.5">
-                  <div className="inline-flex items-center rounded-lg" style={{ border: "1px solid rgba(64,50,37,.25)" }}>
-                    <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="qty-btn w-7 h-7 flex items-center justify-center text-base font-ui" style={{ color: "var(--espresso)" }} aria-label="Kurangi">−</button>
-                    <span className="w-8 text-center text-sm font-ui">{qty}</span>
-                    <button onClick={() => setQty((q) => q + 1)} className="qty-btn w-7 h-7 flex items-center justify-center text-base font-ui" style={{ color: "var(--espresso)" }} aria-label="Tambah">+</button>
+            {/* Items */}
+            {isCartMode ? (
+              <div className="space-y-4">
+                {items.map((item) => (
+                  <div key={`${item.id}-${item.color}-${item.size}`} className="flex gap-3 sm:gap-4">
+                    <div className="w-16 h-20 sm:w-20 sm:h-24 rounded-lg flex-shrink-0 overflow-hidden" style={{ background: "#e8dfd1" }}>
+                      <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13px] sm:text-sm font-ui font-medium leading-snug" style={{ color: "var(--espresso)" }}>{item.name}</p>
+                      <p className="text-[11px] sm:text-xs font-ui mt-0.5" style={{ color: "var(--text-muted)" }}>Warna: {item.color} · Ukuran: {item.size} · ×{item.qty}</p>
+                      <p className="text-[13px] sm:text-sm font-ui font-semibold mt-1.5" style={{ color: "var(--espresso)" }}>Rp {(item.price * item.qty).toLocaleString("id-ID")}</p>
+                    </div>
                   </div>
-                  <span className="text-[13px] sm:text-sm font-ui font-semibold" style={{ color: "var(--espresso)" }}>Rp {subtotal.toLocaleString("id-ID")}</span>
+                ))}
+              </div>
+            ) : (
+              <div className="flex gap-3 sm:gap-4">
+                <div className="w-16 h-20 sm:w-20 sm:h-24 rounded-lg flex-shrink-0 overflow-hidden" style={{ background: "#e8dfd1" }}>
+                  <img src={product!.image} alt={product!.name} className="w-full h-full object-cover" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] sm:text-sm font-ui font-medium leading-snug" style={{ color: "var(--espresso)" }}>{product!.name}</p>
+                  <p className="text-[11px] sm:text-xs font-ui mt-0.5" style={{ color: "var(--text-muted)" }}>Warna: {selectedColor} · Ukuran: {selectedSize}</p>
+                  <div className="flex items-center justify-between mt-2 sm:mt-2.5">
+                    <div className="inline-flex items-center rounded-lg" style={{ border: "1px solid rgba(64,50,37,.25)" }}>
+                      <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="qty-btn w-7 h-7 flex items-center justify-center text-base font-ui" style={{ color: "var(--espresso)" }} aria-label="Kurangi">−</button>
+                      <span className="w-8 text-center text-sm font-ui">{qty}</span>
+                      <button onClick={() => setQty((q) => q + 1)} className="qty-btn w-7 h-7 flex items-center justify-center text-base font-ui" style={{ color: "var(--espresso)" }} aria-label="Tambah">+</button>
+                    </div>
+                    <span className="text-[13px] sm:text-sm font-ui font-semibold" style={{ color: "var(--espresso)" }}>Rp {subtotal.toLocaleString("id-ID")}</span>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Promo */}
             <div className="flex gap-2 mt-5 sm:mt-6">
