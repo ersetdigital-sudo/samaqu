@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { User, ShoppingBag, Settings, LogOut } from "lucide-react";
+import { User, ShoppingBag, LogOut } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { getWhatsAppLink } from "@/lib/store-settings";
 import {
@@ -17,40 +17,33 @@ import {
 export default function ProfileDropdown() {
   const router = useRouter();
   const [customer, setCustomer] = useState<{ name: string; whatsapp: string } | null>(null);
-  const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 40);
-    window.addEventListener("scroll", onScroll);
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_OUT" || !session) {
         setCustomer(null);
+        setReady(true);
         return;
       }
       if (session?.user) {
         supabase.from("customers").select("name, whatsapp").eq("id", session.user.id).single().then(({ data: c }) => {
-          if (c) setCustomer(c);
+          setCustomer(c);
+          setReady(true);
         });
+      } else {
+        setReady(true);
       }
     });
     return () => subscription.unsubscribe();
   }, []);
 
-  const initials = customer?.name?.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) || "●";
-
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
-          className="grid place-items-center w-9 h-9 rounded-full transition-all duration-200 hover:scale-105"
-          style={{
-            background: scrolled ? "rgba(42,33,27,.08)" : "rgba(255,255,255,.15)",
-            color: scrolled ? "var(--espresso)" : "var(--cream)",
-          }}
+          className="w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105"
+          style={{ background: "rgba(42,33,27,.08)", color: "var(--espresso)" }}
           aria-label="Akun saya">
           <User size={18} strokeWidth={2} />
         </button>
