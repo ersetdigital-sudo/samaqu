@@ -26,13 +26,18 @@ export default function ProfileDropdown() {
   }, []);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) {
-        supabase.from("customers").select("name, whatsapp").eq("id", data.user.id).single().then(({ data: c }) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT" || !session) {
+        setCustomer(null);
+        return;
+      }
+      if (session?.user) {
+        supabase.from("customers").select("name, whatsapp").eq("id", session.user.id).single().then(({ data: c }) => {
           if (c) setCustomer(c);
         });
       }
     });
+    return () => subscription.unsubscribe();
   }, []);
 
   const initials = customer?.name?.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) || "●";
@@ -74,7 +79,7 @@ export default function ProfileDropdown() {
               </a>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={async () => { await supabase.auth.signOut(); router.push("/"); }} className="gap-2.5 text-red-500 focus:text-red-600 focus:bg-red-50">
+            <DropdownMenuItem onClick={async () => { setCustomer(null); await supabase.auth.signOut(); router.push("/"); }} className="gap-2.5 text-red-500 focus:text-red-600 focus:bg-red-50">
               <LogOut size={16} />
               <span>Keluar</span>
             </DropdownMenuItem>
