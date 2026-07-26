@@ -23,12 +23,16 @@ export function useStoreSettings() {
   const [settings, setSettings] = useState<StoreSettings>(cached);
 
   useEffect(() => {
-    supabase.from("store_settings").select("*").eq("id", 1).single().then(({ data }) => {
-      if (data) {
-        cached = { ...DEFAULTS, ...data };
-        setSettings(cached);
-      }
-    }).catch(() => {});
+    async function fetchSettings() {
+      try {
+        const { data } = await supabase.from("store_settings").select("*").eq("id", 1).single();
+        if (data) {
+          cached = { ...DEFAULTS, ...data };
+          setSettings(cached);
+        }
+      } catch { /* use defaults */ }
+    }
+    fetchSettings();
   }, []);
 
   return settings;
