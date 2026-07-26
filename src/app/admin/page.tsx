@@ -1096,7 +1096,10 @@ function CustomerProductsSection() {
 
   async function save() {
     setSaving(true);
-    await supabase.from("customer_featured_products").delete().neq("product_id", "");
+    const { data: existingIds } = await supabase.from("customer_featured_products").select("id");
+    if (existingIds && existingIds.length > 0) {
+      for (const row of existingIds) await supabase.from("customer_featured_products").delete().eq("id", row.id);
+    }
     if (featuredIds.length > 0) {
       await supabase.from("customer_featured_products").insert(featuredIds.map((id, i) => ({ product_id: id, display_order: i })));
     }

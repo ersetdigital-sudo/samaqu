@@ -82,11 +82,20 @@ export default function KontenWebsitePage() {
   function openCategoryEdit() { setEditCategories(categories.map((c) => ({ ...c }))); setEditModal("kategori"); }
   async function saveCategories() {
     setSaving(true);
-    await supabase.from("category_images").delete().neq("id", "");
+    // Fetch existing IDs first, then delete by ID (not neq which is a no-op on UUID)
+    const { data: existing } = await supabase.from("category_images").select("id");
+    if (existing && existing.length > 0) {
+      for (const row of existing) {
+        await supabase.from("category_images").delete().eq("id", row.id);
+      }
+    }
     if (editCategories.length > 0) {
       await supabase.from("category_images").insert(editCategories.map((c, i) => ({ name: c.name, description: c.description, image_url: c.image_url, display_order: i })));
     }
-    setCategories(editCategories); setEditModal(null); setSaving(false);
+    // Refetch from DB to ensure state matches
+    const { data: refetched } = await supabase.from("category_images").select("*").order("display_order");
+    setCategories(refetched || []);
+    setEditModal(null); setSaving(false);
     toast.showToast("success", "Kategori berhasil disimpan");
   }
   async function uploadCategoryImage(idx: number, file: File) {
@@ -105,11 +114,19 @@ export default function KontenWebsitePage() {
     setUploadingId(null);
   }
 
+  // Helper: safely delete all rows from a table (fetch IDs first, then delete by ID)
+  async function safeDeleteAll(table: string) {
+    const { data: rows } = await supabase.from(table).select("id");
+    if (rows && rows.length > 0) {
+      for (const row of rows) await supabase.from(table).delete().eq("id", row.id);
+    }
+  }
+
   // Steps handlers
   function openStepsEdit() { setEditSteps(steps.map((s) => ({ ...s }))); setEditModal("steps"); }
   async function saveSteps() {
     setSaving(true);
-    await supabase.from("order_steps").delete().neq("id", "");
+    await safeDeleteAll("order_steps");
     if (editSteps.length > 0) {
       await supabase.from("order_steps").insert(editSteps.map((s, i) => ({ step_number: i + 1, title: s.title, description: s.description })));
     }
@@ -121,9 +138,9 @@ export default function KontenWebsitePage() {
   function openGaransiEdit() { setEditGaransi(garansi.map((g) => ({ ...g }))); setEditBadges(badges.map((b) => ({ ...b }))); setEditModal("garansi"); }
   async function saveGaransi() {
     setSaving(true);
-    await supabase.from("garansi_items").delete().neq("id", "");
+    await safeDeleteAll("garansi_items");
     if (editGaransi.length > 0) await supabase.from("garansi_items").insert(editGaransi.map((g, i) => ({ title: g.title, description: g.description, display_order: i })));
-    await supabase.from("trust_badges").delete().neq("id", "");
+    await safeDeleteAll("trust_badges");
     if (editBadges.length > 0) await supabase.from("trust_badges").insert(editBadges.map((b, i) => ({ label: b.label, display_order: i })));
     setGaransi(editGaransi); setBadges(editBadges); setEditModal(null); setSaving(false);
     toast.showToast("success", "Jaminan berhasil disimpan");
@@ -133,7 +150,7 @@ export default function KontenWebsitePage() {
   function openFaqEdit() { setEditFaqs(faqs.map((f) => ({ ...f }))); setEditModal("faq"); }
   async function saveFaqs() {
     setSaving(true);
-    await supabase.from("faq_items").delete().neq("id", "");
+    await safeDeleteAll("faq_items");
     if (editFaqs.length > 0) await supabase.from("faq_items").insert(editFaqs.map((f, i) => ({ question: f.question, answer: f.answer, display_order: i })));
     setFaqs(editFaqs); setEditModal(null); setSaving(false);
     toast.showToast("success", "FAQ berhasil disimpan");
@@ -143,7 +160,7 @@ export default function KontenWebsitePage() {
   function openMarqueeEdit() { setEditMarquee(marquee.map((m) => ({ ...m }))); setEditModal("marquee"); }
   async function saveMarquee() {
     setSaving(true);
-    await supabase.from("marquee_items").delete().neq("id", "");
+    await safeDeleteAll("marquee_items");
     if (editMarquee.length > 0) await supabase.from("marquee_items").insert(editMarquee.map((m, i) => ({ label: m.label, display_order: i })));
     setMarquee(editMarquee); setEditModal(null); setSaving(false);
     toast.showToast("success", "Marquee berhasil disimpan");
