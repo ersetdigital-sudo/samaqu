@@ -378,3 +378,7 @@ details[open] .faq-plus {
   .marquee { animation: none; }
   html { scroll-behavior: auto; }
 }
+
+/* Global cursor pointer for all interactive elements */
+button, a, [role="button"], select, label { cursor: pointer; }
+a { text-decoration: none; }
