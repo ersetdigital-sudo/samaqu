@@ -113,11 +113,11 @@ export default function DashboardPage() {
         </div>
         <nav className="flex flex-col gap-1 text-sm">
           {navItems.map((item) => (
-            <button key={item.id} onClick={() => setActiveNav(item.id)} className="flex items-center gap-3 rounded-xl px-4 py-3 font-medium transition-colors" style={{ background: activeNav === item.id ? "var(--espresso)" : "transparent", color: activeNav === item.id ? "#f8f5f1" : "var(--text-secondary)" }}>
+            <button key={item.id} onClick={() => setActiveNav(item.id)} className="flex items-center gap-3 rounded-xl px-4 py-3 font-medium transition-colors cursor-pointer" style={{ background: activeNav === item.id ? "var(--espresso)" : "transparent", color: activeNav === item.id ? "#f8f5f1" : "var(--text-secondary)" }}>
               <span>{item.icon}</span> {item.label}
             </button>
           ))}
-          <button onClick={handleLogout} className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm transition-colors mt-1" style={{ color: "var(--text-secondary)" }}>
+          <button onClick={handleLogout} className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm transition-colors mt-1 cursor-pointer" style={{ color: "var(--text-secondary)" }}>
             <LogOut size={16} /> Keluar
           </button>
         </nav>
@@ -263,7 +263,7 @@ export default function DashboardPage() {
                       <p className="text-xs mb-1" style={{ color: "var(--text-muted)" }}>{p.category}</p>
                       <p className="font-medium mb-2" style={{ color: "var(--espresso)" }}>{p.name}</p>
                       <div className="flex items-center justify-between">
-                        <span className="text-xl" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>Rp {p.price.toLocaleString("id-ID")}</span>
+                        <span className="text-sm font-semibold font-ui" style={{ color: "var(--gold)" }}>Rp {p.price.toLocaleString("id-ID")}</span>
                       </div>
                     </div>
                   </Link>
@@ -322,3 +322,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+
