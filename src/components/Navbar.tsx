@@ -196,11 +196,7 @@ function usePrevious<T>(value: T): T | undefined {
 }
 
 /* ── Drawer nav content ── */
-const waHref =
-  "https://wa.me/6281234567890?text=" +
-  encodeURIComponent(
-    "Halo Admin SAMAQU, saya tertarik dengan koleksi Anda dan ingin bertanya soal pemesanan."
-  );
+import { getWhatsAppLink } from "@/lib/store-settings";
 
 function DrawerNavContent({ onClose }: { onClose: () => void }) {
   const pathname = usePathname();
@@ -233,7 +229,7 @@ function DrawerNavContent({ onClose }: { onClose: () => void }) {
       {/* CTA area */}
       <div className="p-6 space-y-3 border-t" style={{ borderColor: "rgba(201,183,156,.15)" }}>
         <a
-          href={waHref}
+          href={getWhatsAppLink("Halo Admin SAMAQU, saya tertarik dengan koleksi Anda dan ingin bertanya soal pemesanan.")}
           target="_blank"
           rel="noopener"
           className="flex items-center justify-center gap-2 w-full px-5 py-3.5 text-[11px] tracking-[0.16em] uppercase font-ui font-medium transition-all duration-300 hover:opacity-90 rounded-sm"

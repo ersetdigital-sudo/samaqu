@@ -3,12 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
-
-const waHref =
-  "https://wa.me/6281234567890?text=" +
-  encodeURIComponent(
-    "Halo Admin SAMAQU, saya tertarik dengan koleksi Anda dan ingin bertanya soal pemesanan."
-  );
+import { getWhatsAppLink } from "@/lib/store-settings";
 
 function WhatsAppIcon() {
   return (
@@ -136,7 +131,7 @@ export default function AutoCTA() {
 
           {/* FAB Button */}
           <a
-            href={waHref}
+            href={getWhatsAppLink("Halo Admin SAMAQU, saya tertarik dengan koleksi Anda dan ingin bertanya soal pemesanan.")}
             target="_blank"
             rel="noopener"
             className="relative flex items-center justify-center w-14 h-14 rounded-full transition-transform duration-300 hover:scale-105"

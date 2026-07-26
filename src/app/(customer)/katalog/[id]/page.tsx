@@ -10,9 +10,9 @@ import { colorMap, type Product, type MediaItem } from "@/lib/katalog-data";
 import { getProductById } from "@/lib/db";
 import { useCart } from "@/lib/cart-context";
 import { useToast } from "@/components/Toast";
+import { getWhatsAppLink } from "@/lib/store-settings";
 
 const sizes = ["S", "M", "L", "XL", "XXL"];
-const waBase = "https://wa.me/6281234567890?text=";
 
 function checkoutLink(product: Product, size: string, color: string, qty: number, notes: string) {
   const params = new URLSearchParams({ id: product.id, color, size, qty: String(qty) });
@@ -22,7 +22,7 @@ function checkoutLink(product: Product, size: string, color: string, qty: number
 
 function waLink(product: Product, size: string, color: string, qty: number, notes: string) {
   const msg = `Halo Admin SAMAQU, saya ingin memesan:\n\nProduk: ${product.name}\nKain: ${product.kain || "-"}\nWarna: ${color}\nUkuran: ${size}\nJumlah: ${qty}\n${notes ? `Catatan: ${notes}\n` : ""}\nTotal: Rp ${(product.price * qty).toLocaleString("id-ID")}\n\nMohon konfirmasi ketersediaan. Terima kasih!`;
-  return waBase + encodeURIComponent(msg);
+  return getWhatsAppLink(msg);
 }
 
 function getDescription(product: Product): string {
