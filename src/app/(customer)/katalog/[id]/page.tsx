@@ -21,6 +21,7 @@ function waLink(product: Product, size: string, color: string, qty: number, note
 }
 
 function getDescription(product: Product): string {
+  if (product.description) return product.description;
   const map: Record<string, string> = {
     Thobe: "Thobe premium dengan bahan pilihan yang adem dan nyaman. Potongan presisi, jahitan rapi, cocok untuk ibadah maupun acara istimewa. Tersedia dalam berbagai pilihan kain dan warna.",
     Kandora: "Kandora berkualitas dengan bahan ringan dan potongan yang elegan. Nyaman dipakai sehari-hari maupun untuk acara formal.",

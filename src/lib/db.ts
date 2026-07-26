@@ -36,6 +36,7 @@ function dbProductToProduct(db: DbProduct): Product {
     id: db.id,
     name: db.name,
     category: db.category as Product["category"],
+    description: db.description || undefined,
     kain: db.kain || undefined,
     series: db.series || undefined,
     colors: Array.isArray(db.colors) ? db.colors : [],

@@ -201,6 +201,7 @@ export default function TambahProdukPage() {
         id: slug,
         name,
         category,
+        description: description || null,
         price: parseInt(basePrice),
         image: media.find((m) => m.url)?.url || "",
         images: media.filter((m) => m.url).map((m) => m.url),
