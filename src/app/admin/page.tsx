@@ -638,31 +638,7 @@ function AdminPageInner() {
                   <h2 className="text-2xl italic" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Pengaturan Toko</h2>
 
                   {/* Store Info */}
-                  <div className="card p-6 max-w-2xl space-y-5">
-                    <h3 className="text-lg font-semibold" style={{ color: "var(--espresso)" }}>Informasi Toko</h3>
-                    <div>
-                      <label className="text-sm font-semibold" style={{ color: "var(--espresso)" }}>Nama Toko</label>
-                      <input defaultValue="SAMAQU" className="mt-1.5 w-full rounded-xl px-4 py-2.5 bg-white text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.1)" }} />
-                    </div>
-                    <div>
-                      <label className="text-sm font-semibold" style={{ color: "var(--espresso)" }}>Tagline</label>
-                      <input defaultValue="Busana yang Layak Menemani Setiap Momen" className="mt-1.5 w-full rounded-xl px-4 py-2.5 bg-white text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.1)" }} />
-                    </div>
-                    <div className="grid sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm font-semibold" style={{ color: "var(--espresso)" }}>Email</label>
-                        <input defaultValue="halo@samaqu.id" className="mt-1.5 w-full rounded-xl px-4 py-2.5 bg-white text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.1)" }} />
-                      </div>
-                      <div>
-                        <label className="text-sm font-semibold" style={{ color: "var(--espresso)" }}>WhatsApp</label>
-                        <input defaultValue="+62 812 3456 7890" className="mt-1.5 w-full rounded-xl px-4 py-2.5 bg-white text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.1)" }} />
-                      </div>
-                    </div>
-                    <div className="flex gap-3 pt-2">
-                      <button className="text-sm font-semibold px-5 py-2.5 rounded-xl text-white" style={{ background: "linear-gradient(135deg, var(--gold), #96742f)" }}>Simpan Perubahan</button>
-                      <button className="text-sm font-semibold px-5 py-2.5 rounded-xl" style={{ border: "1px solid rgba(64,50,37,.15)" }}>Batal</button>
-                    </div>
-                  </div>
+                  <StoreInfoSection />
 
                   {/* Payment Methods */}
                   <PaymentMethodsSection />
@@ -713,6 +689,72 @@ function AdminPageInner() {
         .scrollbar-thin::-webkit-scrollbar-thumb { background: rgba(64,50,37,.2); border-radius: 999px; }
         .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
       `}</style>
+    </div>
+  );
+}
+
+function StoreInfoSection() {
+  const [form, setForm] = useState({ store_name: "", tagline: "", email: "", whatsapp: "" });
+  const [original, setOriginal] = useState({ store_name: "", tagline: "", email: "", whatsapp: "" });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const toast = useToast();
+
+  useEffect(() => {
+    supabase.from("store_settings").select("*").eq("id", 1).single().then(({ data }) => {
+      if (data) {
+        const s = { store_name: data.store_name || "", tagline: data.tagline || "", email: data.email || "", whatsapp: data.whatsapp || "" };
+        setForm(s); setOriginal(s);
+      }
+      setLoading(false);
+    });
+  }, []);
+
+  const dirty = form.store_name !== original.store_name || form.tagline !== original.tagline || form.email !== original.email || form.whatsapp !== original.whatsapp;
+
+  async function handleSave() {
+    setSaving(true);
+    await supabase.from("store_settings").upsert({ id: 1, ...form, updated_at: new Date().toISOString() });
+    setOriginal({ ...form });
+    setSaving(false);
+    toast.showToast("success", "Perubahan berhasil disimpan");
+  }
+
+  function handleReset() {
+    setForm({ ...original });
+  }
+
+  if (loading) return <div className="card p-6 max-w-2xl"><Loader2 size={20} className="animate-spin" style={{ color: "var(--gold)" }} /></div>;
+
+  return (
+    <div className="card p-6 max-w-2xl space-y-5">
+      <h3 className="text-lg font-semibold" style={{ color: "var(--espresso)" }}>Informasi Toko</h3>
+      <div>
+        <label className="text-sm font-semibold" style={{ color: "var(--espresso)" }}>Nama Toko</label>
+        <input value={form.store_name} onChange={(e) => setForm({ ...form, store_name: e.target.value })} className="mt-1.5 w-full rounded-xl px-4 py-2.5 bg-white text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.1)" }} />
+      </div>
+      <div>
+        <label className="text-sm font-semibold" style={{ color: "var(--espresso)" }}>Tagline</label>
+        <input value={form.tagline} onChange={(e) => setForm({ ...form, tagline: e.target.value })} className="mt-1.5 w-full rounded-xl px-4 py-2.5 bg-white text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.1)" }} />
+      </div>
+      <div className="grid sm:grid-cols-2 gap-4">
+        <div>
+          <label className="text-sm font-semibold" style={{ color: "var(--espresso)" }}>Email</label>
+          <input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="mt-1.5 w-full rounded-xl px-4 py-2.5 bg-white text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.1)" }} />
+        </div>
+        <div>
+          <label className="text-sm font-semibold" style={{ color: "var(--espresso)" }}>WhatsApp</label>
+          <input value={form.whatsapp} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} className="mt-1.5 w-full rounded-xl px-4 py-2.5 bg-white text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.1)" }} />
+        </div>
+      </div>
+      <div className="flex gap-3 pt-2">
+        {dirty && (
+          <button onClick={handleSave} disabled={saving} className="text-sm font-semibold px-5 py-2.5 rounded-xl text-white" style={{ background: "linear-gradient(135deg, var(--gold), #96742f)" }}>
+            {saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null} Simpan Perubahan
+          </button>
+        )}
+        <button onClick={handleReset} className="text-sm font-semibold px-5 py-2.5 rounded-xl" style={{ border: "1px solid rgba(64,50,37,.15)" }}>Batal</button>
+      </div>
     </div>
   );
 }
