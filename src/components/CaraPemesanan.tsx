@@ -224,7 +224,7 @@ export default function CaraPemesanan() {
             visible: { transition: { staggerChildren: 0.08 } },
           }}
         >
-          {steps.map((step) => (
+          {steps.map((step, i) => (
             <motion.div
               key={i}
               variants={stepVariants}
