@@ -19,6 +19,7 @@ import { useCart } from "@/lib/cart-context";
 import { useToast } from "@/components/Toast";
 import FilterDrawer, { applyFilters, type FilterState } from "@/components/FilterDrawer";
 import { SITE_URL } from "@/lib/site-config";
+import { useWishlist } from "@/lib/use-wishlist";
 
 /* ── Animation ── */
 const cardVariants: Variants = {
@@ -54,7 +55,7 @@ function Swatch({ color, size = 16 }: { color: string; size?: number }) {
 }
 
 /* ── Product Card ── */
-function ProductCard({ product, index }: { product: Product; index: number }) {
+function ProductCard({ product, index, wishlist }: { product: Product; index: number; wishlist: { isWishlisted: (id: string) => boolean; toggle: (id: string) => Promise<boolean | null> } }) {
   const { addItem } = useCart();
   const toast = useToast();
 
@@ -122,6 +123,14 @@ function ProductCard({ product, index }: { product: Product; index: number }) {
             {product.tag}
           </span>
         )}
+        {/* Wishlist heart button */}
+        <button
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); wishlist.toggle(product.id).then((added) => { if (added !== null) toast.show(added ? "Ditambahkan ke wishlist" : "Dihapus dari wishlist"); }); }}
+          className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
+          style={{ background: "rgba(255,255,255,.9)", backdropFilter: "blur(4px)", boxShadow: "0 2px 6px rgba(0,0,0,.08)" }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill={wishlist.isWishlisted(product.id) ? "#e74c3c" : "none"} stroke={wishlist.isWishlisted(product.id) ? "#e74c3c" : "var(--espresso)"} strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
+        </button>
         {/* Quick Add to Cart button */}
         <button
           onClick={handleAddToCart}
@@ -228,6 +237,7 @@ export default function KatalogPage() {
   const [drawerFilters, setDrawerFilters] = useState<FilterState>({ sizes: [], colors: [], priceRange: null });
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const wishlist = useWishlist();
 
   /* Fetch products from database */
   useEffect(() => {
@@ -568,7 +578,7 @@ export default function KatalogPage() {
             >
               <AnimatePresence mode="popLayout">
                 {visible.map((p, i) => (
-                  <ProductCard key={p.id} product={p} index={i} />
+                  <ProductCard key={p.id} product={p} index={i} wishlist={wishlist} />
                 ))}
               </AnimatePresence>
             </motion.div>
