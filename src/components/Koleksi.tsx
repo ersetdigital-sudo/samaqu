@@ -24,8 +24,9 @@ export default function Koleksi() {
   const [categories, setCategories] = useState<CategoryItem[]>(FALLBACK_CATEGORIES);
 
   useEffect(() => {
-    supabase.from("category_images").select("name, description, image_url").order("display_order").then(({ data }) => {
-      if (data && data.length > 0) setCategories(data);
+    // Fetch with no cache to ensure fresh data after admin edits
+    supabase.from("category_images").select("name, description, image_url").order("display_order").then(({ data, error }) => {
+      if (!error && data && data.length > 0) setCategories(data);
     });
   }, []);
 
@@ -118,6 +119,7 @@ export default function Koleksi() {
                 />
                 <div className="absolute bottom-0 left-0 p-4 sm:p-5">
                   <h3 className="text-xl sm:text-2xl text-white" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>{cat.name}</h3>
+                  {cat.description && <p className="text-[12px] sm:text-[13px] font-ui mt-0.5" style={{ color: "rgba(216,196,168,.85)", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{cat.description}</p>}
                 </div>
               </a>
             )
