@@ -3,7 +3,7 @@
 import { useState, use, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Minus, Plus, ChevronLeft, ChevronRight, Play, ShoppingBag, ShoppingCart } from "lucide-react";
+import { Minus, Plus, ChevronLeft, ChevronRight, Play, MessageCircle, ShoppingCart } from "lucide-react";
 import ImageZoom from "@/components/ImageZoom";
 import Breadcrumb from "@/components/Breadcrumb";
 import { colorMap, type Product, type MediaItem } from "@/lib/katalog-data";
@@ -322,8 +322,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             <button onClick={handleBuyNow}
               className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[11px] tracking-[0.06em] uppercase font-ui font-semibold transition-all duration-300 active:scale-[0.98]"
               style={{ background: "var(--espresso)", color: "white" }}>
-              <ShoppingBag size={15} strokeWidth={1.5} />
-              <span>Beli Sekarang</span>
+              <MessageCircle size={15} strokeWidth={1.5} />
+              <span>Pesan via WA</span>
             </button>
           </div>
         </div>
@@ -468,8 +468,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               <button onClick={handleBuyNow}
                 className="flex-1 flex items-center justify-center gap-2.5 py-4 rounded-sm text-[12px] tracking-[0.08em] uppercase font-ui font-semibold transition-all duration-300 hover:scale-[1.01] hover:shadow-lg"
                 style={{ background: "var(--espresso)", color: "white", boxShadow: "0 8px 28px -8px rgba(45,33,27,.35)" }}>
-                <ShoppingBag size={16} strokeWidth={1.5} />
-                <span>Beli Sekarang</span>
+                <MessageCircle size={16} strokeWidth={1.5} />
+                <span>Pesan via WA</span>
               </button>
             </div>
           </motion.div>
