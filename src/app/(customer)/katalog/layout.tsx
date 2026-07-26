@@ -38,7 +38,7 @@ export default async function KatalogLayout({ children }: { children: React.Reac
             "@type": "ListItem",
             position: i + 1,
             url: `${SITE_URL}/katalog/${p.id}`,
-            item: { "@type": "Product", name: p.name, sku: p.id, image: p.image, offers: { "@type": "Offer", priceCurrency: "IDR", price: p.price, availability: "https://schema.org/InStock" } },
+            item: { "@type": "Product", name: p.name, sku: p.id, image: p.image?.startsWith("http") ? p.image : `${SITE_URL}${p.image || ""}`, offers: { "@type": "Offer", priceCurrency: "IDR", price: p.price, availability: "https://schema.org/InStock" } },
           })),
         },
       },
