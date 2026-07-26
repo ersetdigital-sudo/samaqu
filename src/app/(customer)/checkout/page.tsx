@@ -62,6 +62,9 @@ function CheckoutContent() {
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderNumber, setOrderNumber] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [savedAddresses, setSavedAddresses] = useState<{ id: string; label: string; recipient_name: string; phone: string; address: string; city: string; postal_code: string; is_default: boolean }[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<string>("");
+  const [showNewAddress, setShowNewAddress] = useState(false);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
 
   // Fetch payment methods from Supabase
@@ -73,6 +76,26 @@ function CheckoutContent() {
       } catch { /* silent */ }
     }
     fetchPayment();
+  }, []);
+
+  // Fetch saved addresses for logged-in customers
+  useEffect(() => {
+    async function fetchAddresses() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase.from("saved_addresses").select("*").eq("customer_id", user.id).order("is_default", { ascending: false }).order("created_at", { ascending: true });
+      if (data && data.length > 0) {
+        setSavedAddresses(data);
+        const defaultAddr = data.find((a: { is_default: boolean }) => a.is_default) || data[0];
+        setSelectedAddressId(defaultAddr.id);
+        setNama(defaultAddr.recipient_name);
+        setWhatsapp(defaultAddr.phone);
+        setAlamat(defaultAddr.address);
+        setKota(defaultAddr.city);
+        setKodepos(defaultAddr.postal_code);
+      }
+    }
+    fetchAddresses();
   }, []);
 
   if (!product && !isCartMode) {
@@ -268,7 +291,45 @@ function CheckoutContent() {
               <span className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold" style={{ background: "var(--espresso)", color: "var(--cream)" }}>2</span>
               <h2 className="text-xl sm:text-2xl italic" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Alamat Pengiriman</h2>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+
+            {/* Saved addresses selector */}
+            {savedAddresses.length > 0 && !showNewAddress && (
+              <div className="mb-4 space-y-2">
+                {savedAddresses.map((addr) => (
+                  <label key={addr.id} className="flex items-start gap-3 rounded-xl p-3 cursor-pointer transition-all" style={{ border: `1.5px solid ${selectedAddressId === addr.id ? "var(--gold)" : "rgba(64,50,37,.15)"}`, background: selectedAddressId === addr.id ? "rgba(181,140,74,.04)" : "white" }}
+                    onClick={() => {
+                      setSelectedAddressId(addr.id);
+                      setNama(addr.recipient_name);
+                      setWhatsapp(addr.phone);
+                      setAlamat(addr.address);
+                      setKota(addr.city);
+                      setKodepos(addr.postal_code);
+                    }}>
+                    <span className="relative w-4 h-4 rounded-full border-2 flex-shrink-0 mt-0.5" style={{ borderColor: selectedAddressId === addr.id ? "var(--gold)" : "var(--text-muted)" }}>
+                      {selectedAddressId === addr.id && <span className="absolute inset-[3px] rounded-full" style={{ background: "var(--gold)" }} />}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium" style={{ color: "var(--espresso)" }}>{addr.label}</span>
+                        {addr.is_default && <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ background: "rgba(181,140,74,.15)", color: "var(--gold)" }}>Utama</span>}
+                      </div>
+                      <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>{addr.recipient_name} · {addr.phone}</p>
+                      <p className="text-xs" style={{ color: "var(--text-muted)" }}>{addr.address}, {addr.city} {addr.postal_code}</p>
+                    </div>
+                  </label>
+                ))}
+                <button onClick={() => setShowNewAddress(true)} className="text-xs font-medium mt-1" style={{ color: "#8b6f42" }}>+ Gunakan Alamat Baru</button>
+              </div>
+            )}
+
+            {/* Manual form (shown when no saved addresses, or user chose "new address") */}
+            {(savedAddresses.length === 0 || showNewAddress) && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                {savedAddresses.length > 0 && (
+                  <div className="sm:col-span-2">
+                    <button onClick={() => setShowNewAddress(false)} className="text-xs font-medium" style={{ color: "#8b6f42" }}>← Kembali ke alamat tersimpan</button>
+                  </div>
+                )}
               <div className="sm:col-span-2" data-field="alamat">
                 <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: errors.alamat ? "#e74c3c" : "var(--text-secondary)" }}>Alamat Lengkap <span style={{ color: "var(--gold)" }}>*</span></label>
                 <textarea rows={3} value={alamat} onChange={(e) => { setAlamat(e.target.value); setErrors((p) => ({ ...p, alamat: "" })); }} className="field w-full rounded-lg px-4 py-3 text-sm font-ui resize-none" style={{ background: "white", border: `1px solid ${errors.alamat ? "#e74c3c" : "rgba(64,50,37,.25)"}`, color: "var(--espresso)", outline: "none" }} placeholder="Jalan, nomor rumah, RT/RW, kelurahan" />
@@ -289,6 +350,7 @@ function CheckoutContent() {
                 <input type="text" value={catatanKurir} onChange={(e) => setCatatanKurir(e.target.value)} className="field w-full rounded-lg px-4 py-3 text-sm font-ui" style={{ background: "white", border: "1px solid rgba(64,50,37,.25)", color: "var(--espresso)", outline: "none" }} placeholder="Titipkan ke satpam, dll." />
               </div>
             </div>
+            )}
           </section>
 
           {/* Section 3: Shipping Method */}
