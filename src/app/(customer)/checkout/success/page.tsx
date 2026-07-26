@@ -216,7 +216,7 @@ function CheckoutSuccessContent() {
               Pembayaran dilakukan saat barang diterima. Admin akan menghubungi Anda untuk konfirmasi pengiriman.
             </p>
           </motion.section>
-        ) : order.payment_method === "qris_ewallet" ? (
+        ) : order.payment_method === "qris" ? (
           <motion.section initial={{ opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.4 }} className="rounded-2xl p-5 sm:p-7 mb-5" style={{ background: "rgba(255,255,255,0.65)", backdropFilter: "blur(6px)", border: "1px solid rgba(64,50,37,.06)", boxShadow: "0 18px 44px -28px rgba(64,50,37,0.4)" }}>
             <h2 className="flex items-center gap-2 text-xl mb-4" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="#8b6f42" strokeWidth={1.5}><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><line x1="14" y1="14" x2="21" y2="21" /></svg>
