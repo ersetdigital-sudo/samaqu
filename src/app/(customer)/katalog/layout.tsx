@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { SITE_URL } from "@/lib/site-config";
 
 export const metadata: Metadata = {
   title: "Katalog Produk — SAMAQU",
@@ -7,9 +8,9 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Katalog Produk — SAMAQU",
     description: "Koleksi busana pria muslim premium. Thobe, Kandora, Koko, Vest, Kabak.",
-    url: "https://samaqu.vercel.app/katalog",
+    url: `${SITE_URL}/katalog`,
   },
-  alternates: { canonical: "https://samaqu.vercel.app/katalog" },
+  alternates: { canonical: `${SITE_URL}/katalog` },
 };
 
 export default function KatalogLayout({ children }: { children: React.ReactNode }) {

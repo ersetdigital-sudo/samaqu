@@ -1,7 +1,6 @@
 import { Metadata } from "next";
 import { supabase } from "@/lib/supabase";
-
-const SITE_URL = "https://samaqu.vercel.app";
+import { SITE_URL } from "@/lib/site-config";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;

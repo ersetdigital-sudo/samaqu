@@ -18,6 +18,7 @@ import { getProducts } from "@/lib/db";
 import { useCart } from "@/lib/cart-context";
 import { useToast } from "@/components/Toast";
 import FilterDrawer, { applyFilters, type FilterState } from "@/components/FilterDrawer";
+import { SITE_URL } from "@/lib/site-config";
 
 /* ── Animation ── */
 const cardVariants: Variants = {
@@ -313,7 +314,7 @@ export default function KatalogPage() {
         "@type": "CollectionPage",
         name: "Katalog Produk SAMAQU",
         description: "Koleksi busana pria muslim premium — Thobe, Kandora, Koko, Vest, Kabak, Cover Hanger.",
-        url: "https://samaqu.vercel.app/katalog",
+        url: `${SITE_URL}/katalog`,
         mainEntity: {
           "@type": "ItemList",
           numberOfItems: products.length,

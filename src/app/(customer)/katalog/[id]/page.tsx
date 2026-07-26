@@ -11,6 +11,7 @@ import { getProductById } from "@/lib/db";
 import { useCart } from "@/lib/cart-context";
 import { useToast } from "@/components/Toast";
 import { getWhatsAppLink } from "@/lib/store-settings";
+import { SITE_URL } from "@/lib/site-config";
 import { supabase } from "@/lib/supabase";
 
 const FALLBACK_SIZES = ["S", "M", "L", "XL", "XXL"];
@@ -205,7 +206,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         color: product.colors.join(", "),
         offers: {
           "@type": "Offer",
-          url: `https://samaqu.vercel.app/katalog/${product.id}`,
+          url: `${SITE_URL}/katalog/${product.id}`,
           priceCurrency: "IDR",
           price: currentPrice,
           availability: "https://schema.org/InStock",
@@ -225,8 +226,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         breadcrumb: {
           "@type": "BreadcrumbList",
           itemListElement: [
-            { "@type": "ListItem", position: 1, name: "Beranda", item: "https://samaqu.vercel.app" },
-            { "@type": "ListItem", position: 2, name: "Katalog", item: "https://samaqu.vercel.app/katalog" },
+            { "@type": "ListItem", position: 1, name: "Beranda", item: SITE_URL },
+            { "@type": "ListItem", position: 2, name: "Katalog", item: `${SITE_URL}/katalog` },
             { "@type": "ListItem", position: 3, name: product.name },
           ],
         },

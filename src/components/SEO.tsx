@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { SITE_URL } from "@/lib/site-config";
 
 interface SEOProps {
   title: string;
@@ -101,8 +102,8 @@ export function buildOrganizationJsonLd() {
     "@type": "Organization",
     name: "SAMAQU",
     description: "Premium Muslim Menswear — Busana pria muslim premium berkualitas tinggi.",
-    url: "https://samaqu.vercel.app",
-    logo: "https://samaqu.vercel.app/logo.svg",
+    url: SITE_URL,
+    logo: `${SITE_URL}/logo.svg`,
     contactPoint: {
       "@type": "ContactPoint",
       telephone: "+62-85212150100",
@@ -118,20 +119,20 @@ export function buildWebsiteJsonLd() {
     "@context": "https://schema.org",
     "@type": "WebSite",
     name: "SAMAQU",
-    url: "https://samaqu.vercel.app",
+    url: SITE_URL,
     description: "Premium Muslim Menswear — Busana pria muslim premium berkualitas tinggi.",
     potentialAction: {
       "@type": "SearchAction",
       target: {
         "@type": "EntryPoint",
-        urlTemplate: "https://samaqu.vercel.app/katalog?q={search_term_string}",
+        urlTemplate: `${SITE_URL}/katalog?q={search_term_string}`,
       },
       "query-input": "required name=search_term_string",
     },
     publisher: {
       "@type": "Organization",
       name: "SAMAQU",
-      logo: { "@type": "ImageObject", url: "https://samaqu.vercel.app/logo.svg" },
+      logo: { "@type": "ImageObject", url: `${SITE_URL}/logo.svg` },
     },
   };
 }
@@ -155,7 +156,7 @@ export function buildCollectionJsonLd(products: { id: string; name: string; pric
     "@type": "CollectionPage",
     name: "Katalog Produk SAMAQU",
     description: "Koleksi busana pria muslim premium dari SAMAQU — Thobe, Kandora, Koko, Vest, Kabak, dan Cover Hanger.",
-    url: "https://samaqu.vercel.app/katalog",
+    url: `${SITE_URL}/katalog`,
     mainEntity: {
       "@type": "ItemList",
       numberOfItems: products.length,

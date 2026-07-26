@@ -1,7 +1,6 @@
 import { MetadataRoute } from "next";
 import { supabase } from "@/lib/supabase";
-
-const SITE_URL = "https://samaqu.vercel.app";
+import { SITE_URL } from "@/lib/site-config";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages = [
