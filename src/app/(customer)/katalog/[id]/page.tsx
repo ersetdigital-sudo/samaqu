@@ -10,8 +10,7 @@ import { colorMap, type Product, type MediaItem } from "@/lib/katalog-data";
 import { getProductById } from "@/lib/db";
 import { useCart } from "@/lib/cart-context";
 import { useToast } from "@/components/Toast";
-import { buildGraph, buildProduct, buildBreadcrumb, buildOrganization } from "@/components/SEO";
-import { SITE_URL } from "@/lib/site-config";
+import { getWhatsAppLink } from "@/lib/store-settings";
 import { supabase } from "@/lib/supabase";
 import { useWishlist } from "@/lib/use-wishlist";
 
@@ -197,22 +196,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
   return (
     <section className="min-h-screen" style={{ background: "var(--cream)" }}>
-      {/* JSON-LD Structured Data — consolidated @graph */}
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(
-        buildGraph(
-          buildOrganization(),
-          buildProduct({
-            id: product.id, name: product.name, description: getDescription(product),
-            price: currentPrice, image: product.image, category: product.category,
-            colors: product.colors, inStock: stock !== 0,
-          }),
-          buildBreadcrumb([
-            { name: "Beranda", url: SITE_URL },
-            { name: "Katalog", url: `${SITE_URL}/katalog` },
-            { name: product.name },
-          ]),
-        )
-      ) }} />
       {/* ═══════════════════════════════════════
           MOBILE LAYOUT (max-md)
       ═══════════════════════════════════════ */}
