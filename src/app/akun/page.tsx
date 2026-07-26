@@ -59,7 +59,7 @@ export default function DashboardPage() {
       setCustomer(c);
       const [ordersData, featuredData, wishlistData] = await Promise.all([
         getCustomerOrders(c.id),
-        supabase.from("featured_products").select("product_id, products(id, name, category, price, image)").order("display_order").limit(8),
+        supabase.from("customer_featured_products").select("product_id, products(id, name, category, price, image)").order("display_order").limit(8),
         supabase.from("wishlists").select("product_id").eq("customer_id", c.id),
       ]);
       setOrders(ordersData as Order[]);

@@ -690,6 +690,9 @@ function AdminPageInner() {
                   {/* Payment Methods */}
                   <PaymentMethodsSection />
                   <QrisEwalletSection />
+
+                  {/* Customer Featured Products (separate from CMS Koleksi Pilihan) */}
+                  <CustomerProductsSection />
                 </div>
               )}
 
@@ -1064,7 +1067,7 @@ function CustomerProductsSection() {
 
   useEffect(() => {
     Promise.all([
-      supabase.from("featured_products").select("product_id, display_order").order("display_order"),
+      supabase.from("customer_featured_products").select("product_id, display_order").order("display_order"),
       supabase.from("products").select("id, name, image, category").order("created_at", { ascending: false }),
     ]).then(([fpRes, pRes]) => {
       if (fpRes.data) setFeaturedIds(fpRes.data.map((r) => r.product_id));
@@ -1080,9 +1083,9 @@ function CustomerProductsSection() {
 
   async function save() {
     setSaving(true);
-    await supabase.from("featured_products").delete().neq("product_id", "");
+    await supabase.from("customer_featured_products").delete().neq("product_id", "");
     if (featuredIds.length > 0) {
-      await supabase.from("featured_products").insert(featuredIds.map((id, i) => ({ product_id: id, display_order: i })));
+      await supabase.from("customer_featured_products").insert(featuredIds.map((id, i) => ({ product_id: id, display_order: i })));
     }
     setSaving(false);
     setSaved(true);
