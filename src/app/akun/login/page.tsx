@@ -98,7 +98,9 @@ export default function LoginPage() {
               </div>
             </div>
             {error && (
-              <p className="text-[13px]" style={{ color: "#e74c3c" }}>{error}</p>
+              <div className="rounded-xl px-4 py-3 text-[13px]" style={{ background: "#fef2f2", border: "1px solid #fecaca", color: "#b91c1c" }}>
+                {error}
+              </div>
             )}
             <button type="submit" disabled={loading} className="w-full py-3.5 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90 active:scale-[0.98]" style={{ background: "var(--espresso)", boxShadow: "0 4px 14px -4px rgba(45,33,27,.4)" }}>
               {loading ? <Loader2 size={16} className="animate-spin inline mr-2" /> : null}
