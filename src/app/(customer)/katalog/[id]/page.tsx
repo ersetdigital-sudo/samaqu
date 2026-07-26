@@ -104,7 +104,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const carouselRef = useRef<HTMLDivElement>(null);
   const { addItem } = useCart();
   const toast = useToast();
-  const { isWishlisted, toggle: toggleWishlist, loaded: wishlistLoaded } = useWishlist();
+  const { isWishlisted, toggle: toggleWishlist, isLoggedIn } = useWishlist();
 
   useEffect(() => {
     getProductById(id).then((p) => {
@@ -247,7 +247,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         {/* Gallery carousel */}
         <div className="relative pb-4">
           {/* Wishlist button - mobile */}
-          {product && (
+          {isLoggedIn && product && (
             <button onClick={async () => { const added = await toggleWishlist(product.id); toast.show(added ? "Ditambahkan ke wishlist" : "Dihapus dari wishlist"); }} className="absolute top-4 right-4 z-20 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110" style={{ background: "rgba(255,255,255,.9)", backdropFilter: "blur(8px)", boxShadow: "0 2px 8px rgba(0,0,0,.1)" }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill={isWishlisted(product.id) ? "#e74c3c" : "none"} stroke={isWishlisted(product.id) ? "#e74c3c" : "var(--espresso)"} strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
             </button>
@@ -454,6 +454,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 </motion.div>
               </AnimatePresence>
               {/* Wishlist button - desktop */}
+              {isLoggedIn && (
               <button onClick={(e) => { e.stopPropagation(); toggleWishlist(product.id).then((added) => toast.show(added ? "Ditambahkan ke wishlist" : "Dihapus dari wishlist")); }} className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110" style={{ background: "rgba(255,255,255,.9)", backdropFilter: "blur(8px)", boxShadow: "0 2px 8px rgba(0,0,0,.1)" }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill={isWishlisted(product.id) ? "#e74c3c" : "none"} stroke={isWishlisted(product.id) ? "#e74c3c" : "var(--espresso)"} strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
               </button>
