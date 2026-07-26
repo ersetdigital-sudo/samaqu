@@ -690,6 +690,9 @@ function AdminPageInner() {
                   {/* Payment Methods */}
                   <PaymentMethodsSection />
                   <QrisEwalletSection />
+
+                  {/* Customer Featured Products */}
+                  <CustomerProductsSection />
                 </div>
               )}
 
@@ -1047,6 +1050,76 @@ function PaymentMethodsSection() {
                 </div>
               </div>
             </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function CustomerProductsSection() {
+  const [featuredIds, setFeaturedIds] = useState<string[]>([]);
+  const [allProducts, setAllProducts] = useState<{ id: string; name: string; image: string; category: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const toast = useToast();
+
+  useEffect(() => {
+    Promise.all([
+      supabase.from("featured_products").select("product_id, display_order").order("display_order"),
+      supabase.from("products").select("id, name, image, category").order("created_at", { ascending: false }),
+    ]).then(([fpRes, pRes]) => {
+      if (fpRes.data) setFeaturedIds(fpRes.data.map((r) => r.product_id));
+      if (pRes.data) setAllProducts(pRes.data);
+      setLoading(false);
+    });
+  }, []);
+
+  function toggleProduct(id: string) {
+    setSaved(false);
+    setFeaturedIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+  }
+
+  async function save() {
+    setSaving(true);
+    await supabase.from("featured_products").delete().neq("product_id", "");
+    if (featuredIds.length > 0) {
+      await supabase.from("featured_products").insert(featuredIds.map((id, i) => ({ product_id: id, display_order: i })));
+    }
+    setSaving(false);
+    setSaved(true);
+    toast.showToast("success", "Produk pilihan berhasil disimpan");
+  }
+
+  if (loading) return <div className="card p-6"><Loader2 size={20} className="animate-spin" style={{ color: "var(--gold)" }} /></div>;
+
+  return (
+    <div className="card p-6 max-w-2xl">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h3 className="text-lg font-semibold" style={{ color: "var(--espresso)" }}>Produk Pilihan Customer</h3>
+          <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Tampil di dashboard customer section "Koleksi Pilihan" (maks 8)</p>
+        </div>
+        <button onClick={save} disabled={saving || featuredIds.length === 0} className="text-xs px-4 py-2 rounded-xl font-semibold text-white" style={{ background: saved ? "#5b6b45" : "var(--gold)", opacity: saving || featuredIds.length === 0 ? 0.5 : 1 }}>
+          {saving ? "..." : saved ? "Tersimpan" : "Simpan"}
+        </button>
+      </div>
+      <p className="text-xs mb-3" style={{ color: "var(--text-muted)" }}>Dipilih: {featuredIds.length} / 8 produk</p>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        {allProducts.map((p) => {
+          const selected = featuredIds.includes(p.id);
+          return (
+            <button key={p.id} onClick={() => { if (!selected && featuredIds.length >= 8) return; toggleProduct(p.id); }} className="rounded-xl overflow-hidden text-left transition-all" style={{ border: selected ? "2px solid var(--gold)" : "1px solid rgba(64,50,37,.1)", opacity: !selected && featuredIds.length >= 8 ? 0.4 : 1 }}>
+              <div className="aspect-square" style={{ background: "#e8dfd1" }}>
+                <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
+              </div>
+              <div className="p-2">
+                <p className="text-xs font-medium truncate" style={{ color: "var(--espresso)" }}>{p.name}</p>
+                <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>{p.category}</p>
+              </div>
+              {selected && <div className="text-center text-[10px] py-1 font-medium" style={{ background: "rgba(181,140,74,.1)", color: "var(--gold)" }}>Dipilih</div>}
+            </button>
           );
         })}
       </div>
