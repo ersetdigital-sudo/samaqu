@@ -38,6 +38,7 @@ function CheckoutSuccessContent() {
     store_name: "SAMAQU",
     tagline: "Busana yang Layak Menemani Setiap Momen",
   });
+  const [qrisMethods, setQrisMethods] = useState<{ id: string; provider_name: string; method_type: string; account_info: string; qr_image_url: string }[]>([]);
   const [copied, setCopied] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [timeLeft, setTimeLeft] = useState(24 * 60 * 60);
@@ -46,14 +47,16 @@ function CheckoutSuccessContent() {
   useEffect(() => {
     async function fetchData() {
       if (!orderId) { setLoading(false); return; }
-      const [orderRes, paymentRes, settingsRes] = await Promise.all([
+      const [orderRes, paymentRes, settingsRes, qrisRes] = await Promise.all([
         supabase.from("orders").select("*, order_items(product_name, color, size, quantity, price)").eq("order_number", orderId).single(),
         supabase.from("payment_methods").select("*").eq("is_active", true).order("display_order"),
         supabase.from("store_settings").select("whatsapp, store_name, tagline").eq("id", 1).single(),
+        supabase.from("qris_ewallet_methods").select("*").eq("is_active", true).order("display_order"),
       ]);
       if (orderRes.data) setOrder(orderRes.data as unknown as OrderData);
       if (paymentRes.data) setPaymentMethods(paymentRes.data);
       if (settingsRes.data) setStoreSettings((prev) => ({ ...prev, ...settingsRes.data }));
+      if (qrisRes.data) setQrisMethods(qrisRes.data);
       setLoading(false);
     }
     fetchData();
@@ -215,17 +218,29 @@ function CheckoutSuccessContent() {
           </motion.section>
         ) : order.payment_method === "qris_ewallet" ? (
           <motion.section initial={{ opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.4 }} className="rounded-2xl p-5 sm:p-7 mb-5" style={{ background: "rgba(255,255,255,0.65)", backdropFilter: "blur(6px)", border: "1px solid rgba(64,50,37,.06)", boxShadow: "0 18px 44px -28px rgba(64,50,37,0.4)" }}>
-            <h2 className="flex items-center gap-2 text-xl mb-3" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
+            <h2 className="flex items-center gap-2 text-xl mb-4" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="#8b6f42" strokeWidth={1.5}><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><line x1="14" y1="14" x2="21" y2="21" /></svg>
               QRIS / E-Wallet
             </h2>
-            <p className="text-sm font-ui leading-relaxed mb-4" style={{ color: "var(--text-secondary)" }}>
-              Silakan scan QRIS atau transfer ke e-wallet berikut. Konfirmasi via WhatsApp setelah pembayaran.
-            </p>
-            <div className="rounded-xl p-4 text-center" style={{ background: "var(--bg-secondary, #f0ebe5)", border: "1px solid rgba(64,50,37,.06)" }}>
-              <p className="text-sm font-ui" style={{ color: "var(--text-muted)" }}>Hubungi admin untuk mendapatkan QRIS / info e-wallet</p>
-              <p className="text-lg font-medium font-ui mt-2" style={{ color: "var(--gold)" }}>Rp {order.total.toLocaleString("id-ID")}</p>
-            </div>
+            {qrisMethods.length > 0 ? qrisMethods.map((qm) => (
+              <div key={qm.id} className="rounded-xl p-4 mb-3 last:mb-0" style={{ background: "var(--bg-secondary, #f0ebe5)", border: "1px solid rgba(64,50,37,.06)" }}>
+                <p className="text-sm font-medium font-ui mb-2" style={{ color: "var(--espresso)" }}>{qm.provider_name}</p>
+                {qm.qr_image_url ? (
+                  <img src={qm.qr_image_url} alt={qm.provider_name} className="w-40 h-40 mx-auto object-contain rounded-lg mb-2" />
+                ) : qm.account_info ? (
+                  <div className="flex items-center gap-3 rounded-xl px-4 py-3" style={{ background: "rgba(255,255,255,.6)" }}>
+                    <span className="flex-1 font-medium text-base font-ui" style={{ color: "var(--espresso)", fontVariantNumeric: "tabular-nums" }}>{qm.account_info}</span>
+                    <button onClick={() => copyToClipboard(qm.account_info, `qris-${qm.id}`)} className="inline-flex items-center gap-1.5 text-xs font-medium font-ui px-3 py-2 rounded-lg transition-colors" style={{ border: "1px solid rgba(64,50,37,.25)", color: copied === `qris-${qm.id}` ? "#4b7a4e" : "#8b6f42", borderColor: copied === `qris-${qm.id}` ? "#4b7a4e" : undefined }}>
+                      {copied === `qris-${qm.id}` ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copied === `qris-${qm.id}` ? "Tersalin" : "Salin"}</span>
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            )) : (
+              <p className="text-sm font-ui text-center py-4" style={{ color: "var(--text-muted)" }}>Hubungi admin untuk info pembayaran</p>
+            )}
+            <p className="text-lg font-medium font-ui text-center mt-3" style={{ color: "var(--gold)" }}>Rp {order.total.toLocaleString("id-ID")}</p>
           </motion.section>
         ) : (
           /* Bank Transfer (default) */
