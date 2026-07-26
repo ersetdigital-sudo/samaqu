@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard, ShoppingBag, Package, Users, FileText, Settings,
-  Search, Bell, Menu, LogOut, X,
+  Search, Bell, Menu, LogOut, X, Ticket,
 } from "lucide-react";
 import { useToast } from "@/components/AdminToast";
 import ConfirmModal from "@/components/ConfirmModal";
@@ -18,6 +18,7 @@ const navItems = [
   { href: "/admin", label: "Pelanggan", icon: Users },
   { href: "/admin/konten-website", label: "Konten Website", icon: FileText },
   { href: "/admin/testimoni", label: "Testimoni", icon: FileText },
+  { href: "/admin/voucher", label: "Voucher", icon: Ticket },
   { href: "/admin", label: "Pengaturan", icon: Settings },
 ];
 

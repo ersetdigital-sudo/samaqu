@@ -44,6 +44,9 @@ function CheckoutContent() {
   const [qty, setQty] = useState(qtyParam || 1);
   const [promoCode, setPromoCode] = useState("");
   const [promoApplied, setPromoApplied] = useState(false);
+  const [promoError, setPromoError] = useState("");
+  const [discount, setDiscount] = useState(0);
+  const [voucherCode, setVoucherCode] = useState("");
   const [nama, setNama] = useState("");
   const [email, setEmail] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
@@ -85,13 +88,32 @@ function CheckoutContent() {
   const selectedSize = sizeParam;
   const shippingCost = shippingOptions.find((s) => s.id === shipping)?.price || 0;
   const subtotal = product.price * qty;
-  const discount = promoApplied ? Math.round(subtotal * 0.1) : 0;
+  const subtotal = product.price * qty;
   const total = subtotal - discount + shippingCost;
 
-  function applyPromo() {
-    if (promoCode.toUpperCase() === "SAMAQU10" || promoCode.toUpperCase() === "DISC10") {
-      setPromoApplied(true);
+  async function applyPromo() {
+    if (!promoCode.trim()) { setPromoError("Masukkan kode promo"); return; }
+    setPromoError("");
+    setPromoApplied(false);
+    setDiscount(0);
+    setVoucherCode("");
+
+    const { data: voucher } = await supabase.from("vouchers").select("*").eq("code", promoCode.trim().toUpperCase()).eq("is_active", true).single();
+    if (!voucher) { setPromoError("Kode promo tidak valid"); return; }
+    if (voucher.end_date && new Date(voucher.end_date) < new Date()) { setPromoError("Kode promo sudah kadaluarsa"); return; }
+    if (voucher.usage_limit > 0 && voucher.used_count >= voucher.usage_limit) { setPromoError("Kode promo sudah habis digunakan"); return; }
+    if (voucher.min_purchase > 0 && subtotal < voucher.min_purchase) { setPromoError(`Minimal belanja Rp ${voucher.min_purchase.toLocaleString("id-ID")} untuk kode ini`); return; }
+
+    let disc = 0;
+    if (voucher.discount_type === "percentage") {
+      disc = Math.round(subtotal * voucher.discount_value / 100);
+      if (voucher.max_discount > 0) disc = Math.min(disc, voucher.max_discount);
+    } else {
+      disc = Math.min(voucher.discount_value, subtotal);
     }
+    setDiscount(disc);
+    setPromoApplied(true);
+    setVoucherCode(voucher.code);
   }
 
   function validatePhone(p: string): boolean {
@@ -127,6 +149,7 @@ function CheckoutContent() {
           shipping: { address: alamat, city: kota, postalCode: kodepos, notes: catatanKurir, method: shipping },
           paymentMethod: payment,
           discount,
+          voucherCode: promoApplied ? voucherCode : null,
           items: [{
             productId: product.id,
             name: product.name,
@@ -360,9 +383,11 @@ function CheckoutContent() {
 
             {/* Promo */}
             <div className="flex gap-2 mt-5 sm:mt-6">
-              <input type="text" value={promoCode} onChange={(e) => setPromoCode(e.target.value)} className="field flex-1 rounded-lg px-3.5 py-2.5 text-sm font-ui" style={{ background: "white", border: "1px solid rgba(64,50,37,.25)", color: "var(--espresso)", outline: "none" }} placeholder="Kode promo" />
+              <input type="text" value={promoCode} onChange={(e) => { setPromoCode(e.target.value); setPromoError(""); }} className="field flex-1 rounded-lg px-3.5 py-2.5 text-sm font-ui" style={{ background: "white", border: "1px solid rgba(64,50,37,.25)", color: "var(--espresso)", outline: "none" }} placeholder="Kode promo" />
               <button onClick={applyPromo} className="rounded-lg px-4 text-sm font-ui font-medium" style={{ background: "#e8e2da", color: "var(--espresso)" }}>Terapkan</button>
             </div>
+            {promoError && <p className="text-[11px] mt-1.5 font-ui" style={{ color: "#e74c3c" }}>{promoError}</p>}
+            {promoApplied && <p className="text-[11px] mt-1.5 font-ui" style={{ color: "#4b7a4e" }}>Kode promo berhasil diterapkan!</p>}
 
             {/* Totals */}
             <div className="mt-5 sm:mt-6 pt-4 sm:pt-5 space-y-2 sm:space-y-2.5 text-sm font-ui" style={{ borderTop: "1px solid rgba(64,50,37,.15)" }}>

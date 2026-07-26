@@ -39,6 +39,7 @@ export async function POST(request: NextRequest) {
         subtotal,
         discount,
         total,
+        voucher_code: body.voucherCode || null,
         status: "pending",
       })
       .select()
@@ -66,6 +67,14 @@ export async function POST(request: NextRequest) {
     if (itemsError) {
       console.error("Order items insert error:", itemsError);
       // Order already created, just log the error
+    }
+
+    // Increment voucher used_count
+    if (body.voucherCode) {
+      const { data: vData } = await supabase.from("vouchers").select("used_count").eq("code", body.voucherCode).single();
+      if (vData) {
+        await supabase.from("vouchers").update({ used_count: vData.used_count + 1 }).eq("code", body.voucherCode);
+      }
     }
 
     return NextResponse.json({
