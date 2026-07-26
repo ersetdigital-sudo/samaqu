@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { MobileDrawer, MobileDrawerCtx } from "@/components/ui/drawer";
 import { Storefront, BookOpen, Ruler, ListChecks, Question, ChatCircle as MessageCircle } from "@phosphor-icons/react";
-import { ShoppingBag, User } from "lucide-react";
+import { ShoppingBag } from "lucide-react";
+import ProfileDropdown from "@/components/ProfileDropdown";
 import { useCart } from "@/lib/cart-context";
 import CartDrawer from "@/components/CartDrawer";
 
@@ -118,14 +118,8 @@ export default function Navbar() {
 
               {/* Right: profile + cart + hamburger */}
               <div className="flex items-center gap-4">
-                {/* Profile icon */}
-                <Link
-                  href="/akun"
-                  className="grid place-items-center w-10 h-10 transition-colors duration-500"
-                  style={{ color: scrolled ? "var(--espresso)" : "var(--cream)" }}
-                  aria-label="Akun saya">
-                  <User size={20} strokeWidth={1.5} />
-                </Link>
+                {/* Profile dropdown */}
+                <ProfileDropdown />
                 {/* Cart icon */}
                 <button
                   onClick={() => setCartOpen(true)}
