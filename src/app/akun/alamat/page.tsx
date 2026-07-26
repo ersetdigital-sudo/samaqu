@@ -71,36 +71,41 @@ export default function AlamatPage() {
   async function handleSave() {
     if (!validate() || !customerId) return;
     setSaving(true);
-    const payload = { ...form, label: form.label.trim() || "Alamat", customer_id: customerId };
+    const isFirstAddress = addresses.length === 0;
+    const forceDefault = isFirstAddress; // First address always default
+    const shouldBeDefault = form.is_default || forceDefault;
+    const payload = { ...form, label: form.label.trim() || "Alamat", customer_id: customerId, is_default: shouldBeDefault };
 
-    // If setting as default, unset others first
-    if (payload.is_default) {
+    // Protection 2: unset all others before setting new default (one transaction)
+    if (shouldBeDefault) {
       await supabase.from("saved_addresses").update({ is_default: false }).eq("customer_id", customerId);
     }
 
     if (editing) {
       const { error } = await supabase.from("saved_addresses").update(payload).eq("id", editing.id);
       if (!error) {
-        setAddresses(addresses.map((a) => a.id === editing.id ? { ...a, ...payload } : a));
-        // If this is now default, update others in local state
-        if (payload.is_default) setAddresses((prev) => prev.map((a) => a.id === editing.id ? a : { ...a, is_default: false }));
+        // Refresh from DB to ensure consistency
+        const { data } = await supabase.from("saved_addresses").select("*").eq("customer_id", customerId).order("is_default", { ascending: false }).order("created_at", { ascending: true });
+        if (data) setAddresses(data);
       }
     } else {
       const { data, error } = await supabase.from("saved_addresses").insert(payload).select().single();
       if (!error && data) {
-        if (payload.is_default) setAddresses((prev) => [data, ...prev.map((a) => ({ ...a, is_default: false }))]);
-        else setAddresses((prev) => [...prev, data]);
+        // Refresh from DB
+        const { data: all } = await supabase.from("saved_addresses").select("*").eq("customer_id", customerId).order("is_default", { ascending: false }).order("created_at", { ascending: true });
+        if (all) setAddresses(all);
       }
     }
     setModalOpen(false);
     setSaving(false);
   }
 
+  // Protection 3: delete default → auto-assign new default
   async function handleDelete(addr: Address) {
     await supabase.from("saved_addresses").delete().eq("id", addr.id);
     const remaining = addresses.filter((a) => a.id !== addr.id);
-    // If deleted was default and others remain, set first as default
     if (addr.is_default && remaining.length > 0) {
+      // Auto-assign oldest remaining as default
       const newDefault = remaining[0];
       await supabase.from("saved_addresses").update({ is_default: true }).eq("id", newDefault.id);
       remaining[0] = { ...newDefault, is_default: true };
@@ -109,6 +114,7 @@ export default function AlamatPage() {
     setDeleteConfirm(null);
   }
 
+  // Protection 2: set default in proper sequence
   async function handleSetDefault(addr: Address) {
     if (!customerId) return;
     await supabase.from("saved_addresses").update({ is_default: false }).eq("customer_id", customerId);
