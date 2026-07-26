@@ -47,7 +47,10 @@ export default function ProfileDropdown() {
       <DropdownMenuTrigger asChild>
         <button
           className="grid place-items-center w-9 h-9 rounded-full transition-all duration-200 hover:scale-105"
-          style={{ background: "rgba(42,33,27,.08)", color: "var(--espresso)" }}
+          style={{
+            background: scrolled ? "rgba(42,33,27,.08)" : "rgba(255,255,255,.15)",
+            color: scrolled ? "var(--espresso)" : "var(--cream)",
+          }}
           aria-label="Akun saya">
           <User size={18} strokeWidth={2} />
         </button>
