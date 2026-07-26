@@ -58,6 +58,11 @@ export default function KontenWebsitePage() {
   editFaqsRef.current = editFaqs;
   editMarqueeRef.current = editMarquee;
 
+  // Trigger revalidation of homepage after content changes
+  async function revalidateHomepage() {
+    try { await fetch("/api/revalidate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ secret: "samaqu-revalidate" }) }); } catch { /* ignore */ }
+  }
+
   useEffect(() => {
     loadData();
   }, []);
@@ -106,6 +111,7 @@ export default function KontenWebsitePage() {
     setCategories(refetched || []);
     setEditModal(null); setSaving(false);
     toast.showToast("success", "Kategori berhasil disimpan");
+    revalidateHomepage();
   }
   async function uploadCategoryImage(idx: number, file: File) {
     const fd = new FormData();
@@ -141,6 +147,7 @@ export default function KontenWebsitePage() {
     const { data: refetched } = await supabase.from("order_steps").select("*").order("step_number");
     setSteps(refetched || []); setEditModal(null); setSaving(false);
     toast.showToast("success", "Cara Pemesanan berhasil disimpan");
+    revalidateHomepage();
   }
 
   // Garansi handlers
@@ -160,6 +167,7 @@ export default function KontenWebsitePage() {
     setGaransi(gRefetch.data || []); setBadges(bRefetch.data || []);
     setEditModal(null); setSaving(false);
     toast.showToast("success", "Jaminan berhasil disimpan");
+    revalidateHomepage();
   }
 
   // FAQ handlers
@@ -172,6 +180,7 @@ export default function KontenWebsitePage() {
     const { data: refetched } = await supabase.from("faq_items").select("*").order("display_order");
     setFaqs(refetched || []); setEditModal(null); setSaving(false);
     toast.showToast("success", "FAQ berhasil disimpan");
+    revalidateHomepage();
   }
 
   // Marquee handlers
@@ -184,6 +193,7 @@ export default function KontenWebsitePage() {
     const { data: refetched } = await supabase.from("marquee_items").select("*").order("display_order");
     setMarquee(refetched || []); setEditModal(null); setSaving(false);
     toast.showToast("success", "Marquee berhasil disimpan");
+    revalidateHomepage();
   }
 
   function CharCounter({ current, max }: { current: number; max: number }) {
@@ -272,7 +282,8 @@ export default function KontenWebsitePage() {
                         {cat.image_url ? <img src={cat.image_url} alt={cat.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><ImageIcon size={20} style={{ color: "var(--text-muted)" }} /></div>}
                       </div>
                       <div className="flex-1">
-                        <textarea value={cat.description} onChange={(e) => { const u = [...editCategories]; u[i] = { ...u[i], description: e.target.value }; editCategoriesRef.current = u; setEditCategories(u); }} rows={2} placeholder="Deskripsi singkat kategori" className="w-full rounded-lg px-3 py-2 text-xs outline-none resize-none mb-2" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white" }} />
+                        <textarea value={cat.description} onChange={(e) => { const v = e.target.value.slice(0, 60); const u = [...editCategories]; u[i] = { ...u[i], description: v }; editCategoriesRef.current = u; setEditCategories(u); }} rows={2} placeholder="Deskripsi singkat kategori (max 60 karakter)" className="w-full rounded-lg px-3 py-2 text-xs outline-none resize-none mb-1" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white" }} />
+                        <p className="text-[10px] mb-2" style={{ color: cat.description.length > 54 ? "#8a6f42" : "var(--text-muted)" }}>{cat.description.length}/60</p>
                         <label className="flex items-center gap-2 text-xs cursor-pointer px-3 py-2 rounded-lg transition-colors hover:bg-[rgba(64,50,37,.05)]" style={{ border: "1px dashed rgba(64,50,37,.2)", color: "var(--gold)" }}>
                           <Upload size={14} />
                           {uploadingId === cat.id ? "Uploading..." : "Ganti Gambar"}
