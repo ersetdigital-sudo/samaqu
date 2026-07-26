@@ -108,7 +108,7 @@ export default function DashboardPage() {
       ═══════════════════════════════════ */}
       <aside className="hidden lg:flex lg:flex-col lg:w-64 xl:w-72 shrink-0 px-6 py-8 sticky top-0 h-screen" style={{ borderRight: "1px solid rgba(64,50,37,.09)", background: "var(--bg-secondary, #f0ebe5)" }}>
         <div className="flex items-center gap-3 mb-10">
-          <div className="h-10 w-10 rounded-full flex items-center justify-center text-xl italic" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", background: "linear-gradient(135deg, #403225, #2d211b, #1c1511)", color: "#b58c4a" }}>S</div>
+          <img src="/logo.svg" alt="SAMAQU" className="h-10 w-auto" style={{ filter: "brightness(0) invert(1)" }} />
           <span className="text-2xl tracking-wide" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>SAMAQU</span>
         </div>
         <nav className="flex flex-col gap-1 text-sm">
@@ -137,7 +137,7 @@ export default function DashboardPage() {
           <div className="flex items-center gap-4 px-5 sm:px-8 py-4">
             {/* Mobile logo */}
             <div className="flex items-center gap-2 lg:hidden">
-              <div className="h-8 w-8 rounded-full flex items-center justify-center text-sm italic" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", background: "linear-gradient(135deg, #403225, #2d211b)", color: "#b58c4a" }}>S</div>
+              <img src="/logo.svg" alt="SAMAQU" className="h-8 w-auto" style={{ filter: "brightness(0) invert(1)" }} />
               <span className="text-xl" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>SAMAQU</span>
             </div>
             {/* Search */}
