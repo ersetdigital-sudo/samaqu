@@ -438,8 +438,13 @@ function CheckoutContent() {
               </div>
             </div>
 
-            {/* Submit */}
-            <button onClick={handleSubmit} disabled={submitting} className="btn-primary w-full mt-5 sm:mt-6 rounded-xl py-4 text-sm font-ui font-medium tracking-wide transition-all" style={{ background: "var(--espresso)", color: "var(--cream)" }}>
+            {/* Submit (desktop) */}
+            <button onClick={handleSubmit} disabled={submitting} className="btn-primary hidden lg:block w-full mt-5 sm:mt-6 rounded-xl py-4 text-sm font-ui font-medium tracking-wide transition-all" style={{ background: "var(--espresso)", color: "var(--cream)" }}>
+              {submitting ? "Memproses…" : "Buat Pesanan"}
+            </button>
+
+            {/* Submit (mobile) */}
+            <button onClick={handleSubmit} disabled={submitting} className="btn-primary lg:hidden w-full mt-5 sm:mt-6 rounded-xl py-4 text-sm font-ui font-medium tracking-wide transition-all" style={{ background: "var(--espresso)", color: "var(--cream)" }}>
               {submitting ? "Memproses…" : "Buat Pesanan"}
             </button>
 
