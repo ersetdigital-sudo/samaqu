@@ -57,6 +57,7 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
         setName(product.name);
         setSlug(product.id);
         setCategory(product.category);
+        setDescription(product.description || "");
         setBasePrice(String(product.price));
 
         // Fetch variants
@@ -200,7 +201,7 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
     setSaving(true);
     try {
       await supabase.from("products").upsert({
-        id: slug, name, category, price: parseInt(basePrice),
+        id: slug, name, category, description: description || null, price: parseInt(basePrice),
         image: media.find((m) => m.url)?.url || "",
         images: media.filter((m) => m.url).map((m) => m.url),
         colors: variants.map((v) => v.color),

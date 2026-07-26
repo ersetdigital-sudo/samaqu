@@ -15,6 +15,7 @@ export interface Product {
   id: string;
   name: string;
   category: Category;
+  description?: string;
   kain?: string;
   series?: string;
   colors: string[];
