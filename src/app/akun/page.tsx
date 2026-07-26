@@ -9,7 +9,7 @@ import { getCurrentCustomer, getCustomerOrders, logoutCustomer } from "@/lib/cus
 import { getWhatsAppLink } from "@/lib/store-settings";
 import { SITE_URL } from "@/lib/site-config";
 import type { Product } from "@/lib/katalog-data";
-import { Search, Bell, LogOut } from "lucide-react";
+import { Search, Bell, LogOut, Package } from "lucide-react";
 import ProfileDropdown from "@/components/ProfileDropdown";
 
 interface OrderItem {
