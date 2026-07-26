@@ -93,7 +93,25 @@ export async function getProductById(id: string): Promise<Product | null> {
     return null;
   }
 
-  return dbProductToProduct(data as DbProduct);
+  // Fetch media from product_images table (includes video detection via is_video flag)
+  const { data: images } = await supabase
+    .from("product_images")
+    .select("url, is_video, color, display_order")
+    .eq("product_id", id)
+    .order("display_order");
+
+  const product = dbProductToProduct(data as DbProduct);
+
+  // If product_images has data, use it for media (more accurate video detection)
+  if (images && images.length > 0) {
+    product.media = images.map((img: { url: string; is_video: boolean }) => ({
+      src: img.url,
+      type: (img.is_video ? "video" : "image") as "video" | "image",
+    }));
+    product.images = images.map((img: { url: string }) => img.url);
+  }
+
+  return product;
 }
 
 export async function getTestimonials(category?: string, type?: string) {
