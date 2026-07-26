@@ -56,7 +56,7 @@ export default async function ProductLayout({ children, params }: { children: Re
         "@type": "Product",
         name: product.name,
         description: product.description || `${product.name} — ${product.category} premium dari ${SITE_NAME}`,
-        image: product.image,
+        image: product.image?.startsWith("http") ? product.image : `${SITE_URL}${product.image || "/images/og-product.png"}`,
         sku: product.id,
         brand: { "@type": "Brand", name: SITE_NAME },
         category: product.category,
