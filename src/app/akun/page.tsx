@@ -133,11 +133,17 @@ export default function DashboardPage() {
         </div>
 
         <nav className="flex flex-col gap-1 text-sm">
-          {navItems.map((item) => (
+          {navItems.slice(0, 4).map((item) => (
             <button key={item.id} onClick={() => setActiveNav(item.id)} className="flex items-center gap-3 rounded-xl px-4 py-3 font-medium transition-colors cursor-pointer" style={{ background: activeNav === item.id ? "var(--espresso)" : "transparent", color: activeNav === item.id ? "#f8f5f1" : "var(--text-secondary)" }}>
               <span>{item.icon}</span> {item.label}
             </button>
           ))}
+          <Link href="/akun/alamat" className="flex items-center gap-3 rounded-xl px-4 py-3 font-medium transition-colors" style={{ color: "var(--text-secondary)" }}>
+            <span>📍</span> Alamat Tersimpan
+          </Link>
+          <button onClick={() => setActiveNav("wishlist")} className="flex items-center gap-3 rounded-xl px-4 py-3 font-medium transition-colors cursor-pointer" style={{ background: activeNav === "wishlist" ? "var(--espresso)" : "transparent", color: activeNav === "wishlist" ? "#f8f5f1" : "var(--text-secondary)" }}>
+            <span>♡</span> Wishlist
+          </button>
         </nav>
         <div className="mt-auto rounded-2xl p-5 text-white" style={{ background: "linear-gradient(135deg, #403225, #2d211b, #1c1511)" }}>
           <p className="italic text-lg mb-1" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Konsultasi Ukuran</p>
@@ -370,12 +376,20 @@ export default function DashboardPage() {
       ═══════════════════════════════════ */}
       <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40" style={{ background: "rgba(248,245,241,.95)", backdropFilter: "blur(12px)", borderTop: "1px solid rgba(64,50,37,.09)" }}>
         <div className="px-6 py-2.5 flex items-center justify-between">
-          {navItems.map((item) => (
+          {navItems.slice(0, 4).map((item) => (
             <button key={item.id} onClick={() => setActiveNav(item.id)} className="flex flex-col items-center gap-1 text-[10px]" style={{ color: activeNav === item.id ? "#8b6f42" : "var(--text-muted)" }}>
               <span className="text-lg">{item.icon}</span>
               {item.label.split(" ")[0]}
             </button>
           ))}
+          <Link href="/akun/alamat" className="flex flex-col items-center gap-1 text-[10px]" style={{ color: "var(--text-muted)" }}>
+            <span className="text-lg">📍</span>
+            Alamat
+          </Link>
+          <button onClick={() => setActiveNav("wishlist")} className="flex flex-col items-center gap-1 text-[10px]" style={{ color: activeNav === "wishlist" ? "#8b6f42" : "var(--text-muted)" }}>
+            <span className="text-lg">♡</span>
+            Wishlist
+          </button>
         </div>
       </nav>
     </div>
