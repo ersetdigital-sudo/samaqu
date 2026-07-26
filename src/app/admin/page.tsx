@@ -909,43 +909,73 @@ function PaymentMethodsSection() {
 
 function QrisEwalletSection() {
   const [methods, setMethods] = useState<{ id: string; provider_name: string; method_type: string; account_info: string; qr_image_url: string; is_active: boolean }[]>([]);
+  const [originalMethods, setOriginalMethods] = useState<typeof methods>([]);
   const [loading, setLoading] = useState(true);
+  const [savingId, setSavingId] = useState<string | null>(null);
   const toast = useToast();
 
   useEffect(() => {
     supabase.from("qris_ewallet_methods").select("*").order("display_order").then(({ data }) => {
-      if (data) setMethods(data);
+      if (data) { setMethods(data); setOriginalMethods(JSON.parse(JSON.stringify(data))); }
       setLoading(false);
     });
   }, []);
 
-  async function addMethod() {
-    const { data, error } = await supabase.from("qris_ewallet_methods").insert({
-      provider_name: "", method_type: "qris", account_info: "", qr_image_url: "", is_active: true, display_order: methods.length,
-    }).select().single();
-    if (!error && data) setMethods([...methods, data]);
+  function isDirty(m: typeof methods[0]) {
+    const orig = originalMethods.find((o) => o.id === m.id);
+    if (!orig) return true;
+    return orig.provider_name !== m.provider_name || orig.method_type !== m.method_type || orig.account_info !== m.account_info || orig.qr_image_url !== m.qr_image_url;
   }
 
-  async function updateMethod(id: string, field: string, value: string) {
+  function updateField(id: string, field: string, value: string) {
     setMethods(methods.map((m) => m.id === id ? { ...m, [field]: value } : m));
-    await supabase.from("qris_ewallet_methods").update({ [field]: value }).eq("id", id);
+  }
+
+  async function addMethod() {
+    const tempId = "new-" + Date.now();
+    setMethods([...methods, { id: tempId, provider_name: "", method_type: "qris", account_info: "", qr_image_url: "", is_active: true }]);
+  }
+
+  function cancelNew(id: string) {
+    setMethods(methods.filter((m) => m.id !== id));
   }
 
   async function saveMethod(method: typeof methods[0]) {
     if (!method.provider_name.trim()) { toast.showToast("error", "Nama provider wajib diisi"); return; }
-    await supabase.from("qris_ewallet_methods").upsert(method, { onConflict: "id" });
-    toast.showToast("success", "Berhasil disimpan");
+    setSavingId(method.id);
+    const isNew = !originalMethods.find((o) => o.id === method.id);
+
+    if (isNew) {
+      const { data, error } = await supabase.from("qris_ewallet_methods").insert({
+        provider_name: method.provider_name, method_type: method.method_type, account_info: method.account_info, qr_image_url: method.qr_image_url,
+        is_active: true, display_order: methods.indexOf(method),
+      }).select().single();
+      if (!error && data) {
+        setMethods(methods.map((m) => m.id === method.id ? data : m));
+        setOriginalMethods([...originalMethods, data]);
+        toast.showToast("success", "Berhasil disimpan");
+      }
+    } else {
+      await supabase.from("qris_ewallet_methods").update({
+        provider_name: method.provider_name, method_type: method.method_type, account_info: method.account_info, qr_image_url: method.qr_image_url,
+      }).eq("id", method.id);
+      setOriginalMethods(originalMethods.map((m) => m.id === method.id ? { ...m, ...method } : m));
+      toast.showToast("success", "Berhasil disimpan");
+    }
+    setSavingId(null);
   }
 
   async function toggleMethod(id: string, active: boolean) {
     setMethods(methods.map((m) => m.id === id ? { ...m, is_active: active } : m));
     await supabase.from("qris_ewallet_methods").update({ is_active: active }).eq("id", id);
+    toast.showToast("success", active ? "Diaktifkan" : "Dinonaktifkan");
   }
 
   async function deleteMethod(id: string) {
     if (!confirm("Hapus metode ini?")) return;
     await supabase.from("qris_ewallet_methods").delete().eq("id", id);
     setMethods(methods.filter((m) => m.id !== id));
+    setOriginalMethods(originalMethods.filter((m) => m.id !== id));
     toast.showToast("success", "Berhasil dihapus");
   }
 
@@ -963,39 +993,54 @@ function QrisEwalletSection() {
         </button>
       </div>
       <div className="space-y-4">
-        {methods.map((m) => (
-          <div key={m.id} className="p-4 rounded-xl" style={{ border: "1px solid rgba(64,50,37,.1)", background: m.is_active ? "rgba(255,255,255,.5)" : "rgba(200,200,200,.1)" }}>
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-medium" style={{ color: m.is_active ? "var(--gold)" : "var(--text-muted)" }}>{m.is_active ? "Aktif" : "Nonaktif"}</span>
-              <div className="flex items-center gap-2">
-                <button onClick={() => toggleMethod(m.id, !m.is_active)} className="text-xs px-2 py-1 rounded" style={{ border: "1px solid rgba(64,50,37,.15)", color: m.is_active ? "var(--text-muted)" : "var(--gold)" }}>
-                  {m.is_active ? "Nonaktifkan" : "Aktifkan"}
-                </button>
-                <button onClick={() => saveMethod(m)} className="text-xs px-3 py-1 rounded font-semibold" style={{ background: "var(--gold)", color: "white" }}>Simpan</button>
-                <button onClick={() => deleteMethod(m.id)} className="p-1 rounded hover:bg-red-50" style={{ color: "#e74c3c" }}><Trash2 size={14} /></button>
+        {methods.map((m) => {
+          const isNew = !originalMethods.find((o) => o.id === m.id);
+          const dirty = isDirty(m);
+
+          return (
+            <div key={m.id} className="p-4 rounded-xl" style={{ border: "1px solid rgba(64,50,37,.1)", background: m.is_active ? "rgba(255,255,255,.5)" : "rgba(200,200,200,.1)" }}>
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-medium" style={{ color: m.is_active ? "var(--gold)" : "var(--text-muted)" }}>{isNew ? "Baru" : m.is_active ? "Aktif" : "Nonaktif"}</span>
+                <div className="flex items-center gap-2">
+                  {!isNew && (
+                    <button onClick={() => toggleMethod(m.id, !m.is_active)} className="text-xs px-2 py-1 rounded" style={{ border: "1px solid rgba(64,50,37,.15)", color: m.is_active ? "var(--text-muted)" : "var(--gold)" }}>
+                      {m.is_active ? "Nonaktifkan" : "Aktifkan"}
+                    </button>
+                  )}
+                  {dirty && (
+                    <button onClick={() => saveMethod(m)} disabled={savingId === m.id} className="text-xs px-3 py-1 rounded font-semibold" style={{ background: "var(--gold)", color: "white" }}>
+                      {savingId === m.id ? "..." : "Simpan"}
+                    </button>
+                  )}
+                  {isNew ? (
+                    <button onClick={() => cancelNew(m.id)} className="p-1 rounded hover:bg-red-50" style={{ color: "#e74c3c" }}><X size={14} /></button>
+                  ) : (
+                    <button onClick={() => deleteMethod(m.id)} className="p-1 rounded hover:bg-red-50" style={{ color: "#e74c3c" }}><Trash2 size={14} /></button>
+                  )}
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>Nama Provider *</label>
+                  <input value={m.provider_name} onChange={(e) => updateField(m.id, "provider_name", e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="QRIS SAMAQU / GoPay / OVO" />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>Tipe</label>
+                  <select value={m.method_type} onChange={(e) => updateField(m.id, "method_type", e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }}>
+                    <option value="qris">QRIS</option>
+                    <option value="gopay">GoPay</option>
+                    <option value="ovo">OVO</option>
+                    <option value="dana">Dana</option>
+                  </select>
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>{m.method_type === "qris" ? "URL Gambar QR Code" : "Nomor / Info Akun"}</label>
+                  <input value={m.method_type === "qris" ? m.qr_image_url : m.account_info} onChange={(e) => updateField(m.id, m.method_type === "qris" ? "qr_image_url" : "account_info", e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder={m.method_type === "qris" ? "https://..." : "0812xxxx"} />
+                </div>
               </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>Nama Provider *</label>
-                <input value={m.provider_name} onChange={(e) => updateMethod(m.id, "provider_name", e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="QRIS SAMAQU / GoPay / OVO" />
-              </div>
-              <div>
-                <label className="block text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>Tipe</label>
-                <select value={m.method_type} onChange={(e) => updateMethod(m.id, "method_type", e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }}>
-                  <option value="qris">QRIS</option>
-                  <option value="gopay">GoPay</option>
-                  <option value="ovo">OVO</option>
-                  <option value="dana">Dana</option>
-                </select>
-              </div>
-              <div className="sm:col-span-2">
-                <label className="block text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>{m.method_type === "qris" ? "URL Gambar QR Code" : "Nomor / Info Akun"}</label>
-                <input value={m.method_type === "qris" ? m.qr_image_url : m.account_info} onChange={(e) => updateMethod(m.id, m.method_type === "qris" ? "qr_image_url" : "account_info", e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder={m.method_type === "qris" ? "https://..." : "0812xxxx"} />
-              </div>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
