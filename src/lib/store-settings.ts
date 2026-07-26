@@ -17,13 +17,12 @@ const DEFAULTS: StoreSettings = {
   whatsapp: "+62 812 3456 7890",
 };
 
-let cached: StoreSettings | null = null;
+let cached: StoreSettings = DEFAULTS;
 
 export function useStoreSettings() {
-  const [settings, setSettings] = useState<StoreSettings>(cached || DEFAULTS);
+  const [settings, setSettings] = useState<StoreSettings>(cached);
 
   useEffect(() => {
-    if (cached) return;
     supabase.from("store_settings").select("*").eq("id", 1).single().then(({ data }) => {
       if (data) {
         cached = { ...DEFAULTS, ...data };
