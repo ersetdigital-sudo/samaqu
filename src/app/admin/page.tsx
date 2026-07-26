@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard, ShoppingBag, Package, Users, FileText, Settings,
   Search, Bell, Menu, X, ChevronDown, Plus, TrendingUp, Eye, Edit,
-  DollarSign, ShoppingCart, UserPlus, Box, LogOut, Lock, Mail, Loader2, Trash2,
+  DollarSign, ShoppingCart, UserPlus, Box, LogOut, Lock, Mail, Loader2, Trash2, Upload,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { User } from "@supabase/supabase-js";
@@ -931,6 +931,24 @@ function QrisEwalletSection() {
     setMethods(methods.map((m) => m.id === id ? { ...m, [field]: value } : m));
   }
 
+  async function uploadQrisImage(id: string, file: File) {
+    const allowed = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowed.includes(file.type)) { toast.showToast("error", "Format file tidak didukung (JPG/PNG/WebP)"); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.showToast("error", "Ukuran file maksimal 5MB"); return; }
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("upload_preset", "samaqu_unsigned");
+    try {
+      const res = await fetch(`https://api.cloudinary.com/v1_1/dgtixuop0/image/upload`, { method: "POST", body: fd });
+      const data = await res.json();
+      if (data.secure_url) {
+        setMethods(methods.map((m) => m.id === id ? { ...m, qr_image_url: data.secure_url } : m));
+        await supabase.from("qris_ewallet_methods").update({ qr_image_url: data.secure_url }).eq("id", id);
+        toast.showToast("success", "QR Code berhasil diupload");
+      }
+    } catch { toast.showToast("error", "Gagal upload gambar"); }
+  }
+
   async function addMethod() {
     const tempId = "new-" + Date.now();
     setMethods([...methods, { id: tempId, provider_name: "", method_type: "qris", account_info: "", qr_image_url: "", is_active: true }]);
@@ -1034,8 +1052,35 @@ function QrisEwalletSection() {
                   </select>
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="block text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>{m.method_type === "qris" ? "URL Gambar QR Code" : "Nomor / Info Akun"}</label>
-                  <input value={m.method_type === "qris" ? m.qr_image_url : m.account_info} onChange={(e) => updateField(m.id, m.method_type === "qris" ? "qr_image_url" : "account_info", e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder={m.method_type === "qris" ? "https://..." : "0812xxxx"} />
+                  {m.method_type === "qris" ? (
+                    <div>
+                      <label className="block text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>Gambar QR Code</label>
+                      {m.qr_image_url ? (
+                        <div className="flex items-start gap-3">
+                          <img src={m.qr_image_url} alt="QR Code" className="w-24 h-24 object-contain rounded-lg border" style={{ borderColor: "rgba(64,50,37,.1)" }} />
+                          <div className="flex flex-col gap-2">
+                            <label className="cursor-pointer text-xs px-3 py-1.5 rounded font-medium text-center inline-block" style={{ border: "1px solid rgba(64,50,37,.15)", color: "var(--gold)" }}>
+                              Ganti
+                              <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadQrisImage(m.id, f); }} />
+                            </label>
+                            <button onClick={() => updateField(m.id, "qr_image_url", "")} className="text-xs px-3 py-1.5 rounded font-medium" style={{ border: "1px solid rgba(64,50,37,.15)", color: "#e74c3c" }}>Hapus</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <label className="flex flex-col items-center justify-center w-full h-28 rounded-xl cursor-pointer transition-colors" style={{ border: "2px dashed rgba(64,50,37,.2)", background: "rgba(255,255,255,.3)" }}>
+                          <Upload size={18} style={{ color: "var(--text-muted)" }} />
+                          <span className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Klik untuk upload QR Code</span>
+                          <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>JPG / PNG / WebP, max 5MB</span>
+                          <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadQrisImage(m.id, f); }} />
+                        </label>
+                      )}
+                    </div>
+                  ) : (
+                    <div>
+                      <label className="block text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>Nomor Tujuan / Nama Akun *</label>
+                      <input value={m.account_info} onChange={(e) => updateField(m.id, "account_info", e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="0812xxxx / a.n. SAMAQU" />
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
