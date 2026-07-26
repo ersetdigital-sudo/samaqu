@@ -5,6 +5,7 @@ export interface DbProduct {
   id: string;
   name: string;
   category: string;
+  description: string | null;
   kain: string | null;
   series: string | null;
   colors: string[];
