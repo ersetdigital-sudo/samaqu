@@ -443,12 +443,7 @@ function CheckoutContent() {
               {submitting ? "Memproses…" : "Buat Pesanan"}
             </button>
 
-            {/* Submit (mobile) */}
-            <button onClick={handleSubmit} disabled={submitting} className="btn-primary lg:hidden w-full mt-5 sm:mt-6 rounded-xl py-4 text-sm font-ui font-medium tracking-wide transition-all" style={{ background: "var(--espresso)", color: "var(--cream)" }}>
-              {submitting ? "Memproses…" : "Buat Pesanan"}
-            </button>
-
-            <div className="flex items-center justify-center gap-2 mt-3 sm:mt-4 text-[11px] sm:text-xs font-ui" style={{ color: "var(--text-muted)" }}>
+            <div className="hidden lg:flex items-center justify-center gap-2 mt-3 sm:mt-4 text-[11px] sm:text-xs font-ui" style={{ color: "var(--text-muted)" }}>
               <Lock size={13} strokeWidth={1.6} />
               <span>Transaksi Anda dienkripsi & aman</span>
             </div>
@@ -460,8 +455,15 @@ function CheckoutContent() {
         </aside>
       </main>
 
-      {/* Footer */}
-      <footer className="mt-8" style={{ borderTop: "1px solid rgba(64,50,37,.08)" }}>
+      {/* Sticky mobile submit bar */}
+      <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 px-4 pb-4 pt-3" style={{ background: "linear-gradient(to top, var(--cream) 70%, transparent)" }}>
+        <button onClick={handleSubmit} disabled={submitting} className="btn-primary w-full rounded-xl py-4 text-sm font-ui font-medium tracking-wide transition-all" style={{ background: "var(--espresso)", color: "var(--cream)" }}>
+          {submitting ? "Memproses…" : "Buat Pesanan"}
+        </button>
+      </div>
+
+      {/* Footer (desktop only) */}
+      <footer className="hidden lg:block mt-8" style={{ borderTop: "1px solid rgba(64,50,37,.08)" }}>
         <div className="max-w-6xl mx-auto px-5 sm:px-8 py-6 sm:py-8 text-center text-[11px] sm:text-xs font-ui" style={{ color: "var(--text-muted)" }}>
           © 2024 SAMAQU · Busana yang Layak Menemani Setiap Momen
         </div>
