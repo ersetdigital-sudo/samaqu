@@ -93,7 +93,7 @@ export default function KontenWebsitePage() {
   }
 
   // Category handlers
-  function openCategoryEdit() { setEditCategories(categories.map((c) => ({ ...c }))); setEditModal("kategori"); }
+  function openCategoryEdit() { const cats = categories.map((c) => ({ ...c })); setEditCategories(cats); editCategoriesRef.current = cats; setEditModal("kategori"); }
   async function saveCategories() {
     setSaving(true);
     const latestCats = editCategoriesRef.current; // Always read latest
@@ -116,7 +116,7 @@ export default function KontenWebsitePage() {
       const res = await fetch(`https://api.cloudinary.com/v1_1/dgtixuop0/image/upload`, { method: "POST", body: fd });
       const data = await res.json();
       if (data.secure_url) {
-        const u = [...editCategories]; u[idx] = { ...u[idx], image_url: data.secure_url }; setEditCategories(u);
+        const u = [...editCategories]; u[idx] = { ...u[idx], image_url: data.secure_url }; editCategoriesRef.current = u; setEditCategories(u);
         toast.showToast("success", "Gambar berhasil diupload");
       }
     } catch { toast.showToast("error", "Gagal upload gambar"); }
@@ -264,7 +264,7 @@ export default function KontenWebsitePage() {
                 {editCategories.map((cat, i) => (
                   <div key={cat.id || i} className="p-4 rounded-xl" style={{ border: "1px solid rgba(64,50,37,.1)", background: "rgba(255,255,255,.5)" }}>
                     <div className="flex items-center justify-between mb-3">
-                      <input value={cat.name} onChange={(e) => { const u = [...editCategories]; u[i] = { ...u[i], name: e.target.value }; setEditCategories(u); }} className="text-sm font-semibold outline-none bg-transparent" style={{ color: "var(--espresso)" }} placeholder="Nama kategori" />
+                      <input value={cat.name} onChange={(e) => { const u = [...editCategories]; u[i] = { ...u[i], name: e.target.value }; editCategoriesRef.current = u; setEditCategories(u); }} className="text-sm font-semibold outline-none bg-transparent" style={{ color: "var(--espresso)" }} placeholder="Nama kategori" />
                       {editCategories.length > 1 && <button onClick={() => setEditCategories(editCategories.filter((_, j) => j !== i))} className="p-1 hover:bg-red-50 rounded"><Trash2 size={14} style={{ color: "#e74c3c" }} /></button>}
                     </div>
                     <div className="flex gap-3">
@@ -272,7 +272,7 @@ export default function KontenWebsitePage() {
                         {cat.image_url ? <img src={cat.image_url} alt={cat.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><ImageIcon size={20} style={{ color: "var(--text-muted)" }} /></div>}
                       </div>
                       <div className="flex-1">
-                        <textarea value={cat.description} onChange={(e) => { const u = [...editCategories]; u[i] = { ...u[i], description: e.target.value }; setEditCategories(u); }} rows={2} placeholder="Deskripsi singkat kategori" className="w-full rounded-lg px-3 py-2 text-xs outline-none resize-none mb-2" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white" }} />
+                        <textarea value={cat.description} onChange={(e) => { const u = [...editCategories]; u[i] = { ...u[i], description: e.target.value }; editCategoriesRef.current = u; setEditCategories(u); }} rows={2} placeholder="Deskripsi singkat kategori" className="w-full rounded-lg px-3 py-2 text-xs outline-none resize-none mb-2" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white" }} />
                         <label className="flex items-center gap-2 text-xs cursor-pointer px-3 py-2 rounded-lg transition-colors hover:bg-[rgba(64,50,37,.05)]" style={{ border: "1px dashed rgba(64,50,37,.2)", color: "var(--gold)" }}>
                           <Upload size={14} />
                           {uploadingId === cat.id ? "Uploading..." : "Ganti Gambar"}
