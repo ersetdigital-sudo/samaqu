@@ -367,6 +367,11 @@ export default function KontenWebsitePage() {
         )}
       </AnimatePresence>
     </section>
+
+    <style jsx global>{`
+      .card { background: #fffdfb; border: 1px solid rgba(64,50,37,.06); border-radius: 1rem; box-shadow: 0 1px 2px rgba(64,50,37,.03); }
+      .badge { font-size: .72rem; font-weight: 600; padding: .2rem .6rem; border-radius: 999px; white-space: nowrap; }
+    `}</style>
     </AdminShell>
   );
 }
