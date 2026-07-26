@@ -7,6 +7,7 @@ import { ShieldCheck, Copy, Check, Clock, MessageCircle, ArrowLeft } from "lucid
 import { supabase } from "@/lib/supabase";
 
 interface PaymentMethod {
+  id: string;
   bank_name: string;
   account_name: string;
   account_number: string;
