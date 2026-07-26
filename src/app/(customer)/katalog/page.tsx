@@ -55,7 +55,7 @@ function Swatch({ color, size = 16 }: { color: string; size?: number }) {
 }
 
 /* ── Product Card ── */
-function ProductCard({ product, index, wishlist }: { product: Product; index: number; wishlist: { isWishlisted: (id: string) => boolean; toggle: (id: string) => Promise<boolean | null> } }) {
+function ProductCard({ product, index, wishlist }: { product: Product; index: number; wishlist: { isWishlisted: (id: string) => boolean; toggle: (id: string) => Promise<boolean | null>; isLoggedIn: boolean } }) {
   const { addItem } = useCart();
   const toast = useToast();
 
