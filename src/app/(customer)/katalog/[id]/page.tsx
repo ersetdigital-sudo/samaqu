@@ -14,12 +14,6 @@ import { getWhatsAppLink } from "@/lib/store-settings";
 
 const sizes = ["S", "M", "L", "XL", "XXL"];
 
-function checkoutLink(product: Product, size: string, color: string, qty: number, notes: string) {
-  const params = new URLSearchParams({ id: product.id, color, size, qty: String(qty) });
-  if (notes) params.set("notes", notes);
-  return `/checkout?${params.toString()}`;
-}
-
 function waLink(product: Product, size: string, color: string, qty: number, notes: string) {
   const msg = `Halo Admin SAMAQU, saya ingin memesan:\n\nProduk: ${product.name}\nKain: ${product.kain || "-"}\nWarna: ${color}\nUkuran: ${size}\nJumlah: ${qty}\n${notes ? `Catatan: ${notes}\n` : ""}\nTotal: Rp ${(product.price * qty).toLocaleString("id-ID")}\n\nMohon konfirmasi ketersediaan. Terima kasih!`;
   return getWhatsAppLink(msg);
@@ -125,6 +119,15 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       notes: notes || undefined,
     });
     toast.show("Ditambahkan ke keranjang");
+  }
+
+  function handleBuyNow() {
+    if (!product) return;
+    if (!selectedSize) { toast.show("Pilih ukuran terlebih dahulu"); return; }
+    const color = selectedColor || product.colors[0] || "-";
+    let msg = `Halo, saya mau pesan produk:\n${product.name} - ${color} - Ukuran ${selectedSize}\nJumlah: ${qty}`;
+    if (notes) msg += `\nCatatan: ${notes}`;
+    window.open(getWhatsAppLink(msg), "_blank");
   }
 
   const handleCarouselScroll = () => {
@@ -316,12 +319,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               <ShoppingCart size={15} strokeWidth={1.5} />
               <span>Keranjang</span>
             </button>
-            <a href={checkoutLink(product, selectedSize, selectedColor, qty, notes)}
+            <button onClick={handleBuyNow}
               className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[11px] tracking-[0.06em] uppercase font-ui font-semibold transition-all duration-300 active:scale-[0.98]"
               style={{ background: "var(--espresso)", color: "white" }}>
               <ShoppingBag size={15} strokeWidth={1.5} />
               <span>Beli Sekarang</span>
-            </a>
+            </button>
           </div>
         </div>
       </div>
@@ -462,12 +465,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 <ShoppingCart size={16} strokeWidth={1.5} />
                 <span>Keranjang</span>
               </button>
-              <a href={checkoutLink(product, selectedSize, selectedColor, qty, notes)}
+              <button onClick={handleBuyNow}
                 className="flex-1 flex items-center justify-center gap-2.5 py-4 rounded-sm text-[12px] tracking-[0.08em] uppercase font-ui font-semibold transition-all duration-300 hover:scale-[1.01] hover:shadow-lg"
                 style={{ background: "var(--espresso)", color: "white", boxShadow: "0 8px 28px -8px rgba(45,33,27,.35)" }}>
                 <ShoppingBag size={16} strokeWidth={1.5} />
                 <span>Beli Sekarang</span>
-              </a>
+              </button>
             </div>
           </motion.div>
         </div>
