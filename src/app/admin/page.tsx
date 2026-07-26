@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard, ShoppingBag, Package, Users, FileText, Settings,
   Search, Bell, Menu, X, ChevronDown, Plus, TrendingUp, Eye, Edit,
-  DollarSign, ShoppingCart, UserPlus, Box, LogOut, Lock, Mail, Loader2, Trash2, Upload,
+  DollarSign, ShoppingCart, UserPlus, Box, LogOut, Lock, Mail, Loader2, Trash2, Upload, Ticket,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { User } from "@supabase/supabase-js";
@@ -399,6 +399,14 @@ function AdminPageInner() {
               <span>{item.label}</span>
             </button>
           ))}
+          <Link
+            href="/admin/voucher"
+            className="sidebar-link w-full text-left"
+            onClick={() => setSidebarOpen(false)}
+          >
+            <Ticket size={20} strokeWidth={1.6} />
+            <span>Voucher</span>
+          </Link>
         </nav>
 
         <div className="px-4 pb-6">
