@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { SITE_URL } from "@/lib/site-config";
+import { SITE_URL, SITE_NAME, SITE_DESCRIPTION } from "@/lib/site-config";
 
 interface SEOProps {
   title: string;
@@ -26,6 +26,8 @@ export function SEOHead({ title, description, url, image, type = "website", json
     setMeta("og:description", description);
     setMeta("og:url", url);
     setMeta("og:type", type);
+    setMeta("og:site_name", SITE_NAME);
+    setMeta("og:locale", "id_ID");
     if (image) setMeta("og:image", image);
     setMeta("twitter:card", image ? "summary_large_image" : "summary");
     setMeta("twitter:title", title);
@@ -45,153 +47,95 @@ export function SEOHead({ title, description, url, image, type = "website", json
   return null;
 }
 
-export function buildProductJsonLd(product: {
+// Consolidated @graph builder
+export function buildGraph(...schemas: Record<string, any>[]) {
+  return { "@context": "https://schema.org", "@graph": schemas };
+}
+
+export function buildOrganization() {
+  return {
+    "@type": "Organization",
+    "@id": `${SITE_URL}#organization`,
+    name: SITE_NAME,
+    description: SITE_DESCRIPTION,
+    url: SITE_URL,
+    logo: { "@type": "ImageObject", url: `${SITE_URL}/logo.svg`, width: 200, height: 60 },
+    contactPoint: { "@type": "ContactPoint", telephone: "+62-85212150100", contactType: "customer service", availableLanguage: "Indonesian" },
+  };
+}
+
+export function buildWebSite() {
+  return {
+    "@type": "WebSite",
+    "@id": `${SITE_URL}#website`,
+    name: SITE_NAME,
+    url: SITE_URL,
+    publisher: { "@id": `${SITE_URL}#organization` },
+    potentialAction: {
+      "@type": "SearchAction",
+      target: { "@type": "EntryPoint", urlTemplate: `${SITE_URL}/katalog?q={search_term_string}` },
+      "query-input": "required name=search_term_string",
+    },
+  };
+}
+
+export function buildProduct(product: {
   id: string; name: string; description: string; price: number;
-  image: string; category: string; colors: string[];
-  url: string; rating?: number; reviewCount?: number; inStock?: boolean;
+  image: string; category: string; colors: string[]; inStock?: boolean;
 }) {
   return {
-    "@context": "https://schema.org",
     "@type": "Product",
     name: product.name,
     description: product.description,
     image: product.image,
     sku: product.id,
-    brand: { "@type": "Brand", name: "SAMAQU" },
+    brand: { "@type": "Brand", name: SITE_NAME },
     category: product.category,
     color: product.colors.join(", "),
     offers: {
       "@type": "Offer",
-      url: product.url,
+      url: `${SITE_URL}/katalog/${product.id}`,
       priceCurrency: "IDR",
       price: product.price,
       availability: product.inStock !== false ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
-      seller: { "@type": "Organization", name: "SAMAQU" },
+      seller: { "@id": `${SITE_URL}#organization` },
       itemCondition: "https://schema.org/NewCondition",
-      shippingDetails: {
-        "@type": "OfferShippingDetails",
-        shippingDestination: {
-          "@type": "DefinedRegion",
-          addressCountry: "ID",
-        },
-        shippingRate: {
-          "@type": "MonetaryAmount",
-          value: "25000",
-          currency: "IDR",
-        },
-        deliveryTime: {
-          "@type": "ShippingDeliveryTime",
-          handlingTime: { "@type": "QuantitativeValue", minValue: 1, maxValue: 2, unitCode: "DAY" },
-          transitTime: { "@type": "QuantitativeValue", minValue: 1, maxValue: 3, unitCode: "DAY" },
-        },
-      },
-    },
-    aggregateRating: product.rating ? {
-      "@type": "AggregateRating",
-      ratingValue: product.rating,
-      reviewCount: product.reviewCount || 0,
-      bestRating: 5,
-      worstRating: 1,
-    } : undefined,
-  };
-}
-
-export function buildOrganizationJsonLd() {
-  return {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    name: "SAMAQU",
-    description: "Premium Muslim Menswear — Busana pria muslim premium berkualitas tinggi.",
-    url: SITE_URL,
-    logo: `${SITE_URL}/logo.svg`,
-    contactPoint: {
-      "@type": "ContactPoint",
-      telephone: "+62-85212150100",
-      contactType: "customer service",
-      availableLanguage: "Indonesian",
-    },
-    sameAs: [],
-  };
-}
-
-export function buildWebsiteJsonLd() {
-  return {
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    name: "SAMAQU",
-    url: SITE_URL,
-    description: "Premium Muslim Menswear — Busana pria muslim premium berkualitas tinggi.",
-    potentialAction: {
-      "@type": "SearchAction",
-      target: {
-        "@type": "EntryPoint",
-        urlTemplate: `${SITE_URL}/katalog?q={search_term_string}`,
-      },
-      "query-input": "required name=search_term_string",
-    },
-    publisher: {
-      "@type": "Organization",
-      name: "SAMAQU",
-      logo: { "@type": "ImageObject", url: `${SITE_URL}/logo.svg` },
     },
   };
 }
 
-export function buildBreadcrumbJsonLd(items: { name: string; url: string }[]) {
+export function buildBreadcrumb(items: { name: string; url?: string }[]) {
   return {
-    "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: items.map((item, i) => ({
       "@type": "ListItem",
       position: i + 1,
       name: item.name,
-      item: item.url,
+      ...(item.url ? { item: item.url } : {}),
     })),
   };
 }
 
-export function buildCollectionJsonLd(products: { id: string; name: string; price: number; image: string; url: string; category: string }[]) {
+export function buildItemList(products: { id: string; name: string; price: number; image: string; category: string }[]) {
   return {
-    "@context": "https://schema.org",
-    "@type": "CollectionPage",
-    name: "Katalog Produk SAMAQU",
-    description: "Koleksi busana pria muslim premium dari SAMAQU — Thobe, Kandora, Koko, Vest, Kabak, dan Cover Hanger.",
-    url: `${SITE_URL}/katalog`,
-    mainEntity: {
-      "@type": "ItemList",
-      numberOfItems: products.length,
-      itemListElement: products.map((p, i) => ({
-        "@type": "ListItem",
-        position: i + 1,
-        item: {
-          "@type": "Product",
-          name: p.name,
-          sku: p.id,
-          category: p.category,
-          image: p.image,
-          offers: {
-            "@type": "Offer",
-            priceCurrency: "IDR",
-            price: p.price,
-            availability: "https://schema.org/InStock",
-          },
-        },
-      })),
-    },
+    "@type": "ItemList",
+    numberOfItems: products.length,
+    itemListElement: products.map((p, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      url: `${SITE_URL}/katalog/${p.id}`,
+      item: { "@type": "Product", name: p.name, sku: p.id, image: p.image, offers: { "@type": "Offer", priceCurrency: "IDR", price: p.price, availability: "https://schema.org/InStock" } },
+    })),
   };
 }
 
-export function buildFAQJsonLd(faqs: { question: string; answer: string }[]) {
+export function buildFAQPage(faqs: { question: string; answer: string }[]) {
   return {
-    "@context": "https://schema.org",
     "@type": "FAQPage",
     mainEntity: faqs.map((faq) => ({
       "@type": "Question",
       name: faq.question,
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: faq.answer,
-      },
+      acceptedAnswer: { "@type": "Answer", text: faq.answer },
     })),
   };
 }
