@@ -173,15 +173,22 @@ function AdminPageInner() {
   async function handleAuth(e: React.FormEvent) {
     e.preventDefault();
     setAuthError("");
+    // Sign out any existing session first (customer might be logged in)
+    await supabase.auth.signOut();
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       setAuthError(error.message);
       return;
     }
     const u = data.user;
-    setUser(u);
     const { data: adminData } = await supabase.from("admins").select("role").eq("user_id", u.id).single();
-    setRole(adminData?.role || null);
+    if (!adminData) {
+      await supabase.auth.signOut();
+      setAuthError("Akun ini bukan akun admin. Silakan gunakan akun admin yang benar.");
+      return;
+    }
+    setUser(u);
+    setRole(adminData.role);
   }
 
   async function handleLogout() {

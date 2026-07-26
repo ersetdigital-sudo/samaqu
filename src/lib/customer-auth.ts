@@ -22,16 +22,28 @@ export async function registerCustomer(email: string, password: string, name: st
 }
 
 export async function loginCustomer(email: string, password: string) {
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (!error) return { error: null };
-  const msg = error.message;
-  if (msg.includes("Invalid login credentials") || msg.includes("invalid") || msg.includes("Invalid")) {
-    return { error: "Email atau password salah. Jika belum punya akun, silakan daftar terlebih dahulu." };
+  // Sign out any existing session first (admin might be logged in)
+  await supabase.auth.signOut();
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) {
+    const msg = error.message;
+    if (msg.includes("Invalid login credentials") || msg.includes("invalid") || msg.includes("Invalid")) {
+      return { error: "Email atau password salah. Jika belum punya akun, silakan daftar terlebih dahulu." };
+    }
+    if (msg.includes("not confirmed") || msg.includes("Email not confirmed")) {
+      return { error: "Email belum diverifikasi. Cek inbox email Anda untuk link verifikasi." };
+    }
+    return { error: msg };
   }
-  if (msg.includes("not confirmed") || msg.includes("Email not confirmed")) {
-    return { error: "Email belum diverifikasi. Cek inbox email Anda untuk link verifikasi." };
+  // Verify user exists in customers table
+  if (data.user) {
+    const { data: cust } = await supabase.from("customers").select("id").eq("id", data.user.id).single();
+    if (!cust) {
+      await supabase.auth.signOut();
+      return { error: "Akun ini bukan akun pelanggan. Silakan daftar atau gunakan akun pelanggan yang benar." };
+    }
   }
-  return { error: msg };
+  return { error: null };
 }
 
 export async function logoutCustomer() {

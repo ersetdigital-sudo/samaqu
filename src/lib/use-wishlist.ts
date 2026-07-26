@@ -11,10 +11,17 @@ export function useWishlist() {
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (!data.user) { setLoaded(true); return; }
-      setIsLoggedIn(true);
-      supabase.from("wishlists").select("product_id").eq("customer_id", data.user.id).then(({ data: rows }) => {
-        if (rows) setWishlistIds(new Set(rows.map((r) => r.product_id)));
-        setLoaded(true);
+      // Check if user exists in customers table (not admin)
+      supabase.from("customers").select("id").eq("id", data.user.id).single().then(({ data: c }) => {
+        if (c) {
+          setIsLoggedIn(true);
+          supabase.from("wishlists").select("product_id").eq("customer_id", data.user.id).then(({ data: rows }) => {
+            if (rows) setWishlistIds(new Set(rows.map((r) => r.product_id)));
+            setLoaded(true);
+          });
+        } else {
+          setLoaded(true);
+        }
       });
     });
   }, []);
