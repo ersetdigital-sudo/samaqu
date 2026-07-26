@@ -45,7 +45,7 @@ function StepItem({
   step,
   index,
 }: {
-  step: (typeof steps)[number];
+  step: (typeof DEFAULT_STEPS)[number];
   index: number;
 }) {
   return (
