@@ -38,14 +38,7 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
 
   function handleCheckout() {
     onClose();
-    if (items.length === 1) {
-      const item = items[0];
-      const params = new URLSearchParams({ id: item.id, color: item.color, size: item.size, qty: String(item.qty) });
-      if (item.notes) params.set("notes", item.notes);
-      router.push(`/checkout?${params.toString()}`);
-    } else {
-      router.push("/cart");
-    }
+    router.push("/checkout");
   }
 
   return (
