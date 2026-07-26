@@ -78,11 +78,12 @@ function CheckoutContent() {
     fetchPayment();
   }, []);
 
-  // Fetch saved addresses for logged-in customers
+  // Fetch saved addresses + prefill email for logged-in customers
   useEffect(() => {
     async function fetchAddresses() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+      if (user.email) setEmail(user.email);
       const { data } = await supabase.from("saved_addresses").select("*").eq("customer_id", user.id).order("is_default", { ascending: false }).order("created_at", { ascending: true });
       if (data && data.length > 0) {
         setSavedAddresses(data);
