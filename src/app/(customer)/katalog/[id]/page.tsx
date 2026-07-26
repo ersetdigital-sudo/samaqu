@@ -10,7 +10,7 @@ import { colorMap, type Product, type MediaItem } from "@/lib/katalog-data";
 import { getProductById } from "@/lib/db";
 import { useCart } from "@/lib/cart-context";
 import { useToast } from "@/components/Toast";
-import { getWhatsAppLink } from "@/lib/store-settings";
+import { buildGraph, buildProduct, buildBreadcrumb, buildOrganization } from "@/components/SEO";
 import { SITE_URL } from "@/lib/site-config";
 import { supabase } from "@/lib/supabase";
 import { useWishlist } from "@/lib/use-wishlist";
@@ -197,45 +197,22 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
   return (
     <section className="min-h-screen" style={{ background: "var(--cream)" }}>
-      {/* JSON-LD Structured Data */}
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
-        "@context": "https://schema.org",
-        "@type": "Product",
-        name: product.name,
-        description: getDescription(product),
-        image: product.image,
-        sku: product.id,
-        brand: { "@type": "Brand", name: "SAMAQU" },
-        category: product.category,
-        color: product.colors.join(", "),
-        offers: {
-          "@type": "Offer",
-          url: `${SITE_URL}/katalog/${product.id}`,
-          priceCurrency: "IDR",
-          price: currentPrice,
-          availability: "https://schema.org/InStock",
-          seller: { "@type": "Organization", name: "SAMAQU" },
-          itemCondition: "https://schema.org/NewCondition",
-          shippingDetails: {
-            "@type": "OfferShippingDetails",
-            shippingDestination: { "@type": "DefinedRegion", addressCountry: "ID" },
-            shippingRate: { "@type": "MonetaryAmount", value: "25000", currency: "IDR" },
-            deliveryTime: {
-              "@type": "ShippingDeliveryTime",
-              handlingTime: { "@type": "QuantitativeValue", minValue: 1, maxValue: 2, unitCode: "DAY" },
-              transitTime: { "@type": "QuantitativeValue", minValue: 1, maxValue: 3, unitCode: "DAY" },
-            },
-          },
-        },
-        breadcrumb: {
-          "@type": "BreadcrumbList",
-          itemListElement: [
-            { "@type": "ListItem", position: 1, name: "Beranda", item: SITE_URL },
-            { "@type": "ListItem", position: 2, name: "Katalog", item: `${SITE_URL}/katalog` },
-            { "@type": "ListItem", position: 3, name: product.name },
-          ],
-        },
-      }) }} />
+      {/* JSON-LD Structured Data — consolidated @graph */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(
+        buildGraph(
+          buildOrganization(),
+          buildProduct({
+            id: product.id, name: product.name, description: getDescription(product),
+            price: currentPrice, image: product.image, category: product.category,
+            colors: product.colors, inStock: stock !== 0,
+          }),
+          buildBreadcrumb([
+            { name: "Beranda", url: SITE_URL },
+            { name: "Katalog", url: `${SITE_URL}/katalog` },
+            { name: product.name },
+          ]),
+        )
+      ) }} />
       {/* ═══════════════════════════════════════
           MOBILE LAYOUT (max-md)
       ═══════════════════════════════════════ */}
