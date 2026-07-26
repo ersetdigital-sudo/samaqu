@@ -11,8 +11,9 @@ import { getProductById } from "@/lib/db";
 import { useCart } from "@/lib/cart-context";
 import { useToast } from "@/components/Toast";
 import { getWhatsAppLink } from "@/lib/store-settings";
+import { supabase } from "@/lib/supabase";
 
-const sizes = ["S", "M", "L", "XL", "XXL"];
+const FALLBACK_SIZES = ["S", "M", "L", "XL", "XXL"];
 
 function waLink(product: Product, size: string, color: string, qty: number, notes: string) {
   const msg = `Halo Admin SAMAQU, saya ingin memesan:\n\nProduk: ${product.name}\nKain: ${product.kain || "-"}\nWarna: ${color}\nUkuran: ${size}\nJumlah: ${qty}\n${notes ? `Catatan: ${notes}\n` : ""}\nTotal: Rp ${(product.price * qty).toLocaleString("id-ID")}\n\nMohon konfirmasi ketersediaan. Terima kasih!`;
@@ -88,6 +89,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
   const [selectedColor, setSelectedColor] = useState("");
   const [selectedSize, setSelectedSize] = useState("M");
+  const [availableSizes, setAvailableSizes] = useState<string[]>(FALLBACK_SIZES);
   const [qty, setQty] = useState(1);
   const [notes, setNotes] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
@@ -105,6 +107,19 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       setLoading(false);
     });
   }, [id]);
+
+  useEffect(() => {
+    if (!id || !selectedColor) return;
+    supabase.from("product_variants").select("size").eq("product_id", id).eq("color", selectedColor).order("size").then(({ data }) => {
+      if (data && data.length > 0) {
+        const sizes = data.map((d) => d.size);
+        setAvailableSizes(sizes);
+        if (!sizes.includes(selectedSize)) setSelectedSize(sizes[0]);
+      } else {
+        setAvailableSizes(FALLBACK_SIZES);
+      }
+    });
+  }, [id, selectedColor]);
 
   function handleAddToCart() {
     if (!product) return;
@@ -256,7 +271,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           <div className="mb-5">
             <p className="text-[10px] tracking-[0.1em] uppercase font-ui font-medium mb-2.5" style={{ color: "var(--espresso)" }}>Ukuran</p>
             <div className="flex gap-1.5">
-              {sizes.map((s) => (
+              {availableSizes.map((s) => (
                 <button key={s} onClick={() => setSelectedSize(s)}
                   className="w-10 h-10 flex items-center justify-center text-[12px] font-ui font-medium rounded-sm transition-all duration-200"
                   style={{ background: selectedSize === s ? "var(--espresso)" : "transparent", color: selectedSize === s ? "var(--cream)" : "var(--coffee)", border: `1px solid ${selectedSize === s ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
@@ -431,7 +446,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             <div className="mb-7">
               <p className="text-[11px] sm:text-[12px] tracking-[0.12em] uppercase font-ui font-medium mb-3" style={{ color: "var(--espresso)" }}>Ukuran</p>
               <div className="flex flex-wrap gap-2">
-                {sizes.map((s) => (
+                {availableSizes.map((s) => (
                   <button key={s} onClick={() => setSelectedSize(s)}
                     className="w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center text-[13px] font-ui font-medium rounded-sm transition-all duration-200"
                     style={{ background: selectedSize === s ? "var(--espresso)" : "transparent", color: selectedSize === s ? "var(--cream)" : "var(--coffee)", border: `1px solid ${selectedSize === s ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
