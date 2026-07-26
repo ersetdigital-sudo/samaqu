@@ -1,16 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Loader2, ToggleLeft, ToggleRight, Plus, Trash2, RotateCcw } from "lucide-react";
+import { X, Loader2, Plus, Trash2, Upload } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/AdminToast";
-import ConfirmModal from "@/components/ConfirmModal";
 import AdminShell from "@/components/AdminShell";
-import type { Product } from "@/lib/katalog-data";
 
-/* ── Defaults ── */
 const HERO_DEFAULTS = {
   eyebrow_text: "Premium Muslim Menswear", title_line1: "Busana yang Layak", title_line2: "Menemani Setiap Momen.",
   description: "Dirancang dengan material pilihan, potongan yang presisi, dan detail yang dibuat untuk kenyamanan dalam setiap aktivitas.",
@@ -18,7 +14,7 @@ const HERO_DEFAULTS = {
 };
 
 interface HeroContent { eyebrow_text: string; title_line1: string; title_line2: string; description: string; feature1: string; feature2: string; feature3: string; is_active: boolean; }
-interface FeaturedProduct { id: string; product_id: string; display_order: number; }
+interface CategoryImage { id: string; name: string; description: string; image_url: string; display_order: number; }
 interface OrderStep { id: string; step_number: number; title: string; description: string; }
 interface GaransiItem { id: string; title: string; description: string; display_order: number; }
 interface TrustBadge { id: string; label: string; display_order: number; }
@@ -27,155 +23,132 @@ interface MarqueeItem { id: string; label: string; display_order: number; }
 
 export default function KontenWebsitePage() {
   const [hero, setHero] = useState<HeroContent>(HERO_DEFAULTS);
-  const [featured, setFeatured] = useState<FeaturedProduct[]>([]);
+  const [categories, setCategories] = useState<CategoryImage[]>([]);
   const [steps, setSteps] = useState<OrderStep[]>([]);
   const [garansi, setGaransi] = useState<GaransiItem[]>([]);
   const [badges, setBadges] = useState<TrustBadge[]>([]);
   const [faqs, setFaqs] = useState<FaqItem[]>([]);
   const [marquee, setMarquee] = useState<MarqueeItem[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [editModal, setEditModal] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const toast = useToast();
 
-  // Form states
-  const [heroForm, setHeroForm] = useState<HeroContent>(HERO_DEFAULTS);
-  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
+  // Edit states
+  const [editHero, setEditHero] = useState<HeroContent>(HERO_DEFAULTS);
   const [editSteps, setEditSteps] = useState<OrderStep[]>([]);
   const [editGaransi, setEditGaransi] = useState<GaransiItem[]>([]);
   const [editBadges, setEditBadges] = useState<TrustBadge[]>([]);
   const [editFaqs, setEditFaqs] = useState<FaqItem[]>([]);
   const [editMarquee, setEditMarquee] = useState<MarqueeItem[]>([]);
+  const [editCategories, setEditCategories] = useState<CategoryImage[]>([]);
+  const [uploadingId, setUploadingId] = useState<string | null>(null);
 
   useEffect(() => {
-    async function fetchData() {
-      const [heroRes, featuredRes, stepsRes, garansiRes, badgesRes, faqsRes, marqueeRes, productsRes] = await Promise.all([
-        supabase.from("hero_content").select("*").eq("id", 1).single(),
-        supabase.from("featured_products").select("*").order("display_order"),
-        supabase.from("order_steps").select("*").order("step_number"),
-        supabase.from("garansi_items").select("*").order("display_order"),
-        supabase.from("trust_badges").select("*").order("display_order"),
-        supabase.from("faq_items").select("*").order("display_order"),
-        supabase.from("marquee_items").select("*").order("display_order"),
-        supabase.from("products").select("*").order("name"),
-      ]);
-      if (heroRes.data) {
-        const h = heroRes.data;
-        setHero({ eyebrow_text: h.eyebrow_text || HERO_DEFAULTS.eyebrow_text, title_line1: h.title_line1 || HERO_DEFAULTS.title_line1, title_line2: h.title_line2 || HERO_DEFAULTS.title_line2, description: h.description || HERO_DEFAULTS.description, feature1: h.feature1 || HERO_DEFAULTS.feature1, feature2: h.feature2 || HERO_DEFAULTS.feature2, feature3: h.feature3 || HERO_DEFAULTS.feature3, is_active: h.is_active ?? true });
-      }
-      if (featuredRes.data) setFeatured(featuredRes.data);
-      if (stepsRes.data) setSteps(stepsRes.data);
-      if (garansiRes.data) setGaransi(garansiRes.data);
-      if (badgesRes.data) setBadges(badgesRes.data);
-      if (faqsRes.data) setFaqs(faqsRes.data);
-      if (marqueeRes.data) setMarquee(marqueeRes.data);
-      if (productsRes.data) setProducts(productsRes.data);
-      setLoading(false);
-    }
-    fetchData();
+    loadData();
   }, []);
 
-  // ── Hero ──
-  function openHeroEdit() { setHeroForm({ ...hero }); setEditModal("hero"); }
-  function updateHeroField(field: keyof HeroContent, value: string | boolean) { setHeroForm((p) => ({ ...p, [field]: value })); }
+  async function loadData() {
+    setLoading(true);
+    const [heroRes, catRes, stepsRes, garansiRes, badgesRes, faqsRes, marqueeRes] = await Promise.all([
+      supabase.from("hero_content").select("*").eq("id", 1).single(),
+      supabase.from("category_images").select("*").order("display_order"),
+      supabase.from("order_steps").select("*").order("step_number"),
+      supabase.from("garansi_items").select("*").order("display_order"),
+      supabase.from("trust_badges").select("*").order("display_order"),
+      supabase.from("faq_items").select("*").order("display_order"),
+      supabase.from("marquee_items").select("*").order("display_order"),
+    ]);
+    if (heroRes.data) setHero(heroRes.data);
+    if (catRes.data) setCategories(catRes.data);
+    if (stepsRes.data) setSteps(stepsRes.data);
+    if (garansiRes.data) setGaransi(garansiRes.data);
+    if (badgesRes.data) setBadges(badgesRes.data);
+    if (faqsRes.data) setFaqs(faqsRes.data);
+    if (marqueeRes.data) setMarquee(marqueeRes.data);
+    setLoading(false);
+  }
+
+  // Hero handlers
+  function openHeroEdit() { setEditHero({ ...hero }); setEditModal("hero"); }
   async function saveHero() {
     setSaving(true);
-    await supabase.from("hero_content").upsert({ id: 1, ...heroForm, updated_at: new Date().toISOString() });
-    setHero(heroForm);
-    setSaving(false); setEditModal(null);
+    await supabase.from("hero_content").upsert({ id: 1, ...editHero }, { onConflict: "id" });
+    setHero(editHero); setEditModal(null); setSaving(false);
     toast.showToast("success", "Hero berhasil disimpan");
   }
-  function resetHeroToDefault() { setHeroForm({ ...HERO_DEFAULTS }); }
 
-  // ── Koleksi ──
-  function openKoleksiEdit() { setSelectedProducts(featured.map((f) => f.product_id)); setEditModal("koleksi"); }
-  async function saveKoleksi() {
+  // Category handlers
+  function openCategoryEdit() { setEditCategories(categories.map((c) => ({ ...c }))); setEditModal("kategori"); }
+  async function saveCategories() {
     setSaving(true);
-    await supabase.from("featured_products").delete().neq("id", "");
-    const rows = selectedProducts.map((pid, i) => ({ product_id: pid, display_order: i, is_active: true }));
-    if (rows.length > 0) await supabase.from("featured_products").insert(rows);
-    setFeatured(rows.map((r, i) => ({ id: String(i), ...r })));
-    setSaving(false); setEditModal(null);
-    toast.showToast("success", "Koleksi pilihan berhasil disimpan");
+    await supabase.from("category_images").delete().neq("id", "");
+    if (editCategories.length > 0) {
+      await supabase.from("category_images").insert(editCategories.map((c, i) => ({ name: c.name, description: c.description, image_url: c.image_url, display_order: i })));
+    }
+    setCategories(editCategories); setEditModal(null); setSaving(false);
+    toast.showToast("success", "Kategori berhasil disimpan");
+  }
+  async function uploadCategoryImage(idx: number, file: File) {
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("upload_preset", "samaqu_unsigned");
+    setUploadingId(editCategories[idx].id);
+    try {
+      const res = await fetch(`https://api.cloudinary.com/v1_1/dgtixuop0/image/upload`, { method: "POST", body: fd });
+      const data = await res.json();
+      if (data.secure_url) {
+        const u = [...editCategories]; u[idx] = { ...u[idx], image_url: data.secure_url }; setEditCategories(u);
+        toast.showToast("success", "Gambar berhasil diupload");
+      }
+    } catch { toast.showToast("error", "Gagal upload gambar"); }
+    setUploadingId(null);
   }
 
-  // ── Steps ──
-  function openStepsEdit() { setEditSteps([...steps]); setEditModal("steps"); }
+  // Steps handlers
+  function openStepsEdit() { setEditSteps(steps.map((s) => ({ ...s }))); setEditModal("steps"); }
   async function saveSteps() {
     setSaving(true);
-    // Delete all existing rows first
-    const { data: existingS } = await supabase.from("order_steps").select("id");
-    if (existingS) for (const row of existingS) await supabase.from("order_steps").delete().eq("id", row.id);
-    const rows = editSteps.map((s, i) => ({ step_number: i + 1, title: s.title, description: s.description, is_active: true }));
-    if (rows.length > 0) await supabase.from("order_steps").insert(rows);
-    setSteps(rows.map((r, i) => ({ id: String(i), ...r })));
-    setSaving(false); setEditModal(null);
-    toast.showToast("success", "Cara pemesanan berhasil disimpan");
+    await supabase.from("order_steps").delete().neq("id", "");
+    if (editSteps.length > 0) {
+      await supabase.from("order_steps").insert(editSteps.map((s, i) => ({ step_number: i + 1, title: s.title, description: s.description })));
+    }
+    setSteps(editSteps); setEditModal(null); setSaving(false);
+    toast.showToast("success", "Cara Pemesanan berhasil disimpan");
   }
 
-  // ── Garansi ──
-  function openGaransiEdit() { setEditGaransi([...garansi]); setEditBadges([...badges]); setEditModal("garansi"); }
+  // Garansi handlers
+  function openGaransiEdit() { setEditGaransi(garansi.map((g) => ({ ...g }))); setEditBadges(badges.map((b) => ({ ...b }))); setEditModal("garansi"); }
   async function saveGaransi() {
     setSaving(true);
-    // Delete all existing rows first
-    const { data: existingG } = await supabase.from("garansi_items").select("id");
-    if (existingG) for (const row of existingG) await supabase.from("garansi_items").delete().eq("id", row.id);
-    const rows = editGaransi.map((g, i) => ({ title: g.title, description: g.description, display_order: i, is_active: true }));
-    if (rows.length > 0) await supabase.from("garansi_items").insert(rows);
-    setGaransi(rows.map((r, i) => ({ id: String(i), ...r })));
-
-    const { data: existingB } = await supabase.from("trust_badges").select("id");
-    if (existingB) for (const row of existingB) await supabase.from("trust_badges").delete().eq("id", row.id);
-    const bRows = editBadges.map((b, i) => ({ label: b.label, display_order: i, is_active: true }));
-    if (bRows.length > 0) await supabase.from("trust_badges").insert(bRows);
-    setBadges(bRows.map((r, i) => ({ id: String(i), ...r })));
-
-    setSaving(false); setEditModal(null);
+    await supabase.from("garansi_items").delete().neq("id", "");
+    if (editGaransi.length > 0) await supabase.from("garansi_items").insert(editGaransi.map((g, i) => ({ title: g.title, description: g.description, display_order: i })));
+    await supabase.from("trust_badges").delete().neq("id", "");
+    if (editBadges.length > 0) await supabase.from("trust_badges").insert(editBadges.map((b, i) => ({ label: b.label, display_order: i })));
+    setGaransi(editGaransi); setBadges(editBadges); setEditModal(null); setSaving(false);
     toast.showToast("success", "Jaminan berhasil disimpan");
   }
 
-  // ── FAQ ──
-  function openFaqEdit() { setEditFaqs([...faqs]); setEditModal("faq"); }
-  async function saveFaq() {
+  // FAQ handlers
+  function openFaqEdit() { setEditFaqs(faqs.map((f) => ({ ...f }))); setEditModal("faq"); }
+  async function saveFaqs() {
     setSaving(true);
-    // Delete all existing rows first
-    const { data: existingF } = await supabase.from("faq_items").select("id");
-    if (existingF) for (const row of existingF) await supabase.from("faq_items").delete().eq("id", row.id);
-    const rows = editFaqs.map((f, i) => ({ question: f.question, answer: f.answer, display_order: i, is_active: true }));
-    if (rows.length > 0) await supabase.from("faq_items").insert(rows);
-    setFaqs(rows.map((r, i) => ({ id: String(i), ...r })));
-    setSaving(false); setEditModal(null);
+    await supabase.from("faq_items").delete().neq("id", "");
+    if (editFaqs.length > 0) await supabase.from("faq_items").insert(editFaqs.map((f, i) => ({ question: f.question, answer: f.answer, display_order: i })));
+    setFaqs(editFaqs); setEditModal(null); setSaving(false);
     toast.showToast("success", "FAQ berhasil disimpan");
   }
 
-  // ── Marquee ──
-  function openMarqueeEdit() { setEditMarquee([...marquee]); setEditModal("marquee"); }
+  // Marquee handlers
+  function openMarqueeEdit() { setEditMarquee(marquee.map((m) => ({ ...m }))); setEditModal("marquee"); }
   async function saveMarquee() {
     setSaving(true);
-    // Delete all existing rows first
-    const { data: existingM } = await supabase.from("marquee_items").select("id");
-    if (existingM) for (const row of existingM) await supabase.from("marquee_items").delete().eq("id", row.id);
-    const rows = editMarquee.map((m, i) => ({ label: m.label, display_order: i, is_active: true }));
-    if (rows.length > 0) await supabase.from("marquee_items").insert(rows);
-    setMarquee(rows.map((r, i) => ({ id: String(i), ...r })));
-    setSaving(false); setEditModal(null);
-    toast.showToast("success", "Trust marquee berhasil disimpan");
+    await supabase.from("marquee_items").delete().neq("id", "");
+    if (editMarquee.length > 0) await supabase.from("marquee_items").insert(editMarquee.map((m, i) => ({ label: m.label, display_order: i })));
+    setMarquee(editMarquee); setEditModal(null); setSaving(false);
+    toast.showToast("success", "Marquee berhasil disimpan");
   }
 
-  // ── Reset to defaults ──
-  function resetFaqToDefault() {
-    if (!confirm("Reset FAQ ke pertanyaan default?\n\nSemua perubahan akan hilang.")) return;
-    setEditFaqs([
-      { id: "d1", question: "Bagaimana cara memesan produk SAMAQU?", answer: "Pilih produk dari katalog, cek panduan size, lalu klik tombol WhatsApp untuk menghubungi admin. Admin akan membantu konfirmasi ketersediaan hingga pembayaran.", display_order: 0 },
-      { id: "d2", question: "Apakah bahan SAMAQU nyaman dan adem?", answer: "Sangat. Kami memilih bahan berkualitas yang adem, ringan, dan tidak panas saat dikenakan — nyaman untuk ibadah, keseharian, maupun acara istimewa dalam waktu lama.", display_order: 1 },
-      { id: "d3", question: "Bagaimana jika saya ragu memilih ukuran?", answer: "Gunakan panduan size kami sebagai acuan awal. Jika masih ragu, cukup chat admin dengan menyebutkan tinggi dan postur tubuhmu — kami bantu menentukan ukuran yang paling pas.", display_order: 2 },
-      { id: "d4", question: "Apakah bisa pesan dalam jumlah banyak / grosir?", answer: "Tentu. Kami melayani pemesanan pribadi, keluarga, hingga komunitas. Untuk pembelian grosir tersedia penawaran khusus — ceritakan kebutuhanmu dan tim kami susun harga terbaik.", display_order: 3 },
-      { id: "d5", question: "Apakah ada garansi untuk produk?", answer: "Setiap produk melewati pengecekan jahitan dan bahan sebelum dikirim. Bila ada ketidaksesuaian pada pesanan, hubungi admin kami dan akan kami bantu dengan sepenuh hati.", display_order: 4 },
-    ]);
-  }
-
-  // ── Helpers ──
   function CharCounter({ current, max }: { current: number; max: number }) {
     return <p className="text-[10px] mt-0.5" style={{ color: current > max * 0.9 ? "#8a6f42" : "var(--text-muted)" }}>{current}/{max}</p>;
   }
@@ -184,12 +157,11 @@ export default function KontenWebsitePage() {
 
   const sections = [
     { key: "hero", title: "Hero / Banner Utama", desc: hero.title_line1 + " " + hero.title_line2, active: hero.is_active, edit: openHeroEdit },
-    { key: "koleksi", title: "Koleksi Pilihan", desc: `${featured.length} produk`, active: featured.length > 0, edit: openKoleksiEdit },
+    { key: "kategori", title: "Kategori Koleksi", desc: `${categories.length} kategori`, active: categories.length > 0, edit: openCategoryEdit },
     { key: "steps", title: "Cara Pemesanan", desc: `${steps.length} langkah`, active: steps.length > 0, edit: openStepsEdit },
     { key: "garansi", title: "Jaminan SAMAQU", desc: `${garansi.length} jaminan + ${badges.length} badges`, active: true, edit: openGaransiEdit },
     { key: "faq", title: "FAQ", desc: `${faqs.length} pertanyaan`, active: true, edit: openFaqEdit },
     { key: "marquee", title: "Trust Marquee", desc: `${marquee.length} item scrolling`, active: true, edit: openMarqueeEdit },
-    { key: "testimoni", title: "Testimoni Pelanggan", desc: "Kelola testimoni pelanggan", active: true, edit: null },
   ];
 
   return (
@@ -207,19 +179,11 @@ export default function KontenWebsitePage() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                   <h3 className="font-semibold" style={{ color: "var(--espresso)" }}>{s.title}</h3>
-                  <span className="badge text-[10px]" style={{ background: s.active ? "#e7ecdf" : "#f0ebe5", color: s.active ? "#5b6b45" : "#6b5d50" }}>{s.active ? "Aktif" : "Kosong"}</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ background: s.active ? "#e7ecdf" : "#f0ebe5", color: s.active ? "#5b6b45" : "var(--text-muted)" }}>{s.active ? "Aktif" : "Kosong"}</span>
                 </div>
-                <p className="text-sm truncate" style={{ color: "var(--text-muted)" }}>{s.desc}</p>
+                <p className="text-sm" style={{ color: "var(--text-muted)" }}>{s.desc}</p>
               </div>
-              {s.key === "testimoni" ? (
-                <Link href="/admin/testimoni" className="text-sm font-semibold px-4 py-2 rounded-lg shrink-0 text-center" style={{ background: "var(--gold)", color: "white" }}>
-                  Kelola Testimoni
-                </Link>
-              ) : s.edit ? (
-                <button onClick={s.edit} className="text-sm font-semibold px-4 py-2 rounded-lg shrink-0" style={{ border: "1px solid rgba(64,50,37,.15)", color: "var(--gold)" }}>
-                  Edit Bagian
-                </button>
-              ) : null}
+              {s.edit && <button onClick={s.edit} className="shrink-0 px-5 py-2 rounded-xl text-sm font-medium transition-colors hover:bg-[rgba(64,50,37,.05)]" style={{ border: "1px solid rgba(64,50,37,.15)", color: "var(--gold)" }}>Edit Bagian</button>}
             </div>
           ))}
         </div>
@@ -231,62 +195,59 @@ export default function KontenWebsitePage() {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.4)" }}>
             <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }} className="card p-6 w-full max-w-lg max-h-[85vh] overflow-y-auto">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-serif italic text-xl" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Edit Hero</h3>
+                <h3 className="font-serif italic text-xl" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Hero / Banner Utama</h3>
                 <button onClick={() => setEditModal(null)}><X size={20} style={{ color: "var(--text-muted)" }} /></button>
               </div>
-              <div className="space-y-4">
-                {(["eyebrow_text", "title_line1", "title_line2", "description", "feature1", "feature2", "feature3"] as const).map((field) => (
-                  <div key={field}>
-                    <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>{field.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}</label>
-                    {field === "description" ? (
-                      <textarea value={heroForm[field]} onChange={(e) => updateHeroField(field, e.target.value.slice(0, 150))} rows={3} className="w-full rounded-xl px-4 py-3 text-sm outline-none resize-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
-                    ) : (
-                      <input value={heroForm[field]} onChange={(e) => updateHeroField(field, e.target.value.slice(0, field === "eyebrow_text" ? 40 : 30))} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
-                    )}
-                    <CharCounter current={heroForm[field].length} max={field === "description" ? 150 : field === "eyebrow_text" ? 40 : 30} />
-                  </div>
-                ))}
-                <div className="flex items-center justify-between">
-                  <span className="text-sm" style={{ color: "var(--text-secondary)" }}>Aktif</span>
-                  <button onClick={() => updateHeroField("is_active", !heroForm.is_active)} style={{ color: heroForm.is_active ? "var(--gold)" : "var(--text-muted)" }}>
-                    {heroForm.is_active ? <ToggleRight size={28} /> : <ToggleLeft size={28} />}
-                  </button>
+              <div className="space-y-3">
+                <div><label className="block text-xs font-medium mb-1" style={{ color: "var(--text-muted)" }}>Eyebrow Text</label><input value={editHero.eyebrow_text} onChange={(e) => setEditHero({ ...editHero, eyebrow_text: e.target.value.slice(0, 40) })} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white" }} /><CharCounter current={editHero.eyebrow_text.length} max={40} /></div>
+                <div><label className="block text-xs font-medium mb-1" style={{ color: "var(--text-muted)" }}>Title Line 1</label><input value={editHero.title_line1} onChange={(e) => setEditHero({ ...editHero, title_line1: e.target.value.slice(0, 30) })} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white" }} /><CharCounter current={editHero.title_line1.length} max={30} /></div>
+                <div><label className="block text-xs font-medium mb-1" style={{ color: "var(--text-muted)" }}>Title Line 2</label><input value={editHero.title_line2} onChange={(e) => setEditHero({ ...editHero, title_line2: e.target.value.slice(0, 30) })} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white" }} /><CharCounter current={editHero.title_line2.length} max={30} /></div>
+                <div><label className="block text-xs font-medium mb-1" style={{ color: "var(--text-muted)" }}>Deskripsi</label><textarea value={editHero.description} onChange={(e) => setEditHero({ ...editHero, description: e.target.value.slice(0, 150) })} rows={3} className="w-full rounded-lg px-3 py-2 text-sm outline-none resize-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white" }} /><CharCounter current={editHero.description.length} max={150} /></div>
+                <div className="grid grid-cols-3 gap-2">
+                  {[1, 2, 3].map((n) => { const k = `feature${n}` as keyof HeroContent; return <div key={k}><label className="block text-[10px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>Fitur {n}</label><input value={editHero[k] as string} onChange={(e) => setEditHero({ ...editHero, [k]: e.target.value.slice(0, 30) })} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white" }} /><CharCounter current={(editHero[k] as string).length} max={30} /></div>; })}
                 </div>
               </div>
-              <div className="flex gap-3 mt-6">
-                <button onClick={resetHeroToDefault} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium" style={{ border: "1px solid rgba(64,50,37,.15)", color: "var(--text-secondary)" }}><RotateCcw size={14} /> Reset</button>
-                <button onClick={() => setEditModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-medium" style={{ border: "1px solid rgba(64,50,37,.15)" }}>Batal</button>
-                <button onClick={saveHero} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: "var(--gold)" }}>{saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null} Simpan</button>
-              </div>
+              <div className="flex gap-3 mt-5"><button onClick={() => setEditModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-medium" style={{ border: "1px solid rgba(64,50,37,.15)" }}>Batal</button><button onClick={saveHero} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: "var(--gold)" }}>{saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null} Simpan</button></div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* ═══ Koleksi Modal ═══ */}
+      {/* ═══ Kategori Koleksi Modal ═══ */}
       <AnimatePresence>
-        {editModal === "koleksi" && (
+        {editModal === "kategori" && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.4)" }}>
-            <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }} className="card p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto">
+            <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }} className="card p-6 w-full max-w-lg max-h-[85vh] overflow-y-auto">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-serif italic text-xl" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Koleksi Pilihan</h3>
+                <h3 className="font-serif italic text-xl" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Kategori Koleksi</h3>
                 <button onClick={() => setEditModal(null)}><X size={20} style={{ color: "var(--text-muted)" }} /></button>
               </div>
-              <p className="text-sm mb-4" style={{ color: "var(--text-muted)" }}>Pilih produk (max 8)</p>
-              <div className="space-y-2 mb-4">
-                {products.map((p) => (
-                  <label key={p.id} className="flex items-center gap-3 p-3 rounded-lg cursor-pointer" style={{ background: selectedProducts.includes(p.id) ? "rgba(181,140,74,.08)" : "transparent", border: `1px solid ${selectedProducts.includes(p.id) ? "var(--gold)" : "rgba(64,50,37,.06)"}` }}>
-                    <input type="checkbox" checked={selectedProducts.includes(p.id)} onChange={(e) => { if (e.target.checked && selectedProducts.length < 8) setSelectedProducts([...selectedProducts, p.id]); else if (!e.target.checked) setSelectedProducts(selectedProducts.filter((id) => id !== p.id)); }} style={{ accentColor: "var(--gold)" }} />
-                    <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0" style={{ background: "#e8dfd1" }}><img src={p.image} alt="" className="w-full h-full object-cover" /></div>
-                    <div className="min-w-0"><p className="text-sm font-medium truncate" style={{ color: "var(--espresso)" }}>{p.name}</p><p className="text-xs" style={{ color: "var(--text-muted)" }}>{p.category}</p></div>
-                  </label>
+              <p className="text-xs mb-4 px-3 py-2 rounded-lg" style={{ background: "#f0e7d8", color: "#8a6f42" }}>Ukuran gambar yang disarankan: <strong>800×800px</strong> (aspect ratio 1:1, format JPG/PNG, max 2MB) agar tampil optimal di grid homepage.</p>
+              <div className="space-y-4 mb-4">
+                {editCategories.map((cat, i) => (
+                  <div key={cat.id || i} className="p-4 rounded-xl" style={{ border: "1px solid rgba(64,50,37,.1)", background: "rgba(255,255,255,.5)" }}>
+                    <div className="flex items-center justify-between mb-3">
+                      <input value={cat.name} onChange={(e) => { const u = [...editCategories]; u[i] = { ...u[i], name: e.target.value }; setEditCategories(u); }} className="text-sm font-semibold outline-none bg-transparent" style={{ color: "var(--espresso)" }} placeholder="Nama kategori" />
+                      {editCategories.length > 1 && <button onClick={() => setEditCategories(editCategories.filter((_, j) => j !== i))} className="p-1 hover:bg-red-50 rounded"><Trash2 size={14} style={{ color: "#e74c3c" }} /></button>}
+                    </div>
+                    <div className="flex gap-3">
+                      <div className="w-20 h-20 rounded-lg overflow-hidden shrink-0" style={{ background: "#e8dfd1" }}>
+                        {cat.image_url ? <img src={cat.image_url} alt={cat.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><ImageIcon size={20} style={{ color: "var(--text-muted)" }} /></div>}
+                      </div>
+                      <div className="flex-1">
+                        <textarea value={cat.description} onChange={(e) => { const u = [...editCategories]; u[i] = { ...u[i], description: e.target.value }; setEditCategories(u); }} rows={2} placeholder="Deskripsi singkat kategori" className="w-full rounded-lg px-3 py-2 text-xs outline-none resize-none mb-2" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white" }} />
+                        <label className="flex items-center gap-2 text-xs cursor-pointer px-3 py-2 rounded-lg transition-colors hover:bg-[rgba(64,50,37,.05)]" style={{ border: "1px dashed rgba(64,50,37,.2)", color: "var(--gold)" }}>
+                          <Upload size={14} />
+                          {uploadingId === cat.id ? "Uploading..." : "Ganti Gambar"}
+                          <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadCategoryImage(i, f); }} />
+                        </label>
+                      </div>
+                    </div>
+                  </div>
                 ))}
               </div>
-              <p className="text-xs mb-4" style={{ color: "var(--text-muted)" }}>{selectedProducts.length}/8 dipilih</p>
-              <div className="flex gap-3">
-                <button onClick={() => setEditModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-medium" style={{ border: "1px solid rgba(64,50,37,.15)" }}>Batal</button>
-                <button onClick={saveKoleksi} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: "var(--gold)" }}>{saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null} Simpan</button>
-              </div>
+              {editCategories.length < 6 && <button onClick={() => setEditCategories([...editCategories, { id: "new-" + Date.now(), name: "", description: "", image_url: "", display_order: editCategories.length }])} className="flex items-center gap-1.5 text-sm font-medium mb-4" style={{ color: "var(--gold)" }}><Plus size={14} /> Tambah Kategori</button>}
+              <div className="flex gap-3"><button onClick={() => setEditModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-medium" style={{ border: "1px solid rgba(64,50,37,.15)" }}>Batal</button><button onClick={saveCategories} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: "var(--gold)" }}>{saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null} Simpan</button></div>
             </motion.div>
           </motion.div>
         )}
@@ -308,16 +269,13 @@ export default function KontenWebsitePage() {
                       <span className="text-xs font-semibold" style={{ color: "var(--gold)" }}>Langkah {i + 1}</span>
                       {editSteps.length > 1 && <button onClick={() => setEditSteps(editSteps.filter((_, j) => j !== i))} className="p-1 hover:bg-red-50 rounded"><Trash2 size={14} style={{ color: "#e74c3c" }} /></button>}
                     </div>
-                    <input value={s.title} onChange={(e) => { const u = [...editSteps]; u[i] = { ...u[i], title: e.target.value.slice(0, 30) }; setEditSteps(u); }} placeholder="Judul" className="w-full rounded-lg px-3 py-2 text-sm outline-none mb-1" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
-                    <textarea value={s.description} onChange={(e) => { const u = [...editSteps]; u[i] = { ...u[i], description: e.target.value.slice(0, 100) }; setEditSteps(u); }} placeholder="Deskripsi" rows={2} className="w-full rounded-lg px-3 py-2 text-sm outline-none resize-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
+                    <input value={s.title} onChange={(e) => { const u = [...editSteps]; u[i] = { ...u[i], title: e.target.value.slice(0, 30) }; setEditSteps(u); }} placeholder="Judul" className="w-full rounded-lg px-3 py-2 text-sm outline-none mb-1" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white" }} />
+                    <textarea value={s.description} onChange={(e) => { const u = [...editSteps]; u[i] = { ...u[i], description: e.target.value.slice(0, 100) }; setEditSteps(u); }} placeholder="Deskripsi" rows={2} className="w-full rounded-lg px-3 py-2 text-sm outline-none resize-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white" }} />
                   </div>
                 ))}
               </div>
               {editSteps.length < 6 && <button onClick={() => setEditSteps([...editSteps, { id: String(Date.now()), step_number: editSteps.length + 1, title: "", description: "" }])} className="flex items-center gap-1.5 text-sm font-medium mb-4" style={{ color: "var(--gold)" }}><Plus size={14} /> Tambah</button>}
-              <div className="flex gap-3">
-                <button onClick={() => setEditModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-medium" style={{ border: "1px solid rgba(64,50,37,.15)" }}>Batal</button>
-                <button onClick={saveSteps} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: "var(--gold)" }}>{saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null} Simpan</button>
-              </div>
+              <div className="flex gap-3"><button onClick={() => setEditModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-medium" style={{ border: "1px solid rgba(64,50,37,.15)" }}>Batal</button><button onClick={saveSteps} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: "var(--gold)" }}>{saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null} Simpan</button></div>
             </motion.div>
           </motion.div>
         )}
@@ -332,32 +290,26 @@ export default function KontenWebsitePage() {
                 <h3 className="font-serif italic text-xl" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Jaminan SAMAQU</h3>
                 <button onClick={() => setEditModal(null)}><X size={20} style={{ color: "var(--text-muted)" }} /></button>
               </div>
-
               <p className="text-sm font-medium mb-3" style={{ color: "var(--espresso)" }}>Kartu Jaminan</p>
               <div className="space-y-3 mb-6">
                 {editGaransi.map((g, i) => (
                   <div key={i} className="p-3 rounded-lg" style={{ border: "1px solid rgba(64,50,37,.1)" }}>
-                    <input value={g.title} onChange={(e) => { const u = [...editGaransi]; u[i] = { ...u[i], title: e.target.value }; setEditGaransi(u); }} placeholder="Judul" className="w-full rounded-lg px-3 py-2 text-sm outline-none mb-2" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
-                    <textarea value={g.description} onChange={(e) => { const u = [...editGaransi]; u[i] = { ...u[i], description: e.target.value }; setEditGaransi(u); }} placeholder="Deskripsi" rows={2} className="w-full rounded-lg px-3 py-2 text-sm outline-none resize-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
+                    <input value={g.title} onChange={(e) => { const u = [...editGaransi]; u[i] = { ...u[i], title: e.target.value }; setEditGaransi(u); }} placeholder="Judul" className="w-full rounded-lg px-3 py-2 text-sm outline-none mb-2" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white" }} />
+                    <textarea value={g.description} onChange={(e) => { const u = [...editGaransi]; u[i] = { ...u[i], description: e.target.value }; setEditGaransi(u); }} placeholder="Deskripsi" rows={2} className="w-full rounded-lg px-3 py-2 text-sm outline-none resize-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white" }} />
                   </div>
                 ))}
               </div>
-
               <p className="text-sm font-medium mb-3" style={{ color: "var(--espresso)" }}>Trust Badges</p>
               <div className="space-y-2 mb-4">
                 {editBadges.map((b, i) => (
                   <div key={i} className="flex items-center gap-2">
-                    <input value={b.label} onChange={(e) => { const u = [...editBadges]; u[i] = { ...u[i], label: e.target.value }; setEditBadges(u); }} className="flex-1 rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
+                    <input value={b.label} onChange={(e) => { const u = [...editBadges]; u[i] = { ...u[i], label: e.target.value }; setEditBadges(u); }} className="flex-1 rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white" }} />
                     {editBadges.length > 1 && <button onClick={() => setEditBadges(editBadges.filter((_, j) => j !== i))} className="p-1"><Trash2 size={14} style={{ color: "#e74c3c" }} /></button>}
                   </div>
                 ))}
                 {editBadges.length < 5 && <button onClick={() => setEditBadges([...editBadges, { id: String(Date.now()), label: "", display_order: editBadges.length }])} className="text-sm font-medium" style={{ color: "var(--gold)" }}><Plus size={14} className="inline mr-1" />Tambah Badge</button>}
               </div>
-
-              <div className="flex gap-3">
-                <button onClick={() => setEditModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-medium" style={{ border: "1px solid rgba(64,50,37,.15)" }}>Batal</button>
-                <button onClick={saveGaransi} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: "var(--gold)" }}>{saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null} Simpan</button>
-              </div>
+              <div className="flex gap-3"><button onClick={() => setEditModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-medium" style={{ border: "1px solid rgba(64,50,37,.15)" }}>Batal</button><button onClick={saveGaransi} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: "var(--gold)" }}>{saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null} Simpan</button></div>
             </motion.div>
           </motion.div>
         )}
@@ -376,20 +328,16 @@ export default function KontenWebsitePage() {
                 {editFaqs.map((f, i) => (
                   <div key={i} className="p-4 rounded-xl" style={{ border: "1px solid rgba(64,50,37,.1)", background: "rgba(255,255,255,.5)" }}>
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-semibold" style={{ color: "var(--gold)" }}>FAQ {i + 1}</span>
+                      <span className="text-xs font-semibold" style={{ color: "var(--gold)" }}>Pertanyaan {i + 1}</span>
                       {editFaqs.length > 1 && <button onClick={() => setEditFaqs(editFaqs.filter((_, j) => j !== i))} className="p-1 hover:bg-red-50 rounded"><Trash2 size={14} style={{ color: "#e74c3c" }} /></button>}
                     </div>
-                    <input value={f.question} onChange={(e) => { const u = [...editFaqs]; u[i] = { ...u[i], question: e.target.value }; setEditFaqs(u); }} placeholder="Pertanyaan" className="w-full rounded-lg px-3 py-2 text-sm outline-none mb-2" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
-                    <textarea value={f.answer} onChange={(e) => { const u = [...editFaqs]; u[i] = { ...u[i], answer: e.target.value }; setEditFaqs(u); }} placeholder="Jawaban" rows={3} className="w-full rounded-lg px-3 py-2 text-sm outline-none resize-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
+                    <input value={f.question} onChange={(e) => { const u = [...editFaqs]; u[i] = { ...u[i], question: e.target.value }; setEditFaqs(u); }} placeholder="Pertanyaan" className="w-full rounded-lg px-3 py-2 text-sm outline-none mb-1" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white" }} />
+                    <textarea value={f.answer} onChange={(e) => { const u = [...editFaqs]; u[i] = { ...u[i], answer: e.target.value }; setEditFaqs(u); }} placeholder="Jawaban" rows={2} className="w-full rounded-lg px-3 py-2 text-sm outline-none resize-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white" }} />
                   </div>
                 ))}
               </div>
-              {editFaqs.length < 8 && <button onClick={() => setEditFaqs([...editFaqs, { id: String(Date.now()), question: "", answer: "", display_order: editFaqs.length }])} className="flex items-center gap-1.5 text-sm font-medium mb-4" style={{ color: "var(--gold)" }}><Plus size={14} /> Tambah FAQ</button>}
-              <div className="flex gap-3">
-                <button onClick={resetFaqToDefault} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium" style={{ border: "1px solid rgba(64,50,37,.15)", color: "var(--text-secondary)" }}><RotateCcw size={14} /> Reset</button>
-                <button onClick={() => setEditModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-medium" style={{ border: "1px solid rgba(64,50,37,.15)" }}>Batal</button>
-                <button onClick={saveFaq} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: "var(--gold)" }}>{saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null} Simpan</button>
-              </div>
+              {editFaqs.length < 10 && <button onClick={() => setEditFaqs([...editFaqs, { id: String(Date.now()), question: "", answer: "", display_order: editFaqs.length }])} className="flex items-center gap-1.5 text-sm font-medium mb-4" style={{ color: "var(--gold)" }}><Plus size={14} /> Tambah</button>}
+              <div className="flex gap-3"><button onClick={() => setEditModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-medium" style={{ border: "1px solid rgba(64,50,37,.15)" }}>Batal</button><button onClick={saveFaqs} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: "var(--gold)" }}>{saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null} Simpan</button></div>
             </motion.div>
           </motion.div>
         )}
@@ -399,31 +347,25 @@ export default function KontenWebsitePage() {
       <AnimatePresence>
         {editModal === "marquee" && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.4)" }}>
-            <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }} className="card p-6 w-full max-w-md">
+            <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }} className="card p-6 w-full max-w-lg max-h-[85vh] overflow-y-auto">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-serif italic text-xl" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Trust Marquee</h3>
                 <button onClick={() => setEditModal(null)}><X size={20} style={{ color: "var(--text-muted)" }} /></button>
               </div>
-              <p className="text-sm mb-4" style={{ color: "var(--text-muted)" }}>Teks yang scrolling di homepage</p>
               <div className="space-y-2 mb-4">
                 {editMarquee.map((m, i) => (
                   <div key={i} className="flex items-center gap-2">
-                    <input value={m.label} onChange={(e) => { const u = [...editMarquee]; u[i] = { ...u[i], label: e.target.value }; setEditMarquee(u); }} className="flex-1 rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
+                    <input value={m.label} onChange={(e) => { const u = [...editMarquee]; u[i] = { ...u[i], label: e.target.value }; setEditMarquee(u); }} className="flex-1 rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white" }} />
                     {editMarquee.length > 1 && <button onClick={() => setEditMarquee(editMarquee.filter((_, j) => j !== i))} className="p-1"><Trash2 size={14} style={{ color: "#e74c3c" }} /></button>}
                   </div>
                 ))}
+                {editMarquee.length < 10 && <button onClick={() => setEditMarquee([...editMarquee, { id: String(Date.now()), label: "", display_order: editMarquee.length }])} className="text-sm font-medium" style={{ color: "var(--gold)" }}><Plus size={14} className="inline mr-1" />Tambah Item</button>}
               </div>
-              {editMarquee.length < 6 && <button onClick={() => setEditMarquee([...editMarquee, { id: String(Date.now()), label: "", display_order: editMarquee.length }])} className="text-sm font-medium mb-4" style={{ color: "var(--gold)" }}><Plus size={14} className="inline mr-1" />Tambah Item</button>}
-              <div className="flex gap-3">
-                <button onClick={() => setEditModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-medium" style={{ border: "1px solid rgba(64,50,37,.15)" }}>Batal</button>
-                <button onClick={saveMarquee} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: "var(--gold)" }}>{saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null} Simpan</button>
-              </div>
+              <div className="flex gap-3"><button onClick={() => setEditModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-medium" style={{ border: "1px solid rgba(64,50,37,.15)" }}>Batal</button><button onClick={saveMarquee} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: "var(--gold)" }}>{saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null} Simpan</button></div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
-
-      <style jsx global>{`.card { background: #fffdfb; border: 1px solid rgba(64,50,37,.06); border-radius: 1rem; box-shadow: 0 1px 2px rgba(64,50,37,.03); } .badge { font-size: .72rem; font-weight: 600; padding: .2rem .6rem; border-radius: 999px; white-space: nowrap; }`}</style>
     </section>
     </AdminShell>
   );
