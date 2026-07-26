@@ -88,7 +88,6 @@ function CheckoutContent() {
   const selectedSize = sizeParam;
   const shippingCost = shippingOptions.find((s) => s.id === shipping)?.price || 0;
   const subtotal = product.price * qty;
-  const subtotal = product.price * qty;
   const total = subtotal - discount + shippingCost;
 
   async function applyPromo() {
