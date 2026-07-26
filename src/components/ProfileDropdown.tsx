@@ -37,13 +37,14 @@ export default function ProfileDropdown() {
 
   const initials = customer?.name?.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) || "●";
 
-  const textColor = scrolled ? "var(--espresso)" : "var(--cream)";
-
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="grid place-items-center w-10 h-10 rounded-full transition-all duration-200 hover:opacity-80" style={{ color: textColor }} aria-label="Akun saya">
-          <User size={20} strokeWidth={1.5} />
+        <button
+          className="grid place-items-center w-9 h-9 rounded-full transition-all duration-200 hover:scale-105"
+          style={{ background: "rgba(42,33,27,.08)", color: "var(--espresso)" }}
+          aria-label="Akun saya">
+          <User size={18} strokeWidth={2} />
         </button>
       </DropdownMenuTrigger>
 
