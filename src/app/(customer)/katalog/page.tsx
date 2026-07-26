@@ -124,6 +124,7 @@ function ProductCard({ product, index, wishlist }: { product: Product; index: nu
           </span>
         )}
         {/* Wishlist heart button */}
+        {wishlist.isLoggedIn && (
         <button
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); wishlist.toggle(product.id).then((added) => { if (added !== null) toast.show(added ? "Ditambahkan ke wishlist" : "Dihapus dari wishlist"); }); }}
           className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
@@ -131,6 +132,7 @@ function ProductCard({ product, index, wishlist }: { product: Product; index: nu
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill={wishlist.isWishlisted(product.id) ? "#e74c3c" : "none"} stroke={wishlist.isWishlisted(product.id) ? "#e74c3c" : "var(--espresso)"} strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
         </button>
+        )}
         {/* Quick Add to Cart button */}
         <button
           onClick={handleAddToCart}

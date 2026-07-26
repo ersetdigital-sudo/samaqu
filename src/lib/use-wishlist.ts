@@ -6,10 +6,12 @@ import { supabase } from "@/lib/supabase";
 export function useWishlist() {
   const [wishlistIds, setWishlistIds] = useState<Set<string>>(new Set());
   const [loaded, setLoaded] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (!data.user) { setLoaded(true); return; }
+      setIsLoggedIn(true);
       supabase.from("wishlists").select("product_id").eq("customer_id", data.user.id).then(({ data: rows }) => {
         if (rows) setWishlistIds(new Set(rows.map((r) => r.product_id)));
         setLoaded(true);
@@ -38,5 +40,5 @@ export function useWishlist() {
 
   const isWishlisted = useCallback((productId: string) => wishlistIds.has(productId), [wishlistIds]);
 
-  return { wishlistIds, isWishlisted, toggle, loaded };
+  return { wishlistIds, isWishlisted, toggle, loaded, isLoggedIn };
 }
