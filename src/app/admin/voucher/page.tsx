@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Edit, Trash2, X, Loader2, Ticket, DollarSign, Percent, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Edit, Trash2, X, Loader2, Ticket, DollarSign, Percent, ChevronDown, ChevronUp, Calendar } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import AdminShell from "@/components/AdminShell";
 import { useToast } from "@/components/AdminToast";
@@ -208,54 +208,102 @@ export default function VoucherPage() {
         {loading ? (
           <div className="card p-12 flex justify-center"><Loader2 size={24} className="animate-spin" style={{ color: "var(--gold)" }} /></div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {vouchers.map((v) => {
               const isExpanded = expandedId === v.id;
               const usageList = usages[v.id];
+              const isExpired = v.end_date && new Date(v.end_date) < new Date();
+              const isFull = v.usage_limit > 0 && v.used_count >= v.usage_limit;
+              const statusLabel = isExpired ? "Kadaluarsa" : isFull ? "Habis" : v.is_active ? "Aktif" : "Nonaktif";
+              const statusColor = isExpired ? { bg: "#f0ebe5", text: "#9D8F86" } : isFull ? { bg: "#fde8e8", text: "#c0392b" } : v.is_active ? { bg: "#e7ecdf", text: "#5b6b45" } : { bg: "#f0ebe5", text: "#6b5d50" };
+              const usagePct = v.usage_limit > 0 ? Math.min(100, (v.used_count / v.usage_limit) * 100) : 0;
+
               return (
-                <div key={v.id} className="card overflow-hidden">
-                  <div className="flex items-center gap-4 px-5 py-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold" style={{ color: "var(--espresso)" }}>{v.code}</span>
-                        <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded" style={{ background: v.discount_type === "percentage" ? "#f0e7d8" : "#e7ecdf", color: v.discount_type === "percentage" ? "#8a6f42" : "#5b6b45" }}>
-                          {v.discount_type === "percentage" ? <Percent size={10} /> : <DollarSign size={10} />}
-                          {formatDiscount(v)}
-                        </span>
-                        {v.limit_per_wa && <span className="text-[10px] px-2 py-0.5 rounded" style={{ background: "#e4e6ea", color: "#5c6473" }}>1x/WA</span>}
-                        <button onClick={() => toggleActive(v)} className="text-[10px] px-2 py-0.5 rounded font-medium" style={{ background: v.is_active ? "#e7ecdf" : "#f0ebe5", color: v.is_active ? "#5b6b45" : "#6b5d50" }}>
-                          {v.is_active ? "Aktif" : "Nonaktif"}
-                        </button>
-                      </div>
-                      <div className="flex items-center gap-3 mt-1 text-[11px]" style={{ color: "var(--text-muted)" }}>
-                        <span>{v.min_purchase > 0 ? `Min Rp ${v.min_purchase.toLocaleString("id-ID")}` : "Tanpa min. belanja"}</span>
-                        <span>·</span>
-                        <span>Hingga {formatDate(v.end_date)}</span>
-                        <span>·</span>
-                        <span>Terpakai: {v.used_count}{v.usage_limit > 0 ? ` / ${v.usage_limit}` : ""}</span>
-                      </div>
+                <div key={v.id} className="rounded-2xl overflow-hidden" style={{ background: "#fffdfb", border: "1px solid rgba(64,50,37,.06)", boxShadow: "0 1px 3px rgba(64,50,37,.04)" }}>
+                  <div className="flex">
+                    {/* Left: discount badge (ticket stub) */}
+                    <div className="flex flex-col items-center justify-center px-5 py-5 min-w-[100px] relative" style={{ background: "linear-gradient(135deg, #f0e7d8 0%, #e8dfd1 100%)" }}>
+                      <span className="text-2xl font-bold leading-none" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--gold)" }}>
+                        {v.discount_type === "percentage" ? `${v.discount_value}%` : `Rp${Math.round(v.discount_value / 1000)}K`}
+                      </span>
+                      <span className="text-[10px] uppercase tracking-wider mt-1 font-medium" style={{ color: "#8a6f42" }}>
+                        {v.discount_type === "percentage" ? "Diskon" : "Potongan"}
+                      </span>
+                      {/* Ticket notch */}
+                      <div className="absolute top-0 right-0 w-3 h-3 rounded-bl-full" style={{ background: "#fffdfb" }} />
+                      <div className="absolute bottom-0 right-0 w-3 h-3 rounded-tl-full" style={{ background: "#fffdfb" }} />
+                      <div className="absolute top-0 right-0 w-[1px] h-full" style={{ borderRight: "2px dashed rgba(64,50,37,.12)" }} />
                     </div>
-                    <div className="flex items-center gap-2">
-                      <button onClick={() => openEdit(v)} className="p-1.5 rounded-lg" style={{ color: "var(--gold)", border: "1px solid rgba(64,50,37,.15)" }}><Edit size={14} /></button>
-                      <button onClick={() => handleDelete(v)} className="p-1.5 rounded-lg" style={{ color: "#e74c3c", border: "1px solid rgba(231,76,60,.2)" }}><Trash2 size={14} /></button>
-                      <button onClick={() => { setExpandedId(isExpanded ? null : v.id); loadUsages(v.id); }} className="p-1.5 rounded-lg" style={{ color: "var(--text-muted)", border: "1px solid rgba(64,50,37,.15)" }}>
-                        {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                      </button>
+
+                    {/* Right: voucher details */}
+                    <div className="flex-1 px-5 py-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          {/* Voucher code */}
+                          <div className="flex items-center gap-2.5 flex-wrap">
+                            <span className="text-lg font-bold tracking-wide" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>{v.code}</span>
+                            <span className="text-[10px] px-2.5 py-1 rounded-full font-medium" style={{ background: statusColor.bg, color: statusColor.text }}>{statusLabel}</span>
+                            {v.limit_per_wa && <span className="text-[10px] px-2.5 py-1 rounded-full font-medium" style={{ background: "#e4e6ea", color: "#5c6473" }}>1x/WA</span>}
+                          </div>
+
+                          {/* Info row */}
+                          <div className="flex items-center gap-3 mt-2 text-[11px] flex-wrap" style={{ color: "var(--text-muted)" }}>
+                            {v.min_purchase > 0 && (
+                              <span className="inline-flex items-center gap-1">
+                                <DollarSign size={11} />
+                                Min Rp {v.min_purchase.toLocaleString("id-ID")}
+                              </span>
+                            )}
+                            <span className="inline-flex items-center gap-1">
+                              <Calendar size={11} />
+                              {isExpired ? <span style={{ color: "#c0392b" }}>Kadaluarsa</span> : `Hingga ${formatDate(v.end_date)}`}
+                            </span>
+                          </div>
+
+                          {/* Progress bar or usage count */}
+                          {v.usage_limit > 0 ? (
+                            <div className="mt-3">
+                              <div className="flex items-center justify-between text-[10px] mb-1" style={{ color: "var(--text-muted)" }}>
+                                <span>Terpakai {v.used_count} / {v.usage_limit}</span>
+                                <span>{Math.round(usagePct)}%</span>
+                              </div>
+                              <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(64,50,37,.08)" }}>
+                                <div className="h-full rounded-full transition-all" style={{ width: `${usagePct}%`, background: usagePct >= 100 ? "#c0392b" : "var(--gold)" }} />
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="mt-2 text-[10px]" style={{ color: "var(--text-muted)" }}>Terpakai: {v.used_count} kali (tanpa batas)</p>
+                          )}
+                        </div>
+
+                        {/* Action buttons */}
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button onClick={() => openEdit(v)} className="p-2 rounded-lg transition-colors hover:bg-[rgba(64,50,37,.05)]" style={{ color: "var(--gold)", border: "1px solid rgba(64,50,37,.12)" }} title="Edit"><Edit size={14} /></button>
+                          <button onClick={() => handleDelete(v)} className="p-2 rounded-lg transition-colors hover:bg-red-50" style={{ color: "#e74c3c", border: "1px solid rgba(231,76,60,.15)" }} title="Hapus"><Trash2 size={14} /></button>
+                          <button onClick={() => { setExpandedId(isExpanded ? null : v.id); loadUsages(v.id); }} className="p-2 rounded-lg transition-colors hover:bg-[rgba(64,50,37,.05)]" style={{ color: "var(--text-muted)", border: "1px solid rgba(64,50,37,.12)" }} title="Lihat pemakaian">
+                            {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
+
+                  {/* Expanded usage list */}
                   {isExpanded && (
-                    <div className="px-5 py-3" style={{ borderTop: "1px solid rgba(64,50,37,.06)", background: "rgba(255,255,255,.3)" }}>
-                      <p className="text-[11px] font-medium mb-2" style={{ color: "var(--text-muted)" }}>Nomor WA yang sudah menggunakan voucher:</p>
+                    <div className="px-5 py-4" style={{ borderTop: "1px dashed rgba(64,50,37,.12)", background: "rgba(255,255,255,.3)" }}>
+                      <p className="text-[11px] font-medium mb-2.5" style={{ color: "var(--text-muted)" }}>Nomor WA yang sudah menggunakan voucher:</p>
                       {usageList && usageList.length > 0 ? (
-                        <div className="flex flex-wrap gap-1.5">
+                        <div className="flex flex-wrap gap-2">
                           {usageList.map((u) => (
-                            <span key={u.id} className="text-[11px] px-2 py-1 rounded-lg" style={{ background: "rgba(64,50,37,.05)", color: "var(--espresso)" }}>
-                              {u.whatsapp_number} <span className="ml-1" style={{ color: "var(--text-muted)" }}>{new Date(u.used_at).toLocaleDateString("id-ID")}</span>
+                            <span key={u.id} className="inline-flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-lg font-medium" style={{ background: "rgba(64,50,37,.04)", color: "var(--espresso)" }}>
+                              <span className="w-1.5 h-1.5 rounded-full" style={{ background: "var(--gold)" }} />
+                              {u.whatsapp_number}
+                              <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>{new Date(u.used_at).toLocaleDateString("id-ID")}</span>
                             </span>
                           ))}
                         </div>
                       ) : (
-                        <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>Belum ada pemakaian</p>
+                        <p className="text-[11px] italic" style={{ color: "var(--text-muted)" }}>Belum ada pemakaian</p>
                       )}
                     </div>
                   )}
