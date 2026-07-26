@@ -240,7 +240,7 @@ export default function CaraPemesanan() {
                     color: "var(--espresso)",
                   }}
                 >
-                  {String(index + 1).padStart(2, "0")}
+                  {String(i + 1).padStart(2, "0")}
                 </span>
               </div>
               <h3
