@@ -240,98 +240,81 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           MOBILE LAYOUT (max-md)
       ═══════════════════════════════════════ */}
       <div className="md:hidden">
-        {/* Breadcrumb mobile */}
-        <div className="max-w-7xl mx-auto px-4 pt-4 pb-2">
-          <Breadcrumb extra={[{ label: product.name }]} />
-        </div>
-        {/* Gallery carousel */}
-        <div className="relative pb-4">
-          {/* Wishlist button - mobile */}
-          {isLoggedIn && product && (
-            <button onClick={async () => { const added = await toggleWishlist(product.id); toast.show(added ? "Ditambahkan ke wishlist" : "Dihapus dari wishlist"); }} className="absolute top-4 right-4 z-20 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110" style={{ background: "rgba(255,255,255,.9)", backdropFilter: "blur(8px)", boxShadow: "0 2px 8px rgba(0,0,0,.1)" }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill={isWishlisted(product.id) ? "#e74c3c" : "none"} stroke={isWishlisted(product.id) ? "#e74c3c" : "var(--espresso)"} strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
-            </button>
-          )}
-          <div
-            ref={carouselRef}
-            className="flex overflow-x-auto gap-0 scrollbar-hide scroll-smooth"
-            onScroll={handleCarouselScroll}
-          >
+        {/* Hero image - full width, 288px height per wireframe */}
+        <div className="relative w-full" style={{ height: "288px", background: "#e8dfd1" }}>
+          {/* Carousel */}
+          <div ref={carouselRef} className="flex overflow-x-auto gap-0 scrollbar-hide scroll-smooth h-full" onScroll={handleCarouselScroll}>
             {media.map((item, i) => (
-              <div
-                key={i}
-                className="relative shrink-0 w-[80vw] aspect-[3/4] rounded-xl overflow-hidden cursor-zoom-in"
-                style={{ background: "#e8dfd1" }}
-                onClick={() => { setZoomIndex(i); setZoomOpen(true); }}
-              >
+              <div key={i} className="relative shrink-0 w-full h-full overflow-hidden cursor-zoom-in" onClick={() => { setZoomIndex(i); setZoomOpen(true); }}>
                 <MediaDisplay item={item} poster={product.image} className="absolute inset-0" />
-                {product.tag && i === 0 && (
-                  <span className="absolute top-3 left-3 px-2.5 py-1 text-[10px] tracking-[0.12em] uppercase font-ui font-medium rounded-sm z-10"
-                    style={{ border: "1px solid var(--gold)", color: "var(--gold)", background: "rgba(248,246,242,.9)" }}>
-                    {product.tag}
-                  </span>
-                )}
-                {item.type === "video" && (
-                  <span className="absolute top-3 right-3 px-2 py-1 text-[9px] tracking-[0.1em] uppercase font-ui font-medium rounded-sm z-10"
-                    style={{ background: "rgba(0,0,0,.5)", color: "white" }}>
-                    Video
-                  </span>
-                )}
               </div>
             ))}
           </div>
+
+          {/* Nav overlay - back + heart buttons */}
+          <div className="absolute top-12 inset-x-4 z-20 flex items-center justify-between">
+            <button onClick={() => router.back()} className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: "rgba(255,255,255,.8)", backdropFilter: "blur(8px)" }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+            </button>
+            {isLoggedIn && product && (
+              <button onClick={async () => { const added = await toggleWishlist(product.id); toast.show(added ? "Ditambahkan ke wishlist" : "Dihapus dari wishlist"); }} className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: "rgba(255,255,255,.8)", backdropFilter: "blur(8px)" }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill={isWishlisted(product.id) ? "#e74c3c" : "none"} stroke={isWishlisted(product.id) ? "#e74c3c" : "currentColor"} strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
+              </button>
+            )}
+          </div>
+
           {/* Dots */}
           {media.length > 1 && (
-            <div className="flex justify-center gap-1.5 mt-3">
+            <div className="absolute bottom-4 inset-x-0 z-20 flex justify-center gap-1.5">
               {media.map((_, i) => (
-                <span key={i} className="rounded-full transition-all duration-300"
-                  style={{ background: i === currentSlide ? "var(--gold)" : "rgba(201,183,156,.4)", width: i === currentSlide ? "16px" : "6px", height: "6px" }} />
+                <span key={i} className="rounded-full transition-all" style={{ background: i === currentSlide ? "var(--gold)" : "rgba(255,255,255,.5)", width: i === currentSlide ? "16px" : "6px", height: "6px" }} />
               ))}
             </div>
           )}
+
+          {/* Gradient fade to content card */}
+          <div className="absolute bottom-0 inset-x-0 h-10 z-10" style={{ background: "linear-gradient(to top, var(--cream), transparent)" }} />
         </div>
 
-        {/* Content card */}
-        <div className="relative -mt-6 px-5 py-6 rounded-t-3xl" style={{ background: "var(--cream)" }}>
-          <p className="text-[10px] tracking-[0.12em] uppercase font-ui mb-1.5" style={{ color: "var(--stone)" }}>
-            {product.category}{product.kain && ` — Kain ${product.kain}`}{product.series && ` — ${product.series}`}
-          </p>
-          <h1 className="text-[1.5rem] sm:text-[1.8rem] font-semibold leading-tight mb-2"
-            style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
+        {/* Content card - overlaps image by 24px, rounded top 24px */}
+        <div className="relative -mt-6 px-6 py-6" style={{ background: "var(--cream)", borderRadius: "24px 24px 0 0" }}>
+          {/* Product title */}
+          <h1 className="text-2xl font-semibold leading-tight mb-2" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
             {product.name}
           </h1>
-          <p className="text-[1.3rem] font-ui font-semibold mb-4" style={{ color: "var(--gold)" }}>
+
+          {/* Price */}
+          <p className="text-xl font-semibold mb-4" style={{ color: "var(--gold)" }}>
             Rp {currentPrice.toLocaleString("id-ID")}
           </p>
+
+          {/* Stock badge */}
           {stock !== null && (
             <div className="mb-4">
-              {stock === 0 ? (
-                <span className="inline-flex items-center gap-1 text-[11px] font-ui font-medium px-2.5 py-1 rounded-full" style={{ background: "#fde8e8", color: "#c0392b" }}>Habis</span>
-              ) : stock <= 5 ? (
-                <span className="inline-flex items-center gap-1 text-[11px] font-ui font-medium px-2.5 py-1 rounded-full" style={{ background: "#fef3cd", color: "#856404" }}>Stok Menipis — Tersisa {stock}</span>
-              ) : (
-                <span className="inline-flex items-center gap-1 text-[11px] font-ui font-medium px-2.5 py-1 rounded-full" style={{ background: "#e7ecdf", color: "#5b6b45" }}>Tersedia</span>
-              )}
+              {stock === 0 ? <span className="text-xs font-medium px-3 py-1 rounded-full" style={{ background: "#fde8e8", color: "#c0392b" }}>Habis</span>
+              : stock <= 5 ? <span className="text-xs font-medium px-3 py-1 rounded-full" style={{ background: "#fef3cd", color: "#856404" }}>Stok Menipis — Tersisa {stock}</span>
+              : <span className="text-xs font-medium px-3 py-1 rounded-full" style={{ background: "#e7ecdf", color: "#5b6b45" }}>Tersedia</span>}
             </div>
           )}
-          <p className="text-[13px] leading-relaxed font-ui mb-5" style={{ color: "rgba(42,33,27,.8)" }}>
+
+          {/* Description */}
+          <p className="text-sm leading-relaxed mb-6" style={{ color: "rgba(42,33,27,.8)" }}>
             {getDescription(product)}
           </p>
 
-          <div className="h-px mb-5" style={{ background: "rgba(201,183,156,.2)" }} />
+          {/* Divider */}
+          <div className="h-px mb-6" style={{ background: "rgba(201,183,156,.2)" }} />
 
-          {/* Colors */}
+          {/* Color selector */}
           {product.colors.length > 0 && (
-            <div className="mb-5">
-              <p className="text-[10px] tracking-[0.1em] uppercase font-ui font-medium mb-2.5" style={{ color: "var(--espresso)" }}>
+            <div className="mb-6">
+              <p className="text-xs tracking-wider uppercase font-medium mb-3" style={{ color: "var(--espresso)" }}>
                 Warna — <span style={{ color: "var(--gold)" }}>{selectedColor}</span>
               </p>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-2">
                 {product.colors.map((c) => (
-                  <button key={c} onClick={() => setSelectedColor(c)}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-ui rounded-sm transition-all duration-200"
-                    style={{ background: selectedColor === c ? "var(--espresso)" : "transparent", color: selectedColor === c ? "var(--cream)" : "var(--coffee)", border: `1px solid ${selectedColor === c ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
-                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: colorMap[c] || "#ccc", border: "1px solid rgba(42,33,27,.1)" }} />
+                  <button key={c} onClick={() => setSelectedColor(c)} className="flex items-center gap-2 px-3 py-2 text-xs rounded-lg transition-all" style={{ background: selectedColor === c ? "var(--espresso)" : "transparent", color: selectedColor === c ? "var(--cream)" : "var(--coffee)", border: `1px solid ${selectedColor === c ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
+                    <span className="w-3 h-3 rounded-full shrink-0" style={{ background: colorMap[c] || "#ccc", border: "1px solid rgba(42,33,27,.1)" }} />
                     {c}
                   </button>
                 ))}
@@ -339,80 +322,52 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             </div>
           )}
 
-          {/* Sizes */}
-          <div className="mb-5">
-            <p className="text-[10px] tracking-[0.1em] uppercase font-ui font-medium mb-2.5" style={{ color: "var(--espresso)" }}>Ukuran</p>
-            <div className="flex gap-1.5">
+          {/* Size selector */}
+          <div className="mb-6">
+            <p className="text-xs tracking-wider uppercase font-medium mb-3" style={{ color: "var(--espresso)" }}>
+              Ukuran
+            </p>
+            <div className="flex flex-wrap gap-2">
               {availableSizes.map((s) => (
-                <button key={s} onClick={() => setSelectedSize(s)}
-                  className="w-10 h-10 flex items-center justify-center text-[12px] font-ui font-medium rounded-sm transition-all duration-200"
-                  style={{ background: selectedSize === s ? "var(--espresso)" : "transparent", color: selectedSize === s ? "var(--cream)" : "var(--coffee)", border: `1px solid ${selectedSize === s ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
+                <button key={s} onClick={() => setSelectedSize(s)} className="w-11 h-11 flex items-center justify-center text-xs font-medium rounded-lg transition-all" style={{ background: selectedSize === s ? "var(--espresso)" : "transparent", color: selectedSize === s ? "var(--cream)" : "var(--coffee)", border: `1px solid ${selectedSize === s ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
                   {s}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Notes */}
-          <div className="mb-5">
-            <p className="text-[10px] tracking-[0.1em] uppercase font-ui font-medium mb-2.5" style={{ color: "var(--espresso)" }}>Catatan (Opsional)</p>
-            <input type="text" value={notes} onChange={(e) => setNotes(e.target.value)}
-              placeholder="Minta packing khusus, tambah nama, dll."
-              className="w-full px-3 py-2.5 text-[13px] font-ui rounded-sm outline-none transition-all duration-200 focus:border-[var(--gold)]"
-              style={{ background: "transparent", border: "1px solid rgba(201,183,156,.3)", color: "var(--espresso)" }} />
+          {/* Notes input */}
+          <div className="mb-6">
+            <p className="text-xs tracking-wider uppercase font-medium mb-2" style={{ color: "var(--espresso)" }}>Catatan (Opsional)</p>
+            <input type="text" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Minta packing khusus, tambah nama, dll." className="w-full px-4 py-3 text-sm rounded-xl outline-none" style={{ background: "#F9FAFB", border: "1px solid rgba(201,183,156,.3)", color: "var(--espresso)" }} />
           </div>
 
-          {/* Quantity */}
-          <div className="flex items-center justify-between">
-            <p className="text-[10px] tracking-[0.1em] uppercase font-ui font-medium" style={{ color: "var(--espresso)" }}>Jumlah</p>
-            <div className="flex items-center gap-2.5">
-              <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="w-9 h-9 flex items-center justify-center rounded-sm transition-all duration-200 active:scale-95" style={{ border: "1px solid rgba(201,183,156,.3)", color: "var(--espresso)" }} aria-label="Kurangi jumlah">
-                <Minus size={14} />
-              </button>
-              <span className="w-7 text-center text-sm font-ui font-medium" style={{ color: "var(--espresso)" }}>{qty}</span>
-              <button onClick={() => setQty((q) => q + 1)} className="w-9 h-9 flex items-center justify-center rounded-sm transition-all duration-200 active:scale-95" style={{ border: "1px solid rgba(201,183,156,.3)", color: "var(--espresso)" }} aria-label="Tambah jumlah">
-                <Plus size={14} />
-              </button>
+          {/* Quantity stepper - circle buttons per wireframe */}
+          <div className="flex items-center justify-between mb-24">
+            <p className="text-xs tracking-wider uppercase font-medium" style={{ color: "var(--espresso)" }}>Jumlah</p>
+            <div className="flex items-center gap-3" style={{ background: "#F9FAFB", border: "1px solid rgba(201,183,156,.3)", borderRadius: "9999px", padding: "4px 8px" }}>
+              <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="w-8 h-8 flex items-center justify-center rounded-full" style={{ background: "white" }}><Minus size={14} /></button>
+              <span className="w-6 text-center text-sm font-medium">{qty}</span>
+              <button onClick={() => setQty((q) => q + 1)} className="w-8 h-8 flex items-center justify-center rounded-full" style={{ background: "white" }}><Plus size={14} /></button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ═══════════════════════════════════════
-          MOBILE STICKY BOTTOM BAR
-      ═══════════════════════════════════════ */}
-      <div className="md:hidden fixed bottom-0 inset-x-0 z-40"
-        style={{ background: "var(--cream)", borderTop: "1px solid rgba(201,183,156,.18)", boxShadow: "0 -6px 24px -6px rgba(42,33,27,.1)" }}>
-        <div className="px-4 pt-3 pb-4">
-          {/* Price row */}
-          <div className="flex items-end justify-between mb-3">
-            <div>
-              <p className="text-[10px] font-ui tracking-wide uppercase" style={{ color: "var(--stone)" }}>Total</p>
-              <p className="text-[1.4rem] font-ui font-semibold leading-tight"
-                style={{ color: "var(--gold)" }}>
-                Rp {(currentPrice * qty).toLocaleString("id-ID")}
-              </p>
-            </div>
-            <p className="text-[10px] font-ui" style={{ color: "var(--stone)" }}>
-              {selectedSize}{selectedColor !== "-" && ` / ${selectedColor}`}
-              {qty > 1 && ` × ${qty}`}
-            </p>
+      {/* Sticky bottom bar - per wireframe */}
+      <div className="md:hidden fixed bottom-0 inset-x-0 z-40" style={{ background: "var(--cream)", borderTop: "1px solid rgba(201,183,156,.18)" }}>
+        <div className="px-6 pt-4 pb-8 flex items-center gap-3">
+          <div className="flex-1">
+            <p className="text-xs" style={{ color: "var(--stone)" }}>{selectedSize}{selectedColor !== "-" && ` / ${selectedColor}`}{qty > 1 && ` × ${qty}`}</p>
+            <p className="text-lg font-semibold" style={{ color: "var(--gold)" }}>Rp {(currentPrice * qty).toLocaleString("id-ID")}</p>
           </div>
-          {/* Action buttons */}
-          <div className="flex gap-2">
-            <button onClick={handleAddToCart}
-              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[11px] tracking-[0.06em] uppercase font-ui font-semibold transition-all duration-300 active:scale-[0.98]"
-              style={{ background: "transparent", color: "var(--gold)", border: "1.5px solid var(--gold)" }}>
-              <ShoppingCart size={15} strokeWidth={1.5} />
-              <span>Keranjang</span>
-            </button>
-            <button onClick={handleBuyNow}
-              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[11px] tracking-[0.06em] uppercase font-ui font-semibold transition-all duration-300 active:scale-[0.98]"
-              style={{ background: "var(--espresso)", color: "white" }}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" /></svg>
-              <span>Pesan via WA</span>
-            </button>
-          </div>
+          <button onClick={handleAddToCart} className="h-14 w-14 rounded-2xl flex items-center justify-center" style={{ background: "var(--cream)", border: "2px solid var(--gold)", color: "var(--gold)" }}>
+            <ShoppingCart size={20} strokeWidth={1.5} />
+          </button>
+          <button onClick={handleBuyNow} className="flex-[2] h-14 rounded-2xl flex items-center justify-center gap-2 text-xs tracking-wider uppercase font-semibold text-white" style={{ background: "var(--espresso)" }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.548 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.488" /></svg>
+            Pesan via WA
+          </button>
         </div>
       </div>
 
