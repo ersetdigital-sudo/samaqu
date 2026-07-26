@@ -46,6 +46,7 @@ export default function DashboardPage() {
   const [customer, setCustomer] = useState<CustomerData | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [wishlistProducts, setWishlistProducts] = useState<Product[]>([]);
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [activeNav, setActiveNav] = useState<NavSection>("beranda");
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -55,11 +56,16 @@ export default function DashboardPage() {
       const c = await getCurrentCustomer();
       if (!c) { router.push("/akun/login"); return; }
       setCustomer(c);
-      const [ordersData, wishlistData] = await Promise.all([
+      const [ordersData, featuredData, wishlistData] = await Promise.all([
         getCustomerOrders(c.id),
+        supabase.from("featured_products").select("product_id, products(id, name, category, price, image)").order("display_order").limit(8),
         supabase.from("wishlists").select("product_id").eq("customer_id", c.id),
       ]);
       setOrders(ordersData as Order[]);
+      if (featuredData.data) {
+        const fp = featuredData.data.map((r: any) => r.products).filter(Boolean) as Product[];
+        setFeaturedProducts(fp);
+      }
       if (wishlistData.data && wishlistData.data.length > 0) {
         const ids = wishlistData.data.map((w) => w.product_id);
         const { data: wProducts } = await supabase.from("products").select("*").in("id", ids);
@@ -261,36 +267,37 @@ export default function DashboardPage() {
             </section>
           ) : null}
 
-          {/* ── Koleksi Pilihan (6 Kategori) ── */}
+          {/* ── Koleksi Pilihan (from admin) ── */}
           {activeNav === "beranda" || activeNav === "koleksi" ? (
             <section className="space-y-4">
               <div className="flex items-end justify-between">
                 <div>
                   <h2 className="text-2xl sm:text-3xl italic" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>Koleksi Pilihan</h2>
-                  <p className="text-sm" style={{ color: "var(--text-muted)" }}>Enam kategori inti SAMAQU</p>
+                  <p className="text-sm" style={{ color: "var(--text-muted)" }}>Dikurasi khusus untuk Anda</p>
                 </div>
                 <Link href="/katalog" className="text-sm shrink-0" style={{ color: "#8b6f42" }}>Lihat Semua</Link>
               </div>
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-                {[
-                  { name: "Thobe", src: "/images/57f4aded-cd60-412d-95b6-1085b51b97be.png", desc: "Potongan panjang klasik, adem, dan berwibawa." },
-                  { name: "Kandora", src: "/images/e3214c06-ccf4-4342-aba7-849bf95da85a.png", desc: "Elegan untuk sehari-hari maupun formal." },
-                  { name: "Koko", src: "/images/515c6ce5-1ac8-48d7-9832-450cbcd4cac9.png", desc: "Modern dan nyaman untuk shalat." },
-                  { name: "Vest", src: "/images/3b981a31-de0d-4aa5-9890-330ffe3f261d.png", desc: "Presisi untuk tampilan berkelas." },
-                  { name: "Kabak", src: "/images/b32f8726-78f1-455c-aff9-59ab8b1a1310.png", desc: "Premium berkualitas tinggi." },
-                  { name: "Cover Hanger", src: "/images/6aec5227-932a-4ff1-86e2-2a3bb34943e9.png", desc: "Jaga busana tetap rapi." },
-                ].map((cat) => (
-                  <Link key={cat.name} href={`/katalog?category=${cat.name}`} className="group rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg" style={{ background: "var(--bg-secondary, #f0ebe5)", border: "1px solid rgba(64,50,37,.09)" }}>
-                    <div className="aspect-square overflow-hidden" style={{ background: "var(--bg-tertiary, #e8e1d9)" }}>
-                      <img src={cat.src} alt={cat.name} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
-                    </div>
-                    <div className="p-4">
-                      <p className="font-medium" style={{ color: "var(--espresso)" }}>{cat.name}</p>
-                      {cat.desc && <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>{cat.desc}</p>}
-                    </div>
-                  </Link>
-                ))}
-              </div>
+              {featuredProducts.length > 0 ? (
+                <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {featuredProducts.map((p) => (
+                    <Link key={p.id} href={`/katalog/${p.id}`} className="group rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg" style={{ background: "var(--bg-secondary, #f0ebe5)", border: "1px solid rgba(64,50,37,.09)" }}>
+                      <div className="aspect-square overflow-hidden" style={{ background: "var(--bg-tertiary, #e8e1d9)" }}>
+                        <img src={p.image} alt={p.name} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                      </div>
+                      <div className="p-4">
+                        <p className="text-xs mb-1" style={{ color: "var(--text-muted)" }}>{p.category}</p>
+                        <p className="font-medium" style={{ color: "var(--espresso)" }}>{p.name}</p>
+                        <p className="text-sm font-semibold mt-1" style={{ color: "#b58c4a" }}>Rp {p.price.toLocaleString("id-ID")}</p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-2xl p-10 text-center" style={{ background: "var(--bg-secondary, #f0ebe5)", border: "1px solid rgba(64,50,37,.09)" }}>
+                  <p className="text-sm mb-1" style={{ color: "var(--text-secondary)" }}>Belum ada produk pilihan</p>
+                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>Admin dapat mengatur produk pilihan di Pengaturan</p>
+                </div>
+              )}
             </section>
           ) : null}
 
