@@ -9,7 +9,8 @@ import { getCurrentCustomer, getCustomerOrders, logoutCustomer } from "@/lib/cus
 import { getWhatsAppLink } from "@/lib/store-settings";
 import { SITE_URL } from "@/lib/site-config";
 import type { Product } from "@/lib/katalog-data";
-import { Search, Bell, ShoppingCart, LogOut, ChevronRight, Package, Truck, CheckCircle } from "lucide-react";
+import { Search, Bell, LogOut } from "lucide-react";
+import ProfileDropdown from "@/components/ProfileDropdown";
 
 interface OrderItem {
   product_name: string;
@@ -174,9 +175,7 @@ export default function DashboardPage() {
                 <Bell size={18} style={{ color: "var(--espresso)" }} />
                 <span className="absolute top-2 right-2 h-2 w-2 rounded-full" style={{ background: "#b58c4a" }} />
               </button>
-              <div className="h-10 w-10 rounded-full flex items-center justify-center text-white text-sm font-medium" style={{ background: "#b58c4a" }}>
-                {customer?.name?.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)}
-              </div>
+              <ProfileDropdown />
             </div>
           </div>
         </header>
