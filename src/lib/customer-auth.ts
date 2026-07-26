@@ -2,16 +2,36 @@ import { supabase } from "@/lib/supabase";
 
 export async function registerCustomer(email: string, password: string, name: string, whatsapp: string) {
   const { data, error } = await supabase.auth.signUp({ email, password });
-  if (error) return { error: error.message };
+  if (error) {
+    const msg = error.message;
+    if (msg.includes("already registered") || msg.includes("already been registered") || msg.includes("already exists")) {
+      return { error: "Email sudah terdaftar. Silakan masuk atau gunakan email lain." };
+    }
+    if (msg.includes("valid email")) {
+      return { error: "Format email tidak valid." };
+    }
+    if (msg.includes("at least") || msg.includes("6 characters")) {
+      return { error: "Password minimal 6 karakter." };
+    }
+    return { error: msg };
+  }
   if (data.user) {
     await supabase.from("customers").insert({ id: data.user.id, name, whatsapp });
   }
-  return { error: null };
+  return { error: null, needsVerification: !!data.user };
 }
 
 export async function loginCustomer(email: string, password: string) {
   const { error } = await supabase.auth.signInWithPassword({ email, password });
-  return { error: error?.message || null };
+  if (!error) return { error: null };
+  const msg = error.message;
+  if (msg.includes("Invalid login credentials") || msg.includes("invalid") || msg.includes("Invalid")) {
+    return { error: "Email atau password salah. Jika belum punya akun, silakan daftar terlebih dahulu." };
+  }
+  if (msg.includes("not confirmed") || msg.includes("Email not confirmed")) {
+    return { error: "Email belum diverifikasi. Cek inbox email Anda untuk link verifikasi." };
+  }
+  return { error: msg };
 }
 
 export async function logoutCustomer() {
