@@ -91,7 +91,6 @@ export default function Koleksi() {
                   }}
                 />
                 <div className="absolute bottom-0 left-0 p-5 sm:p-7">
-                  <p className="text-[10px] sm:text-[11px] tracking-[0.32em] uppercase mb-1 font-ui" style={{ color: "var(--sand)" }}>Koleksi SAMAQU</p>
                   <h3 className="text-2xl sm:text-3xl text-white mb-1" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>{cat.name}</h3>
                   {cat.description && <p className="text-[13px] sm:text-sm font-ui" style={{ color: "rgba(216,196,168,.9)" }}>{cat.description}</p>}
                 </div>
