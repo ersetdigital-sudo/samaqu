@@ -47,6 +47,10 @@ export const metadata: Metadata = {
     "SAMAQU — busana muslim pria premium. Thobe, Kandora, Koko, Vest, Kabak, Cover Hanger. Bahan pilihan, jahitan rapi, cocok untuk ibadah dan acara istimewa. Pesan via WhatsApp.",
   keywords: ["SAMAQU", "busana muslim pria", "thobe", "kandora", "baju koko", "vest muslim", "premium menswear", "muslim fashion"],
   metadataBase: new URL(SITE_URL),
+  icons: {
+    icon: "/favicon.svg",
+    apple: "/favicon.svg",
+  },
   openGraph: {
     type: "website",
     locale: "id_ID",
