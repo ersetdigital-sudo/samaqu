@@ -38,9 +38,32 @@ const cormorant = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "SAMAQU — Busana Muslim Pria Premium",
+  title: {
+    default: "SAMAQU — Busana Muslim Pria Premium | Thobe, Kandora, Koko",
+    template: "%s | SAMAQU",
+  },
   description:
-    "SAMAQU — busana muslim pria premium. Thobe, Kandora, Koko, Vest, Kabak, Cover Hanger. Elegan, berkelas, dibuat dengan bahan pilihan. Pesan langsung via WhatsApp.",
+    "SAMAQU — busana muslim pria premium. Thobe, Kandora, Koko, Vest, Kabak, Cover Hanger. Bahan pilihan, jahitan rapi, cocok untuk ibadah dan acara istimewa. Pesan via WhatsApp.",
+  keywords: ["SAMAQU", "busana muslim pria", "thobe", "kandora", "baju koko", "vest muslim", "premium menswear", "muslim fashion"],
+  metadataBase: new URL("https://samaqu.vercel.app"),
+  openGraph: {
+    type: "website",
+    locale: "id_ID",
+    siteName: "SAMAQU",
+    title: "SAMAQU — Busana Muslim Pria Premium",
+    description: "Thobe, Kandora, Koko, Vest, Kabak. Bahan pilihan, jahitan rapi, dibuat untuk momen istimewa.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "SAMAQU — Busana Muslim Pria Premium",
+    description: "Thobe, Kandora, Koko, Vest, Kabak. Bahan pilihan, jahitan rapi, dibuat untuk momen istimewa.",
+  },
+  robots: { index: true, follow: true },
+  other: {
+    "theme-color": "#2A211B",
+    "apple-mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-status-bar-style": "black-translucent",
+  },
 };
 
 export default function RootLayout({

@@ -1,0 +1,53 @@
+# SAMAQU — Full Product Catalog & Information
+
+## About SAMAQU
+SAMAQU adalah brand busana pria muslim premium asal Indonesia yang berfokus pada kualitas material, presisi potongan, dan kenyamanan. Setiap produk melewati pengecekan kahitan dan bahan sebelum dikirim.
+
+Misi: Menyediakan busana muslim pria premium yang layak menemani setiap momen — dari ibadah harian hingga acara istimewa.
+
+## Collections
+
+### Thobe
+Thobe premium dengan bahan pilihan yang adem dan nyaman. Potongan presisi, jahitan rapi, cocok untuk ibadah maupun acara istimewa. Tersedia dalam berbagai pilihan kain dan warna.
+
+### Kandora
+Kandora berkualitas dengan bahan ringan dan potongan yang elegan. Nyaman dipakai sehari-hari maupun untuk acara formal.
+
+### Koko
+Baju Koko dengan desain modern dan bahan premium. Nyaman untuk shalat maupun kegiatan sehari-hari.
+
+### Vest
+Vest elegan dengan potongan yang presisi. Cocok dipadukan dengan thobe atau koko untuk tampilan lebih berkelas.
+
+### Kabak
+Kabak premium dengan kualitas terbaik. Tersedia dalam berbagai pilihan.
+
+### Cover & Hanger
+Cover dan hanger premium untuk menjaga busana tetap rapi dan terlindungi.
+
+## Sizing Guide
+- Ukuran tersedia: S, M, L, XL, XXL
+- Panduan ukuran tersedia di halaman produk masing-masing
+- Konsultasi gratis via WhatsApp
+
+## Ordering Process
+1. Pilih produk dari katalog
+2. Cek panduan size
+3. Chat admin via WhatsApp untuk konfirmasi ketersediaan
+4. Bayar dan pesanan diproses
+
+## Payment Methods
+- Transfer Bank (BCA, Mandiri, BSI, dll.)
+- QRIS / E-Wallet (GoPay, OVO, Dana)
+- COD (Bayar di Tempat)
+
+## Shipping
+- Pengiriman via JNE
+- Estimasi 1-3 hari kerja
+- Ongkos kirim mulai Rp 25.000
+
+## Contact
+- WhatsApp: +62-85212150100
+- Website: https://samaqu.vercel.app
+- Katalog: https://samaqu.vercel.app/katalog
+- Tentang Kami: https://samaqu.vercel.app/tentang-kami
