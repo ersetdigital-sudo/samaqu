@@ -404,8 +404,8 @@ function AdminPageInner() {
         <div className="px-4 pb-6">
           <div className="rounded-xl p-4" style={{ background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.08)" }}>
             <p className="text-sm font-semibold" style={{ color: "var(--cream)" }}>Butuh bantuan?</p>
-            <p className="text-xs mt-1 leading-relaxed" style={{ color: "#9f9690" }}>Hubungi tim support SAMAQU untuk panduan pengelolaan.</p>
-            <button className="mt-3 w-full text-sm font-semibold py-2 rounded-lg text-white" style={{ background: "linear-gradient(135deg, var(--gold), #96742f)" }}>Pusat Bantuan</button>
+            <p className="text-xs mt-1 leading-relaxed" style={{ color: "#9f9690" }}>Butuh bantuan atau ingin tambah fitur? Hubungi kami.</p>
+            <a href="https://wa.me/6285212150100?text=Halo,%20saya%20ingin%20bertanya%20seputar%20dashboard%20admin%20SAMAQU." target="_blank" rel="noopener noreferrer" className="mt-3 w-full text-sm font-semibold py-2 rounded-lg text-white text-center block" style={{ background: "linear-gradient(135deg, var(--gold), #96742f)" }}>Hubungi Kami</a>
           </div>
         </div>
       </aside>
