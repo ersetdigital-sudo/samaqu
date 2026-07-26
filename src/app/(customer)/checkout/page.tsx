@@ -47,6 +47,7 @@ function CheckoutContent() {
   const [promoError, setPromoError] = useState("");
   const [discount, setDiscount] = useState(0);
   const [voucherCode, setVoucherCode] = useState("");
+  const [voucherId, setVoucherId] = useState("");
   const [nama, setNama] = useState("");
   const [email, setEmail] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
@@ -102,6 +103,11 @@ function CheckoutContent() {
     if (voucher.end_date && new Date(voucher.end_date) < new Date()) { setPromoError("Kode promo sudah kadaluarsa"); return; }
     if (voucher.usage_limit > 0 && voucher.used_count >= voucher.usage_limit) { setPromoError("Kode promo sudah habis digunakan"); return; }
     if (voucher.min_purchase > 0 && subtotal < voucher.min_purchase) { setPromoError(`Minimal belanja Rp ${voucher.min_purchase.toLocaleString("id-ID")} untuk kode ini`); return; }
+    if (voucher.limit_per_wa && whatsapp.trim()) {
+      const phone = whatsapp.replace(/[^0-9]/g, "");
+      const { data: existingUsage } = await supabase.from("voucher_usages").select("id").eq("voucher_id", voucher.id).eq("whatsapp_number", phone).limit(1);
+      if (existingUsage && existingUsage.length > 0) { setPromoError("Kode voucher ini sudah pernah Anda gunakan"); return; }
+    }
 
     let disc = 0;
     if (voucher.discount_type === "percentage") {
@@ -113,6 +119,7 @@ function CheckoutContent() {
     setDiscount(disc);
     setPromoApplied(true);
     setVoucherCode(voucher.code);
+    setVoucherId(voucher.id);
   }
 
   function validatePhone(p: string): boolean {
@@ -149,6 +156,7 @@ function CheckoutContent() {
           paymentMethod: payment,
           discount,
           voucherCode: promoApplied ? voucherCode : null,
+          voucherId: promoApplied ? voucherId : null,
           items: [{
             productId: product.id,
             name: product.name,

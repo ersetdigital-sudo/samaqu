@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Edit, Trash2, X, Loader2, Ticket, Calendar, Hash, Percent, DollarSign } from "lucide-react";
+import { Plus, Edit, Trash2, X, Loader2, Ticket, DollarSign, Percent, ChevronDown, ChevronUp } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import AdminShell from "@/components/AdminShell";
 import { useToast } from "@/components/AdminToast";
@@ -16,12 +16,21 @@ interface Voucher {
   max_discount: number;
   usage_limit: number;
   used_count: number;
+  limit_per_wa: boolean;
   start_date: string;
   end_date: string;
   is_active: boolean;
 }
 
-const emptyVoucher: Omit<Voucher, "id"> = {
+interface VoucherUsage {
+  id: string;
+  voucher_id: string;
+  whatsapp_number: string;
+  order_id: string;
+  used_at: string;
+}
+
+const emptyVoucher = {
   code: "",
   discount_type: "percentage",
   discount_value: 0,
@@ -29,10 +38,18 @@ const emptyVoucher: Omit<Voucher, "id"> = {
   max_discount: 0,
   usage_limit: 0,
   used_count: 0,
-  start_date: new Date().toISOString(),
+  limit_per_wa: false,
+  start_date: "",
   end_date: "",
   is_active: true,
 };
+
+function formatRupiahInput(val: string): { display: string; numeric: number } {
+  const digits = val.replace(/\D/g, "");
+  if (!digits) return { display: "", numeric: 0 };
+  const num = parseInt(digits, 10);
+  return { display: num.toLocaleString("id-ID"), numeric: num };
+}
 
 export default function VoucherPage() {
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
@@ -40,9 +57,12 @@ export default function VoucherPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Voucher | null>(null);
   const [form, setForm] = useState(emptyVoucher);
+  const [formDisplay, setFormDisplay] = useState({ discount_value: "", min_purchase: "", max_discount: "" });
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [confirmModal, setConfirmModal] = useState<{ open: boolean; onConfirm: () => void }>({ open: false, onConfirm: () => {} });
+  const [usages, setUsages] = useState<Record<string, VoucherUsage[]>>({});
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const toast = useToast();
 
   useEffect(() => {
@@ -52,9 +72,16 @@ export default function VoucherPage() {
     });
   }, []);
 
+  async function loadUsages(voucherId: string) {
+    if (usages[voucherId]) { setUsages((prev) => { const n = { ...prev }; delete n[voucherId]; return n; }); return; }
+    const { data } = await supabase.from("voucher_usages").select("*").eq("voucher_id", voucherId).order("used_at", { ascending: false });
+    if (data) setUsages((prev) => ({ ...prev, [voucherId]: data }));
+  }
+
   function openAdd() {
     setEditing(null);
-    setForm({ ...emptyVoucher, code: "", discount_value: 0, start_date: new Date().toISOString().split("T")[0], end_date: "" });
+    setForm({ ...emptyVoucher, start_date: new Date().toISOString().split("T")[0] });
+    setFormDisplay({ discount_value: "", min_purchase: "", max_discount: "" });
     setErrors({});
     setModalOpen(true);
   }
@@ -62,19 +89,32 @@ export default function VoucherPage() {
   function openEdit(v: Voucher) {
     setEditing(v);
     setForm({
-      code: v.code,
-      discount_type: v.discount_type,
-      discount_value: v.discount_value,
-      min_purchase: v.min_purchase,
-      max_discount: v.max_discount,
-      usage_limit: v.usage_limit,
-      used_count: v.used_count,
-      start_date: v.start_date?.split("T")[0] || "",
-      end_date: v.end_date?.split("T")[0] || "",
-      is_active: v.is_active,
+      code: v.code, discount_type: v.discount_type, discount_value: v.discount_value,
+      min_purchase: v.min_purchase, max_discount: v.max_discount, usage_limit: v.usage_limit,
+      used_count: v.used_count, limit_per_wa: v.limit_per_wa || false,
+      start_date: v.start_date?.split("T")[0] || "", end_date: v.end_date?.split("T")[0] || "", is_active: v.is_active,
+    });
+    const isFixed = v.discount_type === "fixed";
+    setFormDisplay({
+      discount_value: isFixed && v.discount_value ? v.discount_value.toLocaleString("id-ID") : String(v.discount_value || ""),
+      min_purchase: v.min_purchase ? v.min_purchase.toLocaleString("id-ID") : "",
+      max_discount: v.max_discount ? v.max_discount.toLocaleString("id-ID") : "",
     });
     setErrors({});
     setModalOpen(true);
+  }
+
+  function handleFieldChange(field: "discount_value" | "min_purchase" | "max_discount", raw: string) {
+    const isRupiah = field === "discount_value" ? form.discount_type === "fixed" : true;
+    if (isRupiah) {
+      const { display, numeric } = formatRupiahInput(raw);
+      setFormDisplay((prev) => ({ ...prev, [field]: display }));
+      setForm((prev) => ({ ...prev, [field]: numeric }));
+    } else {
+      const num = parseInt(raw) || 0;
+      setFormDisplay((prev) => ({ ...prev, [field]: raw }));
+      setForm((prev) => ({ ...prev, [field]: num }));
+    }
   }
 
   function validate(): boolean {
@@ -95,14 +135,15 @@ export default function VoucherPage() {
     if (!validate()) return;
     setSaving(true);
     const code = form.code.trim().toUpperCase();
-    const payload = { ...form, code };
+    const payload = {
+      code, discount_type: form.discount_type, discount_value: form.discount_value,
+      min_purchase: form.min_purchase, max_discount: form.max_discount,
+      usage_limit: form.usage_limit, limit_per_wa: form.limit_per_wa,
+      start_date: form.start_date, end_date: form.end_date, is_active: form.is_active,
+    };
 
     if (editing) {
-      const { error } = await supabase.from("vouchers").update({
-        code: payload.code, discount_type: payload.discount_type, discount_value: payload.discount_value,
-        min_purchase: payload.min_purchase, max_discount: payload.max_discount,
-        usage_limit: payload.usage_limit, start_date: payload.start_date, end_date: payload.end_date, is_active: payload.is_active,
-      }).eq("id", editing.id);
+      const { error } = await supabase.from("vouchers").update(payload).eq("id", editing.id);
       if (error) {
         if (error.code === "23505") { setErrors({ code: "Kode voucher sudah digunakan" }); setSaving(false); return; }
         toast.showToast("error", "Gagal menyimpan"); setSaving(false); return;
@@ -110,11 +151,7 @@ export default function VoucherPage() {
       setVouchers(vouchers.map((v) => v.id === editing.id ? { ...v, ...payload, id: editing.id } : v));
       toast.showToast("success", "Voucher berhasil diperbarui");
     } else {
-      const { data, error } = await supabase.from("vouchers").insert({
-        code: payload.code, discount_type: payload.discount_type, discount_value: payload.discount_value,
-        min_purchase: payload.min_purchase, max_discount: payload.max_discount,
-        usage_limit: payload.usage_limit, start_date: payload.start_date, end_date: payload.end_date, is_active: payload.is_active,
-      }).select().single();
+      const { data, error } = await supabase.from("vouchers").insert(payload).select().single();
       if (error) {
         if (error.code === "23505") { setErrors({ code: "Kode voucher sudah digunakan" }); setSaving(false); return; }
         toast.showToast("error", "Gagal menyimpan"); setSaving(false); return;
@@ -130,6 +167,7 @@ export default function VoucherPage() {
     setConfirmModal({
       open: true,
       onConfirm: async () => {
+        await supabase.from("voucher_usages").delete().eq("voucher_id", v.id);
         await supabase.from("vouchers").delete().eq("id", v.id);
         setVouchers(vouchers.filter((x) => x.id !== v.id));
         toast.showToast("success", "Voucher berhasil dihapus");
@@ -170,54 +208,63 @@ export default function VoucherPage() {
         {loading ? (
           <div className="card p-12 flex justify-center"><Loader2 size={24} className="animate-spin" style={{ color: "var(--gold)" }} /></div>
         ) : (
-          <div className="card overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm min-w-[800px]">
-                <thead>
-                  <tr style={{ color: "var(--text-muted)", background: "var(--bg-secondary)" }}>
-                    <th className="font-medium px-5 py-3 text-left">Kode</th>
-                    <th className="font-medium px-5 py-3 text-left">Tipe</th>
-                    <th className="font-medium px-5 py-3 text-left">Diskon</th>
-                    <th className="font-medium px-5 py-3 text-left">Min. Belanja</th>
-                    <th className="font-medium px-5 py-3 text-left">Berlaku Hingga</th>
-                    <th className="font-medium px-5 py-3 text-left">Terpakai</th>
-                    <th className="font-medium px-5 py-3 text-left">Status</th>
-                    <th className="font-medium px-5 py-3 text-right">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {vouchers.map((v) => (
-                    <tr key={v.id} style={{ borderTop: "1px solid rgba(64,50,37,.06)" }}>
-                      <td className="px-5 py-3.5 font-semibold" style={{ color: "var(--espresso)" }}>{v.code}</td>
-                      <td className="px-5 py-3.5">
-                        <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded" style={{ background: v.discount_type === "percentage" ? "#f0e7d8" : "#e7ecdf", color: v.discount_type === "percentage" ? "#8a6f42" : "#5b6b45" }}>
-                          {v.discount_type === "percentage" ? <Percent size={11} /> : <DollarSign size={11} />}
-                          {v.discount_type === "percentage" ? "Persen" : "Fixed"}
+          <div className="space-y-3">
+            {vouchers.map((v) => {
+              const isExpanded = expandedId === v.id;
+              const usageList = usages[v.id];
+              return (
+                <div key={v.id} className="card overflow-hidden">
+                  <div className="flex items-center gap-4 px-5 py-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold" style={{ color: "var(--espresso)" }}>{v.code}</span>
+                        <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded" style={{ background: v.discount_type === "percentage" ? "#f0e7d8" : "#e7ecdf", color: v.discount_type === "percentage" ? "#8a6f42" : "#5b6b45" }}>
+                          {v.discount_type === "percentage" ? <Percent size={10} /> : <DollarSign size={10} />}
+                          {formatDiscount(v)}
                         </span>
-                      </td>
-                      <td className="px-5 py-3.5 font-semibold">{formatDiscount(v)}</td>
-                      <td className="px-5 py-3.5">{v.min_purchase > 0 ? `Rp ${v.min_purchase.toLocaleString("id-ID")}` : "-"}</td>
-                      <td className="px-5 py-3.5" style={{ color: "var(--text-muted)" }}>{formatDate(v.end_date)}</td>
-                      <td className="px-5 py-3.5">{v.used_count}{v.usage_limit > 0 ? ` / ${v.usage_limit}` : ""}</td>
-                      <td className="px-5 py-3.5">
-                        <button onClick={() => toggleActive(v)} className="text-xs px-2 py-1 rounded font-medium" style={{ background: v.is_active ? "#e7ecdf" : "#f0ebe5", color: v.is_active ? "#5b6b45" : "#6b5d50" }}>
+                        {v.limit_per_wa && <span className="text-[10px] px-2 py-0.5 rounded" style={{ background: "#e4e6ea", color: "#5c6473" }}>1x/WA</span>}
+                        <button onClick={() => toggleActive(v)} className="text-[10px] px-2 py-0.5 rounded font-medium" style={{ background: v.is_active ? "#e7ecdf" : "#f0ebe5", color: v.is_active ? "#5b6b45" : "#6b5d50" }}>
                           {v.is_active ? "Aktif" : "Nonaktif"}
                         </button>
-                      </td>
-                      <td className="px-5 py-3.5 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <button onClick={() => openEdit(v)} className="p-1.5 rounded-lg" style={{ color: "var(--gold)", border: "1px solid rgba(64,50,37,.15)" }}><Edit size={14} /></button>
-                          <button onClick={() => handleDelete(v)} className="p-1.5 rounded-lg" style={{ color: "#e74c3c", border: "1px solid rgba(231,76,60,.2)" }}><Trash2 size={14} /></button>
+                      </div>
+                      <div className="flex items-center gap-3 mt-1 text-[11px]" style={{ color: "var(--text-muted)" }}>
+                        <span>{v.min_purchase > 0 ? `Min Rp ${v.min_purchase.toLocaleString("id-ID")}` : "Tanpa min. belanja"}</span>
+                        <span>·</span>
+                        <span>Hingga {formatDate(v.end_date)}</span>
+                        <span>·</span>
+                        <span>Terpakai: {v.used_count}{v.usage_limit > 0 ? ` / ${v.usage_limit}` : ""}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => openEdit(v)} className="p-1.5 rounded-lg" style={{ color: "var(--gold)", border: "1px solid rgba(64,50,37,.15)" }}><Edit size={14} /></button>
+                      <button onClick={() => handleDelete(v)} className="p-1.5 rounded-lg" style={{ color: "#e74c3c", border: "1px solid rgba(231,76,60,.2)" }}><Trash2 size={14} /></button>
+                      <button onClick={() => { setExpandedId(isExpanded ? null : v.id); loadUsages(v.id); }} className="p-1.5 rounded-lg" style={{ color: "var(--text-muted)", border: "1px solid rgba(64,50,37,.15)" }}>
+                        {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                      </button>
+                    </div>
+                  </div>
+                  {isExpanded && (
+                    <div className="px-5 py-3" style={{ borderTop: "1px solid rgba(64,50,37,.06)", background: "rgba(255,255,255,.3)" }}>
+                      <p className="text-[11px] font-medium mb-2" style={{ color: "var(--text-muted)" }}>Nomor WA yang sudah menggunakan voucher:</p>
+                      {usageList && usageList.length > 0 ? (
+                        <div className="flex flex-wrap gap-1.5">
+                          {usageList.map((u) => (
+                            <span key={u.id} className="text-[11px] px-2 py-1 rounded-lg" style={{ background: "rgba(64,50,37,.05)", color: "var(--espresso)" }}>
+                              {u.whatsapp_number} <span className="ml-1" style={{ color: "var(--text-muted)" }}>{new Date(u.used_at).toLocaleDateString("id-ID")}</span>
+                            </span>
+                          ))}
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                  {vouchers.length === 0 && (
-                    <tr><td colSpan={8} className="px-5 py-12 text-center" style={{ color: "var(--text-muted)" }}>Belum ada voucher</td></tr>
+                      ) : (
+                        <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>Belum ada pemakaian</p>
+                      )}
+                    </div>
                   )}
-                </tbody>
-              </table>
-            </div>
+                </div>
+              );
+            })}
+            {vouchers.length === 0 && (
+              <div className="card p-12 text-center" style={{ color: "var(--text-muted)" }}>Belum ada voucher</div>
+            )}
           </div>
         )}
 
@@ -249,7 +296,10 @@ export default function VoucherPage() {
                   </div>
                   <div>
                     <label className="block text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>Nilai Diskon *</label>
-                    <input type="number" value={form.discount_value || ""} onChange={(e) => setForm({ ...form, discount_value: Number(e.target.value) })} className="w-full rounded-lg px-3 py-2.5 text-sm outline-none" style={{ border: errors.discount_value ? "1px solid #e74c3c" : "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder={form.discount_type === "percentage" ? "10" : "50000"} />
+                    <div className="relative">
+                      {form.discount_type === "fixed" && <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm" style={{ color: "var(--text-muted)" }}>Rp</span>}
+                      <input type="text" value={formDisplay.discount_value} onChange={(e) => handleFieldChange("discount_value", e.target.value)} className="w-full rounded-lg py-2.5 text-sm outline-none" style={{ border: errors.discount_value ? "1px solid #e74c3c" : "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)", paddingLeft: form.discount_type === "fixed" ? "2.2rem" : "0.75rem", paddingRight: "0.75rem" }} placeholder={form.discount_type === "percentage" ? "10" : "50.000"} />
+                    </div>
                     {errors.discount_value && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.discount_value}</p>}
                   </div>
                 </div>
@@ -257,22 +307,37 @@ export default function VoucherPage() {
                 {/* Min purchase + Max discount */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>Minimal Belanja (Rp)</label>
-                    <input type="number" value={form.min_purchase || ""} onChange={(e) => setForm({ ...form, min_purchase: Number(e.target.value) })} className="w-full rounded-lg px-3 py-2.5 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="0" />
+                    <label className="block text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>Minimal Belanja</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm" style={{ color: "var(--text-muted)" }}>Rp</span>
+                      <input type="text" value={formDisplay.min_purchase} onChange={(e) => handleFieldChange("min_purchase", e.target.value)} className="w-full rounded-lg pl-9 pr-3 py-2.5 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="0" />
+                    </div>
                   </div>
                   {form.discount_type === "percentage" && (
                     <div>
-                      <label className="block text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>Max Diskon (Rp)</label>
-                      <input type="number" value={form.max_discount || ""} onChange={(e) => setForm({ ...form, max_discount: Number(e.target.value) })} className="w-full rounded-lg px-3 py-2.5 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="0 = tanpa batas" />
+                      <label className="block text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>Max Diskon</label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm" style={{ color: "var(--text-muted)" }}>Rp</span>
+                        <input type="text" value={formDisplay.max_discount} onChange={(e) => handleFieldChange("max_discount", e.target.value)} className="w-full rounded-lg pl-9 pr-3 py-2.5 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="Tanpa batas" />
+                      </div>
                     </div>
                   )}
                 </div>
 
                 {/* Usage limit */}
                 <div>
-                  <label className="block text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>Batas Penggunaan (0 = tanpa batas)</label>
+                  <label className="block text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>Batas Penggunaan Total (0 = tanpa batas)</label>
                   <input type="number" value={form.usage_limit || ""} onChange={(e) => setForm({ ...form, usage_limit: Number(e.target.value) })} className="w-full rounded-lg px-3 py-2.5 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="0" />
                 </div>
+
+                {/* Limit per WA */}
+                <label className="flex items-start gap-2.5 cursor-pointer p-3 rounded-lg" style={{ background: "rgba(255,255,255,.5)", border: "1px solid rgba(64,50,37,.08)" }}>
+                  <input type="checkbox" checked={form.limit_per_wa} onChange={(e) => setForm({ ...form, limit_per_wa: e.target.checked })} className="rounded mt-0.5" />
+                  <div>
+                    <span className="text-sm font-medium" style={{ color: "var(--espresso)" }}>Batasi 1x pakai per nomor WhatsApp</span>
+                    <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>Setiap nomor WhatsApp hanya bisa menggunakan voucher ini sekali</p>
+                  </div>
+                </label>
 
                 {/* Dates */}
                 <div className="grid grid-cols-2 gap-3">
