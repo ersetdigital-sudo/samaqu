@@ -15,6 +15,9 @@ export interface DbProduct {
   image: string;
   images: string[];
   created_at: string;
+  // Create Your Price
+  minimum_price: number | null;
+  create_your_price_enabled: boolean;
 }
 
 export interface DbTestimonial {
@@ -42,6 +45,8 @@ function dbProductToProduct(db: DbProduct): Product {
     series: db.series || undefined,
     colors: Array.isArray(db.colors) ? db.colors : [],
     price: db.price,
+    minimum_price: db.minimum_price,
+    create_your_price_enabled: db.create_your_price_enabled ?? false,
     tag: (db.tag as Product["tag"]) || undefined,
     note: db.note || undefined,
     image: db.image || "",
