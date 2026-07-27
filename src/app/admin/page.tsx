@@ -1010,13 +1010,18 @@ function CourierSettingsSection() {
   const toast = useToast();
 
   useEffect(() => {
-    supabase.from("store_settings").select("enabled_couriers").eq("id", 1).single().then(({ data }) => {
+    console.log("[ADMIN] CourierSettingsSection init start");
+    supabase.from("store_settings").select("enabled_couriers").eq("id", 1).single().then(({ data, error }) => {
+      if (error) console.error("[ADMIN] CourierSettings fetch error:", error);
+      console.log("[ADMIN] Enabled couriers raw:", data?.enabled_couriers);
       if (data?.enabled_couriers) {
         try {
-          const list = JSON.parse(data.enabled_couriers);
+          const list = typeof data.enabled_couriers === "string" ? JSON.parse(data.enabled_couriers) : data.enabled_couriers;
+          console.log("[ADMIN] Enabled couriers parsed:", list);
           setEnabled(list);
           setOriginal(list);
-        } catch {
+        } catch (e) {
+          console.error("[ADMIN] Failed to parse couriers, using defaults:", e);
           setEnabled(["jne", "sicepat", "jnt", "ninja", "tiki", "wahana", "pos", "lion", "anteraja"]);
         }
       }
@@ -1025,6 +1030,7 @@ function CourierSettingsSection() {
   }, []);
 
   function toggle(code: string) {
+    console.log("[ADMIN] Toggle courier:", code);
     setEnabled((prev) => prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]);
   }
 
@@ -1032,9 +1038,11 @@ function CourierSettingsSection() {
 
   async function handleSave() {
     setSaving(true);
+    console.log("[ADMIN] Saving couriers:", enabled);
     await supabase.from("store_settings").upsert({ id: 1, enabled_couriers: JSON.stringify(enabled), updated_at: new Date().toISOString() });
     setOriginal([...enabled]);
     setSaving(false);
+    console.log("[ADMIN] Couriers saved successfully");
     toast.showToast("success", "Pilihan ekspedisi disimpan");
   }
 
