@@ -230,14 +230,14 @@ function CheckoutContent() {
       const json = await res.json();
       const opts: ShipOpt[] = [];
       if (json.data && Array.isArray(json.data)) {
-        for (const cr of json.data) {
-          const name = cr.name || cr.code || "";
-          if (cr.costs && Array.isArray(cr.costs)) {
-            for (const svc of cr.costs) {
-              const c = svc.cost?.[0];
-              if (c) opts.push({ courier: name, service: svc.service || "", description: svc.description || "", cost: c.value || 0, etd: c.etd || "" });
-            }
-          }
+        for (const item of json.data) {
+          opts.push({
+            courier: item.name || item.code || "",
+            service: item.service || "",
+            description: item.description || "",
+            cost: typeof item.cost === "number" ? item.cost : 0,
+            etd: item.etd || "",
+          });
         }
       }
       opts.sort((a, b) => a.cost - b.cost);
