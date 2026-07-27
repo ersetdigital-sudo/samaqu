@@ -20,6 +20,7 @@ export interface Product {
   series?: string;
   colors: string[];
   price: number;
+  weight?: number; // grams, used for shipping cost calculation
   tag?: "Baru" | "Eksklusif";
   note?: string;
   image: string;
@@ -78,6 +79,17 @@ const priceMap: Record<Category, number> = {
   Kabak: 189000,
   "Cover & Hanger": 89000,
 };
+
+const weightMap: Record<Category, number> = {
+  Thobe: 800,
+  Kandora: 750,
+  Koko: 700,
+  Vest: 500,
+  Kabak: 600,
+  "Cover & Hanger": 300,
+};
+
+export { weightMap };
 
 /* ── Helper: generate images/media arrays from single image ── */
 function withImages(image: string): { image: string; images: string[]; media: MediaItem[] } {

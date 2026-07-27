@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Lock, Truck, Loader2, ChevronDown } from "lucide-react";
-import { getProductById } from "@/lib/katalog-data";
+import { getProductById, weightMap } from "@/lib/katalog-data";
 import { useCart } from "@/lib/cart-context";
 import { supabase } from "@/lib/supabase";
 import { getWhatsAppLink } from "@/lib/store-settings";
@@ -147,11 +147,16 @@ function CheckoutContent() {
     fetchAddresses();
   }, []);
 
-  // Auto-calculate weight
+  // Auto-calculate weight from product
   useEffect(() => {
-    const totalQty = isCartMode ? items.reduce((sum, item) => sum + item.qty, 0) : qty;
-    setBerat(Math.max(500, totalQty * 700));
-  }, [isCartMode, items, qty]);
+    if (isCartMode) {
+      const totalQty = items.reduce((sum, item) => sum + item.qty, 0);
+      setBerat(Math.max(300, totalQty * 800));
+    } else if (product) {
+      const unitWeight = product.weight || weightMap[product.category] || 800;
+      setBerat(unitWeight * qty);
+    }
+  }, [isCartMode, items, qty, product]);
 
   if (!product && !isCartMode) {
     return (
