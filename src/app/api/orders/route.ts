@@ -102,8 +102,62 @@ export async function POST(request: NextRequest) {
       verifiedShippingCost = shipping.cost || 0;
     }
 
+    // ── Server-side CYP price validation ──
+    // For CYP items: verify customer_price >= minimum_price from DB
+    // For fixed items: use price as-is
+    console.log("[ORDERS] Validating item prices...");
+    const validatedItems: Array<{ productId: string; name: string; image?: string; color?: string; size?: string; quantity: number; price: number; customer_price: number | null; minimum_price: number | null; create_your_price_enabled: boolean }> = [];
+
+    for (const item of items) {
+      if (item.create_your_price_enabled) {
+        // CYP item: fetch minimum_price from DB (never trust client)
+        const { data: product, error: productError } = await supabase
+          .from("products")
+          .select("minimum_price, create_your_price_enabled")
+          .eq("id", item.productId)
+          .single();
+
+        if (productError || !product) {
+          console.error("[ORDERS] CYP validation: product not found:", item.productId);
+          return NextResponse.json({ error: "Produk tidak ditemukan" }, { status: 400 });
+        }
+
+        if (!product.create_your_price_enabled || !product.minimum_price) {
+          console.error("[ORDERS] CYP validation: product not CYP enabled:", item.productId);
+          return NextResponse.json({ error: "Produk ini tidak mendukung Create Your Price" }, { status: 400 });
+        }
+
+        const dbMinimumPrice = product.minimum_price;
+        const clientCustomerPrice = item.customer_price || item.price;
+
+        if (clientCustomerPrice < dbMinimumPrice) {
+          console.error("[ORDERS] CYP validation FAILED:", { productId: item.productId, clientPrice: clientCustomerPrice, dbMinimum: dbMinimumPrice });
+          return NextResponse.json({
+            error: `Harga untuk "${item.name}" di bawah minimum. Minimum: Rp ${dbMinimumPrice.toLocaleString("id-ID")}`,
+          }, { status: 400 });
+        }
+
+        console.log("[ORDERS] CYP validated:", { name: item.name, customerPrice: clientCustomerPrice, minimumPrice: dbMinimumPrice });
+        validatedItems.push({
+          ...item,
+          price: clientCustomerPrice,
+          customer_price: clientCustomerPrice,
+          minimum_price: dbMinimumPrice,
+          create_your_price_enabled: true,
+        });
+      } else {
+        // Fixed price item: use as-is
+        validatedItems.push({
+          ...item,
+          customer_price: null,
+          minimum_price: null,
+          create_your_price_enabled: false,
+        });
+      }
+    }
+
     const orderNumber = generateOrderNumber();
-    const subtotal = items.reduce((sum: number, item: { price: number; quantity: number }) => sum + item.price * item.quantity, 0);
+    const subtotal = validatedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
     const discount = body.discount || 0;
     const total = subtotal - discount + verifiedShippingCost;
 
@@ -140,8 +194,8 @@ export async function POST(request: NextRequest) {
 
     console.log("[ORDERS] Order created:", order.id, orderNumber);
 
-    // Insert order items
-    const orderItems = items.map((item: { productId: string; name: string; image?: string; color?: string; size?: string; quantity: number; price: number }) => ({
+    // Insert order items (with CYP fields)
+    const orderItems = validatedItems.map((item) => ({
       order_id: order.id,
       product_id: item.productId,
       product_name: item.name,
@@ -150,6 +204,8 @@ export async function POST(request: NextRequest) {
       size: item.size || null,
       quantity: item.quantity || 1,
       price: item.price,
+      customer_price: item.customer_price,
+      minimum_price: item.minimum_price,
     }));
 
     const { error: itemsError } = await supabase.from("order_items").insert(orderItems);
