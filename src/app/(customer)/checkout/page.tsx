@@ -2,12 +2,11 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Minus, Plus, Lock, Truck, Loader2, ChevronDown } from "lucide-react";
+import { Lock, Truck, Loader2, ChevronDown } from "lucide-react";
 import { getProductById } from "@/lib/katalog-data";
 import { useCart } from "@/lib/cart-context";
 import { supabase } from "@/lib/supabase";
 import { getWhatsAppLink } from "@/lib/store-settings";
-import { useShipping, type ShippingOption } from "@/lib/use-shipping";
 
 interface PaymentMethod {
   id: string;
@@ -15,6 +14,9 @@ interface PaymentMethod {
   account_name: string;
   account_number: string;
 }
+
+interface IdName { id: number; name: string; zip_code?: string; }
+interface ShipOpt { courier: string; service: string; description: string; cost: number; etd: string; }
 
 function PaymentIcon({ type }: { type: string }) {
   if (type === "bank") return <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2" /><line x1="2" y1="10" x2="22" y2="10" /></svg>;
@@ -52,6 +54,7 @@ function CheckoutContent() {
   const [kota, setKota] = useState("");
   const [kodepos, setKodepos] = useState("");
   const [catatanKurir, setCatatanKurir] = useState("");
+  const [selectedShipping, setSelectedShipping] = useState<ShipOpt | null>(null);
   const [payment, setPayment] = useState("bank");
   const [submitting, setSubmitting] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
@@ -62,14 +65,45 @@ function CheckoutContent() {
   const [showNewAddress, setShowNewAddress] = useState(false);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
 
-  // RajaOngkir shipping
+  // ── Shipping (RajaOngkir) ──
+  const [provinces, setProvinces] = useState<IdName[]>([]);
+  const [kabupatenList, setKabupatenList] = useState<IdName[]>([]);
   const [provinsiId, setProvinsiId] = useState<number | null>(null);
   const [kotaId, setKotaId] = useState<number | null>(null);
   const [kecamatanId, setKecamatanId] = useState<number | null>(null);
   const [kecamatanName, setKecamatanName] = useState("");
-  const [berat, setBerat] = useState(500); // default 500g per item
-  const [selectedShipping, setSelectedShipping] = useState<ShippingOption | null>(null);
-  const shippingHook = useShipping();
+  const [berat, setBerat] = useState(500);
+  const [shipOptions, setShipOptions] = useState<ShipOpt[]>([]);
+  const [loadingProvinces, setLoadingProvinces] = useState(false);
+  const [loadingKab, setLoadingKab] = useState(false);
+  const [loadingCost, setLoadingCost] = useState(false);
+  const [originId, setOriginId] = useState<number | null>(null);
+
+  // Fetch provinces on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        setLoadingProvinces(true);
+        const res = await fetch("/api/shipping/provinces");
+        const json = await res.json();
+        const list: IdName[] = json.data || [];
+        setProvinces(list);
+
+        // Also resolve origin (Depok) for shipping calculation
+        const jabar = list.find((p) => p.name.toUpperCase().includes("JAWA BARAT"));
+        if (jabar) {
+          const cRes = await fetch(`/api/shipping/districts?provinceId=${jabar.id}`);
+          const cJson = await cRes.json();
+          const depok = (cJson.data || []).find((c: IdName) => c.name.toUpperCase().includes("DEPOK"));
+          if (depok) setOriginId(depok.id);
+        }
+      } catch (e) {
+        console.error("Gagal load provinsi:", e);
+      } finally {
+        setLoadingProvinces(false);
+      }
+    })();
+  }, []);
 
   // Fetch payment methods from Supabase
   useEffect(() => {
@@ -103,18 +137,10 @@ function CheckoutContent() {
     fetchAddresses();
   }, []);
 
-  // Resolve origin (Depok) on mount
+  // Auto-calculate weight
   useEffect(() => {
-    shippingHook.resolveOrigin();
-    shippingHook.fetchProvinces();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Auto-calculate weight based on items
-  useEffect(() => {
-    const totalQty = isCartMode
-      ? items.reduce((sum, item) => sum + item.qty, 0)
-      : qty;
-    setBerat(Math.max(300, totalQty * 400)); // min 300g, ~400g per item
+    const totalQty = isCartMode ? items.reduce((sum, item) => sum + item.qty, 0) : qty;
+    setBerat(Math.max(300, totalQty * 400));
   }, [isCartMode, items, qty]);
 
   if (!product && !isCartMode) {
@@ -168,6 +194,59 @@ function CheckoutContent() {
 
   function validatePhone(p: string): boolean {
     return /^(\+62|62|0)8[1-9][0-9]{6,10}$/.test(p.replace(/[\s-]/g, ""));
+  }
+
+  async function handleSelectProvinsi(provId: number) {
+    setProvinsiId(provId);
+    setKotaId(null);
+    setKecamatanId(null);
+    setKecamatanName("");
+    setSelectedShipping(null);
+    setKabupatenList([]);
+    setShipOptions([]);
+    try {
+      setLoadingKab(true);
+      const res = await fetch(`/api/shipping/districts?provinceId=${provId}`);
+      const json = await res.json();
+      setKabupatenList(json.data || []);
+    } catch (e) {
+      console.error("Gagal load kota:", e);
+    } finally {
+      setLoadingKab(false);
+    }
+  }
+
+  async function handleHitungOngkir() {
+    if (!originId || !kecamatanId) return;
+    setLoadingCost(true);
+    setShipOptions([]);
+    setSelectedShipping(null);
+    try {
+      const res = await fetch("/api/shipping/cost", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ origin: originId, destination: kecamatanId, weight: berat }),
+      });
+      const json = await res.json();
+      const opts: ShipOpt[] = [];
+      if (json.data && Array.isArray(json.data)) {
+        for (const cr of json.data) {
+          const name = cr.name || cr.code || "";
+          if (cr.costs && Array.isArray(cr.costs)) {
+            for (const svc of cr.costs) {
+              const c = svc.cost?.[0];
+              if (c) opts.push({ courier: name, service: svc.service || "", description: svc.description || "", cost: c.value || 0, etd: c.etd || "" });
+            }
+          }
+        }
+      }
+      opts.sort((a, b) => a.cost - b.cost);
+      setShipOptions(opts);
+    } catch (e) {
+      console.error("Gagal hitung ongkir:", e);
+    } finally {
+      setLoadingCost(false);
+    }
   }
 
   async function handleSubmit() {
@@ -250,8 +329,10 @@ function CheckoutContent() {
   }
 
   if (orderPlaced) {
-    return null; // Redirect to success page handled in handleSubmit
+    return null;
   }
+
+  const selectStyle: React.CSSProperties = { background: "white", border: "1px solid rgba(64,50,37,.25)", color: "var(--espresso)", outline: "none" };
 
   return (
     <section className="min-h-screen" style={{ background: "var(--cream)" }}>
@@ -298,16 +379,16 @@ function CheckoutContent() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div className="sm:col-span-2" data-field="nama">
                 <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: errors.nama ? "#e74c3c" : "var(--text-secondary)" }}>Nama Lengkap <span style={{ color: "var(--gold)" }}>*</span></label>
-                <input type="text" value={nama} onChange={(e) => { setNama(e.target.value); setErrors((p) => ({ ...p, nama: "" })); }} className="field w-full rounded-lg px-4 py-3 text-sm font-ui" style={{ background: "white", border: `1px solid ${errors.nama ? "#e74c3c" : "rgba(64,50,37,.25)"}`, color: "var(--espresso)", outline: "none" }} placeholder="Contoh: Ahmad Fauzi" />
+                <input type="text" value={nama} onChange={(e) => { setNama(e.target.value); setErrors((p) => ({ ...p, nama: "" })); }} className="w-full rounded-lg px-4 py-3 text-sm font-ui" style={{ ...selectStyle, border: `1px solid ${errors.nama ? "#e74c3c" : "rgba(64,50,37,.25)"}` }} placeholder="Contoh: Ahmad Fauzi" />
                 {errors.nama && <p className="text-[11px] font-ui mt-1" style={{ color: "#e74c3c" }}>{errors.nama}</p>}
               </div>
               <div>
                 <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: "var(--text-secondary)" }}>Email</label>
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="field w-full rounded-lg px-4 py-3 text-sm font-ui" style={{ background: "white", border: "1px solid rgba(64,50,37,.25)", color: "var(--espresso)", outline: "none" }} placeholder="nama@email.com" />
+                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-lg px-4 py-3 text-sm font-ui" style={selectStyle} placeholder="nama@email.com" />
               </div>
               <div data-field="whatsapp">
                 <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: errors.whatsapp ? "#e74c3c" : "var(--text-secondary)" }}>Nomor WhatsApp <span style={{ color: "var(--gold)" }}>*</span></label>
-                <input type="tel" value={whatsapp} onChange={(e) => { setWhatsapp(e.target.value); setErrors((p) => ({ ...p, whatsapp: "" })); }} className="field w-full rounded-lg px-4 py-3 text-sm font-ui" style={{ background: "white", border: `1px solid ${errors.whatsapp ? "#e74c3c" : "rgba(64,50,37,.25)"}`, color: "var(--espresso)", outline: "none" }} placeholder="0812 3456 7890" />
+                <input type="tel" value={whatsapp} onChange={(e) => { setWhatsapp(e.target.value); setErrors((p) => ({ ...p, whatsapp: "" })); }} className="w-full rounded-lg px-4 py-3 text-sm font-ui" style={{ ...selectStyle, border: `1px solid ${errors.whatsapp ? "#e74c3c" : "rgba(64,50,37,.25)"}` }} placeholder="0812 3456 7890" />
                 {errors.whatsapp && <p className="text-[11px] font-ui mt-1" style={{ color: "#e74c3c" }}>{errors.whatsapp}</p>}
               </div>
             </div>
@@ -320,7 +401,6 @@ function CheckoutContent() {
               <h2 className="text-xl sm:text-2xl italic" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Alamat Pengiriman</h2>
             </div>
 
-            {/* Saved addresses selector */}
             {savedAddresses.length > 0 && !showNewAddress && (
               <div className="mb-4 space-y-2">
                 {savedAddresses.map((addr) => (
@@ -346,38 +426,37 @@ function CheckoutContent() {
                     </div>
                   </label>
                 ))}
-                <button onClick={() => setShowNewAddress(true)} className="text-xs font-medium mt-1" style={{ color: "#8b6f42" }}>+ Gunakan Alamat Baru</button>
+                <button type="button" onClick={() => setShowNewAddress(true)} className="text-xs font-medium mt-1" style={{ color: "#8b6f42" }}>+ Gunakan Alamat Baru</button>
               </div>
             )}
 
-            {/* Manual form (shown when no saved addresses, or user chose "new address") */}
             {(savedAddresses.length === 0 || showNewAddress) && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 {savedAddresses.length > 0 && (
                   <div className="sm:col-span-2">
-                    <button onClick={() => setShowNewAddress(false)} className="text-xs font-medium" style={{ color: "#8b6f42" }}>← Kembali ke alamat tersimpan</button>
+                    <button type="button" onClick={() => setShowNewAddress(false)} className="text-xs font-medium" style={{ color: "#8b6f42" }}>← Kembali ke alamat tersimpan</button>
                   </div>
                 )}
-              <div className="sm:col-span-2" data-field="alamat">
-                <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: errors.alamat ? "#e74c3c" : "var(--text-secondary)" }}>Alamat Lengkap <span style={{ color: "var(--gold)" }}>*</span></label>
-                <textarea rows={3} value={alamat} onChange={(e) => { setAlamat(e.target.value); setErrors((p) => ({ ...p, alamat: "" })); }} className="field w-full rounded-lg px-4 py-3 text-sm font-ui resize-none" style={{ background: "white", border: `1px solid ${errors.alamat ? "#e74c3c" : "rgba(64,50,37,.25)"}`, color: "var(--espresso)", outline: "none" }} placeholder="Jalan, nomor rumah, RT/RW, kelurahan" />
-                {errors.alamat && <p className="text-[11px] font-ui mt-1" style={{ color: "#e74c3c" }}>{errors.alamat}</p>}
+                <div className="sm:col-span-2" data-field="alamat">
+                  <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: errors.alamat ? "#e74c3c" : "var(--text-secondary)" }}>Alamat Lengkap <span style={{ color: "var(--gold)" }}>*</span></label>
+                  <textarea rows={3} value={alamat} onChange={(e) => { setAlamat(e.target.value); setErrors((p) => ({ ...p, alamat: "" })); }} className="w-full rounded-lg px-4 py-3 text-sm font-ui resize-none" style={{ ...selectStyle, border: `1px solid ${errors.alamat ? "#e74c3c" : "rgba(64,50,37,.25)"}` }} placeholder="Jalan, nomor rumah, RT/RW, kelurahan" />
+                  {errors.alamat && <p className="text-[11px] font-ui mt-1" style={{ color: "#e74c3c" }}>{errors.alamat}</p>}
+                </div>
+                <div data-field="kota">
+                  <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: errors.kota ? "#e74c3c" : "var(--text-secondary)" }}>Kota / Kabupaten <span style={{ color: "var(--gold)" }}>*</span></label>
+                  <input type="text" value={kota} onChange={(e) => { setKota(e.target.value); setErrors((p) => ({ ...p, kota: "" })); }} className="w-full rounded-lg px-4 py-3 text-sm font-ui" style={{ ...selectStyle, border: `1px solid ${errors.kota ? "#e74c3c" : "rgba(64,50,37,.25)"}` }} placeholder="Contoh: Bandung" />
+                  {errors.kota && <p className="text-[11px] font-ui mt-1" style={{ color: "#e74c3c" }}>{errors.kota}</p>}
+                </div>
+                <div data-field="kodepos">
+                  <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: errors.kodepos ? "#e74c3c" : "var(--text-secondary)" }}>Kode Pos</label>
+                  <input type="text" value={kodepos} onChange={(e) => { setKodepos(e.target.value); setErrors((p) => ({ ...p, kodepos: "" })); }} className="w-full rounded-lg px-4 py-3 text-sm font-ui" style={{ ...selectStyle, border: `1px solid ${errors.kodepos ? "#e74c3c" : "rgba(64,50,37,.25)"}` }} placeholder="40123" />
+                  {errors.kodepos && <p className="text-[11px] font-ui mt-1" style={{ color: "#e74c3c" }}>{errors.kodepos}</p>}
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: "var(--text-secondary)" }}>Catatan untuk Kurir (opsional)</label>
+                  <input type="text" value={catatanKurir} onChange={(e) => setCatatanKurir(e.target.value)} className="w-full rounded-lg px-4 py-3 text-sm font-ui" style={selectStyle} placeholder="Titipkan ke satpam, dll." />
+                </div>
               </div>
-              <div data-field="kota">
-                <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: errors.kota ? "#e74c3c" : "var(--text-secondary)" }}>Kota / Kabupaten <span style={{ color: "var(--gold)" }}>*</span></label>
-                <input type="text" value={kota} onChange={(e) => { setKota(e.target.value); setErrors((p) => ({ ...p, kota: "" })); }} className="field w-full rounded-lg px-4 py-3 text-sm font-ui" style={{ background: "white", border: `1px solid ${errors.kota ? "#e74c3c" : "rgba(64,50,37,.25)"}`, color: "var(--espresso)", outline: "none" }} placeholder="Contoh: Bandung" />
-                {errors.kota && <p className="text-[11px] font-ui mt-1" style={{ color: "#e74c3c" }}>{errors.kota}</p>}
-              </div>
-              <div data-field="kodepos">
-                <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: errors.kodepos ? "#e74c3c" : "var(--text-secondary)" }}>Kode Pos</label>
-                <input type="text" value={kodepos} onChange={(e) => { setKodepos(e.target.value); setErrors((p) => ({ ...p, kodepos: "" })); }} className="field w-full rounded-lg px-4 py-3 text-sm font-ui" style={{ background: "white", border: `1px solid ${errors.kodepos ? "#e74c3c" : "rgba(64,50,37,.25)"}`, color: "var(--espresso)", outline: "none" }} placeholder="40123" />
-                {errors.kodepos && <p className="text-[11px] font-ui mt-1" style={{ color: "#e74c3c" }}>{errors.kodepos}</p>}
-              </div>
-              <div className="sm:col-span-2">
-                <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: "var(--text-secondary)" }}>Catatan untuk Kurir (opsional)</label>
-                <input type="text" value={catatanKurir} onChange={(e) => setCatatanKurir(e.target.value)} className="field w-full rounded-lg px-4 py-3 text-sm font-ui" style={{ background: "white", border: "1px solid rgba(64,50,37,.25)", color: "var(--espresso)", outline: "none" }} placeholder="Titipkan ke satpam, dll." />
-              </div>
-            </div>
             )}
           </section>
 
@@ -391,85 +470,67 @@ function CheckoutContent() {
             {/* Provinsi */}
             <div className="mb-3">
               <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: "var(--text-secondary)" }}>Provinsi Tujuan</label>
-              <div className="relative">
-                <select
-                  value={provinsiId ?? ""}
-                  onChange={async (e) => {
-                    const id = Number(e.target.value);
-                    setProvinsiId(id);
-                    setKotaId(null);
-                    setKecamatanId(null);
-                    setKecamatanName("");
-                    setSelectedShipping(null);
-                    await shippingHook.fetchCities(id);
-                  }}
-                  className="field w-full rounded-lg px-4 py-3 text-sm font-ui appearance-none pr-10"
-                  style={{ background: "white", border: "1px solid rgba(64,50,37,.25)", color: "var(--espresso)", outline: "none" }}
-                >
-                  <option value="">{shippingHook.loadingProvinces ? "Memuat…" : "Pilih Provinsi"}</option>
-                  {shippingHook.provinces.map((p) => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
-                  ))}
-                </select>
-                <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--text-muted)" }} />
-              </div>
+              <select
+                value={provinsiId ?? ""}
+                onChange={(e) => handleSelectProvinsi(Number(e.target.value))}
+                className="w-full rounded-lg px-4 py-3 text-sm font-ui"
+                style={selectStyle}
+              >
+                <option value="">{loadingProvinces ? "Memuat provinsi…" : "Pilih Provinsi"}</option>
+                {provinces.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
             </div>
 
             {/* Kota/Kabupaten */}
-            {provinsiId && (
-              <div className="mb-3">
-                <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: "var(--text-secondary)" }}>Kota / Kabupaten</label>
-                <div className="relative">
-                  <select
-                    value={kotaId ?? ""}
-                    onChange={(e) => {
-                      const id = Number(e.target.value);
-                      const name = shippingHook.cities.find((c) => c.id === id)?.name || "";
-                      setKotaId(id);
-                      setKota(name);
-                      setKecamatanId(null);
-                      setKecamatanName("");
-                      setSelectedShipping(null);
-                    }}
-                    className="field w-full rounded-lg px-4 py-3 text-sm font-ui appearance-none pr-10"
-                    style={{ background: "white", border: "1px solid rgba(64,50,37,.25)", color: "var(--espresso)", outline: "none" }}
-                  >
-                    <option value="">{shippingHook.loadingCities ? "Memuat…" : "Pilih Kota/Kabupaten"}</option>
-                    {shippingHook.cities.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
-                  <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--text-muted)" }} />
-                </div>
-              </div>
-            )}
+            <div className="mb-3">
+              <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: "var(--text-secondary)" }}>Kota / Kabupaten</label>
+              <select
+                value={kotaId ?? ""}
+                onChange={(e) => {
+                  const id = Number(e.target.value);
+                  const name = kabupatenList.find((c) => c.id === id)?.name || "";
+                  setKotaId(id);
+                  setKota(name);
+                  setKecamatanId(null);
+                  setKecamatanName("");
+                  setSelectedShipping(null);
+                  setShipOptions([]);
+                }}
+                disabled={!provinsiId}
+                className="w-full rounded-lg px-4 py-3 text-sm font-ui"
+                style={{ ...selectStyle, opacity: !provinsiId ? 0.5 : 1 }}
+              >
+                <option value="">{loadingKab ? "Memuat kota…" : "Pilih Kota/Kabupaten"}</option>
+                {kabupatenList.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
 
             {/* Kecamatan */}
-            {kotaId && (
-              <div className="mb-3">
-                <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: "var(--text-secondary)" }}>Kecamatan</label>
-                <div className="relative">
-                  <select
-                    value={kecamatanId ?? ""}
-                    onChange={(e) => {
-                      const id = Number(e.target.value);
-                      const name = shippingHook.cities.find((c) => c.id === id)?.name || "";
-                      setKecamatanId(id);
-                      setKecamatanName(name);
-                      setKodepos(String(shippingHook.cities.find((c) => c.id === id)?.zip_code || "").replace(/^0+$/, "") || "");
-                    }}
-                    className="field w-full rounded-lg px-4 py-3 text-sm font-ui appearance-none pr-10"
-                    style={{ background: "white", border: "1px solid rgba(64,50,37,.25)", color: "var(--espresso)", outline: "none" }}
-                  >
-                    <option value="">Pilih Kecamatan</option>
-                    {shippingHook.cities.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
-                  <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--text-muted)" }} />
-                </div>
-              </div>
-            )}
+            <div className="mb-3">
+              <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: "var(--text-secondary)" }}>Kecamatan</label>
+              <select
+                value={kecamatanId ?? ""}
+                onChange={(e) => {
+                  const id = Number(e.target.value);
+                  const item = kabupatenList.find((c) => c.id === id);
+                  setKecamatanId(id);
+                  setKecamatanName(item?.name || "");
+                  setKodepos(String(item?.zip_code || "").replace(/^0+$/, "") || "");
+                }}
+                disabled={!kotaId}
+                className="w-full rounded-lg px-4 py-3 text-sm font-ui"
+                style={{ ...selectStyle, opacity: !kotaId ? 0.5 : 1 }}
+              >
+                <option value="">{kotaId ? "Pilih Kecamatan" : "Pilih kota terlebih dahulu"}</option>
+                {kabupatenList.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
 
             {/* Weight */}
             <div className="mb-3">
@@ -479,72 +540,73 @@ function CheckoutContent() {
                 value={berat}
                 onChange={(e) => setBerat(Number(e.target.value) || 300)}
                 min={100}
-                className="field w-full rounded-lg px-4 py-3 text-sm font-ui"
-                style={{ background: "white", border: "1px solid rgba(64,50,37,.25)", color: "var(--espresso)", outline: "none" }}
+                className="w-full rounded-lg px-4 py-3 text-sm font-ui"
+                style={selectStyle}
               />
             </div>
 
             {/* Hitung Ongkir button */}
-            {kecamatanId && shippingHook.originDistrictId && (
-              <button
-                type="button"
-                onClick={() => shippingHook.fetchCost(kecamatanId, berat)}
-                disabled={shippingHook.loadingCost}
-                className="w-full rounded-xl py-3 text-sm font-ui font-medium flex items-center justify-center gap-2 transition-all mb-4"
-                style={{ background: "var(--espresso)", color: "var(--cream)" }}
-              >
-                {shippingHook.loadingCost ? (
-                  <><Loader2 size={16} className="animate-spin" /> Menghitung…</>
-                ) : (
-                  <><Truck size={16} /> Hitung Ongkos Kirim</>
-                )}
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={handleHitungOngkir}
+              disabled={!kecamatanId || !originId || loadingCost}
+              className="w-full rounded-xl py-3 text-sm font-ui font-medium flex items-center justify-center gap-2 transition-all mb-4 disabled:opacity-40"
+              style={{ background: "var(--espresso)", color: "var(--cream)" }}
+            >
+              {loadingCost ? (
+                <><Loader2 size={16} className="animate-spin" /> Menghitung…</>
+              ) : (
+                <><Truck size={16} /> Hitung Ongkos Kirim</>
+              )}
+            </button>
 
-            {!kecamatanId && (
-              <p className="text-xs font-ui mb-4" style={{ color: "var(--text-muted)" }}>Pilih provinsi, kota, dan kecamatan untuk melihat opsi pengiriman.</p>
-            )}
-
-            {/* Shipping options */}
-            {shippingHook.shippingOptions.length > 0 && (
+            {/* Shipping options list */}
+            {shipOptions.length > 0 && (
               <div className="space-y-2">
-                {shippingHook.shippingOptions.map((opt, i) => (
-                  <label
-                    key={`${opt.courier}-${opt.service}-${i}`}
-                    className="pay-option relative rounded-xl p-4 flex items-start gap-3 cursor-pointer transition-all"
-                    style={{
-                      border: `1.5px solid ${selectedShipping?.courier === opt.courier && selectedShipping?.service === opt.service ? "var(--gold)" : "rgba(64,50,37,.25)"}`,
-                      background: selectedShipping?.courier === opt.courier && selectedShipping?.service === opt.service ? "white" : "transparent",
-                    }}
-                    onClick={() => {
-                      setSelectedShipping(opt);
-                    }}
-                  >
-                    <input type="radio" name="ship" className="sr-only" checked={selectedShipping?.courier === opt.courier && selectedShipping?.service === opt.service} readOnly />
-                    <span className="relative mt-0.5 w-4 h-4 rounded-full border-2 flex-shrink-0" style={{ borderColor: selectedShipping?.courier === opt.courier && selectedShipping?.service === opt.service ? "var(--gold)" : "var(--text-muted)" }}>
-                      {selectedShipping?.courier === opt.courier && selectedShipping?.service === opt.service && <span className="absolute inset-[3px] rounded-full" style={{ background: "var(--gold)" }} />}
-                    </span>
-                    <span className="flex-1">
-                      <span className="flex items-center justify-between">
-                        <span className="text-[13px] sm:text-sm font-ui font-medium" style={{ color: "var(--espresso)" }}>
-                          {opt.courier.toUpperCase()} — {opt.service}
+                {shipOptions.map((opt, i) => {
+                  const isActive = selectedShipping?.courier === opt.courier && selectedShipping?.service === opt.service;
+                  return (
+                    <label
+                      key={`${opt.courier}-${opt.service}-${i}`}
+                      className="relative rounded-xl p-4 flex items-start gap-3 cursor-pointer transition-all"
+                      style={{ border: `1.5px solid ${isActive ? "var(--gold)" : "rgba(64,50,37,.25)"}`, background: isActive ? "white" : "transparent" }}
+                    >
+                      <input
+                        type="radio"
+                        name="ship"
+                        className="sr-only"
+                        checked={isActive}
+                        onChange={() => setSelectedShipping(opt)}
+                      />
+                      <span className="relative mt-0.5 w-4 h-4 rounded-full border-2 flex-shrink-0" style={{ borderColor: isActive ? "var(--gold)" : "var(--text-muted)" }}>
+                        {isActive && <span className="absolute inset-[3px] rounded-full" style={{ background: "var(--gold)" }} />}
+                      </span>
+                      <span className="flex-1">
+                        <span className="flex items-center justify-between">
+                          <span className="text-[13px] sm:text-sm font-ui font-medium" style={{ color: "var(--espresso)" }}>
+                            {opt.courier.toUpperCase()} — {opt.service}
+                          </span>
+                          <span className="text-[13px] sm:text-sm font-ui font-semibold" style={{ color: "var(--gold)" }}>
+                            Rp {opt.cost.toLocaleString("id-ID")}
+                          </span>
                         </span>
-                        <span className="text-[13px] sm:text-sm font-ui font-semibold" style={{ color: "var(--gold)" }}>
-                          Rp {opt.cost.toLocaleString("id-ID")}
+                        <span className="block text-[11px] sm:text-xs font-ui mt-0.5" style={{ color: "var(--text-muted)" }}>
+                          {opt.description} · Estimasi {opt.etd} hari
                         </span>
                       </span>
-                      <span className="block text-[11px] sm:text-xs font-ui mt-0.5" style={{ color: "var(--text-muted)" }}>
-                        {opt.description} · Estimasi {opt.etd} hari
-                      </span>
-                    </span>
-                  </label>
-                ))}
+                    </label>
+                  );
+                })}
               </div>
             )}
 
-            {shippingHook.shippingOptions.length === 0 && !shippingHook.loadingCost && kecamatanId && shippingHook.originDistrictId && (
-              <p className="text-xs font-ui" style={{ color: "var(--text-muted)" }}>Tekan "Hitung Ongkos Kirim" untuk melihat opsi pengiriman.</p>
+            {shipOptions.length === 0 && !loadingCost && (
+              <p className="text-xs font-ui" style={{ color: "var(--text-muted)" }}>
+                {kecamatanId && originId ? "Tekan tombol di atas untuk melihat opsi pengiriman." : "Lengkapi alamat pengiriman untuk menghitung ongkir."}
+              </p>
             )}
+
+            {errors.shipping && <p className="text-[11px] font-ui mt-2" style={{ color: "#e74c3c" }}>{errors.shipping}</p>}
           </section>
 
           {/* Section 4: Payment Method */}
@@ -606,7 +668,6 @@ function CheckoutContent() {
           <div className="rounded-2xl p-5 sm:p-7" style={{ background: "var(--bg-secondary, #f0ebe5)", border: "1px solid rgba(64,50,37,.08)" }}>
             <h2 className="text-xl sm:text-2xl italic mb-4 sm:mb-5" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Ringkasan Pesanan</h2>
 
-            {/* Items */}
             {isCartMode ? (
               <div className="space-y-4">
                 {items.map((item) => (
@@ -632,9 +693,9 @@ function CheckoutContent() {
                   <p className="text-[11px] sm:text-xs font-ui mt-0.5" style={{ color: "var(--text-muted)" }}>Warna: {selectedColor} · Ukuran: {selectedSize}</p>
                   <div className="flex items-center justify-between mt-2 sm:mt-2.5">
                     <div className="inline-flex items-center rounded-lg" style={{ border: "1px solid rgba(64,50,37,.25)" }}>
-                      <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="qty-btn w-7 h-7 flex items-center justify-center text-base font-ui" style={{ color: "var(--espresso)" }} aria-label="Kurangi">−</button>
+                      <button type="button" onClick={() => setQty((q) => Math.max(1, q - 1))} className="w-7 h-7 flex items-center justify-center text-base font-ui" style={{ color: "var(--espresso)" }} aria-label="Kurangi">−</button>
                       <span className="w-8 text-center text-sm font-ui">{qty}</span>
-                      <button onClick={() => setQty((q) => q + 1)} className="qty-btn w-7 h-7 flex items-center justify-center text-base font-ui" style={{ color: "var(--espresso)" }} aria-label="Tambah">+</button>
+                      <button type="button" onClick={() => setQty((q) => q + 1)} className="w-7 h-7 flex items-center justify-center text-sm font-ui" style={{ color: "var(--espresso)" }} aria-label="Tambah">+</button>
                     </div>
                     <span className="text-[13px] sm:text-sm font-ui font-semibold" style={{ color: "var(--espresso)" }}>Rp {subtotal.toLocaleString("id-ID")}</span>
                   </div>
@@ -649,13 +710,13 @@ function CheckoutContent() {
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="#4b7a4e" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
                   <span className="text-sm font-ui font-medium" style={{ color: "var(--espresso)" }}>{voucherCode}</span>
                 </div>
-                <button onClick={() => { setPromoApplied(false); setPromoCode(""); setDiscount(0); setVoucherCode(""); setVoucherId(""); }} className="text-xs font-ui font-medium" style={{ color: "#8b6f42" }}>Ganti</button>
+                <button type="button" onClick={() => { setPromoApplied(false); setPromoCode(""); setDiscount(0); setVoucherCode(""); setVoucherId(""); }} className="text-xs font-ui font-medium" style={{ color: "#8b6f42" }}>Ganti</button>
               </div>
             ) : (
               <>
                 <div className="flex gap-2 mt-5 sm:mt-6">
-                  <input type="text" value={promoCode} onChange={(e) => { setPromoCode(e.target.value); setPromoError(""); }} className="field flex-1 rounded-lg px-3.5 py-2.5 text-sm font-ui" style={{ background: "white", border: "1px solid rgba(64,50,37,.25)", color: "var(--espresso)", outline: "none" }} placeholder="Kode promo" />
-                  <button onClick={applyPromo} className="rounded-lg px-4 text-sm font-ui font-medium" style={{ background: "#e8e2da", color: "var(--espresso)" }}>Terapkan</button>
+                  <input type="text" value={promoCode} onChange={(e) => { setPromoCode(e.target.value); setPromoError(""); }} className="flex-1 rounded-lg px-3.5 py-2.5 text-sm font-ui" style={{ background: "white", border: "1px solid rgba(64,50,37,.25)", color: "var(--espresso)", outline: "none" }} placeholder="Kode promo" />
+                  <button type="button" onClick={applyPromo} className="rounded-lg px-4 text-sm font-ui font-medium" style={{ background: "#e8e2da", color: "var(--espresso)" }}>Terapkan</button>
                 </div>
                 {promoError && <p className="text-[11px] mt-1.5 font-ui" style={{ color: "#e74c3c" }}>{promoError}</p>}
               </>
@@ -667,7 +728,7 @@ function CheckoutContent() {
                 <span>Subtotal</span><span>Rp {subtotal.toLocaleString("id-ID")}</span>
               </div>
               <div className="flex justify-between" style={{ color: "var(--text-secondary)" }}>
-                <span>Pengiriman</span><span>Rp {shippingCost.toLocaleString("id-ID")}</span>
+                <span>Pengiriman</span><span>{selectedShipping ? `Rp ${shippingCost.toLocaleString("id-ID")}` : "—"}</span>
               </div>
               {promoApplied && (
                 <div className="flex justify-between" style={{ color: "var(--gold)" }}>
@@ -681,7 +742,7 @@ function CheckoutContent() {
             </div>
 
             {/* Submit (desktop) */}
-            <button onClick={handleSubmit} disabled={submitting} className="btn-primary hidden lg:block w-full mt-5 sm:mt-6 rounded-xl py-4 text-sm font-ui font-medium tracking-wide transition-all" style={{ background: "var(--espresso)", color: "var(--cream)" }}>
+            <button type="submit" disabled={submitting} className="hidden lg:block w-full mt-5 sm:mt-6 rounded-xl py-4 text-sm font-ui font-medium tracking-wide transition-all" style={{ background: "var(--espresso)", color: "var(--cream)" }}>
               {submitting ? "Memproses…" : "Buat Pesanan"}
             </button>
 
@@ -699,7 +760,7 @@ function CheckoutContent() {
 
       {/* Sticky mobile submit bar */}
       <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 px-4 pb-4 pt-3" style={{ background: "linear-gradient(to top, var(--cream) 70%, transparent)" }}>
-        <button onClick={handleSubmit} disabled={submitting} className="btn-primary w-full rounded-xl py-4 text-sm font-ui font-medium tracking-wide transition-all" style={{ background: "var(--espresso)", color: "var(--cream)" }}>
+        <button type="submit" disabled={submitting} className="w-full rounded-xl py-4 text-sm font-ui font-medium tracking-wide transition-all" style={{ background: "var(--espresso)", color: "var(--cream)" }}>
           {submitting ? "Memproses…" : "Buat Pesanan"}
         </button>
       </div>
