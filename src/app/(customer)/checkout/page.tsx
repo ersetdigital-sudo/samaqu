@@ -206,6 +206,7 @@ function CheckoutContent() {
   const [shipOptions, setShipOptions] = useState<ShipOpt[]>([]);
   const [loadingCost, setLoadingCost] = useState(false);
   const [shippingError, setShippingError] = useState<string | null>(null);
+  const [kecamatanName, setKecamatanName] = useState("");
   const [originId, setOriginId] = useState<number | null>(null);
   const [enabledCouriers, setEnabledCouriers] = useState<string[]>([]);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
