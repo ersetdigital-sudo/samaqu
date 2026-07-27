@@ -9,17 +9,24 @@ export default function Tentang() {
             Tentang SAMAQU
           </p>
           <h2
-            className="text-4xl sm:text-5xl font-medium mb-6 leading-tight"
+            className="text-3xl sm:text-5xl font-medium mb-6 leading-tight"
             style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}
           >
-            Kesederhanaan yang Bermakna.
+            Kami Juga Orang Biasa.
           </h2>
-          <p className="leading-[1.75] mb-5" style={{ color: "var(--coffee)" }}>
-            SAMAQU lahir dari keyakinan bahwa busana yang baik menemani setiap langkah ibadah dan keseharian dengan tenang. Kami memilih bahan yang adem, potongan yang rapi, dan detail yang halus — agar setiap yang mengenakannya merasa percaya diri dan bersahaja.
+          <p className="leading-[1.75] mb-5 text-sm sm:text-base" style={{ color: "var(--coffee)" }}>
+            Kami tahu rasanya sedang berjuang, bertumbuh, dan membangun masa depan dengan apa yang kita punya. Karena itu Samaqu hadir dengan satu keyakinan sederhana: Orang biasa juga berhak mendapatkan kualitas terbaik.
           </p>
-          <p className="leading-[1.75] mb-8" style={{ color: "var(--coffee)" }}>
-            Dari Thobe hingga Cover Hanger, setiap produk kami rawat dengan ketelitian dan hati. Karena bagi kami, kualitas adalah bentuk penghormatan pada pelanggan.
+          <p className="leading-[1.75] mb-6 text-sm sm:text-base" style={{ color: "var(--coffee)" }}>
+            Kami membuat produk dengan sungguh-sungguh, memberikan harga yang lebih mudah dijangkau, dan terus mencari cara agar apa yang kami bangun bisa memberikan manfaat bagi lebih banyak orang.
           </p>
+          <a
+            href="https://samaqu.vercel.app/tentang-kami"
+            className="inline-flex items-center gap-2 rounded-full px-7 py-3.5 sm:py-4 text-[11px] sm:text-[12px] tracking-[0.18em] uppercase font-ui transition hover:opacity-90 mb-8"
+            style={{ background: "var(--espresso)", color: "var(--cream)" }}
+          >
+            Kenali Samaqu Lebih Dekat
+          </a>
           <div className="flex gap-8">
             <div>
               <p className="text-3xl mb-1" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--gold)" }}>
