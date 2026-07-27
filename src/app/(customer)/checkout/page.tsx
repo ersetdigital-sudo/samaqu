@@ -106,6 +106,7 @@ function CheckoutContent() {
   // Resolve origin (Depok) on mount
   useEffect(() => {
     shippingHook.resolveOrigin();
+    shippingHook.fetchProvinces();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-calculate weight based on items
@@ -402,7 +403,6 @@ function CheckoutContent() {
                     setSelectedShipping(null);
                     await shippingHook.fetchCities(id);
                   }}
-                  onFocus={() => shippingHook.fetchProvinces()}
                   className="field w-full rounded-lg px-4 py-3 text-sm font-ui appearance-none pr-10"
                   style={{ background: "white", border: "1px solid rgba(64,50,37,.25)", color: "var(--espresso)", outline: "none" }}
                 >
