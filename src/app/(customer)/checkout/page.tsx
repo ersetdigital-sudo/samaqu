@@ -676,9 +676,18 @@ function CheckoutContent() {
                   <textarea rows={3} value={alamat} onChange={(e) => { setAlamat(e.target.value); setErrors((p) => ({ ...p, alamat: "" })); }} className="w-full rounded-lg px-4 py-3 text-sm font-ui resize-none" style={{ ...selectStyle, border: `1px solid ${errors.alamat ? "#e74c3c" : "rgba(64,50,37,.25)"}` }} placeholder="Jalan, nomor rumah, RT/RW, kelurahan" />
                   {errors.alamat && <p className="text-[11px] font-ui mt-1" style={{ color: "#e74c3c" }}>{errors.alamat}</p>}
                 </div>
+                <div data-field="kecamatan">
+                  <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: "var(--text-secondary)" }}>Kecamatan <span style={{ color: "var(--gold)" }}>*</span></label>
+                  <input type="text" value={kecamatanName} onChange={(e) => {
+                    setKecamatanName(e.target.value);
+                    lastResolvedRef.current = "";
+                    setShipOptions([]);
+                    setSelectedShipping(null);
+                  }} className="w-full rounded-lg px-4 py-3 text-sm font-ui" style={selectStyle} placeholder="Contoh: Cengkareng" />
+                </div>
                 <div data-field="kota">
                   <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: errors.kota ? "#e74c3c" : "var(--text-secondary)" }}>Kota / Kabupaten <span style={{ color: "var(--gold)" }}>*</span></label>
-                  <input type="text" value={kota} onChange={(e) => { setKota(e.target.value); setErrors((p) => ({ ...p, kota: "" })); }} className="w-full rounded-lg px-4 py-3 text-sm font-ui" style={{ ...selectStyle, border: `1px solid ${errors.kota ? "#e74c3c" : "rgba(64,50,37,.25)"}` }} placeholder="Contoh: Bandung" />
+                  <input type="text" value={kota} onChange={(e) => { setKota(e.target.value); setErrors((p) => ({ ...p, kota: "" })); lastResolvedRef.current = ""; }} className="w-full rounded-lg px-4 py-3 text-sm font-ui" style={{ ...selectStyle, border: `1px solid ${errors.kota ? "#e74c3c" : "rgba(64,50,37,.25)"}` }} placeholder="Contoh: Jakarta Barat" />
                   {errors.kota && <p className="text-[11px] font-ui mt-1" style={{ color: "#e74c3c" }}>{errors.kota}</p>}
                 </div>
                 <div data-field="kodepos">
@@ -690,6 +699,40 @@ function CheckoutContent() {
                   <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: "var(--text-secondary)" }}>Catatan untuk Kurir (opsional)</label>
                   <input type="text" value={catatanKurir} onChange={(e) => setCatatanKurir(e.target.value)} className="w-full rounded-lg px-4 py-3 text-sm font-ui" style={selectStyle} placeholder="Titipkan ke satpam, dll." />
                 </div>
+                {/* Auto-hitung ongkir button for manual address */}
+                {kecamatanName && kota && originId && shipOptions.length === 0 && !loadingCost && !shippingError && (
+                  <div className="sm:col-span-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        console.log("[CHECKOUT] 🔍 Manual resolve for new address:", { kecamatan: kecamatanName, city: kota });
+                        // Build a temporary address object for resolveDestinationId
+                        const tempAddr: SavedAddress = {
+                          id: "manual",
+                          label: "Manual",
+                          recipient_name: nama,
+                          phone: whatsapp,
+                          address: alamat,
+                          city: kota,
+                          postal_code: kodepos,
+                          is_default: false,
+                          kecamatan: kecamatanName,
+                          district_id: null,
+                        };
+                        calculateShipping(tempAddr);
+                      }}
+                      disabled={loadingCost}
+                      className="w-full rounded-xl py-3 text-sm font-ui font-medium flex items-center justify-center gap-2 transition-all"
+                      style={{ background: "var(--espresso)", color: "var(--cream)" }}
+                    >
+                      {loadingCost ? (
+                        <><Loader2 size={16} className="animate-spin" /> Menghitung…</>
+                      ) : (
+                        <><Truck size={16} /> Hitung Ongkos Kirim</>
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </section>
