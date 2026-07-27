@@ -887,120 +887,70 @@ function ShippingOriginSection() {
   useEffect(() => {
     async function init() {
       console.log("[ADMIN] ShippingOriginSection init start");
+
       // 1. Load provinces (1 RajaOngkir call)
       const provRes = await fetch("/api/shipping/provinces");
       const provJson = await provRes.json();
-      const provList = provJson.data || [];
-      setProvinces(provList);
-      console.log("[ADMIN] Provinces loaded:", provList.length);
+      setProvinces(provJson.data || []);
+      console.log("[ADMIN] Provinces loaded:", provJson.data?.length);
 
       // 2. Load saved origin IDs from store_settings
       const { data } = await supabase.from("store_settings").select("origin_district_id, origin_province_id, origin_city_id").eq("id", 1).single();
-      console.log("[ADMIN] Saved origin:", {
-        province_id: data?.origin_province_id,
-        city_id: data?.origin_city_id,
-        district_id: data?.origin_district_id,
-      });
+      console.log("[ADMIN] Saved origin:", data);
 
+      // If all3 IDs exist, auto-select dropdowns (max 2 extra API calls)
       if (data?.origin_province_id && data?.origin_city_id && data?.origin_district_id) {
-        // Fast path: all IDs saved, just load the cascading lists (3 API calls total)
-        console.log("[ADMIN] Fast path: loading from saved IDs");
         setForm({
           origin_province_id: String(data.origin_province_id),
           origin_city_id: String(data.origin_city_id),
           origin_district_id: String(data.origin_district_id),
         });
-
-        // Load cities for saved province (1 call)
-        const cityRes = await fetch(`/api/shipping/districts?provinceId=${data.origin_province_id}`);
-        const cityJson = await cityRes.json();
-        setCities(cityJson.data || []);
-
-        // Load districts for saved city (1 call)
-        const distRes = await fetch(`/api/shipping/districts?cityId=${data.origin_city_id}`);
-        const distJson = await distRes.json();
-        setDistricts(distJson.data || []);
-
-        console.log("[ADMIN] Fast path complete — 3 API calls total");
-      } else if (data?.origin_district_id) {
-        // Legacy path: only district_id saved, need to resolve (slow)
-        console.log("[ADMIN] Legacy path: only district_id saved, resolving...");
-        setForm({ origin_district_id: String(data.origin_district_id), origin_province_id: "", origin_city_id: "" });
-        // Try to resolve with timeout
-        await Promise.race([
-          resolveLocation(data.origin_district_id),
-          new Promise((r) => setTimeout(r, 8000)),
+        // Load cities + districts for the saved IDs
+        const [cityRes, distRes] = await Promise.all([
+          fetch(`/api/shipping/districts?provinceId=${data.origin_province_id}`),
+          fetch(`/api/shipping/districts?cityId=${data.origin_city_id}`),
         ]);
-        console.log("[ADMIN] Legacy resolve done (or timed out)");
+        const [cityJson, distJson] = await Promise.all([cityRes.json(), distRes.json()]);
+        setCities(cityJson.data || []);
+        setDistricts(distJson.data || []);
+        console.log("[ADMIN] Auto-selected from saved IDs — 3 API calls total");
+      }
+      // If only district_id (legacy data), just log — admin re-selects manually
+      else if (data?.origin_district_id) {
+        console.log("[ADMIN] Legacy data: only district_id saved. Admin needs to re-select province+city once.");
       }
 
       setLoading(false);
-      console.log("[ADMIN] ShippingOriginSection init complete");
     }
     init();
   }, []);
-
-  // Legacy fallback: brute-force resolve for old data without province/city IDs
-  async function resolveLocation(districtId: number) {
-    console.log("[ADMIN] resolveLocation: looking for district_id", districtId);
-    try {
-      for (const prov of provinces.length ? provinces : (await (await fetch("/api/shipping/provinces")).json()).data || []) {
-        const cityRes = await fetch(`/api/shipping/districts?provinceId=${prov.id}`);
-        const cityJson = await cityRes.json();
-        const citiesList = cityJson.data || [];
-        for (const city of citiesList) {
-          const distRes = await fetch(`/api/shipping/districts?cityId=${city.id}`);
-          const distJson = await distRes.json();
-          const found = (distJson.data || []).find((d: { id: number }) => d.id === districtId);
-          if (found) {
-            console.log("[ADMIN] resolveLocation: found in", prov.name, "→", city.name, "→", found.name);
-            setForm({
-              origin_province_id: String(prov.id),
-              origin_city_id: String(city.id),
-              origin_district_id: String(districtId),
-            });
-            setCities(citiesList);
-            setDistricts(distJson.data || []);
-            // Auto-save the resolved IDs for next time
-            await supabase.from("store_settings").upsert({
-              id: 1,
-              origin_province_id: prov.id,
-              origin_city_id: city.id,
-              origin_district_id: districtId,
-              updated_at: new Date().toISOString(),
-            });
-            console.log("[ADMIN] Auto-saved resolved IDs to store_settings");
-            return;
-          }
-        }
-      }
-      console.warn("[ADMIN] resolveLocation: district_id", districtId, "not found");
-    } catch (e) {
-      console.error("[ADMIN] resolveLocation error:", e);
-    }
-  }
 
   async function handleProvChange(provId: string) {
     setForm({ origin_province_id: provId, origin_city_id: "", origin_district_id: "" });
     setCities([]);
     setDistricts([]);
     if (!provId) return;
+    console.log("[ADMIN] Loading cities for province:", provId);
     const res = await fetch(`/api/shipping/districts?provinceId=${provId}`);
     const json = await res.json();
     setCities(json.data || []);
+    console.log("[ADMIN] Cities loaded:", json.data?.length);
   }
 
   async function handleCityChange(cityId: string) {
     setForm((f) => ({ ...f, origin_city_id: cityId, origin_district_id: "" }));
     setDistricts([]);
     if (!cityId) return;
+    console.log("[ADMIN] Loading districts for city:", cityId);
     const res = await fetch(`/api/shipping/districts?cityId=${cityId}`);
     const json = await res.json();
     setDistricts(json.data || []);
+    console.log("[ADMIN] Districts loaded:", json.data?.length);
   }
 
   async function handleSave() {
     setSaving(true);
+    console.log("[ADMIN] Saving origin:", form);
     await supabase.from("store_settings").upsert({
       id: 1,
       origin_province_id: form.origin_province_id ? Number(form.origin_province_id) : null,
