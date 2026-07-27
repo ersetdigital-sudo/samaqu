@@ -68,6 +68,7 @@ function CheckoutContent() {
   // ── Shipping (RajaOngkir) ──
   const [provinces, setProvinces] = useState<IdName[]>([]);
   const [kabupatenList, setKabupatenList] = useState<IdName[]>([]);
+  const [kecamatanList, setKecamatanList] = useState<IdName[]>([]);
   const [provinsiId, setProvinsiId] = useState<number | null>(null);
   const [kotaId, setKotaId] = useState<number | null>(null);
   const [kecamatanId, setKecamatanId] = useState<number | null>(null);
@@ -76,10 +77,11 @@ function CheckoutContent() {
   const [shipOptions, setShipOptions] = useState<ShipOpt[]>([]);
   const [loadingProvinces, setLoadingProvinces] = useState(false);
   const [loadingKab, setLoadingKab] = useState(false);
+  const [loadingKec, setLoadingKec] = useState(false);
   const [loadingCost, setLoadingCost] = useState(false);
   const [originId, setOriginId] = useState<number | null>(null);
 
-  // Fetch provinces on mount
+  // Fetch provinces + resolve origin kecamatan on mount
   useEffect(() => {
     (async () => {
       try {
@@ -89,13 +91,21 @@ function CheckoutContent() {
         const list: IdName[] = json.data || [];
         setProvinces(list);
 
-        // Also resolve origin (Depok) for shipping calculation
+        // Resolve origin: Depok → default kecamatan (Pancoran Mas)
         const jabar = list.find((p) => p.name.toUpperCase().includes("JAWA BARAT"));
         if (jabar) {
           const cRes = await fetch(`/api/shipping/districts?provinceId=${jabar.id}`);
           const cJson = await cRes.json();
           const depok = (cJson.data || []).find((c: IdName) => c.name.toUpperCase().includes("DEPOK"));
-          if (depok) setOriginId(depok.id);
+          if (depok) {
+            // Now fetch kecamatan list for Depok
+            const dRes = await fetch(`/api/shipping/districts?cityId=${depok.id}`);
+            const dJson = await dRes.json();
+            const kecamatanData: IdName[] = dJson.data || [];
+            // Pick Pancoran Mas as default origin kecamatan
+            const defaultOrigin = kecamatanData.find((k: IdName) => k.name.toUpperCase().includes("PANCORAN MAS")) || kecamatanData[0];
+            if (defaultOrigin) setOriginId(defaultOrigin.id);
+          }
         }
       } catch (e) {
         console.error("Gagal load provinsi:", e);
@@ -203,6 +213,7 @@ function CheckoutContent() {
     setKecamatanName("");
     setSelectedShipping(null);
     setKabupatenList([]);
+    setKecamatanList([]);
     setShipOptions([]);
     try {
       setLoadingKab(true);
@@ -213,6 +224,27 @@ function CheckoutContent() {
       console.error("Gagal load kota:", e);
     } finally {
       setLoadingKab(false);
+    }
+  }
+
+  async function handleSelectKota(cityId: number) {
+    const name = kabupatenList.find((c) => c.id === cityId)?.name || "";
+    setKotaId(cityId);
+    setKota(name);
+    setKecamatanId(null);
+    setKecamatanName("");
+    setSelectedShipping(null);
+    setKecamatanList([]);
+    setShipOptions([]);
+    try {
+      setLoadingKec(true);
+      const res = await fetch(`/api/shipping/districts?cityId=${cityId}`);
+      const json = await res.json();
+      setKecamatanList(json.data || []);
+    } catch (e) {
+      console.error("Gagal load kecamatan:", e);
+    } finally {
+      setLoadingKec(false);
     }
   }
 
@@ -488,16 +520,7 @@ function CheckoutContent() {
               <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: "var(--text-secondary)" }}>Kota / Kabupaten</label>
               <select
                 value={kotaId ?? ""}
-                onChange={(e) => {
-                  const id = Number(e.target.value);
-                  const name = kabupatenList.find((c) => c.id === id)?.name || "";
-                  setKotaId(id);
-                  setKota(name);
-                  setKecamatanId(null);
-                  setKecamatanName("");
-                  setSelectedShipping(null);
-                  setShipOptions([]);
-                }}
+                onChange={(e) => handleSelectKota(Number(e.target.value))}
                 disabled={!provinsiId}
                 className="w-full rounded-lg px-4 py-3 text-sm font-ui"
                 style={{ ...selectStyle, opacity: !provinsiId ? 0.5 : 1 }}
@@ -516,7 +539,7 @@ function CheckoutContent() {
                 value={kecamatanId ?? ""}
                 onChange={(e) => {
                   const id = Number(e.target.value);
-                  const item = kabupatenList.find((c) => c.id === id);
+                  const item = kecamatanList.find((c) => c.id === id);
                   setKecamatanId(id);
                   setKecamatanName(item?.name || "");
                   setKodepos(String(item?.zip_code || "").replace(/^0+$/, "") || "");
@@ -525,8 +548,8 @@ function CheckoutContent() {
                 className="w-full rounded-lg px-4 py-3 text-sm font-ui"
                 style={{ ...selectStyle, opacity: !kotaId ? 0.5 : 1 }}
               >
-                <option value="">{kotaId ? "Pilih Kecamatan" : "Pilih kota terlebih dahulu"}</option>
-                {kabupatenList.map((c) => (
+                <option value="">{loadingKec ? "Memuat kecamatan…" : kotaId ? "Pilih Kecamatan" : "Pilih kota terlebih dahulu"}</option>
+                {kecamatanList.map((c) => (
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </select>
