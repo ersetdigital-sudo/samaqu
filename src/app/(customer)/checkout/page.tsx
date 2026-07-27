@@ -88,8 +88,10 @@ function CheckoutContent() {
     (async () => {
       try {
         setLoadingProvinces(true);
+        console.log("[checkout] Fetching provinces...");
         const res = await fetch("/api/shipping/provinces");
         const json = await res.json();
+        console.log("[checkout] Provinces response:", json.data?.length, "items", json.data?.[0]);
         const list: IdName[] = json.data || [];
         setProvinces(list);
 
@@ -150,6 +152,7 @@ function CheckoutContent() {
         setSavedAddresses(data);
         const defaultAddr = data.find((a: { is_default: boolean }) => a.is_default) || data[0];
         setSelectedAddressId(defaultAddr.id);
+        console.log("[CHECKOUT] Default address loaded:", { id: defaultAddr.id, label: defaultAddr.label, province: defaultAddr.province, city: defaultAddr.city, kecamatan: defaultAddr.kecamatan, postal: defaultAddr.postal_code });
         setNama(defaultAddr.recipient_name);
         setWhatsapp(defaultAddr.phone);
         setAlamat(defaultAddr.address);
@@ -162,9 +165,11 @@ function CheckoutContent() {
 
   // Auto-resolve ongkir for default saved address once originId is ready
   useEffect(() => {
+    console.log("[checkout] Auto-resolve effect:", { originId, savedAddressesLen: savedAddresses.length, selectedAddressId, provincesLen: provinces.length });
     if (!originId || savedAddresses.length === 0 || !selectedAddressId) return;
     const addr = savedAddresses.find((a) => a.id === selectedAddressId);
     if (addr && shipOptions.length === 0 && !loadingCost) {
+      console.log("[checkout] Calling resolveSavedAddress with:", { province: addr.province, city: addr.city, kecamatan: addr.kecamatan, postal: addr.postal_code });
       resolveSavedAddress(addr);
     }
   }, [originId, savedAddresses, selectedAddressId]);
@@ -277,10 +282,10 @@ function CheckoutContent() {
 
   // Resolve location from saved address and auto-fetch ongkir
   async function resolveSavedAddress(addr: { province?: string; city?: string; kecamatan?: string; postal_code: string }) {
-    if (!originId || !addr.postal_code) return;
+    if (!originId || !addr.postal_code) { console.log("[CHECKOUT] resolveSavedAddress SKIP: missing originId or postal_code", { originId, postal: addr.postal_code }); return; }
     // Cache: skip if same address already resolved
     const addrKey = `${addr.province || ""}|${addr.city || ""}|${addr.kecamatan || ""}|${addr.postal_code}`;
-    if (addrKey === lastResolvedAddress && shipOptions.length > 0) return;
+    if (addrKey === lastResolvedAddress && shipOptions.length > 0) { console.log("[CHECKOUT] resolveSavedAddress SKIP: cached"); return; }
     setLastResolvedAddress(addrKey);
 
     setLoadingCost(true);
@@ -291,18 +296,19 @@ function CheckoutContent() {
 
       // Need province + kecamatan for name matching
       if (!addr.province || !addr.kecamatan || !addr.city) {
-        // Data not complete — user needs to re-save address with province/kecamatan
-        // Show manual selection instead
+        console.log("[CHECKOUT] resolveSavedAddress SKIP: missing address fields", { province: addr.province, city: addr.city, kecamatan: addr.kecamatan });
         setLoadingCost(false);
         return;
       }
 
       // Name matching (fast — 3 API calls)
+      console.log("[CHECKOUT] resolveSavedAddress: starting name matching", { province: addr.province, city: addr.city, kecamatan: addr.kecamatan, provincesLen: provinces.length });
       const provUpper = addr.province.toUpperCase();
       const provMatch = provinces.find((p) => {
         const pName = p.name.toUpperCase();
         return pName === provUpper || pName.includes(provUpper) || provUpper.includes(pName);
       });
+      console.log("[CHECKOUT] Province match:", provMatch?.name || "NOT FOUND", "| searched:", provUpper);
       if (!provMatch) { setLoadingCost(false); return; }
       setProvinsiId(provMatch.id);
       const cityRes = await fetch(`/api/shipping/districts?provinceId=${provMatch.id}`);
@@ -312,6 +318,7 @@ function CheckoutContent() {
 
       const cityUpper = addr.city.toUpperCase();
       const cityMatch = cityList.find((c) => c.name.toUpperCase() === cityUpper || c.name.toUpperCase().includes(cityUpper) || cityUpper.includes(c.name.toUpperCase()));
+      console.log("[CHECKOUT] City match:", cityMatch?.name || "NOT FOUND", "| searched:", cityUpper, "| cityListLen:", cityList.length);
       if (!cityMatch) { setLoadingCost(false); return; }
       setKotaId(cityMatch.id);
       setKota(cityMatch.name);
@@ -322,6 +329,7 @@ function CheckoutContent() {
 
       const kecUpper = addr.kecamatan.toUpperCase();
       const kecMatch = kecList.find((k) => k.name.toUpperCase() === kecUpper || k.name.toUpperCase().includes(kecUpper) || kecUpper.includes(k.name.toUpperCase()));
+      console.log("[CHECKOUT] Kecamatan match:", kecMatch?.name || "NOT FOUND", "| searched:", kecUpper, "| kecListLen:", kecList.length);
       if (!kecMatch) { setLoadingCost(false); return; }
       districtId = kecMatch.id;
       setKecamatanId(kecMatch.id);
@@ -329,6 +337,7 @@ function CheckoutContent() {
       if (kecMatch.zip_code) setKodepos(String(kecMatch.zip_code).replace(/^0+/, "") || addr.postal_code);
 
       // Fetch ongkir
+      console.log("[CHECKOUT] Fetching ongkir with districtId:", districtId);
       const courierStr = enabledCouriers.length > 0 ? enabledCouriers.join(":") : undefined;
       const res = await fetch("/api/shipping/cost", {
         method: "POST",
@@ -349,6 +358,7 @@ function CheckoutContent() {
         }
       }
       opts.sort((a, b) => a.cost - b.cost);
+      console.log("[CHECKOUT] Ongkir result:", opts.length, "options", opts.map(o => `${o.courier}:Rp${o.cost}`));
       setShipOptions(opts);
     } catch (e) {
       console.error("Gagal resolve alamat:", e);
