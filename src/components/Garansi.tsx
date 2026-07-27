@@ -153,15 +153,21 @@ const trustBadges = [
 
 /* ─── Default data (title + description only, icon mapped by index) ─── */
 const DEFAULT_GUARANTEES = [
-  { title: "Kualitas Terjamin", description: "Setiap produk melewati pengecekan jahitan dan bahan sebelum dikirim." },
-  { title: "Pengiriman Aman", description: "Dikemas rapi dan terlindungi agar sampai dalam kondisi sempurna." },
-  { title: "Layanan Ramah", description: "Admin siap membantu dari pemilihan size hingga setelah pembelian." },
+  { title: "Garansi Kualitas Produk", description: "Kami peduli pada setiap produk yang kami buat. Karena itu, setiap produk melewati proses pengecekan kualitas sebelum dikirim." },
+  { title: "Garansi Uang Kembali", description: "Kami ingin setiap transaksi terjadi atas dasar saling ridha. Jika produk yang kamu terima dirasa tidak sesuai, kami siap memberikan garansi uang kembali sesuai ketentuan." },
+  { title: "Garansi Tukar Ukuran", description: "Ukuran kurang pas? Kami siap membantu proses penukaran agar kamu mendapatkan ukuran yang lebih sesuai." },
+  { title: "Pelayanan yang Ramah", description: "Dari konsultasi hingga setelah pembelian, tim kami siap membantu dengan ramah, jujur, dan sepenuh hati." },
 ];
 
 /* Icons mapped by index (not stored in DB) */
 const GUARANTEE_ICONS = [
+  // 1. Shield — Garansi Kualitas Produk
   <svg key="shield" className="h-5 w-5 sm:h-7 sm:w-7" viewBox="0 0 24 24" fill="none" stroke="var(--espresso)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" /><path stroke="var(--gold)" d="m9 12 2 2 4-4" /></svg>,
-  <svg key="box" className="h-5 w-5 sm:h-7 sm:w-7" viewBox="0 0 24 24" fill="none" stroke="var(--espresso)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20.5 7.3 12 12l-8.5-4.7" /><path d="M12 12v9.2" /><path d="M20.5 7.3 12 2.6 3.5 7.3v9.4L12 21.4l8.5-4.7V7.3Z" /><path d="m7.75 4.95 8.5 4.7v3.3" stroke="var(--gold)" strokeWidth="2" /><path d="M14.6 11.15v3.25l1.65.9" stroke="var(--gold)" strokeWidth="2" /></svg>,
+  // 2. RotateCcw — Garansi Uang Kembali
+  <svg key="refund" className="h-5 w-5 sm:h-7 sm:w-7" viewBox="0 0 24 24" fill="none" stroke="var(--espresso)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /><path stroke="var(--gold)" d="M12 7v5l4 2" /></svg>,
+  // 3. Ruler — Garansi Tukar Ukuran
+  <svg key="ruler" className="h-5 w-5 sm:h-7 sm:w-7" viewBox="0 0 24 24" fill="none" stroke="var(--espresso)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.4 2.4 0 0 1 0-3.4l2.6-2.6a2.4 2.4 0 0 1 3.4 0Z" /><path stroke="var(--gold)" d="m14.5 12.5 2-2M11.5 9.5l2-2M8.5 6.5l2-2M17.5 15.5l2-2" /></svg>,
+  // 4. Chat — Pelayanan yang Ramah
   <svg key="chat" className="h-5 w-5 sm:h-7 sm:w-7" viewBox="0 0 24 24" fill="none" stroke="var(--espresso)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z" /><path stroke="var(--gold)" d="M8 10h.01M12 10h.01M16 10h.01" /></svg>,
 ];
 
@@ -250,7 +256,7 @@ export default function Garansi() {
                 className="mt-4 sm:mt-6 max-w-md text-sm sm:text-lg leading-relaxed font-ui"
                 style={{ color: "var(--text-secondary)" }}
               >
-                Kami menjaga kepercayaanmu di setiap pesanan — dari kualitas bahan hingga pelayanan yang tulus.
+                Kami tahu setiap rupiah yang kamu keluarkan adalah hasil kerja kerasmu. Karena itu kami ingin setiap pembelian terasa layak.
               </motion.p>
 
               {/* Inline mini features */}
@@ -313,7 +319,7 @@ export default function Garansi() {
           </div>
 
           {/* Desktop: grid */}
-          <div className="hidden md:grid grid-cols-3 gap-6 mt-10">
+          <div className="hidden md:grid grid-cols-2 lg:grid-cols-4 gap-6 mt-10">
             {guarantees.map((g, i) => (
               <motion.div
                 key={i}

@@ -65,7 +65,7 @@ export default function Tentang() {
               alt="Detail jahitan premium SAMAQU"
               width={600}
               height={800}
-              className="w-full h-[60vh] object-cover"
+              className="w-full h-[35vh] sm:h-[50vh] lg:h-[60vh] object-cover"
             />
           </div>
         </div>
