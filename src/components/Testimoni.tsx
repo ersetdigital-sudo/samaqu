@@ -165,15 +165,14 @@ export default function Testimoni() {
               color: "var(--espresso)",
             }}
           >
-            Dipercaya Pelanggan
+            Dirasakan Langsung oleh Mereka.
           </motion.h2>
           <motion.p
             variants={headerVariants}
             className="text-sm sm:text-base leading-[1.75] font-ui"
             style={{ color: "var(--coffee)" }}
           >
-            Cerita nyata dari mereka yang telah merasakan kualitas dan
-            pelayanan SAMAQU.
+            Bukan kami yang perlu meyakinkanmu. Dengarkan pengalaman mereka yang sudah memakai Samaqu.
           </motion.p>
         </motion.div>
 
