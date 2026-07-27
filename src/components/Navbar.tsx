@@ -4,9 +4,9 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, ShoppingBag } from "lucide-react";
+import { ChevronDown, ShoppingBag, Home } from "lucide-react";
 import { MobileDrawer, MobileDrawerCtx } from "@/components/ui/drawer";
-import { HouseIcon, Storefront, BookOpen, Ruler, ListChecks, Question, ChatCircle as MessageCircle } from "@phosphor-icons/react";
+import { Storefront, BookOpen, Ruler, ListChecks, Question, ChatCircle as MessageCircle } from "@phosphor-icons/react";
 import ProfileDropdown from "@/components/ProfileDropdown";
 import { useCart } from "@/lib/cart-context";
 import CartDrawer from "@/components/CartDrawer";
@@ -18,7 +18,7 @@ type IconComponent = React.ComponentType<any>;
 type NavItem = { label: string; href: string; hasDropdown?: false; Icon?: IconComponent } | { label: string; hasDropdown: true; Icon?: IconComponent };
 
 const NAV_ITEMS: NavItem[] = [
-  { label: "Home", href: "/", Icon: HouseIcon },
+  { label: "Home", href: "/", Icon: Home },
   { label: "Katalog", href: "/katalog", Icon: Storefront },
   { label: "Testimoni", href: "/testimoni", Icon: MessageCircle },
   { label: "Tentang Kami", href: "/tentang-kami", Icon: BookOpen },
