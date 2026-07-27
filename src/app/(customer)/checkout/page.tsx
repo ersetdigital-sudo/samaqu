@@ -413,6 +413,36 @@ function CheckoutContent() {
     }
   }, [settingsLoaded, originId, selectedAddressId, savedAddresses.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── Auto-trigger shipping for manual address (non-logged-in) ──
+  useEffect(() => {
+    // Only trigger for manual address (no saved address selected)
+    if (selectedAddressId && savedAddresses.length > 0) return;
+    if (!originId || !settingsLoaded) return;
+    if (!kecamatanName.trim() || !kota.trim()) return;
+    if (loadingCost) return;
+
+    // Debounce: wait 1.5s after user stops typing
+    console.log("[CHECKOUT] ⏱️ Debounce: kecamatan/kota changed, waiting 1.5s...");
+    const timer = setTimeout(() => {
+      console.log("[CHECKOUT] 🔄 Auto-triggering shipping for manual address:", { kecamatan: kecamatanName, city: kota });
+      const tempAddr: SavedAddress = {
+        id: "manual",
+        label: "Manual",
+        recipient_name: nama,
+        phone: whatsapp,
+        address: alamat,
+        city: kota,
+        postal_code: kodepos,
+        is_default: false,
+        kecamatan: kecamatanName,
+        district_id: null,
+      };
+      calculateShipping(tempAddr);
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, [kecamatanName, kota]); // eslint-disable-line react-hooks/exhaustive-deps
+
   function handleSelectAddress(addr: SavedAddress) {
     console.log("[CHECKOUT] 👆 User selected address:", { id: addr.id, label: addr.label, kecamatan: addr.kecamatan, city: addr.city, district_id: addr.district_id });
     setSelectedAddressId(addr.id);
@@ -700,40 +730,6 @@ function CheckoutContent() {
                   <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: "var(--text-secondary)" }}>Catatan untuk Kurir (opsional)</label>
                   <input type="text" value={catatanKurir} onChange={(e) => setCatatanKurir(e.target.value)} className="w-full rounded-lg px-4 py-3 text-sm font-ui" style={selectStyle} placeholder="Titipkan ke satpam, dll." />
                 </div>
-                {/* Auto-hitung ongkir button for manual address */}
-                {kecamatanName && kota && originId && shipOptions.length === 0 && !loadingCost && !shippingError && (
-                  <div className="sm:col-span-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        console.log("[CHECKOUT] 🔍 Manual resolve for new address:", { kecamatan: kecamatanName, city: kota });
-                        // Build a temporary address object for resolveDestinationId
-                        const tempAddr: SavedAddress = {
-                          id: "manual",
-                          label: "Manual",
-                          recipient_name: nama,
-                          phone: whatsapp,
-                          address: alamat,
-                          city: kota,
-                          postal_code: kodepos,
-                          is_default: false,
-                          kecamatan: kecamatanName,
-                          district_id: null,
-                        };
-                        calculateShipping(tempAddr);
-                      }}
-                      disabled={loadingCost}
-                      className="w-full rounded-xl py-3 text-sm font-ui font-medium flex items-center justify-center gap-2 transition-all"
-                      style={{ background: "var(--espresso)", color: "var(--cream)" }}
-                    >
-                      {loadingCost ? (
-                        <><Loader2 size={16} className="animate-spin" /> Menghitung…</>
-                      ) : (
-                        <><Truck size={16} /> Hitung Ongkos Kirim</>
-                      )}
-                    </button>
-                  </div>
-                )}
               </div>
             )}
           </section>
