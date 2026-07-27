@@ -13,7 +13,7 @@ export default function Instagram() {
       <div className="max-w-[1200px] mx-auto px-5 sm:px-8">
         <div className="text-center max-w-xl mx-auto mb-6 sm:mb-14 fade-up">
           <p className="text-[12px] tracking-[0.32em] uppercase mb-3 sm:mb-4" style={{ color: "var(--gold)" }}>
-            Ikuti Kami
+            Ikuti Perjalanan Kami
           </p>
           <h2
             className="text-3xl sm:text-5xl font-medium mb-3 sm:mb-4"
@@ -22,7 +22,7 @@ export default function Instagram() {
             @samaqu.id
           </h2>
           <p className="leading-[1.75] text-sm sm:text-base truncate sm:line-clamp-none px-4 sm:px-0" style={{ color: "var(--coffee)" }}>
-            Inspirasi gaya, koleksi terbaru, dan cerita di balik setiap busana SAMAQU.
+            Tentang produk, orang biasa, perjuangan, dan cerita-cerita kecil dari mereka yang terus bertumbuh.
           </p>
         </div>
 
@@ -65,7 +65,7 @@ export default function Instagram() {
             className="inline-flex items-center gap-2 rounded-full px-6 sm:px-7 py-3 sm:py-4 text-[11px] sm:text-[12px] tracking-[0.18em] uppercase border transition hover:bg-white"
             style={{ borderColor: "var(--clay)", color: "var(--coffee)" }}
           >
-            Kunjungi Instagram Kami
+            Ikuti @samaqu.id
           </a>
         </div>
       </div>
