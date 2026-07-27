@@ -72,7 +72,7 @@ export default function Footer() {
           </nav>
         </div>
         <div
-          className="pt-5 sm:pt-8 text-[11px] sm:text-xs font-ui text-center md:text-left"
+          className="pt-5 sm:pt-8 text-[11px] sm:text-xs font-ui text-center"
           style={{ color: "rgba(216,196,168,.5)" }}
         >
           <p>&copy; 2026 SAMAQU. Semua hak cipta dilindungi. Dibuat dengan kepedulian &amp; rasa bangga.</p>
