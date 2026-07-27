@@ -35,11 +35,23 @@ function getDescription(product: Product): string {
 }
 
 /* ── Media renderer ── */
-function MediaDisplay({ item, poster, className, style }: { item: MediaItem; poster?: string; className?: string; style?: React.CSSProperties }) {
+function MediaDisplay({ item, poster, className, style, allMedia }: { item: MediaItem; poster?: string; className?: string; style?: React.CSSProperties; allMedia?: MediaItem[] }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(false);
 
+  // For video items, find a valid image poster
+  function getVideoPoster(): string {
+    if (poster && !poster.match(/\.(mp4|webm|ogg)$/i)) return poster;
+    // Find first image in allMedia that isn't a video
+    if (allMedia) {
+      const img = allMedia.find((m) => m.type === "image" && !m.src.match(/\.(mp4|webm|ogg)$/i));
+      if (img) return img.src;
+    }
+    return "";
+  }
+
   if (item.type === "video") {
+    const videoPoster = getVideoPoster();
     return (
       <div className={`relative ${className || ""}`} style={style}>
         {playing ? (
@@ -60,7 +72,13 @@ function MediaDisplay({ item, poster, className, style }: { item: MediaItem; pos
           />
         ) : (
           <>
-            <img src={poster || item.src} alt="" className="w-full h-full object-cover" />
+            {videoPoster ? (
+              <img src={videoPoster} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center" style={{ background: "#e8dfd1" }}>
+                <Play size={32} style={{ color: "var(--gold)" }} />
+              </div>
+            )}
             <button
               onClick={(e) => { e.stopPropagation(); setPlaying(true); }}
               className="absolute inset-0 flex items-center justify-center z-10 cursor-pointer"
@@ -224,7 +242,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 style={{ background: "#e8dfd1" }}
                 onClick={() => { setZoomIndex(i); setZoomOpen(true); }}
               >
-                <MediaDisplay item={item} poster={product.image} className="absolute inset-0" />
+                <MediaDisplay item={item} poster={product.image} allMedia={media} className="absolute inset-0" />
                 {product.tag && i === 0 && (
                   <span className="absolute top-3 left-3 px-2.5 py-1 text-[10px] tracking-[0.12em] uppercase font-ui font-medium rounded-sm z-10"
                     style={{ border: "1px solid var(--gold)", color: "var(--gold)", background: "rgba(248,246,242,.9)" }}>
@@ -413,7 +431,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             <div className="relative flex-1 aspect-[3/4] rounded-2xl overflow-hidden cursor-zoom-in" style={{ background: "#e8dfd1" }} onClick={() => { setZoomIndex(activeIndex); setZoomOpen(true); }}>
               <AnimatePresence mode="wait">
                 <motion.div key={activeIndex} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }} className="absolute inset-0">
-                  <MediaDisplay item={activeMedia} poster={product.image} className="w-full h-full" />
+                  <MediaDisplay item={activeMedia} poster={product.image} allMedia={media} className="w-full h-full" />
                 </motion.div>
               </AnimatePresence>
               {/* Wishlist button - desktop */}
