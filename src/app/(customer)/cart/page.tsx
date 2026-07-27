@@ -7,8 +7,6 @@ import { ArrowLeft, Minus, Plus, Trash2, Tag, ShoppingBag } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { colorMap } from "@/lib/katalog-data";
 
-const shippingCost = 15000;
-
 export default function CartPage() {
   const router = useRouter();
   const { items, removeItem, updateQty, subtotal } = useCart();
@@ -17,7 +15,7 @@ export default function CartPage() {
   const [promoError, setPromoError] = useState("");
 
   const discount = promoApplied ? Math.round(subtotal * 0.1) : 0;
-  const total = subtotal - discount + (items.length > 0 ? shippingCost : 0);
+  const total = subtotal - discount;
 
   function applyPromo() {
     const code = promoCode.trim().toUpperCase();
@@ -203,7 +201,7 @@ export default function CartPage() {
                 {promoApplied && (
                   <SummaryLine label={`Diskon (${promoCode.toUpperCase()})`} value={`- Rp ${discount.toLocaleString("id-ID")}`} valueColor="var(--gold)" />
                 )}
-                <SummaryLine label="Pengiriman Reguler" value={`Rp ${shippingCost.toLocaleString("id-ID")}`} />
+                <SummaryLine label="Pengiriman" value="Dihitung saat checkout" />
               </div>
               <div className="h-px my-3.5" style={{ background: "rgba(201,183,156,.2)" }} />
               <div className="flex justify-between items-end">

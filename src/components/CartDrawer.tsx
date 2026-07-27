@@ -7,8 +7,6 @@ import { useCart } from "@/lib/cart-context";
 import { colorMap } from "@/lib/katalog-data";
 import { useRouter } from "next/navigation";
 
-const shippingCost = 15000;
-
 export default function CartDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   const router = useRouter();
   const { items, removeItem, updateQty, subtotal } = useCart();
@@ -17,7 +15,7 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
   const [promoError, setPromoError] = useState("");
 
   const discount = promoApplied ? Math.round(subtotal * 0.1) : 0;
-  const total = subtotal - discount + (items.length > 0 ? shippingCost : 0);
+  const total = subtotal - discount;
 
   function applyPromo() {
     const code = promoCode.trim().toUpperCase();
@@ -209,7 +207,7 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
                     <div className="space-y-1.5">
                       <SummaryLine label="Subtotal" value={`Rp ${subtotal.toLocaleString("id-ID")}`} />
                       {promoApplied && <SummaryLine label={`Diskon (${promoCode.toUpperCase()})`} value={`- Rp ${discount.toLocaleString("id-ID")}`} valueColor="var(--gold)" />}
-                      <SummaryLine label="Pengiriman" value={`Rp ${shippingCost.toLocaleString("id-ID")}`} />
+                      <SummaryLine label="Pengiriman" value="Dihitung saat checkout" />
                     </div>
                     <div className="h-px my-2.5" style={{ background: "rgba(201,183,156,.15)" }} />
                     <div className="flex justify-between items-end">

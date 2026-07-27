@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Lock, Truck, Loader2, ChevronDown } from "lucide-react";
+import { Lock, Truck, Loader2, RefreshCw } from "lucide-react";
 import { getProductById, weightMap } from "@/lib/katalog-data";
 import { useCart } from "@/lib/cart-context";
 import { supabase } from "@/lib/supabase";
@@ -15,8 +15,21 @@ interface PaymentMethod {
   account_number: string;
 }
 
-interface IdName { id: number; name: string; zip_code?: string; }
 interface ShipOpt { courier: string; service: string; description: string; cost: number; etd: string; }
+
+interface SavedAddress {
+  id: string;
+  label: string;
+  recipient_name: string;
+  phone: string;
+  address: string;
+  city: string;
+  postal_code: string;
+  is_default: boolean;
+  province?: string;
+  kecamatan?: string;
+  district_id?: number | null;
+}
 
 function PaymentIcon({ type }: { type: string }) {
   if (type === "bank") return <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2" /><line x1="2" y1="10" x2="22" y2="10" /></svg>;
@@ -29,6 +42,107 @@ function generateOrderNumber(): string {
   return `SMQ-${d.toISOString().slice(0, 10).replace(/-/g, "")}-${String(Math.floor(Math.random() * 900) + 100)}`;
 }
 
+// ── Shipping: resolve destination_id from address ──
+async function resolveDestinationId(addr: SavedAddress): Promise<number | null> {
+  console.log("[CHECKOUT] 🔍 resolveDestinationId called:", {
+    addressId: addr.id,
+    kecamatan: addr.kecamatan,
+    city: addr.city,
+    province: addr.province,
+    cachedDistrictId: addr.district_id,
+  });
+
+  // 1. If already cached in address record, use it directly
+  if (addr.district_id) {
+    console.log("[CHECKOUT] ✅ Using cached district_id:", addr.district_id);
+    return addr.district_id;
+  }
+
+  // 2. Search RajaOngkir by kecamatan name + city + province
+  if (!addr.kecamatan) {
+    console.log("[CHECKOUT] ❌ No kecamatan in address, cannot resolve");
+    return null;
+  }
+
+  const params = new URLSearchParams({ search: addr.kecamatan, limit: "10" });
+  if (addr.city) params.set("city", addr.city);
+  if (addr.province) params.set("province", addr.province);
+
+  const apiUrl = `/api/shipping/search-destination?${params}`;
+  console.log("[CHECKOUT] 📡 Calling search-destination:", apiUrl);
+
+  const res = await fetch(apiUrl, { signal: AbortSignal.timeout(10000) });
+  console.log("[CHECKOUT] 📡 search-destination status:", res.status);
+
+  const json = await res.json();
+  console.log("[CHECKOUT] 📡 search-destination response:", {
+    resultsCount: json.data?.length || 0,
+    matchId: json.match?.id,
+    matchName: json.match?.subdistrict_name || json.match?.name,
+    matchCity: json.match?.city_name,
+    matchProvince: json.match?.province_name,
+  });
+
+  if (json.match?.id) {
+    console.log("[CHECKOUT] ✅ Destination resolved:", json.match.id, json.match.subdistrict_name || json.match.name);
+    // Cache the resolved ID to the address record (fire-and-forget)
+    console.log("[CHECKOUT] 💾 Caching district_id to address record:", addr.id);
+    supabase.from("saved_addresses").update({ district_id: json.match.id }).eq("id", addr.id).then(({ error }) => {
+      if (error) console.error("[CHECKOUT] ❌ Cache save failed:", error);
+      else console.log("[CHECKOUT] ✅ district_id cached successfully");
+    });
+    return json.match.id;
+  }
+
+  console.log("[CHECKOUT] ❌ No match found for kecamatan:", addr.kecamatan);
+  return null;
+}
+
+// ── Shipping: fetch cost from RajaOngkir ──
+async function fetchShippingCost(originId: number, destinationId: number, weight: number, couriers: string[]): Promise<ShipOpt[]> {
+  const courierStr = couriers.length > 0 ? couriers.join(":") : "jne:sicepat:jnt:ninja:tiki:wahana:pos:lion:anteraja";
+  console.log("[CHECKOUT] 💰 fetchShippingCost called:", { originId, destinationId, weight, couriers: courierStr });
+
+  const res = await fetch("/api/shipping/cost", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ origin: originId, destination: destinationId, weight, courier: courierStr }),
+    signal: AbortSignal.timeout(15000),
+  });
+
+  console.log("[CHECKOUT] 💰 shipping/cost status:", res.status);
+  const json = await res.json();
+
+  if (json.error) {
+    console.error("[CHECKOUT] ❌ shipping/cost error:", json.error);
+    throw new Error(json.error);
+  }
+
+  const opts: ShipOpt[] = [];
+  if (json.data && Array.isArray(json.data)) {
+    for (const item of json.data) {
+      if (item.costs && Array.isArray(item.costs)) {
+        for (const svc of item.costs) {
+          const costEntry = svc.cost?.[0];
+          if (costEntry) {
+            opts.push({
+              courier: item.name || item.code || "",
+              service: svc.service || "",
+              description: svc.description || "",
+              cost: costEntry.value || 0,
+              etd: costEntry.etd || "",
+            });
+          }
+        }
+      }
+    }
+  }
+  opts.sort((a, b) => a.cost - b.cost);
+  console.log("[CHECKOUT] 💰 Parsed shipping options:", opts.length);
+  opts.forEach((o) => console.log(`[CHECKOUT] 💰   ${o.courier} ${o.service}: Rp${o.cost.toLocaleString("id-ID")} (${o.etd})`));
+  return opts;
+}
+
 function CheckoutContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -39,6 +153,8 @@ function CheckoutContent() {
   const product = productId ? getProductById(productId) : null;
   const { items, clearCart } = useCart();
   const isCartMode = !productId && items.length > 0;
+
+  console.log("[CHECKOUT] 🚀 Page loaded:", { productId, isCartMode, itemsCount: items.length, colorParam, sizeParam, qtyParam });
 
   const [qty, setQty] = useState(qtyParam || 1);
   const [promoCode, setPromoCode] = useState("");
@@ -60,88 +176,64 @@ function CheckoutContent() {
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderNumber, setOrderNumber] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [savedAddresses, setSavedAddresses] = useState<{ id: string; label: string; recipient_name: string; phone: string; address: string; city: string; postal_code: string; is_default: boolean; province?: string; kecamatan?: string }[]>([]);
+  const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string>("");
   const [showNewAddress, setShowNewAddress] = useState(false);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
-  const [lastResolvedAddress, setLastResolvedAddress] = useState<string>("");
 
-  // ── Shipping (RajaOngkir) ──
-  const [provinces, setProvinces] = useState<IdName[]>([]);
-  const [kabupatenList, setKabupatenList] = useState<IdName[]>([]);
-  const [kecamatanList, setKecamatanList] = useState<IdName[]>([]);
-  const [provinsiId, setProvinsiId] = useState<number | null>(null);
-  const [kotaId, setKotaId] = useState<number | null>(null);
-  const [kecamatanId, setKecamatanId] = useState<number | null>(null);
-  const [kecamatanName, setKecamatanName] = useState("");
+  // ── Shipping state ──
   const [berat, setBerat] = useState(800);
   const [shipOptions, setShipOptions] = useState<ShipOpt[]>([]);
-  const [loadingProvinces, setLoadingProvinces] = useState(false);
-  const [loadingKab, setLoadingKab] = useState(false);
-  const [loadingKec, setLoadingKec] = useState(false);
   const [loadingCost, setLoadingCost] = useState(false);
+  const [shippingError, setShippingError] = useState<string | null>(null);
   const [originId, setOriginId] = useState<number | null>(null);
   const [enabledCouriers, setEnabledCouriers] = useState<string[]>([]);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
+  const lastResolvedRef = useRef<string>("");
 
-  // Fetch provinces + resolve origin from store settings
+  // Load store settings (origin + couriers) on mount
   useEffect(() => {
     (async () => {
+      console.log("[CHECKOUT] ⚙️ Loading store settings...");
       try {
-        setLoadingProvinces(true);
-        console.log("[CHECKOUT] 1/5 Fetching provinces...");
-        const res = await fetch("/api/shipping/provinces");
-        const json = await res.json();
-        const list: IdName[] = json.data || [];
-        console.log("[CHECKOUT] 1/5 Provinces:", list.length, "items", list.slice(0, 3));
-        setProvinces(list);
+        const { data: settings, error } = await supabase
+          .from("store_settings")
+          .select("origin_district_id, enabled_couriers")
+          .eq("id", 1)
+          .single();
 
-        // Load shipping settings from store_settings
-        console.log("[CHECKOUT] 2/5 Fetching store_settings...");
-        const { data: settings, error: settingsErr } = await supabase.from("store_settings").select("origin_district_id, enabled_couriers").eq("id", 1).single();
-        console.log("[CHECKOUT] 2/5 Store settings:", settings, "error:", settingsErr?.message);
+        if (error) console.error("[CHECKOUT] ❌ Store settings error:", error);
 
-        // Set enabled couriers
-        if (settings?.enabled_couriers) {
-          try {
-            const parsed = JSON.parse(settings.enabled_couriers);
-            setEnabledCouriers(parsed);
-            console.log("[CHECKOUT] 2/5 Enabled couriers:", parsed);
-          } catch { console.log("[CHECKOUT] 2/5 Failed to parse couriers"); }
-        }
+        console.log("[CHECKOUT] ⚙️ Store settings raw:", settings);
 
-        // Set origin from settings or fallback to Depok
         if (settings?.origin_district_id) {
           setOriginId(settings.origin_district_id);
-          console.log("[CHECKOUT] 2/5 Origin from settings:", settings.origin_district_id);
+          console.log("[CHECKOUT] ⚙️ Origin ID:", settings.origin_district_id);
         } else {
-          console.log("[CHECKOUT] 2/5 No origin_district_id in settings, using fallback...");
-          // Fallback: Depok → Pancoran Mas
-          const jabar = list.find((p) => p.name.toUpperCase().includes("JAWA BARAT"));
-          if (jabar) {
-            const cRes = await fetch(`/api/shipping/districts?provinceId=${jabar.id}`);
-            const cJson = await cRes.json();
-            const depok = (cJson.data || []).find((c: IdName) => c.name.toUpperCase().includes("DEPOK"));
-            if (depok) {
-              const dRes = await fetch(`/api/shipping/districts?cityId=${depok.id}`);
-              const dJson = await dRes.json();
-              const kecamatanData: IdName[] = dJson.data || [];
-              const defaultOrigin = kecamatanData.find((k: IdName) => k.name.toUpperCase().includes("PANCORAN MAS")) || kecamatanData[0];
-              if (defaultOrigin) {
-                setOriginId(defaultOrigin.id);
-                console.log("[CHECKOUT] 2/5 Origin from fallback:", defaultOrigin.id, defaultOrigin.name);
-              }
-            }
+          console.warn("[CHECKOUT] ⚠️ No origin_district_id in store_settings!");
+        }
+
+        if (settings?.enabled_couriers) {
+          try {
+            const parsed = typeof settings.enabled_couriers === "string"
+              ? JSON.parse(settings.enabled_couriers)
+              : settings.enabled_couriers;
+            setEnabledCouriers(parsed);
+            console.log("[CHECKOUT] ⚙️ Enabled couriers:", parsed);
+          } catch (e) {
+            console.error("[CHECKOUT] ❌ Failed to parse enabled_couriers:", e);
           }
         }
       } catch (e) {
-        console.error("[CHECKOUT] ERROR loading provinces/settings:", e);
+        console.error("[CHECKOUT] ❌ Gagal load store settings:", e);
       } finally {
-        setLoadingProvinces(false);
+        setSettingsLoaded(true);
+        console.log("[CHECKOUT] ⚙️ Settings loaded flag set to true");
       }
     })();
   }, []);
 
-  // Fetch payment methods from Supabase
+  // Fetch payment methods
   useEffect(() => {
     async function fetchPayment() {
       try {
@@ -152,19 +244,29 @@ function CheckoutContent() {
     fetchPayment();
   }, []);
 
-  // Fetch saved addresses + prefill email for logged-in customers
+  // Fetch saved addresses + prefill
   useEffect(() => {
     async function fetchAddresses() {
-      console.log("[CHECKOUT] 3/5 Fetching saved addresses...");
+      console.log("[CHECKOUT] 📇 Fetching saved addresses...");
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { console.log("[CHECKOUT] 3/5 No user logged in"); return; }
+      if (!user) { console.log("[CHECKOUT] 📇 No user logged in"); return; }
       if (user.email) setEmail(user.email);
-      const { data, error } = await supabase.from("saved_addresses").select("*").eq("customer_id", user.id).order("is_default", { ascending: false }).order("created_at", { ascending: true });
-      console.log("[CHECKOUT] 3/5 Addresses:", data?.length, "error:", error?.message);
+      console.log("[CHECKOUT] 📇 User ID:", user.id);
+      const { data, error } = await supabase
+        .from("saved_addresses")
+        .select("*")
+        .eq("customer_id", user.id)
+        .order("is_default", { ascending: false })
+        .order("created_at", { ascending: true });
+
+      if (error) console.error("[CHECKOUT] ❌ Addresses fetch error:", error);
+      console.log("[CHECKOUT] 📇 Addresses found:", data?.length || 0);
+
       if (data && data.length > 0) {
-        console.log("[CHECKOUT] 3/5 First address:", { id: data[0].id, label: data[0].label, city: data[0].city, postal: data[0].postal_code, is_default: data[0].is_default });
+        data.forEach((a, i) => console.log(`[CHECKOUT] 📇   [${i}] ${a.label}: ${a.kecamatan || "?"}, ${a.city}, ${a.postal_code} (district_id: ${a.district_id || "null"})`));
         setSavedAddresses(data);
-        const defaultAddr = data.find((a: { is_default: boolean }) => a.is_default) || data[0];
+        const defaultAddr = data.find((a) => a.is_default) || data[0];
+        console.log("[CHECKOUT] 📇 Default address:", defaultAddr.label, defaultAddr.id);
         setSelectedAddressId(defaultAddr.id);
         setNama(defaultAddr.recipient_name);
         setWhatsapp(defaultAddr.phone);
@@ -176,26 +278,235 @@ function CheckoutContent() {
     fetchAddresses();
   }, []);
 
-  // Auto-calculate weight from product
+  // Auto-calculate weight
   useEffect(() => {
     if (isCartMode) {
       const totalQty = items.reduce((sum, item) => sum + item.qty, 0);
-      setBerat(Math.max(300, totalQty * 800));
+      const w = Math.max(300, totalQty * 800);
+      setBerat(w);
+      console.log("[CHECKOUT] ⚖️ Weight (cart mode):", w, "g (", totalQty, "items × 800g)");
     } else if (product) {
       const unitWeight = product.weight || weightMap[product.category] || 800;
-      setBerat(unitWeight * qty);
+      const w = unitWeight * qty;
+      setBerat(w);
+      console.log("[CHECKOUT] ⚖️ Weight (product mode):", w, "g (unit:", unitWeight, "× qty:", qty, ")");
     }
   }, [isCartMode, items, qty, product]);
 
-  if (!product && !isCartMode) {
-    return (
-      <section className="min-h-screen flex items-center justify-center" style={{ background: "var(--cream)" }}>
-        <div className="text-center px-6">
-          <p className="text-lg font-medium mb-4" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>Produk tidak ditemukan</p>
-          <button onClick={() => router.push("/katalog")} className="text-sm font-ui underline" style={{ color: "var(--gold)" }}>Kembali ke Katalog</button>
-        </div>
-      </section>
-    );
+  // ── Auto-trigger shipping calculation ──
+  const calculateShipping = useCallback(async (addr: SavedAddress) => {
+    console.log("[CHECKOUT] 🚛 === SHIPPING CALCULATION START ===");
+    console.log("[CHECKOUT] 🚛 Address:", { id: addr.id, label: addr.label, kecamatan: addr.kecamatan, city: addr.city, province: addr.province, district_id: addr.district_id });
+    console.log("[CHECKOUT] 🚛 Origin ID:", originId);
+    console.log("[CHECKOUT] 🚛 Weight:", berat, "g");
+    console.log("[CHECKOUT] 🚛 Enabled couriers:", enabledCouriers);
+
+    if (!originId) {
+      console.error("[CHECKOUT] ❌ Origin toko belum diatur!");
+      setShippingError("Origin toko belum diatur. Hubungi admin.");
+      return;
+    }
+    if (!addr.kecamatan) {
+      console.error("[CHECKOUT] ❌ Kecamatan tidak tersedia di alamat!");
+      setShippingError("Kecamatan tidak tersedia di alamat ini.");
+      return;
+    }
+
+    const addrKey = `${addr.id}-${addr.district_id || addr.kecamatan}`;
+    if (addrKey === lastResolvedRef.current && shipOptions.length > 0 && !shippingError) {
+      console.log("[CHECKOUT] ⏭️ Already resolved, skipping:", addrKey);
+      return;
+    }
+
+    console.log("[CHECKOUT] 🚛 Setting loading state...");
+    setLoadingCost(true);
+    setShipOptions([]);
+    setSelectedShipping(null);
+    setShippingError(null);
+
+    try {
+      // Step 1: Get destination_id
+      console.log("[CHECKOUT] 🚛 Step 1: Resolving destination_id...");
+      const destId = await resolveDestinationId(addr);
+      console.log("[CHECKOUT] 🚛 Step 1 result:", destId);
+
+      if (!destId) {
+        console.error("[CHECKOUT] ❌ Destination ID not found!");
+        setShippingError("Kecamatan tujuan tidak ditemukan di sistem kurir. Pastikan nama kecamatan benar.");
+        setLoadingCost(false);
+        return;
+      }
+
+      // Step 2: Update local state with resolved ID
+      if (!addr.district_id) {
+        console.log("[CHECKOUT] 🚛 Step 2: Updating local address with district_id:", destId);
+        setSavedAddresses((prev) =>
+          prev.map((a) => (a.id === addr.id ? { ...a, district_id: destId } : a))
+        );
+      }
+
+      // Step 3: Fetch shipping cost
+      console.log("[CHECKOUT] 🚛 Step 3: Fetching shipping cost...");
+      const opts = await fetchShippingCost(originId, destId, berat, enabledCouriers);
+      console.log("[CHECKOUT] 🚛 Step 3 result:", opts.length, "options");
+
+      if (opts.length === 0) {
+        console.warn("[CHECKOUT] ⚠️ No shipping options returned!");
+        setShippingError("Tidak ada opsi pengiriman ditemukan untuk tujuan ini.");
+      } else {
+        setShipOptions(opts);
+        lastResolvedRef.current = addrKey;
+        console.log("[CHECKOUT] ✅ Shipping options set, lastResolved updated:", addrKey);
+      }
+    } catch (e) {
+      console.error("[CHECKOUT] ❌ Shipping calculation error:", e);
+      setShippingError("Gagal menghitung ongkir. Periksa koneksi Anda dan coba lagi.");
+    } finally {
+      setLoadingCost(false);
+      console.log("[CHECKOUT] 🚛 === SHIPPING CALCULATION END ===");
+    }
+  }, [originId, berat, enabledCouriers, shipOptions.length, shippingError]);
+
+  // Auto-calculate when default address is selected and settings are loaded
+  useEffect(() => {
+    if (!settingsLoaded) {
+      console.log("[CHECKOUT] ⏳ Waiting for settings to load...");
+      return;
+    }
+    if (!originId) {
+      console.log("[CHECKOUT] ⏳ No originId yet, skipping auto-calc");
+      return;
+    }
+    if (selectedAddressId && savedAddresses.length > 0) {
+      const addr = savedAddresses.find((a) => a.id === selectedAddressId);
+      if (addr) {
+        console.log("[CHECKOUT] 🔄 Auto-triggering shipping calc for default address:", addr.label);
+        calculateShipping(addr);
+      }
+    }
+  }, [settingsLoaded, originId, selectedAddressId, savedAddresses.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function handleSelectAddress(addr: SavedAddress) {
+    console.log("[CHECKOUT] 👆 User selected address:", { id: addr.id, label: addr.label, kecamatan: addr.kecamatan, city: addr.city, district_id: addr.district_id });
+    setSelectedAddressId(addr.id);
+    setNama(addr.recipient_name);
+    setWhatsapp(addr.phone);
+    setAlamat(addr.address);
+    setKota(addr.city);
+    setKodepos(addr.postal_code);
+    setShipOptions([]);
+    setSelectedShipping(null);
+    setShippingError(null);
+    lastResolvedRef.current = "";
+    // Auto-calculate shipping after state updates
+    console.log("[CHECKOUT] 👆 Scheduling shipping calc in 100ms...");
+    setTimeout(() => calculateShipping(addr), 100);
+  }
+
+  function validatePhone(p: string): boolean {
+    return /^(\+62|62|0)8[1-9][0-9]{6,10}$/.test(p.replace(/[\s-]/g, ""));
+  }
+
+  async function handleSubmit() {
+    console.log("[CHECKOUT] 📦 === ORDER SUBMIT START ===");
+    const e: Record<string, string> = {};
+    if (!nama.trim()) e.nama = "Nama lengkap wajib diisi";
+    if (!whatsapp.trim()) e.whatsapp = "No. WhatsApp wajib diisi";
+    else if (!validatePhone(whatsapp)) e.whatsapp = "Nomor WhatsApp tidak valid";
+    if (!alamat.trim()) e.alamat = "Alamat lengkap wajib diisi";
+    if (!kota.trim()) e.kota = "Kota/Kabupaten wajib diisi";
+    if (kodepos && !/^\d{5}$/.test(kodepos)) e.kodepos = "Kode pos harus 5 digit";
+    if (!selectedShipping) e.shipping = "Pilih metode pengiriman";
+
+    if (Object.keys(e).length > 0) {
+      console.log("[CHECKOUT] ❌ Validation errors:", e);
+      setErrors(e);
+      const firstKey = Object.keys(e)[0];
+      const el = document.querySelector(`[data-field="${firstKey}"]`);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+
+    console.log("[CHECKOUT] 📦 Validation passed");
+    console.log("[CHECKOUT] 📦 Shipping:", selectedShipping);
+    console.log("[CHECKOUT] 📦 Origin ID:", originId);
+    console.log("[CHECKOUT] 📦 Weight:", berat);
+
+    setErrors({});
+    setSubmitting(true);
+
+    try {
+      const selectedAddr = savedAddresses.find((a) => a.id === selectedAddressId);
+      const payload = {
+        customer: { name: nama, email, whatsapp },
+        shipping: {
+          address: alamat,
+          city: kota,
+          district: selectedAddr?.kecamatan || "",
+          postalCode: kodepos,
+          notes: catatanKurir,
+          method: `${selectedShipping.courier} - ${selectedShipping.service}`,
+          cost: selectedShipping.cost,
+          originDistrictId: originId,
+          destinationDistrictId: selectedAddr?.district_id,
+          weight: berat,
+        },
+        paymentMethod: payment,
+        discount,
+        voucherCode: promoApplied ? voucherCode : null,
+        voucherId: promoApplied ? voucherId : null,
+        items: isCartMode
+          ? items.map((item) => ({
+              productId: item.id,
+              name: item.name,
+              image: item.image,
+              color: item.color,
+              size: item.size,
+              quantity: item.qty,
+              price: item.price,
+            }))
+          : [{
+              productId: product!.id,
+              name: product!.name,
+              image: product!.image,
+              color: selectedColor,
+              size: selectedSize,
+              quantity: qty,
+              price: product!.price,
+            }],
+      };
+
+      console.log("[CHECKOUT] 📦 Sending to /api/orders:", JSON.stringify(payload).slice(0, 500));
+
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      console.log("[CHECKOUT] 📦 /api/orders status:", res.status);
+      const data = await res.json();
+      console.log("[CHECKOUT] 📦 /api/orders response:", data);
+
+      if (!res.ok) {
+        throw new Error(data.error || "Gagal membuat pesanan");
+      }
+
+      console.log("[CHECKOUT] ✅ ORDER SUCCESS:", data.orderNumber);
+      clearCart();
+      const orderNum = data.orderNumber || generateOrderNumber();
+      router.push(`/checkout/success?order=${orderNum}`);
+    } catch (err) {
+      console.error("[CHECKOUT] ❌ Order submit error:", err);
+      setErrors({ submit: "Terjadi kesalahan. Silakan coba lagi." });
+    } finally {
+      setSubmitting(false);
+      console.log("[CHECKOUT] 📦 === ORDER SUBMIT END ===");
+    }
+  }
+
+  if (orderPlaced) {
+    return null;
   }
 
   const selectedColor = colorParam || product?.colors?.[0] || "-";
@@ -234,192 +545,6 @@ function CheckoutContent() {
     setPromoApplied(true);
     setVoucherCode(voucher.code);
     setVoucherId(voucher.id);
-  }
-
-  function validatePhone(p: string): boolean {
-    return /^(\+62|62|0)8[1-9][0-9]{6,10}$/.test(p.replace(/[\s-]/g, ""));
-  }
-
-  async function handleSelectProvinsi(provId: number) {
-    setProvinsiId(provId);
-    setKotaId(null);
-    setKecamatanId(null);
-    setKecamatanName("");
-    setSelectedShipping(null);
-    setKabupatenList([]);
-    setKecamatanList([]);
-    setShipOptions([]);
-    try {
-      setLoadingKab(true);
-      const res = await fetch(`/api/shipping/districts?provinceId=${provId}`);
-      const json = await res.json();
-      setKabupatenList(json.data || []);
-    } catch (e) {
-      console.error("Gagal load kota:", e);
-    } finally {
-      setLoadingKab(false);
-    }
-  }
-
-  async function handleSelectKota(cityId: number) {
-    const name = kabupatenList.find((c) => c.id === cityId)?.name || "";
-    setKotaId(cityId);
-    setKota(name);
-    setKecamatanId(null);
-    setKecamatanName("");
-    setSelectedShipping(null);
-    setKecamatanList([]);
-    setShipOptions([]);
-    try {
-      setLoadingKec(true);
-      const res = await fetch(`/api/shipping/districts?cityId=${cityId}`);
-      const json = await res.json();
-      setKecamatanList(json.data || []);
-    } catch (e) {
-      console.error("Gagal load kecamatan:", e);
-    } finally {
-      setLoadingKec(false);
-    }
-  }
-
-  // Resolve district from postal code and fetch ongkir
-  async function resolveSavedAddress(addr: { postal_code: string }) {
-    console.log("[CHECKOUT] 5/5 resolveSavedAddress called:", { postal: addr.postal_code, originId });
-    if (!originId || !addr.postal_code) { console.log("[CHECKOUT] 5/5 SKIP: missing originId or postal_code"); return; }
-    const addrKey = addr.postal_code;
-    if (addrKey === lastResolvedAddress && shipOptions.length > 0) { console.log("[CHECKOUT] 5/5 SKIP: cached"); return; }
-    setLastResolvedAddress(addrKey);
-
-    setLoadingCost(true);
-    setShipOptions([]);
-    setSelectedShipping(null);
-    try {
-      // Resolve district_id from postal code (cached server-side)
-      console.log("[CHECKOUT] 5/5 Resolving district for postal:", addr.postal_code);
-      const distRes = await fetch(`/api/shipping/resolve-district?postalCode=${addr.postal_code}`);
-      const distText = await distRes.text();
-      console.log("[CHECKOUT] 5/5 resolve-district raw:", distText);
-      const loc = JSON.parse(distText);
-      console.log("[CHECKOUT] 5/5 resolve-district result:", loc);
-      if (!loc.district_id) { console.log("[CHECKOUT] 5/5 SKIP: no district_id found"); setLoadingCost(false); return; }
-
-      setKecamatanId(loc.district_id);
-      setKecamatanName(loc.district_name || "");
-      console.log("[CHECKOUT] 5/5 District resolved:", { id: loc.district_id, name: loc.district_name });
-
-      // Fetch ongkir
-      const courierStr = enabledCouriers.length > 0 ? enabledCouriers.join(":") : undefined;
-      console.log("[CHECKOUT] 5/5 Fetching ongkir:", { origin: originId, destination: loc.district_id, weight: berat, couriers: courierStr });
-      const res = await fetch("/api/shipping/cost", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ origin: originId, destination: loc.district_id, weight: berat, courier: courierStr }),
-      });
-      const json = await res.json();
-      console.log("[CHECKOUT] 5/5 Cost API raw:", JSON.stringify(json).slice(0, 500));
-      const opts: ShipOpt[] = [];
-      if (json.data && Array.isArray(json.data)) {
-        for (const item of json.data) {
-          opts.push({
-            courier: item.name || item.code || "",
-            service: item.service || "",
-            description: item.description || "",
-            cost: typeof item.cost === "number" ? item.cost : 0,
-            etd: item.etd || "",
-          });
-        }
-      }
-      opts.sort((a, b) => a.cost - b.cost);
-      console.log("[CHECKOUT] 5/5 DONE! Ongkir:", opts.length, "options:", opts.map(o => `${o.courier} ${o.service}: Rp${o.cost}`));
-      setShipOptions(opts);
-    } catch (e) {
-      console.error("[CHECKOUT] 5/5 ERROR:", e);
-    } finally {
-      setLoadingCost(false);
-    }
-  }
-
-  async function handleSubmit() {
-    const e: Record<string, string> = {};
-    if (!nama.trim()) e.nama = "Nama lengkap wajib diisi";
-    if (!whatsapp.trim()) e.whatsapp = "No. WhatsApp wajib diisi";
-    else if (!validatePhone(whatsapp)) e.whatsapp = "Nomor WhatsApp tidak valid";
-    if (!alamat.trim()) e.alamat = "Alamat lengkap wajib diisi";
-    if (!kota.trim()) e.kota = "Kota/Kabupaten wajib diisi";
-    if (kodepos && !/^\d{5}$/.test(kodepos)) e.kodepos = "Kode pos harus 5 digit";
-    if (!selectedShipping) e.shipping = "Pilih metode pengiriman";
-
-    if (Object.keys(e).length > 0) {
-      setErrors(e);
-      const firstKey = Object.keys(e)[0];
-      const el = document.querySelector(`[data-field="${firstKey}"]`);
-      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-      return;
-    }
-
-    setErrors({});
-    setSubmitting(true);
-
-    try {
-      const res = await fetch("/api/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          customer: { name: nama, email, whatsapp },
-          shipping: {
-            address: alamat,
-            city: kota,
-            district: kecamatanName,
-            postalCode: kodepos,
-            notes: catatanKurir,
-            method: selectedShipping ? `${selectedShipping.courier} - ${selectedShipping.service}` : "manual",
-            cost: shippingCost,
-          },
-          paymentMethod: payment,
-          discount,
-          voucherCode: promoApplied ? voucherCode : null,
-          voucherId: promoApplied ? voucherId : null,
-          items: isCartMode
-            ? items.map((item) => ({
-                productId: item.id,
-                name: item.name,
-                image: item.image,
-                color: item.color,
-                size: item.size,
-                quantity: item.qty,
-                price: item.price,
-              }))
-            : [{
-                productId: product!.id,
-                name: product!.name,
-                image: product!.image,
-                color: selectedColor,
-                size: selectedSize,
-                quantity: qty,
-                price: product!.price,
-              }],
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || "Gagal membuat pesanan");
-      }
-
-      clearCart();
-      const orderNum = data.orderNumber || generateOrderNumber();
-      router.push(`/checkout/success?order=${orderNum}`);
-    } catch (err) {
-      console.error("Checkout error:", err);
-      setErrors({ submit: "Terjadi kesalahan. Silakan coba lagi." });
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  if (orderPlaced) {
-    return null;
   }
 
   const selectStyle: React.CSSProperties = { background: "white", border: "1px solid rgba(64,50,37,.25)", color: "var(--espresso)", outline: "none" };
@@ -495,18 +620,7 @@ function CheckoutContent() {
               <div className="mb-4 space-y-2">
                 {savedAddresses.map((addr) => (
                   <label key={addr.id} className="flex items-start gap-3 rounded-xl p-3 cursor-pointer transition-all" style={{ border: `1.5px solid ${selectedAddressId === addr.id ? "var(--gold)" : "rgba(64,50,37,.15)"}`, background: selectedAddressId === addr.id ? "rgba(181,140,74,.04)" : "white" }}
-                    onClick={() => {
-                      console.log("[CHECKOUT] Clicked saved address:", { id: addr.id, city: addr.city, postal: addr.postal_code, kecamatan: addr.kecamatan });
-                      setSelectedAddressId(addr.id);
-                      setNama(addr.recipient_name);
-                      setWhatsapp(addr.phone);
-                      setAlamat(addr.address);
-                      setKota(addr.city);
-                      setKodepos(addr.postal_code);
-                      setKecamatanName(addr.kecamatan || "");
-                      setShipOptions([]);
-                      setSelectedShipping(null);
-                    }}>
+                    onClick={() => handleSelectAddress(addr)}>
                     <span className="relative w-4 h-4 rounded-full border-2 flex-shrink-0 mt-0.5" style={{ borderColor: selectedAddressId === addr.id ? "var(--gold)" : "var(--text-muted)" }}>
                       {selectedAddressId === addr.id && <span className="absolute inset-[3px] rounded-full" style={{ background: "var(--gold)" }} />}
                     </span>
@@ -520,7 +634,7 @@ function CheckoutContent() {
                     </div>
                   </label>
                 ))}
-                <button type="button" onClick={() => { setShowNewAddress(true); setLastResolvedAddress(""); }} className="text-xs font-medium mt-1" style={{ color: "#8b6f42" }}>+ Gunakan Alamat Baru</button>
+                <button type="button" onClick={() => { setShowNewAddress(true); lastResolvedRef.current = ""; }} className="text-xs font-medium mt-1" style={{ color: "#8b6f42" }}>+ Gunakan Alamat Baru</button>
               </div>
             )}
 
@@ -561,53 +675,47 @@ function CheckoutContent() {
               <h2 className="text-xl sm:text-2xl italic" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Metode Pengiriman</h2>
             </div>
 
-            {/* Kecamatan — simple text input */}
-            <div className="mb-3">
-              <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: "var(--text-secondary)" }}>Kecamatan Tujuan</label>
-              <input
-                type="text"
-                value={kecamatanName}
-                onChange={(e) => setKecamatanName(e.target.value)}
-                className="w-full rounded-lg px-4 py-3 text-sm font-ui"
-                style={selectStyle}
-                placeholder={selectedAddressId ? "Otomatis dari alamat tersimpan" : "Ketik kecamatan, contoh: Cengkareng"}
-              />
-              {kecamatanName && kecamatanId && (
-                <p className="text-[11px] font-ui mt-1" style={{ color: "var(--gold)" }}>✓ {kecamatanName}</p>
-              )}
-            </div>
-
-            {/* Hitung Ongkir button */}
-            {selectedAddressId && (
-              <button
-                type="button"
-                onClick={() => {
-                  const addr = savedAddresses.find((a) => a.id === selectedAddressId);
-                  console.log("[CHECKOUT] Hitung Ongkir clicked:", { selectedAddressId, postal: addr?.postal_code, originId });
-                  if (addr) resolveSavedAddress(addr);
-                }}
-                disabled={loadingCost || !originId}
-                className="w-full rounded-xl py-3 text-sm font-ui font-medium flex items-center justify-center gap-2 transition-all mb-4 disabled:opacity-40"
-                style={{ background: "var(--espresso)", color: "var(--cream)" }}
-              >
-                {loadingCost ? (
-                  <><Loader2 size={16} className="animate-spin" /> Menghitung…</>
-                ) : (
-                  <><Truck size={16} /> Hitung Ongkos Kirim</>
-                )}
-              </button>
+            {/* Origin not set warning */}
+            {settingsLoaded && !originId && (
+              <div className="rounded-lg p-3 text-sm font-ui mb-4" style={{ background: "rgba(231,76,60,.08)", color: "#e74c3c", border: "1px solid rgba(231,76,60,.15)" }}>
+                Origin toko belum diatur. Hubungi admin untuk mengatur alamat toko di Pengaturan.
+              </div>
             )}
 
-            {/* Loading indicator saat fetch ongkir */}
+            {/* Loading state */}
             {loadingCost && (
-              <div className="flex items-center gap-2 py-3 text-sm font-ui" style={{ color: "var(--text-muted)" }}>
+              <div className="flex items-center gap-2 py-4 text-sm font-ui" style={{ color: "var(--text-muted)" }}>
                 <Loader2 size={16} className="animate-spin" style={{ color: "var(--gold)" }} />
                 <span>Menghitung ongkos kirim…</span>
               </div>
             )}
 
-            {/* Shipping options list */}
-            {shipOptions.length > 0 && (
+            {/* Error state with retry */}
+            {shippingError && !loadingCost && (
+              <div className="rounded-lg p-4 text-sm font-ui" style={{ background: "rgba(231,76,60,.06)", border: "1px solid rgba(231,76,60,.15)" }}>
+                <p style={{ color: "#e74c3c" }}>{shippingError}</p>
+                {selectedAddressId && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      console.log("[CHECKOUT] 🔄 Retry clicked for address:", selectedAddressId);
+                      const addr = savedAddresses.find((a) => a.id === selectedAddressId);
+                      if (addr) {
+                        lastResolvedRef.current = "";
+                        calculateShipping(addr);
+                      }
+                    }}
+                    className="mt-2 flex items-center gap-1.5 text-xs font-medium"
+                    style={{ color: "var(--gold)" }}
+                  >
+                    <RefreshCw size={12} /> Coba Lagi
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Shipping options */}
+            {shipOptions.length > 0 && !loadingCost && (
               <div className="space-y-2">
                 {shipOptions.map((opt, i) => {
                   const isActive = selectedShipping?.courier === opt.courier && selectedShipping?.service === opt.service;
@@ -622,7 +730,10 @@ function CheckoutContent() {
                         name="ship"
                         className="sr-only"
                         checked={isActive}
-                        onChange={() => setSelectedShipping(opt)}
+                        onChange={() => {
+                          console.log("[CHECKOUT] 📦 Selected shipping:", opt);
+                          setSelectedShipping(opt);
+                        }}
                       />
                       <span className="relative mt-0.5 w-4 h-4 rounded-full border-2 flex-shrink-0" style={{ borderColor: isActive ? "var(--gold)" : "var(--text-muted)" }}>
                         {isActive && <span className="absolute inset-[3px] rounded-full" style={{ background: "var(--gold)" }} />}
@@ -646,9 +757,10 @@ function CheckoutContent() {
               </div>
             )}
 
-            {shipOptions.length === 0 && !loadingCost && (
+            {/* Empty state when no address selected */}
+            {shipOptions.length === 0 && !loadingCost && !shippingError && !selectedAddressId && (
               <p className="text-xs font-ui" style={{ color: "var(--text-muted)" }}>
-                {selectedAddressId ? "Menghitung ongkir…" : "Lengkapi alamat pengiriman untuk menghitung ongkir."}
+                Pilih alamat pengiriman untuk menghitung ongkir otomatis.
               </p>
             )}
 
