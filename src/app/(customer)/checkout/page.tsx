@@ -60,7 +60,7 @@ function CheckoutContent() {
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderNumber, setOrderNumber] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [savedAddresses, setSavedAddresses] = useState<{ id: string; label: string; recipient_name: string; phone: string; address: string; city: string; postal_code: string; is_default: boolean; district_id?: number }[]>([]);
+  const [savedAddresses, setSavedAddresses] = useState<{ id: string; label: string; recipient_name: string; phone: string; address: string; city: string; postal_code: string; is_default: boolean }[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string>("");
   const [showNewAddress, setShowNewAddress] = useState(false);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
@@ -265,19 +265,27 @@ function CheckoutContent() {
     }
   }
 
-  // Auto-fetch ongkir using district_id from saved address
-  async function resolveSavedAddress(addr: { district_id?: number }) {
-    if (!addr.district_id || !originId) return;
-    setKecamatanId(addr.district_id);
+  // Resolve district_id from postal code and auto-fetch ongkir
+  async function resolveSavedAddress(addr: { postal_code: string }) {
+    if (!addr.postal_code || !originId) return;
     setLoadingCost(true);
     setShipOptions([]);
     setSelectedShipping(null);
     try {
+      // Resolve district_id from postal code via API
+      const distRes = await fetch(`/api/shipping/resolve-district?postalCode=${addr.postal_code}`);
+      const distJson = await distRes.json();
+      if (!distJson.district_id) {
+        setLoadingCost(false);
+        return;
+      }
+      setKecamatanId(distJson.district_id);
+      // Auto-fetch ongkir
       const courierStr = enabledCouriers.length > 0 ? enabledCouriers.join(":") : undefined;
       const res = await fetch("/api/shipping/cost", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ origin: originId, destination: addr.district_id, weight: berat, courier: courierStr }),
+        body: JSON.stringify({ origin: originId, destination: distJson.district_id, weight: berat, courier: courierStr }),
       });
       const json = await res.json();
       const opts: ShipOpt[] = [];
