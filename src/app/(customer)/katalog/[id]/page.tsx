@@ -416,7 +416,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                     aria-label={`${item.type === "video" ? "Video" : "Foto"} ${i + 1}`}>
                     {item.type === "video" ? (
                       <>
-                        <img src={product.image} alt="" className="w-full h-full object-cover" loading="lazy" />
+                        <img src={media.find((m) => m.type === "image")?.src || product.image} alt="" className="w-full h-full object-cover" loading="lazy" />
                         <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(0,0,0,.15)" }}>
                           <Play size={14} fill="var(--gold)" stroke="none" />
                         </div>
