@@ -24,6 +24,7 @@ declare module "lucide-react" {
   export const FileText: FC<IconProps>;
   export const GripVertical: FC<IconProps>;
   export const Home: FC<IconProps>;
+  export const HomeIcon: FC<IconProps>;
   export const Image: FC<IconProps>;
   export const ImageIcon: FC<IconProps>;
   export const Languages: FC<IconProps>;
