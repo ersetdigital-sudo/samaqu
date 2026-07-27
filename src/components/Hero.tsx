@@ -12,6 +12,8 @@ const DEFAULTS = {
   eyebrow_text: "Premium Muslim Menswear",
   title_line1: "Busana yang Layak",
   title_line2: "Menemani Setiap Momen.",
+  title_line1_color: "#f8f5f1",
+  title_line2_color: "#e0b563",
   description: "Dirancang dengan material pilihan, potongan yang presisi, dan detail yang dibuat untuk kenyamanan dalam setiap aktivitas.",
   feature1: "6 Koleksi Eksklusif",
   feature2: "Berbagai Jenis Kain",
@@ -33,7 +35,9 @@ export default function Hero() {
           setHeroData({
             eyebrow_text: data.eyebrow_text || DEFAULTS.eyebrow_text,
             title_line1: data.title_line1 || DEFAULTS.title_line1,
-            title_line2: data.title_line2 || DEFAULTS.title_line2,
+            title_line2: data.title_line2 ?? DEFAULTS.title_line2,
+            title_line1_color: data.title_line1_color || DEFAULTS.title_line1_color,
+            title_line2_color: data.title_line2_color || DEFAULTS.title_line2_color,
             description: data.description || DEFAULTS.description,
             feature1: data.feature1 || DEFAULTS.feature1,
             feature2: data.feature2 || DEFAULTS.feature2,
@@ -161,24 +165,29 @@ export default function Hero() {
               {heroData.eyebrow_text}
             </p>
 
-            <h1 className="mb-5 sm:mb-6" style={{ color: "var(--cream)" }}>
-              <span
-                className="hero-anim hero-line block font-semibold tracking-[-0.02em] leading-[1.08] text-[8.5vw] sm:text-[3.4rem] lg:text-[3.6rem] xl:text-[3.9rem]"
-                style={{
-                  fontFamily: "var(--font-cormorant), Georgia, serif",
-                }}
-              >
-                {heroData.title_line1}
-              </span>
-              <span
-                className="hero-anim hero-line block font-semibold tracking-[-0.02em] leading-[1.08] text-[8.5vw] sm:text-[3.4rem] lg:text-[3.6rem] xl:text-[3.9rem]"
-                style={{
-                  fontFamily: "var(--font-cormorant), Georgia, serif",
-                  color: "#e0b563",
-                }}
-              >
-                {heroData.title_line2}
-              </span>
+            <h1 className="mb-5 sm:mb-6">
+              {heroData.title_line1 && (
+                <span
+                  className="hero-anim hero-line block font-semibold tracking-[-0.02em] leading-[1.08] text-[8.5vw] sm:text-[3.4rem] lg:text-[3.6rem] xl:text-[3.9rem]"
+                  style={{
+                    fontFamily: "var(--font-cormorant), Georgia, serif",
+                    color: heroData.title_line1_color || "#f8f5f1",
+                  }}
+                >
+                  {heroData.title_line1}
+                </span>
+              )}
+              {heroData.title_line2 && (
+                <span
+                  className="hero-anim hero-line block font-semibold tracking-[-0.02em] leading-[1.08] text-[8.5vw] sm:text-[3.4rem] lg:text-[3.6rem] xl:text-[3.9rem]"
+                  style={{
+                    fontFamily: "var(--font-cormorant), Georgia, serif",
+                    color: heroData.title_line2_color || "#e0b563",
+                  }}
+                >
+                  {heroData.title_line2}
+                </span>
+              )}
             </h1>
 
             <p
