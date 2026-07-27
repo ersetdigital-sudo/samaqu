@@ -48,10 +48,15 @@ export default function AlamatPage() {
   const [districtId, setDistrictId] = useState<number | null>(null);
   const [loadingLoc, setLoadingLoc] = useState(false);
 
-  // Load provinces on mount
+  // Load provinces when modal opens
   useEffect(() => {
-    fetch("/api/shipping/provinces").then((r) => r.json()).then((j) => setProvinces(j.data || [])).catch(() => {});
-  }, []);
+    if (modalOpen && provinces.length === 0) {
+      fetch("/api/shipping/provinces")
+        .then((r) => r.json())
+        .then((j) => { if (j.data?.length) setProvinces(j.data); })
+        .catch(console.error);
+    }
+  }, [modalOpen]);
 
   useEffect(() => {
     async function init() {
