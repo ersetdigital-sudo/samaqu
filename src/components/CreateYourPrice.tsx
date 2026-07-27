@@ -2,8 +2,8 @@ import { getWhatsAppLink } from "@/lib/store-settings";
 
 export default function CreateYourPrice() {
   return (
-    <section className="py-24 sm:py-32 relative overflow-hidden" style={{ background: "var(--espresso)" }}>
-      <div className="max-w-[1200px] mx-auto px-5 sm:px-8 grid lg:grid-cols-2 gap-12 items-center">
+    <section className="py-14 sm:py-24 lg:py-32 relative overflow-hidden" style={{ background: "var(--espresso)" }}>
+      <div className="max-w-[1200px] mx-auto px-5 sm:px-8 grid lg:grid-cols-2 gap-8 sm:gap-12 items-center">
         <div className="fade-up">
           <p className="text-[12px] tracking-[0.32em] uppercase mb-5" style={{ color: "var(--gold)" }}>
             Create Your Price

@@ -157,7 +157,7 @@ export default function CaraPemesanan() {
   return (
     <section
       id="cara-pesan"
-      className="relative px-5 sm:px-6 py-24 sm:py-32 lg:py-40 overflow-hidden"
+      className="relative px-5 sm:px-6 py-14 sm:py-24 lg:py-32 overflow-hidden"
       style={{
         background:
           "radial-gradient(circle at 15% 10%, rgba(216,196,168,.14), transparent 45%), radial-gradient(circle at 85% 90%, rgba(184,145,70,.08), transparent 45%), var(--bg-primary)",
@@ -167,7 +167,7 @@ export default function CaraPemesanan() {
       <div className="mx-auto max-w-6xl">
         {/* ── Header ── */}
         <motion.div
-          className="text-center mb-14 sm:mb-20 lg:mb-24"
+          className="text-center mb-6 sm:mb-14 lg:mb-20"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-80px" }}
