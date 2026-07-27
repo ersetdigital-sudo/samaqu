@@ -43,6 +43,11 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
   const [description, setDescription] = useState("");
   const [basePrice, setBasePrice] = useState("");
   const [weight, setWeight] = useState("");
+
+  // Create Your Price
+  const [cypEnabled, setCypEnabled] = useState(false);
+  const [minimumPrice, setMinimumPrice] = useState("");
+
   const [variants, setVariants] = useState<Variant[]>([]);
   const [activeColor, setActiveColor] = useState<string | null>(null);
   const [media, setMedia] = useState<MediaFile[]>([]);
@@ -61,6 +66,8 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
         setDescription(product.description || "");
         setBasePrice(String(product.price));
         setWeight(product.weight ? String(product.weight) : "");
+        setCypEnabled(product.create_your_price_enabled || false);
+        setMinimumPrice(product.minimum_price ? String(product.minimum_price) : "");
 
         // Fetch variants
         const { data: dbVariants } = await supabase.from("product_variants").select("*").eq("product_id", id);
@@ -189,6 +196,8 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
     if (!name.trim()) e.name = "Nama produk wajib diisi";
     if (!category) e.category = "Kategori wajib dipilih";
     if (!basePrice || parseInt(basePrice) <= 0) e.basePrice = "Harga wajib diisi";
+    if (cypEnabled && (!minimumPrice || parseInt(minimumPrice) <= 0)) e.minimumPrice = "Harga Minimum wajib diisi jika Create Your Price aktif";
+    if (cypEnabled && minimumPrice && basePrice && parseInt(minimumPrice) > parseInt(basePrice)) e.minimumPrice = "Harga Minimum tidak boleh lebih besar dari Harga Dasar";
     if (variants.length === 0) e.variants = "Minimal 1 varian warna";
     const hasSize = variants.some((v) => v.sizes.some((s) => s.stock > 0));
     if (!hasSize) e.variants = "Minimal 1 ukuran dengan stok > 0";
@@ -204,6 +213,8 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
     try {
       await supabase.from("products").upsert({
         id: slug, name, category, description: description || null, price: parseInt(basePrice),
+        minimum_price: cypEnabled ? parseInt(minimumPrice) : null,
+        create_your_price_enabled: cypEnabled,
         weight: weight ? parseInt(weight) : null,
         image: media.find((m) => m.url)?.url || "",
         images: media.filter((m) => m.url).map((m) => m.url),
@@ -291,6 +302,29 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
                 <div>
                   <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Harga Dasar (Rp)</label>
                   <input type="number" value={basePrice} onChange={(e) => setBasePrice(e.target.value)} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: `1px solid ${errors.basePrice ? "#e74c3c" : "rgba(64,50,37,.15)"}`, background: "white", color: "var(--espresso)" }} />
+                </div>
+                {/* Create Your Price Toggle */}
+                <div className="p-4 rounded-xl" style={{ background: cypEnabled ? "rgba(181,140,74,.06)" : "rgba(64,50,37,.02)", border: `1px solid ${cypEnabled ? "rgba(181,140,74,.3)" : "rgba(64,50,37,.1)"}` }}>
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <p className="text-sm font-medium" style={{ color: "var(--espresso)" }}>Create Your Price</p>
+                      <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>Customer bisa tentukan harga sendiri (minimal = Harga Minimum)</p>
+                    </div>
+                    <button type="button" onClick={() => setCypEnabled(!cypEnabled)}
+                      className="relative w-11 h-6 rounded-full transition-colors duration-200"
+                      style={{ background: cypEnabled ? "var(--gold)" : "rgba(64,50,37,.2)" }}>
+                      <span className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200"
+                        style={{ transform: cypEnabled ? "translateX(20px)" : "translateX(0)" }} />
+                    </button>
+                  </div>
+                  {cypEnabled && (
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Harga Minimum (Rp) <span style={{ color: "var(--gold)" }}>*</span></label>
+                      <input type="number" value={minimumPrice} onChange={(e) => setMinimumPrice(e.target.value)} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: `1px solid ${errors.minimumPrice ? "#e74c3c" : "rgba(64,50,37,.15)"}`, background: "white", color: "var(--espresso)" }} placeholder="389000" />
+                      {errors.minimumPrice && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.minimumPrice}</p>}
+                      <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>Harga terendah yang bisa dipilih customer.</p>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Berat (gram)</label>
