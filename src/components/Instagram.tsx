@@ -9,31 +9,32 @@ const images = [
 
 export default function Instagram() {
   return (
-    <section className="py-24 sm:py-32" style={{ background: "var(--sand-2)" }}>
+    <section className="py-14 sm:py-24 lg:py-32" style={{ background: "var(--sand-2)" }}>
       <div className="max-w-[1200px] mx-auto px-5 sm:px-8">
-        <div className="text-center max-w-xl mx-auto mb-14 fade-up">
-          <p className="text-[12px] tracking-[0.32em] uppercase mb-4" style={{ color: "var(--gold)" }}>
+        <div className="text-center max-w-xl mx-auto mb-6 sm:mb-14 fade-up">
+          <p className="text-[12px] tracking-[0.32em] uppercase mb-3 sm:mb-4" style={{ color: "var(--gold)" }}>
             Ikuti Kami
           </p>
           <h2
-            className="text-4xl sm:text-5xl font-medium mb-4"
+            className="text-3xl sm:text-5xl font-medium mb-3 sm:mb-4"
             style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}
           >
             @samaqu.id
           </h2>
-          <p className="leading-[1.75]" style={{ color: "var(--coffee)" }}>
+          <p className="leading-[1.75] text-sm sm:text-base truncate sm:line-clamp-none px-4 sm:px-0" style={{ color: "var(--coffee)" }}>
             Inspirasi gaya, koleksi terbaru, dan cerita di balik setiap busana SAMAQU.
           </p>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 fade-up">
+        {/* Mobile: horizontal scroll | Desktop: 4-column grid */}
+        <div className="flex sm:grid sm:grid-cols-4 gap-3 sm:gap-4 fade-up overflow-x-auto sm:overflow-visible pb-2 sm:pb-0 -mx-5 px-5 sm:mx-0 sm:px-0 snap-x snap-mandatory">
           {images.map((img) => (
             <a
               key={img.src}
               href="https://instagram.com/samaqu.id"
               target="_blank"
               rel="noopener"
-              className="group relative overflow-hidden rounded-[2px] aspect-square"
+              className="group relative overflow-hidden rounded-[2px] aspect-square shrink-0 w-[42vw] sm:w-auto snap-start"
             >
               <Image
                 src={img.src}
@@ -56,12 +57,12 @@ export default function Instagram() {
           ))}
         </div>
 
-        <div className="text-center mt-10 fade-up">
+        <div className="text-center mt-6 sm:mt-10 fade-up">
           <a
             href="https://instagram.com/samaqu.id"
             target="_blank"
             rel="noopener"
-            className="inline-flex items-center gap-2 rounded-full px-7 py-4 text-[12px] tracking-[0.18em] uppercase border transition hover:bg-white"
+            className="inline-flex items-center gap-2 rounded-full px-6 sm:px-7 py-3 sm:py-4 text-[11px] sm:text-[12px] tracking-[0.18em] uppercase border transition hover:bg-white"
             style={{ borderColor: "var(--clay)", color: "var(--coffee)" }}
           >
             Kunjungi Instagram Kami
