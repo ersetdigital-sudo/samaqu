@@ -80,8 +80,9 @@ function CheckoutContent() {
   const [loadingKec, setLoadingKec] = useState(false);
   const [loadingCost, setLoadingCost] = useState(false);
   const [originId, setOriginId] = useState<number | null>(null);
+  const [enabledCouriers, setEnabledCouriers] = useState<string[]>([]);
 
-  // Fetch provinces + resolve origin kecamatan on mount
+  // Fetch provinces + resolve origin from store settings
   useEffect(() => {
     (async () => {
       try {
@@ -91,20 +92,31 @@ function CheckoutContent() {
         const list: IdName[] = json.data || [];
         setProvinces(list);
 
-        // Resolve origin: Depok → default kecamatan (Pancoran Mas)
-        const jabar = list.find((p) => p.name.toUpperCase().includes("JAWA BARAT"));
-        if (jabar) {
-          const cRes = await fetch(`/api/shipping/districts?provinceId=${jabar.id}`);
-          const cJson = await cRes.json();
-          const depok = (cJson.data || []).find((c: IdName) => c.name.toUpperCase().includes("DEPOK"));
-          if (depok) {
-            // Now fetch kecamatan list for Depok
-            const dRes = await fetch(`/api/shipping/districts?cityId=${depok.id}`);
-            const dJson = await dRes.json();
-            const kecamatanData: IdName[] = dJson.data || [];
-            // Pick Pancoran Mas as default origin kecamatan
-            const defaultOrigin = kecamatanData.find((k: IdName) => k.name.toUpperCase().includes("PANCORAN MAS")) || kecamatanData[0];
-            if (defaultOrigin) setOriginId(defaultOrigin.id);
+        // Load shipping settings from store_settings
+        const { data: settings } = await supabase.from("store_settings").select("origin_district_id, enabled_couriers").eq("id", 1).single();
+
+        // Set enabled couriers
+        if (settings?.enabled_couriers) {
+          try { setEnabledCouriers(JSON.parse(settings.enabled_couriers)); } catch { /* use all */ }
+        }
+
+        // Set origin from settings or fallback to Depok
+        if (settings?.origin_district_id) {
+          setOriginId(settings.origin_district_id);
+        } else {
+          // Fallback: Depok → Pancoran Mas
+          const jabar = list.find((p) => p.name.toUpperCase().includes("JAWA BARAT"));
+          if (jabar) {
+            const cRes = await fetch(`/api/shipping/districts?provinceId=${jabar.id}`);
+            const cJson = await cRes.json();
+            const depok = (cJson.data || []).find((c: IdName) => c.name.toUpperCase().includes("DEPOK"));
+            if (depok) {
+              const dRes = await fetch(`/api/shipping/districts?cityId=${depok.id}`);
+              const dJson = await dRes.json();
+              const kecamatanData: IdName[] = dJson.data || [];
+              const defaultOrigin = kecamatanData.find((k: IdName) => k.name.toUpperCase().includes("PANCORAN MAS")) || kecamatanData[0];
+              if (defaultOrigin) setOriginId(defaultOrigin.id);
+            }
           }
         }
       } catch (e) {
@@ -259,10 +271,11 @@ function CheckoutContent() {
     setShipOptions([]);
     setSelectedShipping(null);
     try {
+      const courierStr = enabledCouriers.length > 0 ? enabledCouriers.join(":") : undefined;
       const res = await fetch("/api/shipping/cost", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ origin: originId, destination: kecamatanId, weight: berat }),
+        body: JSON.stringify({ origin: originId, destination: kecamatanId, weight: berat, courier: courierStr }),
       });
       const json = await res.json();
       const opts: ShipOpt[] = [];
