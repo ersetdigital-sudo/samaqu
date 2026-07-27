@@ -88,23 +88,33 @@ function CheckoutContent() {
     (async () => {
       try {
         setLoadingProvinces(true);
+        console.log("[CHECKOUT] 1/5 Fetching provinces...");
         const res = await fetch("/api/shipping/provinces");
         const json = await res.json();
         const list: IdName[] = json.data || [];
+        console.log("[CHECKOUT] 1/5 Provinces:", list.length, "items", list.slice(0, 3));
         setProvinces(list);
 
         // Load shipping settings from store_settings
-        const { data: settings } = await supabase.from("store_settings").select("origin_district_id, enabled_couriers").eq("id", 1).single();
+        console.log("[CHECKOUT] 2/5 Fetching store_settings...");
+        const { data: settings, error: settingsErr } = await supabase.from("store_settings").select("origin_district_id, enabled_couriers").eq("id", 1).single();
+        console.log("[CHECKOUT] 2/5 Store settings:", settings, "error:", settingsErr?.message);
 
         // Set enabled couriers
         if (settings?.enabled_couriers) {
-          try { setEnabledCouriers(JSON.parse(settings.enabled_couriers)); } catch { /* use all */ }
+          try {
+            const parsed = JSON.parse(settings.enabled_couriers);
+            setEnabledCouriers(parsed);
+            console.log("[CHECKOUT] 2/5 Enabled couriers:", parsed);
+          } catch { console.log("[CHECKOUT] 2/5 Failed to parse couriers"); }
         }
 
         // Set origin from settings or fallback to Depok
         if (settings?.origin_district_id) {
           setOriginId(settings.origin_district_id);
+          console.log("[CHECKOUT] 2/5 Origin from settings:", settings.origin_district_id);
         } else {
+          console.log("[CHECKOUT] 2/5 No origin_district_id in settings, using fallback...");
           // Fallback: Depok → Pancoran Mas
           const jabar = list.find((p) => p.name.toUpperCase().includes("JAWA BARAT"));
           if (jabar) {
@@ -116,12 +126,15 @@ function CheckoutContent() {
               const dJson = await dRes.json();
               const kecamatanData: IdName[] = dJson.data || [];
               const defaultOrigin = kecamatanData.find((k: IdName) => k.name.toUpperCase().includes("PANCORAN MAS")) || kecamatanData[0];
-              if (defaultOrigin) setOriginId(defaultOrigin.id);
+              if (defaultOrigin) {
+                setOriginId(defaultOrigin.id);
+                console.log("[CHECKOUT] 2/5 Origin from fallback:", defaultOrigin.id, defaultOrigin.name);
+              }
             }
           }
         }
       } catch (e) {
-        console.error("Gagal load provinsi:", e);
+        console.error("[CHECKOUT] ERROR loading provinces/settings:", e);
       } finally {
         setLoadingProvinces(false);
       }
@@ -142,11 +155,14 @@ function CheckoutContent() {
   // Fetch saved addresses + prefill email for logged-in customers
   useEffect(() => {
     async function fetchAddresses() {
+      console.log("[CHECKOUT] 3/5 Fetching saved addresses...");
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) { console.log("[CHECKOUT] 3/5 No user logged in"); return; }
       if (user.email) setEmail(user.email);
-      const { data } = await supabase.from("saved_addresses").select("*").eq("customer_id", user.id).order("is_default", { ascending: false }).order("created_at", { ascending: true });
+      const { data, error } = await supabase.from("saved_addresses").select("*").eq("customer_id", user.id).order("is_default", { ascending: false }).order("created_at", { ascending: true });
+      console.log("[CHECKOUT] 3/5 Addresses:", data?.length, "error:", error?.message);
       if (data && data.length > 0) {
+        console.log("[CHECKOUT] 3/5 First address:", { id: data[0].id, label: data[0].label, city: data[0].city, postal: data[0].postal_code, is_default: data[0].is_default });
         setSavedAddresses(data);
         const defaultAddr = data.find((a: { is_default: boolean }) => a.is_default) || data[0];
         setSelectedAddressId(defaultAddr.id);
@@ -162,11 +178,14 @@ function CheckoutContent() {
 
   // Auto-resolve ongkir for default saved address once originId is ready
   useEffect(() => {
-    if (!originId || savedAddresses.length === 0 || !selectedAddressId) return;
+    console.log("[CHECKOUT] 4/5 Auto-resolve check:", { originId, savedAddresses: savedAddresses.length, selectedAddressId, shipOptions: shipOptions.length, loadingCost });
+    if (!originId || savedAddresses.length === 0 || !selectedAddressId) { console.log("[CHECKOUT] 4/5 SKIP: missing data"); return; }
     const addr = savedAddresses.find((a) => a.id === selectedAddressId);
-    if (addr && shipOptions.length === 0 && !loadingCost) {
-      resolveSavedAddress(addr);
-    }
+    if (!addr) { console.log("[CHECKOUT] 4/5 SKIP: address not found for id:", selectedAddressId); return; }
+    console.log("[CHECKOUT] 4/5 Found address:", { id: addr.id, city: addr.city, postal: addr.postal_code });
+    if (shipOptions.length > 0) { console.log("[CHECKOUT] 4/5 SKIP: already have shipping options"); return; }
+    if (loadingCost) { console.log("[CHECKOUT] 4/5 SKIP: already loading"); return; }
+    resolveSavedAddress(addr);
   }, [originId, savedAddresses, selectedAddressId]);
 
   // Auto-calculate weight from product
@@ -277,9 +296,10 @@ function CheckoutContent() {
 
   // Resolve district from postal code and fetch ongkir
   async function resolveSavedAddress(addr: { postal_code: string }) {
-    if (!originId || !addr.postal_code) return;
+    console.log("[CHECKOUT] 5/5 resolveSavedAddress called:", { postal: addr.postal_code, originId });
+    if (!originId || !addr.postal_code) { console.log("[CHECKOUT] 5/5 SKIP: missing originId or postal_code"); return; }
     const addrKey = addr.postal_code;
-    if (addrKey === lastResolvedAddress && shipOptions.length > 0) return;
+    if (addrKey === lastResolvedAddress && shipOptions.length > 0) { console.log("[CHECKOUT] 5/5 SKIP: cached"); return; }
     setLastResolvedAddress(addrKey);
 
     setLoadingCost(true);
@@ -287,21 +307,28 @@ function CheckoutContent() {
     setSelectedShipping(null);
     try {
       // Resolve district_id from postal code (cached server-side)
+      console.log("[CHECKOUT] 5/5 Resolving district for postal:", addr.postal_code);
       const distRes = await fetch(`/api/shipping/resolve-district?postalCode=${addr.postal_code}`);
-      const loc = await distRes.json();
-      if (!loc.district_id) { setLoadingCost(false); return; }
+      const distText = await distRes.text();
+      console.log("[CHECKOUT] 5/5 resolve-district raw:", distText);
+      const loc = JSON.parse(distText);
+      console.log("[CHECKOUT] 5/5 resolve-district result:", loc);
+      if (!loc.district_id) { console.log("[CHECKOUT] 5/5 SKIP: no district_id found"); setLoadingCost(false); return; }
 
       setKecamatanId(loc.district_id);
       setKecamatanName(loc.district_name || "");
+      console.log("[CHECKOUT] 5/5 District resolved:", { id: loc.district_id, name: loc.district_name });
 
       // Fetch ongkir
       const courierStr = enabledCouriers.length > 0 ? enabledCouriers.join(":") : undefined;
+      console.log("[CHECKOUT] 5/5 Fetching ongkir:", { origin: originId, destination: loc.district_id, weight: berat, couriers: courierStr });
       const res = await fetch("/api/shipping/cost", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ origin: originId, destination: loc.district_id, weight: berat, courier: courierStr }),
       });
       const json = await res.json();
+      console.log("[CHECKOUT] 5/5 Cost API raw:", JSON.stringify(json).slice(0, 500));
       const opts: ShipOpt[] = [];
       if (json.data && Array.isArray(json.data)) {
         for (const item of json.data) {
@@ -315,9 +342,10 @@ function CheckoutContent() {
         }
       }
       opts.sort((a, b) => a.cost - b.cost);
+      console.log("[CHECKOUT] 5/5 DONE! Ongkir:", opts.length, "options:", opts.map(o => `${o.courier} ${o.service}: Rp${o.cost}`));
       setShipOptions(opts);
     } catch (e) {
-      console.error("Gagal resolve alamat:", e);
+      console.error("[CHECKOUT] 5/5 ERROR:", e);
     } finally {
       setLoadingCost(false);
     }
