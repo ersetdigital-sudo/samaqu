@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getRajaOngkirApiKey } from "@/lib/rajaongkir-key";
 
 // GET /api/shipping/search-destination?search=nama_kecamatan&city=nama_kota&province=nama_provinsi&limit=5
 // Searches RajaOngkir domestic-destination by name, optionally filtered by city/province
@@ -21,7 +22,7 @@ export async function GET(req: Request) {
     console.log("[SEARCH-DEST] Calling RajaOngkir:", url);
 
     const res = await fetch(url, {
-      headers: { key: process.env.RAJAONGKIR_API_KEY! },
+      headers: { key: await getRajaOngkirApiKey() },
       signal: AbortSignal.timeout(10000),
     });
 

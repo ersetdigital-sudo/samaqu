@@ -1,5 +1,6 @@
 // Server-side shipping cost calculator — shared by API routes
 // Verifies shipping cost by calling RajaOngkir directly, never trusts client value
+import { getRajaOngkirApiKey } from "./rajaongkir-key";
 
 export interface ShippingCostResult {
   cost: number;
@@ -29,7 +30,7 @@ export async function calculateShippingCost(params: {
   const res = await fetch(rajaUrl, {
     method: "POST",
     headers: {
-      key: process.env.RAJAONGKIR_API_KEY!,
+      key: await getRajaOngkirApiKey(),
       "Content-Type": "application/x-www-form-urlencoded",
     },
     body: formBody.toString(),

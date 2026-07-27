@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getRajaOngkirApiKey } from "@/lib/rajaongkir-key";
 
 // POST /api/shipping/cost
 // Body: { origin: subdistrictId, destination: subdistrictId, weight: grams, courier?: string }
@@ -42,7 +43,7 @@ export async function POST(req: Request) {
     const res = await fetch(rajaUrl, {
       method: "POST",
       headers: {
-        key: process.env.RAJAONGKIR_API_KEY!,
+        key: await getRajaOngkirApiKey(),
         "Content-Type": "application/x-www-form-urlencoded",
       },
       body: formBody.toString(),
