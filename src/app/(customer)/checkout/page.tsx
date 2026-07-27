@@ -265,27 +265,44 @@ function CheckoutContent() {
     }
   }
 
-  // Resolve district_id from postal code and auto-fetch ongkir
+  // Resolve location from postal code and auto-fetch ongkir
   async function resolveSavedAddress(addr: { postal_code: string }) {
     if (!addr.postal_code || !originId) return;
     setLoadingCost(true);
     setShipOptions([]);
     setSelectedShipping(null);
     try {
-      // Resolve district_id from postal code via API
+      // Resolve full location from postal code
       const distRes = await fetch(`/api/shipping/resolve-district?postalCode=${addr.postal_code}`);
-      const distJson = await distRes.json();
-      if (!distJson.district_id) {
+      const loc = await distRes.json();
+      if (!loc.district_id) {
         setLoadingCost(false);
         return;
       }
-      setKecamatanId(distJson.district_id);
+
+      // Populate all dropdown states
+      setProvinsiId(loc.province_id);
+      setKecamatanId(loc.district_id);
+      setKecamatanName(loc.district_name);
+      setKotaId(loc.city_id);
+      setKota(loc.city_name);
+
+      // Load cities for this province
+      const cityRes = await fetch(`/api/shipping/districts?provinceId=${loc.province_id}`);
+      const cityJson = await cityRes.json();
+      setKabupatenList(cityJson.data || []);
+
+      // Load kecamatan for this city
+      const kecRes = await fetch(`/api/shipping/districts?cityId=${loc.city_id}`);
+      const kecJson = await kecRes.json();
+      setKecamatanList(kecJson.data || []);
+
       // Auto-fetch ongkir
       const courierStr = enabledCouriers.length > 0 ? enabledCouriers.join(":") : undefined;
       const res = await fetch("/api/shipping/cost", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ origin: originId, destination: distJson.district_id, weight: berat, courier: courierStr }),
+        body: JSON.stringify({ origin: originId, destination: loc.district_id, weight: berat, courier: courierStr }),
       });
       const json = await res.json();
       const opts: ShipOpt[] = [];
@@ -303,7 +320,7 @@ function CheckoutContent() {
       opts.sort((a, b) => a.cost - b.cost);
       setShipOptions(opts);
     } catch (e) {
-      console.error("Gagal hitung ongkir:", e);
+      console.error("Gagal resolve alamat:", e);
     } finally {
       setLoadingCost(false);
     }
