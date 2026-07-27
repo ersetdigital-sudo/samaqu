@@ -42,17 +42,26 @@ export async function POST(req: Request) {
 
     const json = await res.json();
 
+    // Log raw response structure for debugging
+    console.log("[SHIPPING-COST] Raw response keys:", Object.keys(json));
+    console.log("[SHIPPING-COST] Raw data type:", typeof json.data, Array.isArray(json.data) ? `array[${json.data.length}]` : "");
+    if (json.data?.[0]) console.log("[SHIPPING-COST] First item keys:", Object.keys(json.data[0]));
+    console.log("[SHIPPING-COST] Raw response preview:", JSON.stringify(json).slice(0, 1000));
+
     // Log parsed results summary
     if (json.data && Array.isArray(json.data)) {
       console.log("[SHIPPING-COST] Couriers returned:", json.data.length);
       for (const item of json.data) {
-        const services = item.costs?.map((s: { service: string; cost: Array<{ value: number }> }) =>
+        // Try nested format first
+        const nestedServices = item.costs?.map((s: { service: string; cost: Array<{ value: number }> }) =>
           `${s.service}: Rp${s.cost?.[0]?.value?.toLocaleString("id-ID") || 0}`
         ) || [];
-        console.log(`[SHIPPING-COST]   ${item.name || item.code}: [${services.join(", ")}]`);
+        // Also show flat format
+        const flatCost = typeof item.cost === "number" ? `cost=${item.cost}` : "";
+        console.log(`[SHIPPING-COST]   ${item.name || item.code}: nested=[${nestedServices.join(", ")}] flat=[${flatCost}]`);
       }
     } else {
-      console.log("[SHIPPING-COST] No data in response:", JSON.stringify(json).slice(0, 300));
+      console.log("[SHIPPING-COST] No data array in response:", JSON.stringify(json).slice(0, 500));
     }
 
     return NextResponse.json(json);

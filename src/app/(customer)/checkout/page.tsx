@@ -112,6 +112,10 @@ async function fetchShippingCost(originId: number, destinationId: number, weight
 
   console.log("[CHECKOUT] 💰 shipping/cost status:", res.status);
   const json = await res.json();
+  console.log("[CHECKOUT] 💰 Raw response keys:", Object.keys(json));
+  console.log("[CHECKOUT] 💰 Raw data type:", typeof json.data, Array.isArray(json.data) ? `array[${json.data.length}]` : "");
+  if (json.data?.[0]) console.log("[CHECKOUT] 💰 First item keys:", Object.keys(json.data[0]));
+  if (json.data?.[0]) console.log("[CHECKOUT] 💰 First item sample:", JSON.stringify(json.data[0]).slice(0, 500));
 
   if (json.error) {
     console.error("[CHECKOUT] ❌ shipping/cost error:", json.error);
@@ -121,6 +125,7 @@ async function fetchShippingCost(originId: number, destinationId: number, weight
   const opts: ShipOpt[] = [];
   if (json.data && Array.isArray(json.data)) {
     for (const item of json.data) {
+      // Format A: nested — item.costs[].cost[].{value, etd}
       if (item.costs && Array.isArray(item.costs)) {
         for (const svc of item.costs) {
           const costEntry = svc.cost?.[0];
@@ -134,6 +139,16 @@ async function fetchShippingCost(originId: number, destinationId: number, weight
             });
           }
         }
+      }
+      // Format B: flat — item.{service, cost, etd} directly on each data item
+      else if (typeof item.cost === "number" || typeof item.value === "number") {
+        opts.push({
+          courier: item.name || item.code || item.courier || "",
+          service: item.service || "",
+          description: item.description || "",
+          cost: item.cost || item.value || 0,
+          etd: item.etd || item.estimated_delivery || "",
+        });
       }
     }
   }

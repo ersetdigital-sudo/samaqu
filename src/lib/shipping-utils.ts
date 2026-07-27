@@ -39,11 +39,17 @@ export async function calculateShippingCost(params: {
   console.log("[SHIPPING-UTILS] RajaOngkir status:", res.status);
 
   const json = await res.json();
+  console.log("[SHIPPING-UTILS] Raw response keys:", Object.keys(json));
+  console.log("[SHIPPING-UTILS] Raw data type:", typeof json.data, Array.isArray(json.data) ? `array[${json.data.length}]` : "");
+  if (json.data?.[0]) console.log("[SHIPPING-UTILS] First item keys:", Object.keys(json.data[0]));
+  if (json.data?.[0]) console.log("[SHIPPING-UTILS] First item sample:", JSON.stringify(json.data[0]).slice(0, 500));
+
   const results: ShippingCostResult[] = [];
 
   if (json.data && Array.isArray(json.data)) {
     for (const item of json.data) {
       const courierName = item.name || item.code || "";
+      // Format A: nested — item.costs[].cost[].{value, etd}
       if (item.costs && Array.isArray(item.costs)) {
         for (const svc of item.costs) {
           const costEntry = svc.cost?.[0];
@@ -56,6 +62,15 @@ export async function calculateShippingCost(params: {
             });
           }
         }
+      }
+      // Format B: flat — item.{service, cost, etd} directly
+      else if (typeof item.cost === "number" || typeof item.value === "number") {
+        results.push({
+          cost: item.cost || item.value || 0,
+          courier: courierName,
+          service: item.service || "",
+          etd: item.etd || "",
+        });
       }
     }
   }
