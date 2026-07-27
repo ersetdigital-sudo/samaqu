@@ -98,26 +98,35 @@ export default function Footer() {
             <p className="text-[11px] tracking-[0.22em] uppercase font-ui font-semibold mb-3 sm:mb-4" style={{ color: "var(--gold)" }}>
               Terhubung
             </p>
-            <nav aria-label="Terhubung footer" className="flex flex-col gap-2 sm:gap-2.5">
+            <div className="flex items-center gap-3">
               <a
                 href="https://instagram.com/samaqu.id"
                 target="_blank"
                 rel="noopener"
-                className="text-[12px] sm:text-[13px] tracking-[0.12em] uppercase font-ui transition-colors duration-300 hover:text-gold"
+                aria-label="Instagram @samaqu.id"
+                className="flex items-center justify-center w-10 h-10 rounded-full transition-colors duration-300 hover:text-gold"
                 style={{ color: "rgba(248,246,242,.7)" }}
               >
-                Instagram
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="2" width="20" height="20" rx="5" />
+                  <circle cx="12" cy="12" r="5" />
+                  <circle cx="17.5" cy="6.5" r="1.5" fill="currentColor" stroke="none" />
+                </svg>
               </a>
               <a
                 href={getWhatsAppLink("Halo Admin SAMAQU, saya tertarik dengan koleksi Anda dan ingin bertanya soal pemesanan.")}
                 target="_blank"
                 rel="noopener"
-                className="text-[12px] sm:text-[13px] tracking-[0.12em] uppercase font-ui transition-colors duration-300 hover:text-gold"
+                aria-label="WhatsApp Admin SAMAQU"
+                className="flex items-center justify-center w-10 h-10 rounded-full transition-colors duration-300 hover:text-gold"
                 style={{ color: "rgba(248,246,242,.7)" }}
               >
-                WhatsApp
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21" />
+                  <path d="M9 10a.5.5 0 0 0 1 0V9a.5.5 0 0 0-1 0v1zm0 0a5 5 0 0 0 5 5m0 0a.5.5 0 0 0 0-1h-1a.5.5 0 0 0 0 1h1z" />
+                </svg>
               </a>
-            </nav>
+            </div>
           </div>
         </div>
 
