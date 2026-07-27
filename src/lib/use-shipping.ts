@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState } from "react";
 
 interface IdName {
   id: number;
@@ -25,108 +25,113 @@ export function useShipping() {
   const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>([]);
   const [originDistrictId, setOriginDistrictId] = useState<number | null>(null);
 
-  const fetchProvinces = useCallback(async () => {
+  async function fetchProvinces() {
     if (provinces.length > 0) return provinces;
     setLoadingProvinces(true);
     try {
       const res = await fetch("/api/shipping/provinces");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
       const list: IdName[] = json.data || [];
       setProvinces(list);
       return list;
+    } catch (e) {
+      console.error("Gagal fetch provinsi:", e);
+      return [] as IdName[];
     } finally {
       setLoadingProvinces(false);
     }
-  }, [provinces.length]);
+  }
 
-  const fetchCities = useCallback(async (provinceId: number) => {
+  async function fetchCities(provinceId: number) {
     setLoadingCities(true);
     setCities([]);
     try {
       const res = await fetch(`/api/shipping/districts?provinceId=${provinceId}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
       const list: IdName[] = json.data || [];
       setCities(list);
       return list;
+    } catch (e) {
+      console.error("Gagal fetch kota:", e);
+      return [] as IdName[];
     } finally {
       setLoadingCities(false);
     }
-  }, []);
+  }
 
-  const fetchCost = useCallback(
-    async (destinationDistrictId: number, weightGrams: number) => {
-      if (!originDistrictId) return;
-      setLoadingCost(true);
-      setShippingOptions([]);
-      try {
-        const res = await fetch("/api/shipping/cost", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            origin: originDistrictId,
-            destination: destinationDistrictId,
-            weight: weightGrams,
-          }),
-        });
-        const json = await res.json();
+  async function fetchCost(destinationDistrictId: number, weightGrams: number) {
+    if (!originDistrictId) return [];
+    setLoadingCost(true);
+    setShippingOptions([]);
+    try {
+      const res = await fetch("/api/shipping/cost", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          origin: originDistrictId,
+          destination: destinationDistrictId,
+          weight: weightGrams,
+        }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
 
-        // RajaOngkir returns data as array of courier results
-        // Each has costs[] array with service, cost, etd
-        const options: ShippingOption[] = [];
-        if (json.data && Array.isArray(json.data)) {
-          for (const courierResult of json.data) {
-            const courierName = courierResult.name || courierResult.code || "";
-            if (courierResult.costs && Array.isArray(courierResult.costs)) {
-              for (const svc of courierResult.costs) {
-                const costEntry = svc.cost?.[0];
-                if (costEntry) {
-                  options.push({
-                    courier: courierName,
-                    service: svc.service || "",
-                    description: svc.description || "",
-                    cost: costEntry.value || 0,
-                    etd: costEntry.etd || "",
-                  });
-                }
+      const options: ShippingOption[] = [];
+      if (json.data && Array.isArray(json.data)) {
+        for (const courierResult of json.data) {
+          const courierName = courierResult.name || courierResult.code || "";
+          if (courierResult.costs && Array.isArray(courierResult.costs)) {
+            for (const svc of courierResult.costs) {
+              const costEntry = svc.cost?.[0];
+              if (costEntry) {
+                options.push({
+                  courier: courierName,
+                  service: svc.service || "",
+                  description: svc.description || "",
+                  cost: costEntry.value || 0,
+                  etd: costEntry.etd || "",
+                });
               }
             }
           }
         }
-
-        // Sort by price ascending
-        options.sort((a, b) => a.cost - b.cost);
-        setShippingOptions(options);
-        return options;
-      } finally {
-        setLoadingCost(false);
       }
-    },
-    [originDistrictId]
-  );
 
-  // Resolve origin district on first use (Depok)
-  const resolveOrigin = useCallback(async () => {
+      options.sort((a, b) => a.cost - b.cost);
+      setShippingOptions(options);
+      return options;
+    } catch (e) {
+      console.error("Gagal hitung ongkir:", e);
+      return [] as ShippingOption[];
+    } finally {
+      setLoadingCost(false);
+    }
+  }
+
+  async function resolveOrigin() {
     if (originDistrictId) return originDistrictId;
-    // Fetch Jawa Barat province (id varies, search by name)
-    const provRes = await fetch("/api/shipping/provinces");
-    const provJson = await provRes.json();
-    const jabar = (provJson.data || []).find((p: IdName) =>
-      p.name.toUpperCase().includes("JAWA BARAT")
-    );
-    if (!jabar) return null;
+    try {
+      const provList = await fetchProvinces();
+      const jabar = provList.find((p) =>
+        p.name.toUpperCase().includes("JAWA BARAT")
+      );
+      if (!jabar) return null;
 
-    // Fetch cities/districts in Jawa Barat, find Depok
-    const cityRes = await fetch(`/api/shipping/districts?provinceId=${jabar.id}`);
-    const cityJson = await cityRes.json();
-    const depok = (cityJson.data || []).find((c: IdName) =>
-      c.name.toUpperCase().includes("DEPOK")
-    );
-    if (depok) {
-      setOriginDistrictId(depok.id);
-      return depok.id;
+      const cityList = await fetchCities(jabar.id);
+      const depok = cityList.find((c) =>
+        c.name.toUpperCase().includes("DEPOK")
+      );
+      if (depok) {
+        setOriginDistrictId(depok.id);
+        return depok.id;
+      }
+    } catch (e) {
+      console.error("Gagal resolve origin:", e);
     }
     return null;
-  }, [originDistrictId]);
+  }
 
   return {
     provinces,
