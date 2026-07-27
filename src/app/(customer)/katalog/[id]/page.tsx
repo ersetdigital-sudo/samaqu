@@ -153,18 +153,80 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   }, [id, selectedColor, selectedSize]);
 
   const currentPrice = variantPrice ?? product?.price ?? 0;
+  const isCYP = product?.create_your_price_enabled ?? false;
+  const minimumPrice = product?.minimum_price ?? currentPrice;
+
+  // Create Your Price state
+  const [selectedPrice, setSelectedPrice] = useState<number>(0);
+  const [customPriceInput, setCustomPriceInput] = useState("");
+  const [isCustomPrice, setIsCustomPrice] = useState(false);
+  const [customPriceError, setCustomPriceError] = useState("");
+
+  // Initialize selectedPrice when product loads
+  useEffect(() => {
+    if (product && isCYP && minimumPrice > 0) {
+      setSelectedPrice(minimumPrice);
+    }
+  }, [product, isCYP, minimumPrice]);
+
+  // Price to use for cart/checkout
+  const effectivePrice = isCYP ? selectedPrice : currentPrice;
+
+  // Quick select options
+  const quickPrices = isCYP && minimumPrice > 0 ? [
+    { label: "Harga Minimum", value: minimumPrice },
+    { label: `+10% (${(minimumPrice * 1.1).toLocaleString("id-ID")})`, value: Math.round(minimumPrice * 1.1 / 1000) * 1000 },
+    { label: `+20% (${(minimumPrice * 1.2).toLocaleString("id-ID")})`, value: Math.round(minimumPrice * 1.2 / 1000) * 1000 },
+  ] : [];
+
+  function handleQuickPrice(value: number) {
+    setIsCustomPrice(false);
+    setSelectedPrice(value);
+    setCustomPriceInput("");
+    setCustomPriceError("");
+  }
+
+  function handleCustomPriceToggle() {
+    setIsCustomPrice(true);
+    setSelectedPrice(minimumPrice);
+    setCustomPriceInput("");
+    setCustomPriceError("");
+  }
+
+  function handleCustomPriceChange(val: string) {
+    setCustomPriceInput(val);
+    const num = parseInt(val.replace(/[^0-9]/g, ""), 10);
+    if (isNaN(num) || num === 0) {
+      setSelectedPrice(minimumPrice);
+      setCustomPriceError("");
+      return;
+    }
+    setSelectedPrice(num);
+    if (num < minimumPrice) {
+      setCustomPriceError(`Harga minimum untuk produk ini adalah Rp ${minimumPrice.toLocaleString("id-ID")}. Silakan pilih harga tersebut atau lebih.`);
+    } else {
+      setCustomPriceError("");
+    }
+  }
+
+  const isPriceValid = !isCYP || selectedPrice >= minimumPrice;
 
   function handleAddToCart() {
     if (!product) return;
+    if (isCYP && !isPriceValid) return;
     addItem({
       id: product.id,
       name: product.name,
       image: product.image,
-      price: currentPrice,
+      price: isCYP ? minimumPrice : currentPrice,
       color: selectedColor || product.colors[0] || "-",
       size: selectedSize,
       qty,
       notes: notes || undefined,
+      // CYP fields
+      customer_price: isCYP ? selectedPrice : undefined,
+      minimum_price: isCYP ? minimumPrice : undefined,
+      create_your_price_enabled: isCYP || undefined,
     });
     toast.show("Ditambahkan ke keranjang");
   }
@@ -173,7 +235,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     if (!product) return;
     if (!selectedSize) { toast.show("Pilih ukuran terlebih dahulu"); return; }
     const color = selectedColor || product.colors[0] || "-";
-    let msg = `Halo, saya mau pesan produk:\n${product.name} - ${color} - Ukuran ${selectedSize}\nHarga: Rp ${currentPrice.toLocaleString("id-ID")}\nJumlah: ${qty}`;
+    let msg = `Halo, saya mau pesan produk:\n${product.name} - ${color} - Ukuran ${selectedSize}\nHarga: Rp ${effectivePrice.toLocaleString("id-ID")}\nJumlah: ${qty}`;
     if (notes) msg += `\nCatatan: ${notes}`;
     window.open(getWhatsAppLink(msg), "_blank");
   }
@@ -278,9 +340,48 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
             {product.name}
           </h1>
-          <p className="text-[1.3rem] font-ui font-semibold mb-4" style={{ color: "var(--gold)" }}>
-            Rp {currentPrice.toLocaleString("id-ID")}
-          </p>
+          {/* Price display — CYP or Fixed */}
+          {isCYP ? (
+            <div className="mb-4">
+              <p className="text-[10px] tracking-[0.1em] uppercase font-ui mb-1" style={{ color: "var(--stone)" }}>Harga Minimum</p>
+              <p className="text-[1.3rem] font-ui font-semibold mb-1" style={{ color: "var(--gold)" }}>
+                Rp {minimumPrice.toLocaleString("id-ID")}
+              </p>
+              <p className="text-[11px] font-ui mb-3" style={{ color: "var(--stone)" }}>Pilih harga terbaikmu</p>
+              {/* Quick select buttons */}
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {quickPrices.map((qp) => (
+                  <button key={qp.value} onClick={() => handleQuickPrice(qp.value)}
+                    className="px-3 py-1.5 text-[11px] font-ui rounded-sm transition-all"
+                    style={{ background: !isCustomPrice && selectedPrice === qp.value ? "var(--espresso)" : "transparent", color: !isCustomPrice && selectedPrice === qp.value ? "var(--cream)" : "var(--coffee)", border: `1px solid ${!isCustomPrice && selectedPrice === qp.value ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
+                    {qp.label}
+                  </button>
+                ))}
+                <button onClick={handleCustomPriceToggle}
+                  className="px-3 py-1.5 text-[11px] font-ui rounded-sm transition-all"
+                  style={{ background: isCustomPrice ? "var(--espresso)" : "transparent", color: isCustomPrice ? "var(--cream)" : "var(--coffee)", border: `1px solid ${isCustomPrice ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
+                  Harga Lainnya
+                </button>
+              </div>
+              {/* Custom price input */}
+              {isCustomPrice && (
+                <div className="mt-2">
+                  <input type="text" value={customPriceInput} onChange={(e) => handleCustomPriceChange(e.target.value)}
+                    placeholder={`Min. Rp ${minimumPrice.toLocaleString("id-ID")}`}
+                    className="w-full px-3 py-2.5 text-[13px] font-ui rounded-sm outline-none"
+                    style={{ background: "transparent", border: `1px solid ${customPriceError ? "#e74c3c" : "rgba(201,183,156,.3)"}`, color: "var(--espresso)" }} />
+                  {customPriceError && <p className="text-[11px] font-ui mt-1" style={{ color: "#e74c3c" }}>{customPriceError}</p>}
+                </div>
+              )}
+              <p className="text-[10px] font-ui mt-2" style={{ color: "var(--stone)" }}>
+                Harga Minimum boleh dipilih. Itulah alasan kami membuat Create Your Price.
+              </p>
+            </div>
+          ) : (
+            <p className="text-[1.3rem] font-ui font-semibold mb-4" style={{ color: "var(--gold)" }}>
+              Rp {currentPrice.toLocaleString("id-ID")}
+            </p>
+          )}
           {stock !== null && (
             <div className="mb-4">
               {stock === 0 ? (
@@ -371,7 +472,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               <p className="text-[10px] font-ui tracking-wide uppercase" style={{ color: "var(--stone)" }}>Total</p>
               <p className="text-[1.4rem] font-ui font-semibold leading-tight"
                 style={{ color: "var(--gold)" }}>
-                Rp {(currentPrice * qty).toLocaleString("id-ID")}
+                Rp {(effectivePrice * qty).toLocaleString("id-ID")}
               </p>
             </div>
             <p className="text-[10px] font-ui" style={{ color: "var(--stone)" }}>
@@ -381,8 +482,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           </div>
           {/* Action buttons */}
           <div className="flex gap-2">
-            <button onClick={handleAddToCart}
-              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[11px] tracking-[0.06em] uppercase font-ui font-semibold transition-all duration-300 active:scale-[0.98]"
+            <button onClick={handleAddToCart} disabled={isCYP && !isPriceValid}
+              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[11px] tracking-[0.06em] uppercase font-ui font-semibold transition-all duration-300 active:scale-[0.98] disabled:opacity-40"
               style={{ background: "transparent", color: "var(--gold)", border: "1.5px solid var(--gold)" }}>
               <ShoppingCart size={15} strokeWidth={1.5} />
               <span>Keranjang</span>
@@ -476,9 +577,48 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
               {product.name}
             </h1>
-            <p className="text-[20px] sm:text-[22px] font-ui font-semibold mb-4" style={{ color: "var(--gold)" }}>
-              Rp {currentPrice.toLocaleString("id-ID")}
-            </p>
+            {/* Price display — CYP or Fixed */}
+            {isCYP ? (
+              <div className="mb-5">
+                <p className="text-[11px] tracking-[0.1em] uppercase font-ui mb-1" style={{ color: "var(--stone)" }}>Harga Minimum</p>
+                <p className="text-[20px] sm:text-[22px] font-ui font-semibold mb-1" style={{ color: "var(--gold)" }}>
+                  Rp {minimumPrice.toLocaleString("id-ID")}
+                </p>
+                <p className="text-[12px] font-ui mb-3" style={{ color: "var(--stone)" }}>Pilih harga terbaikmu</p>
+                {/* Quick select buttons */}
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {quickPrices.map((qp) => (
+                    <button key={qp.value} onClick={() => handleQuickPrice(qp.value)}
+                      className="px-4 py-2 text-[12px] font-ui rounded-sm transition-all"
+                      style={{ background: !isCustomPrice && selectedPrice === qp.value ? "var(--espresso)" : "transparent", color: !isCustomPrice && selectedPrice === qp.value ? "var(--cream)" : "var(--coffee)", border: `1px solid ${!isCustomPrice && selectedPrice === qp.value ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
+                      {qp.label}
+                    </button>
+                  ))}
+                  <button onClick={handleCustomPriceToggle}
+                    className="px-4 py-2 text-[12px] font-ui rounded-sm transition-all"
+                    style={{ background: isCustomPrice ? "var(--espresso)" : "transparent", color: isCustomPrice ? "var(--cream)" : "var(--coffee)", border: `1px solid ${isCustomPrice ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
+                    Harga Lainnya
+                  </button>
+                </div>
+                {/* Custom price input */}
+                {isCustomPrice && (
+                  <div className="mt-2">
+                    <input type="text" value={customPriceInput} onChange={(e) => handleCustomPriceChange(e.target.value)}
+                      placeholder={`Min. Rp ${minimumPrice.toLocaleString("id-ID")}`}
+                      className="w-full px-3 py-2.5 text-[14px] font-ui rounded-sm outline-none"
+                      style={{ background: "transparent", border: `1px solid ${customPriceError ? "#e74c3c" : "rgba(201,183,156,.3)"}`, color: "var(--espresso)" }} />
+                    {customPriceError && <p className="text-[11px] font-ui mt-1" style={{ color: "#e74c3c" }}>{customPriceError}</p>}
+                  </div>
+                )}
+                <p className="text-[11px] font-ui mt-2" style={{ color: "var(--stone)" }}>
+                  Harga Minimum boleh dipilih. Itulah alasan kami membuat Create Your Price.
+                </p>
+              </div>
+            ) : (
+              <p className="text-[20px] sm:text-[22px] font-ui font-semibold mb-4" style={{ color: "var(--gold)" }}>
+                Rp {currentPrice.toLocaleString("id-ID")}
+              </p>
+            )}
             {stock !== null && (
               <div className="mb-5">
                 {stock === 0 ? (
@@ -544,8 +684,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             </div>
 
             <div className="flex gap-3">
-              <button onClick={handleAddToCart}
-                className="flex-1 flex items-center justify-center gap-2.5 py-4 rounded-sm text-[12px] tracking-[0.08em] uppercase font-ui font-semibold transition-all duration-300 hover:scale-[1.01]"
+              <button onClick={handleAddToCart} disabled={isCYP && !isPriceValid}
+                className="flex-1 flex items-center justify-center gap-2.5 py-4 rounded-sm text-[12px] tracking-[0.08em] uppercase font-ui font-semibold transition-all duration-300 hover:scale-[1.01] disabled:opacity-40"
                 style={{ background: "transparent", color: "var(--gold)", border: "1.5px solid var(--gold)" }}>
                 <ShoppingCart size={16} strokeWidth={1.5} />
                 <span>Keranjang</span>
