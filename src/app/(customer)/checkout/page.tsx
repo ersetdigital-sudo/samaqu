@@ -265,6 +265,64 @@ function CheckoutContent() {
     }
   }
 
+  // Resolve kecamatan from saved address postal code and auto-fetch ongkir
+  async function resolveSavedAddress(addr: { city: string; postal_code: string }) {
+    if (!addr.postal_code || !originId) return;
+    setLoadingCost(true);
+    setShipOptions([]);
+    setSelectedShipping(null);
+    try {
+      // Search through provinces to find matching kecamatan by postal code
+      for (const prov of provinces) {
+        const cityRes = await fetch(`/api/shipping/districts?provinceId=${prov.id}`);
+        const cityJson = await cityRes.json();
+        const cities: IdName[] = cityJson.data || [];
+        for (const city of cities) {
+          const distRes = await fetch(`/api/shipping/districts?cityId=${city.id}`);
+          const distJson = await distRes.json();
+          const dists: IdName[] = distJson.data || [];
+          const match = dists.find((d) => String(d.zip_code || "").replace(/^0+$/, "") === addr.postal_code.replace(/^0+$/, ""));
+          if (match) {
+            setKecamatanId(match.id);
+            setKecamatanName(match.name);
+            setKotaId(city.id);
+            setKota(city.name);
+            setProvinsiId(prov.id);
+            // Load kecamatan list for this city
+            setKecamatanList(dists);
+            // Auto-fetch ongkir
+            const courierStr = enabledCouriers.length > 0 ? enabledCouriers.join(":") : undefined;
+            const costRes = await fetch("/api/shipping/cost", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ origin: originId, destination: match.id, weight: berat, courier: courierStr }),
+            });
+            const costJson = await costRes.json();
+            const opts: ShipOpt[] = [];
+            if (costJson.data && Array.isArray(costJson.data)) {
+              for (const item of costJson.data) {
+                opts.push({
+                  courier: item.name || item.code || "",
+                  service: item.service || "",
+                  description: item.description || "",
+                  cost: typeof item.cost === "number" ? item.cost : 0,
+                  etd: item.etd || "",
+                });
+              }
+            }
+            opts.sort((a, b) => a.cost - b.cost);
+            setShipOptions(opts);
+            return;
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Gagal resolve alamat:", e);
+    } finally {
+      setLoadingCost(false);
+    }
+  }
+
   async function handleSubmit() {
     const e: Record<string, string> = {};
     if (!nama.trim()) e.nama = "Nama lengkap wajib diisi";
@@ -428,6 +486,7 @@ function CheckoutContent() {
                       setAlamat(addr.address);
                       setKota(addr.city);
                       setKodepos(addr.postal_code);
+                      resolveSavedAddress(addr);
                     }}>
                     <span className="relative w-4 h-4 rounded-full border-2 flex-shrink-0 mt-0.5" style={{ borderColor: selectedAddressId === addr.id ? "var(--gold)" : "var(--text-muted)" }}>
                       {selectedAddressId === addr.id && <span className="absolute inset-[3px] rounded-full" style={{ background: "var(--gold)" }} />}
