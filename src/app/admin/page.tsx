@@ -696,6 +696,12 @@ function AdminPageInner() {
                   {/* Store Info */}
                   <StoreInfoSection />
 
+                  {/* Shipping Origin */}
+                  <ShippingOriginSection />
+
+                  {/* Courier Selection */}
+                  <CourierSettingsSection />
+
                   {/* Payment Methods */}
                   <PaymentMethodsSection />
                   <QrisEwalletSection />
@@ -853,6 +859,202 @@ function AdminPageInner() {
         .scrollbar-thin::-webkit-scrollbar-thumb { background: rgba(64,50,37,.2); border-radius: 999px; }
         .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
       `}</style>
+    </div>
+  );
+}
+
+const AVAILABLE_COURIERS = [
+  { code: "jne", name: "JNE" },
+  { code: "sicepat", name: "SiCepat" },
+  { code: "jnt", name: "J&T Express" },
+  { code: "ninja", name: "Ninja" },
+  { code: "tiki", name: "TIKI" },
+  { code: "wahana", name: "Wahana" },
+  { code: "pos", name: "POS Indonesia" },
+  { code: "lion", name: "Lion Parcel" },
+  { code: "anteraja", name: "AnterAja" },
+];
+
+function ShippingOriginSection() {
+  const [form, setForm] = useState({ origin_district_id: "" });
+  const [provinces, setProvinces] = useState<{ id: number; name: string }[]>([]);
+  const [cities, setCities] = useState<{ id: number; name: string }[]>([]);
+  const [districts, setDistricts] = useState<{ id: number; name: string }[]>([]);
+  const [selProv, setSelProv] = useState("");
+  const [selCity, setSelCity] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const toast = useToast();
+
+  useEffect(() => {
+    async function init() {
+      // Load provinces
+      const provRes = await fetch("/api/shipping/provinces");
+      const provJson = await provRes.json();
+      setProvinces(provJson.data || []);
+
+      // Load saved origin
+      const { data } = await supabase.from("store_settings").select("origin_district_id").eq("id", 1).single();
+      if (data?.origin_district_id) {
+        setForm({ origin_district_id: String(data.origin_district_id) });
+        // Resolve province and city from district ID
+        await resolveLocation(data.origin_district_id);
+      }
+      setLoading(false);
+    }
+    init();
+  }, []);
+
+  async function resolveLocation(districtId: number) {
+    // Find which province/city this district belongs to
+    for (const prov of provinces.length ? provinces : (await (await fetch("/api/shipping/provinces")).json()).data || []) {
+      const cityRes = await fetch(`/api/shipping/districts?provinceId=${prov.id}`);
+      const cityJson = await cityRes.json();
+      const citiesList = cityJson.data || [];
+      for (const city of citiesList) {
+        const distRes = await fetch(`/api/shipping/districts?cityId=${city.id}`);
+        const distJson = await distRes.json();
+        const found = (distJson.data || []).find((d: { id: number }) => d.id === districtId);
+        if (found) {
+          setSelProv(String(prov.id));
+          setCities(citiesList);
+          setSelCity(String(city.id));
+          const dRes = await fetch(`/api/shipping/districts?cityId=${city.id}`);
+          const dJson = await dRes.json();
+          setDistricts(dJson.data || []);
+          return;
+        }
+      }
+    }
+  }
+
+  async function handleProvChange(provId: string) {
+    setSelProv(provId);
+    setSelCity("");
+    setForm({ origin_district_id: "" });
+    setDistricts([]);
+    if (!provId) { setCities([]); return; }
+    const res = await fetch(`/api/shipping/districts?provinceId=${provId}`);
+    const json = await res.json();
+    setCities(json.data || []);
+  }
+
+  async function handleCityChange(cityId: string) {
+    setSelCity(cityId);
+    setForm({ origin_district_id: "" });
+    if (!cityId) { setDistricts([]); return; }
+    const res = await fetch(`/api/shipping/districts?cityId=${cityId}`);
+    const json = await res.json();
+    setDistricts(json.data || []);
+  }
+
+  async function handleSave() {
+    setSaving(true);
+    await supabase.from("store_settings").upsert({ id: 1, origin_district_id: form.origin_district_id ? Number(form.origin_district_id) : null, updated_at: new Date().toISOString() });
+    setSaving(false);
+    toast.showToast("success", "Alamat pengiriman toko disimpan");
+  }
+
+  if (loading) return <div className="card p-6 max-w-2xl"><Loader2 size={20} className="animate-spin" style={{ color: "var(--gold)" }} /></div>;
+
+  return (
+    <div className="card p-6 max-w-2xl space-y-4">
+      <h3 className="text-lg font-semibold" style={{ color: "var(--espresso)" }}>Alamat Pengiriman Toko (Origin)</h3>
+      <p className="text-xs" style={{ color: "var(--text-muted)" }}>Lokasi toko Anda, digunakan sebagai asal pengiriman saat hitung ongkir.</p>
+      <div className="grid sm:grid-cols-3 gap-3">
+        <div>
+          <label className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Provinsi</label>
+          <select value={selProv} onChange={(e) => handleProvChange(e.target.value)} className="mt-1 w-full rounded-xl px-3 py-2.5 bg-white text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.1)" }}>
+            <option value="">Pilih</option>
+            {provinces.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Kota / Kabupaten</label>
+          <select value={selCity} onChange={(e) => handleCityChange(e.target.value)} disabled={!selProv} className="mt-1 w-full rounded-xl px-3 py-2.5 bg-white text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.1)", opacity: !selProv ? 0.5 : 1 }}>
+            <option value="">Pilih</option>
+            {cities.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Kecamatan</label>
+          <select value={form.origin_district_id} onChange={(e) => setForm({ origin_district_id: e.target.value })} disabled={!selCity} className="mt-1 w-full rounded-xl px-3 py-2.5 bg-white text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.1)", opacity: !selCity ? 0.5 : 1 }}>
+            <option value="">Pilih</option>
+            {districts.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+          </select>
+        </div>
+      </div>
+      <div className="flex gap-3 pt-2">
+        {form.origin_district_id && (
+          <button onClick={handleSave} disabled={saving} className="text-sm font-semibold px-5 py-2.5 rounded-xl text-white" style={{ background: "linear-gradient(135deg, var(--gold), #96742f)" }}>
+            {saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null} Simpan
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CourierSettingsSection() {
+  const [enabled, setEnabled] = useState<string[]>([]);
+  const [original, setOriginal] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const toast = useToast();
+
+  useEffect(() => {
+    supabase.from("store_settings").select("enabled_couriers").eq("id", 1).single().then(({ data }) => {
+      if (data?.enabled_couriers) {
+        try {
+          const list = JSON.parse(data.enabled_couriers);
+          setEnabled(list);
+          setOriginal(list);
+        } catch {
+          setEnabled(["jne", "sicepat", "jnt", "ninja", "tiki", "wahana", "pos", "lion", "anteraja"]);
+        }
+      }
+      setLoading(false);
+    });
+  }, []);
+
+  function toggle(code: string) {
+    setEnabled((prev) => prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]);
+  }
+
+  const dirty = JSON.stringify(enabled) !== JSON.stringify(original);
+
+  async function handleSave() {
+    setSaving(true);
+    await supabase.from("store_settings").upsert({ id: 1, enabled_couriers: JSON.stringify(enabled), updated_at: new Date().toISOString() });
+    setOriginal([...enabled]);
+    setSaving(false);
+    toast.showToast("success", "Pilihan ekspedisi disimpan");
+  }
+
+  if (loading) return <div className="card p-6 max-w-2xl"><Loader2 size={20} className="animate-spin" style={{ color: "var(--gold)" }} /></div>;
+
+  return (
+    <div className="card p-6 max-w-2xl space-y-4">
+      <h3 className="text-lg font-semibold" style={{ color: "var(--espresso)" }}>Ekspedisi Aktif</h3>
+      <p className="text-xs" style={{ color: "var(--text-muted)" }}>Pilih ekspedisi yang ingin ditampilkan di halaman checkout.</p>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+        {AVAILABLE_COURIERS.map((c) => (
+          <label key={c.code} className="flex items-center gap-2.5 rounded-xl px-4 py-3 cursor-pointer transition-all" style={{ border: `1.5px solid ${enabled.includes(c.code) ? "var(--gold)" : "rgba(64,50,37,.15)"}`, background: enabled.includes(c.code) ? "rgba(181,140,74,.04)" : "white" }}>
+            <input type="checkbox" checked={enabled.includes(c.code)} onChange={() => toggle(c.code)} className="sr-only" />
+            <span className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0" style={{ border: `2px solid ${enabled.includes(c.code) ? "var(--gold)" : "var(--text-muted)"}`, background: enabled.includes(c.code) ? "var(--gold)" : "transparent" }}>
+              {enabled.includes(c.code) && <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={3}><path d="M5 12l5 5L20 7" /></svg>}
+            </span>
+            <span className="text-sm font-medium" style={{ color: "var(--espresso)" }}>{c.name}</span>
+          </label>
+        ))}
+      </div>
+      <div className="flex gap-3 pt-2">
+        {dirty && (
+          <button onClick={handleSave} disabled={saving} className="text-sm font-semibold px-5 py-2.5 rounded-xl text-white" style={{ background: "linear-gradient(135deg, var(--gold), #96742f)" }}>
+            {saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null} Simpan Perubahan
+          </button>
+        )}
+      </div>
     </div>
   );
 }
