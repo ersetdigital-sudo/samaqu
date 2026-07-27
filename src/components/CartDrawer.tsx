@@ -164,8 +164,13 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
                                   <Plus size={11} />
                                 </button>
                               </div>
+                              {item.create_your_price_enabled && (
+                                <p className="text-[10px] font-ui" style={{ color: "var(--gold)" }}>
+                                  Harga pilihanmu
+                                </p>
+                              )}
                               <p className="text-[13px] font-ui font-semibold" style={{ color: "var(--gold)" }}>
-                                Rp {(item.price * item.qty).toLocaleString("id-ID")}
+                                Rp {((item.create_your_price_enabled && item.customer_price ? item.customer_price : item.price) * item.qty).toLocaleString("id-ID")}
                               </p>
                             </div>
                           </div>

@@ -9,7 +9,7 @@ import { colorMap } from "@/lib/katalog-data";
 
 export default function CartPage() {
   const router = useRouter();
-  const { items, removeItem, updateQty, subtotal } = useCart();
+  const { items, removeItem, updateQty, updatePrice, subtotal } = useCart();
   const [promoCode, setPromoCode] = useState("");
   const [promoApplied, setPromoApplied] = useState(false);
   const [promoError, setPromoError] = useState("");
@@ -119,9 +119,14 @@ export default function CartPage() {
                           {item.color !== "-" && <span className="text-[10px]" style={{ color: "var(--clay)" }}>|</span>}
                           <span className="text-[11px] font-ui" style={{ color: "var(--coffee)" }}>UK {item.size}</span>
                         </div>
-                        <p className="text-[11px] font-ui mt-0.5" style={{ color: "var(--stone)" }}>
-                          Rp {item.price.toLocaleString("id-ID")} / pcs
-                        </p>
+                        {/* CYP price or fixed price */}
+                        {item.create_your_price_enabled ? (
+                          <CartCYPPrice item={item} index={i} updatePrice={updatePrice} />
+                        ) : (
+                          <p className="text-[11px] font-ui mt-0.5" style={{ color: "var(--stone)" }}>
+                            Rp {item.price.toLocaleString("id-ID")} / pcs
+                          </p>
+                        )}
                         {/* Qty + subtotal */}
                         <div className="flex items-center justify-between mt-2">
                           <div className="inline-flex items-center gap-0 rounded-full"
@@ -141,7 +146,7 @@ export default function CartPage() {
                             </button>
                           </div>
                           <p className="text-[14px] font-ui font-semibold" style={{ color: "var(--gold)" }}>
-                            Rp {(item.price * item.qty).toLocaleString("id-ID")}
+                            Rp {((item.create_your_price_enabled && item.customer_price ? item.customer_price : item.price) * item.qty).toLocaleString("id-ID")}
                           </p>
                         </div>
                       </div>
@@ -226,6 +231,56 @@ export default function CartPage() {
         </div>
       )}
     </section>
+  );
+}
+
+function CartCYPPrice({ item, index, updatePrice }: { item: { price: number; customer_price?: number; minimum_price?: number }; index: number; updatePrice: (index: number, price: number) => void }) {
+  const currentPrice = item.customer_price || item.minimum_price || item.price;
+  const minPrice = item.minimum_price || item.price;
+  const [editing, setEditing] = useState(false);
+  const [inputVal, setInputVal] = useState("");
+  const [error, setError] = useState("");
+
+  function handleEdit() {
+    setEditing(true);
+    setInputVal(String(currentPrice));
+    setError("");
+  }
+
+  function handleSave() {
+    const num = parseInt(inputVal.replace(/[^0-9]/g, ""), 10);
+    if (isNaN(num) || num < minPrice) {
+      setError(`Min. Rp ${minPrice.toLocaleString("id-ID")}`);
+      return;
+    }
+    updatePrice(index, num);
+    setEditing(false);
+    setError("");
+  }
+
+  if (editing) {
+    return (
+      <div className="mt-0.5">
+        <div className="flex items-center gap-2">
+          <input type="text" value={inputVal} onChange={(e) => { setInputVal(e.target.value); setError(""); }}
+            className="flex-1 px-2 py-1 text-[12px] font-ui rounded outline-none"
+            style={{ background: "white", border: `1px solid ${error ? "#e74c3c" : "var(--gold)"}`, color: "var(--espresso)" }}
+            autoFocus onKeyDown={(e) => e.key === "Enter" && handleSave()} />
+          <button onClick={handleSave} className="text-[10px] font-ui font-semibold px-2 py-1 rounded" style={{ background: "var(--gold)", color: "white" }}>OK</button>
+          <button onClick={() => setEditing(false)} className="text-[10px] font-ui px-2 py-1 rounded" style={{ border: "1px solid rgba(201,183,156,.3)" }}>Batal</button>
+        </div>
+        {error && <p className="text-[10px] font-ui mt-0.5" style={{ color: "#e74c3c" }}>{error}</p>}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2 mt-0.5">
+      <p className="text-[11px] font-ui" style={{ color: "var(--gold)" }}>
+        Harga pilihanmu: Rp {currentPrice.toLocaleString("id-ID")}
+      </p>
+      <button onClick={handleEdit} className="text-[10px] font-ui underline" style={{ color: "var(--stone)" }}>Ubah</button>
+    </div>
   );
 }
 
