@@ -72,7 +72,7 @@ function CheckoutContent() {
   const [kotaId, setKotaId] = useState<number | null>(null);
   const [kecamatanId, setKecamatanId] = useState<number | null>(null);
   const [kecamatanName, setKecamatanName] = useState("");
-  const [berat, setBerat] = useState(500);
+  const [berat, setBerat] = useState(800);
   const [shipOptions, setShipOptions] = useState<ShipOpt[]>([]);
   const [loadingProvinces, setLoadingProvinces] = useState(false);
   const [loadingKab, setLoadingKab] = useState(false);
@@ -140,7 +140,7 @@ function CheckoutContent() {
   // Auto-calculate weight
   useEffect(() => {
     const totalQty = isCartMode ? items.reduce((sum, item) => sum + item.qty, 0) : qty;
-    setBerat(Math.max(300, totalQty * 400));
+    setBerat(Math.max(500, totalQty * 700));
   }, [isCartMode, items, qty]);
 
   if (!product && !isCartMode) {
@@ -538,7 +538,7 @@ function CheckoutContent() {
               <input
                 type="number"
                 value={berat}
-                onChange={(e) => setBerat(Number(e.target.value) || 300)}
+                onChange={(e) => setBerat(Number(e.target.value) || 500)}
                 min={100}
                 className="w-full rounded-lg px-4 py-3 text-sm font-ui"
                 style={selectStyle}
