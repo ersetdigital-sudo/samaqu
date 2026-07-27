@@ -101,7 +101,12 @@ async function resolveDestinationId(addr: SavedAddress): Promise<number | null> 
 // ── Shipping: fetch cost from RajaOngkir ──
 async function fetchShippingCost(originId: number, destinationId: number, weight: number, couriers: string[]): Promise<ShipOpt[]> {
   const courierStr = couriers.length > 0 ? couriers.join(":") : "jne:sicepat:jnt:ninja:tiki:wahana:pos:lion:anteraja";
-  console.log("[CHECKOUT] 💰 fetchShippingCost called:", { originId, destinationId, weight, couriers: courierStr });
+  console.log("[CHECKOUT] 💰 === RAJAONGKIR REQUEST ===");
+  console.log("[CHECKOUT] 💰 origin:", originId, "(toko)");
+  console.log("[CHECKOUT] 💰 destination:", destinationId, "(customer)");
+  console.log("[CHECKOUT] 💰 weight:", weight, "grams");
+  console.log("[CHECKOUT] 💰 couriers:", courierStr);
+  console.log("[CHECKOUT] 💰 URL: POST /api/shipping/cost → POST https://rajaongkir.komerce.id/api/v1/calculate/domestic-cost");
 
   const res = await fetch("/api/shipping/cost", {
     method: "POST",
@@ -213,13 +218,17 @@ function CheckoutContent() {
       try {
         const { data: settings, error } = await supabase
           .from("store_settings")
-          .select("origin_district_id, enabled_couriers")
+          .select("origin_district_id, origin_province_id, origin_city_id, enabled_couriers")
           .eq("id", 1)
           .single();
 
         if (error) console.error("[CHECKOUT] ❌ Store settings error:", error);
 
-        console.log("[CHECKOUT] ⚙️ Store settings raw:", settings);
+        console.log("[CHECKOUT] ⚙️ === STORE SETTINGS ===");
+        console.log("[CHECKOUT] ⚙️ origin_province_id:", settings?.origin_province_id);
+        console.log("[CHECKOUT] ⚙️ origin_city_id:", settings?.origin_city_id);
+        console.log("[CHECKOUT] ⚙️ origin_district_id:", settings?.origin_district_id);
+        console.log("[CHECKOUT] ⚙️ enabled_couriers:", settings?.enabled_couriers);
 
         if (settings?.origin_district_id) {
           setOriginId(settings.origin_district_id);
@@ -310,11 +319,13 @@ function CheckoutContent() {
 
   // ── Auto-trigger shipping calculation ──
   const calculateShipping = useCallback(async (addr: SavedAddress) => {
-    console.log("[CHECKOUT] 🚛 === SHIPPING CALCULATION START ===");
-    console.log("[CHECKOUT] 🚛 Address:", { id: addr.id, label: addr.label, kecamatan: addr.kecamatan, city: addr.city, province: addr.province, district_id: addr.district_id });
-    console.log("[CHECKOUT] 🚛 Origin ID:", originId);
-    console.log("[CHECKOUT] 🚛 Weight:", berat, "g");
-    console.log("[CHECKOUT] 🚛 Enabled couriers:", enabledCouriers);
+    console.log("[CHECKOUT] 🚛 ========================================");
+    console.log("[CHECKOUT] 🚛 === SHIPPING CALCULATION START ========");
+    console.log("[CHECKOUT] 🚛 ========================================");
+    console.log("[CHECKOUT] 🚛 ORIGIN (toko):", originId);
+    console.log("[CHECKOUT] 🚛 DESTINATION (customer):", { id: addr.id, label: addr.label, kecamatan: addr.kecamatan, city: addr.city, province: addr.province, district_id: addr.district_id });
+    console.log("[CHECKOUT] 🚛 WEIGHT:", berat, "grams");
+    console.log("[CHECKOUT] 🚛 COURIERS:", enabledCouriers);
 
     if (!originId) {
       console.error("[CHECKOUT] ❌ Origin toko belum diatur!");
