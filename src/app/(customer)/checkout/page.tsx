@@ -160,6 +160,15 @@ function CheckoutContent() {
     fetchAddresses();
   }, []);
 
+  // Auto-resolve ongkir for default saved address once originId is ready
+  useEffect(() => {
+    if (!originId || savedAddresses.length === 0 || !selectedAddressId) return;
+    const addr = savedAddresses.find((a) => a.id === selectedAddressId);
+    if (addr && addr.province && addr.kecamatan && shipOptions.length === 0 && !loadingCost) {
+      resolveSavedAddress(addr);
+    }
+  }, [originId, savedAddresses, selectedAddressId]);
+
   // Auto-calculate weight from product
   useEffect(() => {
     if (isCartMode) {
