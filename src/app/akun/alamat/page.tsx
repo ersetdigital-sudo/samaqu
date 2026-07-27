@@ -19,7 +19,6 @@ interface Address {
   city: string;
   postal_code: string;
   is_default: boolean;
-  district_id?: number;
 }
 
 const emptyForm = { label: "", recipient_name: "", phone: "", address: "", city: "", postal_code: "", is_default: false };
@@ -38,26 +37,6 @@ export default function AlamatPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<Address | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // RajaOngkir cascading location
-  const [provinces, setProvinces] = useState<{ id: number; name: string }[]>([]);
-  const [cities, setCities] = useState<{ id: number; name: string; zip_code?: string }[]>([]);
-  const [districts, setDistricts] = useState<{ id: number; name: string; zip_code?: string }[]>([]);
-  const [selProv, setSelProv] = useState("");
-  const [selCity, setSelCity] = useState("");
-  const [selKec, setSelKec] = useState("");
-  const [districtId, setDistrictId] = useState<number | null>(null);
-  const [loadingLoc, setLoadingLoc] = useState(false);
-
-  // Load provinces when modal opens
-  useEffect(() => {
-    if (modalOpen && provinces.length === 0) {
-      fetch("/api/shipping/provinces")
-        .then((r) => r.json())
-        .then((j) => { if (j.data?.length) setProvinces(j.data); })
-        .catch(console.error);
-    }
-  }, [modalOpen]);
-
   useEffect(() => {
     async function init() {
       const c = await getCurrentCustomer();
@@ -70,71 +49,6 @@ export default function AlamatPage() {
     }
     init();
   }, []);
-
-  function resetLocation() {
-    setSelProv("");
-    setSelCity("");
-    setSelKec("");
-    setDistrictId(null);
-    setCities([]);
-    setDistricts([]);
-  }
-
-  async function handleProvChange(provId: string) {
-    setSelProv(provId);
-    setSelCity("");
-    setSelKec("");
-    setDistrictId(null);
-    setDistricts([]);
-    setForm((f) => ({ ...f, city: "", postal_code: "" }));
-    if (!provId) { setCities([]); return; }
-    setLoadingLoc(true);
-    try {
-      const res = await fetch(`/api/shipping/districts?provinceId=${provId}`);
-      const json = await res.json();
-      setCities(json.data || []);
-    } finally { setLoadingLoc(false); }
-  }
-
-  async function handleCityChange(cityId: string) {
-    setSelCity(cityId);
-    setSelKec("");
-    setDistrictId(null);
-    setForm((f) => ({ ...f, postal_code: "" }));
-    if (!cityId) { setDistricts([]); return; }
-    const cityName = cities.find((c) => c.id === Number(cityId))?.name || "";
-    setForm((f) => ({ ...f, city: cityName }));
-    setLoadingLoc(true);
-    try {
-      const res = await fetch(`/api/shipping/districts?cityId=${cityId}`);
-      const json = await res.json();
-      setDistricts(json.data || []);
-    } finally { setLoadingLoc(false); }
-  }
-
-  function handleKecChange(kecId: string) {
-    setSelKec(kecId);
-    if (!kecId) { setDistrictId(null); return; }
-    const item = districts.find((d) => d.id === Number(kecId));
-    if (item) {
-      setDistrictId(item.id);
-      setForm((f) => ({ ...f, postal_code: String(item.zip_code || "").replace(/^0+$/, "") || f.postal_code }));
-    }
-  }
-
-  function openModal(addr?: Address) {
-    if (addr) {
-      setEditing(addr);
-      setForm({ label: addr.label, recipient_name: addr.recipient_name, phone: addr.phone, address: addr.address, city: addr.city, postal_code: addr.postal_code, is_default: addr.is_default });
-      setDistrictId(addr.district_id || null);
-    } else {
-      setEditing(null);
-      setForm(emptyForm);
-      resetLocation();
-    }
-    setErrors({});
-    setModalOpen(true);
-  }
 
   const navItems = [
     { href: "/akun", label: "Beranda", icon: "◇" },
@@ -153,7 +67,6 @@ export default function AlamatPage() {
   function openAdd() {
     setEditing(null);
     setForm({ ...emptyForm, label: "Rumah", is_default: addresses.length === 0 });
-    resetLocation();
     setErrors({});
     setModalOpen(true);
   }
@@ -161,7 +74,6 @@ export default function AlamatPage() {
   function openEdit(addr: Address) {
     setEditing(addr);
     setForm({ label: addr.label, recipient_name: addr.recipient_name, phone: addr.phone, address: addr.address, city: addr.city, postal_code: addr.postal_code, is_default: addr.is_default });
-    setDistrictId(addr.district_id || null);
     setErrors({});
     setModalOpen(true);
   }
@@ -171,8 +83,8 @@ export default function AlamatPage() {
     if (!form.recipient_name.trim()) e.recipient_name = "Nama penerima wajib diisi";
     if (!form.phone.trim()) e.phone = "No. HP wajib diisi";
     if (!form.address.trim()) e.address = "Alamat lengkap wajib diisi";
-    if (!selCity) e.city = "Kota wajib dipilih";
-    if (!selKec) e.postal_code = "Kecamatan wajib dipilih";
+    if (!form.city.trim()) e.city = "Kota wajib diisi";
+    if (!form.postal_code.trim()) e.postal_code = "Kode pos wajib diisi";
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -183,7 +95,7 @@ export default function AlamatPage() {
     const isFirstAddress = addresses.length === 0;
     const forceDefault = isFirstAddress;
     const shouldBeDefault = form.is_default || forceDefault;
-    const payload = { ...form, label: form.label.trim() || "Alamat", customer_id: customerId, is_default: shouldBeDefault, district_id: districtId };
+    const payload = { ...form, label: form.label.trim() || "Alamat", customer_id: customerId, is_default: shouldBeDefault };
 
     if (shouldBeDefault) {
       await supabase.from("saved_addresses").update({ is_default: false }).eq("customer_id", customerId);
@@ -355,34 +267,8 @@ export default function AlamatPage() {
                 <div><label className="block text-[11px] font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>No. HP *</label><input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: errors.phone ? "1px solid #e74c3c" : "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="0812xxxx" />{errors.phone && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.phone}</p>}</div>
                 <div><label className="block text-[11px] font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>Alamat Lengkap *</label><textarea value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} rows={3} className="w-full rounded-xl px-4 py-3 text-sm outline-none resize-none" style={{ border: errors.address ? "1px solid #e74c3c" : "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />{errors.address && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.address}</p>}</div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[11px] font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>Provinsi *</label>
-                    <select value={selProv} onChange={(e) => handleProvChange(e.target.value)} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }}>
-                      <option value="">Pilih</option>
-                      {provinces.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>Kota/Kabupaten *</label>
-                    <select value={selCity} onChange={(e) => handleCityChange(e.target.value)} disabled={!selProv} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: errors.city ? "1px solid #e74c3c" : "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)", opacity: !selProv ? 0.5 : 1 }}>
-                      <option value="">{loadingLoc ? "Memuat…" : "Pilih"}</option>
-                      {cities.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    </select>
-                    {errors.city && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.city}</p>}
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[11px] font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>Kecamatan *</label>
-                    <select value={selKec} onChange={(e) => handleKecChange(e.target.value)} disabled={!selCity} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: errors.postal_code ? "1px solid #e74c3c" : "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)", opacity: !selCity ? 0.5 : 1 }}>
-                      <option value="">{loadingLoc ? "Memuat…" : selCity ? "Pilih" : "Pilih kota dulu"}</option>
-                      {districts.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>Kode Pos</label>
-                    <input value={form.postal_code} onChange={(e) => setForm({ ...form, postal_code: e.target.value })} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="Otomatis" readOnly={!!districtId} />
-                  </div>
+                  <div><label className="block text-[11px] font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>Kota/Kabupaten *</label><input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: errors.city ? "1px solid #e74c3c" : "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="Contoh: Depok" />{errors.city && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.city}</p>}</div>
+                  <div><label className="block text-[11px] font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>Kode Pos *</label><input value={form.postal_code} onChange={(e) => setForm({ ...form, postal_code: e.target.value })} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: errors.postal_code ? "1px solid #e74c3c" : "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="16515" />{errors.postal_code && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.postal_code}</p>}</div>
                 </div>
                 <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={form.is_default} onChange={(e) => setForm({ ...form, is_default: e.target.checked })} className="rounded" style={{ accentColor: "var(--gold)" }} /><span className="text-sm" style={{ color: "var(--espresso)" }}>Jadikan alamat utama</span></label>
               </div>
