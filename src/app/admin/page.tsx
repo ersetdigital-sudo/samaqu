@@ -33,7 +33,7 @@ interface Order {
   total: number;
   status: string;
   created_at: string;
-  order_items?: { product_name: string; color: string; size: string; quantity: number; price: number }[];
+  order_items?: { product_name: string; color: string; size: string; quantity: number; price: number; customer_price: number | null; minimum_price: number | null }[];
 }
 
 interface Product {
@@ -152,7 +152,7 @@ function AdminPageInner() {
     async function fetchData() {
       try {
         const [ordersRes, productsRes] = await Promise.all([
-          supabase.from("orders").select("*, order_items(product_name, color, size, quantity, price)").order("created_at", { ascending: false }).limit(50),
+          supabase.from("orders").select("*, order_items(product_name, color, size, quantity, price, customer_price, minimum_price)").order("created_at", { ascending: false }).limit(50),
           supabase.from("products").select("*").order("created_at", { ascending: true }),
         ]);
         if (mounted) {
@@ -774,6 +774,17 @@ function AdminPageInner() {
                   </div>
                 </div>
 
+                {/* Expedition + Shipping Cost */}
+                {selectedOrder.shipping_method && selectedOrder.shipping_method !== "manual" && (
+                  <div className="rounded-xl p-4" style={{ background: "rgba(255,255,255,.6)", border: "1px solid rgba(64,50,37,.06)" }}>
+                    <p className="text-[11px] tracking-[0.15em] uppercase mb-2 font-medium" style={{ color: "var(--text-muted)" }}>Pengiriman</p>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium" style={{ color: "var(--espresso)" }}>{selectedOrder.shipping_method}</span>
+                      <span className="text-sm font-semibold" style={{ color: "var(--espresso)" }}>{money(selectedOrder.shipping_cost)}</span>
+                    </div>
+                  </div>
+                )}
+
                 {/* Order Items */}
                 <div className="rounded-xl p-4" style={{ background: "rgba(255,255,255,.6)", border: "1px solid rgba(64,50,37,.06)" }}>
                   <p className="text-[11px] tracking-[0.15em] uppercase mb-3 font-medium" style={{ color: "var(--text-muted)" }}>Produk Dipesan</p>
@@ -784,6 +795,12 @@ function AdminPageInner() {
                           <div>
                             <p className="font-medium" style={{ color: "var(--espresso)" }}>{item.product_name}</p>
                             <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{item.color || ""} {item.size || ""} &times; {item.quantity}</p>
+                            {/* CYP info */}
+                            {item.customer_price && item.minimum_price && (
+                              <p className="text-[10px] mt-0.5" style={{ color: "var(--gold)" }}>
+                                Min: {money(item.minimum_price)} · Dipilih: {money(item.customer_price)}
+                              </p>
+                            )}
                           </div>
                           <span className="font-semibold" style={{ color: "var(--espresso)" }}>{money(item.price * item.quantity)}</span>
                         </div>
