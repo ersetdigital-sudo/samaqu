@@ -42,6 +42,7 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
   const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
   const [basePrice, setBasePrice] = useState("");
+  const [weight, setWeight] = useState("");
   const [variants, setVariants] = useState<Variant[]>([]);
   const [activeColor, setActiveColor] = useState<string | null>(null);
   const [media, setMedia] = useState<MediaFile[]>([]);
@@ -59,6 +60,7 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
         setCategory(product.category);
         setDescription(product.description || "");
         setBasePrice(String(product.price));
+        setWeight(product.weight ? String(product.weight) : "");
 
         // Fetch variants
         const { data: dbVariants } = await supabase.from("product_variants").select("*").eq("product_id", id);
@@ -202,6 +204,7 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
     try {
       await supabase.from("products").upsert({
         id: slug, name, category, description: description || null, price: parseInt(basePrice),
+        weight: weight ? parseInt(weight) : null,
         image: media.find((m) => m.url)?.url || "",
         images: media.filter((m) => m.url).map((m) => m.url),
         colors: variants.map((v) => v.color),
@@ -288,6 +291,11 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
                 <div>
                   <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Harga Dasar (Rp)</label>
                   <input type="number" value={basePrice} onChange={(e) => setBasePrice(e.target.value)} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: `1px solid ${errors.basePrice ? "#e74c3c" : "rgba(64,50,37,.15)"}`, background: "white", color: "var(--espresso)" }} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Berat (gram)</label>
+                  <input type="number" value={weight} onChange={(e) => setWeight(e.target.value)} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="800" />
+                  <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>Digunakan untuk hitung ongkir. Kosongkan = default per kategori.</p>
                 </div>
               </div>
             </div>
