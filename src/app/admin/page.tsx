@@ -943,27 +943,64 @@ function ShippingOriginSection() {
   }
 
   async function handleCityChange(cityId: string) {
+    const selectedCity = cities.find((c) => String(c.id) === cityId);
+    console.log("[ADMIN] City selected:", { id: cityId, name: selectedCity?.name });
     setForm((f) => ({ ...f, origin_city_id: cityId, origin_district_id: "" }));
     setDistricts([]);
     if (!cityId) return;
-    console.log("[ADMIN] Loading districts for city:", cityId);
+    console.log("[ADMIN] Loading districts for city:", cityId, selectedCity?.name);
     const res = await fetch(`/api/shipping/districts?cityId=${cityId}`);
     const json = await res.json();
     setDistricts(json.data || []);
     console.log("[ADMIN] Districts loaded:", json.data?.length);
+    if (json.data?.[0]) console.log("[ADMIN] First district sample:", json.data[0]);
   }
 
   async function handleSave() {
     setSaving(true);
-    console.log("[ADMIN] Saving origin:", form);
+    const selectedProv = provinces.find((p) => String(p.id) === form.origin_province_id);
+    const selectedCity = cities.find((c) => String(c.id) === form.origin_city_id);
+    const selectedDist = districts.find((d) => String(d.id) === form.origin_district_id);
+    console.log("[ADMIN] === SAVE ORIGIN START ===");
+    console.log("[ADMIN] Step-by-step IDs:", {
+      province: `${form.origin_province_id} (${selectedProv?.name})`,
+      city: `${form.origin_city_id} (${selectedCity?.name})`,
+      district: `${form.origin_district_id} (${selectedDist?.name})`,
+    });
+
+    // IMPORTANT: Resolve step-by-step district ID to direct search subdistrict ID
+    // RajaOngkir V2 has 2 different ID systems — cost calculation needs direct search IDs
+    let directSearchId = form.origin_district_id ? Number(form.origin_district_id) : null;
+
+    if (selectedDist?.name && selectedCity?.name && selectedProv?.name) {
+      console.log("[ADMIN] Resolving direct search ID for:", selectedDist.name, selectedCity.name, selectedProv.name);
+      try {
+        const searchQuery = encodeURIComponent(selectedDist.name);
+        const searchRes = await fetch(`/api/shipping/search-destination?search=${searchQuery}&city=${encodeURIComponent(selectedCity.name)}&province=${encodeURIComponent(selectedProv.name)}&limit=5`);
+        const searchJson = await searchRes.json();
+        console.log("[ADMIN] Search results:", searchJson);
+
+        if (searchJson.match?.id) {
+          directSearchId = searchJson.match.id;
+          console.log("[ADMIN] ✅ Direct search ID resolved:", directSearchId, "(", searchJson.match.subdistrict_name || searchJson.match.name, ")");
+        } else {
+          console.warn("[ADMIN] ⚠️ No direct search match found, using step-by-step ID:", directSearchId);
+        }
+      } catch (e) {
+        console.error("[ADMIN] ❌ Direct search failed, using step-by-step ID:", e);
+      }
+    }
+
+    console.log("[ADMIN] Final origin_district_id to save:", directSearchId);
     await supabase.from("store_settings").upsert({
       id: 1,
       origin_province_id: form.origin_province_id ? Number(form.origin_province_id) : null,
       origin_city_id: form.origin_city_id ? Number(form.origin_city_id) : null,
-      origin_district_id: form.origin_district_id ? Number(form.origin_district_id) : null,
+      origin_district_id: directSearchId,
       updated_at: new Date().toISOString(),
     });
     setSaving(false);
+    console.log("[ADMIN] === SAVE ORIGIN DONE ===");
     toast.showToast("success", "Alamat pengiriman toko disimpan");
   }
 
