@@ -49,20 +49,20 @@ export default function Koleksi() {
               Katalog SAMAQU
             </p>
             <h2
-              className="text-4xl sm:text-5xl font-medium"
+              className="text-3xl sm:text-5xl font-medium"
               style={{
                 fontFamily: "var(--font-cormorant), Georgia, serif",
                 color: "var(--espresso)",
               }}
             >
-              Koleksi Pilihan
+              Pilih yang Membuatmu Lebih Percaya Diri
             </h2>
           </div>
           <p
             className="leading-[1.75] max-w-sm text-sm font-ui"
             style={{ color: "var(--coffee)" }}
           >
-            {categories.length > 0 ? `${categories.length} kategori inti yang dirancang untuk melengkapi setiap momen — ibadah, keseharian, hingga acara istimewa.` : ""}
+            Dibuat dengan perhatian pada kualitas, kepedulian, dan rasa bangga untuk menemani berbagai aktivitasmu.
           </p>
         </div>
 
