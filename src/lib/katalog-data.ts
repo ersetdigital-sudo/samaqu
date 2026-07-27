@@ -26,6 +26,9 @@ export interface Product {
   image: string;
   images: string[];
   media: MediaItem[];
+  // Create Your Price
+  minimum_price?: number | null;
+  create_your_price_enabled?: boolean;
 }
 
 /* ── Color hex map ── */

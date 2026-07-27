@@ -6,11 +6,15 @@ export interface CartItem {
   id: string;
   name: string;
   image: string;
-  price: number;
+  price: number;           // base price (fixed) or minimum_price (CYP)
   color: string;
   size: string;
   qty: number;
   notes?: string;
+  // Create Your Price
+  customer_price?: number;   // harga pilihan customer (CYP only)
+  minimum_price?: number;    // harga minimum untuk validasi (CYP only)
+  create_your_price_enabled?: boolean; // apakah produk ini pakai CYP
 }
 
 interface CartState {
@@ -21,6 +25,7 @@ type CartAction =
   | { type: "ADD"; item: CartItem }
   | { type: "REMOVE"; index: number }
   | { type: "UPDATE_QTY"; index: number; qty: number }
+  | { type: "UPDATE_PRICE"; index: number; price: number }
   | { type: "LOAD"; items: CartItem[] }
   | { type: "CLEAR" };
 
@@ -47,6 +52,16 @@ function cartReducer(state: CartState, action: CartAction): CartState {
       items[action.index] = { ...items[action.index], qty: action.qty };
       return { items };
     }
+    case "UPDATE_PRICE": {
+      const items = [...state.items];
+      const item = items[action.index];
+      // Validate: price cannot be below minimum_price for CYP items
+      if (item.create_your_price_enabled && item.minimum_price && action.price < item.minimum_price) {
+        return state; // reject invalid price
+      }
+      items[action.index] = { ...item, customer_price: action.price };
+      return { items };
+    }
     case "LOAD":
       return { items: action.items };
     case "CLEAR":
@@ -61,6 +76,7 @@ const CartContext = createContext<{
   addItem: (item: CartItem) => void;
   removeItem: (index: number) => void;
   updateQty: (index: number, qty: number) => void;
+  updatePrice: (index: number, price: number) => void;
   clearCart: () => void;
   totalItems: number;
   subtotal: number;
@@ -98,15 +114,23 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: "UPDATE_QTY", index, qty });
   }, []);
 
+  const updatePrice = useCallback((index: number, price: number) => {
+    dispatch({ type: "UPDATE_PRICE", index, price });
+  }, []);
+
   const clearCart = useCallback(() => {
     dispatch({ type: "CLEAR" });
   }, []);
 
   const totalItems = state.items.reduce((sum, i) => sum + i.qty, 0);
-  const subtotal = state.items.reduce((sum, i) => sum + i.price * i.qty, 0);
+  // Subtotal: CYP items use customer_price, fixed items use price
+  const subtotal = state.items.reduce((sum, i) => {
+    const unitPrice = (i.create_your_price_enabled && i.customer_price) ? i.customer_price : i.price;
+    return sum + unitPrice * i.qty;
+  }, 0);
 
   return (
-    <CartContext.Provider value={{ items: state.items, addItem, removeItem, updateQty, clearCart, totalItems, subtotal }}>
+    <CartContext.Provider value={{ items: state.items, addItem, removeItem, updateQty, updatePrice, clearCart, totalItems, subtotal }}>
       {children}
     </CartContext.Provider>
   );
