@@ -57,7 +57,7 @@ export default function FinalCta() {
               className="font-ui text-[0.72rem] sm:text-[0.74rem] font-semibold uppercase tracking-[0.32em] sm:tracking-[0.38em]"
               style={{ color: "var(--gold)" }}
             >
-              Siap Tampil Berkelas?
+              Perjalananmu Masih Panjang
             </p>
             <span
               className="w-6 sm:w-8 h-px"
@@ -75,9 +75,9 @@ export default function FinalCta() {
               color: "var(--espresso)",
             }}
           >
-            Mulai Perjalanan Gaya
+            Terus Melangkah dengan
             <br className="hidden sm:block" />
-            Muslimmu Bersama{" "}
+            Percaya Diri Bersama{" "}
             <span
               className="italic"
               style={{ color: "var(--gold)" }}
@@ -93,8 +93,7 @@ export default function FinalCta() {
             className="mt-5 sm:mt-6 max-w-md mx-auto text-[0.95rem] sm:text-base leading-[1.75] font-ui"
             style={{ color: "var(--text-secondary)" }}
           >
-            Pilih koleksi favoritmu dan biarkan admin kami membantu, dari
-            pemilihan hingga pesanan sampai di tangan.
+            Temukan produk yang sesuai denganmu. Kami siap membantu dari pemilihan ukuran hingga pesananmu sampai.
           </motion.p>
 
           {/* Divider */}
