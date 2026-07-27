@@ -16,12 +16,23 @@ interface Address {
   recipient_name: string;
   phone: string;
   address: string;
+  province: string;
   city: string;
+  kecamatan: string;
   postal_code: string;
   is_default: boolean;
 }
 
-const emptyForm = { label: "", recipient_name: "", phone: "", address: "", city: "", postal_code: "", is_default: false };
+const PROVINCES = [
+  "ACEH","SUMATERA UTARA","SUMATERA BARAT","RIAU","JAMBI","SUMATERA SELATAN","BENGKULU","LAMPUNG",
+  "KEPULAUAN BANGKA BELITUNG","KEPULAUAN RIAU","DKI JAKARTA","JAWA BARAT","JAWA TENGAH","DI YOGYAKARTA",
+  "JAWA TIMUR","BANTEN","BALI","NUSA TENGGARA BARAT","NUSA TENGGARA TIMUR","KALIMANTAN BARAT",
+  "KALIMANTAN TENGAH","KALIMANTAN SELATAN","KALIMANTAN TIMUR","KALIMANTAN UTARA","SULAWESI UTARA",
+  "SULAWESI TENGAH","SULAWESI SELATAN","SULAWESI TENGGARA","GORONTALO","MALUKU","MALUKU UTARA",
+  "PAPUA BARAT","PAPUA","SULAWESI BARAT",
+];
+
+const emptyForm = { label: "", recipient_name: "", phone: "", address: "", province: "", city: "", kecamatan: "", postal_code: "", is_default: false };
 
 export default function AlamatPage() {
   const pathname = usePathname();
@@ -73,7 +84,7 @@ export default function AlamatPage() {
 
   function openEdit(addr: Address) {
     setEditing(addr);
-    setForm({ label: addr.label, recipient_name: addr.recipient_name, phone: addr.phone, address: addr.address, city: addr.city, postal_code: addr.postal_code, is_default: addr.is_default });
+    setForm({ label: addr.label, recipient_name: addr.recipient_name, phone: addr.phone, address: addr.address, province: addr.province || "", city: addr.city, kecamatan: addr.kecamatan || "", postal_code: addr.postal_code, is_default: addr.is_default });
     setErrors({});
     setModalOpen(true);
   }
@@ -83,7 +94,9 @@ export default function AlamatPage() {
     if (!form.recipient_name.trim()) e.recipient_name = "Nama penerima wajib diisi";
     if (!form.phone.trim()) e.phone = "No. HP wajib diisi";
     if (!form.address.trim()) e.address = "Alamat lengkap wajib diisi";
+    if (!form.province) e.province = "Provinsi wajib dipilih";
     if (!form.city.trim()) e.city = "Kota wajib diisi";
+    if (!form.kecamatan.trim()) e.kecamatan = "Kecamatan wajib diisi";
     if (!form.postal_code.trim()) e.postal_code = "Kode pos wajib diisi";
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -219,7 +232,7 @@ export default function AlamatPage() {
                   <div className="text-sm space-y-1" style={{ color: "var(--text-secondary)" }}>
                     <p className="font-medium" style={{ color: "var(--espresso)" }}>{addr.recipient_name} · {addr.phone}</p>
                     <p>{addr.address}</p>
-                    <p>{addr.city}, {addr.postal_code}</p>
+                    <p>{addr.kecamatan ? `${addr.kecamatan}, ` : ""}{addr.city}{addr.province ? `, ${addr.province}` : ""} {addr.postal_code}</p>
                   </div>
                 </div>
               ))}
@@ -266,10 +279,12 @@ export default function AlamatPage() {
                 <div><label className="block text-[11px] font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>Nama Penerima *</label><input value={form.recipient_name} onChange={(e) => setForm({ ...form, recipient_name: e.target.value })} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: errors.recipient_name ? "1px solid #e74c3c" : "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />{errors.recipient_name && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.recipient_name}</p>}</div>
                 <div><label className="block text-[11px] font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>No. HP *</label><input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: errors.phone ? "1px solid #e74c3c" : "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="0812xxxx" />{errors.phone && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.phone}</p>}</div>
                 <div><label className="block text-[11px] font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>Alamat Lengkap *</label><textarea value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} rows={3} className="w-full rounded-xl px-4 py-3 text-sm outline-none resize-none" style={{ border: errors.address ? "1px solid #e74c3c" : "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />{errors.address && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.address}</p>}</div>
+                <div><label className="block text-[11px] font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>Provinsi *</label><select value={form.province} onChange={(e) => setForm({ ...form, province: e.target.value })} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: errors.province ? "1px solid #e74c3c" : "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }}><option value="">Pilih provinsi</option>{PROVINCES.map((p) => <option key={p} value={p}>{p}</option>)}</select>{errors.province && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.province}</p>}</div>
                 <div className="grid grid-cols-2 gap-3">
                   <div><label className="block text-[11px] font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>Kota/Kabupaten *</label><input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: errors.city ? "1px solid #e74c3c" : "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="Contoh: Jakarta Barat" />{errors.city && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.city}</p>}</div>
-                  <div><label className="block text-[11px] font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>Kode Pos *</label><input value={form.postal_code} onChange={(e) => setForm({ ...form, postal_code: e.target.value })} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: errors.postal_code ? "1px solid #e74c3c" : "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="11750" />{errors.postal_code && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.postal_code}</p>}</div>
+                  <div><label className="block text-[11px] font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>Kecamatan *</label><input value={form.kecamatan} onChange={(e) => setForm({ ...form, kecamatan: e.target.value })} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: errors.kecamatan ? "1px solid #e74c3c" : "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="Contoh: Cengkareng" />{errors.kecamatan && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.kecamatan}</p>}</div>
                 </div>
+                <div><label className="block text-[11px] font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>Kode Pos *</label><input value={form.postal_code} onChange={(e) => setForm({ ...form, postal_code: e.target.value })} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: errors.postal_code ? "1px solid #e74c3c" : "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="11750" />{errors.postal_code && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.postal_code}</p>}</div>
                 <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={form.is_default} onChange={(e) => setForm({ ...form, is_default: e.target.checked })} className="rounded" style={{ accentColor: "var(--gold)" }} /><span className="text-sm" style={{ color: "var(--espresso)" }}>Jadikan alamat utama</span></label>
               </div>
               <div className="flex gap-3 mt-6">
