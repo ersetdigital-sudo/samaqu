@@ -60,7 +60,7 @@ function CheckoutContent() {
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderNumber, setOrderNumber] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [savedAddresses, setSavedAddresses] = useState<{ id: string; label: string; recipient_name: string; phone: string; address: string; city: string; postal_code: string; is_default: boolean }[]>([]);
+  const [savedAddresses, setSavedAddresses] = useState<{ id: string; label: string; recipient_name: string; phone: string; address: string; city: string; postal_code: string; is_default: boolean; district_id?: number }[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string>("");
   const [showNewAddress, setShowNewAddress] = useState(false);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
@@ -265,59 +265,37 @@ function CheckoutContent() {
     }
   }
 
-  // Resolve kecamatan from saved address postal code and auto-fetch ongkir
-  async function resolveSavedAddress(addr: { city: string; postal_code: string }) {
-    if (!addr.postal_code || !originId) return;
+  // Auto-fetch ongkir using district_id from saved address
+  async function resolveSavedAddress(addr: { district_id?: number }) {
+    if (!addr.district_id || !originId) return;
+    setKecamatanId(addr.district_id);
     setLoadingCost(true);
     setShipOptions([]);
     setSelectedShipping(null);
     try {
-      // Search through provinces to find matching kecamatan by postal code
-      for (const prov of provinces) {
-        const cityRes = await fetch(`/api/shipping/districts?provinceId=${prov.id}`);
-        const cityJson = await cityRes.json();
-        const cities: IdName[] = cityJson.data || [];
-        for (const city of cities) {
-          const distRes = await fetch(`/api/shipping/districts?cityId=${city.id}`);
-          const distJson = await distRes.json();
-          const dists: IdName[] = distJson.data || [];
-          const match = dists.find((d) => String(d.zip_code || "").replace(/^0+$/, "") === addr.postal_code.replace(/^0+$/, ""));
-          if (match) {
-            setKecamatanId(match.id);
-            setKecamatanName(match.name);
-            setKotaId(city.id);
-            setKota(city.name);
-            setProvinsiId(prov.id);
-            // Load kecamatan list for this city
-            setKecamatanList(dists);
-            // Auto-fetch ongkir
-            const courierStr = enabledCouriers.length > 0 ? enabledCouriers.join(":") : undefined;
-            const costRes = await fetch("/api/shipping/cost", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ origin: originId, destination: match.id, weight: berat, courier: courierStr }),
-            });
-            const costJson = await costRes.json();
-            const opts: ShipOpt[] = [];
-            if (costJson.data && Array.isArray(costJson.data)) {
-              for (const item of costJson.data) {
-                opts.push({
-                  courier: item.name || item.code || "",
-                  service: item.service || "",
-                  description: item.description || "",
-                  cost: typeof item.cost === "number" ? item.cost : 0,
-                  etd: item.etd || "",
-                });
-              }
-            }
-            opts.sort((a, b) => a.cost - b.cost);
-            setShipOptions(opts);
-            return;
-          }
+      const courierStr = enabledCouriers.length > 0 ? enabledCouriers.join(":") : undefined;
+      const res = await fetch("/api/shipping/cost", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ origin: originId, destination: addr.district_id, weight: berat, courier: courierStr }),
+      });
+      const json = await res.json();
+      const opts: ShipOpt[] = [];
+      if (json.data && Array.isArray(json.data)) {
+        for (const item of json.data) {
+          opts.push({
+            courier: item.name || item.code || "",
+            service: item.service || "",
+            description: item.description || "",
+            cost: typeof item.cost === "number" ? item.cost : 0,
+            etd: item.etd || "",
+          });
         }
       }
+      opts.sort((a, b) => a.cost - b.cost);
+      setShipOptions(opts);
     } catch (e) {
-      console.error("Gagal resolve alamat:", e);
+      console.error("Gagal hitung ongkir:", e);
     } finally {
       setLoadingCost(false);
     }
