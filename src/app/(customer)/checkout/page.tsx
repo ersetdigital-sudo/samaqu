@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Lock, Truck, Loader2, ChevronDown } from "lucide-react";
+import { Lock, Loader2, ChevronDown } from "lucide-react";
 import { getProductById, weightMap } from "@/lib/katalog-data";
 import { useCart } from "@/lib/cart-context";
 import { supabase } from "@/lib/supabase";
@@ -265,40 +265,6 @@ function CheckoutContent() {
     }
   }
 
-  async function handleHitungOngkir() {
-    if (!originId || !kecamatanId) return;
-    setLoadingCost(true);
-    setShipOptions([]);
-    setSelectedShipping(null);
-    try {
-      const courierStr = enabledCouriers.length > 0 ? enabledCouriers.join(":") : undefined;
-      const res = await fetch("/api/shipping/cost", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ origin: originId, destination: kecamatanId, weight: berat, courier: courierStr }),
-      });
-      const json = await res.json();
-      const opts: ShipOpt[] = [];
-      if (json.data && Array.isArray(json.data)) {
-        for (const item of json.data) {
-          opts.push({
-            courier: item.name || item.code || "",
-            service: item.service || "",
-            description: item.description || "",
-            cost: typeof item.cost === "number" ? item.cost : 0,
-            etd: item.etd || "",
-          });
-        }
-      }
-      opts.sort((a, b) => a.cost - b.cost);
-      setShipOptions(opts);
-    } catch (e) {
-      console.error("Gagal hitung ongkir:", e);
-    } finally {
-      setLoadingCost(false);
-    }
-  }
-
   async function handleSubmit() {
     const e: Record<string, string> = {};
     if (!nama.trim()) e.nama = "Nama lengkap wajib diisi";
@@ -555,12 +521,45 @@ function CheckoutContent() {
               <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: "var(--text-secondary)" }}>Kecamatan</label>
               <select
                 value={kecamatanId ?? ""}
-                onChange={(e) => {
+                onChange={async (e) => {
                   const id = Number(e.target.value);
                   const item = kecamatanList.find((c) => c.id === id);
                   setKecamatanId(id);
                   setKecamatanName(item?.name || "");
                   setKodepos(String(item?.zip_code || "").replace(/^0+$/, "") || "");
+                  // Auto-fetch ongkir when kecamatan selected
+                  if (id && originId) {
+                    setLoadingCost(true);
+                    setShipOptions([]);
+                    setSelectedShipping(null);
+                    try {
+                      const courierStr = enabledCouriers.length > 0 ? enabledCouriers.join(":") : undefined;
+                      const res = await fetch("/api/shipping/cost", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ origin: originId, destination: id, weight: berat, courier: courierStr }),
+                      });
+                      const json = await res.json();
+                      const opts: ShipOpt[] = [];
+                      if (json.data && Array.isArray(json.data)) {
+                        for (const item of json.data) {
+                          opts.push({
+                            courier: item.name || item.code || "",
+                            service: item.service || "",
+                            description: item.description || "",
+                            cost: typeof item.cost === "number" ? item.cost : 0,
+                            etd: item.etd || "",
+                          });
+                        }
+                      }
+                      opts.sort((a, b) => a.cost - b.cost);
+                      setShipOptions(opts);
+                    } catch (e) {
+                      console.error("Gagal hitung ongkir:", e);
+                    } finally {
+                      setLoadingCost(false);
+                    }
+                  }
                 }}
                 disabled={!kotaId}
                 className="w-full rounded-lg px-4 py-3 text-sm font-ui"
@@ -573,33 +572,13 @@ function CheckoutContent() {
               </select>
             </div>
 
-            {/* Weight */}
-            <div className="mb-3">
-              <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: "var(--text-secondary)" }}>Berat (gram)</label>
-              <input
-                type="number"
-                value={berat}
-                onChange={(e) => setBerat(Number(e.target.value) || 500)}
-                min={100}
-                className="w-full rounded-lg px-4 py-3 text-sm font-ui"
-                style={selectStyle}
-              />
-            </div>
-
-            {/* Hitung Ongkir button */}
-            <button
-              type="button"
-              onClick={handleHitungOngkir}
-              disabled={!kecamatanId || !originId || loadingCost}
-              className="w-full rounded-xl py-3 text-sm font-ui font-medium flex items-center justify-center gap-2 transition-all mb-4 disabled:opacity-40"
-              style={{ background: "var(--espresso)", color: "var(--cream)" }}
-            >
-              {loadingCost ? (
-                <><Loader2 size={16} className="animate-spin" /> Menghitung…</>
-              ) : (
-                <><Truck size={16} /> Hitung Ongkos Kirim</>
-              )}
-            </button>
+            {/* Loading indicator saat fetch ongkir */}
+            {loadingCost && (
+              <div className="flex items-center gap-2 py-3 text-sm font-ui" style={{ color: "var(--text-muted)" }}>
+                <Loader2 size={16} className="animate-spin" style={{ color: "var(--gold)" }} />
+                <span>Menghitung ongkos kirim…</span>
+              </div>
+            )}
 
             {/* Shipping options list */}
             {shipOptions.length > 0 && (
