@@ -60,7 +60,7 @@ function CheckoutContent() {
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderNumber, setOrderNumber] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [savedAddresses, setSavedAddresses] = useState<{ id: string; label: string; recipient_name: string; phone: string; address: string; city: string; postal_code: string; is_default: boolean }[]>([]);
+  const [savedAddresses, setSavedAddresses] = useState<{ id: string; label: string; recipient_name: string; phone: string; address: string; province: string; city: string; kecamatan: string; postal_code: string; is_default: boolean }[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string>("");
   const [showNewAddress, setShowNewAddress] = useState(false);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
@@ -265,44 +265,49 @@ function CheckoutContent() {
     }
   }
 
-  // Resolve location from postal code and auto-fetch ongkir
-  async function resolveSavedAddress(addr: { postal_code: string }) {
-    if (!addr.postal_code || !originId) return;
+  // Resolve location from saved address (province + city + kecamatan name matching)
+  async function resolveSavedAddress(addr: { province: string; city: string; kecamatan: string; postal_code: string }) {
+    if (!originId) return;
     setLoadingCost(true);
     setShipOptions([]);
     setSelectedShipping(null);
     try {
-      // Resolve full location from postal code
-      const distRes = await fetch(`/api/shipping/resolve-district?postalCode=${addr.postal_code}`);
-      const loc = await distRes.json();
-      if (!loc.district_id) {
-        setLoadingCost(false);
-        return;
-      }
+      // Find province ID from loaded list
+      const provMatch = provinces.find((p) => p.name.toUpperCase() === addr.province?.toUpperCase());
+      if (!provMatch) { setLoadingCost(false); return; }
+      setProvinsiId(provMatch.id);
 
-      // Populate all dropdown states
-      setProvinsiId(loc.province_id);
-      setKecamatanId(loc.district_id);
-      setKecamatanName(loc.district_name);
-      setKotaId(loc.city_id);
-      setKota(loc.city_name);
-
-      // Load cities for this province
-      const cityRes = await fetch(`/api/shipping/districts?provinceId=${loc.province_id}`);
+      // Fetch cities for this province
+      const cityRes = await fetch(`/api/shipping/districts?provinceId=${provMatch.id}`);
       const cityJson = await cityRes.json();
-      setKabupatenList(cityJson.data || []);
+      const cityList: IdName[] = cityJson.data || [];
+      setKabupatenList(cityList);
 
-      // Load kecamatan for this city
-      const kecRes = await fetch(`/api/shipping/districts?cityId=${loc.city_id}`);
+      // Find city ID by name
+      const cityMatch = cityList.find((c) => c.name.toUpperCase() === addr.city?.toUpperCase());
+      if (!cityMatch) { setLoadingCost(false); return; }
+      setKotaId(cityMatch.id);
+      setKota(cityMatch.name);
+
+      // Fetch kecamatan for this city
+      const kecRes = await fetch(`/api/shipping/districts?cityId=${cityMatch.id}`);
       const kecJson = await kecRes.json();
-      setKecamatanList(kecJson.data || []);
+      const kecList: IdName[] = kecJson.data || [];
+      setKecamatanList(kecList);
+
+      // Find kecamatan ID by name
+      const kecMatch = kecList.find((k) => k.name.toUpperCase() === addr.kecamatan?.toUpperCase());
+      if (!kecMatch) { setLoadingCost(false); return; }
+      setKecamatanId(kecMatch.id);
+      setKecamatanName(kecMatch.name);
+      if (kecMatch.zip_code) setKodepos(String(kecMatch.zip_code).replace(/^0+/, "") || addr.postal_code);
 
       // Auto-fetch ongkir
       const courierStr = enabledCouriers.length > 0 ? enabledCouriers.join(":") : undefined;
       const res = await fetch("/api/shipping/cost", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ origin: originId, destination: loc.district_id, weight: berat, courier: courierStr }),
+        body: JSON.stringify({ origin: originId, destination: kecMatch.id, weight: berat, courier: courierStr }),
       });
       const json = await res.json();
       const opts: ShipOpt[] = [];
