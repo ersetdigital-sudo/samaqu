@@ -289,56 +289,46 @@ function CheckoutContent() {
     try {
       let districtId: number | null = null;
 
-      // Try name matching first (fast — 3 API calls)
-      if (addr.province && addr.kecamatan) {
-        const provUpper = addr.province.toUpperCase();
-        const provMatch = provinces.find((p) => {
-          const pName = p.name.toUpperCase();
-          return pName === provUpper || pName.includes(provUpper) || provUpper.includes(pName);
-        });
-        if (provMatch) {
-          setProvinsiId(provMatch.id);
-          const cityRes = await fetch(`/api/shipping/districts?provinceId=${provMatch.id}`);
-          const cityJson = await cityRes.json();
-          const cityList: IdName[] = cityJson.data || [];
-          setKabupatenList(cityList);
-
-          const cityUpper = addr.city?.toUpperCase() || "";
-          const cityMatch = cityList.find((c) => c.name.toUpperCase() === cityUpper || c.name.toUpperCase().includes(cityUpper) || cityUpper.includes(c.name.toUpperCase()));
-          if (cityMatch) {
-            setKotaId(cityMatch.id);
-            setKota(cityMatch.name);
-            const kecRes = await fetch(`/api/shipping/districts?cityId=${cityMatch.id}`);
-            const kecJson = await kecRes.json();
-            const kecList: IdName[] = kecJson.data || [];
-            setKecamatanList(kecList);
-
-            const kecUpper = addr.kecamatan.toUpperCase();
-            const kecMatch = kecList.find((k) => k.name.toUpperCase() === kecUpper || k.name.toUpperCase().includes(kecUpper) || kecUpper.includes(k.name.toUpperCase()));
-            if (kecMatch) {
-              districtId = kecMatch.id;
-              setKecamatanId(kecMatch.id);
-              setKecamatanName(kecMatch.name);
-              if (kecMatch.zip_code) setKodepos(String(kecMatch.zip_code).replace(/^0+/, "") || addr.postal_code);
-            }
-          }
-        }
+      // Need province + kecamatan for name matching
+      if (!addr.province || !addr.kecamatan || !addr.city) {
+        // Data not complete — user needs to re-save address with province/kecamatan
+        // Show manual selection instead
+        setLoadingCost(false);
+        return;
       }
 
-      // Fallback: resolve from postal code (1 call, cached server-side)
-      if (!districtId) {
-        const distRes = await fetch(`/api/shipping/resolve-district?postalCode=${addr.postal_code}`);
-        const loc = await distRes.json();
-        if (loc.district_id) {
-          districtId = loc.district_id;
-          setKecamatanId(loc.district_id);
-          setKecamatanName(loc.district_name || "");
-        }
-      }
+      // Name matching (fast — 3 API calls)
+      const provUpper = addr.province.toUpperCase();
+      const provMatch = provinces.find((p) => {
+        const pName = p.name.toUpperCase();
+        return pName === provUpper || pName.includes(provUpper) || provUpper.includes(pName);
+      });
+      if (!provMatch) { setLoadingCost(false); return; }
+      setProvinsiId(provMatch.id);
+      const cityRes = await fetch(`/api/shipping/districts?provinceId=${provMatch.id}`);
+      const cityJson = await cityRes.json();
+      const cityList: IdName[] = cityJson.data || [];
+      setKabupatenList(cityList);
 
-      if (!districtId) { setLoadingCost(false); return; }
+      const cityUpper = addr.city.toUpperCase();
+      const cityMatch = cityList.find((c) => c.name.toUpperCase() === cityUpper || c.name.toUpperCase().includes(cityUpper) || cityUpper.includes(c.name.toUpperCase()));
+      if (!cityMatch) { setLoadingCost(false); return; }
+      setKotaId(cityMatch.id);
+      setKota(cityMatch.name);
+      const kecRes = await fetch(`/api/shipping/districts?cityId=${cityMatch.id}`);
+      const kecJson = await kecRes.json();
+      const kecList: IdName[] = kecJson.data || [];
+      setKecamatanList(kecList);
 
-      // Auto-fetch ongkir
+      const kecUpper = addr.kecamatan.toUpperCase();
+      const kecMatch = kecList.find((k) => k.name.toUpperCase() === kecUpper || k.name.toUpperCase().includes(kecUpper) || kecUpper.includes(k.name.toUpperCase()));
+      if (!kecMatch) { setLoadingCost(false); return; }
+      districtId = kecMatch.id;
+      setKecamatanId(kecMatch.id);
+      setKecamatanName(kecMatch.name);
+      if (kecMatch.zip_code) setKodepos(String(kecMatch.zip_code).replace(/^0+/, "") || addr.postal_code);
+
+      // Fetch ongkir
       const courierStr = enabledCouriers.length > 0 ? enabledCouriers.join(":") : undefined;
       const res = await fetch("/api/shipping/cost", {
         method: "POST",
@@ -725,7 +715,7 @@ function CheckoutContent() {
 
             {shipOptions.length === 0 && !loadingCost && (
               <p className="text-xs font-ui" style={{ color: "var(--text-muted)" }}>
-                {kecamatanId && originId ? "Tekan tombol di atas untuk melihat opsi pengiriman." : "Lengkapi alamat pengiriman untuk menghitung ongkir."}
+                {selectedAddressId && !kecamatanId ? "Alamat ini perlu disimpan ulang dengan data provinsi & kecamatan. Pilih kecamatan secara manual untuk melihat ongkir." : kecamatanId && originId ? "Tekan tombol di atas untuk melihat opsi pengiriman." : "Lengkapi alamat pengiriman untuk menghitung ongkir."}
               </p>
             )}
 
