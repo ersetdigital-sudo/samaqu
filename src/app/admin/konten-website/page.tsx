@@ -340,14 +340,16 @@ export default function KontenWebsitePage() {
                 <button onClick={() => setEditModal(null)}><X size={20} style={{ color: "var(--text-muted)" }} /></button>
               </div>
               <p className="text-sm font-medium mb-3" style={{ color: "var(--espresso)" }}>Kartu Jaminan</p>
-              <div className="space-y-3 mb-6">
+              <div className="space-y-3 mb-4">
                 {editGaransi.map((g, i) => (
-                  <div key={i} className="p-3 rounded-lg" style={{ border: "1px solid rgba(64,50,37,.1)" }}>
+                  <div key={i} className="p-3 rounded-lg relative" style={{ border: "1px solid rgba(64,50,37,.1)" }}>
+                    {editGaransi.length > 1 && <button onClick={() => setEditGaransi(editGaransi.filter((_, j) => j !== i))} className="absolute top-2 right-2 p-1 hover:bg-red-50 rounded"><Trash2 size={14} style={{ color: "#e74c3c" }} /></button>}
                     <input value={g.title} onChange={(e) => { const u = [...editGaransi]; u[i] = { ...u[i], title: e.target.value }; setEditGaransi(u); }} placeholder="Judul" className="w-full rounded-lg px-3 py-2 text-sm outline-none mb-2" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white" }} />
                     <textarea value={g.description} onChange={(e) => { const u = [...editGaransi]; u[i] = { ...u[i], description: e.target.value }; setEditGaransi(u); }} placeholder="Deskripsi" rows={2} className="w-full rounded-lg px-3 py-2 text-sm outline-none resize-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white" }} />
                   </div>
                 ))}
               </div>
+              {editGaransi.length < 6 && <button onClick={() => setEditGaransi([...editGaransi, { id: String(Date.now()), title: "", description: "", display_order: editGaransi.length }])} className="flex items-center gap-1.5 text-sm font-medium mb-6" style={{ color: "var(--gold)" }}><Plus size={14} /> Tambah Jaminan</button>}
               <p className="text-sm font-medium mb-3" style={{ color: "var(--espresso)" }}>Trust Badges</p>
               <div className="space-y-2 mb-4">
                 {editBadges.map((b, i) => (
