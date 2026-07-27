@@ -2,16 +2,12 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Minus, Plus, Lock } from "lucide-react";
+import { Minus, Plus, Lock, Truck, Loader2, ChevronDown } from "lucide-react";
 import { getProductById } from "@/lib/katalog-data";
 import { useCart } from "@/lib/cart-context";
 import { supabase } from "@/lib/supabase";
 import { getWhatsAppLink } from "@/lib/store-settings";
-
-const shippingOptions = [
-  { id: "reguler", label: "Reguler", estimate: "3–5 hari kerja", price: 25000 },
-  { id: "express", label: "Ekspres", estimate: "1–2 hari kerja", price: 45000 },
-];
+import { useShipping, type ShippingOption } from "@/lib/use-shipping";
 
 interface PaymentMethod {
   id: string;
@@ -56,7 +52,6 @@ function CheckoutContent() {
   const [kota, setKota] = useState("");
   const [kodepos, setKodepos] = useState("");
   const [catatanKurir, setCatatanKurir] = useState("");
-  const [shipping, setShipping] = useState("reguler");
   const [payment, setPayment] = useState("bank");
   const [submitting, setSubmitting] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
@@ -66,6 +61,15 @@ function CheckoutContent() {
   const [selectedAddressId, setSelectedAddressId] = useState<string>("");
   const [showNewAddress, setShowNewAddress] = useState(false);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+
+  // RajaOngkir shipping
+  const [provinsiId, setProvinsiId] = useState<number | null>(null);
+  const [kotaId, setKotaId] = useState<number | null>(null);
+  const [kecamatanId, setKecamatanId] = useState<number | null>(null);
+  const [kecamatanName, setKecamatanName] = useState("");
+  const [berat, setBerat] = useState(500); // default 500g per item
+  const [selectedShipping, setSelectedShipping] = useState<ShippingOption | null>(null);
+  const shippingHook = useShipping();
 
   // Fetch payment methods from Supabase
   useEffect(() => {
@@ -99,6 +103,19 @@ function CheckoutContent() {
     fetchAddresses();
   }, []);
 
+  // Resolve origin (Depok) on mount
+  useEffect(() => {
+    shippingHook.resolveOrigin();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-calculate weight based on items
+  useEffect(() => {
+    const totalQty = isCartMode
+      ? items.reduce((sum, item) => sum + item.qty, 0)
+      : qty;
+    setBerat(Math.max(300, totalQty * 400)); // min 300g, ~400g per item
+  }, [isCartMode, items, qty]);
+
   if (!product && !isCartMode) {
     return (
       <section className="min-h-screen flex items-center justify-center" style={{ background: "var(--cream)" }}>
@@ -112,7 +129,7 @@ function CheckoutContent() {
 
   const selectedColor = colorParam || product?.colors?.[0] || "-";
   const selectedSize = sizeParam;
-  const shippingCost = shippingOptions.find((s) => s.id === shipping)?.price || 0;
+  const shippingCost = selectedShipping?.cost || 0;
   const cartSubtotal = isCartMode ? items.reduce((sum, item) => sum + item.price * item.qty, 0) : (product?.price || 0) * qty;
   const subtotal = cartSubtotal;
   const total = subtotal - discount + shippingCost;
@@ -160,6 +177,7 @@ function CheckoutContent() {
     if (!alamat.trim()) e.alamat = "Alamat lengkap wajib diisi";
     if (!kota.trim()) e.kota = "Kota/Kabupaten wajib diisi";
     if (kodepos && !/^\d{5}$/.test(kodepos)) e.kodepos = "Kode pos harus 5 digit";
+    if (!selectedShipping) e.shipping = "Pilih metode pengiriman";
 
     if (Object.keys(e).length > 0) {
       setErrors(e);
@@ -178,7 +196,15 @@ function CheckoutContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           customer: { name: nama, email, whatsapp },
-          shipping: { address: alamat, city: kota, postalCode: kodepos, notes: catatanKurir, method: shipping },
+          shipping: {
+            address: alamat,
+            city: kota,
+            district: kecamatanName,
+            postalCode: kodepos,
+            notes: catatanKurir,
+            method: selectedShipping ? `${selectedShipping.courier} - ${selectedShipping.service}` : "manual",
+            cost: shippingCost,
+          },
           paymentMethod: payment,
           discount,
           voucherCode: promoApplied ? voucherCode : null,
@@ -354,29 +380,171 @@ function CheckoutContent() {
             )}
           </section>
 
-          {/* Section 3: Shipping Method */}
+          {/* Section 3: Shipping Method — RajaOngkir */}
           <section>
             <div className="flex items-center gap-3 mb-4 sm:mb-5">
               <span className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold" style={{ background: "var(--espresso)", color: "var(--cream)" }}>3</span>
               <h2 className="text-xl sm:text-2xl italic" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Metode Pengiriman</h2>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {shippingOptions.map((opt) => (
-                <label key={opt.id} className="pay-option relative rounded-xl p-4 flex items-start gap-3 cursor-pointer transition-all" style={{ border: `1.5px solid ${shipping === opt.id ? "var(--gold)" : "rgba(64,50,37,.25)"}`, background: shipping === opt.id ? "white" : "transparent" }}>
-                  <input type="radio" name="ship" value={opt.id} checked={shipping === opt.id} onChange={() => setShipping(opt.id)} className="sr-only" />
-                  <span className="relative mt-0.5 w-4 h-4 rounded-full border-2 flex-shrink-0" style={{ borderColor: shipping === opt.id ? "var(--gold)" : "var(--text-muted)" }}>
-                    {shipping === opt.id && <span className="absolute inset-[3px] rounded-full" style={{ background: "var(--gold)" }} />}
-                  </span>
-                  <span className="flex-1">
-                    <span className="flex items-center justify-between">
-                      <span className="text-[13px] sm:text-sm font-ui font-medium" style={{ color: "var(--espresso)" }}>{opt.label}</span>
-                      <span className="text-[13px] sm:text-sm font-ui font-semibold" style={{ color: "var(--gold)" }}>Rp {opt.price.toLocaleString("id-ID")}</span>
-                    </span>
-                    <span className="block text-[11px] sm:text-xs font-ui mt-0.5" style={{ color: "var(--text-muted)" }}>Estimasi {opt.estimate}</span>
-                  </span>
-                </label>
-              ))}
+
+            {/* Provinsi */}
+            <div className="mb-3">
+              <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: "var(--text-secondary)" }}>Provinsi Tujuan</label>
+              <div className="relative">
+                <select
+                  value={provinsiId ?? ""}
+                  onChange={async (e) => {
+                    const id = Number(e.target.value);
+                    setProvinsiId(id);
+                    setKotaId(null);
+                    setKecamatanId(null);
+                    setKecamatanName("");
+                    setSelectedShipping(null);
+                    await shippingHook.fetchCities(id);
+                  }}
+                  onFocus={() => shippingHook.fetchProvinces()}
+                  className="field w-full rounded-lg px-4 py-3 text-sm font-ui appearance-none pr-10"
+                  style={{ background: "white", border: "1px solid rgba(64,50,37,.25)", color: "var(--espresso)", outline: "none" }}
+                >
+                  <option value="">{shippingHook.loadingProvinces ? "Memuat…" : "Pilih Provinsi"}</option>
+                  {shippingHook.provinces.map((p) => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+                <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--text-muted)" }} />
+              </div>
             </div>
+
+            {/* Kota/Kabupaten */}
+            {provinsiId && (
+              <div className="mb-3">
+                <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: "var(--text-secondary)" }}>Kota / Kabupaten</label>
+                <div className="relative">
+                  <select
+                    value={kotaId ?? ""}
+                    onChange={(e) => {
+                      const id = Number(e.target.value);
+                      const name = shippingHook.cities.find((c) => c.id === id)?.name || "";
+                      setKotaId(id);
+                      setKota(name);
+                      setKecamatanId(null);
+                      setKecamatanName("");
+                      setSelectedShipping(null);
+                    }}
+                    className="field w-full rounded-lg px-4 py-3 text-sm font-ui appearance-none pr-10"
+                    style={{ background: "white", border: "1px solid rgba(64,50,37,.25)", color: "var(--espresso)", outline: "none" }}
+                  >
+                    <option value="">{shippingHook.loadingCities ? "Memuat…" : "Pilih Kota/Kabupaten"}</option>
+                    {shippingHook.cities.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                  <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--text-muted)" }} />
+                </div>
+              </div>
+            )}
+
+            {/* Kecamatan */}
+            {kotaId && (
+              <div className="mb-3">
+                <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: "var(--text-secondary)" }}>Kecamatan</label>
+                <div className="relative">
+                  <select
+                    value={kecamatanId ?? ""}
+                    onChange={(e) => {
+                      const id = Number(e.target.value);
+                      const name = shippingHook.cities.find((c) => c.id === id)?.name || "";
+                      setKecamatanId(id);
+                      setKecamatanName(name);
+                      setKodepos(String(shippingHook.cities.find((c) => c.id === id)?.zip_code || "").replace(/^0+$/, "") || "");
+                    }}
+                    className="field w-full rounded-lg px-4 py-3 text-sm font-ui appearance-none pr-10"
+                    style={{ background: "white", border: "1px solid rgba(64,50,37,.25)", color: "var(--espresso)", outline: "none" }}
+                  >
+                    <option value="">Pilih Kecamatan</option>
+                    {shippingHook.cities.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                  <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--text-muted)" }} />
+                </div>
+              </div>
+            )}
+
+            {/* Weight */}
+            <div className="mb-3">
+              <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: "var(--text-secondary)" }}>Berat (gram)</label>
+              <input
+                type="number"
+                value={berat}
+                onChange={(e) => setBerat(Number(e.target.value) || 300)}
+                min={100}
+                className="field w-full rounded-lg px-4 py-3 text-sm font-ui"
+                style={{ background: "white", border: "1px solid rgba(64,50,37,.25)", color: "var(--espresso)", outline: "none" }}
+              />
+            </div>
+
+            {/* Hitung Ongkir button */}
+            {kecamatanId && shippingHook.originDistrictId && (
+              <button
+                type="button"
+                onClick={() => shippingHook.fetchCost(kecamatanId, berat)}
+                disabled={shippingHook.loadingCost}
+                className="w-full rounded-xl py-3 text-sm font-ui font-medium flex items-center justify-center gap-2 transition-all mb-4"
+                style={{ background: "var(--espresso)", color: "var(--cream)" }}
+              >
+                {shippingHook.loadingCost ? (
+                  <><Loader2 size={16} className="animate-spin" /> Menghitung…</>
+                ) : (
+                  <><Truck size={16} /> Hitung Ongkos Kirim</>
+                )}
+              </button>
+            )}
+
+            {!kecamatanId && (
+              <p className="text-xs font-ui mb-4" style={{ color: "var(--text-muted)" }}>Pilih provinsi, kota, dan kecamatan untuk melihat opsi pengiriman.</p>
+            )}
+
+            {/* Shipping options */}
+            {shippingHook.shippingOptions.length > 0 && (
+              <div className="space-y-2">
+                {shippingHook.shippingOptions.map((opt, i) => (
+                  <label
+                    key={`${opt.courier}-${opt.service}-${i}`}
+                    className="pay-option relative rounded-xl p-4 flex items-start gap-3 cursor-pointer transition-all"
+                    style={{
+                      border: `1.5px solid ${selectedShipping?.courier === opt.courier && selectedShipping?.service === opt.service ? "var(--gold)" : "rgba(64,50,37,.25)"}`,
+                      background: selectedShipping?.courier === opt.courier && selectedShipping?.service === opt.service ? "white" : "transparent",
+                    }}
+                    onClick={() => {
+                      setSelectedShipping(opt);
+                    }}
+                  >
+                    <input type="radio" name="ship" className="sr-only" checked={selectedShipping?.courier === opt.courier && selectedShipping?.service === opt.service} readOnly />
+                    <span className="relative mt-0.5 w-4 h-4 rounded-full border-2 flex-shrink-0" style={{ borderColor: selectedShipping?.courier === opt.courier && selectedShipping?.service === opt.service ? "var(--gold)" : "var(--text-muted)" }}>
+                      {selectedShipping?.courier === opt.courier && selectedShipping?.service === opt.service && <span className="absolute inset-[3px] rounded-full" style={{ background: "var(--gold)" }} />}
+                    </span>
+                    <span className="flex-1">
+                      <span className="flex items-center justify-between">
+                        <span className="text-[13px] sm:text-sm font-ui font-medium" style={{ color: "var(--espresso)" }}>
+                          {opt.courier.toUpperCase()} — {opt.service}
+                        </span>
+                        <span className="text-[13px] sm:text-sm font-ui font-semibold" style={{ color: "var(--gold)" }}>
+                          Rp {opt.cost.toLocaleString("id-ID")}
+                        </span>
+                      </span>
+                      <span className="block text-[11px] sm:text-xs font-ui mt-0.5" style={{ color: "var(--text-muted)" }}>
+                        {opt.description} · Estimasi {opt.etd} hari
+                      </span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            )}
+
+            {shippingHook.shippingOptions.length === 0 && !shippingHook.loadingCost && kecamatanId && shippingHook.originDistrictId && (
+              <p className="text-xs font-ui" style={{ color: "var(--text-muted)" }}>Tekan "Hitung Ongkos Kirim" untuk melihat opsi pengiriman.</p>
+            )}
           </section>
 
           {/* Section 4: Payment Method */}
