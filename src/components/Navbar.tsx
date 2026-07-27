@@ -13,7 +13,9 @@ import CartDrawer from "@/components/CartDrawer";
 import { getWhatsAppLink } from "@/lib/store-settings";
 
 /* ── Nav data ── */
-type NavItem = { label: string; href: string; hasDropdown?: false; Icon?: React.ComponentType<{ size?: number; weight?: string; style?: React.CSSProperties }> } | { label: string; hasDropdown: true; Icon?: React.ComponentType<{ size?: number; weight?: string; style?: React.CSSProperties }> };
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type IconComponent = React.ComponentType<any>;
+type NavItem = { label: string; href: string; hasDropdown?: false; Icon?: IconComponent } | { label: string; hasDropdown: true; Icon?: IconComponent };
 
 const NAV_ITEMS: NavItem[] = [
   { label: "Home", href: "/" },
