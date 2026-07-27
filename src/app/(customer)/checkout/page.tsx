@@ -541,7 +541,7 @@ function CheckoutContent() {
                         {addr.is_default && <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ background: "rgba(181,140,74,.15)", color: "var(--gold)" }}>Utama</span>}
                       </div>
                       <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>{addr.recipient_name} · {addr.phone}</p>
-                      <p className="text-xs" style={{ color: "var(--text-muted)" }}>{addr.address}, {addr.city} {addr.postal_code}</p>
+                      <p className="text-xs" style={{ color: "var(--text-muted)" }}>{addr.address}, {addr.kecamatan ? `${addr.kecamatan}, ` : ""}{addr.city}{addr.province ? `, ${addr.province}` : ""} {addr.postal_code}</p>
                     </div>
                   </label>
                 ))}
