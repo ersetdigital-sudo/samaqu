@@ -888,44 +888,69 @@ function ShippingOriginSection() {
 
   useEffect(() => {
     async function init() {
+      console.log("[ADMIN] ShippingOriginSection init start");
       // Load provinces
       const provRes = await fetch("/api/shipping/provinces");
       const provJson = await provRes.json();
-      setProvinces(provJson.data || []);
+      const provList = provJson.data || [];
+      setProvinces(provList);
+      console.log("[ADMIN] Provinces loaded:", provList.length);
 
       // Load saved origin
       const { data } = await supabase.from("store_settings").select("origin_district_id").eq("id", 1).single();
+      console.log("[ADMIN] Saved origin_district_id:", data?.origin_district_id);
+
       if (data?.origin_district_id) {
         setForm({ origin_district_id: String(data.origin_district_id) });
-        // Resolve province and city from district ID
-        await resolveLocation(data.origin_district_id);
+        // Resolve province and city from district ID — with 8s timeout
+        console.log("[ADMIN] Resolving location for district_id:", data.origin_district_id);
+        await Promise.race([
+          resolveLocation(data.origin_district_id),
+          new Promise((r) => setTimeout(r, 8000)),
+        ]);
+        console.log("[ADMIN] Location resolve done (or timed out)");
       }
       setLoading(false);
+      console.log("[ADMIN] ShippingOriginSection init complete");
     }
     init();
   }, []);
 
   async function resolveLocation(districtId: number) {
+    console.log("[ADMIN] resolveLocation: looking for district_id", districtId);
     // Find which province/city this district belongs to
-    for (const prov of provinces.length ? provinces : (await (await fetch("/api/shipping/provinces")).json()).data || []) {
-      const cityRes = await fetch(`/api/shipping/districts?provinceId=${prov.id}`);
-      const cityJson = await cityRes.json();
-      const citiesList = cityJson.data || [];
-      for (const city of citiesList) {
-        const distRes = await fetch(`/api/shipping/districts?cityId=${city.id}`);
-        const distJson = await distRes.json();
-        const found = (distJson.data || []).find((d: { id: number }) => d.id === districtId);
-        if (found) {
-          setSelProv(String(prov.id));
-          setCities(citiesList);
-          setSelCity(String(city.id));
-          const dRes = await fetch(`/api/shipping/districts?cityId=${city.id}`);
-          const dJson = await dRes.json();
-          setDistricts(dJson.data || []);
-          return;
+    // Use a timeout to prevent infinite loading
+    const timeout = setTimeout(() => {
+      console.warn("[ADMIN] resolveLocation timed out after 8s, skipping auto-select");
+    }, 8000);
+
+    try {
+      for (const prov of provinces.length ? provinces : (await (await fetch("/api/shipping/provinces")).json()).data || []) {
+        const cityRes = await fetch(`/api/shipping/districts?provinceId=${prov.id}`);
+        const cityJson = await cityRes.json();
+        const citiesList = cityJson.data || [];
+        for (const city of citiesList) {
+          const distRes = await fetch(`/api/shipping/districts?cityId=${city.id}`);
+          const distJson = await distRes.json();
+          const found = (distJson.data || []).find((d: { id: number }) => d.id === districtId);
+          if (found) {
+            console.log("[ADMIN] resolveLocation: found in", prov.name, "→", city.name, "→", found.name);
+            setSelProv(String(prov.id));
+            setCities(citiesList);
+            setSelCity(String(city.id));
+            const dRes = await fetch(`/api/shipping/districts?cityId=${city.id}`);
+            const dJson = await dRes.json();
+            setDistricts(dJson.data || []);
+            clearTimeout(timeout);
+            return;
+          }
         }
       }
+      console.warn("[ADMIN] resolveLocation: district_id", districtId, "not found in any province/city");
+    } catch (e) {
+      console.error("[ADMIN] resolveLocation error:", e);
     }
+    clearTimeout(timeout);
   }
 
   async function handleProvChange(provId: string) {
