@@ -9,13 +9,13 @@ export default function CreateYourPrice() {
             Create Your Price
           </p>
           <h2
-            className="text-4xl sm:text-5xl font-medium mb-6"
+            className="text-3xl sm:text-5xl font-medium mb-6"
             style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--cream)" }}
           >
-            Sesuaikan dengan Kebutuhanmu.
+            Di Samaqu, Kamu Bisa Memilih Hargamu Sendiri.
           </h2>
-          <p className="leading-[1.75] mb-8 max-w-md" style={{ color: "var(--sand)" }}>
-            Setiap kebutuhan berbeda — jumlah, bahan, hingga custom untuk seragam komunitas atau acara. Ceritakan kebutuhanmu, dan tim kami bantu susun paket dengan harga yang paling pas.
+          <p className="leading-[1.75] mb-8 max-w-md text-sm sm:text-base" style={{ color: "var(--sand)" }}>
+            Kami tahu kemampuan setiap orang berbeda. Karena itu setiap produk memiliki Harga Minimum, dan kamu bebas menentukan harga terbaikmu selama tidak berada di bawah harga tersebut. Bukan karena produk kami tidak bernilai. Kami hanya ingin kualitas yang baik bisa dijangkau oleh lebih banyak orang.
           </p>
           <ul className="space-y-3 mb-9 text-sm" style={{ color: "var(--sand)" }}>
             <li className="flex items-center gap-3">
@@ -35,7 +35,7 @@ export default function CreateYourPrice() {
             className="inline-flex items-center gap-2 rounded-full px-7 py-4 text-[12px] tracking-[0.18em] uppercase transition hover:opacity-90"
             style={{ background: "var(--gold)", color: "var(--espresso)" }}
           >
-            Buat Penawaran via WhatsApp
+            Pelajari Create Your Price
           </a>
         </div>
 
