@@ -702,6 +702,9 @@ function AdminPageInner() {
                   {/* Courier Selection */}
                   <CourierSettingsSection />
 
+                  {/* RajaOngkir API Key */}
+                  <ApiKeySection />
+
                   {/* Payment Methods */}
                   <PaymentMethodsSection />
                   <QrisEwalletSection />
@@ -1112,6 +1115,77 @@ function CourierSettingsSection() {
           </button>
         )}
       </div>
+    </div>
+  );
+}
+
+function ApiKeySection() {
+  const [apiKey, setApiKey] = useState("");
+  const [masked, setMasked] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [showKey, setShowKey] = useState(false);
+  const toast = useToast();
+
+  useEffect(() => {
+    console.log("[ADMIN] ApiKeySection init");
+    supabase.from("store_settings").select("rajaongkir_api_key").eq("id", 1).single().then(({ data }) => {
+      const key = data?.rajaongkir_api_key || "";
+      console.log("[ADMIN] API key loaded:", key ? `${key.slice(0, 6)}...${key.slice(-4)}` : "(not set)");
+      setMasked(key ? `${key.slice(0, 6)}${"*".repeat(Math.max(0, key.length - 10))}${key.slice(-4)}` : "");
+      setLoading(false);
+    });
+  }, []);
+
+  async function handleSave() {
+    if (!apiKey.trim()) { toast.showToast("error", "API key tidak boleh kosong"); return; }
+    setSaving(true);
+    console.log("[ADMIN] Saving API key:", `${apiKey.slice(0, 6)}...${apiKey.slice(-4)}`);
+    await supabase.from("store_settings").upsert({ id: 1, rajaongkir_api_key: apiKey.trim(), updated_at: new Date().toISOString() });
+    setMasked(`${apiKey.slice(0, 6)}${"*".repeat(Math.max(0, apiKey.length - 10))}${apiKey.slice(-4)}`);
+    setApiKey("");
+    setShowKey(false);
+    setSaving(false);
+    console.log("[ADMIN] API key saved successfully");
+    toast.showToast("success", "API key RajaOngkir disimpan");
+  }
+
+  if (loading) return <div className="card p-6 max-w-2xl"><Loader2 size={20} className="animate-spin" style={{ color: "var(--gold)" }} /></div>;
+
+  return (
+    <div className="card p-6 max-w-2xl space-y-4">
+      <h3 className="text-lg font-semibold" style={{ color: "var(--espresso)" }}>API Key RajaOngkir</h3>
+      <p className="text-xs" style={{ color: "var(--text-muted)" }}>API key untuk integrasi RajaOngkir (Shipping Cost). Disimpan aman di database, tidak pernah dikirim ke browser customer.</p>
+
+      {masked && (
+        <div className="flex items-center gap-2 text-sm font-mono" style={{ color: "var(--text-secondary)" }}>
+          <span>Key tersimpan:</span>
+          <span className="px-2 py-1 rounded" style={{ background: "rgba(64,50,37,.06)" }}>{masked}</span>
+        </div>
+      )}
+
+      <div className="flex gap-2">
+        <div className="flex-1 relative">
+          <input
+            type={showKey ? "text" : "password"}
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+            className="w-full rounded-xl px-4 py-2.5 pr-10 bg-white text-sm outline-none font-mono"
+            style={{ border: "1px solid rgba(64,50,37,.1)" }}
+            placeholder={masked ? "Masukkan key baru untuk mengganti" : "Masukkan API key RajaOngkir"}
+          />
+          <button type="button" onClick={() => setShowKey(!showKey)} className="absolute right-3 top-1/2 -translate-y-1/2 text-xs" style={{ color: "var(--text-muted)" }}>
+            {showKey ? "🙈" : "👁️"}
+          </button>
+        </div>
+        <button onClick={handleSave} disabled={saving || !apiKey.trim()} className="text-sm font-semibold px-5 py-2.5 rounded-xl text-white disabled:opacity-40" style={{ background: "linear-gradient(135deg, var(--gold), #96742f)" }}>
+          {saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null} Simpan
+        </button>
+      </div>
+
+      <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
+        Jika tidak diisi, sistem akan menggunakan API key dari environment variable (RAJAONGKIR_API_KEY).
+      </p>
     </div>
   );
 }
