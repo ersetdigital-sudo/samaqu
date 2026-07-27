@@ -496,6 +496,7 @@ function CheckoutContent() {
                 {savedAddresses.map((addr) => (
                   <label key={addr.id} className="flex items-start gap-3 rounded-xl p-3 cursor-pointer transition-all" style={{ border: `1.5px solid ${selectedAddressId === addr.id ? "var(--gold)" : "rgba(64,50,37,.15)"}`, background: selectedAddressId === addr.id ? "rgba(181,140,74,.04)" : "white" }}
                     onClick={() => {
+                      console.log("[CHECKOUT] Clicked saved address:", { id: addr.id, city: addr.city, postal: addr.postal_code, kecamatan: addr.kecamatan });
                       setSelectedAddressId(addr.id);
                       setNama(addr.recipient_name);
                       setWhatsapp(addr.phone);
@@ -582,6 +583,7 @@ function CheckoutContent() {
                 type="button"
                 onClick={() => {
                   const addr = savedAddresses.find((a) => a.id === selectedAddressId);
+                  console.log("[CHECKOUT] Hitung Ongkir clicked:", { selectedAddressId, postal: addr?.postal_code, originId });
                   if (addr) resolveSavedAddress(addr);
                 }}
                 disabled={loadingCost || !originId}
