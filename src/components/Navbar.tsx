@@ -1,36 +1,39 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { usePathname } from "next/navigation";
-import { MobileDrawer, MobileDrawerCtx } from "@/components/ui/drawer";
-import { Storefront, BookOpen, Ruler, ListChecks, Question, ChatCircle as MessageCircle } from "@phosphor-icons/react";
-import { ShoppingBag } from "lucide-react";
+import Link from "next/link";
+import { AnimatePresence, motion } from "framer-motion";
+import { ChevronDown, Menu, X, ShoppingBag } from "lucide-react";
 import ProfileDropdown from "@/components/ProfileDropdown";
 import { useCart } from "@/lib/cart-context";
 import CartDrawer from "@/components/CartDrawer";
+import { getWhatsAppLink } from "@/lib/store-settings";
 
 /* ── Nav data ── */
-const navLinks = [
-  { href: "/katalog", label: "Katalog", Icon: Storefront },
-  { href: "/testimoni", label: "Testimoni", Icon: MessageCircle },
-  { href: "/tentang-kami", label: "Tentang Kami", Icon: BookOpen },
-  { href: "#size", label: "Panduan Size", Icon: Ruler },
-  { href: "#cara-pesan", label: "Cara Pemesanan", Icon: ListChecks },
-  { href: "#faq", label: "FAQ", Icon: Question },
+type NavItem = { label: string; href: string; hasDropdown?: false } | { label: string; hasDropdown: true };
+const NAV_ITEMS: NavItem[] = [
+  { label: "Home", href: "/" },
+  { label: "Katalog", href: "/katalog" },
+  { label: "Testimoni", href: "/testimoni" },
+  { label: "Tentang Kami", href: "/tentang-kami" },
+  { label: "Bantuan", hasDropdown: true },
 ];
 
-/* ── Resolve anchor href: if not on home, prefix with / ── */
-function anchorHref(href: string, isHome: boolean): string {
-  if (href.startsWith("#")) return isHome ? href : `/${href}`;
-  return href;
-}
+const BANTUAN_LINKS = [
+  { label: "Panduan Size", href: "/#size" },
+  { label: "Cara Pemesanan", href: "/#cara-pesan" },
+  { label: "FAQ", href: "/#faq" },
+];
 
 export default function Navbar() {
   const pathname = usePathname();
   const isHome = pathname === "/";
+  const [openDropdown, setOpenDropdown] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   /* ── Scroll: transparent over hero → solid after hero ── */
   const onScroll = useCallback(() => {
@@ -49,6 +52,24 @@ export default function Navbar() {
       window.removeEventListener("resize", onScroll);
     };
   }, [onScroll]);
+
+  /* ── Close dropdown on outside click ── */
+  useEffect(() => {
+    if (!openDropdown) return;
+    const handleClick = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpenDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [openDropdown]);
+
+  /* ── Resolve anchor href: if not on home, prefix with / ── */
+  function resolveHref(href: string): string {
+    if (href.startsWith("/#")) return isHome ? href.slice(1) : href;
+    return href;
+  }
 
   /* ── Styles ── */
   const shellStyle = scrolled
@@ -71,7 +92,7 @@ export default function Navbar() {
   const ctaColor = scrolled ? "var(--espresso)" : "var(--cream)";
 
   return (
-    <MobileDrawerCtx.Provider value={{ open: menuOpen, setOpen: setMenuOpen }}>
+    <>
       {/* ── Navbar: fixed, z-50 ── */}
       <header id="top" className="fixed top-0 inset-x-0 z-50">
         <div className="transition-all duration-500" style={shellStyle}>
@@ -82,7 +103,7 @@ export default function Navbar() {
               aria-label="Navigasi utama"
             >
               {/* Logo */}
-              <a
+              <Link
                 href="/"
                 className="inline-flex items-center leading-none shrink-0 cursor-pointer"
                 aria-label="SAMAQU — kembali ke beranda"
@@ -95,54 +116,120 @@ export default function Navbar() {
                     filter: !isHome || scrolled ? "none" : "invert(1) brightness(0.95)",
                   }}
                 />
-              </a>
+              </Link>
 
-              {/* Desktop links */}
-              <ul
-                className="hidden lg:flex items-center gap-9 text-[11px] tracking-[0.18em] uppercase transition-colors duration-500 font-ui"
-                style={{ color: linkColor }}
-                role="list"
-              >
-                {navLinks.map((link) => (
-                  <li key={link.href}>
-                    <a
-                      href={anchorHref(link.href, isHome)}
-                      className="nav-desktop-link relative py-1 transition-colors duration-300 hover:text-gold"
-                      style={{ color: "inherit" }}
-                    >
-                      {link.label}
-                    </a>
-                  </li>
-                ))}
-              </ul>
+              {/* Desktop nav */}
+              <nav className="hidden lg:flex items-center gap-1" style={{ color: linkColor }}>
+                {NAV_ITEMS.map((item) => {
+                  if (!item.hasDropdown) {
+                    const isActive = pathname === item.href;
+                    return (
+                      <Link
+                        key={item.label}
+                        href={item.href}
+                        className={`rounded-full px-4 py-2 text-[13px] tracking-[0.14em] uppercase font-ui font-medium transition-colors ${
+                          isActive ? "text-gold" : "hover:text-gold"
+                        }`}
+                        style={{ color: "inherit" }}
+                      >
+                        {item.label}
+                      </Link>
+                    );
+                  }
+
+                  // Bantuan dropdown
+                  return (
+                    <div key={item.label} className="relative" ref={dropdownRef}>
+                      <button
+                        onClick={() => setOpenDropdown((v) => !v)}
+                        aria-expanded={openDropdown}
+                        className={`flex items-center gap-1 rounded-full px-4 py-2 text-[13px] tracking-[0.14em] uppercase font-ui font-medium transition-colors ${
+                          openDropdown ? "text-gold" : "hover:text-gold"
+                        }`}
+                        style={{ color: "inherit" }}
+                      >
+                        {item.label}
+                        <ChevronDown
+                          className={`h-3.5 w-3.5 transition-transform duration-300 ${
+                            openDropdown ? "rotate-180" : ""
+                          }`}
+                        />
+                      </button>
+
+                      <AnimatePresence>
+                        {openDropdown && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -8, scale: 0.97 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -8, scale: 0.97 }}
+                            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                            className="absolute right-0 top-full z-20 mt-2 w-52 overflow-hidden rounded-2xl border p-1.5 shadow-lg"
+                            style={{
+                              background: "rgba(239,232,222,.97)",
+                              borderColor: "rgba(201,183,156,.3)",
+                              backdropFilter: "blur(16px)",
+                            }}
+                          >
+                            {BANTUAN_LINKS.map((link) => (
+                              <Link
+                                key={link.label}
+                                href={resolveHref(link.href)}
+                                onClick={() => setOpenDropdown(false)}
+                                className="flex w-full items-center rounded-xl px-3.5 py-2.5 text-sm font-ui font-medium transition-colors hover:bg-[rgba(201,183,156,.15)]"
+                                style={{ color: "var(--espresso)" }}
+                              >
+                                {link.label}
+                              </Link>
+                            ))}
+                            {/* WhatsApp CTA */}
+                            <div className="mt-1 border-t pt-1.5" style={{ borderColor: "rgba(201,183,156,.2)" }}>
+                              <a
+                                href={getWhatsAppLink("Halo Admin SAMAQU, saya butuh bantuan.")}
+                                target="_blank"
+                                rel="noopener"
+                                onClick={() => setOpenDropdown(false)}
+                                className="flex w-full items-center gap-2 rounded-xl px-3.5 py-2.5 text-sm font-ui font-medium transition-colors hover:bg-[rgba(201,183,156,.15)]"
+                                style={{ color: "var(--gold)" }}
+                              >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                  <path d="M17.6 6.3A7.85 7.85 0 0 0 12 4a7.94 7.94 0 0 0-6.9 11.9L4 20l4.2-1.1A7.9 7.9 0 0 0 12 19.9 7.94 7.94 0 0 0 17.6 6.3Z" />
+                                </svg>
+                                Chat Admin
+                              </a>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  );
+                })}
+              </nav>
 
               {/* Right: profile + cart + hamburger */}
               <div className="flex items-center gap-4">
                 {/* Profile dropdown */}
                 <ProfileDropdown />
+
                 {/* Cart icon */}
                 <button
                   onClick={() => setCartOpen(true)}
                   className="relative grid place-items-center w-10 h-10 transition-colors duration-500 cursor-pointer"
-                  style={{ color: scrolled ? "var(--espresso)" : "var(--cream)" }}
-                  aria-label="Keranjang belanja">
+                  style={{ color: ctaColor }}
+                  aria-label="Keranjang belanja"
+                >
                   <ShoppingBag size={20} strokeWidth={1.5} />
                   <CartBadge />
                 </button>
 
-                {/* Hamburger — opens drawer */}
+                {/* Hamburger — mobile */}
                 <button
                   className="lg:hidden grid place-items-center w-10 h-10 -mr-2 transition-colors duration-500"
-                  style={{ color: scrolled ? "var(--espresso)" : "var(--cream)" }}
-                  aria-label="Buka menu"
-                  aria-expanded={menuOpen}
-                  onClick={() => setMenuOpen(true)}
+                  style={{ color: ctaColor }}
+                  aria-label={mobileOpen ? "Tutup menu" : "Buka menu"}
+                  aria-expanded={mobileOpen}
+                  onClick={() => setMobileOpen((v) => !v)}
                 >
-                  <span className="nav-hamburger" data-open={menuOpen || undefined}>
-                    <span />
-                    <span />
-                    <span />
-                  </span>
+                  {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
                 </button>
               </div>
             </nav>
@@ -150,14 +237,86 @@ export default function Navbar() {
         </div>
       </header>
 
-      {/* ── Drawer: renders at body level via portal, z-9999 ── */}
-      <MobileDrawer title="Menu">
-        <DrawerNavContent onClose={() => setMenuOpen(false)} />
-      </MobileDrawer>
+      {/* ── Mobile menu panel ── */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.25 }}
+            className="fixed inset-x-0 top-[72px] sm:top-[84px] z-40 lg:hidden"
+          >
+            <div
+              className="mx-4 rounded-2xl border overflow-hidden shadow-lg"
+              style={{
+                background: "rgba(239,232,222,.97)",
+                borderColor: "rgba(201,183,156,.3)",
+                backdropFilter: "blur(16px)",
+              }}
+            >
+              <div className="flex flex-col">
+                {NAV_ITEMS.map((item) => {
+                  if (!item.hasDropdown) {
+                    return (
+                      <Link
+                        key={item.label}
+                        href={item.href}
+                        onClick={() => setMobileOpen(false)}
+                        className="flex items-center px-6 py-3.5 text-[13px] tracking-[0.14em] uppercase font-ui font-medium transition-colors hover:bg-[rgba(201,183,156,.15)]"
+                        style={{ color: "var(--espresso)", borderBottom: "1px solid rgba(201,183,156,.1)" }}
+                      >
+                        {item.label}
+                      </Link>
+                    );
+                  }
+
+                  // Bantuan: show links directly on mobile (no dropdown needed)
+                  return (
+                    <div key={item.label}>
+                      <div className="px-6 pt-4 pb-2 text-[11px] tracking-[0.2em] uppercase font-ui font-semibold" style={{ color: "var(--gold)" }}>
+                        {item.label}
+                      </div>
+                      {BANTUAN_LINKS.map((link) => (
+                        <Link
+                          key={link.label}
+                          href={resolveHref(link.href)}
+                          onClick={() => setMobileOpen(false)}
+                          className="flex items-center pl-10 pr-6 py-3 text-[13px] tracking-[0.12em] uppercase font-ui font-medium transition-colors hover:bg-[rgba(201,183,156,.15)]"
+                          style={{ color: "var(--espresso)", borderBottom: "1px solid rgba(201,183,156,.1)" }}
+                        >
+                          {link.label}
+                        </Link>
+                      ))}
+                    </div>
+                  );
+                })}
+
+                {/* WhatsApp CTA */}
+                <div className="p-4 border-t" style={{ borderColor: "rgba(201,183,156,.15)" }}>
+                  <a
+                    href={getWhatsAppLink("Halo Admin SAMAQU, saya tertarik dengan koleksi Anda dan ingin bertanya soal pemesanan.")}
+                    target="_blank"
+                    rel="noopener"
+                    className="flex items-center justify-center gap-2 w-full px-5 py-3 text-[11px] tracking-[0.16em] uppercase font-ui font-medium transition-all duration-300 hover:opacity-90 rounded-lg"
+                    style={{ background: "var(--gold)", color: "white" }}
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M17.6 6.3A7.85 7.85 0 0 0 12 4a7.94 7.94 0 0 0-6.9 11.9L4 20l4.2-1.1A7.9 7.9 0 0 0 12 19.9 7.94 7.94 0 0 0 17.6 6.3Z" />
+                    </svg>
+                    Chat Admin via WhatsApp
+                  </a>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── Cart Drawer ── */}
       <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
-    </MobileDrawerCtx.Provider>
+    </>
   );
 }
 
@@ -185,7 +344,8 @@ function CartBadge() {
         color: "white",
         transform: bump ? "scale(1.3)" : "scale(1)",
         transition: "transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
-      }}>
+      }}
+    >
       {totalItems}
     </span>
   );
@@ -196,58 +356,4 @@ function usePrevious<T>(value: T): T | undefined {
   const current = ref[0];
   ref[0] = value as T;
   return current;
-}
-
-/* ── Drawer nav content ── */
-import { getWhatsAppLink } from "@/lib/store-settings";
-
-function DrawerNavContent({ onClose }: { onClose: () => void }) {
-  const pathname = usePathname();
-  const isHome = pathname === "/";
-  return (
-    <nav className="flex flex-col h-full" role="navigation" aria-label="Menu mobile">
-      {/* Links */}
-      <ul className="flex flex-col" role="list">
-        {navLinks.map((link) => (
-          <li key={link.href}>
-            <a
-              href={anchorHref(link.href, isHome)}
-              className="flex items-center gap-4 px-6 py-4 text-[13px] tracking-[0.18em] uppercase font-ui transition-colors duration-200 hover:text-gold hover:bg-[var(--sand-2)]"
-              style={{
-                color: "var(--espresso)",
-                borderBottom: "1px solid rgba(201,183,156,.12)",
-              }}
-              onClick={onClose}
-            >
-              <link.Icon size={22} weight="light" style={{ color: "var(--gold)" }} />
-              {link.label}
-            </a>
-          </li>
-        ))}
-      </ul>
-
-      {/* Spacer */}
-      <div className="flex-1" />
-
-      {/* CTA area */}
-      <div className="p-6 space-y-3 border-t" style={{ borderColor: "rgba(201,183,156,.15)" }}>
-        <a
-          href={getWhatsAppLink("Halo Admin SAMAQU, saya tertarik dengan koleksi Anda dan ingin bertanya soal pemesanan.")}
-          target="_blank"
-          rel="noopener"
-          className="flex items-center justify-center gap-2 w-full px-5 py-3.5 text-[11px] tracking-[0.16em] uppercase font-ui font-medium transition-all duration-300 hover:opacity-90 rounded-sm"
-          style={{ background: "var(--gold)", color: "white" }}
-          onClick={onClose}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M17.6 6.3A7.85 7.85 0 0 0 12 4a7.94 7.94 0 0 0-6.9 11.9L4 20l4.2-1.1A7.9 7.9 0 0 0 12 19.9 7.94 7.94 0 0 0 17.6 6.3Z" />
-          </svg>
-          Chat Admin
-        </a>
-        <p className="text-center text-[10px] tracking-[0.2em] uppercase mt-4 font-ui" style={{ color: "var(--stone)" }}>
-          SAMAQU — Busana Muslim Premium
-        </p>
-      </div>
-    </nav>
-  );
 }
