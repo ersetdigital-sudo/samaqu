@@ -60,7 +60,7 @@ function CheckoutContent() {
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderNumber, setOrderNumber] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [savedAddresses, setSavedAddresses] = useState<{ id: string; label: string; recipient_name: string; phone: string; address: string; city: string; postal_code: string; is_default: boolean }[]>([]);
+  const [savedAddresses, setSavedAddresses] = useState<{ id: string; label: string; recipient_name: string; phone: string; address: string; city: string; postal_code: string; is_default: boolean; province?: string; kecamatan?: string }[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string>("");
   const [showNewAddress, setShowNewAddress] = useState(false);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
@@ -525,7 +525,7 @@ function CheckoutContent() {
                         {addr.is_default && <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ background: "rgba(181,140,74,.15)", color: "var(--gold)" }}>Utama</span>}
                       </div>
                       <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>{addr.recipient_name} · {addr.phone}</p>
-                      <p className="text-xs" style={{ color: "var(--text-muted)" }}>{addr.address}, {addr.city} {addr.postal_code}</p>
+                      <p className="text-xs" style={{ color: "var(--text-muted)" }}>{addr.address}, {addr.kecamatan ? `${addr.kecamatan}, ` : ""}{addr.city}{addr.province ? `, ${addr.province}` : ""} {addr.postal_code}</p>
                     </div>
                   </label>
                 ))}
@@ -570,93 +570,20 @@ function CheckoutContent() {
               <h2 className="text-xl sm:text-2xl italic" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Metode Pengiriman</h2>
             </div>
 
-            {/* Provinsi */}
+            {/* Kecamatan — simple text input */}
             <div className="mb-3">
-              <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: "var(--text-secondary)" }}>Provinsi Tujuan</label>
-              <select
-                value={provinsiId ?? ""}
-                onChange={(e) => handleSelectProvinsi(Number(e.target.value))}
+              <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: "var(--text-secondary)" }}>Kecamatan Tujuan</label>
+              <input
+                type="text"
+                value={kecamatanName}
+                onChange={(e) => setKecamatanName(e.target.value)}
                 className="w-full rounded-lg px-4 py-3 text-sm font-ui"
                 style={selectStyle}
-              >
-                <option value="">{loadingProvinces ? "Memuat provinsi…" : "Pilih Provinsi"}</option>
-                {provinces.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Kota/Kabupaten */}
-            <div className="mb-3">
-              <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: "var(--text-secondary)" }}>Kota / Kabupaten</label>
-              <select
-                value={kotaId ?? ""}
-                onChange={(e) => handleSelectKota(Number(e.target.value))}
-                disabled={!provinsiId}
-                className="w-full rounded-lg px-4 py-3 text-sm font-ui"
-                style={{ ...selectStyle, opacity: !provinsiId ? 0.5 : 1 }}
-              >
-                <option value="">{loadingKab ? "Memuat kota…" : "Pilih Kota/Kabupaten"}</option>
-                {kabupatenList.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Kecamatan */}
-            <div className="mb-3">
-              <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: "var(--text-secondary)" }}>Kecamatan</label>
-              <select
-                value={kecamatanId ?? ""}
-                onChange={async (e) => {
-                  const id = Number(e.target.value);
-                  const item = kecamatanList.find((c) => c.id === id);
-                  setKecamatanId(id);
-                  setKecamatanName(item?.name || "");
-                  setKodepos(String(item?.zip_code || "").replace(/^0+$/, "") || "");
-                  // Auto-fetch ongkir when kecamatan selected
-                  if (id && originId) {
-                    setLoadingCost(true);
-                    setShipOptions([]);
-                    setSelectedShipping(null);
-                    try {
-                      const courierStr = enabledCouriers.length > 0 ? enabledCouriers.join(":") : undefined;
-                      const res = await fetch("/api/shipping/cost", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ origin: originId, destination: id, weight: berat, courier: courierStr }),
-                      });
-                      const json = await res.json();
-                      const opts: ShipOpt[] = [];
-                      if (json.data && Array.isArray(json.data)) {
-                        for (const item of json.data) {
-                          opts.push({
-                            courier: item.name || item.code || "",
-                            service: item.service || "",
-                            description: item.description || "",
-                            cost: typeof item.cost === "number" ? item.cost : 0,
-                            etd: item.etd || "",
-                          });
-                        }
-                      }
-                      opts.sort((a, b) => a.cost - b.cost);
-                      setShipOptions(opts);
-                    } catch (e) {
-                      console.error("Gagal hitung ongkir:", e);
-                    } finally {
-                      setLoadingCost(false);
-                    }
-                  }
-                }}
-                disabled={!kotaId}
-                className="w-full rounded-lg px-4 py-3 text-sm font-ui"
-                style={{ ...selectStyle, opacity: !kotaId ? 0.5 : 1 }}
-              >
-                <option value="">{loadingKec ? "Memuat kecamatan…" : kotaId ? "Pilih Kecamatan" : "Pilih kota terlebih dahulu"}</option>
-                {kecamatanList.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
+                placeholder={selectedAddressId ? "Otomatis dari alamat tersimpan" : "Ketik kecamatan, contoh: Cengkareng"}
+              />
+              {kecamatanName && kecamatanId && (
+                <p className="text-[11px] font-ui mt-1" style={{ color: "var(--gold)" }}>✓ {kecamatanName}</p>
+              )}
             </div>
 
             {/* Loading indicator saat fetch ongkir */}
