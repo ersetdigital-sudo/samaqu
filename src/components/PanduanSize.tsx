@@ -6,8 +6,6 @@ const sizes = [
   { size: "XXL", tinggi: "184–189", dada: "64", panjang: "160" },
 ];
 
-import { getWhatsAppLink } from "@/lib/store-settings";
-
 export default function PanduanSize() {
   return (
     <section id="size" className="py-14 sm:py-24 lg:py-32" style={{ background: "var(--cream)" }}>
@@ -15,25 +13,23 @@ export default function PanduanSize() {
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div className="fade-up">
             <p className="text-[12px] tracking-[0.32em] uppercase mb-4" style={{ color: "var(--gold)" }}>
-              Pas &amp; Nyaman
+              Panduan Ukuran
             </p>
             <h2
-              className="text-4xl sm:text-5xl font-medium mb-6"
+              className="text-3xl sm:text-5xl font-medium mb-6"
               style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}
             >
-              Panduan Ukuran
+              Temukan Ukuran yang Paling Pas untukmu.
             </h2>
-            <p className="leading-[1.75] mb-8" style={{ color: "var(--coffee)" }}>
-              Temukan ukuran yang paling pas untukmu. Ragu memilih? Admin kami siap membantu menentukan size ideal sesuai tinggi dan postur tubuhmu.
+            <p className="leading-[1.75] mb-8 text-sm sm:text-base" style={{ color: "var(--coffee)" }}>
+              Tidak perlu bingung menentukan ukuran. Lihat Size Chart setiap produk dan gunakan Rekomendasi Size yang tersedia untuk membantu menemukan ukuran yang sesuai dengan tinggi dan berat badanmu.
             </p>
             <a
-              href={getWhatsAppLink("Halo Admin SAMAQU, saya tertarik dengan koleksi Anda dan ingin bertanya soal pemesanan.")}
-              target="_blank"
-              rel="noopener"
+              href="#"
               className="inline-flex items-center gap-2 rounded-full px-7 py-4 text-[12px] tracking-[0.18em] uppercase text-white transition hover:opacity-90"
               style={{ background: "var(--espresso)" }}
             >
-              Konsultasi Size via WhatsApp
+              Lihat Panduan Ukuran
             </a>
           </div>
 
