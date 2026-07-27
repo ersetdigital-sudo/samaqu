@@ -891,8 +891,10 @@ function ShippingOriginSection() {
       // 1. Load provinces (1 RajaOngkir call)
       const provRes = await fetch("/api/shipping/provinces");
       const provJson = await provRes.json();
-      setProvinces(provJson.data || []);
-      console.log("[ADMIN] Provinces loaded:", provJson.data?.length);
+      const provList = provJson.data || [];
+      setProvinces(provList);
+      console.log("[ADMIN] Provinces loaded:", provList.length);
+      console.log("[ADMIN] All provinces:", provList.map((p: {id: number; name: string}) => `${p.id}:${p.name}`).join(", "));
 
       // 2. Load saved origin IDs from store_settings
       const { data } = await supabase.from("store_settings").select("origin_district_id, origin_province_id, origin_city_id").eq("id", 1).single();
@@ -926,15 +928,18 @@ function ShippingOriginSection() {
   }, []);
 
   async function handleProvChange(provId: string) {
+    const selectedProv = provinces.find((p) => String(p.id) === provId);
+    console.log("[ADMIN] Province selected:", { id: provId, name: selectedProv?.name });
     setForm({ origin_province_id: provId, origin_city_id: "", origin_district_id: "" });
     setCities([]);
     setDistricts([]);
     if (!provId) return;
-    console.log("[ADMIN] Loading cities for province:", provId);
+    console.log("[ADMIN] Loading cities for province:", provId, selectedProv?.name);
     const res = await fetch(`/api/shipping/districts?provinceId=${provId}`);
     const json = await res.json();
     setCities(json.data || []);
     console.log("[ADMIN] Cities loaded:", json.data?.length);
+    if (json.data?.[0]) console.log("[ADMIN] First city sample:", json.data[0]);
   }
 
   async function handleCityChange(cityId: string) {

@@ -8,7 +8,11 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { origin, destination, weight, courier } = body;
 
-    console.log("[SHIPPING-COST] Request body:", { origin, destination, weight, courier });
+    console.log("[SHIPPING-COST] === INCOMING REQUEST ===");
+    console.log("[SHIPPING-COST] origin:", origin, typeof origin);
+    console.log("[SHIPPING-COST] destination:", destination, typeof destination);
+    console.log("[SHIPPING-COST] weight:", weight, typeof weight);
+    console.log("[SHIPPING-COST] courier:", courier);
 
     if (!origin || !destination || !weight) {
       console.log("[SHIPPING-COST] ERROR: param wajib kosong", { origin, destination, weight });
@@ -25,8 +29,15 @@ export async function POST(req: Request) {
     formBody.append("courier", couriers);
 
     const rajaUrl = "https://rajaongkir.komerce.id/api/v1/calculate/domestic-cost";
-    console.log("[SHIPPING-COST] Calling RajaOngkir:", rajaUrl);
+    console.log("[SHIPPING-COST] === RAJAONGKIR OUTGOING REQUEST ===");
+    console.log("[SHIPPING-COST] URL:", rajaUrl);
+    console.log("[SHIPPING-COST] Method: POST");
+    console.log("[SHIPPING-COST] Content-Type: application/x-www-form-urlencoded");
     console.log("[SHIPPING-COST] Form body:", formBody.toString());
+    console.log("[SHIPPING-COST] Parsed params:");
+    for (const [key, val] of formBody.entries()) {
+      console.log(`[SHIPPING-COST]   ${key} = ${val}`);
+    }
 
     const res = await fetch(rajaUrl, {
       method: "POST",
@@ -38,27 +49,35 @@ export async function POST(req: Request) {
       signal: AbortSignal.timeout(15000),
     });
 
-    console.log("[SHIPPING-COST] RajaOngkir response status:", res.status);
+    console.log("[SHIPPING-COST] === RAJAONGKIR RESPONSE ===");
+    console.log("[SHIPPING-COST] Status:", res.status);
 
     const json = await res.json();
 
-    // Log raw response structure for debugging
-    console.log("[SHIPPING-COST] Raw response keys:", Object.keys(json));
-    console.log("[SHIPPING-COST] Raw data type:", typeof json.data, Array.isArray(json.data) ? `array[${json.data.length}]` : "");
-    if (json.data?.[0]) console.log("[SHIPPING-COST] First item keys:", Object.keys(json.data[0]));
-    console.log("[SHIPPING-COST] Raw response preview:", JSON.stringify(json).slice(0, 1000));
+    // Log EVERYTHING from RajaOngkir response
+    console.log("[SHIPPING-COST] Response JSON:", JSON.stringify(json, null, 2).slice(0, 2000));
 
     // Log parsed results summary
     if (json.data && Array.isArray(json.data)) {
-      console.log("[SHIPPING-COST] Couriers returned:", json.data.length);
+      console.log("[SHIPPING-COST] === PARSED RESULTS ===");
+      console.log("[SHIPPING-COST] Total couriers:", json.data.length);
       for (const item of json.data) {
-        // Try nested format first
-        const nestedServices = item.costs?.map((s: { service: string; cost: Array<{ value: number }> }) =>
-          `${s.service}: Rp${s.cost?.[0]?.value?.toLocaleString("id-ID") || 0}`
-        ) || [];
-        // Also show flat format
-        const flatCost = typeof item.cost === "number" ? `cost=${item.cost}` : "";
-        console.log(`[SHIPPING-COST]   ${item.name || item.code}: nested=[${nestedServices.join(", ")}] flat=[${flatCost}]`);
+        const courierName = item.name || item.code || "unknown";
+        // Flat format (V2 direct)
+        if (typeof item.cost === "number") {
+          console.log(`[SHIPPING-COST]   ${courierName} ${item.service}: Rp${item.cost.toLocaleString("id-ID")} (etd: ${item.etd || "n/a"})`);
+        }
+        // Nested format
+        else if (item.costs && Array.isArray(item.costs)) {
+          for (const svc of item.costs) {
+            const costEntry = svc.cost?.[0];
+            if (costEntry) {
+              console.log(`[SHIPPING-COST]   ${courierName} ${svc.service}: Rp${costEntry.value?.toLocaleString("id-ID")} (etd: ${costEntry.etd || "n/a"})`);
+            }
+          }
+        } else {
+          console.log(`[SHIPPING-COST]   ${courierName}: UNEXPECTED FORMAT`, JSON.stringify(item).slice(0, 200));
+        }
       }
     } else {
       console.log("[SHIPPING-COST] No data array in response:", JSON.stringify(json).slice(0, 500));
