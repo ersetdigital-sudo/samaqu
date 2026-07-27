@@ -35,12 +35,12 @@ export default function Koleksi() {
   return (
     <section
       id="produk"
-      className="py-24 sm:py-32"
+      className="py-14 sm:py-24 lg:py-32"
       style={{ background: "var(--sand-2)" }}
     >
       <div className="max-w-[1200px] mx-auto px-5 sm:px-8">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-14 fade-up">
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 sm:gap-6 mb-6 sm:mb-14 fade-up">
           <div className="max-w-xl">
             <p
               className="text-[12px] tracking-[0.32em] uppercase mb-4 font-ui"

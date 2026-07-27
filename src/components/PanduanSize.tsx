@@ -10,7 +10,7 @@ import { getWhatsAppLink } from "@/lib/store-settings";
 
 export default function PanduanSize() {
   return (
-    <section id="size" className="py-24 sm:py-32" style={{ background: "var(--cream)" }}>
+    <section id="size" className="py-14 sm:py-24 lg:py-32" style={{ background: "var(--cream)" }}>
       <div className="max-w-[1200px] mx-auto px-5 sm:px-8">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div className="fade-up">

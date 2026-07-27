@@ -138,13 +138,13 @@ function TestimonialCard({ t }: { t: (typeof reviews)[number] }) {
 export default function Testimoni() {
   return (
     <section
-      className="py-20 sm:py-28 lg:py-32 px-4 sm:px-8"
+      className="py-12 sm:py-20 lg:py-32 px-4 sm:px-8"
       style={{ background: "var(--cream)" }}
     >
       <div className="max-w-[1200px] mx-auto">
         {/* ── Header ── */}
         <motion.div
-          className="text-center max-w-xl mx-auto mb-12 sm:mb-16"
+          className="text-center max-w-xl mx-auto mb-6 sm:mb-12 lg:mb-16"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-80px" }}

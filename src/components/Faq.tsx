@@ -153,11 +153,11 @@ export default function Faq() {
     <section
       id="faq"
       aria-labelledby="faq-heading"
-      className="relative overflow-hidden py-24 sm:py-32"
+      className="relative overflow-hidden py-14 sm:py-24 lg:py-32"
       style={{ background: "var(--beige)" }}
     >
       <div className="mx-auto max-w-6xl px-6 sm:px-8 lg:px-12">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-12 lg:gap-16">
           {/* ── Left: sticky heading ── */}
           <div className="lg:col-span-4">
             <motion.div

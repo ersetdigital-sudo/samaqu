@@ -2,7 +2,7 @@ import Image from "next/image";
 
 export default function Tentang() {
   return (
-    <section id="tentang" className="py-24 sm:py-32" style={{ background: "var(--sand-2)" }}>
+    <section id="tentang" className="py-14 sm:py-24 lg:py-32" style={{ background: "var(--sand-2)" }}>
       <div className="max-w-[1200px] mx-auto px-5 sm:px-8 grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
         <div className="fade-up order-2 lg:order-1">
           <p className="text-[12px] tracking-[0.32em] uppercase mb-5" style={{ color: "var(--gold)" }}>

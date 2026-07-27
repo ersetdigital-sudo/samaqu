@@ -189,7 +189,7 @@ export default function Garansi() {
   return (
     <section
       id="jaminan"
-      className="relative w-full px-5 sm:px-8 pt-16 sm:pt-32 lg:pt-40 pb-14 sm:pb-28 flex justify-center overflow-hidden"
+      className="relative w-full px-5 sm:px-8 pt-10 sm:pt-24 lg:pt-32 pb-10 sm:pb-20 lg:pb-28 flex justify-center overflow-hidden"
       style={{
         background:
           "radial-gradient(1200px 600px at 50% -5%, #efe8de 0%, #f8f6f2 55%, #f8f6f2 100%)",

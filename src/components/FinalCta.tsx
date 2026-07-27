@@ -15,7 +15,7 @@ const revealVariants: Variants = {
 export default function FinalCta() {
   return (
     <section
-      className="relative overflow-hidden py-24 sm:py-32 lg:py-40"
+      className="relative overflow-hidden py-14 sm:py-24 lg:py-32"
       style={{
         background:
           "radial-gradient(circle at 20% 20%, rgba(184,145,70,.08), transparent 50%), radial-gradient(circle at 80% 80%, rgba(201,183,156,.1), transparent 50%), var(--beige)",
