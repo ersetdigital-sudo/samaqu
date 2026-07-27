@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Lock, Loader2, ChevronDown } from "lucide-react";
+import { Lock, Truck, Loader2, ChevronDown } from "lucide-react";
 import { getProductById, weightMap } from "@/lib/katalog-data";
 import { useCart } from "@/lib/cart-context";
 import { supabase } from "@/lib/supabase";
@@ -175,18 +175,6 @@ function CheckoutContent() {
     }
     fetchAddresses();
   }, []);
-
-  // Auto-resolve ongkir for default saved address once originId is ready
-  useEffect(() => {
-    console.log("[CHECKOUT] 4/5 Auto-resolve check:", { originId, savedAddresses: savedAddresses.length, selectedAddressId, shipOptions: shipOptions.length, loadingCost });
-    if (!originId || savedAddresses.length === 0 || !selectedAddressId) { console.log("[CHECKOUT] 4/5 SKIP: missing data"); return; }
-    const addr = savedAddresses.find((a) => a.id === selectedAddressId);
-    if (!addr) { console.log("[CHECKOUT] 4/5 SKIP: address not found for id:", selectedAddressId); return; }
-    console.log("[CHECKOUT] 4/5 Found address:", { id: addr.id, city: addr.city, postal: addr.postal_code });
-    if (shipOptions.length > 0) { console.log("[CHECKOUT] 4/5 SKIP: already have shipping options"); return; }
-    if (loadingCost) { console.log("[CHECKOUT] 4/5 SKIP: already loading"); return; }
-    resolveSavedAddress(addr);
-  }, [originId, savedAddresses, selectedAddressId]);
 
   // Auto-calculate weight from product
   useEffect(() => {
@@ -514,7 +502,9 @@ function CheckoutContent() {
                       setAlamat(addr.address);
                       setKota(addr.city);
                       setKodepos(addr.postal_code);
-                      resolveSavedAddress(addr);
+                      setKecamatanName(addr.kecamatan || "");
+                      setShipOptions([]);
+                      setSelectedShipping(null);
                     }}>
                     <span className="relative w-4 h-4 rounded-full border-2 flex-shrink-0 mt-0.5" style={{ borderColor: selectedAddressId === addr.id ? "var(--gold)" : "var(--text-muted)" }}>
                       {selectedAddressId === addr.id && <span className="absolute inset-[3px] rounded-full" style={{ background: "var(--gold)" }} />}
@@ -585,6 +575,26 @@ function CheckoutContent() {
                 <p className="text-[11px] font-ui mt-1" style={{ color: "var(--gold)" }}>✓ {kecamatanName}</p>
               )}
             </div>
+
+            {/* Hitung Ongkir button */}
+            {selectedAddressId && (
+              <button
+                type="button"
+                onClick={() => {
+                  const addr = savedAddresses.find((a) => a.id === selectedAddressId);
+                  if (addr) resolveSavedAddress(addr);
+                }}
+                disabled={loadingCost || !originId}
+                className="w-full rounded-xl py-3 text-sm font-ui font-medium flex items-center justify-center gap-2 transition-all mb-4 disabled:opacity-40"
+                style={{ background: "var(--espresso)", color: "var(--cream)" }}
+              >
+                {loadingCost ? (
+                  <><Loader2 size={16} className="animate-spin" /> Menghitung…</>
+                ) : (
+                  <><Truck size={16} /> Hitung Ongkos Kirim</>
+                )}
+              </button>
+            )}
 
             {/* Loading indicator saat fetch ongkir */}
             {loadingCost && (
