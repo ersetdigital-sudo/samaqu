@@ -1,19 +1,8 @@
 import { NextResponse } from "next/server";
-
-interface ResolveResult {
-  district_id: number;
-  district_name: string;
-  city_id: number;
-  city_name: string;
-  province_id: number;
-  province_name: string;
-}
-
-// Cache: postalCode → full result
-const cache = new Map<string, ResolveResult>();
+import { supabase } from "@/lib/supabase";
 
 // GET /api/shipping/resolve-district?postalCode=12345
-// Finds district/city/province IDs from postal code
+// Finds district_id from postal code, cached in Supabase
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const postalCode = searchParams.get("postalCode")?.replace(/^0+/, "");
@@ -21,12 +10,18 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "postalCode wajib" }, { status: 400 });
   }
 
-  // Check cache
-  const cached = cache.get(postalCode);
-  if (cached) {
-    return NextResponse.json(cached);
+  // 1. Check Supabase cache
+  const { data: cached } = await supabase
+    .from("postal_district_cache")
+    .select("district_id, district_name")
+    .eq("postal_code", postalCode)
+    .single();
+
+  if (cached?.district_id) {
+    return NextResponse.json({ district_id: cached.district_id, district_name: cached.district_name });
   }
 
+  // 2. Not cached — search RajaOngkir
   const key = process.env.RAJAONGKIR_API_KEY!;
   const headers = { key };
 
@@ -50,16 +45,18 @@ export async function GET(req: Request) {
         );
 
         if (match) {
-          const result: ResolveResult = {
+          // Cache in Supabase for next time
+          await supabase.from("postal_district_cache").upsert({
+            postal_code: postalCode,
             district_id: match.id,
             district_name: match.name,
             city_id: city.id,
             city_name: city.name,
             province_id: prov.id,
             province_name: prov.name,
-          };
-          cache.set(postalCode, result);
-          return NextResponse.json(result);
+          });
+
+          return NextResponse.json({ district_id: match.id, district_name: match.name });
         }
       }
     }
