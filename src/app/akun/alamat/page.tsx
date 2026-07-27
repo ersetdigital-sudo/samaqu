@@ -95,7 +95,18 @@ export default function AlamatPage() {
     const isFirstAddress = addresses.length === 0;
     const forceDefault = isFirstAddress;
     const shouldBeDefault = form.is_default || forceDefault;
-    const payload = { ...form, label: form.label.trim() || "Alamat", customer_id: customerId, is_default: shouldBeDefault };
+
+    // Resolve district_id from postal code for shipping calculation
+    let districtId: number | null = null;
+    if (form.postal_code.trim()) {
+      try {
+        const res = await fetch(`/api/shipping/resolve-district?postalCode=${form.postal_code.trim()}`);
+        const json = await res.json();
+        if (json.district_id) districtId = json.district_id;
+      } catch { /* silent */ }
+    }
+
+    const payload = { ...form, label: form.label.trim() || "Alamat", customer_id: customerId, is_default: shouldBeDefault, district_id: districtId };
 
     if (shouldBeDefault) {
       await supabase.from("saved_addresses").update({ is_default: false }).eq("customer_id", customerId);
