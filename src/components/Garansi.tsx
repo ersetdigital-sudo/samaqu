@@ -176,8 +176,8 @@ export default function Garansi() {
     async function fetch() {
       try {
         const [gRes, bRes] = await Promise.all([
-          supabase.from("garansi_items").select("*").eq("is_active", true).order("display_order"),
-          supabase.from("trust_badges").select("*").eq("is_active", true).order("display_order"),
+          supabase.from("garansi_items").select("*").order("display_order"),
+          supabase.from("trust_badges").select("*").order("display_order"),
         ]);
         if (gRes.data && gRes.data.length > 0) setGuarantees(gRes.data.map((g: { title: string; description: string }) => ({ title: g.title, description: g.description })));
         if (bRes.data && bRes.data.length > 0) setBadges(bRes.data.map((b: { label: string }) => b.label));

@@ -11,7 +11,7 @@ export default function TrustMarquee() {
   useEffect(() => {
     async function fetch() {
       try {
-        const { data } = await supabase.from("marquee_items").select("*").eq("is_active", true).order("display_order");
+        const { data } = await supabase.from("marquee_items").select("*").order("display_order");
         if (data && data.length > 0) setItems(data.map((m: { label: string }) => m.label));
       } catch { /* use defaults */ }
     }

@@ -141,7 +141,7 @@ export default function CaraPemesanan() {
   useEffect(() => {
     async function fetchSteps() {
       try {
-        const { data } = await supabase.from("order_steps").select("*").eq("is_active", true).order("step_number");
+        const { data } = await supabase.from("order_steps").select("*").order("step_number");
         if (data && data.length > 0) {
           setSteps(data.map((s: { title: string; description: string }, i: number) => ({
             title: s.title,

@@ -142,7 +142,7 @@ export default function Faq() {
   useEffect(() => {
     async function fetch() {
       try {
-        const { data } = await supabase.from("faq_items").select("*").eq("is_active", true).order("display_order");
+        const { data } = await supabase.from("faq_items").select("*").order("display_order");
         if (data && data.length > 0) setFaqs(data.map((f: { question: string; answer: string }) => ({ q: f.question, a: f.answer })));
       } catch { /* use defaults */ }
     }
