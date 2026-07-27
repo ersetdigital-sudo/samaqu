@@ -520,7 +520,10 @@ function CheckoutContent() {
               color: item.color,
               size: item.size,
               quantity: item.qty,
-              price: item.price,
+              price: item.create_your_price_enabled && item.customer_price ? item.customer_price : item.price,
+              customer_price: item.customer_price || null,
+              minimum_price: item.minimum_price || null,
+              create_your_price_enabled: item.create_your_price_enabled || false,
             }))
           : [{
               productId: product!.id,
@@ -530,6 +533,9 @@ function CheckoutContent() {
               size: selectedSize,
               quantity: qty,
               price: product!.price,
+              customer_price: null,
+              minimum_price: null,
+              create_your_price_enabled: false,
             }],
       };
 
@@ -569,7 +575,10 @@ function CheckoutContent() {
   const selectedColor = colorParam || product?.colors?.[0] || "-";
   const selectedSize = sizeParam;
   const shippingCost = selectedShipping?.cost || 0;
-  const cartSubtotal = isCartMode ? items.reduce((sum, item) => sum + item.price * item.qty, 0) : (product?.price || 0) * qty;
+  const cartSubtotal = isCartMode ? items.reduce((sum, item) => {
+    const unitPrice = (item.create_your_price_enabled && item.customer_price) ? item.customer_price : item.price;
+    return sum + unitPrice * item.qty;
+  }, 0) : (product?.price || 0) * qty;
   const subtotal = cartSubtotal;
   const total = subtotal - discount + shippingCost;
 
