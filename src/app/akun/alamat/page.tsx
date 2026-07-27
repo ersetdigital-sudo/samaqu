@@ -232,7 +232,7 @@ export default function AlamatPage() {
                   <div className="text-sm space-y-1" style={{ color: "var(--text-secondary)" }}>
                     <p className="font-medium" style={{ color: "var(--espresso)" }}>{addr.recipient_name} · {addr.phone}</p>
                     <p>{addr.address}</p>
-                    <p>{addr.city}, {addr.postal_code}</p>
+                    <p>{addr.kecamatan ? `${addr.kecamatan}, ` : ""}{addr.city}{addr.province ? `, ${addr.province}` : ""} {addr.postal_code}</p>
                   </div>
                 </div>
               ))}

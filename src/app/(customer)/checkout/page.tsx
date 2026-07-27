@@ -64,6 +64,7 @@ function CheckoutContent() {
   const [selectedAddressId, setSelectedAddressId] = useState<string>("");
   const [showNewAddress, setShowNewAddress] = useState(false);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+  const [lastResolvedAddress, setLastResolvedAddress] = useState<string>("");
 
   // ── Shipping (RajaOngkir) ──
   const [provinces, setProvinces] = useState<IdName[]>([]);
@@ -265,15 +266,24 @@ function CheckoutContent() {
     }
   }
 
-  // Resolve location from saved address (province + city + kecamatan name matching)
+  // Resolve location from saved address (case-insensitive name matching, cached)
   async function resolveSavedAddress(addr: { province: string; city: string; kecamatan: string; postal_code: string }) {
     if (!originId) return;
+    // Cache: skip if same address already resolved
+    const addrKey = `${addr.province}|${addr.city}|${addr.kecamatan}`;
+    if (addrKey === lastResolvedAddress && shipOptions.length > 0) return;
+    setLastResolvedAddress(addrKey);
+
     setLoadingCost(true);
     setShipOptions([]);
     setSelectedShipping(null);
     try {
-      // Find province ID from loaded list
-      const provMatch = provinces.find((p) => p.name.toUpperCase() === addr.province?.toUpperCase());
+      // Find province ID — case-insensitive, handle "NANGGROE ACEH DARUSSALAM" vs "ACEH"
+      const provUpper = addr.province?.toUpperCase() || "";
+      const provMatch = provinces.find((p) => {
+        const pName = p.name.toUpperCase();
+        return pName === provUpper || pName.includes(provUpper) || provUpper.includes(pName);
+      });
       if (!provMatch) { setLoadingCost(false); return; }
       setProvinsiId(provMatch.id);
 
@@ -283,8 +293,9 @@ function CheckoutContent() {
       const cityList: IdName[] = cityJson.data || [];
       setKabupatenList(cityList);
 
-      // Find city ID by name
-      const cityMatch = cityList.find((c) => c.name.toUpperCase() === addr.city?.toUpperCase());
+      // Find city ID — case-insensitive
+      const cityUpper = addr.city?.toUpperCase() || "";
+      const cityMatch = cityList.find((c) => c.name.toUpperCase() === cityUpper || c.name.toUpperCase().includes(cityUpper) || cityUpper.includes(c.name.toUpperCase()));
       if (!cityMatch) { setLoadingCost(false); return; }
       setKotaId(cityMatch.id);
       setKota(cityMatch.name);
@@ -295,8 +306,9 @@ function CheckoutContent() {
       const kecList: IdName[] = kecJson.data || [];
       setKecamatanList(kecList);
 
-      // Find kecamatan ID by name
-      const kecMatch = kecList.find((k) => k.name.toUpperCase() === addr.kecamatan?.toUpperCase());
+      // Find kecamatan ID — case-insensitive
+      const kecUpper = addr.kecamatan?.toUpperCase() || "";
+      const kecMatch = kecList.find((k) => k.name.toUpperCase() === kecUpper || k.name.toUpperCase().includes(kecUpper) || kecUpper.includes(k.name.toUpperCase()));
       if (!kecMatch) { setLoadingCost(false); return; }
       setKecamatanId(kecMatch.id);
       setKecamatanName(kecMatch.name);
@@ -509,7 +521,7 @@ function CheckoutContent() {
                     </div>
                   </label>
                 ))}
-                <button type="button" onClick={() => setShowNewAddress(true)} className="text-xs font-medium mt-1" style={{ color: "#8b6f42" }}>+ Gunakan Alamat Baru</button>
+                <button type="button" onClick={() => { setShowNewAddress(true); setLastResolvedAddress(""); }} className="text-xs font-medium mt-1" style={{ color: "#8b6f42" }}>+ Gunakan Alamat Baru</button>
               </div>
             )}
 
