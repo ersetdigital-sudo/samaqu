@@ -356,41 +356,32 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           {/* Price display — CYP or Fixed */}
           {isCYP ? (
             <div className="mb-4">
+              <p className="text-[10px] tracking-[0.1em] uppercase font-ui mb-1" style={{ color: "var(--stone)" }}>Harga Minimum</p>
+              <p className="text-[1.3rem] font-ui font-semibold mb-1" style={{ color: "var(--gold)" }}>
+                Rp {minimumPrice.toLocaleString("id-ID")}
+              </p>
               <p className="text-[11px] font-ui mb-3" style={{ color: "var(--stone)" }}>Pilih harga terbaikmu</p>
-              {/* Quick select buttons — 3 options, equal height */}
-              <div className="flex gap-1.5 mb-2">
+              {/* Quick select buttons */}
+              <div className="flex flex-wrap gap-1.5 mb-2">
                 {quickPrices.map((qp) => {
                   const isActive = !isCustomPrice && selectedPrice === qp.value;
                   const isRecommended = qp.highlight;
                   return (
                     <button key={qp.value} onClick={() => handleQuickPrice(qp.value)}
-                      className="flex-1 flex flex-col items-center justify-center px-2 py-2 text-center font-ui rounded-sm transition-all"
+                      className="px-3 py-1.5 text-[11px] font-ui rounded-sm transition-all"
                       style={{
-                        minHeight: "48px",
                         background: isActive ? (isRecommended ? "var(--gold)" : "var(--espresso)") : "transparent",
                         color: isActive ? "white" : (isRecommended ? "var(--gold)" : "var(--coffee)"),
                         border: `1.5px solid ${isActive ? (isRecommended ? "var(--gold)" : "var(--espresso)") : (isRecommended ? "var(--gold)" : "rgba(201,183,156,.3)")}`,
                       }}>
-                      <span className="text-[11px] leading-tight">
-                        {isRecommended && <span className="text-[8px] align-top mr-0.5">★</span>}
-                        {qp.label}
-                      </span>
-                      <span className="text-[12px] font-semibold leading-tight mt-0.5">
-                        Rp {qp.value.toLocaleString("id-ID")}
-                      </span>
+                      {isRecommended && "★ "}{qp.label} — Rp {qp.value.toLocaleString("id-ID")}
                     </button>
                   );
                 })}
                 <button onClick={handleCustomPriceToggle}
-                  className="flex-1 flex flex-col items-center justify-center px-2 py-2 text-center font-ui rounded-sm transition-all"
-                  style={{
-                    minHeight: "48px",
-                    background: isCustomPrice ? "var(--espresso)" : "transparent",
-                    color: isCustomPrice ? "var(--cream)" : "var(--coffee)",
-                    border: `1px solid ${isCustomPrice ? "var(--espresso)" : "rgba(201,183,156,.3)"}`,
-                  }}>
-                  <span className="text-[11px] leading-tight">Pilih Harga</span>
-                  <span className="text-[12px] font-semibold leading-tight mt-0.5">Lainnya</span>
+                  className="px-3 py-1.5 text-[11px] font-ui rounded-sm transition-all"
+                  style={{ background: isCustomPrice ? "var(--espresso)" : "transparent", color: isCustomPrice ? "var(--cream)" : "var(--coffee)", border: `1px solid ${isCustomPrice ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
+                  Pilih Harga Lainnya
                 </button>
               </div>
               {/* Custom price input */}
@@ -610,41 +601,32 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             {/* Price display — CYP or Fixed */}
             {isCYP ? (
               <div className="mb-5">
+                <p className="text-[11px] tracking-[0.1em] uppercase font-ui mb-1" style={{ color: "var(--stone)" }}>Harga Minimum</p>
+                <p className="text-[20px] sm:text-[22px] font-ui font-semibold mb-1" style={{ color: "var(--gold)" }}>
+                  Rp {minimumPrice.toLocaleString("id-ID")}
+                </p>
                 <p className="text-[12px] font-ui mb-3" style={{ color: "var(--stone)" }}>Pilih harga terbaikmu</p>
-                {/* Quick select buttons — 3 options, equal height */}
-                <div className="flex gap-2 mb-2">
+                {/* Quick select buttons */}
+                <div className="flex flex-wrap gap-2 mb-2">
                   {quickPrices.map((qp) => {
                     const isActive = !isCustomPrice && selectedPrice === qp.value;
                     const isRecommended = qp.highlight;
                     return (
                       <button key={qp.value} onClick={() => handleQuickPrice(qp.value)}
-                        className="flex-1 flex flex-col items-center justify-center px-3 py-2.5 text-center font-ui rounded-sm transition-all"
+                        className="px-4 py-2 text-[12px] font-ui rounded-sm transition-all"
                         style={{
-                          minHeight: "56px",
                           background: isActive ? (isRecommended ? "var(--gold)" : "var(--espresso)") : "transparent",
                           color: isActive ? "white" : (isRecommended ? "var(--gold)" : "var(--coffee)"),
                           border: `1.5px solid ${isActive ? (isRecommended ? "var(--gold)" : "var(--espresso)") : (isRecommended ? "var(--gold)" : "rgba(201,183,156,.3)")}`,
                         }}>
-                        <span className="text-[12px] leading-tight">
-                          {isRecommended && <span className="text-[9px] align-top mr-0.5">★</span>}
-                          {qp.label}
-                        </span>
-                        <span className="text-[14px] font-semibold leading-tight mt-0.5">
-                          Rp {qp.value.toLocaleString("id-ID")}
-                        </span>
+                        {isRecommended && "★ "}{qp.label} — Rp {qp.value.toLocaleString("id-ID")}
                       </button>
                     );
                   })}
                   <button onClick={handleCustomPriceToggle}
-                    className="flex-1 flex flex-col items-center justify-center px-3 py-2.5 text-center font-ui rounded-sm transition-all"
-                    style={{
-                      minHeight: "56px",
-                      background: isCustomPrice ? "var(--espresso)" : "transparent",
-                      color: isCustomPrice ? "var(--cream)" : "var(--coffee)",
-                      border: `1px solid ${isCustomPrice ? "var(--espresso)" : "rgba(201,183,156,.3)"}`,
-                    }}>
-                    <span className="text-[12px] leading-tight">Pilih Harga</span>
-                    <span className="text-[14px] font-semibold leading-tight mt-0.5">Lainnya</span>
+                    className="px-4 py-2 text-[12px] font-ui rounded-sm transition-all"
+                    style={{ background: isCustomPrice ? "var(--espresso)" : "transparent", color: isCustomPrice ? "var(--cream)" : "var(--coffee)", border: `1px solid ${isCustomPrice ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
+                    Pilih Harga Lainnya
                   </button>
                 </div>
                 {/* Custom price input */}
