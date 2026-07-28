@@ -211,7 +211,6 @@ function CheckoutContent() {
   const [enabledCouriers, setEnabledCouriers] = useState<string[]>([]);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
   const lastResolvedRef = useRef<string>("");
-  const shippingAbortRef = useRef<AbortController | null>(null);
 
   // Load store settings (origin + couriers) on mount
   useEffect(() => {
@@ -408,14 +407,8 @@ function CheckoutContent() {
   useEffect(() => {
     if (!settingsLoaded || !originId) return;
 
-    // Reset guard so a fresh call can proceed when effect re-fires
-    // (e.g. StrictMode double-mount or address change). Any in-flight
-    // API call from the previous fire will be aborted in cleanup.
-    lastResolvedRef.current = "";
-
     // Create a fresh AbortController for this effect lifecycle
     const controller = new AbortController();
-    shippingAbortRef.current = controller;
 
     if (selectedAddressId && savedAddresses.length > 0) {
       const addr = savedAddresses.find((a) => a.id === selectedAddressId);
