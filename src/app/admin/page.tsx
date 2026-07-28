@@ -160,16 +160,26 @@ function AdminPageInner() {
           if (ordersRes.data) setOrders(ordersRes.data as Order[]);
           if (productsRes.data) {
             setProducts(productsRes.data as Product[]);
-            // Fetch first IMAGE (not video) for each product from product_images table
+            // Always fetch first actual IMAGE (skip videos) from product_images table
             const thumbs: Record<string, string> = {};
+            const productIds = (productsRes.data as Product[]).map((p) => p.id);
+            if (productIds.length > 0) {
+              const { data: allImgs } = await supabase
+                .from("product_images")
+                .select("product_id, url, is_video")
+                .in("product_id", productIds)
+                .order("display_order");
+              if (allImgs) {
+                for (const pid of productIds) {
+                  const firstImage = allImgs.find((img: { product_id: string; url: string; is_video: boolean }) => img.product_id === pid && !img.is_video);
+                  if (firstImage) thumbs[pid] = firstImage.url;
+                }
+              }
+            }
+            // Fallback: if no image found in product_images, use product.image
             for (const p of productsRes.data as Product[]) {
-              if (p.image) {
+              if (!thumbs[p.id] && p.image && !p.image.match(/\.(mp4|webm|ogg)$/i)) {
                 thumbs[p.id] = p.image;
-              } else {
-                // Skip videos, get first actual image
-                const { data: imgs } = await supabase.from("product_images").select("url, is_video").eq("product_id", p.id).order("display_order");
-                const firstImage = imgs?.find((img: { url: string; is_video: boolean }) => !img.is_video);
-                if (firstImage) thumbs[p.id] = firstImage.url;
               }
             }
             setProductThumbnails(thumbs);
