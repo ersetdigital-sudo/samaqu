@@ -33,6 +33,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Data wajib tidak lengkap" }, { status: 400 });
     }
 
+    if (!body.paymentMethod || !["bank", "qris", "cod"].includes(body.paymentMethod)) {
+      console.log("[ORDERS] ERROR: Metode pembayaran tidak valid:", body.paymentMethod);
+      return NextResponse.json({ error: "Pilih metode pembayaran terlebih dahulu" }, { status: 400 });
+    }
+
     // ── Server-side shipping cost verification ──
     // Never trust shipping.cost from client — verify via RajaOngkir
     let verifiedShippingCost = 0;
@@ -177,7 +182,7 @@ export async function POST(request: NextRequest) {
         shipping_notes: shipping.notes || null,
         shipping_method: verifiedShippingMethod,
         shipping_cost: verifiedShippingCost,
-        payment_method: body.paymentMethod || "bank",
+        payment_method: body.paymentMethod,
         subtotal,
         discount,
         total,
