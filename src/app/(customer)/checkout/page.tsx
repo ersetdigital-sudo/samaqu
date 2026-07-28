@@ -43,7 +43,7 @@ function generateOrderNumber(): string {
 }
 
 // ── Shipping: resolve destination_id from address ──
-async function resolveDestinationId(addr: SavedAddress): Promise<number | null> {
+async function resolveDestinationId(addr: SavedAddress, signal?: AbortSignal): Promise<number | null> {
   console.log("[CHECKOUT] 🔍 resolveDestinationId called:", {
     addressId: addr.id,
     kecamatan: addr.kecamatan,
@@ -71,7 +71,7 @@ async function resolveDestinationId(addr: SavedAddress): Promise<number | null> 
   const apiUrl = `/api/shipping/search-destination?${params}`;
   console.log("[CHECKOUT] 📡 Calling search-destination:", apiUrl);
 
-  const res = await fetch(apiUrl, { signal: AbortSignal.timeout(10000) });
+  const res = await fetch(apiUrl, { signal: signal ?? AbortSignal.timeout(10000) });
   console.log("[CHECKOUT] 📡 search-destination status:", res.status);
 
   const json = await res.json();
@@ -99,7 +99,7 @@ async function resolveDestinationId(addr: SavedAddress): Promise<number | null> 
 }
 
 // ── Shipping: fetch cost from RajaOngkir ──
-async function fetchShippingCost(originId: number, destinationId: number, weight: number, couriers: string[]): Promise<ShipOpt[]> {
+async function fetchShippingCost(originId: number, destinationId: number, weight: number, couriers: string[], signal?: AbortSignal): Promise<ShipOpt[]> {
   const courierStr = couriers.length > 0 ? couriers.join(":") : "jne:sicepat:jnt:ninja:tiki:wahana:pos:lion:anteraja";
   console.log("[CHECKOUT] 💰 === RAJAONGKIR REQUEST ===");
   console.log("[CHECKOUT] 💰 origin:", originId, "(toko)");
@@ -112,7 +112,7 @@ async function fetchShippingCost(originId: number, destinationId: number, weight
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ origin: originId, destination: destinationId, weight, courier: courierStr }),
-    signal: AbortSignal.timeout(15000),
+    signal: signal ?? AbortSignal.timeout(15000),
   });
 
   console.log("[CHECKOUT] 💰 shipping/cost status:", res.status);
@@ -211,6 +211,7 @@ function CheckoutContent() {
   const [enabledCouriers, setEnabledCouriers] = useState<string[]>([]);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
   const lastResolvedRef = useRef<string>("");
+  const shippingAbortRef = useRef<AbortController | null>(null);
 
   // Load store settings (origin + couriers) on mount
   useEffect(() => {
@@ -330,17 +331,9 @@ function CheckoutContent() {
   }, [isCartMode, items, qty, product]);
 
   // ── Auto-trigger shipping calculation ──
-  const calculateShipping = useCallback(async (addr: SavedAddress) => {
+  const calculateShipping = useCallback(async (addr: SavedAddress, signal?: AbortSignal) => {
     const callId = Math.random().toString(36).slice(2, 8);
-    console.log(`[CHECKOUT] 🚛 [${callId}] === SHIPPING CALCULATION START ===`, new Date().toISOString());
-    console.log(`[CHECKOUT] 🚛 [${callId}] Called from:`, new Error().stack?.split("\n")[2]?.trim());
-    console.log(`[CHECKOUT] 🚛 [${callId}] ORIGIN (toko):`, originId);
-    console.log(`[CHECKOUT] 🚛 [${callId}] DESTINATION (customer):`, { id: addr.id, label: addr.label, kecamatan: addr.kecamatan, city: addr.city, district_id: addr.district_id });
-    console.log(`[CHECKOUT] 🚛 [${callId}] WEIGHT:`, berat, "grams");
-    console.log(`[CHECKOUT] 🚛 [${callId}] COURIERS:`, enabledCouriers);
-    console.log(`[CHECKOUT] 🚛 [${callId}] lastResolvedRef.current:`, lastResolvedRef.current);
-    console.log(`[CHECKOUT] 🚛 [${callId}] shipOptions.length:`, shipOptions.length);
-    console.log(`[CHECKOUT] 🚛 [${callId}] loadingCost:`, loadingCost);
+    console.log(`[CHECKOUT] 🚛 [${callId}] Shipping calc start for: ${addr.label} (${addr.id})`);
 
     if (!originId) {
       console.error("[CHECKOUT] ❌ Origin toko belum diatur!");
@@ -354,27 +347,16 @@ function CheckoutContent() {
     }
 
     const addrKey = `${addr.id}-${addr.district_id || addr.kecamatan}`;
-    console.log(`[CHECKOUT] 🛡️ [${callId}] Guard check:`, {
-      addrKey,
-      addrId: addr.id,
-      lastResolvedRefCurrent: lastResolvedRef.current,
-      shipOptionsLength: shipOptions.length,
-      shippingError,
-    });
     // Guard: if same address already fully resolved (with results), skip
     if (addrKey === lastResolvedRef.current && shipOptions.length > 0 && !shippingError) {
-      console.log(`[CHECKOUT] ⏭️ [${callId}] GUARD HIT #1 (already resolved): addrKey=${addrKey} === lastResolvedRef=${lastResolvedRef.current}`);
       return;
     }
     // Guard: if same address is currently being processed (concurrent call), skip
     if (addr.id === lastResolvedRef.current) {
-      console.log(`[CHECKOUT] ⏭️ [${callId}] GUARD HIT #2 (already processing): addr.id=${addr.id} === lastResolvedRef=${lastResolvedRef.current}`);
       return;
     }
-    console.log(`[CHECKOUT] 🚛 [${callId}] NO GUARD HIT — proceeding with API call`);
     // Mark this address as "processing" BEFORE any async work
     lastResolvedRef.current = addr.id;
-    console.log(`[CHECKOUT] 🚛 [${callId}] Marked as processing, lastResolvedRef =`, addr.id);
 
     console.log("[CHECKOUT] 🚛 Setting loading state...");
     setLoadingCost(true);
@@ -383,11 +365,7 @@ function CheckoutContent() {
     setShippingError(null);
 
     try {
-      // Step 1: Get destination_id
-      console.log("[CHECKOUT] 🚛 Step 1: Resolving destination_id...");
-      const destId = await resolveDestinationId(addr);
-      console.log("[CHECKOUT] 🚛 Step 1 result:", destId);
-
+      const destId = await resolveDestinationId(addr, signal);
       if (!destId) {
         console.error("[CHECKOUT] ❌ Destination ID not found!");
         setShippingError("Kecamatan tujuan tidak ditemukan di sistem kurir. Pastikan nama kecamatan benar.");
@@ -395,18 +373,14 @@ function CheckoutContent() {
         return;
       }
 
-      // Step 2: Update local state with resolved ID
+      // Update local address with resolved district_id if not cached
       if (!addr.district_id) {
-        console.log("[CHECKOUT] 🚛 Step 2: Updating local address with district_id:", destId);
         setSavedAddresses((prev) =>
           prev.map((a) => (a.id === addr.id ? { ...a, district_id: destId } : a))
         );
       }
 
-      // Step 3: Fetch shipping cost
-      console.log("[CHECKOUT] 🚛 Step 3: Fetching shipping cost...");
-      const opts = await fetchShippingCost(originId, destId, berat, enabledCouriers);
-      console.log("[CHECKOUT] 🚛 Step 3 result:", opts.length, "options");
+      const opts = await fetchShippingCost(originId, destId, berat, enabledCouriers, signal);
 
       if (opts.length === 0) {
         console.warn("[CHECKOUT] ⚠️ No shipping options returned!");
@@ -414,61 +388,48 @@ function CheckoutContent() {
       } else {
         setShipOptions(opts);
         lastResolvedRef.current = addrKey;
-        console.log("[CHECKOUT] ✅ Shipping options set, lastResolved updated:", addrKey);
+        console.log(`[CHECKOUT] ✅ [${callId}] Shipping options set:`, opts.length, "options");
       }
     } catch (e) {
+      if (e instanceof Error && e.name === "AbortError") {
+        console.log(`[CHECKOUT] ⏭️ [${callId}] Shipping calc aborted (effect re-fired or unmounted)`);
+        return;
+      }
       console.error("[CHECKOUT] ❌ Shipping calculation error:", e);
       setShippingError("Gagal menghitung ongkir. Periksa koneksi Anda dan coba lagi.");
       lastResolvedRef.current = ""; // Clear processing state on error so user can retry
     } finally {
       setLoadingCost(false);
-      console.log("[CHECKOUT] 🚛 === SHIPPING CALCULATION END ===");
     }
   }, [originId, berat, enabledCouriers]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-calculate when default address is selected and settings are loaded
   const shippingCalcTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const effectFireCountRef = useRef(0);
   useEffect(() => {
-    const fireId = ++effectFireCountRef.current;
-    const ts = performance.now();
-    console.log(`[CHECKOUT] 🔄 useEffect#5 FIRED [#${fireId}] at ${ts.toFixed(1)}ms`, {
-      settingsLoaded,
-      originId,
-      selectedAddressId,
-      savedAddressesLength: savedAddresses.length,
-      lastResolvedRef: lastResolvedRef.current,
-      timerActive: !!shippingCalcTimerRef.current,
-    });
+    if (!settingsLoaded || !originId) return;
 
-    if (!settingsLoaded) {
-      console.log(`[CHECKOUT] ⏳ [#${fireId}] Waiting for settings to load...`);
-      return;
-    }
-    if (!originId) {
-      console.log(`[CHECKOUT] ⏳ [#${fireId}] No originId yet, skipping auto-calc`);
-      return;
-    }
+    // Reset guard so a fresh call can proceed when effect re-fires
+    // (e.g. StrictMode double-mount or address change). Any in-flight
+    // API call from the previous fire will be aborted in cleanup.
+    lastResolvedRef.current = "";
+
+    // Create a fresh AbortController for this effect lifecycle
+    const controller = new AbortController();
+    shippingAbortRef.current = controller;
+
     if (selectedAddressId && savedAddresses.length > 0) {
       const addr = savedAddresses.find((a) => a.id === selectedAddressId);
       if (addr) {
-        console.log(`[CHECKOUT] 🔄 [#${fireId}] Will debounce 400ms for address: ${addr.label} (id=${addr.id}, district_id=${addr.district_id ?? "null"})`);
         // Debounce: clear previous timer, wait 400ms before triggering
-        if (shippingCalcTimerRef.current) {
-          console.log(`[CHECKOUT] 🔄 [#${fireId}] Clearing previous timer`);
-          clearTimeout(shippingCalcTimerRef.current);
-        }
+        if (shippingCalcTimerRef.current) clearTimeout(shippingCalcTimerRef.current);
         shippingCalcTimerRef.current = setTimeout(() => {
-          console.log(`[CHECKOUT] 🔄 [#${fireId}] Timer FIRED at ${performance.now().toFixed(1)}ms — calling calculateShipping(${addr.label})`);
-          calculateShipping(addr);
+          calculateShipping(addr, controller.signal);
         }, 400);
       }
     }
     return () => {
-      if (shippingCalcTimerRef.current) {
-        console.log(`[CHECKOUT] 🔄 [#${fireId}] CLEANUP — clearing timer`);
-        clearTimeout(shippingCalcTimerRef.current);
-      }
+      controller.abort();
+      if (shippingCalcTimerRef.current) clearTimeout(shippingCalcTimerRef.current);
     };
   }, [settingsLoaded, originId, selectedAddressId, savedAddresses.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
