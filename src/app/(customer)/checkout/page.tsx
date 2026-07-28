@@ -191,7 +191,7 @@ function CheckoutContent() {
   const [kodepos, setKodepos] = useState("");
   const [catatanKurir, setCatatanKurir] = useState("");
   const [selectedShipping, setSelectedShipping] = useState<ShipOpt | null>(null);
-  const [payment, setPayment] = useState("bank");
+  const [payment, setPayment] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderNumber, setOrderNumber] = useState("");
@@ -331,13 +331,16 @@ function CheckoutContent() {
 
   // ── Auto-trigger shipping calculation ──
   const calculateShipping = useCallback(async (addr: SavedAddress) => {
-    console.log("[CHECKOUT] 🚛 ========================================");
-    console.log("[CHECKOUT] 🚛 === SHIPPING CALCULATION START ========");
-    console.log("[CHECKOUT] 🚛 ========================================");
-    console.log("[CHECKOUT] 🚛 ORIGIN (toko):", originId);
-    console.log("[CHECKOUT] 🚛 DESTINATION (customer):", { id: addr.id, label: addr.label, kecamatan: addr.kecamatan, city: addr.city, province: addr.province, district_id: addr.district_id });
-    console.log("[CHECKOUT] 🚛 WEIGHT:", berat, "grams");
-    console.log("[CHECKOUT] 🚛 COURIERS:", enabledCouriers);
+    const callId = Math.random().toString(36).slice(2, 8);
+    console.log(`[CHECKOUT] 🚛 [${callId}] === SHIPPING CALCULATION START ===`, new Date().toISOString());
+    console.log(`[CHECKOUT] 🚛 [${callId}] Called from:`, new Error().stack?.split("\n")[2]?.trim());
+    console.log(`[CHECKOUT] 🚛 [${callId}] ORIGIN (toko):`, originId);
+    console.log(`[CHECKOUT] 🚛 [${callId}] DESTINATION (customer):`, { id: addr.id, label: addr.label, kecamatan: addr.kecamatan, city: addr.city, district_id: addr.district_id });
+    console.log(`[CHECKOUT] 🚛 [${callId}] WEIGHT:", berat, "grams`);
+    console.log(`[CHECKOUT] 🚛 [${callId}] COURIERS:", enabledCouriers);
+    console.log(`[CHECKOUT] 🚛 [${callId}] lastResolvedRef.current:`, lastResolvedRef.current);
+    console.log(`[CHECKOUT] 🚛 [${callId}] shipOptions.length:`, shipOptions.length);
+    console.log(`[CHECKOUT] 🚛 [${callId}] loadingCost:`, loadingCost);
 
     if (!originId) {
       console.error("[CHECKOUT] ❌ Origin toko belum diatur!");
@@ -353,16 +356,17 @@ function CheckoutContent() {
     const addrKey = `${addr.id}-${addr.district_id || addr.kecamatan}`;
     // Guard: if same address already fully resolved (with results), skip
     if (addrKey === lastResolvedRef.current && shipOptions.length > 0 && !shippingError) {
-      console.log("[CHECKOUT] ⏭️ Already resolved, skipping:", addrKey);
+      console.log(`[CHECKOUT] ⏭️ [${callId}] Already resolved, skipping:`, addrKey);
       return;
     }
     // Guard: if same address is currently being processed (concurrent call), skip
     if (addr.id === lastResolvedRef.current) {
-      console.log("[CHECKOUT] ⏭️ Already processing this address, skipping:", addr.id);
+      console.log(`[CHECKOUT] ⏭️ [${callId}] Already processing this address, skipping:`, addr.id);
       return;
     }
     // Mark this address as "processing" BEFORE any async work
     lastResolvedRef.current = addr.id;
+    console.log(`[CHECKOUT] 🚛 [${callId}] Marked as processing, lastResolvedRef =`, addr.id);
 
     console.log("[CHECKOUT] 🚛 Setting loading state...");
     setLoadingCost(true);
@@ -417,6 +421,7 @@ function CheckoutContent() {
   // Auto-calculate when default address is selected and settings are loaded
   const shippingCalcTimerRef = useRef<NodeJS.Timeout | null>(null);
   useEffect(() => {
+    console.log("[CHECKOUT] 🔄 useEffect#5 fired:", { settingsLoaded, originId, selectedAddressId, savedAddressesLength: savedAddresses.length, timestamp: new Date().toISOString() });
     if (!settingsLoaded) {
       console.log("[CHECKOUT] ⏳ Waiting for settings to load...");
       return;
@@ -431,7 +436,7 @@ function CheckoutContent() {
         // Debounce: clear previous timer, wait 400ms before triggering
         if (shippingCalcTimerRef.current) clearTimeout(shippingCalcTimerRef.current);
         shippingCalcTimerRef.current = setTimeout(() => {
-          console.log("[CHECKOUT] 🔄 Auto-triggering shipping calc for default address:", addr.label);
+          console.log("[CHECKOUT] 🔄 Auto-triggering shipping calc for default address:", addr.label, "at", new Date().toISOString());
           calculateShipping(addr);
         }, 400);
       }
