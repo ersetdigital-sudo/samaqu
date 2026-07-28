@@ -934,6 +934,21 @@ function ShippingOriginSection() {
   const [saving, setSaving] = useState(false);
   const toast = useToast();
 
+  // localStorage cache helpers (30 days TTL)
+  const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+  const getCache = (key: string) => {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (Date.now() - parsed.ts > CACHE_TTL_MS) return null;
+      return parsed.data;
+    } catch { return null; }
+  };
+  const setCache = (key: string, data: unknown) => {
+    try { localStorage.setItem(key, JSON.stringify({ data, ts: Date.now() })); } catch {}
+  };
+
   useEffect(() => {
     async function init() {
       console.log("[ADMIN] ShippingOriginSection init start");
@@ -955,27 +970,49 @@ function ShippingOriginSection() {
       // 2. Show form immediately (no full-section spinner)
       setLoading(false);
 
-      // 3. Load provinces from RajaOngkir in background (cached 30 days on server)
+      // 3. Load dropdown data — localStorage first, API as fallback
       try {
-        const provRes = await fetch("/api/shipping/provinces");
-        const provJson = await provRes.json();
-        const provList = provJson.data || [];
+        // Provinces: check localStorage cache
+        let provList = getCache("samaqu_provinces");
+        if (provList) {
+          console.log("[ADMIN] Provinces loaded from localStorage cache:", provList.length);
+        } else {
+          const provRes = await fetch("/api/shipping/provinces");
+          const provJson = await provRes.json();
+          provList = provJson.data || [];
+          if (provList.length > 0) setCache("samaqu_provinces", provList);
+          console.log("[ADMIN] Provinces fetched from API:", provList.length);
+        }
         setProvinces(provList);
-        console.log("[ADMIN] Provinces loaded:", provList.length);
 
-        // 4. If saved IDs exist, load cities + districts in background
+        // Cities + Districts: check localStorage cache
         if (data?.origin_province_id && data?.origin_city_id && data?.origin_district_id) {
-          const [cityRes, distRes] = await Promise.all([
-            fetch(`/api/shipping/districts?provinceId=${data.origin_province_id}`),
-            fetch(`/api/shipping/districts?cityId=${data.origin_city_id}`),
-          ]);
-          const [cityJson, distJson] = await Promise.all([cityRes.json(), distRes.json()]);
-          setCities(cityJson.data || []);
-          setDistricts(distJson.data || []);
-          console.log("[ADMIN] Background loaded cities + districts");
+          const citiesCacheKey = `samaqu_cities_${data.origin_province_id}`;
+          const distsCacheKey = `samaqu_districts_${data.origin_city_id}`;
+
+          let cityList = getCache(citiesCacheKey);
+          let distList = getCache(distsCacheKey);
+
+          if (cityList && distList) {
+            console.log("[ADMIN] Cities + districts loaded from localStorage cache");
+          } else {
+            const [cityRes, distRes] = await Promise.all([
+              fetch(`/api/shipping/districts?provinceId=${data.origin_province_id}`),
+              fetch(`/api/shipping/districts?cityId=${data.origin_city_id}`),
+            ]);
+            const [cityJson, distJson] = await Promise.all([cityRes.json(), distRes.json()]);
+            cityList = cityJson.data || [];
+            distList = distJson.data || [];
+            if (cityList.length > 0) setCache(citiesCacheKey, cityList);
+            if (distList.length > 0) setCache(distsCacheKey, distList);
+            console.log("[ADMIN] Cities + districts fetched from API");
+          }
+
+          setCities(cityList);
+          setDistricts(distList);
         }
       } catch (e) {
-        console.error("[ADMIN] Background load error:", e);
+        console.error("[ADMIN] Load error:", e);
       } finally {
         setDropdownsLoading(false);
       }
@@ -991,11 +1028,19 @@ function ShippingOriginSection() {
     setDistricts([]);
     if (!provId) return;
     console.log("[ADMIN] Loading cities for province:", provId, selectedProv?.name);
-    const res = await fetch(`/api/shipping/districts?provinceId=${provId}`);
-    const json = await res.json();
-    setCities(json.data || []);
-    console.log("[ADMIN] Cities loaded:", json.data?.length);
-    if (json.data?.[0]) console.log("[ADMIN] First city sample:", json.data[0]);
+    // Check localStorage cache first
+    const cacheKey = `samaqu_cities_${provId}`;
+    let cityList = getCache(cacheKey);
+    if (cityList) {
+      console.log("[ADMIN] Cities loaded from cache:", cityList.length);
+    } else {
+      const res = await fetch(`/api/shipping/districts?provinceId=${provId}`);
+      const json = await res.json();
+      cityList = json.data || [];
+      if (cityList.length > 0) setCache(cacheKey, cityList);
+      console.log("[ADMIN] Cities loaded from API:", cityList.length);
+    }
+    setCities(cityList);
   }
 
   async function handleCityChange(cityId: string) {
@@ -1005,11 +1050,19 @@ function ShippingOriginSection() {
     setDistricts([]);
     if (!cityId) return;
     console.log("[ADMIN] Loading districts for city:", cityId, selectedCity?.name);
-    const res = await fetch(`/api/shipping/districts?cityId=${cityId}`);
-    const json = await res.json();
-    setDistricts(json.data || []);
-    console.log("[ADMIN] Districts loaded:", json.data?.length);
-    if (json.data?.[0]) console.log("[ADMIN] First district sample:", json.data[0]);
+    // Check localStorage cache first
+    const cacheKey = `samaqu_districts_${cityId}`;
+    let distList = getCache(cacheKey);
+    if (distList) {
+      console.log("[ADMIN] Districts loaded from cache:", distList.length);
+    } else {
+      const res = await fetch(`/api/shipping/districts?cityId=${cityId}`);
+      const json = await res.json();
+      distList = json.data || [];
+      if (distList.length > 0) setCache(cacheKey, distList);
+      console.log("[ADMIN] Districts loaded from API:", distList.length);
+    }
+    setDistricts(distList);
   }
 
   async function handleSave() {
