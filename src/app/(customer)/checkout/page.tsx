@@ -406,6 +406,7 @@ function CheckoutContent() {
   }, [originId, berat, enabledCouriers]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-calculate when default address is selected and settings are loaded
+  const shippingCalcTimerRef = useRef<NodeJS.Timeout | null>(null);
   useEffect(() => {
     if (!settingsLoaded) {
       console.log("[CHECKOUT] ⏳ Waiting for settings to load...");
@@ -418,10 +419,17 @@ function CheckoutContent() {
     if (selectedAddressId && savedAddresses.length > 0) {
       const addr = savedAddresses.find((a) => a.id === selectedAddressId);
       if (addr) {
-        console.log("[CHECKOUT] 🔄 Auto-triggering shipping calc for default address:", addr.label);
-        calculateShipping(addr);
+        // Debounce: clear previous timer, wait 400ms before triggering
+        if (shippingCalcTimerRef.current) clearTimeout(shippingCalcTimerRef.current);
+        shippingCalcTimerRef.current = setTimeout(() => {
+          console.log("[CHECKOUT] 🔄 Auto-triggering shipping calc for default address:", addr.label);
+          calculateShipping(addr);
+        }, 400);
       }
     }
+    return () => {
+      if (shippingCalcTimerRef.current) clearTimeout(shippingCalcTimerRef.current);
+    };
   }, [settingsLoaded, originId, selectedAddressId, savedAddresses.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Auto-trigger shipping for manual address (non-logged-in) ──
