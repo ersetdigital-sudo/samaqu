@@ -351,10 +351,18 @@ function CheckoutContent() {
     }
 
     const addrKey = `${addr.id}-${addr.district_id || addr.kecamatan}`;
+    // Guard: if same address already fully resolved (with results), skip
     if (addrKey === lastResolvedRef.current && shipOptions.length > 0 && !shippingError) {
       console.log("[CHECKOUT] ⏭️ Already resolved, skipping:", addrKey);
       return;
     }
+    // Guard: if same address is currently being processed (concurrent call), skip
+    if (addr.id === lastResolvedRef.current) {
+      console.log("[CHECKOUT] ⏭️ Already processing this address, skipping:", addr.id);
+      return;
+    }
+    // Mark this address as "processing" BEFORE any async work
+    lastResolvedRef.current = addr.id;
 
     console.log("[CHECKOUT] 🚛 Setting loading state...");
     setLoadingCost(true);
@@ -399,6 +407,7 @@ function CheckoutContent() {
     } catch (e) {
       console.error("[CHECKOUT] ❌ Shipping calculation error:", e);
       setShippingError("Gagal menghitung ongkir. Periksa koneksi Anda dan coba lagi.");
+      lastResolvedRef.current = ""; // Clear processing state on error so user can retry
     } finally {
       setLoadingCost(false);
       console.log("[CHECKOUT] 🚛 === SHIPPING CALCULATION END ===");
@@ -473,8 +482,8 @@ function CheckoutContent() {
     setShipOptions([]);
     setSelectedShipping(null);
     setShippingError(null);
-    lastResolvedRef.current = "";
-    // Shipping calc is auto-triggered by the useEffect on selectedAddressId
+    // Don't clear lastResolvedRef here — let the guard in calculateShipping handle it
+    // The debounce + addr.id guard prevent double-hit for same address
   }
 
   function validatePhone(p: string): boolean {
