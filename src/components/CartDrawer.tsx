@@ -6,6 +6,7 @@ import { X, Minus, Plus, Trash2, Tag, ShoppingBag, ShoppingCart } from "lucide-r
 import { useCart } from "@/lib/cart-context";
 import { colorMap } from "@/lib/katalog-data";
 import { useRouter } from "next/navigation";
+import { validateVoucher } from "@/lib/voucher-utils";
 
 export default function CartDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   const router = useRouter();
@@ -14,17 +15,19 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
   const [promoApplied, setPromoApplied] = useState(false);
   const [promoError, setPromoError] = useState("");
 
-  const discount = promoApplied ? Math.round(subtotal * 0.1) : 0;
+  const [discount, setDiscount] = useState(0);
   const total = subtotal - discount;
 
-  function applyPromo() {
-    const code = promoCode.trim().toUpperCase();
-    if (code === "SAMAQU10" || code === "DISC10") {
+  async function applyPromo() {
+    const result = await validateVoucher(promoCode, subtotal);
+    if (result.valid) {
       setPromoApplied(true);
       setPromoError("");
+      setDiscount(result.discount);
     } else {
       setPromoApplied(false);
-      setPromoError("Kode promo tidak valid");
+      setDiscount(0);
+      setPromoError(result.error);
     }
   }
 
@@ -32,6 +35,7 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
     setPromoCode("");
     setPromoApplied(false);
     setPromoError("");
+    setDiscount(0);
   }
 
   function handleCheckout() {

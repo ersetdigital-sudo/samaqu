@@ -798,7 +798,7 @@ function AdminPageInner() {
                 <div className="rounded-xl p-4" style={{ background: "rgba(255,255,255,.6)", border: "1px solid rgba(64,50,37,.06)" }}>
                   <p className="text-[11px] tracking-[0.15em] uppercase mb-3 font-medium" style={{ color: "var(--text-muted)" }}>Pembayaran & Pengiriman</p>
                   <div className="space-y-2">
-                    <div className="flex justify-between text-sm"><span style={{ color: "var(--text-secondary)" }}>Metode Pembayaran</span><span className="font-medium" style={{ color: "var(--espresso)" }}>{selectedOrder.payment_method === "bank" || selectedOrder.payment_method?.startsWith?.("pm_") ? "Transfer Bank" : selectedOrder.payment_method === "qris" ? "QRIS / E-Wallet" : selectedOrder.payment_method === "cod" ? "COD" : selectedOrder.payment_method || "-"}</span></div>
+                    <div className="flex justify-between text-sm"><span style={{ color: "var(--text-secondary)" }}>Metode Pembayaran</span><span className="font-medium" style={{ color: "var(--espresso)" }}>{selectedOrder.payment_method === "bank" || selectedOrder.payment_method?.startsWith?.("pm_") || /^[0-9a-f]{8}-/.test(selectedOrder.payment_method || "") ? "Transfer Bank" : selectedOrder.payment_method === "qris" ? "QRIS / E-Wallet" : selectedOrder.payment_method === "cod" ? "COD" : selectedOrder.payment_method || "-"}</span></div>
                     <div className="flex justify-between text-sm"><span style={{ color: "var(--text-secondary)" }}>Metode Pengiriman</span><span className="font-medium" style={{ color: "var(--espresso)" }}>{selectedOrder.shipping_method || "-"}</span></div>
                   </div>
                 </div>
