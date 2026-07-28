@@ -1058,10 +1058,10 @@ function ShippingOriginSection() {
     toast.showToast("success", "Alamat pengiriman toko disimpan");
   }
 
-  if (loading) return <div className="card p-6 max-w-2xl"><Loader2 size={20} className="animate-spin" style={{ color: "var(--gold)" }} /></div>;
-
   // Helper: find name from list by ID
   const findName = (list: { id: number; name: string }[], id: string) => list.find((i) => String(i.id) === id)?.name;
+
+  if (loading) return <div className="card p-6 max-w-2xl"><Loader2 size={20} className="animate-spin" style={{ color: "var(--gold)" }} /></div>;
 
   return (
     <div className="card p-6 max-w-2xl space-y-4">
