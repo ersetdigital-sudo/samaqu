@@ -7,7 +7,6 @@ import { getProductById, weightMap } from "@/lib/katalog-data";
 import { useCart } from "@/lib/cart-context";
 import { supabase } from "@/lib/supabase";
 import { getWhatsAppLink } from "@/lib/store-settings";
-import { validateVoucher } from "@/lib/voucher-utils";
 
 interface PaymentMethod {
   id: string;
@@ -172,18 +171,18 @@ function CheckoutContent() {
   const sizeParam = searchParams.get("size") || "M";
   const qtyParam = parseInt(searchParams.get("qty") || "1", 10);
   const product = productId ? getProductById(productId) : null;
-  const { items, clearCart } = useCart();
+  const { items, clearCart, voucher, applyVoucher, removeVoucher } = useCart();
   const isCartMode = !productId && items.length > 0;
 
   console.log("[CHECKOUT] 🚀 Page loaded:", { productId, isCartMode, itemsCount: items.length, colorParam, sizeParam, qtyParam });
 
   const [qty, setQty] = useState(qtyParam || 1);
   const [promoCode, setPromoCode] = useState("");
-  const [promoApplied, setPromoApplied] = useState(false);
   const [promoError, setPromoError] = useState("");
-  const [discount, setDiscount] = useState(0);
-  const [voucherCode, setVoucherCode] = useState("");
-  const [voucherId, setVoucherId] = useState("");
+  const promoApplied = voucher.discount > 0;
+  const discount = voucher.discount;
+  const voucherCode = voucher.code;
+  const voucherId = voucher.id;
   const [nama, setNama] = useState("");
   const [email, setEmail] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
@@ -602,18 +601,12 @@ function CheckoutContent() {
   const total = subtotal - discount + shippingCost;
 
   async function applyPromo() {
-    const result = await validateVoucher(promoCode, subtotal, whatsapp);
-    if (result.valid) {
-      setPromoError("");
-      setPromoApplied(true);
-      setDiscount(result.discount);
-      setVoucherCode(result.voucher.code);
-      setVoucherId(result.voucher.id);
+    setPromoError("");
+    const result = await applyVoucher(promoCode, whatsapp);
+    if (result.ok) {
+      setPromoCode("");
     } else {
-      setPromoError(result.error);
-      setPromoApplied(false);
-      setDiscount(0);
-      setVoucherCode("");
+      setPromoError(result.error || "Kode promo tidak valid");
     }
   }
 
@@ -951,7 +944,7 @@ function CheckoutContent() {
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="#4b7a4e" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
                   <span className="text-sm font-ui font-medium" style={{ color: "var(--espresso)" }}>{voucherCode}</span>
                 </div>
-                <button type="button" onClick={() => { setPromoApplied(false); setPromoCode(""); setDiscount(0); setVoucherCode(""); setVoucherId(""); }} className="text-xs font-ui font-medium" style={{ color: "#8b6f42" }}>Ganti</button>
+                <button type="button" onClick={() => { removeVoucher(); setPromoCode(""); }} className="text-xs font-ui font-medium" style={{ color: "#8b6f42" }}>Ganti</button>
               </div>
             ) : (
               <>
