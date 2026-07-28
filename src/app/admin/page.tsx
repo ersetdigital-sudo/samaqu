@@ -960,7 +960,8 @@ function ShippingOriginSection() {
         const provRes = await fetch("/api/shipping/provinces");
         const provJson = await provRes.json();
         setProvinces(provJson.data || []);
-        console.log("[ADMIN] Provinces loaded:", provJson.data?.length);
+        const provCache = provRes.headers.get("X-Cache");
+        console.log("[ADMIN] Provinces loaded:", provJson.data?.length, "| cache:", provCache);
 
         if (data?.origin_province_id && data?.origin_city_id && data?.origin_district_id) {
           const [cityRes, distRes] = await Promise.all([
@@ -970,7 +971,10 @@ function ShippingOriginSection() {
           const [cityJson, distJson] = await Promise.all([cityRes.json(), distRes.json()]);
           setCities(cityJson.data || []);
           setDistricts(distJson.data || []);
-          console.log("[ADMIN] Cities + districts loaded");
+          const cityCache = cityRes.headers.get("X-Cache");
+          const distCache = distRes.headers.get("X-Cache");
+          console.log("[ADMIN] Cities loaded:", cityJson.data?.length, "| cache:", cityCache);
+          console.log("[ADMIN] Districts loaded:", distJson.data?.length, "| cache:", distCache);
         }
       } catch (e) {
         console.error("[ADMIN] Load error:", e);
