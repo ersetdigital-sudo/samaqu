@@ -92,6 +92,7 @@ function AdminPageInner() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [productThumbnails, setProductThumbnails] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [profileOpen, setProfileOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -157,7 +158,20 @@ function AdminPageInner() {
         ]);
         if (mounted) {
           if (ordersRes.data) setOrders(ordersRes.data as Order[]);
-          if (productsRes.data) setProducts(productsRes.data as Product[]);
+          if (productsRes.data) {
+            setProducts(productsRes.data as Product[]);
+            // Fetch first image for each product from product_images table
+            const thumbs: Record<string, string> = {};
+            for (const p of productsRes.data as Product[]) {
+              if (p.image) {
+                thumbs[p.id] = p.image;
+              } else {
+                const { data: imgs } = await supabase.from("product_images").select("url").eq("product_id", p.id).order("display_order").limit(1);
+                if (imgs && imgs.length > 0) thumbs[p.id] = imgs[0].url;
+              }
+            }
+            setProductThumbnails(thumbs);
+          }
         }
       } catch (err) {
         console.error("Error fetching data:", err);
@@ -613,7 +627,7 @@ function AdminPageInner() {
                     {products.map((p) => (
                       <div key={p.id} className="card overflow-hidden group">
                         <div className="h-40 relative overflow-hidden" style={{ background: "#e8dfd1" }}>
-                          <img src={p.image} alt={p.name} className="w-full h-full object-cover" loading="lazy" />
+                          <img src={productThumbnails[p.id] || p.image || ""} alt={p.name} className="w-full h-full object-cover" loading="lazy" />
                           <span className="absolute top-3 left-3 badge" style={{ background: "rgba(255,255,255,.8)", color: "var(--espresso)" }}>{p.category}</span>
                         </div>
                         <div className="p-4">
