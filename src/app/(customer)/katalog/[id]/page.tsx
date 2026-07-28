@@ -10,7 +10,7 @@ import { colorMap, type Product, type MediaItem } from "@/lib/katalog-data";
 import { getProductById } from "@/lib/db";
 import { useCart } from "@/lib/cart-context";
 import { useToast } from "@/components/Toast";
-import { getWhatsAppLink } from "@/lib/store-settings";
+import { getWhatsAppLink, useStoreSettings } from "@/lib/store-settings";
 import { supabase } from "@/lib/supabase";
 import { useWishlist } from "@/lib/use-wishlist";
 
@@ -121,7 +121,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const carouselRef = useRef<HTMLDivElement>(null);
   const { addItem } = useCart();
   const toast = useToast();
+  const storeSettings = useStoreSettings();
   const { isWishlisted, toggle: toggleWishlist, isLoggedIn } = useWishlist();
+  const cypMicrocopy = storeSettings.cyp_microcopy || "Harga Minimum boleh dipilih. Itulah alasan kami membuat Create Your Price.";
 
   useEffect(() => {
     getProductById(id).then((p) => {
@@ -395,7 +397,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 </div>
               )}
               <p className="text-[10px] font-ui mt-2" style={{ color: "var(--stone)" }}>
-                Harga Minimum boleh dipilih. Itulah alasan kami membuat Create Your Price.
+                {cypMicrocopy}
               </p>
             </div>
           ) : (
@@ -640,7 +642,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                   </div>
                 )}
                 <p className="text-[11px] font-ui mt-2" style={{ color: "var(--stone)" }}>
-                  Harga Minimum boleh dipilih. Itulah alasan kami membuat Create Your Price.
+                  {cypMicrocopy}
                 </p>
               </div>
             ) : (
