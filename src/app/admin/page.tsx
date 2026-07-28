@@ -1449,6 +1449,7 @@ function PaymentMethodsSection() {
 function CustomerProductsSection() {
   const [featuredIds, setFeaturedIds] = useState<string[]>([]);
   const [allProducts, setAllProducts] = useState<{ id: string; name: string; image: string; category: string }[]>([]);
+  const [productThumbnails, setProductThumbnails] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -1458,9 +1459,22 @@ function CustomerProductsSection() {
     Promise.all([
       supabase.from("customer_featured_products").select("product_id, display_order").order("display_order"),
       supabase.from("products").select("id, name, image, category").order("created_at", { ascending: false }),
-    ]).then(([fpRes, pRes]) => {
+    ]).then(async ([fpRes, pRes]) => {
       if (fpRes.data) setFeaturedIds(fpRes.data.map((r) => r.product_id));
-      if (pRes.data) setAllProducts(pRes.data);
+      if (pRes.data) {
+        setAllProducts(pRes.data);
+        // Fetch thumbnails (skip videos)
+        const ids = pRes.data.map((p) => p.id);
+        const { data: imgs } = await supabase.from("product_images").select("product_id, url, is_video").in("product_id", ids).order("display_order");
+        if (imgs) {
+          const thumbs: Record<string, string> = {};
+          for (const p of pRes.data) {
+            const firstImage = imgs.find((img: any) => img.product_id === p.id && !img.is_video);
+            thumbs[p.id] = firstImage?.url || (p.image && !p.image.match(/\.(mp4|webm|ogg)$/i) ? p.image : "");
+          }
+          setProductThumbnails(thumbs);
+        }
+      }
       setLoading(false);
     });
   }, []);
