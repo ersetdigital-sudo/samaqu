@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import { getThumbnailFromImages } from "@/lib/product-thumbnail";
 import {
   LayoutDashboard, ShoppingBag, Package, Users, FileText, Settings,
   Search, Bell, Menu, X, ChevronDown, Plus, TrendingUp, Eye, Edit,
@@ -117,11 +118,11 @@ function AdminPageInner() {
         counts[item.product_name].count += item.quantity;
       });
     });
-    // Match product images
+    // Match product images (use thumbnails to skip videos)
     const result = Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 5);
     result.forEach((item) => {
       const product = products.find((p) => p.name === item.name);
-      if (product) item.image = product.image;
+      if (product) item.image = productThumbnails[product.id] || product.image || "";
     });
     return result;
   }, [orders, products]);
@@ -162,7 +163,7 @@ function AdminPageInner() {
           if (ordersRes.data) setOrders(ordersRes.data as Order[]);
           if (productsRes.data) {
             setProducts(productsRes.data as Product[]);
-            // Always fetch first actual IMAGE (skip videos) from product_images table
+            // Fetch thumbnails: first non-video image from product_images, fallback to product.image
             const thumbs: Record<string, string> = {};
             const productIds = (productsRes.data as Product[]).map((p) => p.id);
             if (productIds.length > 0) {
@@ -172,16 +173,9 @@ function AdminPageInner() {
                 .in("product_id", productIds)
                 .order("display_order");
               if (allImgs) {
-                for (const pid of productIds) {
-                  const firstImage = allImgs.find((img: { product_id: string; url: string; is_video: boolean }) => img.product_id === pid && !img.is_video);
-                  if (firstImage) thumbs[pid] = firstImage.url;
+                for (const p of productsRes.data as Product[]) {
+                  thumbs[p.id] = getThumbnailFromImages(p.id, p.image, allImgs);
                 }
-              }
-            }
-            // Fallback: if no image found in product_images, use product.image
-            for (const p of productsRes.data as Product[]) {
-              if (!thumbs[p.id] && p.image && !p.image.match(/\.(mp4|webm|ogg)$/i)) {
-                thumbs[p.id] = p.image;
               }
             }
             setProductThumbnails(thumbs);
@@ -1510,7 +1504,7 @@ function CustomerProductsSection() {
           return (
             <button key={p.id} onClick={() => { if (!selected && featuredIds.length >= 8) return; toggleProduct(p.id); }} className="rounded-xl overflow-hidden text-left transition-all" style={{ border: selected ? "2px solid var(--gold)" : "1px solid rgba(64,50,37,.1)", opacity: !selected && featuredIds.length >= 8 ? 0.4 : 1 }}>
               <div className="aspect-square" style={{ background: "#e8dfd1" }}>
-                <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
+                <img src={productThumbnails[p.id] || p.image || ""} alt={p.name} className="w-full h-full object-cover" />
               </div>
               <div className="p-2">
                 <p className="text-xs font-medium truncate" style={{ color: "var(--espresso)" }}>{p.name}</p>

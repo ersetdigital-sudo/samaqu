@@ -48,6 +48,7 @@ export default function DashboardPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [wishlistProducts, setWishlistProducts] = useState<Product[]>([]);
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+  const [productThumbnails, setProductThumbnails] = useState<Record<string, string>>({});
   const [activeNav, setActiveNav] = useState<NavSection>("beranda");
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -66,11 +67,36 @@ export default function DashboardPage() {
       if (featuredData.data) {
         const fp = featuredData.data.map((r: any) => r.products).filter(Boolean) as Product[];
         setFeaturedProducts(fp);
+        // Fetch thumbnails for featured products (skip videos)
+        const allIds = fp.map((p) => p.id);
+        if (allIds.length > 0) {
+          const { data: imgs } = await supabase.from("product_images").select("product_id, url, is_video").in("product_id", allIds).order("display_order");
+          if (imgs) {
+            const thumbs: Record<string, string> = {};
+            for (const p of fp) {
+              const firstImage = imgs.find((img: any) => img.product_id === p.id && !img.is_video);
+              thumbs[p.id] = firstImage?.url || (p.image && !p.image.match(/\.(mp4|webm|ogg)$/i) ? p.image : "");
+            }
+            setProductThumbnails((prev) => ({ ...prev, ...thumbs }));
+          }
+        }
       }
       if (wishlistData.data && wishlistData.data.length > 0) {
         const ids = wishlistData.data.map((w) => w.product_id);
         const { data: wProducts } = await supabase.from("products").select("*").in("id", ids);
-        if (wProducts) setWishlistProducts(wProducts as Product[]);
+        if (wProducts) {
+          setWishlistProducts(wProducts as Product[]);
+          // Fetch thumbnails for wishlist products (skip videos)
+          const wImgs = await supabase.from("product_images").select("product_id, url, is_video").in("product_id", ids).order("display_order");
+          if (wImgs.data) {
+            const thumbs: Record<string, string> = {};
+            for (const p of wProducts as Product[]) {
+              const firstImage = wImgs.data.find((img: any) => img.product_id === p.id && !img.is_video);
+              thumbs[p.id] = firstImage?.url || (p.image && !p.image.match(/\.(mp4|webm|ogg)$/i) ? p.image : "");
+            }
+            setProductThumbnails((prev) => ({ ...prev, ...thumbs }));
+          }
+        }
       }
       setLoading(false);
     }
@@ -279,7 +305,7 @@ export default function DashboardPage() {
                   {featuredProducts.map((p) => (
                     <Link key={p.id} href={`/katalog/${p.id}`} className="group rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg" style={{ background: "var(--bg-secondary, #f0ebe5)", border: "1px solid rgba(64,50,37,.09)" }}>
                       <div className="aspect-square overflow-hidden" style={{ background: "var(--bg-tertiary, #e8e1d9)" }}>
-                        <img src={p.image} alt={p.name} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                        <img src={productThumbnails[p.id] || p.image || ""} alt={p.name} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
                       </div>
                       <div className="p-4">
                         <p className="text-xs mb-1" style={{ color: "var(--text-muted)" }}>{p.category}</p>
@@ -346,7 +372,7 @@ export default function DashboardPage() {
                     <div key={p.id} className="shrink-0 w-56 sm:w-auto rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg group" style={{ background: "var(--bg-secondary, #f0ebe5)", border: "1px solid rgba(64,50,37,.09)" }}>
                       <Link href={`/katalog/${p.id}`} className="block">
                         <div className="aspect-square overflow-hidden relative" style={{ background: "var(--bg-tertiary, #e8e1d9)" }}>
-                          <img src={p.image} alt={p.name} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                          <img src={productThumbnails[p.id] || p.image || ""} alt={p.name} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                         </div>
                       </Link>
