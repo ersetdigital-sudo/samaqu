@@ -162,15 +162,16 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const [isCustomPrice, setIsCustomPrice] = useState(false);
   const [customPriceError, setCustomPriceError] = useState("");
 
-  // Initialize selectedPrice when product loads
+  // Initialize selectedPrice when product loads (always sync with minimumPrice)
   useEffect(() => {
     if (product && isCYP && minimumPrice > 0) {
       setSelectedPrice(minimumPrice);
+      console.log("[CYP] Initialized selectedPrice:", minimumPrice);
     }
-  }, [product, isCYP, minimumPrice]);
+  }, [product?.id, isCYP, minimumPrice]);
 
-  // Price to use for cart/checkout
-  const effectivePrice = isCYP ? selectedPrice : currentPrice;
+  // Price to use for cart/checkout — fallback to minimumPrice if selectedPrice is 0
+  const effectivePrice = isCYP ? (selectedPrice || minimumPrice) : currentPrice;
 
   // Quick select options
   const quickPrices = isCYP && minimumPrice > 0 ? [
@@ -180,6 +181,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   ] : [];
 
   function handleQuickPrice(value: number) {
+    console.log("[CYP] Quick price selected:", value);
     setIsCustomPrice(false);
     setSelectedPrice(value);
     setCustomPriceInput("");
@@ -213,18 +215,27 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
   function handleAddToCart() {
     if (!product) return;
-    if (isCYP && !isPriceValid) return;
+    const finalCYPPrice = selectedPrice || minimumPrice;
+    if (isCYP && finalCYPPrice < minimumPrice) return;
+
+    // Find image for selected color, fallback to main product image
+    const colorImage = media.find((m) => m.type === "image" && m.src?.toLowerCase().includes(selectedColor?.toLowerCase() || ""))?.src
+      || media.find((m) => m.type === "image")?.src
+      || product.image;
+
+    console.log("[CYP] handleAddToCart:", { isCYP, selectedPrice, minimumPrice, finalCYPPrice, effectivePrice, colorImage });
+
     addItem({
       id: product.id,
       name: product.name,
-      image: product.image,
+      image: colorImage,
       price: isCYP ? minimumPrice : currentPrice,
       color: selectedColor || product.colors[0] || "-",
       size: selectedSize,
       qty,
       notes: notes || undefined,
       // CYP fields
-      customer_price: isCYP ? selectedPrice : undefined,
+      customer_price: isCYP ? finalCYPPrice : undefined,
       minimum_price: isCYP ? minimumPrice : undefined,
       create_your_price_enabled: isCYP || undefined,
     });
