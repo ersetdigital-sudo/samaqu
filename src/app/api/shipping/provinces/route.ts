@@ -40,9 +40,9 @@ export async function GET() {
     console.log("[PROVINCES] Step 2: Fetching from RajaOngkir...");
     const apiKey = await getRajaOngkirApiKey();
     console.log("[PROVINCES] API key present:", apiKey ? "YES (length:" + apiKey.length + ")" : "NO");
-    const res = await fetch(BASE, { headers: { key: apiKey } });
-    const json = await res.json();
-    console.log("[PROVINCES] RajaOngkir response:", json.data?.length || 0, "provinces, status:", res.status);
+    const rRes = await fetch(BASE, { headers: { key: apiKey } });
+    const json = await rRes.json();
+    console.log("[PROVINCES] RajaOngkir response:", json.data?.length || 0, "provinces, status:", rRes.status);
 
     // Step 3: Upsert to Supabase cache
     if (json.data && Array.isArray(json.data) && json.data.length > 0) {
