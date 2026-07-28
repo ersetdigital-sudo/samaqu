@@ -941,7 +941,7 @@ function ShippingOriginSection() {
       console.log("[ADMIN] ShippingOriginSection init start");
 
       // Load saved origin IDs from Supabase
-      const { data } = await supabase.from("store_settings").select("origin_district_id, origin_province_id, origin_city_id").eq("id", 1).single();
+      const { data } = await supabase.from("store_settings").select("origin_district_id, origin_province_id, origin_city_id, origin_district_step_id").eq("id", 1).single();
       console.log("[ADMIN] Saved origin:", data);
 
       // Set province + city immediately (dropdowns exist or will exist soon)
@@ -951,9 +951,10 @@ function ShippingOriginSection() {
           origin_city_id: String(data.origin_city_id),
           origin_district_id: "", // NOT set yet — wait for districts to load
         });
-        // Stash district ID to assign later
-        if (data.origin_district_id) {
-          setSavedDistrictId(String(data.origin_district_id));
+        // Use step-by-step ID for dropdown (falls back to direct search ID for legacy data)
+        const stepId = data.origin_district_step_id || data.origin_district_id;
+        if (stepId) {
+          setSavedDistrictId(String(stepId));
         }
       }
 
@@ -1062,7 +1063,8 @@ function ShippingOriginSection() {
       id: 1,
       origin_province_id: form.origin_province_id ? Number(form.origin_province_id) : null,
       origin_city_id: form.origin_city_id ? Number(form.origin_city_id) : null,
-      origin_district_id: directSearchId,
+      origin_district_id: directSearchId, // direct search ID (for shipping cost)
+      origin_district_step_id: form.origin_district_id ? Number(form.origin_district_id) : null, // step-by-step ID (for dropdown)
       updated_at: new Date().toISOString(),
     });
     setSaving(false);
