@@ -403,7 +403,7 @@ function CheckoutContent() {
       setLoadingCost(false);
       console.log("[CHECKOUT] 🚛 === SHIPPING CALCULATION END ===");
     }
-  }, [originId, berat, enabledCouriers, shipOptions.length, shippingError]);
+  }, [originId, berat, enabledCouriers]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-calculate when default address is selected and settings are loaded
   useEffect(() => {
@@ -466,9 +466,7 @@ function CheckoutContent() {
     setSelectedShipping(null);
     setShippingError(null);
     lastResolvedRef.current = "";
-    // Auto-calculate shipping after state updates
-    console.log("[CHECKOUT] 👆 Scheduling shipping calc in 100ms...");
-    setTimeout(() => calculateShipping(addr), 100);
+    // Shipping calc is auto-triggered by the useEffect on selectedAddressId
   }
 
   function validatePhone(p: string): boolean {
