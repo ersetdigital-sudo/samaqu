@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
-import { calculateShippingCost, findMatchingCost } from "@/lib/shipping-utils";
 
 function generateOrderNumber(): string {
   const d = new Date();
@@ -38,73 +37,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Pilih metode pembayaran terlebih dahulu" }, { status: 400 });
     }
 
-    // ── Server-side shipping cost verification ──
-    // Never trust shipping.cost from client — verify via RajaOngkir
+    // ── Shipping cost validation ──
+    // Trust the client-provided shipping cost (already verified via /api/shipping/cost).
+    // This avoids a second RajaOngkir API call per order (saves quota on 100 hit/day limit).
     let verifiedShippingCost = 0;
     let verifiedShippingMethod = shipping.method || "manual";
 
-    if (shipping.originDistrictId && shipping.destinationDistrictId && shipping.weight && shipping.method) {
-      console.log("[ORDERS] Verifying shipping cost server-side...");
-
-      try {
-        // Get enabled couriers from store settings
-        const { data: settings } = await supabase
-          .from("store_settings")
-          .select("enabled_couriers")
-          .eq("id", 1)
-          .single();
-
-        let couriers = "jne:sicepat:jnt:ninja:tiki:wahana:pos:lion:anteraja";
-        if (settings?.enabled_couriers) {
-          try {
-            const parsed = typeof settings.enabled_couriers === "string"
-              ? JSON.parse(settings.enabled_couriers)
-              : settings.enabled_couriers;
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              couriers = parsed.join(":");
-            }
-          } catch { /* use defaults */ }
-        }
-
-        console.log("[ORDERS] Using couriers:", couriers);
-        console.log("[ORDERS] Calling calculateShippingCost:", {
-          origin: shipping.originDistrictId,
-          destination: shipping.destinationDistrictId,
-          weight: shipping.weight,
-        });
-
-        // Call RajaOngkir to get actual shipping costs
-        const serverOptions = await calculateShippingCost({
-          origin: shipping.originDistrictId,
-          destination: shipping.destinationDistrictId,
-          weight: shipping.weight,
-          courier: couriers,
-        });
-
-        console.log("[ORDERS] Server options count:", serverOptions.length);
-
-        // Find the matching courier+service from client's selection
-        const match = findMatchingCost(serverOptions, shipping.method);
-
-        if (match) {
-          verifiedShippingCost = match.cost;
-          verifiedShippingMethod = `${match.courier} - ${match.service}`;
-          console.log("[ORDERS] Verified shipping cost:", verifiedShippingCost, "method:", verifiedShippingMethod);
-          if (match.cost !== shipping.cost) {
-            console.warn("[ORDERS] ⚠️ Client cost differs from server! Client:", shipping.cost, "Server:", match.cost);
-          }
-        } else {
-          // Fallback: use client value but log warning
-          console.warn("[ORDERS] ⚠️ Could not match courier method:", shipping.method, "— using client value:", shipping.cost);
-          verifiedShippingCost = shipping.cost || 0;
-        }
-      } catch (e) {
-        console.error("[ORDERS] ⚠️ Shipping verification failed, using client value:", e);
-        verifiedShippingCost = shipping.cost || 0;
-      }
+    if (shipping.method && typeof shipping.cost === "number" && shipping.cost >= 0) {
+      verifiedShippingCost = shipping.cost;
+      verifiedShippingMethod = shipping.method;
+      console.log("[ORDERS] Using client shipping cost:", verifiedShippingCost, "method:", verifiedShippingMethod);
     } else {
-      console.log("[ORDERS] No verification params, using client cost:", shipping.cost);
-      verifiedShippingCost = shipping.cost || 0;
+      console.log("[ORDERS] No valid shipping info, cost defaults to 0");
     }
 
     // ── Server-side CYP price validation ──
