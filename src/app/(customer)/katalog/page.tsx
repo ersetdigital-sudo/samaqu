@@ -64,8 +64,8 @@ function ProductCard({ product, index, wishlist }: { product: Product; index: nu
   function handleAddToCart(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
-    // CYP products: redirect to detail page so customer picks their price
-    if (product.create_your_price_enabled) {
+    // CYP products or products with multiple color variants → redirect to detail page
+    if (product.create_your_price_enabled || product.colors.length > 1) {
       router.push(`/katalog/${product.id}`);
       return;
     }
