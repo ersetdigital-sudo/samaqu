@@ -7,10 +7,10 @@ const navLinks = [
 ];
 
 const helpLinks = [
-  { href: "/#cara-pesan", label: "Cara Pesan" },
+  { href: "/cara-pesan", label: "CARA PESAN" },
   { href: "/#faq", label: "FAQ" },
-  { href: "/#size", label: "Panduan Ukuran" },
-  { href: "/create-your-price", label: "Create Your Price" },
+  { href: "/#size", label: "PANDUAN UKURAN" },
+  { href: "/create-your-price", label: "CREATE YOUR PRICE" },
 ];
 
 export default function Footer() {
