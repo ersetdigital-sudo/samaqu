@@ -10,6 +10,7 @@ const helpLinks = [
   { href: "/#cara-pesan", label: "Cara Pesan" },
   { href: "/#faq", label: "FAQ" },
   { href: "/#size", label: "Panduan Ukuran" },
+  { href: "/create-your-price", label: "Create Your Price" },
 ];
 
 export default function Footer() {
