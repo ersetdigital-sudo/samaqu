@@ -1006,8 +1006,6 @@ function ShippingOriginSection() {
     const json = await res.json();
     setDistricts(json.data || []);
     console.log("[ADMIN] Districts loaded:", json.data?.length);
-    }
-    setDistricts(distList);
   }
 
   async function handleSave() {
