@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 import { SlidersHorizontal, X, ChevronDown, ArrowRight, ShoppingCart } from "lucide-react";
 import Breadcrumb from "@/components/Breadcrumb";
@@ -58,10 +59,16 @@ function Swatch({ color, size = 16 }: { color: string; size?: number }) {
 function ProductCard({ product, index, wishlist }: { product: Product; index: number; wishlist: { isWishlisted: (id: string) => boolean; toggle: (id: string) => Promise<boolean | null>; isLoggedIn: boolean } }) {
   const { addItem } = useCart();
   const toast = useToast();
+  const router = useRouter();
 
   function handleAddToCart(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
+    // CYP products: redirect to detail page so customer picks their price
+    if (product.create_your_price_enabled) {
+      router.push(`/katalog/${product.id}`);
+      return;
+    }
     addItem({
       id: product.id,
       name: product.name,
