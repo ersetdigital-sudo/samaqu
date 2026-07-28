@@ -7,6 +7,7 @@ import { getProductById, weightMap } from "@/lib/katalog-data";
 import { useCart } from "@/lib/cart-context";
 import { supabase } from "@/lib/supabase";
 import { getWhatsAppLink } from "@/lib/store-settings";
+import { validateVoucher } from "@/lib/voucher-utils";
 
 interface PaymentMethod {
   id: string;
@@ -483,6 +484,7 @@ function CheckoutContent() {
     if (!kota.trim()) e.kota = "Kota/Kabupaten wajib diisi";
     if (kodepos && !/^\d{5}$/.test(kodepos)) e.kodepos = "Kode pos harus 5 digit";
     if (!selectedShipping) e.shipping = "Pilih metode pengiriman";
+    if (!payment || !["bank", "qris", "cod"].includes(payment)) e.payment = "Pilih metode pembayaran";
 
     if (Object.keys(e).length > 0) {
       console.log("[CHECKOUT] ❌ Validation errors:", e);
@@ -600,34 +602,19 @@ function CheckoutContent() {
   const total = subtotal - discount + shippingCost;
 
   async function applyPromo() {
-    if (!promoCode.trim()) { setPromoError("Masukkan kode promo"); return; }
-    setPromoError("");
-    setPromoApplied(false);
-    setDiscount(0);
-    setVoucherCode("");
-
-    const { data: voucher } = await supabase.from("vouchers").select("*").eq("code", promoCode.trim().toUpperCase()).eq("is_active", true).single();
-    if (!voucher) { setPromoError("Kode promo tidak valid"); return; }
-    if (voucher.end_date && new Date(voucher.end_date) < new Date()) { setPromoError("Kode promo sudah kadaluarsa"); return; }
-    if (voucher.usage_limit > 0 && voucher.used_count >= voucher.usage_limit) { setPromoError("Kode promo sudah habis digunakan"); return; }
-    if (voucher.min_purchase > 0 && subtotal < voucher.min_purchase) { setPromoError(`Minimal belanja Rp ${voucher.min_purchase.toLocaleString("id-ID")} untuk kode ini`); return; }
-    if (voucher.limit_per_wa && whatsapp.trim()) {
-      const phone = whatsapp.replace(/[^0-9]/g, "");
-      const { data: existingUsage } = await supabase.from("voucher_usages").select("id").eq("voucher_id", voucher.id).eq("whatsapp_number", phone).limit(1);
-      if (existingUsage && existingUsage.length > 0) { setPromoError("Kode voucher ini sudah pernah Anda gunakan"); return; }
-    }
-
-    let disc = 0;
-    if (voucher.discount_type === "percentage") {
-      disc = Math.round(subtotal * voucher.discount_value / 100);
-      if (voucher.max_discount > 0) disc = Math.min(disc, voucher.max_discount);
+    const result = await validateVoucher(promoCode, subtotal, whatsapp);
+    if (result.valid) {
+      setPromoError("");
+      setPromoApplied(true);
+      setDiscount(result.discount);
+      setVoucherCode(result.voucher.code);
+      setVoucherId(result.voucher.id);
     } else {
-      disc = Math.min(voucher.discount_value, subtotal);
+      setPromoError(result.error);
+      setPromoApplied(false);
+      setDiscount(0);
+      setVoucherCode("");
     }
-    setDiscount(disc);
-    setPromoApplied(true);
-    setVoucherCode(voucher.code);
-    setVoucherId(voucher.id);
   }
 
   const selectStyle: React.CSSProperties = { background: "white", border: "1px solid rgba(64,50,37,.25)", color: "var(--espresso)", outline: "none" };
@@ -860,17 +847,17 @@ function CheckoutContent() {
           </section>
 
           {/* Section 4: Payment Method */}
-          <section>
+          <section data-field="payment">
             <div className="flex items-center gap-3 mb-4 sm:mb-5">
               <span className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold" style={{ background: "var(--espresso)", color: "var(--cream)" }}>4</span>
               <h2 className="text-xl sm:text-2xl italic" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Metode Pembayaran</h2>
             </div>
             <div className="space-y-3">
               {paymentMethods.length > 0 ? paymentMethods.map((pm) => (
-                <label key={pm.id} className="pay-option relative rounded-xl p-4 flex items-center gap-3 cursor-pointer transition-all" style={{ border: `1.5px solid ${payment === pm.id ? "var(--gold)" : "rgba(64,50,37,.25)"}`, background: payment === pm.id ? "white" : "transparent" }}>
-                  <input type="radio" name="pay" value={pm.id} checked={payment === pm.id} onChange={() => setPayment(pm.id)} className="sr-only" />
-                  <span className="relative w-4 h-4 rounded-full border-2 flex-shrink-0" style={{ borderColor: payment === pm.id ? "var(--gold)" : "var(--text-muted)" }}>
-                    {payment === pm.id && <span className="absolute inset-[3px] rounded-full" style={{ background: "var(--gold)" }} />}
+                <label key={pm.id} className="pay-option relative rounded-xl p-4 flex items-center gap-3 cursor-pointer transition-all" style={{ border: `1.5px solid ${payment === "bank" ? "var(--gold)" : "rgba(64,50,37,.25)"}`, background: payment === "bank" ? "white" : "transparent" }}>
+                  <input type="radio" name="pay" value="bank" checked={payment === "bank"} onChange={() => setPayment("bank")} className="sr-only" />
+                  <span className="relative w-4 h-4 rounded-full border-2 flex-shrink-0" style={{ borderColor: payment === "bank" ? "var(--gold)" : "var(--text-muted)" }}>
+                    {payment === "bank" && <span className="absolute inset-[3px] rounded-full" style={{ background: "var(--gold)" }} />}
                   </span>
                   <span className="text-[13px] sm:text-sm font-ui font-medium flex-1" style={{ color: "var(--espresso)" }}>Transfer Bank ({pm.bank_name})</span>
                   <PaymentIcon type="bank" />
@@ -903,6 +890,7 @@ function CheckoutContent() {
               </label>
             </div>
           </section>
+          {errors.payment && <p className="text-[11px] font-ui" style={{ color: "#e74c3c" }}>{errors.payment}</p>}
 
           {/* Submit error */}
           {errors.submit && (
