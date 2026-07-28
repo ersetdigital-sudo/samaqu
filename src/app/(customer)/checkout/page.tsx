@@ -44,57 +44,50 @@ function generateOrderNumber(): string {
 
 // ── Shipping: resolve destination_id from address ──
 async function resolveDestinationId(addr: SavedAddress, signal?: AbortSignal): Promise<number | null> {
-  console.log("[CHECKOUT] 🔍 resolveDestinationId called:", {
-    addressId: addr.id,
-    kecamatan: addr.kecamatan,
-    city: addr.city,
-    province: addr.province,
-    cachedDistrictId: addr.district_id,
-  });
-
   // 1. If already cached in address record, use it directly
   if (addr.district_id) {
-    console.log("[CHECKOUT] ✅ Using cached district_id:", addr.district_id);
     return addr.district_id;
   }
 
-  // 2. Search RajaOngkir by kecamatan name + city + province
   if (!addr.kecamatan) {
-    console.log("[CHECKOUT] ❌ No kecamatan in address, cannot resolve");
     return null;
   }
 
+  // 2. Check Supabase destination cache (shared across all users)
+  const cacheKey = `${addr.kecamatan}|${addr.city || ""}`.toUpperCase();
+  try {
+    const { data: cached } = await supabase
+      .from("destination_cache")
+      .select("district_id")
+      .eq("cache_key", cacheKey)
+      .maybeSingle();
+    if (cached?.district_id) {
+      console.log("[CHECKOUT] ✅ Destination cache hit:", cacheKey, "→", cached.district_id);
+      return cached.district_id;
+    }
+  } catch { /* table might not exist yet, fall through to API */ }
+
+  // 3. Search RajaOngkir by kecamatan name + city + province
   const params = new URLSearchParams({ search: addr.kecamatan, limit: "10" });
   if (addr.city) params.set("city", addr.city);
   if (addr.province) params.set("province", addr.province);
 
-  const apiUrl = `/api/shipping/search-destination?${params}`;
-  console.log("[CHECKOUT] 📡 Calling search-destination:", apiUrl);
-
-  const res = await fetch(apiUrl, { signal: signal ?? AbortSignal.timeout(10000) });
-  console.log("[CHECKOUT] 📡 search-destination status:", res.status);
-
+  const res = await fetch(`/api/shipping/search-destination?${params}`, { signal: signal ?? AbortSignal.timeout(10000) });
   const json = await res.json();
-  console.log("[CHECKOUT] 📡 search-destination response:", {
-    resultsCount: json.data?.length || 0,
-    matchId: json.match?.id,
-    matchName: json.match?.subdistrict_name || json.match?.name,
-    matchCity: json.match?.city_name,
-    matchProvince: json.match?.province_name,
-  });
 
   if (json.match?.id) {
-    console.log("[CHECKOUT] ✅ Destination resolved:", json.match.id, json.match.subdistrict_name || json.match.name);
-    // Cache the resolved ID to the address record (fire-and-forget)
-    console.log("[CHECKOUT] 💾 Caching district_id to address record:", addr.id);
-    supabase.from("saved_addresses").update({ district_id: json.match.id }).eq("id", addr.id).then(({ error }) => {
-      if (error) console.error("[CHECKOUT] ❌ Cache save failed:", error);
-      else console.log("[CHECKOUT] ✅ district_id cached successfully");
-    });
+    console.log("[CHECKOUT] ✅ Destination resolved via API:", json.match.id);
+    // Cache to Supabase for future lookups (fire-and-forget)
+    supabase.from("destination_cache").upsert({
+      cache_key: cacheKey,
+      district_id: json.match.id,
+      kecamatan: addr.kecamatan,
+      city: addr.city || null,
+      province: addr.province || null,
+    }, { onConflict: "cache_key" }).then(() => {});
     return json.match.id;
   }
 
-  console.log("[CHECKOUT] ❌ No match found for kecamatan:", addr.kecamatan);
   return null;
 }
 
