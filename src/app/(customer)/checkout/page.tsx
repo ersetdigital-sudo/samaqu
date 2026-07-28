@@ -911,7 +911,7 @@ function CheckoutContent() {
                     <div className="flex-1 min-w-0">
                       <p className="text-[13px] sm:text-sm font-ui font-medium leading-snug" style={{ color: "var(--espresso)" }}>{item.name}</p>
                       <p className="text-[11px] sm:text-xs font-ui mt-0.5" style={{ color: "var(--text-muted)" }}>Warna: {item.color} · Ukuran: {item.size} · ×{item.qty}</p>
-                      <p className="text-[13px] sm:text-sm font-ui font-semibold mt-1.5" style={{ color: "var(--espresso)" }}>Rp {(item.price * item.qty).toLocaleString("id-ID")}</p>
+                      <p className="text-[13px] sm:text-sm font-ui font-semibold mt-1.5" style={{ color: "var(--espresso)" }}>Rp {((item.create_your_price_enabled && item.customer_price ? item.customer_price : item.price) * item.qty).toLocaleString("id-ID")}</p>
                     </div>
                   </div>
                 ))}
