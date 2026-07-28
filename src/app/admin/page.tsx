@@ -640,7 +640,7 @@ function AdminPageInner() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                     {products.map((p) => (
                       <div key={p.id} className="card overflow-hidden group">
-                        <div className="h-40 relative overflow-hidden" style={{ background: "#e8dfd1" }}>
+                        <div className="relative aspect-[4/5] overflow-hidden" style={{ background: "#e8dfd1" }}>
                           <img src={productThumbnails[p.id] || p.image || ""} alt={p.name} className="w-full h-full object-cover" loading="lazy" />
                           <span className="absolute top-3 left-3 badge" style={{ background: "rgba(255,255,255,.8)", color: "var(--espresso)" }}>{p.category}</span>
                         </div>
