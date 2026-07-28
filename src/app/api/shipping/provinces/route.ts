@@ -29,7 +29,9 @@ export async function GET() {
       console.log("[PROVINCES] Cache FOUND, age:", ageDays, "days, cached_at:", cached.cached_at);
       if (ageDays < CACHE_TTL_DAYS) {
         console.log("[PROVINCES] → Cache HIT — returning cached data");
-        return NextResponse.json(cached.cache_data);
+        const res = NextResponse.json(cached.cache_data);
+        res.headers.set("X-Cache", "HIT");
+        return res;
       }
       console.log("[PROVINCES] → Cache STALE (>30 days) — refetching from RajaOngkir");
     }
@@ -60,7 +62,9 @@ export async function GET() {
     }
 
     console.log("[PROVINCES] === REQUEST END ===");
-    return NextResponse.json(json);
+    const res = NextResponse.json(json);
+    res.headers.set("X-Cache", "MISS");
+    return res;
   } catch (e) {
     console.error("[PROVINCES] FATAL ERROR:", e);
     return NextResponse.json({ error: "Gagal mengambil data provinsi", data: [] }, { status: 500 });
