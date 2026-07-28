@@ -164,7 +164,7 @@ function CheckoutSuccessContent() {
             </div>
             <div>
               <p className="text-[11px] tracking-[0.15em] uppercase mb-1 font-ui" style={{ color: "var(--text-muted)" }}>Pengiriman</p>
-              <p className="text-sm font-medium font-ui" style={{ color: "var(--espresso)" }}>{order.shipping_method === "express" ? "Ekspres" : "Reguler"}</p>
+              <p className="text-sm font-medium font-ui" style={{ color: "var(--espresso)" }}>{order.shipping_method}</p>
             </div>
           </div>
 
@@ -189,7 +189,7 @@ function CheckoutSuccessContent() {
               <span className="text-sm font-medium font-ui" style={{ color: "var(--espresso)" }}>Rp {order.subtotal.toLocaleString("id-ID")}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm font-ui" style={{ color: "var(--text-secondary)" }}>Ongkos Kirim ({order.shipping_method === "express" ? "Ekspres" : "Reguler"})</span>
+              <span className="text-sm font-ui" style={{ color: "var(--text-secondary)" }}>Ongkos Kirim</span>
               <span className="text-sm font-medium font-ui" style={{ color: "var(--espresso)" }}>Rp {order.shipping_cost.toLocaleString("id-ID")}</span>
             </div>
             {order.discount > 0 && (
