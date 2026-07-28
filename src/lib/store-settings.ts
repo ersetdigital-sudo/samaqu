@@ -11,6 +11,7 @@ interface StoreSettings {
   origin_district_id: number | null;
   enabled_couriers: string[];
   instagram_url: string;
+  cyp_microcopy: string;
 }
 
 const DEFAULTS: StoreSettings = {
@@ -21,6 +22,7 @@ const DEFAULTS: StoreSettings = {
   origin_district_id: null,
   enabled_couriers: ["jne", "sicepat", "jnt", "ninja", "tiki", "wahana", "pos", "lion", "anteraja"],
   instagram_url: "https://instagram.com/samaqu.id",
+  cyp_microcopy: "Harga Minimum boleh dipilih. Itulah alasan kami membuat Create Your Price.",
 };
 
 let cached: StoreSettings = DEFAULTS;

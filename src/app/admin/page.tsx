@@ -1286,8 +1286,8 @@ function SocialMediaSection() {
 }
 
 function StoreInfoSection() {
-  const [form, setForm] = useState({ store_name: "", tagline: "", email: "", whatsapp: "" });
-  const [original, setOriginal] = useState({ store_name: "", tagline: "", email: "", whatsapp: "" });
+  const [form, setForm] = useState({ store_name: "", tagline: "", email: "", whatsapp: "", cyp_microcopy: "" });
+  const [original, setOriginal] = useState({ store_name: "", tagline: "", email: "", whatsapp: "", cyp_microcopy: "" });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const toast = useToast();
@@ -1295,14 +1295,14 @@ function StoreInfoSection() {
   useEffect(() => {
     supabase.from("store_settings").select("*").eq("id", 1).single().then(({ data }) => {
       if (data) {
-        const s = { store_name: data.store_name || "", tagline: data.tagline || "", email: data.email || "", whatsapp: data.whatsapp || "" };
+        const s = { store_name: data.store_name || "", tagline: data.tagline || "", email: data.email || "", whatsapp: data.whatsapp || "", cyp_microcopy: data.cyp_microcopy || "" };
         setForm(s); setOriginal(s);
       }
       setLoading(false);
     });
   }, []);
 
-  const dirty = form.store_name !== original.store_name || form.tagline !== original.tagline || form.email !== original.email || form.whatsapp !== original.whatsapp;
+  const dirty = form.store_name !== original.store_name || form.tagline !== original.tagline || form.email !== original.email || form.whatsapp !== original.whatsapp || form.cyp_microcopy !== original.cyp_microcopy;
 
   async function handleSave() {
     setSaving(true);
@@ -1338,6 +1338,11 @@ function StoreInfoSection() {
           <label className="text-sm font-semibold" style={{ color: "var(--espresso)" }}>WhatsApp</label>
           <input value={form.whatsapp} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} className="mt-1.5 w-full rounded-xl px-4 py-2.5 bg-white text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.1)" }} />
         </div>
+      </div>
+      <div>
+        <label className="text-sm font-semibold" style={{ color: "var(--espresso)" }}>Teks Microcopy Create Your Price</label>
+        <p className="text-[11px] font-ui mt-0.5 mb-1.5" style={{ color: "var(--text-muted)" }}>Teks kecil yang muncul di bawah pilihan harga pada halaman produk CYP. Kosongkan untuk gunakan default.</p>
+        <textarea value={form.cyp_microcopy} onChange={(e) => setForm({ ...form, cyp_microcopy: e.target.value })} rows={2} className="w-full rounded-xl px-4 py-2.5 bg-white text-sm outline-none resize-none" style={{ border: "1px solid rgba(64,50,37,.1)" }} placeholder="Harga Minimum boleh dipilih. Itulah alasan kami membuat Create Your Price." />
       </div>
       <div className="flex gap-3 pt-2">
         {dirty && (
