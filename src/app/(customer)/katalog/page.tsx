@@ -180,7 +180,9 @@ function ProductCard({ product, index, wishlist }: { product: Product; index: nu
           className="text-[15px] sm:text-base font-ui font-medium mb-2"
           style={{ color: "var(--gold)" }}
         >
-          Rp {product.price.toLocaleString("id-ID")}
+          {product.create_your_price_enabled && product.minimum_price
+            ? `Mulai dari Rp ${product.minimum_price.toLocaleString("id-ID")}`
+            : `Rp ${product.price.toLocaleString("id-ID")}`}
         </p>
 
         {/* Color swatches — fixed min-height */}

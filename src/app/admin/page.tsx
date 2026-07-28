@@ -42,6 +42,8 @@ interface Product {
   category: string;
   price: number;
   image: string;
+  minimum_price?: number | null;
+  create_your_price_enabled?: boolean;
 }
 
 const navItems = [
@@ -644,7 +646,11 @@ function AdminPageInner() {
                         </div>
                         <div className="p-4">
                           <h3 className="font-semibold text-sm leading-snug">{p.name}</h3>
-                          <p className="text-[15px] sm:text-base font-ui font-medium mt-2" style={{ color: "var(--gold)" }}>Rp {p.price.toLocaleString("id-ID")}</p>
+                          <p className="text-[15px] sm:text-base font-ui font-medium mt-2" style={{ color: "var(--gold)" }}>
+                            {p.create_your_price_enabled && p.minimum_price
+                              ? `Mulai dari Rp ${p.minimum_price.toLocaleString("id-ID")}`
+                              : `Rp ${p.price.toLocaleString("id-ID")}`}
+                          </p>
                           <div className="flex gap-2 mt-3">
                             <Link href={`/admin/produk/edit/${p.id}`} className="flex-1 text-xs font-semibold py-2 rounded-lg text-center" style={{ border: "1px solid rgba(64,50,37,.15)" }}>Edit</Link>
                             <Link href={`/admin/produk/detail/${p.id}`} className="flex-1 text-xs font-semibold py-2 rounded-lg text-center text-white" style={{ background: "var(--gold)" }}>Detail</Link>
