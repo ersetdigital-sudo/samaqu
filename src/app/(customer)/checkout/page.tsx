@@ -570,6 +570,7 @@ function CheckoutContent() {
       }
 
       console.log("[CHECKOUT] ✅ ORDER SUCCESS:", data.orderNumber);
+      setOrderPlaced(true);
       clearCart();
       const orderNum = data.orderNumber || generateOrderNumber();
       console.log("[CHECKOUT] ✅ Redirecting to:", `/checkout/success?order=${orderNum}`);
