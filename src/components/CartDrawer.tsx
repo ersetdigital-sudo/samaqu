@@ -6,36 +6,30 @@ import { X, Minus, Plus, Trash2, Tag, ShoppingBag, ShoppingCart } from "lucide-r
 import { useCart } from "@/lib/cart-context";
 import { colorMap } from "@/lib/katalog-data";
 import { useRouter } from "next/navigation";
-import { validateVoucher } from "@/lib/voucher-utils";
 
 export default function CartDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   const router = useRouter();
-  const { items, removeItem, updateQty, subtotal } = useCart();
+  const { items, removeItem, updateQty, subtotal, voucher, applyVoucher, removeVoucher } = useCart();
   const [promoCode, setPromoCode] = useState("");
-  const [promoApplied, setPromoApplied] = useState(false);
   const [promoError, setPromoError] = useState("");
+  const promoApplied = voucher.discount > 0;
 
-  const [discount, setDiscount] = useState(0);
-  const total = subtotal - discount;
+  const total = subtotal - voucher.discount;
 
-  async function applyPromo() {
-    const result = await validateVoucher(promoCode, subtotal);
-    if (result.valid) {
-      setPromoApplied(true);
-      setPromoError("");
-      setDiscount(result.discount);
+  async function handleApplyPromo() {
+    setPromoError("");
+    const result = await applyVoucher(promoCode);
+    if (result.ok) {
+      setPromoCode("");
     } else {
-      setPromoApplied(false);
-      setDiscount(0);
-      setPromoError(result.error);
+      setPromoError(result.error || "Kode promo tidak valid");
     }
   }
 
-  function removePromo() {
+  function handleRemovePromo() {
+    removeVoucher();
     setPromoCode("");
-    setPromoApplied(false);
     setPromoError("");
-    setDiscount(0);
   }
 
   function handleCheckout() {
@@ -190,9 +184,9 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <Tag size={14} style={{ color: "var(--gold)" }} />
-                          <span className="text-[12px] font-ui font-semibold" style={{ color: "var(--gold)" }}>{promoCode.toUpperCase()}</span>
+                          <span className="text-[12px] font-ui font-semibold" style={{ color: "var(--gold)" }}>{voucher.code}</span>
                         </div>
-                        <button onClick={removePromo} className="text-[11px] font-ui underline" style={{ color: "var(--stone)" }}>Hapus</button>
+                        <button onClick={handleRemovePromo} className="text-[11px] font-ui underline" style={{ color: "var(--stone)" }}>Hapus</button>
                       </div>
                     ) : (
                       <div className="flex items-center gap-2">
@@ -200,7 +194,7 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
                           placeholder="Kode promo"
                           className="flex-1 text-[12px] font-ui bg-transparent outline-none px-2 py-1.5 rounded-lg"
                           style={{ border: `1px solid ${promoError ? "#e74c3c" : "rgba(201,183,156,.2)"}`, color: "var(--espresso)" }} />
-                        <button onClick={applyPromo}
+                        <button onClick={handleApplyPromo}
                           className="px-3 py-1.5 rounded-lg text-[11px] font-ui font-semibold transition-all hover:scale-105 shrink-0"
                           style={{ background: "var(--espresso)", color: "white" }}>
                           Pakai
@@ -215,7 +209,7 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
                     style={{ background: "rgba(255,255,255,.4)", border: "1px solid rgba(201,183,156,.1)" }}>
                     <div className="space-y-1.5">
                       <SummaryLine label="Subtotal" value={`Rp ${subtotal.toLocaleString("id-ID")}`} />
-                      {promoApplied && <SummaryLine label={`Diskon (${promoCode.toUpperCase()})`} value={`- Rp ${discount.toLocaleString("id-ID")}`} valueColor="var(--gold)" />}
+                      {promoApplied && <SummaryLine label={`Diskon (${voucher.code})`} value={`- Rp ${voucher.discount.toLocaleString("id-ID")}`} valueColor="var(--gold)" />}
                       <SummaryLine label="Pengiriman" value="Dihitung saat checkout" />
                     </div>
                     <div className="h-px my-2.5" style={{ background: "rgba(201,183,156,.15)" }} />

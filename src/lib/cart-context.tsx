@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useReducer, useEffect, useCallback, useState } from "react";
+import { validateVoucher } from "./voucher-utils";
 
 export interface CartItem {
   id: string;
@@ -15,6 +16,12 @@ export interface CartItem {
   customer_price?: number;   // harga pilihan customer (CYP only)
   minimum_price?: number;    // harga minimum untuk validasi (CYP only)
   create_your_price_enabled?: boolean; // apakah produk ini pakai CYP
+}
+
+interface VoucherState {
+  code: string;
+  id: string;
+  discount: number;
 }
 
 interface CartState {
@@ -80,27 +87,45 @@ const CartContext = createContext<{
   clearCart: () => void;
   totalItems: number;
   subtotal: number;
+  voucher: VoucherState;
+  applyVoucher: (code: string, whatsapp?: string) => Promise<{ ok: boolean; error?: string }>;
+  removeVoucher: () => void;
 } | null>(null);
 
 const STORAGE_KEY = "samaqu-cart";
+const VOUCHER_KEY = "samaqu-voucher";
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(cartReducer, { items: [] });
   const [loaded, setLoaded] = useState(false);
+  const [voucher, setVoucher] = useState<VoucherState>({ code: "", id: "", discount: 0 });
 
+  // Load cart + voucher from localStorage
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) dispatch({ type: "LOAD", items: JSON.parse(raw) });
     } catch {}
+    try {
+      const vRaw = localStorage.getItem(VOUCHER_KEY);
+      if (vRaw) setVoucher(JSON.parse(vRaw));
+    } catch {}
     setLoaded(true);
   }, []);
 
+  // Persist cart
   useEffect(() => {
     if (loaded) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state.items));
     }
   }, [state.items, loaded]);
+
+  // Persist voucher
+  useEffect(() => {
+    if (loaded) {
+      localStorage.setItem(VOUCHER_KEY, JSON.stringify(voucher));
+    }
+  }, [voucher, loaded]);
 
   const addItem = useCallback((item: CartItem) => {
     dispatch({ type: "ADD", item });
@@ -120,6 +145,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const clearCart = useCallback(() => {
     dispatch({ type: "CLEAR" });
+    setVoucher({ code: "", id: "", discount: 0 });
   }, []);
 
   const totalItems = state.items.reduce((sum, i) => sum + i.qty, 0);
@@ -129,8 +155,21 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     return sum + unitPrice * i.qty;
   }, 0);
 
+  const applyVoucher = useCallback(async (code: string, whatsapp?: string) => {
+    const result = await validateVoucher(code, subtotal, whatsapp);
+    if (result.valid) {
+      setVoucher({ code: result.voucher.code, id: result.voucher.id, discount: result.discount });
+      return { ok: true };
+    }
+    return { ok: false, error: result.error };
+  }, [subtotal]);
+
+  const removeVoucher = useCallback(() => {
+    setVoucher({ code: "", id: "", discount: 0 });
+  }, []);
+
   return (
-    <CartContext.Provider value={{ items: state.items, addItem, removeItem, updateQty, updatePrice, clearCart, totalItems, subtotal }}>
+    <CartContext.Provider value={{ items: state.items, addItem, removeItem, updateQty, updatePrice, clearCart, totalItems, subtotal, voucher, applyVoucher, removeVoucher }}>
       {children}
     </CartContext.Provider>
   );
