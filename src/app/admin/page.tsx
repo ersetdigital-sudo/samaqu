@@ -930,6 +930,7 @@ function ShippingOriginSection() {
   const [cities, setCities] = useState<{ id: number; name: string }[]>([]);
   const [districts, setDistricts] = useState<{ id: number; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dropdownsLoading, setDropdownsLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const toast = useToast();
 
@@ -937,41 +938,47 @@ function ShippingOriginSection() {
     async function init() {
       console.log("[ADMIN] ShippingOriginSection init start");
 
-      // 1. Load provinces (1 RajaOngkir call)
-      const provRes = await fetch("/api/shipping/provinces");
-      const provJson = await provRes.json();
-      const provList = provJson.data || [];
-      setProvinces(provList);
-      console.log("[ADMIN] Provinces loaded:", provList.length);
-      console.log("[ADMIN] All provinces:", provList.map((p: {id: number; name: string}) => `${p.id}:${p.name}`).join(", "));
-
-      // 2. Load saved origin IDs from store_settings
+      // 1. Load saved origin IDs from Supabase FIRST (fast, show form immediately)
       const { data } = await supabase.from("store_settings").select("origin_district_id, origin_province_id, origin_city_id").eq("id", 1).single();
       console.log("[ADMIN] Saved origin:", data);
 
-      // If all3 IDs exist, auto-select dropdowns (max 2 extra API calls)
       if (data?.origin_province_id && data?.origin_city_id && data?.origin_district_id) {
         setForm({
           origin_province_id: String(data.origin_province_id),
           origin_city_id: String(data.origin_city_id),
           origin_district_id: String(data.origin_district_id),
         });
-        // Load cities + districts for the saved IDs
-        const [cityRes, distRes] = await Promise.all([
-          fetch(`/api/shipping/districts?provinceId=${data.origin_province_id}`),
-          fetch(`/api/shipping/districts?cityId=${data.origin_city_id}`),
-        ]);
-        const [cityJson, distJson] = await Promise.all([cityRes.json(), distRes.json()]);
-        setCities(cityJson.data || []);
-        setDistricts(distJson.data || []);
-        console.log("[ADMIN] Auto-selected from saved IDs — 3 API calls total");
-      }
-      // If only district_id (legacy data), just log — admin re-selects manually
-      else if (data?.origin_district_id) {
+      } else if (data?.origin_district_id) {
         console.log("[ADMIN] Legacy data: only district_id saved. Admin needs to re-select province+city once.");
       }
 
+      // 2. Show form immediately (no full-section spinner)
       setLoading(false);
+
+      // 3. Load provinces from RajaOngkir in background (cached 30 days on server)
+      try {
+        const provRes = await fetch("/api/shipping/provinces");
+        const provJson = await provRes.json();
+        const provList = provJson.data || [];
+        setProvinces(provList);
+        console.log("[ADMIN] Provinces loaded:", provList.length);
+
+        // 4. If saved IDs exist, load cities + districts in background
+        if (data?.origin_province_id && data?.origin_city_id && data?.origin_district_id) {
+          const [cityRes, distRes] = await Promise.all([
+            fetch(`/api/shipping/districts?provinceId=${data.origin_province_id}`),
+            fetch(`/api/shipping/districts?cityId=${data.origin_city_id}`),
+          ]);
+          const [cityJson, distJson] = await Promise.all([cityRes.json(), distRes.json()]);
+          setCities(cityJson.data || []);
+          setDistricts(distJson.data || []);
+          console.log("[ADMIN] Background loaded cities + districts");
+        }
+      } catch (e) {
+        console.error("[ADMIN] Background load error:", e);
+      } finally {
+        setDropdownsLoading(false);
+      }
     }
     init();
   }, []);
@@ -1055,6 +1062,9 @@ function ShippingOriginSection() {
 
   if (loading) return <div className="card p-6 max-w-2xl"><Loader2 size={20} className="animate-spin" style={{ color: "var(--gold)" }} /></div>;
 
+  // Helper: find name from list by ID
+  const findName = (list: { id: number; name: string }[], id: string) => list.find((i) => String(i.id) === id)?.name;
+
   return (
     <div className="card p-6 max-w-2xl space-y-4">
       <h3 className="text-lg font-semibold" style={{ color: "var(--espresso)" }}>Alamat Pengiriman Toko (Origin)</h3>
@@ -1062,24 +1072,42 @@ function ShippingOriginSection() {
       <div className="grid sm:grid-cols-3 gap-3">
         <div>
           <label className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Provinsi</label>
-          <select value={form.origin_province_id} onChange={(e) => handleProvChange(e.target.value)} className="mt-1 w-full rounded-xl px-3 py-2.5 bg-white text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.1)" }}>
-            <option value="">Pilih</option>
-            {provinces.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
+          {dropdownsLoading && form.origin_province_id ? (
+            <div className="mt-1 w-full rounded-xl px-3 py-2.5 bg-white text-sm" style={{ border: "1px solid rgba(64,50,37,.1)" }}>
+              {findName(provinces, form.origin_province_id) || "Memuat..."}
+            </div>
+          ) : (
+            <select value={form.origin_province_id} onChange={(e) => handleProvChange(e.target.value)} className="mt-1 w-full rounded-xl px-3 py-2.5 bg-white text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.1)" }}>
+              <option value="">Pilih</option>
+              {provinces.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          )}
         </div>
         <div>
           <label className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Kota / Kabupaten</label>
-          <select value={form.origin_city_id} onChange={(e) => handleCityChange(e.target.value)} disabled={!form.origin_province_id} className="mt-1 w-full rounded-xl px-3 py-2.5 bg-white text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.1)", opacity: !form.origin_province_id ? 0.5 : 1 }}>
-            <option value="">Pilih</option>
-            {cities.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
+          {dropdownsLoading && form.origin_city_id ? (
+            <div className="mt-1 w-full rounded-xl px-3 py-2.5 bg-white text-sm" style={{ border: "1px solid rgba(64,50,37,.1)", opacity: !form.origin_province_id ? 0.5 : 1 }}>
+              {findName(cities, form.origin_city_id) || "Memuat..."}
+            </div>
+          ) : (
+            <select value={form.origin_city_id} onChange={(e) => handleCityChange(e.target.value)} disabled={!form.origin_province_id} className="mt-1 w-full rounded-xl px-3 py-2.5 bg-white text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.1)", opacity: !form.origin_province_id ? 0.5 : 1 }}>
+              <option value="">Pilih</option>
+              {cities.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          )}
         </div>
         <div>
           <label className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Kecamatan</label>
-          <select value={form.origin_district_id} onChange={(e) => setForm((f) => ({ ...f, origin_district_id: e.target.value }))} disabled={!form.origin_city_id} className="mt-1 w-full rounded-xl px-3 py-2.5 bg-white text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.1)", opacity: !form.origin_city_id ? 0.5 : 1 }}>
-            <option value="">Pilih</option>
-            {districts.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
-          </select>
+          {dropdownsLoading && form.origin_district_id ? (
+            <div className="mt-1 w-full rounded-xl px-3 py-2.5 bg-white text-sm" style={{ border: "1px solid rgba(64,50,37,.1)", opacity: !form.origin_city_id ? 0.5 : 1 }}>
+              {findName(districts, form.origin_district_id) || "Memuat..."}
+            </div>
+          ) : (
+            <select value={form.origin_district_id} onChange={(e) => setForm((f) => ({ ...f, origin_district_id: e.target.value }))} disabled={!form.origin_city_id} className="mt-1 w-full rounded-xl px-3 py-2.5 bg-white text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.1)", opacity: !form.origin_city_id ? 0.5 : 1 }}>
+              <option value="">Pilih</option>
+              {districts.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </select>
+          )}
         </div>
       </div>
       <div className="flex gap-3 pt-2">
