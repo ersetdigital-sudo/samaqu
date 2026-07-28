@@ -160,14 +160,16 @@ function AdminPageInner() {
           if (ordersRes.data) setOrders(ordersRes.data as Order[]);
           if (productsRes.data) {
             setProducts(productsRes.data as Product[]);
-            // Fetch first image for each product from product_images table
+            // Fetch first IMAGE (not video) for each product from product_images table
             const thumbs: Record<string, string> = {};
             for (const p of productsRes.data as Product[]) {
               if (p.image) {
                 thumbs[p.id] = p.image;
               } else {
-                const { data: imgs } = await supabase.from("product_images").select("url").eq("product_id", p.id).order("display_order").limit(1);
-                if (imgs && imgs.length > 0) thumbs[p.id] = imgs[0].url;
+                // Skip videos, get first actual image
+                const { data: imgs } = await supabase.from("product_images").select("url, is_video").eq("product_id", p.id).order("display_order");
+                const firstImage = imgs?.find((img: { url: string; is_video: boolean }) => !img.is_video);
+                if (firstImage) thumbs[p.id] = firstImage.url;
               }
             }
             setProductThumbnails(thumbs);
