@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="id"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Create Your Price — SAMAQU</title>
+<style>
+  :root{
+    --bg-primary:#f1e9dd; --bg-secondary:#ebe0d4; --bg-tertiary:#e5d8cb;
+    --bg-inverted:#2a211b; --text-primary:#2a211b; --text-secondary:#5a4a40;
+    --text-muted:#8a7a70; --text-inverted:#f1e9dd; --accent:#a2855f; --accent-2:#c9a87a;
+  }
+  body{background:var(--bg-primary);color:var(--text-primary);font-family:"Inter",sans-serif;-webkit-font-smoothing:antialiased;}
+  .serif{font-family:"Cormorant","Libre Baskerville",serif;}
+  .rule{height:1px;background:linear-gradient(90deg,transparent,rgba(42,33,27,.25),transparent);}
+  input[type=range]{-webkit-appearance:none;appearance:none;height:8px;border-radius:99px;outline:none;
+    background:linear-gradient(90deg,var(--accent) 0%,var(--accent) var(--pct,0%),rgba(42,33,27,.14) var(--pct,0%),rgba(42,33,27,.14) 100%);}
+  input[type=range]::-webkit-slider-runnable-track{height:8px;border-radius:99px;background:transparent;}
+  input[type=range]::-moz-range-track{height:8px;border-radius:99px;background:transparent;}
+  input[type=range]::-moz-range-progress{height:8px;border-radius:99px;background:var(--accent);}
+  input[type=range]{display:block;margin:0;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;height:28px;width:28px;border-radius:99px;background:var(--accent);border:4px solid #fff;box-shadow:0 2px 10px rgba(42,33,27,.25);cursor:pointer;}
+  input[type=range]::-moz-range-thumb{height:28px;width:28px;border:4px solid #fff;border-radius:99px;background:var(--accent);cursor:pointer;}
+  html{scroll-behavior:smooth;}
+  section[id]{scroll-margin-top:5.5rem;}
+  .card-hover{transition:transform .3s ease, box-shadow .3s ease;}
+  .card-hover:hover{transform:translateY(-4px);box-shadow:0 12px 30px rgba(42,33,27,.10);}
+</style>
+<script src="https://cdn.moda.app/runtime-libs/tailwind-browser-4.1.13-index.global.min.js"></script><style data-moda-export-fonts="true">@font-face { font-family: 'Inter'; src: url("../fonts/inter_24pt-thin.ttf") format("truetype"); font-style: normal; font-weight: 100; font-display: swap; }
+@font-face { font-family: 'Inter'; src: url("../fonts/inter_24pt-thinitalic.ttf") format("truetype"); font-style: italic; font-weight: 100; font-display: swap; }
+@font-face { font-family: 'Inter'; src: url("../fonts/inter_24pt-extralight.ttf") format("truetype"); font-style: normal; font-weight: 200; font-display: swap; }
+@font-face { font-family: 'Inter'; src: url("../fonts/inter_24pt-extralightitalic.ttf") format("truetype"); font-style: italic; font-weight: 200; font-display: swap; }
+@font-face { font-family: 'Inter'; src: url("../fonts/inter_24pt-light.ttf") format("truetype"); font-style: normal; font-weight: 300; font-display: swap; }
+@font-face { font-family: 'Inter'; src: url("../fonts/inter_24pt-lightitalic.ttf") format("truetype"); font-style: italic; font-weight: 300; font-display: swap; }
+@font-face { font-family: 'Inter'; src: url("../fonts/inter_24pt-regular.ttf") format("truetype"); font-style: normal; font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Inter'; src: url("../fonts/inter_24pt-italic.ttf") format("truetype"); font-style: italic; font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Inter'; src: url("../fonts/inter_24pt-medium.ttf") format("truetype"); font-style: normal; font-weight: 500; font-display: swap; }
+@font-face { font-family: 'Inter'; src: url("../fonts/inter_24pt-mediumitalic.ttf") format("truetype"); font-style: italic; font-weight: 500; font-display: swap; }
+@font-face { font-family: 'Inter'; src: url("../fonts/inter_24pt-semibold.ttf") format("truetype"); font-style: normal; font-weight: 600; font-display: swap; }
+@font-face { font-family: 'Inter'; src: url("../fonts/inter_24pt-semibolditalic.ttf") format("truetype"); font-style: italic; font-weight: 600; font-display: swap; }
+@font-face { font-family: 'Inter'; src: url("../fonts/inter_24pt-bold.ttf") format("truetype"); font-style: normal; font-weight: 700; font-display: swap; }
+@font-face { font-family: 'Inter'; src: url("../fonts/inter_24pt-bolditalic.ttf") format("truetype"); font-style: italic; font-weight: 700; font-display: swap; }
+@font-face { font-family: 'Inter'; src: url("../fonts/inter_24pt-extrabold.ttf") format("truetype"); font-style: normal; font-weight: 800; font-display: swap; }
+@font-face { font-family: 'Inter'; src: url("../fonts/inter_24pt-extrabolditalic.ttf") format("truetype"); font-style: italic; font-weight: 800; font-display: swap; }
+@font-face { font-family: 'Inter'; src: url("../fonts/inter_24pt-black.ttf") format("truetype"); font-style: normal; font-weight: 900; font-display: swap; }
+@font-face { font-family: 'Inter'; src: url("../fonts/inter_24pt-blackitalic.ttf") format("truetype"); font-style: italic; font-weight: 900; font-display: swap; }
+@font-face { font-family: 'Cormorant'; src: url("../fonts/cormorant-wght--light.ttf") format("truetype"); font-style: normal; font-weight: 300; font-display: swap; }
+@font-face { font-family: 'Cormorant'; src: url("../fonts/cormorant-wght--lightitalic.ttf") format("truetype"); font-style: italic; font-weight: 300; font-display: swap; }
+@font-face { font-family: 'Cormorant'; src: url("../fonts/cormorant-wght--regular.ttf") format("truetype"); font-style: normal; font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Cormorant'; src: url("../fonts/cormorant-wght--italic.ttf") format("truetype"); font-style: italic; font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Cormorant'; src: url("../fonts/cormorant-wght--medium.ttf") format("truetype"); font-style: normal; font-weight: 500; font-display: swap; }
+@font-face { font-family: 'Cormorant'; src: url("../fonts/cormorant-wght--mediumitalic.ttf") format("truetype"); font-style: italic; font-weight: 500; font-display: swap; }
+@font-face { font-family: 'Cormorant'; src: url("../fonts/cormorant-wght--semibold.ttf") format("truetype"); font-style: normal; font-weight: 600; font-display: swap; }
+@font-face { font-family: 'Cormorant'; src: url("../fonts/cormorant-wght--semibolditalic.ttf") format("truetype"); font-style: italic; font-weight: 600; font-display: swap; }
+@font-face { font-family: 'Cormorant'; src: url("../fonts/cormorant-wght--bold.ttf") format("truetype"); font-style: normal; font-weight: 700; font-display: swap; }
+@font-face { font-family: 'Cormorant'; src: url("../fonts/cormorant-wght--bolditalic.ttf") format("truetype"); font-style: italic; font-weight: 700; font-display: swap; }
+@font-face { font-family: 'Libre Baskerville'; src: url("../fonts/librebaskerville-regular.ttf") format("truetype"); font-style: normal; font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Libre Baskerville'; src: url("../fonts/librebaskerville-italic.ttf") format("truetype"); font-style: italic; font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Libre Baskerville'; src: url("../fonts/librebaskerville-bold.ttf") format("truetype"); font-style: normal; font-weight: 700; font-display: swap; }
+@font-face { font-family: 'Libre Baskerville'; src: url("../fonts/librebaskerville-bolditalic.ttf") format("truetype"); font-style: italic; font-weight: 700; font-display: swap; }</style></head>
+<body class="antialiased">
+
+<!-- Nav -->
+<header class="sticky top-0 z-40 backdrop-blur bg-[#f1e9dd]/85 border-b border-[#2a211b]/10">
+  <div class="mx-auto max-w-6xl px-5 h-16 flex items-center justify-between">
+    <img src="../images/2a0598f8-892d-470a-8663-8396b0fdf409.svg" alt="SAMAQU" class="h-7 w-auto object-contain">
+    <a href="#simulasi" class="text-sm font-medium rounded-full px-5 py-2.5 text-white" style="background:var(--accent)">Coba Simulasi</a>
+  </div>
+</header>
+
+<!-- Hero -->
+<section class="relative overflow-hidden" style="background:var(--bg-inverted)">
+  <img src="../images/e6311168-b0e0-4586-9209-a2ad19712a37.png" alt="" class="absolute inset-0 w-full h-full object-cover opacity-25">
+  <div class="relative mx-auto max-w-4xl px-5 py-20 sm:py-28 text-center" style="color:var(--text-inverted)">
+    <p class="text-[11px] sm:text-xs tracking-[0.35em] uppercase" style="color:var(--accent-2)">SAMAQU</p>
+    <h1 class="serif mt-5 text-5xl sm:text-7xl leading-[1.05] font-light">Create Your <em class="italic" style="color:var(--accent-2)">Price</em></h1>
+    <p class="mt-6 text-lg sm:text-xl" style="color:#d4c4b4">Di Samaqu, kamu bisa memilih hargamu sendiri.</p>
+    <div class="mt-9 flex flex-col sm:flex-row gap-3 justify-center">
+      <a href="#simulasi" class="rounded-full px-7 py-3.5 text-sm font-medium text-white" style="background:var(--accent)">Lihat Cara Kerjanya</a>
+      <a href="#cerita" class="rounded-full px-7 py-3.5 text-sm font-medium border" style="border-color:rgba(241,233,221,.35);color:var(--text-inverted)">Kenapa Kami Membuat Ini</a>
+    </div>
+  </div>
+</section>
+
+<!-- Cerita -->
+<section id="cerita" class="py-16 sm:py-24">
+  <div class="mx-auto max-w-3xl px-5 fade">
+    <h2 class="serif text-3xl sm:text-4xl leading-snug">Kami tahu rasanya menyukai produk berkualitas, tapi harus mengurungkan niat.</h2>
+    <div class="rule my-8"></div>
+    <div class="space-y-5 text-base sm:text-lg leading-relaxed" style="color:var(--text-secondary)">
+      <p>Bukan karena tidak ingin membelinya. Tapi karena ada banyak hal lain yang lebih penting untuk diperjuangkan.</p>
+      <p>Kami memahami itu, karena Samaqu juga lahir dari orang biasa. Itulah alasan kami membuat <strong style="color:var(--text-primary)">Create Your Price</strong>.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Aksesibilitas -->
+<section class="py-16 sm:py-24" style="background:var(--bg-secondary)">
+  <div class="mx-auto max-w-6xl px-5 grid gap-10 lg:grid-cols-2 lg:items-center">
+    <div class="fade">
+      <h2 class="serif text-3xl sm:text-5xl leading-tight">Kualitas yang baik seharusnya bisa dijangkau lebih banyak orang.</h2>
+      <div class="mt-6 space-y-4 text-base sm:text-lg leading-relaxed" style="color:var(--text-secondary)">
+        <p>Kami ingin membuat produk dengan kualitas yang benar-benar kami banggakan, tanpa membuat harganya terasa memberatkan.</p>
+        <p>Karena kemampuan setiap orang berbeda. Harga yang terasa ringan bagi seseorang, bisa menjadi pengeluaran besar bagi orang lain.</p>
+        <p>Kami tidak ingin perbedaan itu menjadi penghalang untuk mendapatkan produk berkualitas.</p>
+      </div>
+    </div>
+    <div class="fade rounded-2xl overflow-hidden shadow-sm">
+      <img src="../images/141ca791-3f39-4055-9409-d945ad3205a4.png" alt="Produk Samaqu" class="w-full h-full object-cover aspect-[4/3] lg:aspect-[4/5]">
+    </div>
+  </div>
+</section>
+
+<!-- Cara kerja + simulasi -->
+<section id="simulasi" class="py-16 sm:py-24 scroll-mt-24">
+  <div class="mx-auto max-w-5xl px-5">
+    <div class="text-center fade">
+      <p class="text-[11px] tracking-[0.3em] uppercase" style="color:var(--accent)">Cara Kerja</p>
+      <h2 class="serif mt-4 text-3xl sm:text-5xl">Bagaimana Create Your Price bekerja?</h2>
+      <p class="mt-4 text-lg" style="color:var(--text-secondary)">Sederhana. Hanya tiga langkah.</p>
+    </div>
+
+    <div class="mt-12 grid gap-5 sm:grid-cols-3">
+      <div class="fade rounded-2xl p-6 bg-white border border-[#2a211b]/10">
+        <div class="serif text-3xl" style="color:var(--accent)">01</div>
+        <h3 class="mt-3 font-semibold text-lg">Lihat Harga Minimum</h3>
+        <p class="mt-2 text-sm leading-relaxed" style="color:var(--text-secondary)">Setiap produk Samaqu memiliki Harga Minimum yang tertera jelas.</p>
+      </div>
+      <div class="fade rounded-2xl p-6 bg-white border border-[#2a211b]/10">
+        <div class="serif text-3xl" style="color:var(--accent)">02</div>
+        <h3 class="mt-3 font-semibold text-lg">Pilih Hargamu</h3>
+        <p class="mt-2 text-sm leading-relaxed" style="color:var(--text-secondary)">Kamu bebas menentukan harga yang ingin kamu bayar, selama tidak di bawah Harga Minimum.</p>
+      </div>
+      <div class="fade rounded-2xl p-6 bg-white border border-[#2a211b]/10">
+        <div class="serif text-3xl" style="color:var(--accent)">03</div>
+        <h3 class="mt-3 font-semibold text-lg">Produk Tetap Sama</h3>
+        <p class="mt-2 text-sm leading-relaxed" style="color:var(--text-secondary)">Berapa pun harga yang kamu pilih, produk dan kualitas yang kamu dapatkan tetap sama.</p>
+      </div>
+    </div>
+
+    <!-- Slider -->
+    <div class="fade mt-12 rounded-3xl p-6 sm:p-10 border border-[#2a211b]/10" style="background:var(--bg-tertiary)">
+      <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 sm:gap-4">
+        <div class="min-w-0">
+          <p class="text-[11px] sm:text-xs tracking-[0.2em] uppercase" style="color:var(--text-muted)">Contoh — Harga Minimum Rp300.000</p>
+          <h3 class="serif text-2xl sm:text-3xl mt-2">Coba pilih hargamu</h3>
+        </div>
+        <div class="text-3xl sm:text-4xl font-semibold tracking-tight leading-none whitespace-nowrap tabular-nums" id="priceOut" style="color:var(--accent);font-family:'Inter',sans-serif">Rp300.000</div>
+      </div>
+      <div class="mt-7 px-[14px]">
+        <div class="flex justify-between">
+          <span class="block w-px h-2 bg-[#2a211b]/20"></span><span class="block w-px h-2 bg-[#2a211b]/20"></span><span class="block w-px h-2 bg-[#2a211b]/20"></span><span class="block w-px h-2 bg-[#2a211b]/20"></span><span class="block w-px h-2 bg-[#2a211b]/20"></span>
+        </div>
+      </div>
+      <input id="priceRange" type="range" min="300000" max="500000" step="10000" value="300000" class="mt-2 w-full">
+      <div class="mt-6 sm:mt-7 flex justify-between gap-3 text-[11px] sm:text-xs tabular-nums" style="color:var(--text-muted)">
+        <span>Rp300.000 (min)</span><span>Rp500.000</span>
+      </div>
+      <div class="mt-6 flex flex-wrap gap-2">
+        <button data-p="300000" class="chip rounded-full px-4 py-2 text-sm bg-white border border-[#2a211b]/15">Rp300.000</button>
+        <button data-p="320000" class="chip rounded-full px-4 py-2 text-sm bg-white border border-[#2a211b]/15">Rp320.000</button>
+        <button data-p="350000" class="chip rounded-full px-4 py-2 text-sm bg-white border border-[#2a211b]/15">Rp350.000</button>
+      </div>
+      <p id="priceNote" class="mt-5 text-sm leading-relaxed" style="color:var(--text-secondary)">Rp300.000 adalah pilihan yang sah. Tidak perlu merasa sungkan — itulah alasan Harga Minimum kami buat.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Boleh pilih minimum -->
+<section class="py-16 sm:py-24" style="background:var(--bg-secondary)">
+  <div class="mx-auto max-w-3xl px-5 text-center fade">
+    <h2 class="serif text-3xl sm:text-5xl">Boleh pilih Harga Minimum?</h2>
+    <p class="serif italic text-2xl sm:text-3xl mt-4" style="color:var(--accent)">Tentu boleh.</p>
+    <div class="mt-6 space-y-4 text-base sm:text-lg leading-relaxed" style="color:var(--text-secondary)">
+      <p>Kalau saat ini Rp300.000 adalah harga yang paling sesuai dengan kemampuanmu, pilihlah Rp300.000. Tidak perlu merasa sungkan.</p>
+      <p>Itulah alasan Harga Minimum tersebut kami buat. Dan berapa pun harga yang kamu pilih, produk dan kualitas yang kamu dapatkan tetap sama.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Bukan diskon -->
+<section class="py-16 sm:py-24">
+  <div class="mx-auto max-w-6xl px-5 grid gap-10 lg:grid-cols-2 lg:items-center">
+    <div class="fade order-2 lg:order-1 rounded-2xl overflow-hidden">
+      <img src="../images/5d744c19-2ea0-411e-b002-bfc4b6cb3d08.png" alt="Produk Samaqu" class="w-full object-cover aspect-[4/3] lg:aspect-square">
+    </div>
+    <div class="fade order-1 lg:order-2">
+      <h2 class="serif text-3xl sm:text-5xl leading-tight">Bukan diskon. Bukan promo.</h2>
+      <div class="mt-6 space-y-4 text-base sm:text-lg leading-relaxed" style="color:var(--text-secondary)">
+        <p>Create Your Price bukan program sementara. Ini adalah cara Samaqu berusaha membuat kualitas yang baik lebih mudah dijangkau oleh orang-orang biasa seperti kami.</p>
+        <p>Kami ingin bertumbuh tanpa meninggalkan mereka yang sejak awal ingin kami layani.</p>
+        <p>Bahkan ketika Samaqu semakin besar, harapan kami bukan membuat produk semakin sulit dijangkau. Justru membuat Harga Minimum semakin mudah dijangkau oleh lebih banyak orang.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Closing -->
+<section class="py-20 sm:py-28" style="background:var(--bg-inverted);color:var(--text-inverted)">
+  <div class="mx-auto max-w-3xl px-5 text-center fade">
+    <p class="serif text-3xl sm:text-5xl leading-snug font-light">Karena kemampuan kita mungkin berbeda. Tapi kualitas yang baik seharusnya bisa dirasakan <em class="italic" style="color:var(--accent-2)">lebih banyak orang</em>.</p>
+    <p class="mt-8 text-sm tracking-[0.25em] uppercase" style="color:var(--accent-2)">Create Your Price — Pilih Harga Terbaikmu</p>
+    <a href="#simulasi" class="mt-9 inline-block rounded-full px-8 py-4 text-sm font-medium text-white" style="background:var(--accent)">Mulai Pilih Hargamu</a>
+  </div>
+</section>
+
+<footer class="py-10 text-center text-sm" style="background:var(--bg-secondary);color:var(--text-muted)">
+  <p>SAMAQU — Untuk orang biasa yang sedang bertumbuh.</p>
+</footer>
+
+<script>
+  const fmt = n => "Rp" + n.toLocaleString("id-ID");
+  const r = document.getElementById("priceRange");
+  const out = document.getElementById("priceOut");
+  const note = document.getElementById("priceNote");
+  function sync(){
+    const v = +r.value;
+    out.textContent = fmt(v);
+    const pct = ((v - r.min) / (r.max - r.min)) * 100;
+    r.style.setProperty("--pct", pct + "%");
+    note.textContent = v === 300000
+      ? "Rp300.000 adalah pilihan yang sah. Tidak perlu merasa sungkan — itulah alasan Harga Minimum kami buat."
+      : "Terima kasih. " + fmt(v) + " membantu kami menjaga Harga Minimum tetap terjangkau bagi lebih banyak orang. Produk yang kamu terima tetap sama.";
+  }
+  r.addEventListener("input", sync);
+  document.querySelectorAll(".chip").forEach(b => b.addEventListener("click", () => { r.value = b.dataset.p; sync(); }));
+  sync();
+
+</script>
+
+</body></html>

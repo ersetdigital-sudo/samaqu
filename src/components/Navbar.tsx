@@ -29,6 +29,7 @@ const BANTUAN_LINKS = [
   { label: "Panduan Size", href: "/#size", Icon: Ruler },
   { label: "Cara Pemesanan", href: "/#cara-pesan", Icon: ListChecks },
   { label: "FAQ", href: "/#faq", Icon: Question },
+  { label: "Create Your Price", href: "/create-your-price", Icon: Question },
 ];
 
 /* ── Resolve anchor href: if not on home, prefix with / ── */
