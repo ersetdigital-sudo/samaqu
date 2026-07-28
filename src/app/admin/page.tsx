@@ -932,38 +932,41 @@ function ShippingOriginSection() {
   const [loading, setLoading] = useState(true);
   const [dropdownsLoading, setDropdownsLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savedDistrictId, setSavedDistrictId] = useState<string | null>(null);
   const toast = useToast();
 
+  // Effect 1: Load saved IDs + show form + fetch dropdown data
   useEffect(() => {
     async function init() {
       console.log("[ADMIN] ShippingOriginSection init start");
 
-      // 1. Load saved origin IDs from Supabase FIRST (fast, show form immediately)
+      // Load saved origin IDs from Supabase
       const { data } = await supabase.from("store_settings").select("origin_district_id, origin_province_id, origin_city_id").eq("id", 1).single();
       console.log("[ADMIN] Saved origin:", data);
 
-      if (data?.origin_province_id && data?.origin_city_id && data?.origin_district_id) {
+      // Set province + city immediately (dropdowns exist or will exist soon)
+      if (data?.origin_province_id && data?.origin_city_id) {
         setForm({
           origin_province_id: String(data.origin_province_id),
           origin_city_id: String(data.origin_city_id),
-          origin_district_id: String(data.origin_district_id),
+          origin_district_id: "", // NOT set yet — wait for districts to load
         });
-      } else if (data?.origin_district_id) {
-        console.log("[ADMIN] Legacy data: only district_id saved. Admin needs to re-select province+city once.");
+        // Stash district ID to assign later
+        if (data.origin_district_id) {
+          setSavedDistrictId(String(data.origin_district_id));
+        }
       }
 
-      // 2. Show form immediately (no full-section spinner)
       setLoading(false);
 
-      // 3. Load dropdown data — API routes handle Supabase cache (30 days TTL)
+      // Load dropdown data
       try {
         const provRes = await fetch("/api/shipping/provinces");
         const provJson = await provRes.json();
         setProvinces(provJson.data || []);
-        const provCache = provRes.headers.get("X-Cache");
-        console.log("[ADMIN] Provinces loaded:", provJson.data?.length, "| cache:", provCache);
+        console.log("[ADMIN] Provinces loaded:", provJson.data?.length, "| cache:", provRes.headers.get("X-Cache"));
 
-        if (data?.origin_province_id && data?.origin_city_id && data?.origin_district_id) {
+        if (data?.origin_province_id && data?.origin_city_id) {
           const [cityRes, distRes] = await Promise.all([
             fetch(`/api/shipping/districts?provinceId=${data.origin_province_id}`),
             fetch(`/api/shipping/districts?cityId=${data.origin_city_id}`),
@@ -971,10 +974,8 @@ function ShippingOriginSection() {
           const [cityJson, distJson] = await Promise.all([cityRes.json(), distRes.json()]);
           setCities(cityJson.data || []);
           setDistricts(distJson.data || []);
-          const cityCache = cityRes.headers.get("X-Cache");
-          const distCache = distRes.headers.get("X-Cache");
-          console.log("[ADMIN] Cities loaded:", cityJson.data?.length, "| cache:", cityCache);
-          console.log("[ADMIN] Districts loaded:", distJson.data?.length, "| cache:", distCache);
+          console.log("[ADMIN] Cities loaded:", cityJson.data?.length, "| cache:", cityRes.headers.get("X-Cache"));
+          console.log("[ADMIN] Districts loaded:", distJson.data?.length, "| cache:", distRes.headers.get("X-Cache"));
         }
       } catch (e) {
         console.error("[ADMIN] Load error:", e);
@@ -984,6 +985,15 @@ function ShippingOriginSection() {
     }
     init();
   }, []);
+
+  // Effect 2: Set district value ONLY AFTER districts array is populated
+  useEffect(() => {
+    if (savedDistrictId && districts.length > 0) {
+      console.log("[ADMIN] Setting district value after districts loaded:", savedDistrictId);
+      setForm((f) => ({ ...f, origin_district_id: savedDistrictId }));
+      setSavedDistrictId(null);
+    }
+  }, [districts, savedDistrictId]);
 
   async function handleProvChange(provId: string) {
     const selectedProv = provinces.find((p) => String(p.id) === provId);
