@@ -284,7 +284,11 @@ export default function DashboardPage() {
                       <div className="p-4">
                         <p className="text-xs mb-1" style={{ color: "var(--text-muted)" }}>{p.category}</p>
                         <p className="font-medium" style={{ color: "var(--espresso)" }}>{p.name}</p>
-                        <p className="text-sm font-semibold mt-1" style={{ color: "#b58c4a" }}>Rp {p.price.toLocaleString("id-ID")}</p>
+                        <p className="text-sm font-semibold mt-1" style={{ color: "#b58c4a" }}>
+                          {p.create_your_price_enabled && p.minimum_price
+                            ? `Mulai dari Rp ${p.minimum_price.toLocaleString("id-ID")}`
+                            : `Rp ${p.price.toLocaleString("id-ID")}`}
+                        </p>
                       </div>
                     </Link>
                   ))}
@@ -350,7 +354,11 @@ export default function DashboardPage() {
                         <p className="text-xs mb-1" style={{ color: "var(--text-muted)" }}>{p.category}</p>
                         <p className="font-medium text-sm mb-2" style={{ color: "var(--espresso)" }}>{p.name}</p>
                         <div className="flex items-center justify-between">
-                          <span className="text-sm font-semibold" style={{ color: "#b58c4a" }}>Rp {p.price.toLocaleString("id-ID")}</span>
+                          <span className="text-sm font-semibold" style={{ color: "#b58c4a" }}>
+                            {p.create_your_price_enabled && p.minimum_price
+                              ? `Mulai dari Rp ${p.minimum_price.toLocaleString("id-ID")}`
+                              : `Rp ${p.price.toLocaleString("id-ID")}`}
+                          </span>
                           <button onClick={() => handleRemoveWishlist(p.id)} className="text-xs px-3 py-1.5 rounded-full transition-colors" style={{ border: "1px solid rgba(231,76,60,.2)", color: "#e74c3c" }}>Hapus</button>
                         </div>
                       </div>
