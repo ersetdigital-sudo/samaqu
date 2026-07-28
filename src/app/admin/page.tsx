@@ -1089,7 +1089,7 @@ function ShippingOriginSection() {
           ) : (
             <select value={form.origin_province_id} onChange={(e) => handleProvChange(e.target.value)} className="mt-1 w-full rounded-xl px-3 py-2.5 bg-white text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.1)" }}>
               <option value="">Pilih</option>
-              {provinces.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              {provinces.map((p) => <option key={p.id} value={String(p.id)}>{p.name}</option>)}
             </select>
           )}
         </div>
@@ -1102,7 +1102,7 @@ function ShippingOriginSection() {
           ) : (
             <select value={form.origin_city_id} onChange={(e) => handleCityChange(e.target.value)} disabled={!form.origin_province_id} className="mt-1 w-full rounded-xl px-3 py-2.5 bg-white text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.1)", opacity: !form.origin_province_id ? 0.5 : 1 }}>
               <option value="">Pilih</option>
-              {cities.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              {cities.map((c) => <option key={c.id} value={String(c.id)}>{c.name}</option>)}
             </select>
           )}
         </div>
@@ -1115,7 +1115,7 @@ function ShippingOriginSection() {
           ) : (
             <select value={form.origin_district_id} onChange={(e) => setForm((f) => ({ ...f, origin_district_id: e.target.value }))} disabled={!form.origin_city_id} className="mt-1 w-full rounded-xl px-3 py-2.5 bg-white text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.1)", opacity: !form.origin_city_id ? 0.5 : 1 }}>
               <option value="">Pilih</option>
-              {districts.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+              {districts.map((d) => <option key={d.id} value={String(d.id)}>{d.name}</option>)}
             </select>
           )}
         </div>
