@@ -336,8 +336,8 @@ function CheckoutContent() {
     console.log(`[CHECKOUT] 🚛 [${callId}] Called from:`, new Error().stack?.split("\n")[2]?.trim());
     console.log(`[CHECKOUT] 🚛 [${callId}] ORIGIN (toko):`, originId);
     console.log(`[CHECKOUT] 🚛 [${callId}] DESTINATION (customer):`, { id: addr.id, label: addr.label, kecamatan: addr.kecamatan, city: addr.city, district_id: addr.district_id });
-    console.log(`[CHECKOUT] 🚛 [${callId}] WEIGHT:", berat, "grams`);
-    console.log(`[CHECKOUT] 🚛 [${callId}] COURIERS:", enabledCouriers);
+    console.log(`[CHECKOUT] 🚛 [${callId}] WEIGHT:`, berat, "grams");
+    console.log(`[CHECKOUT] 🚛 [${callId}] COURIERS:`, enabledCouriers);
     console.log(`[CHECKOUT] 🚛 [${callId}] lastResolvedRef.current:`, lastResolvedRef.current);
     console.log(`[CHECKOUT] 🚛 [${callId}] shipOptions.length:`, shipOptions.length);
     console.log(`[CHECKOUT] 🚛 [${callId}] loadingCost:`, loadingCost);
