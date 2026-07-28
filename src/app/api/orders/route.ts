@@ -181,7 +181,6 @@ export async function POST(request: NextRequest) {
         subtotal,
         discount,
         total,
-        voucher_code: body.voucherCode || null,
         status: "pending",
       })
       .select()

@@ -1,3 +1,6 @@
+-- Add voucher_code column to orders table
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS voucher_code TEXT;
+
 -- Vouchers table
 CREATE TABLE IF NOT EXISTS vouchers (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
