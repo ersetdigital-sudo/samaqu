@@ -273,7 +273,18 @@ function CheckoutContent() {
   useEffect(() => {
     async function fetchAddresses() {
       console.log("[CHECKOUT] 📇 Fetching saved addresses...");
-      const { data: { user } } = await supabase.auth.getUser();
+      let user = null;
+      try {
+        const { data, error: authError } = await supabase.auth.getUser();
+        if (authError) {
+          console.log("[CHECKOUT] 📇 Auth check failed (guest mode):", authError.message);
+          return;
+        }
+        user = data.user;
+      } catch (authErr) {
+        console.log("[CHECKOUT] 📇 Auth check error (guest mode):", authErr);
+        return;
+      }
       if (!user) { console.log("[CHECKOUT] 📇 No user logged in"); return; }
       if (user.email) setEmail(user.email);
       console.log("[CHECKOUT] 📇 User ID:", user.id);
@@ -539,28 +550,35 @@ function CheckoutContent() {
             }],
       };
 
-      console.log("[CHECKOUT] 📦 Sending to /api/orders:", JSON.stringify(payload).slice(0, 500));
+      console.log("[CHECKOUT] 📦 Payload built. Items:", payload.items.length, "Shipping:", payload.shipping.method, "Payment:", payload.paymentMethod);
+      console.log("[CHECKOUT] 📦 Sending to /api/orders...");
 
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(30000),
       });
 
       console.log("[CHECKOUT] 📦 /api/orders status:", res.status);
       const data = await res.json();
-      console.log("[CHECKOUT] 📦 /api/orders response:", data);
+      console.log("[CHECKOUT] 📦 /api/orders response:", JSON.stringify(data).slice(0, 300));
 
       if (!res.ok) {
+        console.error("[CHECKOUT] ❌ API returned error:", res.status, data.error);
         throw new Error(data.error || "Gagal membuat pesanan");
       }
 
       console.log("[CHECKOUT] ✅ ORDER SUCCESS:", data.orderNumber);
       clearCart();
       const orderNum = data.orderNumber || generateOrderNumber();
+      console.log("[CHECKOUT] ✅ Redirecting to:", `/checkout/success?order=${orderNum}`);
       router.push(`/checkout/success?order=${orderNum}`);
     } catch (err) {
       console.error("[CHECKOUT] ❌ Order submit error:", err);
+      if (err instanceof Error && err.name === "TimeoutError") {
+        console.error("[CHECKOUT] ❌ Request timed out after 30s");
+      }
       setErrors({ submit: "Terjadi kesalahan. Silakan coba lagi." });
     } finally {
       setSubmitting(false);
@@ -650,7 +668,7 @@ function CheckoutContent() {
       {/* Main: 2-column */}
       <main className="max-w-6xl mx-auto px-5 sm:px-8 py-6 sm:py-8 grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-8 lg:gap-12 items-start">
         {/* Left: Form */}
-        <form className="space-y-8 sm:space-y-10" onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
+        <form id="checkout-form" className="space-y-8 sm:space-y-10" onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
           {/* Section 1: Contact */}
           <section>
             <div className="flex items-center gap-3 mb-4 sm:mb-5">
@@ -978,7 +996,7 @@ function CheckoutContent() {
             </div>
 
             {/* Submit (desktop) */}
-            <button type="submit" disabled={submitting} className="hidden lg:block w-full mt-5 sm:mt-6 rounded-xl py-4 text-sm font-ui font-medium tracking-wide transition-all" style={{ background: "var(--espresso)", color: "var(--cream)" }}>
+            <button type="submit" form="checkout-form" disabled={submitting} className="hidden lg:block w-full mt-5 sm:mt-6 rounded-xl py-4 text-sm font-ui font-medium tracking-wide transition-all" style={{ background: "var(--espresso)", color: "var(--cream)" }}>
               {submitting ? "Memproses…" : "Buat Pesanan"}
             </button>
 
@@ -996,7 +1014,7 @@ function CheckoutContent() {
 
       {/* Sticky mobile submit bar */}
       <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 px-4 pb-4 pt-3" style={{ background: "linear-gradient(to top, var(--cream) 70%, transparent)" }}>
-        <button type="submit" disabled={submitting} className="w-full rounded-xl py-4 text-sm font-ui font-medium tracking-wide transition-all" style={{ background: "var(--espresso)", color: "var(--cream)" }}>
+        <button type="submit" form="checkout-form" disabled={submitting} className="w-full rounded-xl py-4 text-sm font-ui font-medium tracking-wide transition-all" style={{ background: "var(--espresso)", color: "var(--cream)" }}>
           {submitting ? "Memproses…" : "Buat Pesanan"}
         </button>
       </div>
