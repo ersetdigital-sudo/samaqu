@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS shipping_cache (
 -- Index for TTL checks
 CREATE INDEX IF NOT EXISTS idx_shipping_cache_cached_at ON shipping_cache (cached_at);
 
--- RLS policies (match pattern from other tables)
+-- RLS policies
 ALTER TABLE shipping_cache ENABLE ROW LEVEL SECURITY;
 
 DO $$ BEGIN
@@ -17,5 +17,9 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 DO $$ BEGIN
-  CREATE POLICY "Service role all shipping_cache" ON shipping_cache FOR ALL USING (true);
+  CREATE POLICY "Anon insert shipping_cache" ON shipping_cache FOR INSERT WITH CHECK (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE POLICY "Anon update shipping_cache" ON shipping_cache FOR UPDATE USING (true) WITH CHECK (true);
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
