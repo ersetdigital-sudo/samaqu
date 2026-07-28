@@ -354,16 +354,24 @@ function CheckoutContent() {
     }
 
     const addrKey = `${addr.id}-${addr.district_id || addr.kecamatan}`;
+    console.log(`[CHECKOUT] 🛡️ [${callId}] Guard check:`, {
+      addrKey,
+      addrId: addr.id,
+      lastResolvedRefCurrent: lastResolvedRef.current,
+      shipOptionsLength: shipOptions.length,
+      shippingError,
+    });
     // Guard: if same address already fully resolved (with results), skip
     if (addrKey === lastResolvedRef.current && shipOptions.length > 0 && !shippingError) {
-      console.log(`[CHECKOUT] ⏭️ [${callId}] Already resolved, skipping:`, addrKey);
+      console.log(`[CHECKOUT] ⏭️ [${callId}] GUARD HIT #1 (already resolved): addrKey=${addrKey} === lastResolvedRef=${lastResolvedRef.current}`);
       return;
     }
     // Guard: if same address is currently being processed (concurrent call), skip
     if (addr.id === lastResolvedRef.current) {
-      console.log(`[CHECKOUT] ⏭️ [${callId}] Already processing this address, skipping:`, addr.id);
+      console.log(`[CHECKOUT] ⏭️ [${callId}] GUARD HIT #2 (already processing): addr.id=${addr.id} === lastResolvedRef=${lastResolvedRef.current}`);
       return;
     }
+    console.log(`[CHECKOUT] 🚛 [${callId}] NO GUARD HIT — proceeding with API call`);
     // Mark this address as "processing" BEFORE any async work
     lastResolvedRef.current = addr.id;
     console.log(`[CHECKOUT] 🚛 [${callId}] Marked as processing, lastResolvedRef =`, addr.id);
@@ -420,29 +428,47 @@ function CheckoutContent() {
 
   // Auto-calculate when default address is selected and settings are loaded
   const shippingCalcTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const effectFireCountRef = useRef(0);
   useEffect(() => {
-    console.log("[CHECKOUT] 🔄 useEffect#5 fired:", { settingsLoaded, originId, selectedAddressId, savedAddressesLength: savedAddresses.length, timestamp: new Date().toISOString() });
+    const fireId = ++effectFireCountRef.current;
+    const ts = performance.now();
+    console.log(`[CHECKOUT] 🔄 useEffect#5 FIRED [#${fireId}] at ${ts.toFixed(1)}ms`, {
+      settingsLoaded,
+      originId,
+      selectedAddressId,
+      savedAddressesLength: savedAddresses.length,
+      lastResolvedRef: lastResolvedRef.current,
+      timerActive: !!shippingCalcTimerRef.current,
+    });
+
     if (!settingsLoaded) {
-      console.log("[CHECKOUT] ⏳ Waiting for settings to load...");
+      console.log(`[CHECKOUT] ⏳ [#${fireId}] Waiting for settings to load...`);
       return;
     }
     if (!originId) {
-      console.log("[CHECKOUT] ⏳ No originId yet, skipping auto-calc");
+      console.log(`[CHECKOUT] ⏳ [#${fireId}] No originId yet, skipping auto-calc`);
       return;
     }
     if (selectedAddressId && savedAddresses.length > 0) {
       const addr = savedAddresses.find((a) => a.id === selectedAddressId);
       if (addr) {
+        console.log(`[CHECKOUT] 🔄 [#${fireId}] Will debounce 400ms for address: ${addr.label} (id=${addr.id}, district_id=${addr.district_id ?? "null"})`);
         // Debounce: clear previous timer, wait 400ms before triggering
-        if (shippingCalcTimerRef.current) clearTimeout(shippingCalcTimerRef.current);
+        if (shippingCalcTimerRef.current) {
+          console.log(`[CHECKOUT] 🔄 [#${fireId}] Clearing previous timer`);
+          clearTimeout(shippingCalcTimerRef.current);
+        }
         shippingCalcTimerRef.current = setTimeout(() => {
-          console.log("[CHECKOUT] 🔄 Auto-triggering shipping calc for default address:", addr.label, "at", new Date().toISOString());
+          console.log(`[CHECKOUT] 🔄 [#${fireId}] Timer FIRED at ${performance.now().toFixed(1)}ms — calling calculateShipping(${addr.label})`);
           calculateShipping(addr);
         }, 400);
       }
     }
     return () => {
-      if (shippingCalcTimerRef.current) clearTimeout(shippingCalcTimerRef.current);
+      if (shippingCalcTimerRef.current) {
+        console.log(`[CHECKOUT] 🔄 [#${fireId}] CLEANUP — clearing timer`);
+        clearTimeout(shippingCalcTimerRef.current);
+      }
     };
   }, [settingsLoaded, originId, selectedAddressId, savedAddresses.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
