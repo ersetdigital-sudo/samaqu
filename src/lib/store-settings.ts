@@ -10,6 +10,7 @@ interface StoreSettings {
   whatsapp: string;
   origin_district_id: number | null;
   enabled_couriers: string[];
+  instagram_url: string;
 }
 
 const DEFAULTS: StoreSettings = {
@@ -19,6 +20,7 @@ const DEFAULTS: StoreSettings = {
   whatsapp: "+62 812 3456 7890",
   origin_district_id: null,
   enabled_couriers: ["jne", "sicepat", "jnt", "ninja", "tiki", "wahana", "pos", "lion", "anteraja"],
+  instagram_url: "https://instagram.com/samaqu.id",
 };
 
 let cached: StoreSettings = DEFAULTS;

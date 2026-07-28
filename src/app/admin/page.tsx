@@ -731,6 +731,9 @@ function AdminPageInner() {
                   {/* RajaOngkir API Key */}
                   <ApiKeySection />
 
+                  {/* Social Media */}
+                  <SocialMediaSection />
+
                   {/* Payment Methods */}
                   <PaymentMethodsSection />
                   <QrisEwalletSection />
@@ -1229,6 +1232,55 @@ function ApiKeySection() {
       <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
         Jika tidak diisi, sistem akan menggunakan API key dari environment variable (RAJAONGKIR_API_KEY).
       </p>
+    </div>
+  );
+}
+
+function SocialMediaSection() {
+  const [instagramUrl, setInstagramUrl] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const toast = useToast();
+
+  useEffect(() => {
+    console.log("[ADMIN] SocialMediaSection init");
+    supabase.from("store_settings").select("instagram_url").eq("id", 1).single().then(({ data }) => {
+      setInstagramUrl(data?.instagram_url || "");
+      console.log("[ADMIN] Instagram URL loaded:", data?.instagram_url || "(empty)");
+      setLoading(false);
+    });
+  }, []);
+
+  async function handleSave() {
+    setSaving(true);
+    console.log("[ADMIN] Saving instagram_url:", instagramUrl);
+    await supabase.from("store_settings").upsert({ id: 1, instagram_url: instagramUrl || null, updated_at: new Date().toISOString() });
+    setSaving(false);
+    toast.showToast("success", "Link Instagram disimpan");
+  }
+
+  if (loading) return <div className="card p-6 max-w-2xl"><Loader2 size={20} className="animate-spin" style={{ color: "var(--gold)" }} /></div>;
+
+  return (
+    <div className="card p-6 max-w-2xl space-y-4">
+      <h3 className="text-lg font-semibold" style={{ color: "var(--espresso)" }}>Sosial Media</h3>
+      <p className="text-xs" style={{ color: "var(--text-muted)" }}>Link yang muncul di footer website (kolom &quot;Terhubung&quot;).</p>
+      <div>
+        <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Link Instagram</label>
+        <input
+          value={instagramUrl}
+          onChange={(e) => setInstagramUrl(e.target.value)}
+          className="w-full rounded-xl px-4 py-2.5 bg-white text-sm outline-none"
+          style={{ border: "1px solid rgba(64,50,37,.1)" }}
+          placeholder="https://instagram.com/samaqu.id"
+        />
+        <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>Kosongkan untuk menyembunyikan icon Instagram di footer.</p>
+      </div>
+      <div className="flex gap-3 pt-2">
+        <button onClick={handleSave} disabled={saving} className="text-sm font-semibold px-5 py-2.5 rounded-xl text-white" style={{ background: "var(--gold)" }}>
+          {saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null} Simpan
+        </button>
+      </div>
     </div>
   );
 }

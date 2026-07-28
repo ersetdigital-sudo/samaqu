@@ -1,9 +1,17 @@
-import { getWhatsAppLink } from "@/lib/store-settings";
+"use client";
+
+import { useStoreSettings, getWhatsAppLink } from "@/lib/store-settings";
 
 const navLinks = [
   { href: "/katalog", label: "Katalog" },
   { href: "/testimoni", label: "Testimoni" },
   { href: "/tentang-kami", label: "Tentang Kami" },
+  { href: "/#faq", label: "FAQ" },
+  {
+    href: "https://instagram.com/samaqu.id",
+    label: "Instagram",
+    external: true,
+  },
 ];
 
 const helpLinks = [
@@ -14,6 +22,9 @@ const helpLinks = [
 ];
 
 export default function Footer() {
+  const settings = useStoreSettings();
+  const instagramUrl = settings.instagram_url || "";
+
   return (
     <footer className="relative pt-12 sm:pt-20 pb-20 sm:pb-14 overflow-hidden" style={{ background: "#1a120f" }}>
       {/* Subtle noise overlay */}
@@ -66,6 +77,8 @@ export default function Footer() {
                 <a
                   key={link.href}
                   href={link.href}
+                  target={link.external ? "_blank" : undefined}
+                  rel={link.external ? "noopener" : undefined}
                   className="text-[12px] sm:text-[13px] tracking-[0.12em] uppercase font-ui transition-colors duration-300 hover:text-gold"
                   style={{ color: "rgba(248,246,242,.7)" }}
                 >
@@ -100,20 +113,22 @@ export default function Footer() {
               Terhubung
             </p>
             <div className="flex items-center gap-3">
-              <a
-                href="https://instagram.com/samaqu.id"
-                target="_blank"
-                rel="noopener"
-                aria-label="Instagram @samaqu.id"
-                className="flex items-center justify-center w-10 h-10 rounded-full transition-colors duration-300 hover:text-gold"
-                style={{ color: "rgba(248,246,242,.7)" }}
-              >
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="2" y="2" width="20" height="20" rx="5" />
-                  <circle cx="12" cy="12" r="5" />
-                  <circle cx="17.5" cy="6.5" r="1.5" fill="currentColor" stroke="none" />
-                </svg>
-              </a>
+              {instagramUrl && (
+                <a
+                  href={instagramUrl}
+                  target="_blank"
+                  rel="noopener"
+                  aria-label="Instagram"
+                  className="flex items-center justify-center w-10 h-10 rounded-full transition-colors duration-300 hover:text-gold"
+                  style={{ color: "rgba(248,246,242,.7)" }}
+                >
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="2" y="2" width="20" height="20" rx="5" />
+                    <circle cx="12" cy="12" r="5" />
+                    <circle cx="17.5" cy="6.5" r="1.5" fill="currentColor" stroke="none" />
+                  </svg>
+                </a>
+              )}
               <a
                 href={getWhatsAppLink("Halo Admin SAMAQU, saya tertarik dengan koleksi Anda dan ingin bertanya soal pemesanan.")}
                 target="_blank"
