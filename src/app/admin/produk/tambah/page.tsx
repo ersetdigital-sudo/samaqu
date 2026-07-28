@@ -50,6 +50,7 @@ export default function TambahProdukPage() {
   // Create Your Price
   const [cypEnabled, setCypEnabled] = useState(false);
   const [minimumPrice, setMinimumPrice] = useState("");
+  const [recommendedPrice, setRecommendedPrice] = useState("");
 
   // Variants
   const [variants, setVariants] = useState<Variant[]>([]);
@@ -188,6 +189,7 @@ export default function TambahProdukPage() {
     if (!basePrice || parseInt(basePrice) <= 0) e.basePrice = "Harga wajib diisi";
     if (cypEnabled && (!minimumPrice || parseInt(minimumPrice) <= 0)) e.minimumPrice = "Harga Minimum wajib diisi jika Create Your Price aktif";
     if (cypEnabled && minimumPrice && basePrice && parseInt(minimumPrice) > parseInt(basePrice)) e.minimumPrice = "Harga Minimum tidak boleh lebih besar dari Harga Dasar";
+    if (cypEnabled && recommendedPrice && minimumPrice && parseInt(recommendedPrice) < parseInt(minimumPrice)) e.recommendedPrice = "Harga Rekomendasi tidak boleh kurang dari Harga Minimum";
     if (variants.length === 0) e.variants = "Minimal 1 varian warna";
     const hasSize = variants.some((v) => v.sizes.some((s) => s.stock > 0));
     if (!hasSize) e.variants = "Minimal 1 ukuran dengan stok > 0";
@@ -211,6 +213,7 @@ export default function TambahProdukPage() {
         description: description || null,
         price: parseInt(basePrice),
         minimum_price: cypEnabled ? parseInt(minimumPrice) : null,
+        recommended_price: cypEnabled && recommendedPrice ? parseInt(recommendedPrice) : null,
         create_your_price_enabled: cypEnabled,
         weight: weight ? parseInt(weight) : null,
         image: media.find((m) => m.url)?.url || "",
@@ -335,11 +338,19 @@ export default function TambahProdukPage() {
                     </button>
                   </div>
                   {cypEnabled && (
-                    <div>
-                      <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Harga Minimum (Rp) <span style={{ color: "var(--gold)" }}>*</span></label>
-                      <input type="number" value={minimumPrice} onChange={(e) => setMinimumPrice(e.target.value)} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: `1px solid ${errors.minimumPrice ? "#e74c3c" : "rgba(64,50,37,.15)"}`, background: "white", color: "var(--espresso)" }} placeholder="389000" />
-                      {errors.minimumPrice && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.minimumPrice}</p>}
-                      <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>Harga terendah yang bisa dipilih customer.</p>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Harga Minimum (Rp) <span style={{ color: "var(--gold)" }}>*</span></label>
+                        <input type="number" value={minimumPrice} onChange={(e) => setMinimumPrice(e.target.value)} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: `1px solid ${errors.minimumPrice ? "#e74c3c" : "rgba(64,50,37,.15)"}`, background: "white", color: "var(--espresso)" }} placeholder="350000" />
+                        {errors.minimumPrice && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.minimumPrice}</p>}
+                        <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>Harga terendah yang bisa dipilih customer.</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Harga Rekomendasi (Rp)</label>
+                        <input type="number" value={recommendedPrice} onChange={(e) => setRecommendedPrice(e.target.value)} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: `1px solid ${errors.recommendedPrice ? "#e74c3c" : "rgba(64,50,37,.15)"}`, background: "white", color: "var(--espresso)" }} placeholder="379000" />
+                        {errors.recommendedPrice && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.recommendedPrice}</p>}
+                        <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>Opsi &quot;Rekomendasi Samaqu&quot; di halaman produk. Opsional — kosongkan jika tidak ingin menampilkan.</p>
+                      </div>
                     </div>
                   )}
                 </div>

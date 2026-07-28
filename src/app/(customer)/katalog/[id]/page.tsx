@@ -155,6 +155,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const currentPrice = variantPrice ?? product?.price ?? 0;
   const isCYP = product?.create_your_price_enabled ?? false;
   const minimumPrice = product?.minimum_price ?? currentPrice;
+  const recommendedPrice = product?.recommended_price ?? null;
 
   // Create Your Price state
   const [selectedPrice, setSelectedPrice] = useState<number>(0);
@@ -173,11 +174,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   // Price to use for cart/checkout — fallback to minimumPrice if selectedPrice is 0
   const effectivePrice = isCYP ? (selectedPrice || minimumPrice) : currentPrice;
 
-  // Quick select options
+  // Quick select options — 3 choices: Minimum, Recommended, Custom
   const quickPrices = isCYP && minimumPrice > 0 ? [
-    { label: "Harga Minimum", value: minimumPrice },
-    { label: `+10% (${(minimumPrice * 1.1).toLocaleString("id-ID")})`, value: Math.round(minimumPrice * 1.1 / 1000) * 1000 },
-    { label: `+20% (${(minimumPrice * 1.2).toLocaleString("id-ID")})`, value: Math.round(minimumPrice * 1.2 / 1000) * 1000 },
+    { label: "Harga Minimum", value: minimumPrice, highlight: false },
+    ...(recommendedPrice && recommendedPrice > minimumPrice
+      ? [{ label: "Rekomendasi Samaqu", value: recommendedPrice, highlight: true }]
+      : []),
   ] : [];
 
   function handleQuickPrice(value: number) {
@@ -359,19 +361,29 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 Rp {minimumPrice.toLocaleString("id-ID")}
               </p>
               <p className="text-[11px] font-ui mb-3" style={{ color: "var(--stone)" }}>Pilih harga terbaikmu</p>
-              {/* Quick select buttons */}
+              {/* Quick select buttons — 3 options */}
               <div className="flex flex-wrap gap-1.5 mb-2">
-                {quickPrices.map((qp) => (
-                  <button key={qp.value} onClick={() => handleQuickPrice(qp.value)}
-                    className="px-3 py-1.5 text-[11px] font-ui rounded-sm transition-all"
-                    style={{ background: !isCustomPrice && selectedPrice === qp.value ? "var(--espresso)" : "transparent", color: !isCustomPrice && selectedPrice === qp.value ? "var(--cream)" : "var(--coffee)", border: `1px solid ${!isCustomPrice && selectedPrice === qp.value ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
-                    {qp.label}
-                  </button>
-                ))}
+                {quickPrices.map((qp) => {
+                  const isActive = !isCustomPrice && selectedPrice === qp.value;
+                  const isRecommended = qp.highlight;
+                  return (
+                    <button key={qp.value} onClick={() => handleQuickPrice(qp.value)}
+                      className="px-3 py-1.5 text-[11px] font-ui rounded-sm transition-all relative"
+                      style={{
+                        background: isActive ? (isRecommended ? "var(--gold)" : "var(--espresso)") : "transparent",
+                        color: isActive ? "white" : (isRecommended ? "var(--gold)" : "var(--coffee)"),
+                        border: `1.5px solid ${isActive ? (isRecommended ? "var(--gold)" : "var(--espresso)") : (isRecommended ? "var(--gold)" : "rgba(201,183,156,.3)")}`,
+                      }}>
+                      {isRecommended && <span className="mr-1">★</span>}
+                      {qp.label}
+                      {isRecommended && <span className="ml-1 text-[9px] opacity-70">Rp {qp.value.toLocaleString("id-ID")}</span>}
+                    </button>
+                  );
+                })}
                 <button onClick={handleCustomPriceToggle}
                   className="px-3 py-1.5 text-[11px] font-ui rounded-sm transition-all"
                   style={{ background: isCustomPrice ? "var(--espresso)" : "transparent", color: isCustomPrice ? "var(--cream)" : "var(--coffee)", border: `1px solid ${isCustomPrice ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
-                  Harga Lainnya
+                  Pilih Harga Lainnya
                 </button>
               </div>
               {/* Custom price input */}
@@ -596,19 +608,29 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                   Rp {minimumPrice.toLocaleString("id-ID")}
                 </p>
                 <p className="text-[12px] font-ui mb-3" style={{ color: "var(--stone)" }}>Pilih harga terbaikmu</p>
-                {/* Quick select buttons */}
+                {/* Quick select buttons — 3 options */}
                 <div className="flex flex-wrap gap-2 mb-2">
-                  {quickPrices.map((qp) => (
-                    <button key={qp.value} onClick={() => handleQuickPrice(qp.value)}
-                      className="px-4 py-2 text-[12px] font-ui rounded-sm transition-all"
-                      style={{ background: !isCustomPrice && selectedPrice === qp.value ? "var(--espresso)" : "transparent", color: !isCustomPrice && selectedPrice === qp.value ? "var(--cream)" : "var(--coffee)", border: `1px solid ${!isCustomPrice && selectedPrice === qp.value ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
-                      {qp.label}
-                    </button>
-                  ))}
+                  {quickPrices.map((qp) => {
+                    const isActive = !isCustomPrice && selectedPrice === qp.value;
+                    const isRecommended = qp.highlight;
+                    return (
+                      <button key={qp.value} onClick={() => handleQuickPrice(qp.value)}
+                        className="px-4 py-2 text-[12px] font-ui rounded-sm transition-all relative"
+                        style={{
+                          background: isActive ? (isRecommended ? "var(--gold)" : "var(--espresso)") : "transparent",
+                          color: isActive ? "white" : (isRecommended ? "var(--gold)" : "var(--coffee)"),
+                          border: `1.5px solid ${isActive ? (isRecommended ? "var(--gold)" : "var(--espresso)") : (isRecommended ? "var(--gold)" : "rgba(201,183,156,.3)")}`,
+                        }}>
+                        {isRecommended && <span className="mr-1">★</span>}
+                        {qp.label}
+                        {isRecommended && <span className="ml-1 text-[10px] opacity-70">Rp {qp.value.toLocaleString("id-ID")}</span>}
+                      </button>
+                    );
+                  })}
                   <button onClick={handleCustomPriceToggle}
                     className="px-4 py-2 text-[12px] font-ui rounded-sm transition-all"
                     style={{ background: isCustomPrice ? "var(--espresso)" : "transparent", color: isCustomPrice ? "var(--cream)" : "var(--coffee)", border: `1px solid ${isCustomPrice ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
-                    Harga Lainnya
+                    Pilih Harga Lainnya
                   </button>
                 </div>
                 {/* Custom price input */}
