@@ -1,29 +1,42 @@
 import { NextResponse } from "next/server";
 import { getRajaOngkirApiKey } from "@/lib/rajaongkir-key";
+import { supabase } from "@/lib/supabase";
 
 const BASE = "https://rajaongkir.komerce.id/api/v1/destination/province";
-
-// In-memory cache: provinces rarely change (static Indonesian administrative data)
-const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
-let cache: { data: unknown; ts: number } | null = null;
+const CACHE_KEY = "provinces";
+const CACHE_TTL_DAYS = 30;
 
 export async function GET() {
   try {
-    // Return cached data if still fresh
-    if (cache && Date.now() - cache.ts < CACHE_TTL_MS) {
-      console.log("[PROVINCES] Cache hit, age:", Math.round((Date.now() - cache.ts) / 1000 / 60 / 60 / 24), "days");
-      return NextResponse.json(cache.data);
+    // Check Supabase cache first
+    const { data: cached } = await supabase
+      .from("shipping_cache")
+      .select("cache_data, cached_at")
+      .eq("cache_key", CACHE_KEY)
+      .single();
+
+    if (cached) {
+      const ageMs = Date.now() - new Date(cached.cached_at).getTime();
+      const ageDays = Math.round(ageMs / 1000 / 60 / 60 / 24);
+      if (ageDays < CACHE_TTL_DAYS) {
+        console.log("[PROVINCES] Cache hit, age:", ageDays, "days");
+        return NextResponse.json(cached.cache_data);
+      }
+      console.log("[PROVINCES] Cache stale, age:", ageDays, "days — refetching");
     }
 
+    // Fetch fresh data from RajaOngkir
     const apiKey = await getRajaOngkirApiKey();
-    const res = await fetch(BASE, {
-      headers: { key: apiKey },
-    });
+    const res = await fetch(BASE, { headers: { key: apiKey } });
     const json = await res.json();
 
-    // Only cache successful responses
+    // Upsert to Supabase cache
     if (json.data && Array.isArray(json.data) && json.data.length > 0) {
-      cache = { data: json, ts: Date.now() };
+      await supabase.from("shipping_cache").upsert({
+        cache_key: CACHE_KEY,
+        cache_data: json,
+        cached_at: new Date().toISOString(),
+      });
       console.log("[PROVINCES] Cache updated,", json.data.length, "provinces");
     }
 
