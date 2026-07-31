@@ -39,8 +39,10 @@ export default function Koleksi() {
           className="text-[1.65rem] sm:text-4xl md:text-5xl lg:text-[3.4rem] font-semibold leading-[1.08] tracking-tight max-w-2xl"
           style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}
         >
-          Pilih yang Membuatmu<br className="hidden sm:block" />
-          <span className="italic font-normal pr-1 sm:pr-2" style={{ color: "var(--gold)" }}>Lebih</span>Percaya Diri
+          Pilih yang Membuatmu{" "}
+          <br className="hidden sm:block" />
+          <span className="italic font-normal" style={{ color: "var(--gold)" }}>Lebih </span>
+          Percaya Diri
         </h1>
 
         <p className="mt-3 sm:mt-5 max-w-xl text-[13px] sm:text-[15px] leading-relaxed" style={{ color: "#5a5a5a" }}>
