@@ -4,7 +4,7 @@ import { useState, use, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Minus, Plus, ChevronLeft, ChevronRight, Play, ShoppingCart } from "lucide-react";
-import ImageZoom from "@/components/ImageZoom";
+import ImageZoom, { type ZoomMedia } from "@/components/ImageZoom";
 import Breadcrumb from "@/components/Breadcrumb";
 import { colorMap, type Product, type MediaItem } from "@/lib/katalog-data";
 import { getProductById } from "@/lib/db";
@@ -765,11 +765,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           IMAGE/VIDEO ZOOM LIGHTBOX
       ═══════════════════════════════════════ */}
       <ImageZoom
-        src={media[zoomIndex]?.src || activeMedia.src}
+        media={media}
+        initialIndex={zoomIndex}
         alt={product.name}
         isOpen={zoomOpen}
         onClose={() => setZoomOpen(false)}
-        type={media[zoomIndex]?.type || "image"}
       />
     </section>
   );
