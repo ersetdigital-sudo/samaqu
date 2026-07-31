@@ -19,15 +19,6 @@ const FALLBACK_CATEGORIES: CategoryItem[] = [
   { name: "Cover Hanger", description: "Jaga busana tetap rapi dan terlindungi.", image_url: "/images/6aec5227-932a-4ff1-86e2-2a3bb34943e9.png" },
 ];
 
-const BENTO_SPANS = [
-  { col: "sm:col-span-2 lg:col-span-7 lg:row-span-4", h: "aspect-[3/4] sm:aspect-[4/5] lg:aspect-auto lg:h-auto" },
-  { col: "lg:col-span-5 lg:row-span-2", h: "aspect-[3/4] sm:aspect-[4/3] lg:aspect-auto lg:h-auto" },
-  { col: "lg:col-span-5 lg:row-span-2", h: "aspect-[3/4] sm:aspect-[4/3] lg:aspect-auto lg:h-auto" },
-  { col: "lg:col-span-4 lg:row-span-2", h: "aspect-[3/4] sm:aspect-[4/3] lg:aspect-auto lg:h-auto" },
-  { col: "lg:col-span-4 lg:row-span-2", h: "aspect-[3/4] sm:aspect-[4/3] lg:aspect-auto lg:h-auto" },
-  { col: "lg:col-span-4 lg:row-span-2", h: "aspect-[3/4] sm:aspect-[4/3] lg:aspect-auto lg:h-auto" },
-];
-
 export default function Koleksi() {
   const [categories, setCategories] = useState<CategoryItem[]>(FALLBACK_CATEGORIES);
 
@@ -37,119 +28,129 @@ export default function Koleksi() {
     });
   }, []);
 
+  const thobe = categories[0];
+  const kandora = categories[1];
+  const koko = categories[2];
+  const vest = categories[3];
+  const kabak = categories[4];
+  const coverHanger = categories[5];
+
   return (
-    <section id="produk" className="px-5 sm:px-8 lg:px-14 py-16 sm:py-24" style={{ background: "var(--sand-2)" }}>
-      <div className="mx-auto max-w-7xl">
+    <section id="produk" className="px-4 sm:px-6 lg:px-14 py-10 sm:py-16" style={{ background: "var(--sand-2)" }}>
+      <div className="mx-auto max-w-6xl">
 
         {/* Header */}
-        <div className="grid lg:grid-cols-12 gap-8 lg:gap-12 items-end mb-12 sm:mb-16 fade-up">
-          <div className="lg:col-span-7">
-            <div className="flex items-center gap-3 mb-6">
-              <span className="inline-block w-8 h-px" style={{ background: "var(--gold)" }}></span>
-              <span className="text-[11px] tracking-[0.32em] uppercase font-medium" style={{ color: "var(--gold)" }}>Katalog Samaqu</span>
-            </div>
-            <h2
-              className="text-[2.6rem] sm:text-6xl lg:text-7xl leading-[1.02]"
-              style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}
-            >
-              Pilih yang Membuatmu<br className="hidden sm:block" />
-              <em className="italic" style={{ color: "var(--gold)" }}>Lebih</em> Percaya Diri
-            </h2>
-          </div>
-          <div className="lg:col-span-5 lg:pb-3">
-            <div className="h-px mb-6" style={{ background: "linear-gradient(to right, rgba(64,50,37,.28), rgba(64,50,37,0))" }}></div>
-            <p className="text-[15px] leading-relaxed max-w-md" style={{ color: "var(--coffee)" }}>
-              Dibuat dengan perhatian pada kualitas, kepedulian, dan rasa bangga untuk menemani berbagai aktivitasmu — dari keseharian hingga momen istimewa.
-            </p>
-          </div>
+        <div className="text-left pt-2 pb-8 sm:pt-4 sm:pb-12 max-w-3xl fade-up">
+          <span className="block text-[11px] sm:text-xs uppercase tracking-[0.25em] font-medium mb-3 sm:mb-4" style={{ color: "var(--gold)" }}>
+            Katalog Samaqu
+          </span>
+          <h2
+            className="text-3xl sm:text-5xl md:text-6xl font-semibold leading-[1.18] tracking-tight mb-4 sm:mb-6"
+            style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}
+          >
+            Pilih yang Membuatmu{" "}
+            <em className="italic font-normal" style={{ color: "var(--gold)" }}>Lebih</em>{" "}
+            Percaya Diri
+          </h2>
+          <p className="text-sm sm:text-base md:text-[17px] leading-relaxed max-w-2xl" style={{ color: "var(--coffee)" }}>
+            Dibuat dengan perhatian pada kualitas, kepedulian, dan rasa bangga untuk menemani berbagai aktivitasmu — dari keseharian hingga momen istimewa.
+          </p>
         </div>
 
-        {/* Bento grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4 sm:gap-5 lg:auto-rows-[150px]">
-          {categories.map((cat, i) => {
-            const span = BENTO_SPANS[i] || BENTO_SPANS[BENTO_SPANS.length - 1];
-            const isFeatured = i === 0;
+        {/* Two-column grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 md:gap-6">
 
-            return (
-              <a
-                key={cat.name}
-                href={getWhatsAppLink("Halo Admin SAMAQU, saya tertarik dengan koleksi Anda dan ingin bertanya soal pemesanan.")}
-                target="_blank"
-                rel="noopener"
-                className={`card group relative overflow-hidden rounded-2xl ${span.col} ${span.h}`}
-              >
-                <img
-                  src={cat.image_url}
-                  alt={`${cat.name} SAMAQU`}
-                  className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-[900ms] ease-[cubic-bezier(.2,.7,.2,1)] group-hover:scale-[1.06]"
-                />
-                <div
-                  className="absolute inset-0"
-                  style={{
-                    background: isFeatured
-                      ? "linear-gradient(to top, rgba(29,22,17,.88) 0%, rgba(29,22,17,.45) 35%, rgba(29,22,17,0) 70%)"
-                      : i === 5
-                        ? "linear-gradient(to top, rgba(29,22,17,.94) 0%, rgba(29,22,17,.7) 45%, rgba(29,22,17,.25) 100%)"
-                        : "linear-gradient(to top, rgba(29,22,17,.88) 0%, rgba(29,22,17,.45) 35%, rgba(29,22,17,0) 70%)",
-                  }}
-                />
+          {/* LEFT: Thobe + Koko (tall cards) */}
+          <div className="flex flex-col gap-4 sm:gap-5 md:gap-6">
+            {thobe && <CatalogCard category={thobe} heightClass="h-[460px] sm:h-[500px] md:h-[520px]" badgeText="Best Seller" />}
+            {koko && <CatalogCard category={koko} heightClass="h-[460px] sm:h-[500px] md:h-[520px]" />}
+          </div>
 
-                {isFeatured && (
-                  <span
-                    className="absolute top-5 left-5 text-[10px] tracking-[0.25em] uppercase px-3 py-1.5 rounded-full"
-                    style={{ backdropFilter: "blur(10px)", background: "rgba(42,33,27,.72)", border: "1px solid rgba(241,233,221,.22)", color: "var(--sand-2)" }}
-                  >
-                    Best Seller
-                  </span>
-                )}
+          {/* RIGHT: Kandora, Vest, Kabak, Cover Hanger */}
+          <div className="flex flex-col gap-4 sm:gap-5 md:gap-6">
+            {kandora && <CatalogCard category={kandora} heightClass="h-[220px] sm:h-[240px] md:h-[250px]" />}
+            {vest && <CatalogCard category={vest} heightClass="h-[220px] sm:h-[240px] md:h-[250px]" />}
+            {kabak && <CatalogCard category={kabak} heightClass="h-[220px] sm:h-[240px] md:h-[250px]" />}
+            {coverHanger && <CatalogCard category={coverHanger} heightClass="h-[220px] sm:h-[240px] md:h-[250px]" />}
+          </div>
 
-                <div className={`absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 ${isFeatured ? "p-6 sm:p-8" : "p-5"}`}>
-                  <div>
-                    <h3
-                      className={`text-white ${isFeatured ? "text-3xl sm:text-4xl" : "text-2xl sm:text-3xl"}`}
-                      style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}
-                    >
-                      {cat.name}
-                    </h3>
-                    {cat.description && (
-                      <p className={`mt-1.5 ${isFeatured ? "text-[13px] sm:text-sm max-w-sm" : "text-[13px]"}`} style={{ color: "#d4c7ba" }}>
-                        {cat.description}
-                      </p>
-                    )}
-                  </div>
-                  <span
-                    className="shrink-0 grid place-items-center rounded-full transition-transform duration-300 group-hover:translate-x-[3px] group-hover:-translate-y-[3px]"
-                    style={{
-                      width: isFeatured ? 44 : 40,
-                      height: isFeatured ? 44 : 40,
-                      backdropFilter: "blur(10px)",
-                      background: "rgba(241,233,221,.14)",
-                      border: "1px solid rgba(241,233,221,.28)",
-                      color: "var(--sand-2)",
-                    }}
-                  >
-                    ↗
-                  </span>
-                </div>
-              </a>
-            );
-          })}
         </div>
 
         {/* CTA */}
-        <div className="mt-12 sm:mt-16 flex items-center justify-center fade-up">
+        <div className="flex justify-center pt-8 sm:pt-12 pb-8 fade-up">
           <a
             href={getWhatsAppLink("Halo Admin SAMAQU, saya tertarik dengan koleksi Anda dan ingin bertanya soal pemesanan.")}
             target="_blank"
             rel="noopener"
-            className="group inline-flex items-center gap-3 rounded-full px-8 py-4 text-[11px] tracking-[0.24em] uppercase font-medium text-white transition-colors duration-300 hover:bg-[var(--gold)]"
-            style={{ background: "var(--espresso)" }}
+            className="group inline-flex items-center gap-3 rounded-full px-7 py-3.5 sm:px-9 sm:py-4 text-[11px] sm:text-xs font-bold uppercase tracking-[0.18em] transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0"
+            style={{ background: "var(--espresso)", color: "var(--sand-2)" }}
           >
             Lihat Katalog Selengkapnya
-            <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
+            <svg className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
           </a>
         </div>
       </div>
     </section>
+  );
+}
+
+function CatalogCard({ category, heightClass, badgeText }: { category: CategoryItem; heightClass: string; badgeText?: string }) {
+  return (
+    <a
+      href={getWhatsAppLink(`Halo Admin SAMAQU, saya tertarik dengan koleksi ${category.name} dan ingin bertanya soal pemesanan.`)}
+      target="_blank"
+      rel="noopener"
+      className={`group relative w-full ${heightClass} rounded-2xl sm:rounded-3xl overflow-hidden cursor-pointer shadow-md hover:shadow-xl transition-all duration-300 border`}
+      style={{ borderColor: "rgba(216,206,189,.3)", background: "var(--espresso)" }}
+    >
+      <img
+        src={category.image_url}
+        alt={category.name}
+        className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 ease-out"
+      />
+
+      {/* Gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent transition-opacity group-hover:from-black/90" />
+
+      {/* Badge */}
+      {badgeText && (
+        <div className="absolute top-4 left-4 sm:top-5 sm:left-5 z-10">
+          <span
+            className="inline-block backdrop-blur-md text-white text-[10px] sm:text-[11px] font-bold tracking-widest uppercase px-3 py-1 sm:px-3.5 sm:py-1 rounded-full shadow-sm"
+            style={{ background: "rgba(170,131,89,.8)", border: "1px solid rgba(255,255,255,.2)" }}
+          >
+            {badgeText}
+          </span>
+        </div>
+      )}
+
+      {/* Bottom content */}
+      <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-6 md:p-7 z-10 flex items-end justify-between">
+        <div className="pr-4 max-w-[80%]">
+          <h3
+            className="text-2xl sm:text-3xl md:text-3xl font-semibold text-white mb-1.5 sm:mb-2 tracking-tight group-hover:text-[#f3ede2] transition-colors"
+            style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}
+          >
+            {category.name}
+          </h3>
+          {category.description && (
+            <p className="text-xs sm:text-sm font-normal leading-relaxed line-clamp-2" style={{ color: "rgba(226,218,208,.9)" }}>
+              {category.description}
+            </p>
+          )}
+        </div>
+
+        {/* Arrow button */}
+        <div className="shrink-0">
+          <span
+            aria-label={`Lihat ${category.name}`}
+            className="w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110 shadow-lg"
+            style={{ background: "rgba(255,255,255,.85)", color: "var(--espresso)" }}
+          >
+            <svg className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+          </span>
+        </div>
+      </div>
+    </a>
   );
 }
