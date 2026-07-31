@@ -400,11 +400,21 @@ export default function TambahProdukPage() {
                     <span className="w-28">SKU</span>
                   </div>
                   {activeVariant.sizes.map((s, i) => (
-                    <div key={i} className="flex items-center gap-3 flex-wrap">
-                      <select value={s.size} onChange={(e) => updateSizeField(activeColor!, i, "size", e.target.value)}
-                        className="rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }}>
-                        {SIZES.map((sz) => <option key={sz} value={sz}>{sz}</option>)}
-                      </select>
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <div className="relative">
+                        <input
+                          value={s.size}
+                          onChange={(e) => updateSizeField(activeColor!, i, "size", e.target.value.toUpperCase())}
+                          onFocus={(e) => e.target.select()}
+                          list={`size-options-${i}`}
+                          className="w-[60px] rounded-lg px-3 py-2 text-sm outline-none"
+                          style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }}
+                          placeholder="Ukuran"
+                        />
+                        <datalist id={`size-options-${i}`}>
+                          {SIZES.map((sz) => <option key={sz} value={sz} />)}
+                        </datalist>
+                      </div>
                       <input type="number" value={s.stock || ""} onChange={(e) => updateSizeField(activeColor!, i, "stock", parseInt(e.target.value) || 0)}
                         placeholder="Stok" className="w-20 rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
                       <input value={s.priceOverride} onChange={(e) => updateSizeField(activeColor!, i, "priceOverride", e.target.value)}
