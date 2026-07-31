@@ -365,28 +365,32 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
               {activeVariant && (
                 <div className="space-y-3">
                   <p className="text-sm font-medium" style={{ color: "var(--espresso)" }}>Ukuran untuk <span style={{ color: "var(--gold)" }}>{activeColor}</span></p>
+                  <div className="grid grid-cols-[72px_80px_112px_112px_36px] gap-2 text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>
+                    <span>Ukuran</span>
+                    <span>Stok</span>
+                    <span>Harga Khusus</span>
+                    <span>SKU</span>
+                  </div>
                   {activeVariant.sizes.map((s, i) => (
-                    <div key={i} className="flex items-center gap-3 flex-wrap">
-                      <div className="relative">
-                        <input
-                          value={s.size}
-                          onChange={(e) => updateSizeField(activeColor!, i, "size", e.target.value.toUpperCase())}
-                          onFocus={(e) => e.target.select()}
-                          list={`size-options-${i}`}
-                          className="w-[60px] rounded-lg px-3 py-2 text-sm outline-none"
-                          style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }}
-                          placeholder="Ukuran"
-                        />
-                        <datalist id={`size-options-${i}`}>
-                          {SIZES.map((sz) => <option key={sz} value={sz} />)}
-                        </datalist>
-                      </div>
-                      <input type="number" value={s.stock || ""} onChange={(e) => updateSizeField(activeColor!, i, "stock", parseInt(e.target.value) || 0)} placeholder="Stok" className="w-20 rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
-                      <input value={s.priceOverride} onChange={(e) => updateSizeField(activeColor!, i, "priceOverride", e.target.value)} placeholder="Opsional" className="w-28 rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
-                      <input value={s.sku} onChange={(e) => updateSizeField(activeColor!, i, "sku", e.target.value)} placeholder="SKU" className="w-28 rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
-                      {activeVariant.sizes.length > 1 && <button onClick={() => removeSize(activeColor!, i)} className="p-1.5 rounded-lg hover:bg-red-50" style={{ color: "#e74c3c" }}><Trash2 size={14} /></button>}
+                    <div key={i} className="grid grid-cols-[72px_80px_112px_112px_36px] gap-2 items-center">
+                      <input
+                        value={s.size}
+                        onChange={(e) => updateSizeField(activeColor!, i, "size", e.target.value.toUpperCase())}
+                        onFocus={(e) => e.target.select()}
+                        list="size-suggestions"
+                        className="rounded-lg px-2.5 py-2 text-sm outline-none text-center"
+                        style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }}
+                        placeholder="—"
+                      />
+                      <input type="number" value={s.stock || ""} onChange={(e) => updateSizeField(activeColor!, i, "stock", parseInt(e.target.value) || 0)} placeholder="0" className="rounded-lg px-2.5 py-2 text-sm outline-none text-center" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
+                      <input value={s.priceOverride} onChange={(e) => updateSizeField(activeColor!, i, "priceOverride", e.target.value)} placeholder="—" className="rounded-lg px-2.5 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
+                      <input value={s.sku} onChange={(e) => updateSizeField(activeColor!, i, "sku", e.target.value)} placeholder="—" className="rounded-lg px-2.5 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
+                      {activeVariant.sizes.length > 1 && <button onClick={() => removeSize(activeColor!, i)} className="p-1.5 rounded-lg hover:bg-red-50 transition-colors" style={{ color: "#e74c3c" }}><Trash2 size={14} /></button>}
                     </div>
                   ))}
+                  <datalist id="size-suggestions">
+                    {SIZES.map((sz) => <option key={sz} value={sz} />)}
+                  </datalist>
                   <button onClick={() => addSize(activeColor!)} className="flex items-center gap-1.5 text-sm font-medium" style={{ color: "var(--gold)" }}><Plus size={14} /> Tambah Ukuran</button>
                 </div>
               )}
