@@ -95,7 +95,7 @@ function MediaDisplay({ item, poster, className, style, allMedia }: { item: Medi
   }
 
   return (
-    <div className={`relative overflow-hidden ${className || ""}`} style={{ background: "#e8dfd1", ...style }}>
+    <div className={`relative ${className || ""}`} style={{ background: "#e8dfd1", ...style }}>
       <img src={item.src} alt="" className="w-full h-full object-cover" loading="lazy" />
     </div>
   );
@@ -552,7 +552,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 ))}
               </div>
             )}
-            <div className="relative w-full aspect-[4/5] rounded-2xl overflow-hidden cursor-zoom-in shrink-0" style={{ background: "#e8dfd1" }} onClick={() => { setZoomIndex(activeIndex); setZoomOpen(true); }}>
+            <div className="relative flex-1 aspect-[3/4] rounded-2xl overflow-hidden cursor-zoom-in" style={{ background: "#e8dfd1" }} onClick={() => { setZoomIndex(activeIndex); setZoomOpen(true); }}>
               <AnimatePresence mode="wait">
                 <motion.div key={activeIndex} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }} className="absolute inset-0">
                   <MediaDisplay item={activeMedia} poster={product.image} allMedia={media} className="w-full h-full" />
