@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
@@ -9,14 +9,13 @@ import {
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import AdminShell from "@/components/AdminShell";
+import JenisKainForm from "@/components/JenisKainForm";
 import { colorMap } from "@/lib/katalog-data";
+import { uploadToCloudinary } from "@/lib/cloudinary";
 
 const CATEGORIES = ["Thobe", "Kandora", "Koko", "Vest", "Kabak", "Cover & Hanger"] as const;
 const SIZES = ["S", "M", "L", "XL", "XXL"] as const;
 const COLORS = Object.keys(colorMap);
-
-const CLOUDINARY_CLOUD = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD || "dgtixuop0";
-const CLOUDINARY_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_PRESET || "samaqu_unsigned";
 
 interface Variant {
   color: string;
@@ -46,6 +45,13 @@ export default function TambahProdukPage() {
   const [description, setDescription] = useState("");
   const [basePrice, setBasePrice] = useState("");
   const [weight, setWeight] = useState("");
+  const [series, setSeries] = useState("");
+  const [catatanHarga, setCatatanHarga] = useState("");
+  const [selectedJenisKainId, setSelectedJenisKainId] = useState<string>("");
+  const [showNewKainForm, setShowNewKainForm] = useState(false);
+
+  // Jenis Kain list
+  const [jenisKainList, setJenisKainList] = useState<{ id: string; name: string }[]>([]);
 
   // Create Your Price
   const [cypEnabled, setCypEnabled] = useState(false);
@@ -59,6 +65,13 @@ export default function TambahProdukPage() {
   // Media
   const [media, setMedia] = useState<MediaFile[]>([]);
   const [previewIndex, setPreviewIndex] = useState(0);
+
+  // Fetch jenis_kain list on mount
+  useEffect(() => {
+    supabase.from("jenis_kain").select("id, name").order("display_order").then(({ data }) => {
+      if (data) setJenisKainList(data);
+    });
+  }, []);
 
   // Auto-generate slug from name
   function handleNameChange(val: string) {
@@ -117,22 +130,6 @@ export default function TambahProdukPage() {
       sizes[sizeIdx] = { ...sizes[sizeIdx], [field]: value };
       return { ...v, sizes };
     }));
-  }
-
-  // Upload to Cloudinary
-  async function uploadToCloudinary(file: File): Promise<string> {
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("upload_preset", CLOUDINARY_PRESET);
-    const isVideo = file.type.startsWith("video/");
-    const endpoint = isVideo ? "video" : "image";
-    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/${endpoint}/upload`, {
-      method: "POST",
-      body: formData,
-    });
-    if (!res.ok) throw new Error("Upload gagal");
-    const data = await res.json();
-    return data.secure_url;
   }
 
   // Handle file select
@@ -220,6 +217,9 @@ export default function TambahProdukPage() {
         image: media.find((m) => m.url)?.url || "",
         images: media.filter((m) => m.url).map((m) => m.url),
         colors: variants.map((v) => v.color),
+        jenis_kain_id: selectedJenisKainId || null,
+        series: series.trim() || null,
+        catatan_harga: catatanHarga.trim() || null,
       }, { onConflict: "id" });
 
       if (productError) throw productError;
@@ -359,6 +359,40 @@ export default function TambahProdukPage() {
                   <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Berat (gram)</label>
                   <input type="number" value={weight} onChange={(e) => setWeight(e.target.value)} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="800" />
                   <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>Digunakan untuk hitung ongkir. Kosongkan = default per kategori.</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Jenis Kain</label>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <select value={selectedJenisKainId} onChange={(e) => setSelectedJenisKainId(e.target.value)} className="w-full rounded-xl px-4 py-3 text-sm outline-none appearance-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }}>
+                        <option value="">Pilih Jenis Kain</option>
+                        {jenisKainList.map((jk) => <option key={jk.id} value={jk.id}>{jk.name}</option>)}
+                      </select>
+                    </div>
+                    <button type="button" onClick={() => setShowNewKainForm(!showNewKainForm)} className="px-3 py-2 rounded-xl text-xs font-medium shrink-0" style={{ border: "1px dashed rgba(181,140,74,.4)", color: "var(--gold)" }}>
+                      + Baru
+                    </button>
+                  </div>
+                  {showNewKainForm && (
+                    <div className="mt-3">
+                      <JenisKainForm
+                        onSave={(newKain) => {
+                          setJenisKainList((prev) => [...prev, { id: newKain.id, name: newKain.name }]);
+                          setSelectedJenisKainId(newKain.id);
+                          setShowNewKainForm(false);
+                        }}
+                        onCancel={() => setShowNewKainForm(false)}
+                      />
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Series</label>
+                  <input value={series} onChange={(e) => setSeries(e.target.value)} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="Contoh: Jiharkah, Zahwan, Duha" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Catatan Harga</label>
+                  <input value={catatanHarga} onChange={(e) => setCatatanHarga(e.target.value)} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="Contoh: Harga belum termasuk Kabak & Cover Hanger" />
                 </div>
               </div>
             </div>

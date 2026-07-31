@@ -12,6 +12,17 @@ export interface MediaItem {
   color?: string; // optional: which color variant this media belongs to
 }
 
+export interface JenisKain {
+  id: string;
+  name: string;
+  material: string | null;
+  texture: string | null;
+  suitable_for: string | null;
+  care_instructions: string | null;
+  image_url: string | null;
+  display_order: number;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -27,6 +38,10 @@ export interface Product {
   image: string;
   images: string[];
   media: MediaItem[];
+  // Jenis Kain (structured)
+  jenis_kain_id?: string | null;
+  jenis_kain?: JenisKain | null;
+  catatan_harga?: string | null;
   // Create Your Price
   minimum_price?: number | null;
   recommended_price?: number | null;

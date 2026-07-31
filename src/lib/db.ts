@@ -1,5 +1,5 @@
 import { supabase } from "./supabase";
-import type { Product } from "./katalog-data";
+import type { Product, JenisKain } from "./katalog-data";
 
 export interface DbProduct {
   id: string;
@@ -15,10 +15,15 @@ export interface DbProduct {
   image: string;
   images: string[];
   created_at: string;
+  // Jenis Kain
+  jenis_kain_id: string | null;
+  catatan_harga: string | null;
   // Create Your Price
   minimum_price: number | null;
   recommended_price: number | null;
   create_your_price_enabled: boolean;
+  // Joined relation (optional, only when fetched with join)
+  jenis_kain?: JenisKain | null;
 }
 
 export interface DbTestimonial {
@@ -57,6 +62,9 @@ function dbProductToProduct(db: DbProduct): Product {
       src,
       type: src.match(/\.(mp4|webm|ogg)$/i) ? "video" as const : "image" as const,
     })),
+    jenis_kain_id: db.jenis_kain_id || null,
+    jenis_kain: db.jenis_kain || null,
+    catatan_harga: db.catatan_harga || null,
   };
 }
 
@@ -64,7 +72,7 @@ export async function getProducts(category?: string): Promise<Product[]> {
   try {
     let query = supabase
       .from("products")
-      .select("*")
+      .select("*, jenis_kain(*)")
       .order("created_at", { ascending: true });
 
     if (category && category !== "Semua") {
@@ -94,7 +102,7 @@ export async function getProducts(category?: string): Promise<Product[]> {
 export async function getProductById(id: string): Promise<Product | null> {
   const { data, error } = await supabase
     .from("products")
-    .select("*")
+    .select("*, jenis_kain(*)")
     .eq("id", id)
     .single();
 
