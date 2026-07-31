@@ -2,22 +2,71 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  X,
-  ChevronLeft,
-  ChevronRight,
-  Layers,
-  Move,
-  Shirt,
-  Wind,
-  Ruler,
-  Scissors,
-  type LucideIcon,
-} from "lucide-react";
+import { X, ChevronLeft, ChevronRight } from "lucide-react";
+
+/* ── Inline icons (custom SVG — avoids relying on less-common lucide-react named exports) ── */
+type IconProps = { size?: number; strokeWidth?: number };
+
+function IconBase({ size = 16, strokeWidth = 1.6, children }: IconProps & { children: React.ReactNode }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+      {children}
+    </svg>
+  );
+}
+
+function LayersIcon(props: IconProps) {
+  return (
+    <IconBase {...props}>
+      <path d="M12 4 3 8.5l9 4.5 9-4.5L12 4Z" />
+      <path d="M3 13.5 12 18l9-4.5" />
+    </IconBase>
+  );
+}
+
+function StretchIcon(props: IconProps) {
+  return (
+    <IconBase {...props}>
+      <path d="M4 4h6M4 4v6M4 4l6 6M20 20h-6M20 20v-6M20 20l-6-6" />
+    </IconBase>
+  );
+}
+
+function DrapeIcon(props: IconProps) {
+  return (
+    <IconBase {...props}>
+      <path d="M6 4h12v16l-3-2-3 2-3-2-3 2V4Z" />
+    </IconBase>
+  );
+}
+
+function AirIcon(props: IconProps) {
+  return (
+    <IconBase {...props}>
+      <path d="M3 8h12a3 3 0 1 0-3-3M3 13h15a3 3 0 1 1-3 3M3 18h9" />
+    </IconBase>
+  );
+}
+
+function RulerIcon(props: IconProps) {
+  return (
+    <IconBase {...props}>
+      <path d="M3 9h18v6H3zM7 9v3M11 9v3M15 9v3M19 9v3" />
+    </IconBase>
+  );
+}
+
+function CutIcon(props: IconProps) {
+  return (
+    <IconBase {...props}>
+      <path d="M12 4v16M8 8l8 8M16 8l-8 8" />
+    </IconBase>
+  );
+}
 
 /* ── Types ── */
 interface KainSeriesPoint {
-  icon: LucideIcon;
+  icon: (props: IconProps) => React.JSX.Element;
   title: string;
   desc: string;
 }
@@ -39,10 +88,10 @@ const KAIN: KainSeriesItem[] = [
     tag: "Ketebalan: Tinggi",
     gradient: "linear-gradient(160deg, #2b2b2b 0%, #141414 100%)",
     points: [
-      { icon: Layers, title: "Lebih tebal & kokoh", desc: "Memberikan struktur yang kuat dan tidak mudah menerawang." },
-      { icon: Move, title: "Stretch", desc: "Nyaman bergerak, tidak terasa kaku." },
-      { icon: Shirt, title: "Jatuh lebih rapi", desc: "Memberikan tampilan yang elegan dan berkelas." },
-      { icon: Wind, title: "Adem & nyaman", desc: "Sirkulasi udara baik, nyaman dipakai seharian." },
+      { icon: LayersIcon, title: "Lebih tebal & kokoh", desc: "Memberikan struktur yang kuat dan tidak mudah menerawang." },
+      { icon: StretchIcon, title: "Stretch", desc: "Nyaman bergerak, tidak terasa kaku." },
+      { icon: DrapeIcon, title: "Jatuh lebih rapi", desc: "Memberikan tampilan yang elegan dan berkelas." },
+      { icon: AirIcon, title: "Adem & nyaman", desc: "Sirkulasi udara baik, nyaman dipakai seharian." },
     ],
     fit: "Aktivitas formal, acara penting, dan tampilan premium sehari-hari.",
   },
@@ -51,10 +100,10 @@ const KAIN: KainSeriesItem[] = [
     tag: "Ketebalan: Sedang-Tinggi",
     gradient: "linear-gradient(160deg, #2a3350 0%, #1e2436 100%)",
     points: [
-      { icon: Layers, title: "Tebal seimbang", desc: "Kokoh namun tetap ringan saat dipakai." },
-      { icon: Move, title: "Serat halus", desc: "Permukaan lembut dengan kilau tipis." },
-      { icon: Shirt, title: "Siluet bersih", desc: "Jatuh lurus, minim kerutan." },
-      { icon: Wind, title: "Breathable", desc: "Cocok untuk cuaca panas maupun ruang ber-AC." },
+      { icon: LayersIcon, title: "Tebal seimbang", desc: "Kokoh namun tetap ringan saat dipakai." },
+      { icon: StretchIcon, title: "Serat halus", desc: "Permukaan lembut dengan kilau tipis." },
+      { icon: DrapeIcon, title: "Siluet bersih", desc: "Jatuh lurus, minim kerutan." },
+      { icon: AirIcon, title: "Breathable", desc: "Cocok untuk cuaca panas maupun ruang ber-AC." },
     ],
     fit: "Kerja, kajian, dan pemakaian harian yang tetap rapi.",
   },
@@ -63,10 +112,10 @@ const KAIN: KainSeriesItem[] = [
     tag: "Ketebalan: Sedang",
     gradient: "linear-gradient(160deg, #c9baa9 0%, #b4a79b 100%)",
     points: [
-      { icon: Layers, title: "Ringan", desc: "Terasa enteng, nyaman untuk mobilitas tinggi." },
-      { icon: Move, title: "Lentur", desc: "Mengikuti gerak tubuh dengan baik." },
-      { icon: Shirt, title: "Flowy", desc: "Jatuh mengalir, kesan santai namun sopan." },
-      { icon: Wind, title: "Sangat adem", desc: "Pilihan terbaik untuk suhu panas." },
+      { icon: LayersIcon, title: "Ringan", desc: "Terasa enteng, nyaman untuk mobilitas tinggi." },
+      { icon: StretchIcon, title: "Lentur", desc: "Mengikuti gerak tubuh dengan baik." },
+      { icon: DrapeIcon, title: "Flowy", desc: "Jatuh mengalir, kesan santai namun sopan." },
+      { icon: AirIcon, title: "Sangat adem", desc: "Pilihan terbaik untuk suhu panas." },
     ],
     fit: "Perjalanan, aktivitas outdoor, dan pemakaian santai.",
   },
@@ -75,10 +124,10 @@ const KAIN: KainSeriesItem[] = [
     tag: "Ketebalan: Sedang",
     gradient: "linear-gradient(160deg, #e4d9c8 0%, #cdbfb0 100%)",
     points: [
-      { icon: Layers, title: "Klasik", desc: "Tekstur katun premium dengan nuansa lembut." },
-      { icon: Move, title: "Nyaman di kulit", desc: "Halus, tidak panas, tidak gatal." },
-      { icon: Shirt, title: "Rapi natural", desc: "Tampilan bersih tanpa terlihat kaku." },
-      { icon: Wind, title: "Mudah dirawat", desc: "Cepat kering dan tidak rewel saat disetrika." },
+      { icon: LayersIcon, title: "Klasik", desc: "Tekstur katun premium dengan nuansa lembut." },
+      { icon: StretchIcon, title: "Nyaman di kulit", desc: "Halus, tidak panas, tidak gatal." },
+      { icon: DrapeIcon, title: "Rapi natural", desc: "Tampilan bersih tanpa terlihat kaku." },
+      { icon: AirIcon, title: "Mudah dirawat", desc: "Cepat kering dan tidak rewel saat disetrika." },
     ],
     fit: "Pemakaian harian, ibadah, dan acara keluarga.",
   },
@@ -91,9 +140,9 @@ const SERIES: KainSeriesItem[] = [
     tag: "Potongan: Longgar",
     gradient: "linear-gradient(160deg, #e4d9c8 0%, #cdbfb0 100%)",
     points: [
-      { icon: Ruler, title: "Lebar dada relaks", desc: "Ruang gerak maksimal, nyaman untuk semua bentuk tubuh." },
-      { icon: Scissors, title: "Lengan lurus", desc: "Model klasik dengan manset standar." },
-      { icon: Shirt, title: "Jatuh lurus", desc: "Siluet tradisional yang sopan." },
+      { icon: RulerIcon, title: "Lebar dada relaks", desc: "Ruang gerak maksimal, nyaman untuk semua bentuk tubuh." },
+      { icon: CutIcon, title: "Lengan lurus", desc: "Model klasik dengan manset standar." },
+      { icon: DrapeIcon, title: "Jatuh lurus", desc: "Siluet tradisional yang sopan." },
     ],
     fit: "Yang suka pakaian longgar dan santai.",
   },
@@ -102,9 +151,9 @@ const SERIES: KainSeriesItem[] = [
     tag: "Potongan: Ramping",
     gradient: "linear-gradient(160deg, #c9baa9 0%, #b4a79b 100%)",
     points: [
-      { icon: Ruler, title: "Badan lebih ramping", desc: "Mengikuti bentuk tubuh tanpa terasa sempit." },
-      { icon: Scissors, title: "Lengan lebih kecil", desc: "Tampilan modern dan bersih." },
-      { icon: Shirt, title: "Siluet tegas", desc: "Terlihat lebih tinggi dan proporsional." },
+      { icon: RulerIcon, title: "Badan lebih ramping", desc: "Mengikuti bentuk tubuh tanpa terasa sempit." },
+      { icon: CutIcon, title: "Lengan lebih kecil", desc: "Tampilan modern dan bersih." },
+      { icon: DrapeIcon, title: "Siluet tegas", desc: "Terlihat lebih tinggi dan proporsional." },
     ],
     fit: "Tampilan modern, acara formal, dan foto.",
   },
@@ -113,9 +162,9 @@ const SERIES: KainSeriesItem[] = [
     tag: "Potongan: Terstruktur",
     gradient: "linear-gradient(160deg, #2b2b2b 0%, #141414 100%)",
     points: [
-      { icon: Ruler, title: "Pola presisi", desc: "Dikembangkan dari data ukuran pelanggan." },
-      { icon: Scissors, title: "Detail jahitan rapat", desc: "Finishing kuat dan tahan lama." },
-      { icon: Shirt, title: "Struktur premium", desc: "Bahu dan kerah lebih terbentuk." },
+      { icon: RulerIcon, title: "Pola presisi", desc: "Dikembangkan dari data ukuran pelanggan." },
+      { icon: CutIcon, title: "Detail jahitan rapat", desc: "Finishing kuat dan tahan lama." },
+      { icon: DrapeIcon, title: "Struktur premium", desc: "Bahu dan kerah lebih terbentuk." },
     ],
     fit: "Pemakaian intens dan tampilan paling premium.",
   },
