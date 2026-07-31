@@ -463,7 +463,7 @@ export default function TambahProdukPage() {
                     <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 mt-4">
                       {activeMedia.map((m, idx) => (
                         <div key={m.id} className="relative aspect-square rounded-lg overflow-hidden group cursor-pointer" style={{ background: "#e8dfd1" }}
-                          onClick={() => { if (!m.uploading && !m.error) { setZoomIndex(idx); setZoomOpen(true); } }}>
+                          onClick={() => { if (!m.uploading && !m.error) { console.log("[Admin] Opening lightbox:", idx, activeMedia.length); setZoomIndex(idx); setZoomOpen(true); } }}>
                           {m.uploading ? (
                             <div className="absolute inset-0 flex items-center justify-center">
                               <Loader2 size={20} className="animate-spin" style={{ color: "var(--gold)" }} />

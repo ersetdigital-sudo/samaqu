@@ -136,7 +136,10 @@ export default function ImageZoom({ media, initialIndex, alt, isOpen, onClose }:
     else setScale(2.5);
   }, [scale]);
 
-  if (!isOpen || !currentItem) return null;
+  if (!isOpen || !currentItem) {
+    if (isOpen) console.log("[ImageZoom] isOpen but no currentItem:", { isOpen, currentIndex, mediaLen: media.length, currentItem });
+    return null;
+  }
 
   return (
     <AnimatePresence>
