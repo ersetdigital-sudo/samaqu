@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Minus, Plus, ChevronLeft, ChevronRight, ChevronDown, Play, ShoppingCart } from "lucide-react";
 import ImageZoom, { type ZoomMedia } from "@/components/ImageZoom";
 import JenisKainModal from "@/components/JenisKainModal";
+import { getKainSwatchColor } from "@/components/KainSeriesModal";
 import Breadcrumb from "@/components/Breadcrumb";
 import { colorMap, type Product, type MediaItem } from "@/lib/katalog-data";
 import { getProductById, getAvailableSeries, getProducts, type SeriesOption } from "@/lib/db";
@@ -554,7 +555,13 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             {isThobe ? (
               <>
                 {product.jenis_kain?.name && (
-                  <>Jenis kain <button type="button" onClick={() => setKainModalOpen(true)} className="underline decoration-dotted underline-offset-2 hover:opacity-70 transition-opacity" style={{ color: "var(--gold)" }}>{product.jenis_kain.name}</button></>
+                  <span className="inline-flex items-center gap-1.5">
+                    Jenis kain
+                    <button type="button" onClick={() => setKainModalOpen(true)} className="inline-flex items-center gap-1 underline decoration-dotted underline-offset-2 hover:opacity-70 transition-opacity" style={{ color: "var(--gold)" }}>
+                      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: getKainSwatchColor(product.jenis_kain.name) }} />
+                      {product.jenis_kain.name}
+                    </button>
+                  </span>
                 )}
                 {!product.jenis_kain?.name && product.kain && `Kain ${product.kain}`}
               </>
@@ -562,7 +569,13 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               <>
                 {product.category}
                 {product.jenis_kain?.name && (
-                  <> — <button type="button" onClick={() => setKainModalOpen(true)} className="underline decoration-dotted underline-offset-2 hover:opacity-70 transition-opacity" style={{ color: "var(--gold)" }}>{product.jenis_kain.name}</button></>
+                  <span className="inline-flex items-center gap-1.5">
+                    —
+                    <button type="button" onClick={() => setKainModalOpen(true)} className="inline-flex items-center gap-1 underline decoration-dotted underline-offset-2 hover:opacity-70 transition-opacity" style={{ color: "var(--gold)" }}>
+                      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: getKainSwatchColor(product.jenis_kain.name) }} />
+                      {product.jenis_kain.name}
+                    </button>
+                  </span>
                 )}
                 {!product.jenis_kain?.name && product.kain && ` — Kain ${product.kain}`}
                 {product.series && ` — ${product.series}`}
