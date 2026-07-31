@@ -481,7 +481,7 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
                     <Upload size={24} className="mx-auto mb-2" style={{ color: "var(--text-muted)" }} />
                     <p className="text-sm font-medium" style={{ color: "var(--espresso)" }}>Klik atau seret file</p>
                     <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>JPG, PNG, WebP (10MB) · MP4, WebM (50MB)</p>
-                    <input type="file" multiple accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" onChange={(e) => handleFileSelect(e, category === "Thobe" ? "default" : activeColor)} className="hidden" />
+                    <input type="file" multiple accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" onChange={(e) => handleFileSelect(e, category === "Thobe" ? "default" : activeColor || "default")} className="hidden" />
                   </label>
                   {activeMedia.length > 0 && (
                     <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 mt-4">

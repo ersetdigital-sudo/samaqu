@@ -531,7 +531,7 @@ export default function TambahProdukPage() {
                     <Upload size={24} className="mx-auto mb-2" style={{ color: "var(--text-muted)" }} />
                     <p className="text-sm font-medium" style={{ color: "var(--espresso)" }}>Klik atau seret file ke sini</p>
                     <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>JPG, PNG, WebP (max 10MB) · MP4, WebM (max 50MB)</p>
-                    <input type="file" multiple accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" onChange={(e) => handleFileSelect(e, category === "Thobe" ? "default" : activeColor)} className="hidden" />
+                    <input type="file" multiple accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" onChange={(e) => handleFileSelect(e, category === "Thobe" ? "default" : activeColor || "default")} className="hidden" />
                   </label>
 
                   {/* Media preview grid */}
