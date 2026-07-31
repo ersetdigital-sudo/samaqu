@@ -9,6 +9,7 @@ export type Category =
 export interface MediaItem {
   src: string;
   type: "image" | "video";
+  color?: string; // optional: which color variant this media belongs to
 }
 
 export interface Product {

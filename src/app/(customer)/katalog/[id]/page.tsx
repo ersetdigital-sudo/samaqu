@@ -133,6 +133,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     });
   }, [id]);
 
+  // Reset gallery index when color changes
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [selectedColor]);
+
   useEffect(() => {
     if (!id || !selectedColor) return;
     supabase.from("product_variants").select("size, price_override").eq("product_id", id).eq("color", selectedColor).order("size").then(({ data }) => {
@@ -286,7 +291,10 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     );
   }
 
-  const media = product.media.length > 0 ? product.media : [{ src: product.image, type: "image" as const }];
+  const allMedia = product.media.length > 0 ? product.media : [{ src: product.image, type: "image" as const }];
+  const media = selectedColor
+    ? allMedia.filter((m) => !m.color || m.color === selectedColor)
+    : allMedia;
   const activeMedia = media[activeIndex];
 
   return (
