@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import AdminShell from "@/components/AdminShell";
+import ImageZoom from "@/components/ImageZoom";
 import { colorMap } from "@/lib/katalog-data";
 
 const CATEGORIES = ["Thobe", "Kandora", "Koko", "Vest", "Kabak", "Cover & Hanger"] as const;
@@ -58,6 +59,8 @@ export default function TambahProdukPage() {
 
   // Media
   const [media, setMedia] = useState<MediaFile[]>([]);
+  const [zoomOpen, setZoomOpen] = useState(false);
+  const [zoomIndex, setZoomIndex] = useState(0);
 
   // Auto-generate slug from name
   function handleNameChange(val: string) {
@@ -458,8 +461,9 @@ export default function TambahProdukPage() {
                   {/* Media preview grid */}
                   {activeMedia.length > 0 && (
                     <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 mt-4">
-                      {activeMedia.map((m) => (
-                        <div key={m.id} className="relative aspect-square rounded-lg overflow-hidden group" style={{ background: "#e8dfd1" }}>
+                      {activeMedia.map((m, idx) => (
+                        <div key={m.id} className="relative aspect-square rounded-lg overflow-hidden group cursor-pointer" style={{ background: "#e8dfd1" }}
+                          onClick={() => { if (!m.uploading && !m.error) { setZoomIndex(idx); setZoomOpen(true); } }}>
                           {m.uploading ? (
                             <div className="absolute inset-0 flex items-center justify-center">
                               <Loader2 size={20} className="animate-spin" style={{ color: "var(--gold)" }} />
@@ -473,7 +477,7 @@ export default function TambahProdukPage() {
                           ) : (
                             <img src={m.url || m.preview} alt="" className="w-full h-full object-cover" />
                           )}
-                          <button onClick={() => removeMedia(m.id)} className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: "rgba(0,0,0,.6)", color: "white" }}>
+                          <button onClick={(e) => { e.stopPropagation(); removeMedia(m.id); }} className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: "rgba(0,0,0,.6)", color: "white" }}>
                             <X size={12} />
                           </button>
                           {m.isVideo && <div className="absolute bottom-1.5 left-1.5"><Video size={12} style={{ color: "white" }} /></div>}
@@ -561,6 +565,14 @@ export default function TambahProdukPage() {
       <style jsx global>{`
         .card { background: #fffdfb; border: 1px solid rgba(64,50,37,.06); border-radius: 1rem; box-shadow: 0 1px 2px rgba(64,50,37,.03); }
       `}</style>
+
+      <ImageZoom
+        media={activeMedia.map((m) => ({ src: m.url || m.preview, type: m.isVideo ? "video" as const : "image" as const }))}
+        initialIndex={zoomIndex}
+        alt={activeColor || "Media"}
+        isOpen={zoomOpen}
+        onClose={() => setZoomOpen(false)}
+      />
     </section>
     </AdminShell>
   );
