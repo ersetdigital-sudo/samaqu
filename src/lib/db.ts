@@ -164,13 +164,18 @@ export interface SeriesOption {
   create_your_price_enabled: boolean;
 }
 
-export async function getAvailableSeries(jenisKainId: string, color: string): Promise<SeriesOption[]> {
-  const { data, error } = await supabase
+export async function getAvailableSeries(jenisKainId: string, color: string, category?: string): Promise<SeriesOption[]> {
+  let query = supabase
     .from("products")
     .select("id, name, series, price, minimum_price, create_your_price_enabled")
-    .eq("jenis_kain_id", jenisKainId)
-    .contains("colors", [color])
-    .order("series");
+    .eq("jenis_kain_id", jenisKainId);
+
+  // Thobe tidak pakai warna, jadi skip color filter
+  if (category !== "Thobe") {
+    query = query.contains("colors", [color]);
+  }
+
+  const { data, error } = await query.order("series");
 
   if (error || !data) return [];
 
