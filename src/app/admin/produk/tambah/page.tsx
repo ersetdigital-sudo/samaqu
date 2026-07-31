@@ -261,7 +261,7 @@ export default function TambahProdukPage() {
   }
 
   const activeVariant = variants.find((v) => v.color === activeColor);
-  const activeMedia = media.filter((m) => m.color === activeColor);
+  const activeMedia = category === "Thobe" ? media : media.filter((m) => m.color === activeColor);
 
   return (
     <AdminShell>
@@ -402,70 +402,114 @@ export default function TambahProdukPage() {
               <h2 className="font-serif italic text-xl mb-4" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Varian & Stok</h2>
               {errors.variants && <p className="text-[12px] mb-3" style={{ color: "#e74c3c" }}>{errors.variants}</p>}
 
-              {/* Color chips */}
-              <div className="flex flex-wrap gap-2 mb-4">
-                {variants.map((v) => (
-                  <button key={v.color} onClick={() => { setActiveColor(v.color); setPreviewIndex(0); }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all"
-                    style={{ background: activeColor === v.color ? "var(--espresso)" : "transparent", color: activeColor === v.color ? "var(--cream)" : "var(--coffee)", border: `1px solid ${activeColor === v.color ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
-                    <span className="w-3 h-3 rounded-full" style={{ background: colorMap[v.color] || "#ccc", border: "1px solid rgba(42,33,27,.1)" }} />
-                    {v.color}
-                    <button onClick={(e) => { e.stopPropagation(); removeColor(v.color); }} className="ml-1 hover:opacity-60"><X size={12} /></button>
-                  </button>
-                ))}
-                <div className="relative">
-                  <select onChange={(e) => { if (e.target.value) addColor(e.target.value); e.target.value = ""; }}
-                    className="appearance-none px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer" style={{ border: "1px dashed rgba(201,183,156,.4)", color: "var(--gold)", background: "transparent" }}>
-                    <option value="">+ Tambah Warna</option>
-                    {COLORS.filter((c) => !variants.find((v) => v.color === c)).map((c) => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              {/* Sizes for active color */}
-              {activeVariant && (
+              {category === "Thobe" ? (
+                /* Thobe: tidak pakai warna, langsung tampilkan ukuran */
                 <div className="space-y-3">
-                  <p className="text-sm font-medium" style={{ color: "var(--espresso)" }}>
-                    Ukuran untuk <span style={{ color: "var(--gold)" }}>{activeColor}</span>
-                  </p>
+                  <p className="text-sm font-medium" style={{ color: "var(--espresso)" }}>Ukuran</p>
                   <div className="grid grid-cols-[72px_80px_112px_112px_36px] gap-2 text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>
                     <span>Ukuran</span>
                     <span>Stok</span>
                     <span>Harga Khusus</span>
                     <span>SKU</span>
                   </div>
-                  {activeVariant.sizes.map((s, i) => (
+                  {variants.length > 0 && variants[0].sizes.map((s, i) => (
                     <div key={i} className="grid grid-cols-[72px_80px_112px_112px_36px] gap-2 items-center">
                       <input
                         value={s.size}
-                        onChange={(e) => updateSizeField(activeColor!, i, "size", e.target.value.toUpperCase())}
+                        onChange={(e) => updateSizeField(variants[0].color, i, "size", e.target.value.toUpperCase())}
                         onFocus={(e) => e.target.select()}
                         list="size-suggestions"
                         className="rounded-lg px-2.5 py-2 text-sm outline-none text-center"
                         style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }}
                         placeholder="—"
                       />
-                      <input type="number" value={s.stock || ""} onChange={(e) => updateSizeField(activeColor!, i, "stock", parseInt(e.target.value) || 0)}
+                      <input type="number" value={s.stock || ""} onChange={(e) => updateSizeField(variants[0].color, i, "stock", parseInt(e.target.value) || 0)}
                         placeholder="0" className="rounded-lg px-2.5 py-2 text-sm outline-none text-center" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
-                      <input value={s.priceOverride} onChange={(e) => updateSizeField(activeColor!, i, "priceOverride", e.target.value)}
+                      <input value={s.priceOverride} onChange={(e) => updateSizeField(variants[0].color, i, "priceOverride", e.target.value)}
                         placeholder="—" className="rounded-lg px-2.5 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
-                      <input value={s.sku} onChange={(e) => updateSizeField(activeColor!, i, "sku", e.target.value)}
+                      <input value={s.sku} onChange={(e) => updateSizeField(variants[0].color, i, "sku", e.target.value)}
                         placeholder="—" className="rounded-lg px-2.5 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
-                      {activeVariant.sizes.length > 1 && (
-                        <button onClick={() => removeSize(activeColor!, i)} className="p-1.5 rounded-lg hover:bg-red-50 transition-colors" style={{ color: "#e74c3c" }}><Trash2 size={14} /></button>
+                      {variants[0].sizes.length > 1 && (
+                        <button onClick={() => removeSize(variants[0].color, i)} className="p-1.5 rounded-lg hover:bg-red-50 transition-colors" style={{ color: "#e74c3c" }}><Trash2 size={14} /></button>
                       )}
                     </div>
                   ))}
                   <datalist id="size-suggestions">
                     {SIZES.map((sz) => <option key={sz} value={sz} />)}
                   </datalist>
-                  <button onClick={() => addSize(activeColor!)} className="flex items-center gap-1.5 text-sm font-medium" style={{ color: "var(--gold)" }}>
+                  <button onClick={() => { if (variants.length === 0) addColor("default"); else addSize(variants[0].color); }} className="flex items-center gap-1.5 text-sm font-medium" style={{ color: "var(--gold)" }}>
                     <Plus size={14} /> Tambah Ukuran
                   </button>
                 </div>
-              )}
-              {variants.length === 0 && (
-                <p className="text-sm text-center py-6" style={{ color: "var(--text-muted)" }}>Pilih warna terlebih dahulu untuk mengatur ukuran dan stok</p>
+              ) : (
+                /* Kategori lain: tampilkan pemilihan warna + ukuran */
+                <>
+                  {/* Color chips */}
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {variants.map((v) => (
+                      <button key={v.color} onClick={() => { setActiveColor(v.color); setPreviewIndex(0); }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all"
+                        style={{ background: activeColor === v.color ? "var(--espresso)" : "transparent", color: activeColor === v.color ? "var(--cream)" : "var(--coffee)", border: `1px solid ${activeColor === v.color ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
+                        <span className="w-3 h-3 rounded-full" style={{ background: colorMap[v.color] || "#ccc", border: "1px solid rgba(42,33,27,.1)" }} />
+                        {v.color}
+                        <button onClick={(e) => { e.stopPropagation(); removeColor(v.color); }} className="ml-1 hover:opacity-60"><X size={12} /></button>
+                      </button>
+                    ))}
+                    <div className="relative">
+                      <select onChange={(e) => { if (e.target.value) addColor(e.target.value); e.target.value = ""; }}
+                        className="appearance-none px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer" style={{ border: "1px dashed rgba(201,183,156,.4)", color: "var(--gold)", background: "transparent" }}>
+                        <option value="">+ Tambah Warna</option>
+                        {COLORS.filter((c) => !variants.find((v) => v.color === c)).map((c) => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Sizes for active color */}
+                  {activeVariant && (
+                    <div className="space-y-3">
+                      <p className="text-sm font-medium" style={{ color: "var(--espresso)" }}>
+                        Ukuran untuk <span style={{ color: "var(--gold)" }}>{activeColor}</span>
+                      </p>
+                      <div className="grid grid-cols-[72px_80px_112px_112px_36px] gap-2 text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>
+                        <span>Ukuran</span>
+                        <span>Stok</span>
+                        <span>Harga Khusus</span>
+                        <span>SKU</span>
+                      </div>
+                      {activeVariant.sizes.map((s, i) => (
+                        <div key={i} className="grid grid-cols-[72px_80px_112px_112px_36px] gap-2 items-center">
+                          <input
+                            value={s.size}
+                            onChange={(e) => updateSizeField(activeColor!, i, "size", e.target.value.toUpperCase())}
+                            onFocus={(e) => e.target.select()}
+                            list="size-suggestions"
+                            className="rounded-lg px-2.5 py-2 text-sm outline-none text-center"
+                            style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }}
+                            placeholder="—"
+                          />
+                          <input type="number" value={s.stock || ""} onChange={(e) => updateSizeField(activeColor!, i, "stock", parseInt(e.target.value) || 0)}
+                            placeholder="0" className="rounded-lg px-2.5 py-2 text-sm outline-none text-center" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
+                          <input value={s.priceOverride} onChange={(e) => updateSizeField(activeColor!, i, "priceOverride", e.target.value)}
+                            placeholder="—" className="rounded-lg px-2.5 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
+                          <input value={s.sku} onChange={(e) => updateSizeField(activeColor!, i, "sku", e.target.value)}
+                            placeholder="—" className="rounded-lg px-2.5 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
+                          {activeVariant.sizes.length > 1 && (
+                            <button onClick={() => removeSize(activeColor!, i)} className="p-1.5 rounded-lg hover:bg-red-50 transition-colors" style={{ color: "#e74c3c" }}><Trash2 size={14} /></button>
+                          )}
+                        </div>
+                      ))}
+                      <datalist id="size-suggestions">
+                        {SIZES.map((sz) => <option key={sz} value={sz} />)}
+                      </datalist>
+                      <button onClick={() => addSize(activeColor!)} className="flex items-center gap-1.5 text-sm font-medium" style={{ color: "var(--gold)" }}>
+                        <Plus size={14} /> Tambah Ukuran
+                      </button>
+                    </div>
+                  )}
+                  {variants.length === 0 && (
+                    <p className="text-sm text-center py-6" style={{ color: "var(--text-muted)" }}>Pilih warna terlebih dahulu untuk mengatur ukuran dan stok</p>
+                  )}
+                </>
               )}
             </div>
 
@@ -474,12 +518,12 @@ export default function TambahProdukPage() {
               <h2 className="font-serif italic text-xl mb-4" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Media</h2>
               {errors.media && <p className="text-[12px] mb-3" style={{ color: "#e74c3c" }}>{errors.media}</p>}
 
-              {!activeColor ? (
+              {category !== "Thobe" && !activeColor ? (
                 <p className="text-sm text-center py-6" style={{ color: "var(--text-muted)" }}>Pilih warna terlebih dahulu untuk upload media</p>
               ) : (
                 <div>
                   <p className="text-sm mb-3" style={{ color: "var(--text-secondary)" }}>
-                    Upload untuk warna: <span className="font-medium" style={{ color: "var(--gold)" }}>{activeColor}</span>
+                    {category === "Thobe" ? "Upload foto/video produk" : <>Upload untuk warna: <span className="font-medium" style={{ color: "var(--gold)" }}>{activeColor}</span></>}
                   </p>
 
                   {/* Upload area */}
@@ -487,7 +531,7 @@ export default function TambahProdukPage() {
                     <Upload size={24} className="mx-auto mb-2" style={{ color: "var(--text-muted)" }} />
                     <p className="text-sm font-medium" style={{ color: "var(--espresso)" }}>Klik atau seret file ke sini</p>
                     <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>JPG, PNG, WebP (max 10MB) · MP4, WebM (max 50MB)</p>
-                    <input type="file" multiple accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" onChange={(e) => handleFileSelect(e, activeColor)} className="hidden" />
+                    <input type="file" multiple accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" onChange={(e) => handleFileSelect(e, category === "Thobe" ? "default" : activeColor)} className="hidden" />
                   </label>
 
                   {/* Media preview grid */}
