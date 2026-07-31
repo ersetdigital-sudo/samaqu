@@ -200,12 +200,14 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const [kainModalOpen, setKainModalOpen] = useState(false);
   const [zoomIndex, setZoomIndex] = useState(0);
   const [availableSeries, setAvailableSeries] = useState<SeriesOption[]>([]);
+  const [activeSeriesId, setActiveSeriesId] = useState<string | null>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
   const { addItem } = useCart();
   const toast = useToast();
   const storeSettings = useStoreSettings();
   const { isWishlisted, toggle: toggleWishlist, isLoggedIn } = useWishlist();
   const cypMicrocopy = storeSettings.cyp_microcopy || "Harga Minimum boleh dipilih. Itulah alasan kami membuat Create Your Price.";
+  const isThobe = product?.category === "Thobe";
 
   // Supabase images per color
   const [supabaseMedia, setSupabaseMedia] = useState<MediaItem[]>([]);
@@ -224,6 +226,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   useEffect(() => {
     getProductById(id).then((p) => {
       setProduct(p);
+      setActiveSeriesId(id);
       if (p) {
         // Read color/size from URL params (preserved from series navigation)
         const urlColor = searchParams.get("color");
@@ -250,6 +253,31 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       }
     });
   }, [id]);
+
+  // For Thobe: fetch new product data when activeSeriesId changes (without navigating)
+  useEffect(() => {
+    if (!activeSeriesId || activeSeriesId === id || !isThobe) return;
+    getProductById(activeSeriesId).then((p) => {
+      if (p) {
+        setProduct(p);
+        // Fetch gallery for the new product
+        supabase.from("product_images").select("url, color, is_video, display_order").eq("product_id", activeSeriesId).order("display_order").then(({ data }) => {
+          if (data && data.length > 0) {
+            const items: MediaItem[] = data.map((d) => ({
+              src: d.url,
+              type: d.is_video ? "video" as const : "image" as const,
+              color: d.color,
+            }));
+            setSupabaseMedia(items);
+          } else {
+            setSupabaseMedia([]);
+          }
+        });
+        // Reset gallery index
+        setActiveIndex(0);
+      }
+    });
+  }, [activeSeriesId, id, isThobe]);
 
   // Reset gallery index when color changes
   useEffect(() => {
@@ -385,6 +413,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     let msg = `Halo, saya mau pesan produk:\n${product.name} - ${color} - Ukuran ${selectedSize}\nHarga: Rp ${effectivePrice.toLocaleString("id-ID")}\nJumlah: ${qty}`;
     if (notes) msg += `\nCatatan: ${notes}`;
     window.open(getWhatsAppLink(msg), "_blank");
+  }
+
+  function handleSeriesSelect(seriesId: string) {
+    if (!isThobe || seriesId === activeSeriesId) return;
+    setActiveSeriesId(seriesId);
   }
 
   const handleCarouselScroll = () => {
@@ -624,7 +657,29 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               </p>
               <div className="flex flex-wrap gap-2">
                 {availableSeries.map((s) => {
-                  const isActive = s.id === product.id;
+                  const isActive = isThobe ? s.id === activeSeriesId : s.id === product.id;
+                  if (isThobe) {
+                    return (
+                      <button
+                        key={s.id}
+                        onClick={() => handleSeriesSelect(s.id)}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[12px] font-ui transition-all duration-200 cursor-pointer"
+                        style={{
+                          background: isActive ? "var(--espresso)" : "var(--cream-bright)",
+                          color: isActive ? "var(--cream)" : "var(--coffee)",
+                          border: `1px solid ${isActive ? "var(--espresso)" : "rgba(201,183,156,.3)"}`,
+                        }}
+                      >
+                        <span className="font-medium">{s.series}</span>
+                        <span style={{ color: isActive ? "rgba(248,245,241,.75)" : "var(--gold)" }}>
+                          {s.create_your_price_enabled && s.minimum_price
+                            ? `Mulai Rp ${s.minimum_price.toLocaleString("id-ID")}`
+                            : `Rp ${s.price.toLocaleString("id-ID")}`
+                          }
+                        </span>
+                      </button>
+                    );
+                  }
                   return (
                     <a
                       key={s.id}
@@ -934,7 +989,29 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {availableSeries.map((s) => {
-                    const isActive = s.id === product.id;
+                    const isActive = isThobe ? s.id === activeSeriesId : s.id === product.id;
+                    if (isThobe) {
+                      return (
+                        <button
+                          key={s.id}
+                          onClick={() => handleSeriesSelect(s.id)}
+                          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-[13px] font-ui transition-all duration-200 cursor-pointer"
+                          style={{
+                            background: isActive ? "var(--espresso)" : "var(--cream-bright)",
+                            color: isActive ? "var(--cream)" : "var(--coffee)",
+                            border: `1px solid ${isActive ? "var(--espresso)" : "rgba(201,183,156,.3)"}`,
+                          }}
+                        >
+                          <span className="font-medium">{s.series}</span>
+                          <span style={{ color: isActive ? "rgba(248,245,241,.75)" : "var(--gold)" }}>
+                            {s.create_your_price_enabled && s.minimum_price
+                              ? `Mulai Rp ${s.minimum_price.toLocaleString("id-ID")}`
+                              : `Rp ${s.price.toLocaleString("id-ID")}`
+                            }
+                          </span>
+                        </button>
+                      );
+                    }
                     return (
                       <a
                         key={s.id}
