@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence, Variants } from "framer-motion";
-import { SlidersHorizontal, X, ChevronDown, ArrowRight, ShoppingCart } from "lucide-react";
+import { SlidersHorizontal, X, ChevronDown, ChevronRight, ArrowRight, ShoppingCart } from "lucide-react";
 import Breadcrumb from "@/components/Breadcrumb";
 import {
   allCategories,
@@ -52,6 +52,34 @@ function Swatch({ color, size = 16 }: { color: string; size?: number }) {
       }}
       title={color}
     />
+  );
+}
+
+/* ── Info Link Button (katalog listing) — not wired up yet ── */
+function InfoLinkButton({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full flex items-center gap-3 px-4 sm:px-5 py-3.5 sm:py-3 rounded-full transition-all duration-200 hover:bg-[rgba(181,140,74,.09)]"
+      style={{
+        border: "1px solid rgba(181,140,74,.35)",
+        background: "rgba(181,140,74,.05)",
+      }}
+    >
+      <span
+        className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-ui font-bold"
+        style={{ background: "rgba(181,140,74,.14)", color: "var(--gold)" }}
+      >
+        i
+      </span>
+      <span
+        className="flex-1 text-left text-[13px] sm:text-sm font-ui font-medium"
+        style={{ color: "var(--gold)" }}
+      >
+        {label}
+      </span>
+      <ChevronRight size={16} strokeWidth={1.75} className="shrink-0" style={{ color: "var(--gold)" }} />
+    </button>
   );
 }
 
@@ -449,6 +477,19 @@ export default function KatalogPage() {
               ))}
             </div>
           </div>
+
+          {/* Info link buttons — Jenis Kain & Series Thobe (mobile, belum ada aksi) */}
+          <div className="flex flex-col gap-3 pb-4">
+            <InfoLinkButton
+              label="Perbedaan Jenis Kain Thobe"
+              onClick={() => console.log("Perbedaan Jenis Kain Thobe diklik")}
+            />
+            <InfoLinkButton
+              label="Perbedaan Series Thobe"
+              onClick={() => console.log("Perbedaan Series Thobe diklik")}
+            />
+          </div>
+
           <div className="flex items-center justify-between pb-4">
             <button
               onClick={() => setFilterDrawerOpen(true)}
@@ -535,6 +576,18 @@ export default function KatalogPage() {
               <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--stone)" }} />
             </div>
           </div>
+        </div>
+
+        {/* Info link buttons — Jenis Kain & Series Thobe (desktop, belum ada aksi) */}
+        <div className="hidden lg:flex flex-col gap-3 py-5">
+          <InfoLinkButton
+            label="Perbedaan Jenis Kain Thobe"
+            onClick={() => console.log("Perbedaan Jenis Kain Thobe diklik")}
+          />
+          <InfoLinkButton
+            label="Perbedaan Series Thobe"
+            onClick={() => console.log("Perbedaan Series Thobe diklik")}
+          />
         </div>
 
         {/* Active filter chips */}
