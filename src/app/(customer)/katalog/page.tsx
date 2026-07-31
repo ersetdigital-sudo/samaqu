@@ -163,12 +163,10 @@ function ProductCard({ product, index, wishlist }: { product: Product; index: nu
       <div className="p-4 sm:p-5 flex flex-col flex-1">
         {/* Category + Kain — fixed 2-line height */}
         <p
-          className="text-[10px] sm:text-[11px] tracking-[0.14em] uppercase font-ui mb-1.5 line-clamp-2 min-h-[2.5em]"
+          className="text-[10px] sm:text-[11px] tracking-[0.14em] uppercase font-ui mb-1.5"
           style={{ color: "var(--stone)" }}
         >
           {product.category}
-          {product.kain && ` — Kain ${product.kain}`}
-          {product.series && ` — ${product.series}`}
         </p>
 
         {/* Name — max 1 line */}

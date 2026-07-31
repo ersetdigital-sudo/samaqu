@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Minus, Plus, ChevronLeft, ChevronRight, Play, ShoppingCart } from "lucide-react";
 import ImageZoom, { type ZoomMedia } from "@/components/ImageZoom";
+import JenisKainModal from "@/components/JenisKainModal";
 import Breadcrumb from "@/components/Breadcrumb";
 import { colorMap, type Product, type MediaItem } from "@/lib/katalog-data";
 import { getProductById } from "@/lib/db";
@@ -117,6 +118,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const [activeIndex, setActiveIndex] = useState(0);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [zoomOpen, setZoomOpen] = useState(false);
+  const [kainModalOpen, setKainModalOpen] = useState(false);
   const [zoomIndex, setZoomIndex] = useState(0);
   const carouselRef = useRef<HTMLDivElement>(null);
   const { addItem } = useCart();
@@ -378,7 +380,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         {/* Content card */}
         <div className="relative -mt-4 mx-4 px-5 py-6 rounded-t-2xl" style={{ background: "var(--cream)", boxShadow: "0 -4px 20px -8px rgba(42,33,27,.08)" }}>
           <p className="text-[10px] tracking-[0.12em] uppercase font-ui mb-1.5" style={{ color: "var(--stone)" }}>
-            {product.category}{product.kain && ` — Kain ${product.kain}`}{product.series && ` — ${product.series}`}
+            {product.category}
+            {product.jenis_kain?.name && (
+              <> — <button type="button" onClick={() => setKainModalOpen(true)} className="underline decoration-dotted underline-offset-2 hover:opacity-70 transition-opacity" style={{ color: "var(--gold)" }}>{product.jenis_kain.name}</button></>
+            )}
+            {!product.jenis_kain?.name && product.kain && ` — Kain ${product.kain}`}
+            {product.series && ` — ${product.series}`}
           </p>
           <h1 className="text-[1.5rem] sm:text-[1.8rem] font-semibold leading-tight mb-2"
             style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
@@ -623,7 +630,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           {/* Info */}
           <motion.div className="sticky top-24 h-fit" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}>
             <p className="text-[11px] tracking-[0.14em] uppercase font-ui mb-3" style={{ color: "var(--stone)" }}>
-              {product.category}{product.kain && ` — Kain ${product.kain}`}{product.series && ` — ${product.series}`}
+              {product.category}
+              {product.jenis_kain?.name && (
+                <> — <button type="button" onClick={() => setKainModalOpen(true)} className="underline decoration-dotted underline-offset-2 hover:opacity-70 transition-opacity" style={{ color: "var(--gold)" }}>{product.jenis_kain.name}</button></>
+              )}
+              {!product.jenis_kain?.name && product.kain && ` — Kain ${product.kain}`}
+              {product.series && ` — ${product.series}`}
             </p>
             <h1 className="text-[2rem] sm:text-[2.5rem] lg:text-[2.8rem] font-semibold leading-tight mb-3"
               style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
@@ -770,6 +782,13 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         alt={product.name}
         isOpen={zoomOpen}
         onClose={() => setZoomOpen(false)}
+      />
+
+      {/* Jenis Kain Detail Modal */}
+      <JenisKainModal
+        kain={product.jenis_kain || null}
+        isOpen={kainModalOpen}
+        onClose={() => setKainModalOpen(false)}
       />
     </section>
   );
