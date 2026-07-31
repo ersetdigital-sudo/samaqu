@@ -736,11 +736,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           IMAGE/VIDEO ZOOM LIGHTBOX
       ═══════════════════════════════════════ */}
       <ImageZoom
-        media={media}
-        initialIndex={zoomIndex}
+        src={media[zoomIndex]?.src || activeMedia.src}
         alt={product.name}
         isOpen={zoomOpen}
         onClose={() => setZoomOpen(false)}
+        type={media[zoomIndex]?.type || "image"}
       />
     </section>
   );

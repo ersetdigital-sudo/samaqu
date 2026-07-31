@@ -2,138 +2,112 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ZoomIn, ZoomOut, RotateCcw, ChevronLeft, ChevronRight, Play } from "lucide-react";
-
-export interface ZoomMedia {
-  src: string;
-  type: "image" | "video";
-}
+import { X, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
 
 interface ImageZoomProps {
-  media: ZoomMedia[];
-  initialIndex: number;
+  src: string;
   alt: string;
   isOpen: boolean;
   onClose: () => void;
+  type?: "image" | "video";
 }
 
-export default function ImageZoom({ media, initialIndex, alt, isOpen, onClose }: ImageZoomProps) {
-  const [currentIndex, setCurrentIndex] = useState(initialIndex);
+export default function ImageZoom({ src, alt, isOpen, onClose, type = "image" }: ImageZoomProps) {
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
-  const [swipeX, setSwipeX] = useState(0);
   const lastTouchRef = useRef<{ x: number; y: number } | null>(null);
   const lastDistRef = useRef(0);
   const dragStartRef = useRef({ x: 0, y: 0 });
-  const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
-  const isSwipingRef = useRef(false);
 
-  // Sync initialIndex when lightbox opens
   useEffect(() => {
-    if (isOpen) {
-      setCurrentIndex(initialIndex);
-      setScale(1);
-      setPosition({ x: 0, y: 0 });
-      setSwipeX(0);
-    }
-  }, [isOpen, initialIndex]);
-
-  const currentItem = media[currentIndex];
-
-  const goNext = useCallback(() => {
-    if (scale > 1) return;
-    if (currentIndex < media.length - 1) {
-      setCurrentIndex((i) => i + 1);
+    if (!isOpen) {
       setScale(1);
       setPosition({ x: 0, y: 0 });
     }
-  }, [currentIndex, media.length, scale]);
+  }, [isOpen]);
 
-  const goPrev = useCallback(() => {
-    if (scale > 1) return;
-    if (currentIndex > 0) {
-      setCurrentIndex((i) => i - 1);
-      setScale(1);
-      setPosition({ x: 0, y: 0 });
-    }
-  }, [currentIndex, scale]);
-
-  // Keyboard navigation
-  useEffect(() => {
-    if (!isOpen) return;
-    function handleKey(e: KeyboardEvent) {
-      if (e.key === "ArrowRight") goNext();
-      else if (e.key === "ArrowLeft") goPrev();
-      else if (e.key === "Escape") onClose();
-    }
-    window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
-  }, [isOpen, goNext, goPrev, onClose]);
-
-  const zoomIn = useCallback(() => setScale((s) => Math.min(s + 0.5, 4)), []);
-  const zoomOut = useCallback(() => setScale((s) => { const next = Math.max(s - 0.5, 1); if (next === 1) setPosition({ x: 0, y: 0 }); return next; }), []);
-  const resetZoom = useCallback(() => { setScale(1); setPosition({ x: 0, y: 0 }); }, []);
-
-  const handleWheel = useCallback((e: React.WheelEvent) => {
-    e.preventDefault();
-    if (e.deltaY < 0) setScale((s) => Math.min(s + 0.2, 4));
-    else setScale((s) => { const next = Math.max(s - 0.2, 1); if (next === 1) setPosition({ x: 0, y: 0 }); return next; });
+  const zoomIn = useCallback(() => {
+    setScale((s) => Math.min(s + 0.5, 4));
   }, []);
+
+  const zoomOut = useCallback(() => {
+    setScale((s) => {
+      const next = Math.max(s - 0.5, 1);
+      if (next === 1) setPosition({ x: 0, y: 0 });
+      return next;
+    });
+  }, []);
+
+  const resetZoom = useCallback(() => {
+    setScale(1);
+    setPosition({ x: 0, y: 0 });
+  }, []);
+
+  const handleWheel = useCallback(
+    (e: React.WheelEvent) => {
+      e.preventDefault();
+      if (e.deltaY < 0) {
+        setScale((s) => Math.min(s + 0.2, 4));
+      } else {
+        setScale((s) => {
+          const next = Math.max(s - 0.2, 1);
+          if (next === 1) setPosition({ x: 0, y: 0 });
+          return next;
+        });
+      }
+    },
+    []
+  );
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     if (e.touches.length === 2) {
       const dx = e.touches[0].clientX - e.touches[1].clientX;
       const dy = e.touches[0].clientY - e.touches[1].clientY;
       lastDistRef.current = Math.sqrt(dx * dx + dy * dy);
-    } else if (e.touches.length === 1) {
-      if (scale > 1) {
-        setIsDragging(true);
-        dragStartRef.current = { x: e.touches[0].clientX - position.x, y: e.touches[0].clientY - position.y };
-      } else if (media.length > 1) {
-        swipeStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-        isSwipingRef.current = false;
-      }
+    } else if (e.touches.length === 1 && scale > 1) {
+      setIsDragging(true);
+      dragStartRef.current = {
+        x: e.touches[0].clientX - position.x,
+        y: e.touches[0].clientY - position.y,
+      };
     }
-  }, [scale, position, media.length]);
+  }, [scale, position]);
 
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (e.touches.length === 2) {
-      const dx = e.touches[0].clientX - e.touches[1].clientX;
-      const dy = e.touches[0].clientY - e.touches[1].clientY;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      if (lastDistRef.current > 0) setScale((s) => Math.max(1, Math.min(4, s * (dist / lastDistRef.current))));
-      lastDistRef.current = dist;
-    } else if (isDragging && e.touches.length === 1) {
-      setPosition({ x: e.touches[0].clientX - dragStartRef.current.x, y: e.touches[0].clientY - dragStartRef.current.y });
-    } else if (swipeStartRef.current && e.touches.length === 1 && scale === 1) {
-      const dx = e.touches[0].clientX - swipeStartRef.current.x;
-      const dy = e.touches[0].clientY - swipeStartRef.current.y;
-      if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 10) {
-        isSwipingRef.current = true;
-        setSwipeX(dx);
+  const handleTouchMove = useCallback(
+    (e: React.TouchEvent) => {
+      if (e.touches.length === 2) {
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (lastDistRef.current > 0) {
+          const ratio = dist / lastDistRef.current;
+          setScale((s) => Math.max(1, Math.min(4, s * ratio)));
+        }
+        lastDistRef.current = dist;
+      } else if (isDragging && e.touches.length === 1) {
+        setPosition({
+          x: e.touches[0].clientX - dragStartRef.current.x,
+          y: e.touches[0].clientY - dragStartRef.current.y,
+        });
       }
-    }
-  }, [isDragging, scale]);
+    },
+    [isDragging]
+  );
 
   const handleTouchEnd = useCallback(() => {
     lastDistRef.current = 0;
     setIsDragging(false);
-    if (isSwipingRef.current && scale === 1) {
-      if (swipeX < -60) goNext();
-      else if (swipeX > 60) goPrev();
-    }
-    setSwipeX(0);
-    swipeStartRef.current = null;
-    isSwipingRef.current = false;
-  }, [swipeX, scale, goNext, goPrev]);
+  }, []);
 
   const handleDoubleClick = useCallback(() => {
-    if (scale > 1) { setScale(1); setPosition({ x: 0, y: 0 }); }
-    else setScale(2.5);
+    if (scale > 1) {
+      setScale(1);
+      setPosition({ x: 0, y: 0 });
+    } else {
+      setScale(2.5);
+    }
   }, [scale]);
-
-  if (!isOpen || !currentItem) return null;
 
   return (
     <AnimatePresence>
@@ -148,105 +122,90 @@ export default function ImageZoom({ media, initialIndex, alt, isOpen, onClose }:
         >
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 shrink-0">
-            <p className="text-[12px] tracking-wide truncate max-w-[40%]" style={{ color: "rgba(248,246,242,.6)" }}>{alt}</p>
-            <p className="text-[12px] tracking-wide" style={{ color: "rgba(248,246,242,.5)" }}>{currentIndex + 1} / {media.length}</p>
-            <div className="flex items-center gap-1">
-              {currentItem.type === "image" && (
-                <>
-                  <button onClick={zoomOut} className="w-9 h-9 rounded-full flex items-center justify-center transition-colors hover:bg-white/10" style={{ color: "var(--ivory)" }} aria-label="Zoom out"><ZoomOut size={18} /></button>
-                  <span className="text-[11px] w-10 text-center" style={{ color: "rgba(248,246,242,.5)" }}>{Math.round(scale * 100)}%</span>
-                  <button onClick={zoomIn} className="w-9 h-9 rounded-full flex items-center justify-center transition-colors hover:bg-white/10" style={{ color: "var(--ivory)" }} aria-label="Zoom in"><ZoomIn size={18} /></button>
-                  <button onClick={resetZoom} className="w-9 h-9 rounded-full flex items-center justify-center transition-colors hover:bg-white/10" style={{ color: "var(--ivory)" }} aria-label="Reset zoom"><RotateCcw size={16} /></button>
-                </>
-              )}
-              <button onClick={onClose} className="w-9 h-9 rounded-full flex items-center justify-center transition-colors hover:bg-white/10 ml-1" style={{ color: "var(--ivory)" }} aria-label="Tutup"><X size={20} /></button>
+            <p
+              className="text-[12px] font-ui tracking-wide truncate max-w-[60%]"
+              style={{ color: "rgba(248,246,242,.6)" }}
+            >
+              {alt}
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={zoomOut}
+                className="w-9 h-9 rounded-full flex items-center justify-center transition-colors duration-200 hover:bg-white/10"
+                style={{ color: "var(--ivory)" }}
+                aria-label="Zoom out"
+              >
+                <ZoomOut size={18} />
+              </button>
+              <span className="text-[11px] font-ui w-10 text-center" style={{ color: "rgba(248,246,242,.5)" }}>
+                {Math.round(scale * 100)}%
+              </span>
+              <button
+                onClick={zoomIn}
+                className="w-9 h-9 rounded-full flex items-center justify-center transition-colors duration-200 hover:bg-white/10"
+                style={{ color: "var(--ivory)" }}
+                aria-label="Zoom in"
+              >
+                <ZoomIn size={18} />
+              </button>
+              <button
+                onClick={resetZoom}
+                className="w-9 h-9 rounded-full flex items-center justify-center transition-colors duration-200 hover:bg-white/10"
+                style={{ color: "var(--ivory)" }}
+                aria-label="Reset zoom"
+              >
+                <RotateCcw size={16} />
+              </button>
+              <button
+                onClick={onClose}
+                className="w-9 h-9 rounded-full flex items-center justify-center transition-colors duration-200 hover:bg-white/10 ml-1"
+                style={{ color: "var(--ivory)" }}
+                aria-label="Tutup"
+              >
+                <X size={20} />
+              </button>
             </div>
           </div>
 
           {/* Image area */}
-          <div className="flex-1 relative flex items-center justify-center overflow-hidden">
-            {/* Left arrow */}
-            {media.length > 1 && currentIndex > 0 && scale === 1 && (
-              <button onClick={goPrev} className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full flex items-center justify-center transition-all hover:scale-110 hidden sm:flex" style={{ background: "rgba(248,246,242,.15)", backdropFilter: "blur(6px)" }} aria-label="Sebelumnya">
-                <ChevronLeft size={22} style={{ color: "var(--ivory)" }} />
-              </button>
-            )}
-
-            <div
-              className="w-full h-full flex items-center justify-center cursor-grab active:cursor-grabbing"
-              onWheel={handleWheel}
-              onTouchStart={handleTouchStart}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
-              onDoubleClick={handleDoubleClick}
-              onClick={(e) => { if (e.target === e.currentTarget && scale > 1) resetZoom(); }}
-              style={{ transform: scale === 1 && swipeX !== 0 ? `translateX(${swipeX * 0.4}px)` : undefined, transition: swipeX !== 0 ? "none" : "transform 0.3s" }}
-            >
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={currentIndex}
-                  initial={{ opacity: 0, x: swipeX > 0 ? -40 : 40 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: swipeX > 0 ? 40 : -40 }}
-                  transition={{ duration: 0.25 }}
-                  className="absolute inset-0 flex items-center justify-center"
-                >
-                  {currentItem.type === "video" ? (
-                    <video
-                      src={currentItem.src}
-                      className="max-w-full max-h-full object-contain select-none"
-                      controls
-                      loop
-                      playsInline
-                    />
-                  ) : (
-                    <img
-                      src={currentItem.src}
-                      alt={alt}
-                      className="max-w-full max-h-full object-contain select-none"
-                      style={{
-                        transform: `scale(${scale}) translate(${position.x / scale}px, ${position.y / scale}px)`,
-                        transition: isDragging ? "none" : "transform 0.3s cubic-bezier(0.22, 1, 0.36, 1)",
-                      }}
-                      draggable={false}
-                    />
-                  )}
-                </motion.div>
-              </AnimatePresence>
-            </div>
-
-            {/* Right arrow */}
-            {media.length > 1 && currentIndex < media.length - 1 && scale === 1 && (
-              <button onClick={goNext} className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full flex items-center justify-center transition-all hover:scale-110 hidden sm:flex" style={{ background: "rgba(248,246,242,.15)", backdropFilter: "blur(6px)" }} aria-label="Berikutnya">
-                <ChevronRight size={22} style={{ color: "var(--ivory)" }} />
-              </button>
+          <div
+            className="flex-1 flex items-center justify-center overflow-hidden cursor-grab active:cursor-grabbing"
+            onWheel={handleWheel}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onDoubleClick={handleDoubleClick}
+            onClick={(e) => {
+              if (e.target === e.currentTarget && scale > 1) {
+                resetZoom();
+              }
+            }}
+          >
+            {type === "video" ? (
+              <video
+                src={src}
+                className="max-w-full max-h-full object-contain select-none"
+                style={{
+                  transform: `scale(${scale}) translate(${position.x / scale}px, ${position.y / scale}px)`,
+                  transition: isDragging ? "none" : "transform 0.3s cubic-bezier(0.22, 1, 0.36, 1)",
+                }}
+                controls
+                loop
+                playsInline
+              />
+            ) : (
+              <motion.img
+                src={src}
+                alt={alt}
+                className="max-w-full max-h-full object-contain select-none"
+                style={{
+                  transform: `scale(${scale}) translate(${position.x / scale}px, ${position.y / scale}px)`,
+                  transition: isDragging ? "none" : "transform 0.3s cubic-bezier(0.22, 1, 0.36, 1)",
+                }}
+                draggable={false}
+              />
             )}
           </div>
-
-          {/* Thumbnail strip */}
-          {media.length > 1 && (
-            <div className="shrink-0 flex justify-center gap-2 px-4 py-3 overflow-x-auto scrollbar-hide">
-              {media.map((item, i) => (
-                <button
-                  key={i}
-                  onClick={() => { setCurrentIndex(i); setScale(1); setPosition({ x: 0, y: 0 }); }}
-                  className="relative shrink-0 w-12 h-16 sm:w-14 sm:h-[72px] rounded-lg overflow-hidden transition-all duration-200"
-                  style={{ border: currentIndex === i ? "2px solid var(--gold)" : "1px solid rgba(248,246,242,.15)", opacity: currentIndex === i ? 1 : 0.5 }}
-                  aria-label={`${item.type === "video" ? "Video" : "Foto"} ${i + 1}`}
-                >
-                  {item.type === "video" ? (
-                    <>
-                      <div className="w-full h-full flex items-center justify-center" style={{ background: "rgba(248,246,242,.08)" }}>
-                        <Play size={14} fill="var(--gold)" stroke="none" />
-                      </div>
-                    </>
-                  ) : (
-                    <img src={item.src} alt="" className="w-full h-full object-cover" loading="lazy" />
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
         </motion.div>
       )}
     </AnimatePresence>
