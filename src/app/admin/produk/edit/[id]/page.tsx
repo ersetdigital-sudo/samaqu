@@ -6,7 +6,6 @@ import { ArrowLeft, Plus, X, Upload, Image as ImageIcon, Video, Loader2, Trash2 
 import { supabase } from "@/lib/supabase";
 import { colorMap } from "@/lib/katalog-data";
 import AdminShell from "@/components/AdminShell";
-import ImageZoom from "@/components/ImageZoom";
 
 const CATEGORIES = ["Thobe", "Kandora", "Koko", "Vest", "Kabak", "Cover & Hanger"] as const;
 const SIZES = ["S", "M", "L", "XL", "XXL"] as const;
@@ -53,8 +52,7 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
   const [variants, setVariants] = useState<Variant[]>([]);
   const [activeColor, setActiveColor] = useState<string | null>(null);
   const [media, setMedia] = useState<MediaFile[]>([]);
-  const [zoomOpen, setZoomOpen] = useState(false);
-  const [zoomIndex, setZoomIndex] = useState(0);
+  const [previewIndex, setPreviewIndex] = useState(0);
 
   // Load existing product data
   useEffect(() => {
@@ -354,7 +352,7 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
               {errors.variants && <p className="text-[12px] mb-3" style={{ color: "#e74c3c" }}>{errors.variants}</p>}
               <div className="flex flex-wrap gap-2 mb-4">
                 {variants.map((v) => (
-                  <button key={v.color} onClick={() => setActiveColor(v.color)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all" style={{ background: activeColor === v.color ? "var(--espresso)" : "transparent", color: activeColor === v.color ? "var(--cream)" : "var(--coffee)", border: `1px solid ${activeColor === v.color ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
+                  <button key={v.color} onClick={() => { setActiveColor(v.color); setPreviewIndex(0); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all" style={{ background: activeColor === v.color ? "var(--espresso)" : "transparent", color: activeColor === v.color ? "var(--cream)" : "var(--coffee)", border: `1px solid ${activeColor === v.color ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
                     <span className="w-3 h-3 rounded-full" style={{ background: colorMap[v.color] || "#ccc", border: "1px solid rgba(42,33,27,.1)" }} />
                     {v.color}
                     <button onClick={(e) => { e.stopPropagation(); removeColor(v.color); }} className="ml-1 hover:opacity-60"><X size={12} /></button>
@@ -415,7 +413,7 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
                     <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 mt-4">
                       {activeMedia.map((m, idx) => (
                         <div key={m.id} className="relative aspect-square rounded-lg overflow-hidden group cursor-pointer" style={{ background: "#e8dfd1" }}
-                          onClick={() => { if (!m.uploading && !m.error) { setZoomIndex(idx); setZoomOpen(true); } }}>
+                          onClick={() => { if (!m.uploading && !m.error) { setPreviewIndex(idx); } }}>
                           {m.uploading ? <div className="absolute inset-0 flex items-center justify-center"><Loader2 size={20} className="animate-spin" style={{ color: "var(--gold)" }} /></div>
                             : m.isVideo ? <video src={m.url || m.preview} className="w-full h-full object-cover" muted loop playsInline />
                             : <img src={m.url || m.preview} alt="" className="w-full h-full object-cover" />}
@@ -436,11 +434,14 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
               {/* Main image / video */}
               <div className="aspect-[4/5] rounded-xl overflow-hidden mb-3" style={{ background: "#e8dfd1" }}>
                 {activeMedia.length > 0 ? (
-                  activeMedia[0].isVideo ? (
-                    <video src={activeMedia[0].url || activeMedia[0].preview} className="w-full h-full object-cover" muted loop playsInline onMouseEnter={(e) => (e.target as HTMLVideoElement).play()} onMouseLeave={(e) => { (e.target as HTMLVideoElement).pause(); (e.target as HTMLVideoElement).currentTime = 0; }} />
-                  ) : (
-                    <img src={activeMedia[0].url || activeMedia[0].preview} alt="" className="w-full h-full object-cover" />
-                  )
+                  (() => {
+                    const item = activeMedia[Math.min(previewIndex, activeMedia.length - 1)];
+                    return item.isVideo ? (
+                      <video src={item.url || item.preview} className="w-full h-full object-cover" muted loop playsInline onMouseEnter={(e) => (e.target as HTMLVideoElement).play()} onMouseLeave={(e) => { (e.target as HTMLVideoElement).pause(); (e.target as HTMLVideoElement).currentTime = 0; }} />
+                    ) : (
+                      <img src={item.url || item.preview} alt="" className="w-full h-full object-cover" />
+                    );
+                  })()
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
                     <ImageIcon size={32} style={{ color: "var(--text-muted)" }} />
@@ -452,7 +453,7 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
               {activeMedia.length > 1 && (
                 <div className="flex gap-1.5 overflow-x-auto mb-3 pb-1">
                   {activeMedia.map((m, i) => (
-                    <button key={m.id} className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0" style={{ border: i === 0 ? "2px solid var(--gold)" : "1px solid rgba(64,50,37,.1)" }}>
+                    <button key={m.id} onClick={() => setPreviewIndex(i)} className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 transition-all" style={{ border: i === (Math.min(previewIndex, activeMedia.length - 1)) ? "2px solid var(--gold)" : "1px solid rgba(64,50,37,.1)", opacity: i === (Math.min(previewIndex, activeMedia.length - 1)) ? 1 : 0.6 }}>
                       {m.isVideo ? (
                         <div className="w-full h-full relative">
                           <video src={m.url || m.preview} className="w-full h-full object-cover" muted />
@@ -479,7 +480,7 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
               {variants.length > 0 && (
                 <div className="mt-3 flex flex-wrap gap-2">
                   {variants.map((v) => (
-                    <button key={v.color} onClick={() => setActiveColor(v.color)} className="w-6 h-6 rounded-full transition-transform" style={{ background: colorMap[v.color] || "#ccc", border: activeColor === v.color ? "2px solid var(--gold)" : "1px solid rgba(42,33,27,.15)", transform: activeColor === v.color ? "scale(1.15)" : "scale(1)" }} title={v.color} />
+                    <button key={v.color} onClick={() => { setActiveColor(v.color); setPreviewIndex(0); }} className="w-6 h-6 rounded-full transition-transform" style={{ background: colorMap[v.color] || "#ccc", border: activeColor === v.color ? "2px solid var(--gold)" : "1px solid rgba(42,33,27,.15)", transform: activeColor === v.color ? "scale(1.15)" : "scale(1)" }} title={v.color} />
                   ))}
                 </div>
               )}
@@ -500,14 +501,6 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
       </div>
 
       <style jsx global>{`.card { background: #fffdfb; border: 1px solid rgba(64,50,37,.06); border-radius: 1rem; box-shadow: 0 1px 2px rgba(64,50,37,.03); }`}</style>
-
-      <ImageZoom
-        media={activeMedia.map((m) => ({ src: m.url || m.preview, type: m.isVideo ? "video" as const : "image" as const }))}
-        initialIndex={zoomIndex}
-        alt={activeColor || "Media"}
-        isOpen={zoomOpen}
-        onClose={() => setZoomOpen(false)}
-      />
     </section>
     </AdminShell>
   );
