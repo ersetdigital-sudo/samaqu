@@ -551,12 +551,23 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             {product.name}{selectedColor && <span style={{ color: "var(--gold)" }}> — {selectedColor}</span>}
           </h1>
           <p className="text-[11px] font-ui mb-5" style={{ color: "var(--stone)" }}>
-            {product.category}
-            {product.jenis_kain?.name && (
-              <> — <button type="button" onClick={() => setKainModalOpen(true)} className="underline decoration-dotted underline-offset-2 hover:opacity-70 transition-opacity" style={{ color: "var(--gold)" }}>{product.jenis_kain.name}</button></>
+            {isThobe ? (
+              <>
+                {product.jenis_kain?.name && (
+                  <>Jenis kain <button type="button" onClick={() => setKainModalOpen(true)} className="underline decoration-dotted underline-offset-2 hover:opacity-70 transition-opacity" style={{ color: "var(--gold)" }}>{product.jenis_kain.name}</button></>
+                )}
+                {!product.jenis_kain?.name && product.kain && `Kain ${product.kain}`}
+              </>
+            ) : (
+              <>
+                {product.category}
+                {product.jenis_kain?.name && (
+                  <> — <button type="button" onClick={() => setKainModalOpen(true)} className="underline decoration-dotted underline-offset-2 hover:opacity-70 transition-opacity" style={{ color: "var(--gold)" }}>{product.jenis_kain.name}</button></>
+                )}
+                {!product.jenis_kain?.name && product.kain && ` — Kain ${product.kain}`}
+                {product.series && ` — ${product.series}`}
+              </>
             )}
-            {!product.jenis_kain?.name && product.kain && ` — Kain ${product.kain}`}
-            {product.series && ` — ${product.series}`}
             {" · ready stock · garansi tukar ukuran"}
           </p>
           {/* Price card */}
@@ -885,12 +896,23 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               {product.name}{selectedColor && <span style={{ color: "var(--gold)" }}> — {selectedColor}</span>}
             </h1>
             <p className="text-[13px] font-ui mb-6" style={{ color: "var(--stone)" }}>
-              {product.category}
-              {product.jenis_kain?.name && (
-                <> — <button type="button" onClick={() => setKainModalOpen(true)} className="underline decoration-dotted underline-offset-2 hover:opacity-70 transition-opacity" style={{ color: "var(--gold)" }}>{product.jenis_kain.name}</button></>
+              {isThobe ? (
+                <>
+                  {product.jenis_kain?.name && (
+                    <>Jenis kain <button type="button" onClick={() => setKainModalOpen(true)} className="underline decoration-dotted underline-offset-2 hover:opacity-70 transition-opacity" style={{ color: "var(--gold)" }}>{product.jenis_kain.name}</button></>
+                  )}
+                  {!product.jenis_kain?.name && product.kain && `Kain ${product.kain}`}
+                </>
+              ) : (
+                <>
+                  {product.category}
+                  {product.jenis_kain?.name && (
+                    <> — <button type="button" onClick={() => setKainModalOpen(true)} className="underline decoration-dotted underline-offset-2 hover:opacity-70 transition-opacity" style={{ color: "var(--gold)" }}>{product.jenis_kain.name}</button></>
+                  )}
+                  {!product.jenis_kain?.name && product.kain && ` — Kain ${product.kain}`}
+                  {product.series && ` — ${product.series}`}
+                </>
               )}
-              {!product.jenis_kain?.name && product.kain && ` — Kain ${product.kain}`}
-              {product.series && ` — ${product.series}`}
               {" · ready stock · garansi tukar ukuran"}
             </p>
             {/* Price card */}
