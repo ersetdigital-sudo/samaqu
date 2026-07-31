@@ -270,7 +270,12 @@ export default function KontenWebsitePage() {
                 <h3 className="font-serif italic text-xl" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Kategori Koleksi</h3>
                 <button onClick={() => setEditModal(null)}><X size={20} style={{ color: "var(--text-muted)" }} /></button>
               </div>
-              <p className="text-xs mb-4 px-3 py-2 rounded-lg" style={{ background: "#f0e7d8", color: "#8a6f42" }}>Ukuran gambar yang disarankan: <strong>800×800px</strong> (aspect ratio 1:1, format JPG/PNG, max 2MB) agar tampil optimal di grid homepage.</p>
+              <div className="text-xs mb-4 px-3 py-2.5 rounded-lg space-y-1" style={{ background: "#f0e7d8", color: "#8a6f42" }}>
+                <p className="font-semibold mb-1">Ukuran gambar yang disarankan:</p>
+                <p><strong>Thobe & Kandora</strong> → 1080 × 1350px (4:5 portrait)</p>
+                <p><strong>Koko, Vest, Kabak, Cover Hanger</strong> → 1920 × 1080px (16:9 landscape)</p>
+                <p className="mt-1 opacity-75">Format JPG/PNG/WebP, max 2MB.</p>
+              </div>
               <div className="space-y-4 mb-4">
                 {editCategories.map((cat, i) => (
                   <div key={cat.id || i} className="p-4 rounded-xl" style={{ border: "1px solid rgba(64,50,37,.1)", background: "rgba(255,255,255,.5)" }}>
