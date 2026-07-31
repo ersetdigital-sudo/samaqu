@@ -133,7 +133,7 @@ function ProductCard({ product, index, wishlist }: { product: Product; index: nu
         }}
       >
       {/* Image */}
-      <div className="relative aspect-[4/5] overflow-hidden" style={{ background: "#e8dfd1" }}>
+      <div className="relative aspect-[3/4] overflow-hidden" style={{ background: "#e8dfd1" }}>
         {/* Color gradient fallback (visible if image fails) */}
         <div
           className="absolute inset-0 transition-transform duration-700 group-hover:scale-[1.04]"

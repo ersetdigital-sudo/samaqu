@@ -153,7 +153,7 @@ function RelatedProductCard({ p }: { p: Product }) {
       className="group block rounded-2xl overflow-hidden"
       style={{ background: "white", border: "1px solid rgba(201,183,156,.12)" }}
     >
-      <div className="relative aspect-[4/5] overflow-hidden" style={{ background: "#e8dfd1" }}>
+      <div className="relative aspect-[3/4] overflow-hidden" style={{ background: "#e8dfd1" }}>
         <img
           src={p.media.find((m) => m.type === "image")?.src || p.image}
           alt={p.name}
@@ -447,7 +447,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         </div>
         {/* Gallery */}
         <div className="relative px-4 pb-1">
-          <div className="relative rounded-3xl overflow-hidden aspect-[4/5]" style={{ background: "#e8dfd1" }}>
+          <div className="relative rounded-3xl overflow-hidden aspect-[3/4]" style={{ background: "#e8dfd1" }}>
             <div
               ref={carouselRef}
               className="h-full flex overflow-x-auto snap-x snap-mandatory scrollbar-hide"
@@ -737,7 +737,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         <div className="grid grid-cols-2 gap-10 lg:gap-14">
           {/* Gallery */}
           <div className="lg:sticky lg:top-24">
-            <div className="relative w-full aspect-[4/5] rounded-3xl overflow-hidden cursor-zoom-in" style={{ background: "#e8dfd1" }} onClick={() => { setZoomIndex(activeIndex); setZoomOpen(true); }}>
+            <div className="relative w-full aspect-[3/4] rounded-3xl overflow-hidden cursor-zoom-in" style={{ background: "#e8dfd1" }} onClick={() => { setZoomIndex(activeIndex); setZoomOpen(true); }}>
               <AnimatePresence mode="wait">
                 <motion.div key={activeIndex} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }} className="absolute inset-0">
                   <MediaDisplay item={activeMedia} poster={product.image} allMedia={media} className="w-full h-full" />
