@@ -20,12 +20,12 @@ const FALLBACK_CATEGORIES: CategoryItem[] = [
 ];
 
 const BENTO_SPANS = [
-  { col: "sm:col-span-2 lg:col-span-7 lg:row-span-4", h: "h-[420px] sm:h-[520px] lg:h-auto" },
-  { col: "lg:col-span-5 lg:row-span-2", h: "h-[260px] lg:h-auto" },
-  { col: "lg:col-span-5 lg:row-span-2", h: "h-[260px] lg:h-auto" },
-  { col: "lg:col-span-4 lg:row-span-2", h: "h-[220px] lg:h-auto" },
-  { col: "lg:col-span-4 lg:row-span-2", h: "h-[220px] lg:h-auto" },
-  { col: "lg:col-span-4 lg:row-span-2", h: "h-[220px] lg:h-auto" },
+  { col: "sm:col-span-2 lg:col-span-7 lg:row-span-4", h: "aspect-[3/4] sm:aspect-[4/5] lg:aspect-auto lg:h-auto" },
+  { col: "lg:col-span-5 lg:row-span-2", h: "aspect-[3/4] sm:aspect-[4/3] lg:aspect-auto lg:h-auto" },
+  { col: "lg:col-span-5 lg:row-span-2", h: "aspect-[3/4] sm:aspect-[4/3] lg:aspect-auto lg:h-auto" },
+  { col: "lg:col-span-4 lg:row-span-2", h: "aspect-[3/4] sm:aspect-[4/3] lg:aspect-auto lg:h-auto" },
+  { col: "lg:col-span-4 lg:row-span-2", h: "aspect-[3/4] sm:aspect-[4/3] lg:aspect-auto lg:h-auto" },
+  { col: "lg:col-span-4 lg:row-span-2", h: "aspect-[3/4] sm:aspect-[4/3] lg:aspect-auto lg:h-auto" },
 ];
 
 export default function Koleksi() {
@@ -81,7 +81,7 @@ export default function Koleksi() {
                 <img
                   src={cat.image_url}
                   alt={`${cat.name} SAMAQU`}
-                  className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-[900ms] ease-[cubic-bezier(.2,.7,.2,1)] group-hover:scale-[1.06]"
+                  className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-[900ms] ease-[cubic-bezier(.2,.7,.2,1)] group-hover:scale-[1.06]"
                 />
                 <div
                   className="absolute inset-0"
@@ -137,7 +137,7 @@ export default function Koleksi() {
         </div>
 
         {/* CTA */}
-        <div className="mt-12 sm:mt-16 flex flex-col sm:flex-row items-center justify-center gap-5 fade-up">
+        <div className="mt-12 sm:mt-16 flex items-center justify-center fade-up">
           <a
             href={getWhatsAppLink("Halo Admin SAMAQU, saya tertarik dengan koleksi Anda dan ingin bertanya soal pemesanan.")}
             target="_blank"
@@ -148,7 +148,6 @@ export default function Koleksi() {
             Lihat Katalog Selengkapnya
             <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
           </a>
-          <p className="text-[12px] tracking-[0.18em] uppercase" style={{ color: "var(--coffee)" }}>Create Your Own Price</p>
         </div>
       </div>
     </section>
