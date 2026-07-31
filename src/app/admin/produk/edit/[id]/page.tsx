@@ -377,10 +377,6 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
                   <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Series</label>
                   <input value={series} onChange={(e) => setSeries(e.target.value)} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="Contoh: Jiharkah, Zahwan, Duha" />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Catatan Harga</label>
-                  <input value={catatanHarga} onChange={(e) => setCatatanHarga(e.target.value)} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="Contoh: Harga belum termasuk Kabak & Cover Hanger" />
-                </div>
               </div>
             </div>
 
