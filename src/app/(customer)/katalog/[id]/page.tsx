@@ -125,11 +125,29 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const { isWishlisted, toggle: toggleWishlist, isLoggedIn } = useWishlist();
   const cypMicrocopy = storeSettings.cyp_microcopy || "Harga Minimum boleh dipilih. Itulah alasan kami membuat Create Your Price.";
 
+  // Supabase images per color
+  const [supabaseMedia, setSupabaseMedia] = useState<MediaItem[]>([]);
+
   useEffect(() => {
     getProductById(id).then((p) => {
       setProduct(p);
       if (p) setSelectedColor(p.colors[0] || "");
       setLoading(false);
+    });
+  }, [id]);
+
+  // Fetch images from Supabase product_images table
+  useEffect(() => {
+    if (!id) return;
+    supabase.from("product_images").select("url, color, is_video, display_order").eq("product_id", id).order("display_order").then(({ data }) => {
+      if (data && data.length > 0) {
+        const items: MediaItem[] = data.map((d) => ({
+          src: d.url,
+          type: d.is_video ? "video" as const : "image" as const,
+          color: d.color,
+        }));
+        setSupabaseMedia(items);
+      }
     });
   }, [id]);
 
@@ -291,10 +309,13 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     );
   }
 
-  const allMedia = product.media.length > 0 ? product.media : [{ src: product.image, type: "image" as const }];
+  // Use Supabase images if available, otherwise fall back to static data
+  const baseMedia = supabaseMedia.length > 0
+    ? supabaseMedia
+    : (product.media.length > 0 ? product.media : [{ src: product.image, type: "image" as const }]);
   const media = selectedColor
-    ? allMedia.filter((m) => !m.color || m.color === selectedColor)
-    : allMedia;
+    ? baseMedia.filter((m) => !m.color || m.color === selectedColor)
+    : baseMedia;
   const activeMedia = media[activeIndex];
 
   return (
