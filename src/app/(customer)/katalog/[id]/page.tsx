@@ -382,7 +382,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           </p>
           <h1 className="text-[1.5rem] sm:text-[1.8rem] font-semibold leading-tight mb-2"
             style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
-            {product.name}
+            {product.name}{selectedColor && <span style={{ color: "var(--gold)" }}> — {selectedColor}</span>}
           </h1>
           {/* Price display — CYP or Fixed */}
           {isCYP ? (
@@ -627,7 +627,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             </p>
             <h1 className="text-[2rem] sm:text-[2.5rem] lg:text-[2.8rem] font-semibold leading-tight mb-3"
               style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
-              {product.name}
+              {product.name}{selectedColor && <span style={{ color: "var(--gold)" }}> — {selectedColor}</span>}
             </h1>
             {/* Price display — CYP or Fixed */}
             {isCYP ? (
