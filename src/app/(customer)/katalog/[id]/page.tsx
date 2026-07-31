@@ -1,14 +1,14 @@
 "use client";
 
 import { useState, use, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Minus, Plus, ChevronLeft, ChevronRight, Play, ShoppingCart } from "lucide-react";
 import ImageZoom, { type ZoomMedia } from "@/components/ImageZoom";
 import JenisKainModal from "@/components/JenisKainModal";
 import Breadcrumb from "@/components/Breadcrumb";
 import { colorMap, type Product, type MediaItem } from "@/lib/katalog-data";
-import { getProductById } from "@/lib/db";
+import { getProductById, getAvailableSeries, type SeriesOption } from "@/lib/db";
 import { useCart } from "@/lib/cart-context";
 import { useToast } from "@/components/Toast";
 import { getWhatsAppLink, useStoreSettings } from "@/lib/store-settings";
@@ -105,6 +105,7 @@ function MediaDisplay({ item, poster, className, style, allMedia }: { item: Medi
 export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -120,6 +121,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const [zoomOpen, setZoomOpen] = useState(false);
   const [kainModalOpen, setKainModalOpen] = useState(false);
   const [zoomIndex, setZoomIndex] = useState(0);
+  const [availableSeries, setAvailableSeries] = useState<SeriesOption[]>([]);
   const carouselRef = useRef<HTMLDivElement>(null);
   const { addItem } = useCart();
   const toast = useToast();
@@ -133,10 +135,17 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   useEffect(() => {
     getProductById(id).then((p) => {
       setProduct(p);
-      if (p) setSelectedColor(p.colors[0] || "");
+      if (p) {
+        // Read color/size from URL params (preserved from series navigation)
+        const urlColor = searchParams.get("color");
+        const urlSize = searchParams.get("size");
+        const initialColor = urlColor && p.colors.includes(urlColor) ? urlColor : (p.colors[0] || "");
+        setSelectedColor(initialColor);
+        if (urlSize) setSelectedSize(urlSize);
+      }
       setLoading(false);
     });
-  }, [id]);
+  }, [id, searchParams]);
 
   // Fetch images from Supabase product_images table
   useEffect(() => {
@@ -157,6 +166,15 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   useEffect(() => {
     setActiveIndex(0);
   }, [selectedColor]);
+
+  // Fetch available series when jenis_kain_id or color changes
+  useEffect(() => {
+    if (!product?.jenis_kain_id || !selectedColor) {
+      setAvailableSeries([]);
+      return;
+    }
+    getAvailableSeries(product.jenis_kain_id, selectedColor).then(setAvailableSeries);
+  }, [product?.jenis_kain_id, selectedColor]);
 
   useEffect(() => {
     if (!id || !selectedColor) return;
@@ -477,6 +495,44 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             </div>
           )}
 
+          {/* Series Selector */}
+          {availableSeries.length > 1 && (
+            <div className="mb-5">
+              <p className="text-[10px] tracking-[0.1em] uppercase font-ui font-medium mb-2.5" style={{ color: "var(--espresso)" }}>
+                Series — <span style={{ color: "var(--gold)" }}>{product.series}</span>
+              </p>
+              <div className="flex flex-col gap-2">
+                {availableSeries.map((s) => {
+                  const isActive = s.id === product.id;
+                  return (
+                    <a
+                      key={s.id}
+                      href={`/katalog/${s.id}?color=${encodeURIComponent(selectedColor)}&size=${encodeURIComponent(selectedSize)}`}
+                      className="flex items-center justify-between px-3.5 py-2.5 rounded-lg transition-all duration-200"
+                      style={{
+                        background: isActive ? "rgba(42,33,27,.06)" : "transparent",
+                        border: `1.5px solid ${isActive ? "var(--espresso)" : "rgba(201,183,156,.25)"}`,
+                      }}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-[13px] font-medium font-ui" style={{ color: isActive ? "var(--espresso)" : "var(--coffee)" }}>
+                          {s.series}
+                        </span>
+                        {isActive && <span className="text-[9px] tracking-[0.1em] uppercase px-1.5 py-0.5 rounded-sm font-medium" style={{ background: "var(--gold)", color: "white" }}>Aktif</span>}
+                      </div>
+                      <span className="text-[12px] font-ui font-medium" style={{ color: "var(--gold)" }}>
+                        {s.create_your_price_enabled && s.minimum_price
+                          ? `Mulai Rp ${s.minimum_price.toLocaleString("id-ID")}`
+                          : `Rp ${s.price.toLocaleString("id-ID")}`
+                        }
+                      </span>
+                    </a>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Sizes */}
           <div className="mb-5">
             <p className="text-[10px] tracking-[0.1em] uppercase font-ui font-medium mb-2.5" style={{ color: "var(--espresso)" }}>Ukuran</p>
@@ -721,6 +777,44 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                       {c}
                     </button>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* Series Selector — Desktop */}
+            {availableSeries.length > 1 && (
+              <div className="mb-7">
+                <p className="text-[11px] sm:text-[12px] tracking-[0.12em] uppercase font-ui font-medium mb-3" style={{ color: "var(--espresso)" }}>
+                  Series — <span style={{ color: "var(--gold)" }}>{product.series}</span>
+                </p>
+                <div className="flex flex-col gap-2">
+                  {availableSeries.map((s) => {
+                    const isActive = s.id === product.id;
+                    return (
+                      <a
+                        key={s.id}
+                        href={`/katalog/${s.id}?color=${encodeURIComponent(selectedColor)}&size=${encodeURIComponent(selectedSize)}`}
+                        className="flex items-center justify-between px-4 py-3 rounded-lg transition-all duration-200"
+                        style={{
+                          background: isActive ? "rgba(42,33,27,.06)" : "transparent",
+                          border: `1.5px solid ${isActive ? "var(--espresso)" : "rgba(201,183,156,.25)"}`,
+                        }}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm font-medium font-ui" style={{ color: isActive ? "var(--espresso)" : "var(--coffee)" }}>
+                            {s.series}
+                          </span>
+                          {isActive && <span className="text-[9px] tracking-[0.1em] uppercase px-1.5 py-0.5 rounded-sm font-medium" style={{ background: "var(--gold)", color: "white" }}>Aktif</span>}
+                        </div>
+                        <span className="text-[13px] font-ui font-medium" style={{ color: "var(--gold)" }}>
+                          {s.create_your_price_enabled && s.minimum_price
+                            ? `Mulai Rp ${s.minimum_price.toLocaleString("id-ID")}`
+                            : `Rp ${s.price.toLocaleString("id-ID")}`
+                          }
+                        </span>
+                      </a>
+                    );
+                  })}
                 </div>
               </div>
             )}
