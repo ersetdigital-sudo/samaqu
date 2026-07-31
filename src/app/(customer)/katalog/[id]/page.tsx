@@ -535,7 +535,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               <div className="flex flex-col gap-2 shrink-0">
                 {media.map((item, i) => (
                   <button key={i} onClick={() => setActiveIndex(i)}
-                    className="relative w-[68px] aspect-[4/3] rounded-lg overflow-hidden transition-all duration-200 shrink-0"
+                    className="relative w-[68px] aspect-[3/4] rounded-lg overflow-hidden transition-all duration-200 shrink-0"
                     style={{ border: activeIndex === i ? "2px solid var(--gold)" : "1px solid rgba(201,183,156,.25)", opacity: activeIndex === i ? 1 : 0.55 }}
                     aria-label={`${item.type === "video" ? "Video" : "Foto"} ${i + 1}`}>
                     {item.type === "video" ? (
@@ -552,7 +552,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 ))}
               </div>
             )}
-            <div className="relative flex-1 aspect-[4/3] rounded-2xl overflow-hidden cursor-zoom-in" style={{ background: "#e8dfd1" }} onClick={() => { setZoomIndex(activeIndex); setZoomOpen(true); }}>
+            <div className="relative flex-1 max-h-[600px] lg:max-h-[700px] rounded-2xl overflow-hidden cursor-zoom-in" style={{ background: "#e8dfd1" }} onClick={() => { setZoomIndex(activeIndex); setZoomOpen(true); }}>
               <AnimatePresence mode="wait">
                 <motion.div key={activeIndex} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }} className="absolute inset-0">
                   <MediaDisplay item={activeMedia} poster={product.image} allMedia={media} className="w-full h-full" />
