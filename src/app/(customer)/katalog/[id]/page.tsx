@@ -505,25 +505,32 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
         {/* Info */}
         <div className="relative mt-5 px-5 pb-6">
-          <p className="text-[10px] tracking-[0.12em] uppercase font-ui mb-1.5" style={{ color: "var(--stone)" }}>
+          <p className="text-[10px] tracking-[0.28em] uppercase font-ui mb-2" style={{ color: "var(--gold)" }}>
+            Detail Produk
+          </p>
+          <h1 className="text-[1.5rem] sm:text-[1.8rem] font-semibold leading-tight mb-1.5"
+            style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
+            {product.name}{selectedColor && <span style={{ color: "var(--gold)" }}> — {selectedColor}</span>}
+          </h1>
+          <p className="text-[11px] font-ui mb-5" style={{ color: "var(--stone)" }}>
             {product.category}
             {product.jenis_kain?.name && (
               <> — <button type="button" onClick={() => setKainModalOpen(true)} className="underline decoration-dotted underline-offset-2 hover:opacity-70 transition-opacity" style={{ color: "var(--gold)" }}>{product.jenis_kain.name}</button></>
             )}
             {!product.jenis_kain?.name && product.kain && ` — Kain ${product.kain}`}
             {product.series && ` — ${product.series}`}
+            {" · ready stock · garansi tukar ukuran"}
           </p>
-          <h1 className="text-[1.5rem] sm:text-[1.8rem] font-semibold leading-tight mb-2"
-            style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
-            {product.name}{selectedColor && <span style={{ color: "var(--gold)" }}> — {selectedColor}</span>}
-          </h1>
           {/* Price card */}
-          <div className="mt-6 mb-5 rounded-2xl p-5" style={{ background: "var(--cream-bright)", border: "1px solid rgba(201,183,156,.25)" }}>
+          <div className="mb-5 rounded-2xl p-5" style={{ background: "var(--cream-bright)", border: "1px solid rgba(201,183,156,.25)" }}>
             {isCYP ? (
               <div>
                 <p className="text-[10px] tracking-[0.1em] uppercase font-ui mb-1" style={{ color: "var(--stone)" }}>Harga Minimum</p>
                 <p className="text-[1.3rem] font-ui font-semibold mb-1" style={{ color: "var(--gold)" }}>
                   Rp {minimumPrice.toLocaleString("id-ID")}
+                </p>
+                <p className="text-[10.5px] leading-relaxed font-ui mb-3" style={{ color: "var(--stone)" }}>
+                  *Harga ini belum termasuk Kabak &amp; Cover Hanger, karena itu dijual terpisah.
                 </p>
                 <p className="text-[11px] font-ui mb-3" style={{ color: "var(--stone)" }}>Pilih harga terbaikmu</p>
                 {/* Quick select buttons */}
@@ -566,22 +573,23 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             ) : (
               <div>
                 <p className="text-[10px] tracking-[0.1em] uppercase font-ui mb-1" style={{ color: "var(--stone)" }}>Harga</p>
-                <p className="text-[1.3rem] font-ui font-semibold" style={{ color: "var(--gold)" }}>
+                <p className="text-[1.3rem] font-ui font-semibold mb-1" style={{ color: "var(--gold)" }}>
                   Rp {currentPrice.toLocaleString("id-ID")}
+                </p>
+                <p className="text-[10.5px] leading-relaxed font-ui" style={{ color: "var(--stone)" }}>
+                  *Harga ini belum termasuk Kabak &amp; Cover Hanger, karena itu dijual terpisah.
                 </p>
               </div>
             )}
-            {stock !== null && (
-              <div className="mt-3">
-                {stock === 0 ? (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-ui font-medium px-2.5 py-1 rounded-full" style={{ background: "#fde8e8", color: "#c0392b" }}>Habis</span>
-                ) : stock <= 5 ? (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-ui font-medium px-2.5 py-1 rounded-full" style={{ background: "#fef3cd", color: "#856404" }}>Stok Menipis — Tersisa {stock}</span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-ui font-medium px-2.5 py-1 rounded-full" style={{ background: "#e7ecdf", color: "#5b6b45" }}>Tersedia</span>
-                )}
-              </div>
-            )}
+            <div className="mt-3">
+              {stock === 0 ? (
+                <span className="inline-flex items-center gap-1 text-[11px] font-ui font-medium px-2.5 py-1 rounded-full" style={{ background: "#fde8e8", color: "#c0392b" }}>Habis</span>
+              ) : stock !== null && stock <= 5 ? (
+                <span className="inline-flex items-center gap-1 text-[11px] font-ui font-medium px-2.5 py-1 rounded-full" style={{ background: "#fef3cd", color: "#856404" }}>Stok Menipis — Tersisa {stock}</span>
+              ) : (
+                <span className="inline-flex items-center gap-1 text-[11px] font-ui font-medium px-2.5 py-1 rounded-full" style={{ background: "#e7ecdf", color: "#5b6b45" }}>Tersedia</span>
+              )}
+            </div>
           </div>
           <p className="text-[13px] leading-relaxed font-ui mb-5" style={{ color: "rgba(42,33,27,.8)" }}>
             {getDescription(product)}
@@ -809,25 +817,32 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
           {/* Info */}
           <motion.div className="sticky top-24 h-fit" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}>
-            <p className="text-[11px] tracking-[0.14em] uppercase font-ui mb-3" style={{ color: "var(--stone)" }}>
+            <p className="text-[11px] tracking-[0.28em] uppercase font-ui mb-3" style={{ color: "var(--gold)" }}>
+              Detail Produk
+            </p>
+            <h1 className="text-[2rem] sm:text-[2.5rem] lg:text-[2.8rem] font-semibold leading-tight mb-2"
+              style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
+              {product.name}{selectedColor && <span style={{ color: "var(--gold)" }}> — {selectedColor}</span>}
+            </h1>
+            <p className="text-[13px] font-ui mb-6" style={{ color: "var(--stone)" }}>
               {product.category}
               {product.jenis_kain?.name && (
                 <> — <button type="button" onClick={() => setKainModalOpen(true)} className="underline decoration-dotted underline-offset-2 hover:opacity-70 transition-opacity" style={{ color: "var(--gold)" }}>{product.jenis_kain.name}</button></>
               )}
               {!product.jenis_kain?.name && product.kain && ` — Kain ${product.kain}`}
               {product.series && ` — ${product.series}`}
+              {" · ready stock · garansi tukar ukuran"}
             </p>
-            <h1 className="text-[2rem] sm:text-[2.5rem] lg:text-[2.8rem] font-semibold leading-tight mb-3"
-              style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
-              {product.name}{selectedColor && <span style={{ color: "var(--gold)" }}> — {selectedColor}</span>}
-            </h1>
             {/* Price card */}
-            <div className="mt-2 mb-8 rounded-2xl p-6" style={{ background: "var(--cream-bright)", border: "1px solid rgba(201,183,156,.25)" }}>
+            <div className="mb-8 rounded-2xl p-6" style={{ background: "var(--cream-bright)", border: "1px solid rgba(201,183,156,.25)" }}>
               {isCYP ? (
                 <div>
                   <p className="text-[11px] tracking-[0.1em] uppercase font-ui mb-1" style={{ color: "var(--stone)" }}>Harga Minimum</p>
                   <p className="text-[20px] sm:text-[22px] font-ui font-semibold mb-1" style={{ color: "var(--gold)" }}>
                     Rp {minimumPrice.toLocaleString("id-ID")}
+                  </p>
+                  <p className="text-[11.5px] leading-relaxed font-ui mb-3" style={{ color: "var(--stone)" }}>
+                    *Harga ini belum termasuk Kabak &amp; Cover Hanger, karena itu dijual terpisah.
                   </p>
                   <p className="text-[12px] font-ui mb-3" style={{ color: "var(--stone)" }}>Pilih harga terbaikmu</p>
                   {/* Quick select buttons */}
@@ -870,22 +885,23 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               ) : (
                 <div>
                   <p className="text-[11px] tracking-[0.1em] uppercase font-ui mb-1" style={{ color: "var(--stone)" }}>Harga</p>
-                  <p className="text-[20px] sm:text-[22px] font-ui font-semibold" style={{ color: "var(--gold)" }}>
+                  <p className="text-[20px] sm:text-[22px] font-ui font-semibold mb-1" style={{ color: "var(--gold)" }}>
                     Rp {currentPrice.toLocaleString("id-ID")}
+                  </p>
+                  <p className="text-[11.5px] leading-relaxed font-ui" style={{ color: "var(--stone)" }}>
+                    *Harga ini belum termasuk Kabak &amp; Cover Hanger, karena itu dijual terpisah.
                   </p>
                 </div>
               )}
-              {stock !== null && (
-                <div className="mt-3">
-                  {stock === 0 ? (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-ui font-medium px-2.5 py-1 rounded-full" style={{ background: "#fde8e8", color: "#c0392b" }}>Habis</span>
-                  ) : stock <= 5 ? (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-ui font-medium px-2.5 py-1 rounded-full" style={{ background: "#fef3cd", color: "#856404" }}>Stok Menipis — Tersisa {stock}</span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-ui font-medium px-2.5 py-1 rounded-full" style={{ background: "#e7ecdf", color: "#5b6b45" }}>Tersedia</span>
-                  )}
-                </div>
-              )}
+              <div className="mt-3">
+                {stock === 0 ? (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-ui font-medium px-2.5 py-1 rounded-full" style={{ background: "#fde8e8", color: "#c0392b" }}>Habis</span>
+                ) : stock !== null && stock <= 5 ? (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-ui font-medium px-2.5 py-1 rounded-full" style={{ background: "#fef3cd", color: "#856404" }}>Stok Menipis — Tersisa {stock}</span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-ui font-medium px-2.5 py-1 rounded-full" style={{ background: "#e7ecdf", color: "#5b6b45" }}>Tersedia</span>
+                )}
+              </div>
             </div>
             <p className="text-sm sm:text-[15px] leading-relaxed font-ui mb-8" style={{ color: "rgba(42,33,27,.8)" }}>
               {getDescription(product)}
