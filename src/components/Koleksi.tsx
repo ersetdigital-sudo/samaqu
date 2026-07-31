@@ -148,9 +148,7 @@ export default function Koleksi() {
         {/* CTA */}
         <div className="mt-8 sm:mt-10 lg:mt-12 flex justify-center">
           <a
-            href={getWhatsAppLink("Halo Admin SAMAQU, saya tertarik dengan koleksi Anda dan ingin bertanya soal pemesanan.")}
-            target="_blank"
-            rel="noopener"
+            href="/katalog"
             className="inline-flex items-center gap-2 sm:gap-3 rounded-full px-6 py-3 sm:px-8 sm:py-4 text-[11px] sm:text-[12px] font-semibold uppercase tracking-[0.14em] sm:tracking-[0.16em] transition hover:bg-[var(--gold)]"
             style={{ background: "var(--espresso)", color: "#f1e9dd" }}
           >
