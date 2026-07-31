@@ -19,6 +19,7 @@ import { getProducts } from "@/lib/db";
 import { useCart } from "@/lib/cart-context";
 import { useToast } from "@/components/Toast";
 import FilterDrawer, { applyFilters, type FilterState } from "@/components/FilterDrawer";
+import KainSeriesModal from "@/components/KainSeriesModal";
 import { SITE_URL } from "@/lib/site-config";
 import { useWishlist } from "@/lib/use-wishlist";
 
@@ -272,6 +273,7 @@ export default function KatalogPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
   const [drawerFilters, setDrawerFilters] = useState<FilterState>({ sizes: [], colors: [], priceRange: null });
+  const [infoSheet, setInfoSheet] = useState<"kain" | "series" | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const wishlist = useWishlist();
@@ -482,11 +484,11 @@ export default function KatalogPage() {
           <div className="flex flex-col gap-3 pb-4">
             <InfoLinkButton
               label="Perbedaan Jenis Kain Thobe"
-              onClick={() => console.log("Perbedaan Jenis Kain Thobe diklik")}
+              onClick={() => setInfoSheet("kain")}
             />
             <InfoLinkButton
               label="Perbedaan Series Thobe"
-              onClick={() => console.log("Perbedaan Series Thobe diklik")}
+              onClick={() => setInfoSheet("series")}
             />
           </div>
 
@@ -582,11 +584,11 @@ export default function KatalogPage() {
         <div className="hidden lg:flex flex-col gap-3 py-5">
           <InfoLinkButton
             label="Perbedaan Jenis Kain Thobe"
-            onClick={() => console.log("Perbedaan Jenis Kain Thobe diklik")}
+            onClick={() => setInfoSheet("kain")}
           />
           <InfoLinkButton
             label="Perbedaan Series Thobe"
-            onClick={() => console.log("Perbedaan Series Thobe diklik")}
+            onClick={() => setInfoSheet("series")}
           />
         </div>
 
@@ -673,6 +675,9 @@ export default function KatalogPage() {
         onApply={setDrawerFilters}
         activeCount={drawerFilterCount}
       />
+
+      {/* Kain / Series info sheet */}
+      <KainSeriesModal type={infoSheet} onClose={() => setInfoSheet(null)} />
     </section>
   );
 }
