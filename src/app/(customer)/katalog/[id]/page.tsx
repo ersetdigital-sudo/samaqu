@@ -3,12 +3,12 @@
 import { useState, use, useRef, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Minus, Plus, ChevronLeft, ChevronRight, Play, ShoppingCart } from "lucide-react";
+import { Minus, Plus, ChevronLeft, ChevronRight, ChevronDown, Play, ShoppingCart } from "lucide-react";
 import ImageZoom, { type ZoomMedia } from "@/components/ImageZoom";
 import JenisKainModal from "@/components/JenisKainModal";
 import Breadcrumb from "@/components/Breadcrumb";
 import { colorMap, type Product, type MediaItem } from "@/lib/katalog-data";
-import { getProductById, getAvailableSeries, type SeriesOption } from "@/lib/db";
+import { getProductById, getAvailableSeries, getProducts, type SeriesOption } from "@/lib/db";
 import { useCart } from "@/lib/cart-context";
 import { useToast } from "@/components/Toast";
 import { getWhatsAppLink, useStoreSettings } from "@/lib/store-settings";
@@ -102,6 +102,84 @@ function MediaDisplay({ item, poster, className, style, allMedia }: { item: Medi
   );
 }
 
+/* ── Info accordion item (bahan/ukuran/pengiriman) ── */
+function InfoAccordionItem({ title, children }: { title: string; children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="rounded-lg overflow-hidden" style={{ background: "rgba(64,50,37,.03)", border: "1px solid rgba(201,183,156,.15)" }}>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="w-full flex items-center justify-between gap-3 px-4 py-3.5 text-left"
+      >
+        <span className="text-[13px] font-medium font-ui" style={{ color: "var(--espresso)" }}>{title}</span>
+        <ChevronDown
+          size={16}
+          strokeWidth={1.5}
+          className="shrink-0 transition-transform duration-300"
+          style={{ color: "var(--stone)", transform: open ? "rotate(180deg)" : "none" }}
+        />
+      </button>
+      {open && (
+        <div className="px-4 pb-3.5">
+          <p className="text-[12.5px] leading-relaxed font-ui" style={{ color: "var(--stone)" }}>{children}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function InfoAccordionGroup() {
+  return (
+    <div className="space-y-2.5">
+      <InfoAccordionItem title="Detail bahan & perawatan">
+        Kain premium dengan sirkulasi udara baik, tidak menerawang, dan jatuh rapi. Cuci dengan air dingin, setrika suhu sedang, jangan gunakan pemutih.
+      </InfoAccordionItem>
+      <InfoAccordionItem title="Panduan ukuran">
+        Tersedia ukuran S–XXL. Ukur lingkar dada dan panjang badan, lalu sesuaikan dengan tabel ukuran. Ragu? Chat kami via WhatsApp.
+      </InfoAccordionItem>
+      <InfoAccordionItem title="Pengiriman & pengembalian">
+        Dikirim 1–2 hari kerja setelah pembayaran. Salah ukuran bisa ditukar maksimal 7 hari setelah barang diterima.
+      </InfoAccordionItem>
+    </div>
+  );
+}
+
+/* ── Related product tile (produk lain dari kain yang sama) ── */
+function RelatedProductCard({ p }: { p: Product }) {
+  return (
+    <a
+      href={`/katalog/${p.id}`}
+      className="group block rounded-2xl overflow-hidden"
+      style={{ background: "white", border: "1px solid rgba(201,183,156,.12)" }}
+    >
+      <div className="relative aspect-[4/5] overflow-hidden" style={{ background: "#e8dfd1" }}>
+        <img
+          src={p.media.find((m) => m.type === "image")?.src || p.image}
+          alt={p.name}
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+          loading="lazy"
+        />
+        {p.colors[0] && (
+          <span
+            className="absolute bottom-3 right-3 w-4 h-4 rounded-full"
+            style={{ background: colorMap[p.colors[0]] || "#ccc", boxShadow: "0 0 0 2px white" }}
+          />
+        )}
+      </div>
+      <div className="p-3.5">
+        <h3 className="text-[14px] font-semibold font-ui line-clamp-1" style={{ color: "var(--espresso)" }}>{p.name}</h3>
+        {p.kain && (
+          <p className="mt-1 text-[11.5px] font-ui" style={{ color: "var(--gold)" }}>Kain {p.kain}</p>
+        )}
+        <p className="mt-1.5 text-[12.5px] font-ui" style={{ color: "var(--stone)" }}>
+          Mulai <span style={{ color: "var(--espresso)", fontWeight: 500 }}>Rp {p.price.toLocaleString("id-ID")}</span>
+        </p>
+      </div>
+    </a>
+  );
+}
+
 export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
@@ -131,6 +209,17 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
   // Supabase images per color
   const [supabaseMedia, setSupabaseMedia] = useState<MediaItem[]>([]);
+
+  // Related products (same kain), for "Produk lain dari kain ini"
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
+  useEffect(() => {
+    if (!product) return;
+    getProducts().then((all) => {
+      const sameKain = all.filter((p) => p.id !== product.id && product.kain && p.kain === product.kain);
+      const others = all.filter((p) => p.id !== product.id && (!product.kain || p.kain !== product.kain));
+      setRelatedProducts([...sameKain, ...others].slice(0, 4));
+    });
+  }, [product]);
 
   useEffect(() => {
     getProductById(id).then((p) => {
@@ -570,6 +659,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             </div>
           </div>
 
+          {/* Info tambahan — accordion */}
+          <div className="mb-5">
+            <InfoAccordionGroup />
+          </div>
+
           {/* Bottom spacer for sticky bar */}
           <div className="h-32" />
         </div>
@@ -863,13 +957,39 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 <span>Pesan via WA</span>
               </button>
             </div>
+
+            {/* Info tambahan — accordion */}
+            <div className="mt-7">
+              <InfoAccordionGroup />
+            </div>
           </motion.div>
         </div>
       </div>
 
-      {/* ═══════════════════════════════════════
+      {/* ══════════════════════════════════════════
+          PRODUK LAIN DARI KAIN INI
+      ══════════════════════════════════════════ */}
+      {relatedProducts.length > 0 && (
+        <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 pb-40 md:pb-20">
+          <div className="flex items-end justify-between border-t pt-6" style={{ borderColor: "rgba(201,183,156,.2)" }}>
+            <h2 className="text-[1.4rem] sm:text-[1.7rem] font-semibold" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
+              Produk lain dari kain ini
+            </h2>
+            <a href="/katalog" className="text-[12.5px] font-ui font-medium shrink-0" style={{ color: "var(--gold)" }}>
+              Lihat semua &rsaquo;
+            </a>
+          </div>
+          <div className="mt-5 grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+            {relatedProducts.map((p) => (
+              <RelatedProductCard key={p.id} p={p} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════
           IMAGE/VIDEO ZOOM LIGHTBOX
-      ═══════════════════════════════════════ */}
+      ══════════════════════════════════════════ */}
       <ImageZoom
         media={media}
         initialIndex={zoomIndex}
