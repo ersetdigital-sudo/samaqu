@@ -11,12 +11,12 @@ interface CategoryItem {
 }
 
 const FALLBACK_CATEGORIES: CategoryItem[] = [
-  { name: "Thobe", description: "Potongan panjang klasik, adem, dan berwibawa.", image_url: "/images/57f4aded-cd60-412d-95b6-1085b51b97be.png" },
-  { name: "Kandora", description: "Elegan untuk sehari-hari maupun formal.", image_url: "/images/e3214c06-ccf4-4342-aba7-849bf95da85a.png" },
-  { name: "Koko", description: "Modern dan nyaman untuk shalat.", image_url: "/images/515c6ce5-1ac8-48d7-9832-450cbcd4cac9.png" },
-  { name: "Vest", description: "Presisi untuk tampilan berkelas.", image_url: "/images/3b981a31-de0d-4aa5-9890-330ffe3f261d.png" },
-  { name: "Kabak", description: "Premium berkualitas tinggi.", image_url: "/images/b32f8726-78f1-455c-aff9-59ab8b1a1310.png" },
-  { name: "Cover Hanger", description: "Jaga busana tetap rapi.", image_url: "/images/6aec5227-932a-4ff1-86e2-2a3bb34943e9.png" },
+  { name: "Thobe", description: "Potongan panjang klasik, adem, dan berwibawa.", image_url: "/images/5616b4f5-b494-4940-808b-343520d0782e.png" },
+  { name: "Kandora", description: "Elegan untuk sehari-hari maupun formal.", image_url: "/images/8b1f2100-01e0-41cc-a77c-96dde3e2b290.png" },
+  { name: "Koko", description: "Modern dan nyaman untuk shalat.", image_url: "/images/44dc4804-7c64-4276-9e9d-374d0905f8ba.png" },
+  { name: "Vest", description: "Presisi untuk tampilan berkelas.", image_url: "/images/819b1d90-d58e-4670-bfbd-2883bd685f63.png" },
+  { name: "Kabak", description: "Premium berkualitas tinggi.", image_url: "/images/818e960c-6128-467b-b60f-eec772ee8125.png" },
+  { name: "Cover Hanger", description: "Jaga busana tetap rapi.", image_url: "/images/fe8e7d65-922e-4797-8488-317779065a0b.png" },
 ];
 
 export default function Koleksi() {
