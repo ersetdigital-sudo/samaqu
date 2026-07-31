@@ -112,7 +112,8 @@ function KainSwatchRow({ category, options, selected, onSelect }: { category: Ca
 /* ── Product Card ── */
 function ProductCard({ product, index, wishlist }: { product: Product; index: number; wishlist: { isWishlisted: (id: string) => boolean; toggle: (id: string) => Promise<boolean | null>; isLoggedIn: boolean } }) {
   const toast = useToast();
-  const kainColor = product.kain ? getKainSwatchColor(product.kain) : null;
+  const kainName = product.jenis_kain?.name || product.kain;
+  const kainColor = kainName ? getKainSwatchColor(kainName) : null;
   const dotColor = kainColor || colorMap[product.colors[0]] || "#c9b79c";
 
   return (
@@ -196,7 +197,7 @@ function ProductCard({ product, index, wishlist }: { product: Product; index: nu
 
         {/* Kain */}
         <p className="mt-1 text-[11.5px] font-ui" style={{ color: "var(--gold)" }}>
-          {product.kain ? `Kain ${product.kain}` : product.category}
+          {product.jenis_kain?.name ? `Kain ${product.jenis_kain.name}` : product.kain ? `Kain ${product.kain}` : product.category}
         </p>
 
         {/* Price */}
@@ -256,7 +257,7 @@ export default function KatalogPage() {
   /* Jenis kain yang tersedia untuk kategori yang sedang aktif (dari data produk live) */
   const kainOptionsForCategory = useMemo(() => {
     if (category === "Semua") return [];
-    return [...new Set(products.filter((p) => p.category === category && p.kain).map((p) => p.kain as string))];
+    return [...new Set(products.filter((p) => p.category === category && (p.jenis_kain?.name || p.kain)).map((p) => (p.jenis_kain?.name || p.kain) as string))];
   }, [products, category]);
 
   /* Filtered products */
@@ -267,7 +268,7 @@ export default function KatalogPage() {
       result = result.filter((p) => p.category === category);
     }
     if (selectedKain) {
-      result = result.filter((p) => p.kain === selectedKain);
+      result = result.filter((p) => (p.jenis_kain?.name || p.kain) === selectedKain);
     }
     if (selectedColor) {
       result = result.filter((p) => p.colors.includes(selectedColor));
@@ -281,7 +282,7 @@ export default function KatalogPage() {
         (p) =>
           p.name.toLowerCase().includes(q) ||
           p.category.toLowerCase().includes(q) ||
-          (p.kain && p.kain.toLowerCase().includes(q)) ||
+          ((p.jenis_kain?.name || p.kain) && (p.jenis_kain?.name || p.kain)!.toLowerCase().includes(q)) ||
           (p.series && p.series.toLowerCase().includes(q))
       );
     }
