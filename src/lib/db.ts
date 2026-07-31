@@ -154,3 +154,34 @@ export async function getTestimonials(category?: string, type?: string) {
 
   return data as DbTestimonial[];
 }
+
+export interface SeriesOption {
+  id: string;
+  name: string;
+  series: string;
+  price: number;
+  minimum_price: number | null;
+  create_your_price_enabled: boolean;
+}
+
+export async function getAvailableSeries(jenisKainId: string, color: string): Promise<SeriesOption[]> {
+  const { data, error } = await supabase
+    .from("products")
+    .select("id, name, series, price, minimum_price, create_your_price_enabled")
+    .eq("jenis_kain_id", jenisKainId)
+    .contains("colors", [color])
+    .order("series");
+
+  if (error || !data) return [];
+
+  return data
+    .filter((p: { series: string | null }) => p.series)
+    .map((p: { id: string; name: string; series: string; price: number; minimum_price: number | null; create_your_price_enabled: boolean }) => ({
+      id: p.id,
+      name: p.name,
+      series: p.series!,
+      price: p.price,
+      minimum_price: p.minimum_price,
+      create_your_price_enabled: p.create_your_price_enabled ?? false,
+    }));
+}
