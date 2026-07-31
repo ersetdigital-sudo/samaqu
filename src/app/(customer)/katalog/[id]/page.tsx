@@ -552,7 +552,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 ))}
               </div>
             )}
-            <div className="relative flex-1 max-h-[560px] lg:max-h-[640px] rounded-2xl overflow-hidden cursor-zoom-in" style={{ background: "#e8dfd1" }} onClick={() => { setZoomIndex(activeIndex); setZoomOpen(true); }}>
+            <div className="relative w-full max-h-[560px] lg:max-h-[640px] rounded-2xl overflow-hidden cursor-zoom-in" style={{ background: "#e8dfd1" }} onClick={() => { setZoomIndex(activeIndex); setZoomOpen(true); }}>
               <AnimatePresence mode="wait">
                 <motion.div key={activeIndex} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }} className="absolute inset-0">
                   <MediaDisplay item={activeMedia} poster={product.image} allMedia={media} className="w-full h-full" />
