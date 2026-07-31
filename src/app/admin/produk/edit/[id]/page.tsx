@@ -224,6 +224,7 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
         image: media.find((m) => m.url)?.url || "",
         images: media.filter((m) => m.url).map((m) => m.url),
         colors: variants.map((v) => v.color),
+        jenis_kain_id: selectedJenisKainId || null,
         series: series.trim() || null,
         catatan_harga: catatanHarga.trim() || null,
       }, { onConflict: "id" });
@@ -345,6 +346,32 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
                   <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Berat (gram)</label>
                   <input type="number" value={weight} onChange={(e) => setWeight(e.target.value)} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="800" />
                   <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>Digunakan untuk hitung ongkir. Kosongkan = default per kategori.</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Jenis Kain</label>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <select value={selectedJenisKainId} onChange={(e) => setSelectedJenisKainId(e.target.value)} className="w-full rounded-xl px-4 py-3 text-sm outline-none appearance-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }}>
+                        <option value="">Pilih Jenis Kain</option>
+                        {jenisKainList.map((jk) => <option key={jk.id} value={jk.id}>{jk.name}</option>)}
+                      </select>
+                    </div>
+                    <button type="button" onClick={() => setShowNewKainForm(!showNewKainForm)} className="px-3 py-2 rounded-xl text-xs font-medium shrink-0" style={{ border: "1px dashed rgba(181,140,74,.4)", color: "var(--gold)" }}>
+                      + Baru
+                    </button>
+                  </div>
+                  {showNewKainForm && (
+                    <div className="mt-3">
+                      <JenisKainForm
+                        onSave={(newKain) => {
+                          setJenisKainList((prev) => [...prev, { id: newKain.id, name: newKain.name }]);
+                          setSelectedJenisKainId(newKain.id);
+                          setShowNewKainForm(false);
+                        }}
+                        onCancel={() => setShowNewKainForm(false)}
+                      />
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Series</label>
