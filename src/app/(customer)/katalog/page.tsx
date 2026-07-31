@@ -19,7 +19,7 @@ import { getProducts } from "@/lib/db";
 import { useCart } from "@/lib/cart-context";
 import { useToast } from "@/components/Toast";
 import FilterDrawer, { applyFilters, type FilterState } from "@/components/FilterDrawer";
-import KainSeriesModal from "@/components/KainSeriesModal";
+import KainSeriesModal, { getKainGradient } from "@/components/KainSeriesModal";
 import { SITE_URL } from "@/lib/site-config";
 import { useWishlist } from "@/lib/use-wishlist";
 
@@ -81,6 +81,47 @@ function InfoLinkButton({ label, onClick }: { label: string; onClick: () => void
       </span>
       <ChevronRight size={16} strokeWidth={1.75} className="shrink-0" style={{ color: "var(--gold)" }} />
     </button>
+  );
+}
+
+/* ── Jenis Kain swatch selector (katalog listing) ── */
+function KainSwatchRow({ category, options, selected, onSelect }: { category: Category; options: string[]; selected: string | null; onSelect: (v: string | null) => void }) {
+  if (options.length === 0) return null;
+  return (
+    <div>
+      <p className="text-[13px] font-ui font-medium mb-3" style={{ color: "var(--espresso)" }}>
+        Jenis Kain {category}
+      </p>
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+        <button
+          onClick={() => onSelect(null)}
+          className="flex items-center gap-3 rounded-lg px-3.5 py-3 text-[13px] font-ui transition-all duration-200"
+          style={{
+            background: selected === null ? "rgba(42,33,27,.06)" : "var(--cream-bright)",
+            border: `1.5px solid ${selected === null ? "var(--espresso)" : "rgba(201,183,156,.3)"}`,
+            color: "var(--coffee)",
+          }}
+        >
+          <span className="w-6 h-6 rounded-full shrink-0" style={{ background: "linear-gradient(135deg,#141414,#CDBFB0)" }} />
+          Semua
+        </button>
+        {options.map((k) => (
+          <button
+            key={k}
+            onClick={() => onSelect(k)}
+            className="flex items-center gap-3 rounded-lg px-3.5 py-3 text-[13px] font-ui transition-all duration-200"
+            style={{
+              background: selected === k ? "rgba(42,33,27,.06)" : "var(--cream-bright)",
+              border: `1.5px solid ${selected === k ? "var(--espresso)" : "rgba(201,183,156,.3)"}`,
+              color: "var(--coffee)",
+            }}
+          >
+            <span className="w-6 h-6 rounded-full shrink-0" style={{ background: getKainGradient(k) || "#c9b79c" }} />
+            {k}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -293,6 +334,12 @@ export default function KatalogPage() {
     setSelectedSeries(null);
   }, [category]);
 
+  /* Jenis kain yang tersedia untuk kategori yang sedang aktif (dari data produk live) */
+  const kainOptionsForCategory = useMemo(() => {
+    if (category === "Semua") return [];
+    return [...new Set(products.filter((p) => p.category === category && p.kain).map((p) => p.kain as string))];
+  }, [products, category]);
+
   /* Filtered products */
   const filtered = useMemo(() => {
     let result = [...products];
@@ -480,17 +527,25 @@ export default function KatalogPage() {
             </div>
           </div>
 
-          {/* Info link buttons — Jenis Kain & Series Thobe (mobile, belum ada aksi) */}
-          <div className="flex flex-col gap-3 pb-4">
-            <InfoLinkButton
-              label="Perbedaan Jenis Kain Thobe"
-              onClick={() => setInfoSheet("kain")}
-            />
-            <InfoLinkButton
-              label="Perbedaan Series Thobe"
-              onClick={() => setInfoSheet("series")}
-            />
-          </div>
+          {category !== "Semua" && (
+            <div className="pb-5">
+              <KainSwatchRow category={category} options={kainOptionsForCategory} selected={selectedKain} onSelect={setSelectedKain} />
+            </div>
+          )}
+
+          {/* Info link buttons — Jenis Kain & Series (mobile) */}
+          {category !== "Semua" && (
+            <div className="flex flex-col gap-3 pb-4">
+              <InfoLinkButton
+                label={`Perbedaan Jenis Kain ${category}`}
+                onClick={() => setInfoSheet("kain")}
+              />
+              <InfoLinkButton
+                label={`Perbedaan Series ${category}`}
+                onClick={() => setInfoSheet("series")}
+              />
+            </div>
+          )}
 
           <div className="flex items-center justify-between pb-4">
             <button
@@ -580,17 +635,25 @@ export default function KatalogPage() {
           </div>
         </div>
 
-        {/* Info link buttons — Jenis Kain & Series Thobe (desktop, belum ada aksi) */}
-        <div className="hidden lg:flex flex-col gap-3 py-5">
-          <InfoLinkButton
-            label="Perbedaan Jenis Kain Thobe"
-            onClick={() => setInfoSheet("kain")}
-          />
-          <InfoLinkButton
-            label="Perbedaan Series Thobe"
-            onClick={() => setInfoSheet("series")}
-          />
-        </div>
+        {category !== "Semua" && (
+          <div className="hidden lg:block pt-5">
+            <KainSwatchRow category={category} options={kainOptionsForCategory} selected={selectedKain} onSelect={setSelectedKain} />
+          </div>
+        )}
+
+        {/* Info link buttons — Jenis Kain & Series (desktop) */}
+        {category !== "Semua" && (
+          <div className="hidden lg:flex flex-col gap-3 py-5">
+            <InfoLinkButton
+              label={`Perbedaan Jenis Kain ${category}`}
+              onClick={() => setInfoSheet("kain")}
+            />
+            <InfoLinkButton
+              label={`Perbedaan Series ${category}`}
+              onClick={() => setInfoSheet("series")}
+            />
+          </div>
+        )}
 
         {/* Active filter chips */}
         {activeFilters.length > 0 && (

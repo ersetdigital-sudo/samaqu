@@ -133,6 +133,30 @@ const KAIN: KainSeriesItem[] = [
   },
 ];
 
+/* ── Swatch color lookup, dipakai di halaman katalog untuk filter "Jenis Kain" ── */
+const KAIN_FLAT_COLOR: Record<string, string> = {
+  "B.01": "#141414",
+  "B.02": "#1E2436",
+  "A.02": "#B4A79B",
+  "C.01": "#CDBFB0",
+};
+
+function normalizeKainCode(code: string): string {
+  return code.trim().toUpperCase().replace(/-/g, ".");
+}
+
+export function getKainGradient(code?: string | null): string | undefined {
+  if (!code) return undefined;
+  const normalized = normalizeKainCode(code);
+  return KAIN.find((k) => k.code === normalized)?.gradient;
+}
+
+export function getKainSwatchColor(code?: string | null): string {
+  if (!code) return "#c9b79c";
+  const normalized = normalizeKainCode(code);
+  return KAIN_FLAT_COLOR[normalized] || "#c9b79c";
+}
+
 /* ── Content: Perbedaan Series Thobe ── */
 const SERIES: KainSeriesItem[] = [
   {
