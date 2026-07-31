@@ -286,11 +286,16 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
   // Fetch available series when jenis_kain_id or color changes
   useEffect(() => {
-    if (!product?.jenis_kain_id || !selectedColor) {
+    if (!product?.jenis_kain_id) {
       setAvailableSeries([]);
       return;
     }
-    getAvailableSeries(product.jenis_kain_id, selectedColor, product.category).then(setAvailableSeries);
+    // Thobe tidak pakai warna, jadi tetap fetch series meskipun selectedColor kosong
+    if (!selectedColor && product.category !== "Thobe") {
+      setAvailableSeries([]);
+      return;
+    }
+    getAvailableSeries(product.jenis_kain_id, selectedColor || "", product.category).then(setAvailableSeries);
   }, [product?.jenis_kain_id, selectedColor]);
 
   useEffect(() => {
