@@ -2,9 +2,8 @@
 
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { motion, AnimatePresence, Variants } from "framer-motion";
-import { SlidersHorizontal, X, ChevronDown, ChevronRight, ArrowRight, ShoppingCart } from "lucide-react";
+import { SlidersHorizontal, X, ChevronDown, ChevronRight } from "lucide-react";
 import Breadcrumb from "@/components/Breadcrumb";
 import {
   allCategories,
@@ -16,10 +15,9 @@ import {
   type Product,
 } from "@/lib/katalog-data";
 import { getProducts } from "@/lib/db";
-import { useCart } from "@/lib/cart-context";
 import { useToast } from "@/components/Toast";
 import FilterDrawer, { applyFilters, type FilterState } from "@/components/FilterDrawer";
-import KainSeriesModal, { getKainGradient } from "@/components/KainSeriesModal";
+import KainSeriesModal, { getKainGradient, getKainSwatchColor } from "@/components/KainSeriesModal";
 import { SITE_URL } from "@/lib/site-config";
 import { useWishlist } from "@/lib/use-wishlist";
 
@@ -40,21 +38,7 @@ const headerVariants: Variants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
 };
 
-/* ── Color Swatch ── */
-function Swatch({ color, size = 16 }: { color: string; size?: number }) {
-  return (
-    <span
-      className="inline-block rounded-full border shrink-0"
-      style={{
-        width: size,
-        height: size,
-        background: colorMap[color] || "#ccc",
-        borderColor: "rgba(42,33,27,.12)",
-      }}
-      title={color}
-    />
-  );
-}
+
 
 /* ── Info Link Button (katalog listing) — not wired up yet ── */
 function InfoLinkButton({ label, onClick }: { label: string; onClick: () => void }) {
@@ -127,29 +111,9 @@ function KainSwatchRow({ category, options, selected, onSelect }: { category: Ca
 
 /* ── Product Card ── */
 function ProductCard({ product, index, wishlist }: { product: Product; index: number; wishlist: { isWishlisted: (id: string) => boolean; toggle: (id: string) => Promise<boolean | null>; isLoggedIn: boolean } }) {
-  const { addItem } = useCart();
   const toast = useToast();
-  const router = useRouter();
-
-  function handleAddToCart(e: React.MouseEvent) {
-    e.preventDefault();
-    e.stopPropagation();
-    // CYP products or products with multiple color variants → redirect to detail page
-    if (product.create_your_price_enabled || product.colors.length > 1) {
-      router.push(`/katalog/${product.id}`);
-      return;
-    }
-    addItem({
-      id: product.id,
-      name: product.name,
-      image: product.image,
-      price: product.price,
-      color: product.colors[0] || "-",
-      size: "M",
-      qty: 1,
-    });
-    toast.show("Ditambahkan ke keranjang");
-  }
+  const kainColor = product.kain ? getKainSwatchColor(product.kain) : null;
+  const dotColor = kainColor || colorMap[product.colors[0]] || "#c9b79c";
 
   return (
     <motion.div
@@ -162,17 +126,17 @@ function ProductCard({ product, index, wishlist }: { product: Product; index: nu
     >
       <Link
         href={`/katalog/${product.id}`}
-        className="group relative flex flex-col h-full bg-white rounded-sm overflow-hidden cursor-pointer"
+        className="group relative flex flex-col h-full rounded-2xl overflow-hidden cursor-pointer"
         style={{
-          boxShadow: "0 2px 12px -4px rgba(43,38,32,.06)",
-          border: "1px solid rgba(201,183,156,.12)",
+          background: "var(--cream-bright)",
+          border: "1px solid rgba(201,183,156,.2)",
         }}
       >
       {/* Image */}
       <div className="relative aspect-[4/5] overflow-hidden" style={{ background: "#e8dfd1" }}>
         {/* Color gradient fallback (visible if image fails) */}
         <div
-          className="absolute inset-0 transition-transform duration-500 group-hover:scale-[1.03]"
+          className="absolute inset-0 transition-transform duration-700 group-hover:scale-[1.04]"
           style={{
             background: `linear-gradient(135deg, ${colorMap[product.colors[0]] || "#e8dfd1"}44, ${colorMap[product.colors[1]] || "#d4c5a9"}44)`,
           }}
@@ -181,16 +145,26 @@ function ProductCard({ product, index, wishlist }: { product: Product; index: nu
         <img
           src={product.media.find((m) => m.type === "image")?.src || product.image}
           alt={product.name}
-          className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+          className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
           loading="lazy"
           onError={(e) => {
             (e.target as HTMLImageElement).style.display = "none";
           }}
         />
+        {/* Wishlist heart button */}
+        {wishlist.isLoggedIn && (
+        <button
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); wishlist.toggle(product.id).then((added) => { if (added !== null) toast.show(added ? "Ditambahkan ke wishlist" : "Dihapus dari wishlist"); }); }}
+          className="absolute top-3 left-3 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
+          style={{ background: "rgba(255,255,255,.85)", backdropFilter: "blur(4px)" }}
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill={wishlist.isWishlisted(product.id) ? "#e74c3c" : "none"} stroke={wishlist.isWishlisted(product.id) ? "#e74c3c" : "var(--espresso)"} strokeWidth="1.8"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
+        </button>
+        )}
         {/* Tag */}
         {product.tag && (
           <span
-            className="absolute top-3 left-3 px-2.5 py-1 text-[10px] tracking-[0.12em] uppercase font-ui font-medium rounded-sm"
+            className="absolute top-3 right-3 px-2.5 py-1 text-[10px] tracking-[0.12em] uppercase font-ui font-medium rounded-sm"
             style={{
               border: "1px solid var(--gold)",
               color: "var(--gold)",
@@ -200,48 +174,18 @@ function ProductCard({ product, index, wishlist }: { product: Product; index: nu
             {product.tag}
           </span>
         )}
-        {/* Wishlist heart button */}
-        {wishlist.isLoggedIn && (
-        <button
-          onClick={(e) => { e.preventDefault(); e.stopPropagation(); wishlist.toggle(product.id).then((added) => { if (added !== null) toast.show(added ? "Ditambahkan ke wishlist" : "Dihapus dari wishlist"); }); }}
-          className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
-          style={{ background: "rgba(255,255,255,.9)", backdropFilter: "blur(4px)", boxShadow: "0 2px 6px rgba(0,0,0,.08)" }}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill={wishlist.isWishlisted(product.id) ? "#e74c3c" : "none"} stroke={wishlist.isWishlisted(product.id) ? "#e74c3c" : "var(--espresso)"} strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
-        </button>
-        )}
-        {/* Quick Add to Cart button */}
-        <button
-          onClick={handleAddToCart}
-          className="absolute bottom-3 right-3 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 opacity-0 group-hover:opacity-100 hover:scale-110 active:scale-95 z-10"
-          style={{ background: "var(--gold)", color: "white", boxShadow: "0 4px 12px -2px rgba(181,140,74,.4)" }}
-          aria-label="Tambah ke keranjang">
-          <ShoppingCart size={15} strokeWidth={1.8} />
-        </button>
-        {/* Quick View pill */}
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          <span
-            className="px-4 py-2 text-[11px] tracking-[0.12em] uppercase font-ui font-medium rounded-full"
-            style={{ background: "rgba(248,246,242,.95)", color: "var(--espresso)" }}
-          >
-            Quick View
-          </span>
-        </div>
+        {/* Kain / color dot */}
+        <span
+          className="absolute bottom-3 right-3 w-4 h-4 rounded-full"
+          style={{ background: dotColor, boxShadow: "0 0 0 2px white" }}
+        />
       </div>
 
       {/* Info */}
-      <div className="p-4 sm:p-5 flex flex-col flex-1">
-        {/* Category + Kain — fixed 2-line height */}
-        <p
-          className="text-[10px] sm:text-[11px] tracking-[0.14em] uppercase font-ui mb-1.5"
-          style={{ color: "var(--stone)" }}
-        >
-          {product.category}
-        </p>
-
-        {/* Name — max 1 line */}
+      <div className="p-3.5 md:p-4 flex flex-col flex-1">
+        {/* Name */}
         <h3
-          className="text-[1rem] sm:text-[1.1rem] font-medium leading-snug mb-1 line-clamp-1"
+          className="text-[14px] md:text-[16px] font-semibold leading-snug line-clamp-1"
           style={{
             fontFamily: "var(--font-cormorant), Georgia, serif",
             color: "var(--espresso)",
@@ -250,47 +194,22 @@ function ProductCard({ product, index, wishlist }: { product: Product; index: nu
           {product.name}
         </h3>
 
-        {/* Price */}
-        <p
-          className="text-[15px] sm:text-base font-ui font-medium mb-2"
-          style={{ color: "var(--gold)" }}
-        >
-          {product.create_your_price_enabled && product.minimum_price
-            ? `Mulai dari Rp ${product.minimum_price.toLocaleString("id-ID")}`
-            : `Rp ${product.price.toLocaleString("id-ID")}`}
+        {/* Kain */}
+        <p className="mt-1 text-[11.5px] font-ui" style={{ color: "var(--gold)" }}>
+          {product.kain ? `Kain ${product.kain}` : product.category}
         </p>
 
-        {/* Color swatches — fixed min-height */}
-        <div className="flex items-center gap-1.5 mb-3 min-h-[18px]">
-          {product.colors.length > 0 ? (
-            <>
-              {product.colors.slice(0, 5).map((c) => (
-                <Swatch key={c} color={c} />
-              ))}
-              {product.colors.length > 5 && (
-                <span className="text-[11px] font-ui" style={{ color: "var(--stone)" }}>
-                  +{product.colors.length - 5}
-                </span>
-              )}
-            </>
-          ) : null}
-        </div>
+        {/* Price */}
+        <p className="mt-1.5 text-[12.5px] font-ui" style={{ color: "var(--stone)" }}>
+          Mulai{" "}
+          <span className="font-medium" style={{ color: "var(--espresso)" }}>
+            Rp {(product.create_your_price_enabled && product.minimum_price ? product.minimum_price : product.price).toLocaleString("id-ID")}
+          </span>
+        </p>
 
-        {/* Note — fixed min-height */}
-        <div className="min-h-[18px] mb-3">
-          {product.note && (
-            <p className="text-[11px] font-ui" style={{ color: "var(--stone)" }}>
-              {product.note}
-            </p>
-          )}
-        </div>
-
-        {/* Link — pushed to bottom */}
-        <span className="mt-auto inline-flex items-center gap-1.5 text-[12px] tracking-[0.08em] uppercase font-ui font-medium group-hover:gap-2.5 transition-all duration-300"
-          style={{ color: "var(--gold)" }}
-        >
-          Lihat Detail
-          <ArrowRight size={14} strokeWidth={1.5} />
+        {/* Lihat Detail button */}
+        <span className="mt-3 w-full rounded-lg border border-[var(--espresso)] px-3 py-2.5 text-[12.5px] text-[var(--espresso)] font-ui font-medium flex items-center justify-center gap-1.5 transition-all duration-200 group-hover:bg-[var(--espresso)] group-hover:text-white">
+          Lihat Detail <ChevronRight size={14} strokeWidth={2} />
         </span>
       </div>
       </Link>
