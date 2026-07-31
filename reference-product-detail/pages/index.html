@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="id"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAMAQU — Katalog Thobe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&amp;family=Jost:wght@300;400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#F6F1EA;
+    --cream-soft:#FBF8F4;
+    --ink:#1B1917;
+    --muted:#8B8078;
+    --accent:#B98A4B;
+    --line:#E7DED3;
+  }
+  body{background:var(--cream);color:var(--ink);font-family:"Jost",sans-serif;-webkit-font-smoothing:antialiased;}
+  h1,h2,h3,.display{font-family:"Cormorant Garamond",serif;}
+  .no-scrollbar::-webkit-scrollbar{display:none}
+  .no-scrollbar{-ms-overflow-style:none;scrollbar-width:none}
+  .card-img{background:linear-gradient(160deg,#EFE7DC,#E3D8C9);}
+  .swatch-ring{box-shadow:0 0 0 1px var(--line);}
+  .swatch-active{box-shadow:0 0 0 1.5px var(--ink);}
+  .fade-up{opacity:0;transform:translateY(14px);animation:fu .7s ease forwards}
+  @keyframes fu{to{opacity:1;transform:none}}
+</style>
+<script src="https://cdn.moda.app/runtime-libs/tailwind-browser-4.1.13-index.global.min.js"></script><style data-moda-export-fonts="true">@font-face { font-family: 'Jost'; src: url("../fonts/jost-wght--thin.ttf") format("truetype"); font-style: normal; font-weight: 100; font-display: swap; }
+@font-face { font-family: 'Jost'; src: url("../fonts/jost-wght--thinitalic.ttf") format("truetype"); font-style: italic; font-weight: 100; font-display: swap; }
+@font-face { font-family: 'Jost'; src: url("../fonts/jost-wght--extralight.ttf") format("truetype"); font-style: normal; font-weight: 200; font-display: swap; }
+@font-face { font-family: 'Jost'; src: url("../fonts/jost-wght--extralightitalic.ttf") format("truetype"); font-style: italic; font-weight: 200; font-display: swap; }
+@font-face { font-family: 'Jost'; src: url("../fonts/jost-wght--light.ttf") format("truetype"); font-style: normal; font-weight: 300; font-display: swap; }
+@font-face { font-family: 'Jost'; src: url("../fonts/jost-wght--lightitalic.ttf") format("truetype"); font-style: italic; font-weight: 300; font-display: swap; }
+@font-face { font-family: 'Jost'; src: url("../fonts/jost-wght--regular.ttf") format("truetype"); font-style: normal; font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Jost'; src: url("../fonts/jost-wght--italic.ttf") format("truetype"); font-style: italic; font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Jost'; src: url("../fonts/jost-wght--medium.ttf") format("truetype"); font-style: normal; font-weight: 500; font-display: swap; }
+@font-face { font-family: 'Jost'; src: url("../fonts/jost-wght--mediumitalic.ttf") format("truetype"); font-style: italic; font-weight: 500; font-display: swap; }
+@font-face { font-family: 'Jost'; src: url("../fonts/jost-wght--semibold.ttf") format("truetype"); font-style: normal; font-weight: 600; font-display: swap; }
+@font-face { font-family: 'Jost'; src: url("../fonts/jost-wght--semibolditalic.ttf") format("truetype"); font-style: italic; font-weight: 600; font-display: swap; }
+@font-face { font-family: 'Jost'; src: url("../fonts/jost-wght--bold.ttf") format("truetype"); font-style: normal; font-weight: 700; font-display: swap; }
+@font-face { font-family: 'Jost'; src: url("../fonts/jost-wght--bolditalic.ttf") format("truetype"); font-style: italic; font-weight: 700; font-display: swap; }
+@font-face { font-family: 'Jost'; src: url("../fonts/jost-wght--extrabold.ttf") format("truetype"); font-style: normal; font-weight: 800; font-display: swap; }
+@font-face { font-family: 'Jost'; src: url("../fonts/jost-wght--extrabolditalic.ttf") format("truetype"); font-style: italic; font-weight: 800; font-display: swap; }
+@font-face { font-family: 'Jost'; src: url("../fonts/jost-wght--black.ttf") format("truetype"); font-style: normal; font-weight: 900; font-display: swap; }
+@font-face { font-family: 'Jost'; src: url("../fonts/jost-wght--blackitalic.ttf") format("truetype"); font-style: italic; font-weight: 900; font-display: swap; }
+@font-face { font-family: 'Cormorant Garamond'; src: url("../fonts/cormorantgaramond-wght--light.ttf") format("truetype"); font-style: normal; font-weight: 300; font-display: swap; }
+@font-face { font-family: 'Cormorant Garamond'; src: url("../fonts/cormorantgaramond-wght--lightitalic.ttf") format("truetype"); font-style: italic; font-weight: 300; font-display: swap; }
+@font-face { font-family: 'Cormorant Garamond'; src: url("../fonts/cormorantgaramond-wght--regular.ttf") format("truetype"); font-style: normal; font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Cormorant Garamond'; src: url("../fonts/cormorantgaramond-wght--italic.ttf") format("truetype"); font-style: italic; font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Cormorant Garamond'; src: url("../fonts/cormorantgaramond-wght--medium.ttf") format("truetype"); font-style: normal; font-weight: 500; font-display: swap; }
+@font-face { font-family: 'Cormorant Garamond'; src: url("../fonts/cormorantgaramond-wght--mediumitalic.ttf") format("truetype"); font-style: italic; font-weight: 500; font-display: swap; }
+@font-face { font-family: 'Cormorant Garamond'; src: url("../fonts/cormorantgaramond-wght--semibold.ttf") format("truetype"); font-style: normal; font-weight: 600; font-display: swap; }
+@font-face { font-family: 'Cormorant Garamond'; src: url("../fonts/cormorantgaramond-wght--semibolditalic.ttf") format("truetype"); font-style: italic; font-weight: 600; font-display: swap; }
+@font-face { font-family: 'Cormorant Garamond'; src: url("../fonts/cormorantgaramond-wght--bold.ttf") format("truetype"); font-style: normal; font-weight: 700; font-display: swap; }
+@font-face { font-family: 'Cormorant Garamond'; src: url("../fonts/cormorantgaramond-wght--bolditalic.ttf") format("truetype"); font-style: italic; font-weight: 700; font-display: swap; }</style></head>
+<body class="min-h-screen">
+
+<!-- Topbar -->
+<header class="sticky top-0 z-40 bg-[var(--cream-soft)]/95 backdrop-blur border-b" style="border-color:var(--line)">
+  <div class="mx-auto max-w-6xl px-5 h-16 flex items-center justify-between">
+    <a href="#" class="text-[19px] tracking-[0.32em] font-semibold">SAMAQU</a>
+    <nav class="hidden md:flex items-center gap-9 text-[13px] tracking-wide text-[var(--muted)]">
+      <a href="#katalog" class="hover:text-[var(--ink)] transition">Katalog</a>
+      <a href="#" class="hover:text-[var(--ink)] transition">Koko</a>
+      <a href="#" class="hover:text-[var(--ink)] transition">Kandora</a>
+      <a href="#" class="hover:text-[var(--ink)] transition">Tentang</a>
+    </nav>
+    <div class="flex items-center gap-4">
+      <button aria-label="Akun" class="w-9 h-9 grid place-items-center rounded-full swatch-ring hover:bg-white transition">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="3.6"></circle><path d="M4.5 20c1.2-3.8 4-5.6 7.5-5.6S18.3 16.2 19.5 20"></path></svg>
+      </button>
+      <button aria-label="Keranjang" class="relative w-9 h-9 grid place-items-center rounded-full swatch-ring hover:bg-white transition">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 8h14l-1.1 12H6.1L5 8Z"></path><path d="M9 8V6.2A3 3 0 0 1 15 6.2V8"></path></svg>
+        <span class="absolute -top-1 -right-1 w-[17px] h-[17px] rounded-full bg-[var(--accent)] text-white text-[10px] grid place-items-center">1</span>
+      </button>
+      <button id="menuBtn" aria-label="Menu" class="md:hidden w-9 h-9 grid place-items-center">
+        <svg width="20" height="20" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path d="M4 7h16M4 12h16M4 17h16"></path></svg>
+      </button>
+    </div>
+  </div>
+  <div id="mobileNav" class="hidden md:hidden border-t px-5 py-4 space-y-3 text-sm" style="border-color:var(--line)">
+    <a href="#katalog" class="block">Katalog</a><a href="#" class="block">Koko</a><a href="#" class="block">Kandora</a><a href="#" class="block">Tentang</a>
+  </div>
+</header>
+
+<main class="mx-auto max-w-6xl px-5 pb-24">
+
+  <!-- Hero -->
+  <section class="pt-10 md:pt-16 fade-up">
+    <p class="text-[11px] tracking-[0.28em] uppercase" style="color:var(--accent)">Katalog Samaqu</p>
+    <h1 class="mt-3 text-[30px] leading-[1.15] md:text-[52px] md:leading-[1.08] max-w-2xl">
+      Temukan produk yang<br class="hidden sm:block"> paling sesuai dengan kebutuhanmu.
+    </h1>
+
+    <!-- Search -->
+    <div class="mt-7 relative max-w-xl">
+      <svg class="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--muted)]" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="6.5"></circle><path d="M16 16l4 4"></path></svg>
+      <input type="search" placeholder="Cari produk (thobe, koko, kandora...)" class="w-full rounded-xl bg-[var(--cream-soft)] border pl-11 pr-4 py-3.5 text-sm placeholder:text-[var(--muted)] outline-none focus:border-[var(--accent)] transition" style="border-color:var(--line)">
+    </div>
+  </section>
+
+  <!-- Filters -->
+  <section class="mt-10 space-y-7">
+    <div>
+      <p class="text-[13px] font-medium mb-3">Kategori</p>
+      <div class="flex gap-2.5 overflow-x-auto no-scrollbar pb-1" id="catRow">
+        <button class="cat px-6 py-2.5 rounded-lg text-[13px] bg-[var(--ink)] text-white" data-active="1">Thobe</button>
+        <button class="cat px-6 py-2.5 rounded-lg text-[13px] bg-[var(--cream-soft)] swatch-ring">Koko</button>
+        <button class="cat px-6 py-2.5 rounded-lg text-[13px] bg-[var(--cream-soft)] swatch-ring">Kandora</button>
+        <button class="cat px-6 py-2.5 rounded-lg text-[13px] bg-[var(--cream-soft)] swatch-ring">Gamis</button>
+      </div>
+    </div>
+
+    <div>
+      <p class="text-[13px] font-medium mb-3">Jenis Kain Thobe</p>
+      <div class="grid grid-cols-2 sm:grid-cols-5 gap-2.5" id="fabricRow">
+        <button class="fabric flex items-center gap-3 rounded-lg bg-[var(--cream-soft)] px-3.5 py-3 text-[13px] swatch-active" data-fabric="all">
+          <span class="w-6 h-6 rounded-full" style="background:linear-gradient(135deg,#141414,#CDBFB0)"></span> Semua</button>
+        <button class="fabric flex items-center gap-3 rounded-lg bg-[var(--cream-soft)] px-3.5 py-3 text-[13px] swatch-ring" data-fabric="B.01">
+          <span class="w-6 h-6 rounded-full" style="background:#141414"></span> B.01</button>
+        <button class="fabric flex items-center gap-3 rounded-lg bg-[var(--cream-soft)] px-3.5 py-3 text-[13px] swatch-ring" data-fabric="B.02">
+          <span class="w-6 h-6 rounded-full" style="background:#1E2436"></span> B.02</button>
+        <button class="fabric flex items-center gap-3 rounded-lg bg-[var(--cream-soft)] px-3.5 py-3 text-[13px] swatch-ring" data-fabric="A.02">
+          <span class="w-6 h-6 rounded-full" style="background:#B4A79B"></span> A.02</button>
+        <button class="fabric flex items-center gap-3 rounded-lg bg-[var(--cream-soft)] px-3.5 py-3 text-[13px] swatch-ring" data-fabric="C.01">
+          <span class="w-6 h-6 rounded-full" style="background:#CDBFB0"></span> C.01</button>
+      </div>
+    </div>
+
+    <div class="space-y-2.5">
+      <button data-sheet="kain" class="w-full flex items-center justify-between rounded-xl border border-dashed px-4 py-3.5 text-[13px] hover:bg-[var(--cream-soft)] transition" style="border-color:var(--accent);color:var(--accent)">
+        Perbedaan Jenis Kain Thobe <span>›</span></button>
+      <button data-sheet="series" class="w-full flex items-center justify-between rounded-xl border border-dashed px-4 py-3.5 text-[13px] hover:bg-[var(--cream-soft)] transition" style="border-color:var(--accent);color:var(--accent)">
+        Perbedaan Series Thobe <span>›</span></button>
+    </div>
+  </section>
+
+  <!-- Toolbar -->
+  <section id="katalog" class="mt-10 flex items-center justify-between border-t pt-5" style="border-color:var(--line)">
+    <p class="text-[13px] text-[var(--muted)]"><span id="count" class="text-[var(--ink)] font-medium">0</span> produk<span id="fabricLabel"></span></p>
+    <div class="relative">
+      <select id="sortSel" class="appearance-none rounded-lg bg-[var(--cream-soft)] swatch-ring pl-4 pr-9 py-2.5 text-[13px] outline-none">
+        <option value="new">Terbaru</option><option value="low">Harga Terendah</option><option value="high">Harga Tertinggi</option>
+      </select>
+      <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--muted)] text-xs">▾</span>
+    </div>
+  </section>
+
+  <!-- Sumber gambar: dipakai ulang oleh grid produk & modal kain.
+       Ditulis sebagai <img> asli (bukan URL di dalam JS) supaya semua gambar
+       ikut terbawa saat Export as HTML. -->
+  <div aria-hidden="true" style="position:absolute;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none">
+    <img id="assetDark" src="../images/7936666b-1136-4ed7-9494-a3dedc62a603.png" alt="">
+    <img id="assetLight" src="../images/fafcb426-5012-4e8d-bb54-ce826f786f2f.png" alt="">
+    <img id="fabBlack" src="../images/98d3f891-3ab0-49f8-8cc4-795f0291c591.png" alt="">
+    <img id="fabNavy" src="../images/c9be796a-6cff-4860-b279-e5614709a028.png" alt="">
+    <img id="fabTaupe" src="../images/6314f974-839b-4a7b-8031-8a9a6f49f9fa.png" alt="">
+    <img id="fabCream" src="../images/a9d76e0f-b1e5-481d-8190-a398001baa12.png" alt="">
+  </div>
+
+  <!-- Grid -->
+  <section class="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6" id="grid"></section>
+
+  <p id="empty" class="hidden mt-10 text-center text-[13px] text-[var(--muted)]">Belum ada produk untuk kain ini.</p>
+</main>
+
+<footer class="border-t bg-[var(--cream-soft)]" style="border-color:var(--line)">
+  <div class="mx-auto max-w-6xl px-5 py-10 flex flex-col sm:flex-row gap-4 items-center justify-between text-[12px] text-[var(--muted)]">
+    <span class="tracking-[0.3em] text-[var(--ink)] font-semibold">SAMAQU</span>
+    <span>© 2025 Samaqu. Semua hak dilindungi.</span>
+  </div>
+</footer>
+
+<!-- Sheet / Modal -->
+<div id="sheet" class="fixed inset-0 z-50 hidden">
+  <div id="sheetBg" class="absolute inset-0 bg-black/55 backdrop-blur-[2px]"></div>
+  <div id="sheetPanel" class="absolute inset-0 sm:inset-4 md:inset-6 sm:m-auto sm:max-w-[920px] sm:max-h-[600px] sm:rounded-3xl overflow-hidden bg-[#0E0D0C] text-white opacity-0 translate-y-6 sm:translate-y-0 transition duration-300 flex flex-col">
+
+    <!-- header (desktop, in flow) -->
+    <div class="hidden sm:block shrink-0 px-8 pt-5 pb-3 text-center">
+      <p class="text-[10px] tracking-[0.34em]" style="color:var(--accent)">SAMAQU</p>
+      <h2 class="sheetTitle mt-1.5 text-[20px] lg:text-[24px] font-semibold leading-tight uppercase tracking-[0.04em]" style="font-family:'Jost',sans-serif"></h2>
+      <p class="sheetSub mt-1.5 text-[12px] text-white/60 max-w-[54ch] mx-auto"></p>
+    </div>
+
+    <!-- slides -->
+    <div id="track" class="relative flex-1 min-h-0 flex overflow-x-auto snap-x snap-mandatory no-scrollbar scroll-smooth"></div>
+
+    <!-- header overlay (mobile) -->
+    <div class="sm:hidden absolute inset-x-0 top-0 z-20 px-6 pt-6 pb-4 text-center pointer-events-none">
+      <p class="text-[10px] tracking-[0.34em]" style="color:var(--accent)">SAMAQU</p>
+      <h2 class="sheetTitle mt-2 text-[21px] font-semibold leading-[1.15] uppercase tracking-[0.04em] max-w-[16ch] mx-auto" style="font-family:'Jost',sans-serif"></h2>
+      <p class="sheetSub mt-2.5 text-[12px] text-white/60 leading-relaxed max-w-[30ch] mx-auto"></p>
+    </div>
+
+    <button id="sheetClose" aria-label="Tutup" class="absolute right-4 top-4 z-30 w-9 h-9 rounded-full bg-white/12 hover:bg-white/25 grid place-items-center transition">
+      <svg width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" fill="none"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+    </button>
+
+    <!-- arrows -->
+    <button id="prev" aria-label="Sebelumnya" class="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/12 hover:bg-white/25 grid place-items-center transition">
+      <svg width="17" height="17" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" fill="none"><path d="M14 6l-6 6 6 6"></path></svg></button>
+    <button id="next" aria-label="Berikutnya" class="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/12 hover:bg-white/25 grid place-items-center transition">
+      <svg width="17" height="17" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" fill="none"><path d="M10 6l6 6-6 6"></path></svg></button>
+
+    <!-- dots + footer card -->
+    <div id="dots" class="absolute inset-x-0 bottom-[104px] sm:static sm:shrink-0 sm:py-3 z-20 flex justify-center gap-2.5"></div>
+    <div class="absolute inset-x-0 bottom-0 sm:static sm:shrink-0 z-20 rounded-t-3xl sm:rounded-none bg-[var(--cream-soft)] text-[var(--ink)] px-6 pt-4 pb-5 sm:py-3.5 text-center shadow-[0_-10px_30px_rgba(0,0,0,.35)] sm:shadow-none">
+      <p class="text-[12.5px] font-medium">Swipe untuk melihat <span id="swipeWord">jenis kain</span> lainnya</p>
+      <p id="chipList" class="mt-1 text-[12px] text-[var(--muted)]"></p>
+    </div>
+  </div>
+
+</div>
+
+<script src="/js/products.js"></script>
+<script>
+document.getElementById('menuBtn').onclick = () =>
+  document.getElementById('mobileNav').classList.toggle('hidden');
+
+/* ---------- data (dari /js/products.js) ---------- */
+var IMG_DARK = imgSrc("dark");
+var IMG_LIGHT = imgSrc("light");
+var activeFabric = "all";
+
+function render(){
+  var list = PRODUCTS.filter(function(p){ return activeFabric==="all" || p.f===activeFabric; });
+  var s = document.getElementById('sortSel').value;
+  if(s==="low") list.sort(function(a,b){return a.p-b.p;});
+  if(s==="high") list.sort(function(a,b){return b.p-a.p;});
+
+  document.getElementById('grid').innerHTML = list.map(function(p){
+    return '<article class="group rounded-2xl bg-[var(--cream-soft)] overflow-hidden border fade-up flex flex-col" style="border-color:var(--line)">'
+      + '<div class="relative aspect-[4/5] card-img overflow-hidden">'
+      + '<a href="/produk?p='+p.s+'" class="block w-full h-full"><img src="'+(p.t==="dark"?IMG_DARK:IMG_LIGHT)+'" alt="'+p.n+'" class="w-full h-full object-cover transition duration-700 group-hover:scale-[1.04]"></a>'
+      + '<button aria-label="Wishlist" class="absolute top-3 left-3 w-8 h-8 rounded-full bg-white/85 grid place-items-center hover:bg-white transition"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#1B1917" stroke-width="1.6"><path d="M12 20s-7-4.4-7-9.2A4 4 0 0 1 12 8a4 4 0 0 1 7-1.2C19 11.6 12 20 12 20Z"/></svg></button>'
+      + '<span class="absolute bottom-3 right-3 w-4 h-4 rounded-full ring-2 ring-white" style="background:'+FABRIC_COLOR[p.f]+'"></span>'
+      + '</div><div class="p-3.5 md:p-4">'
+      + '<h3 class="text-[14px] md:text-[16px] font-semibold leading-snug"><a href="/produk?p='+p.s+'" class="hover:underline">'+p.n+'</a></h3>'
+      + '<p class="mt-1 text-[11.5px]" style="color:var(--accent)">Kain '+p.f+'</p>'
+      + '<p class="mt-1.5 text-[12.5px] text-[var(--muted)]">Mulai <span class="text-[var(--ink)] font-medium">'+rupiah(p.p)+'</span></p>'
+      + '<a href="/produk?p='+p.s+'" class="mt-3 w-full rounded-lg border px-3 py-2.5 text-[12.5px] font-medium hover:bg-[var(--ink)] hover:text-white transition flex items-center justify-center gap-1.5" style="border-color:var(--ink)">Lihat Detail <span>&rsaquo;</span></a>'
+      + '</div></article>';
+  }).join("");
+
+  document.getElementById('count').textContent = list.length;
+  document.getElementById('fabricLabel').textContent = activeFabric==="all" ? "" : " \u00b7 kain "+activeFabric;
+  document.getElementById('empty').classList.toggle('hidden', list.length>0);
+}
+
+document.querySelectorAll('#catRow .cat').forEach(function(b){ b.onclick=function(){
+  document.querySelectorAll('#catRow .cat').forEach(function(x){ x.className="cat px-6 py-2.5 rounded-lg text-[13px] bg-[var(--cream-soft)] swatch-ring"; });
+  b.className="cat px-6 py-2.5 rounded-lg text-[13px] bg-[var(--ink)] text-white";
+};});
+
+document.querySelectorAll('#fabricRow .fabric').forEach(function(b){ b.onclick=function(){
+  document.querySelectorAll('#fabricRow .fabric').forEach(function(x){ x.classList.remove('swatch-active'); x.classList.add('swatch-ring'); });
+  b.classList.remove('swatch-ring'); b.classList.add('swatch-active');
+  activeFabric = b.dataset.fabric;
+  render();
+};});
+
+document.getElementById('sortSel').onchange = render;
+render();
+
+/* ---------- sheet content ---------- */
+var ICONS = {
+  layers:'<path d="M12 4 3 8.5l9 4.5 9-4.5L12 4Z"/><path d="M3 13.5 12 18l9-4.5"/>',
+  stretch:'<path d="M4 4h6M4 4v6M4 4l6 6M20 20h-6M20 20v-6M20 20l-6-6"/>',
+  drape:'<path d="M6 4h12v16l-3-2-3 2-3-2-3 2V4Z"/>',
+  air:'<path d="M3 8h12a3 3 0 1 0-3-3M3 13h15a3 3 0 1 1-3 3M3 18h9"/>',
+  ruler:'<path d="M3 9h18v6H3zM7 9v3M11 9v3M15 9v3M19 9v3"/>',
+  cut:'<path d="M12 4v16M8 8l8 8M16 8l-8 8"/>'
+};
+function ico(k){ return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'+(ICONS[k]||ICONS.layers)+'</svg>'; }
+
+/* ilustrasi tekstur kain — src dibaca dari <img> di markup
+   supaya ikut ter-export jadi file gambar lokal */
+function assetSrc(id){ var el = document.getElementById(id); return el ? el.getAttribute('src') : ''; }
+var FAB = {
+  black: assetSrc('fabBlack'),
+  navy:  assetSrc('fabNavy'),
+  taupe: assetSrc('fabTaupe'),
+  cream: assetSrc('fabCream')
+};
+
+var KAIN = [
+  {code:"B.01", tag:"Ketebalan: Tinggi", bg:FAB.black, points:[
+    ["layers","Lebih tebal & kokoh","Memberikan struktur yang kuat dan tidak mudah menerawang."],
+    ["stretch","Stretch","Nyaman bergerak, tidak terasa kaku."],
+    ["drape","Jatuh lebih rapi","Memberikan tampilan yang elegan dan berkelas."],
+    ["air","Adem & nyaman","Sirkulasi udara baik, nyaman dipakai seharian."]],
+    fit:"Aktivitas formal, acara penting, dan tampilan premium sehari-hari."},
+  {code:"B.02", tag:"Ketebalan: Sedang-Tinggi", bg:FAB.navy, points:[
+    ["layers","Tebal seimbang","Kokoh namun tetap ringan saat dipakai."],
+    ["stretch","Serat halus","Permukaan lembut dengan kilau tipis."],
+    ["drape","Siluet bersih","Jatuh lurus, minim kerutan."],
+    ["air","Breathable","Cocok untuk cuaca panas maupun ruang ber-AC."]],
+    fit:"Kerja, kajian, dan pemakaian harian yang tetap rapi."},
+  {code:"A.02", tag:"Ketebalan: Sedang", bg:FAB.taupe, points:[
+    ["layers","Ringan","Terasa enteng, nyaman untuk mobilitas tinggi."],
+    ["stretch","Lentur","Mengikuti gerak tubuh dengan baik."],
+    ["drape","Flowy","Jatuh mengalir, kesan santai namun sopan."],
+    ["air","Sangat adem","Pilihan terbaik untuk suhu panas."]],
+    fit:"Perjalanan, aktivitas outdoor, dan pemakaian santai."},
+  {code:"C.01", tag:"Ketebalan: Sedang", bg:FAB.cream, points:[
+    ["layers","Klasik","Tekstur katun premium dengan nuansa lembut."],
+    ["stretch","Nyaman di kulit","Halus, tidak panas, tidak gatal."],
+    ["drape","Rapi natural","Tampilan bersih tanpa terlihat kaku."],
+    ["air","Mudah dirawat","Cepat kering dan tidak rewel saat disetrika."]],
+    fit:"Pemakaian harian, ibadah, dan acara keluarga."}
+];
+
+var SERIES = [
+  {code:"Regular", tag:"Potongan: Longgar", bg:FAB.cream, points:[
+    ["ruler","Lebar dada relaks","Ruang gerak maksimal, nyaman untuk semua bentuk tubuh."],
+    ["cut","Lengan lurus","Model klasik dengan manset standar."],
+    ["drape","Jatuh lurus","Siluet tradisional yang sopan."]],
+    fit:"Yang suka pakaian longgar dan santai."},
+  {code:"Slim", tag:"Potongan: Ramping", bg:FAB.taupe, points:[
+    ["ruler","Badan lebih ramping","Mengikuti bentuk tubuh tanpa terasa sempit."],
+    ["cut","Lengan lebih kecil","Tampilan modern dan bersih."],
+    ["drape","Siluet tegas","Terlihat lebih tinggi dan proporsional."]],
+    fit:"Tampilan modern, acara formal, dan foto."},
+  {code:"Pro", tag:"Potongan: Terstruktur", bg:FAB.black, points:[
+    ["ruler","Pola presisi","Dikembangkan dari data ukuran pelanggan."],
+    ["cut","Detail jahitan rapat","Finishing kuat dan tahan lama."],
+    ["drape","Struktur premium","Bahu dan kerah lebih terbentuk."]],
+    fit:"Pemakaian intens dan tampilan paling premium."}
+];
+
+var sheet = document.getElementById('sheet'),
+    panel = document.getElementById('sheetPanel'),
+    track = document.getElementById('track'),
+    dots  = document.getElementById('dots');
+var current = [];
+
+function slideHTML(d){
+  return '<div class="slide snap-center shrink-0 w-full h-full relative overflow-hidden">'
+    + '<img src="'+d.bg+'" alt="" class="absolute inset-0 w-full h-full object-cover">'
+    + '<div class="absolute inset-0" style="background:linear-gradient(180deg,rgba(10,10,10,.86) 0%,rgba(12,12,12,.6) 32%,rgba(10,10,10,.8) 100%)"></div>'
+    + '<div class="relative h-full overflow-y-auto no-scrollbar px-6 sm:px-8 pt-[140px] pb-[132px] sm:pt-5 sm:pb-5 flex flex-col justify-center md:grid md:grid-cols-[minmax(0,.75fr)_minmax(0,1.25fr)] md:gap-x-8 md:items-center">'
+    + '<div class="md:self-center">'
+    + '<p class="display text-[34px] sm:text-[40px] lg:text-[46px] leading-none">'+d.code+'</p>'
+    + '<span class="inline-block self-start mt-2.5 rounded-full px-3 py-1 text-[11px]" style="background:rgba(185,138,75,.18);color:#E0BE8A">'+d.tag+'</span>'
+    + '<div class="mt-3.5 h-px w-12" style="background:var(--accent)"></div>'
+    + '<div class="hidden md:flex mt-5 rounded-2xl bg-white/[0.07] border border-white/10 p-3.5 gap-3">'
+    + '<span style="color:#E0BE8A">&#10022;</span>'
+    + '<div><p class="text-[12px]" style="color:#E0BE8A">Cocok untuk</p><p class="text-[12px] text-white/70 leading-snug">'+d.fit+'</p></div></div>'
+    + '</div>'
+    + '<div class="mt-4 md:mt-0 space-y-3 sm:space-y-3.5">'
+    + d.points.map(function(p){ return '<div class="flex gap-3.5">'
+        + '<span class="mt-0.5 w-9 h-9 shrink-0 rounded-xl bg-white/10 grid place-items-center" style="color:#E0BE8A">'+ico(p[0])+'</span>'
+        + '<div><p class="text-[13.5px] font-medium leading-snug">'+p[1]+'</p><p class="mt-0.5 text-[12px] text-white/60 leading-snug">'+p[2]+'</p></div></div>'; }).join("")
+    + '<div class="md:hidden rounded-2xl bg-white/[0.07] border border-white/10 p-3.5 flex gap-3">'
+    + '<span style="color:#E0BE8A">&#10022;</span>'
+    + '<div><p class="text-[12px]" style="color:#E0BE8A">Cocok untuk</p><p class="text-[12px] text-white/70 leading-snug">'+d.fit+'</p></div></div>'
+    + '</div>'
+    + '</div></div>';
+}
+
+function openSheet(type){
+  current = type==="kain" ? KAIN : SERIES;
+  var t = type==="kain" ? "Perbedaan Jenis Kain Thobe" : "Perbedaan Series Thobe";
+  var s = type==="kain"
+    ? "Setiap kain punya karakter terbaiknya. Pilih yang paling sesuai untukmu."
+    : "Series menentukan potongan dan siluet. Pilih yang paling pas dengan gayamu.";
+  document.querySelectorAll('.sheetTitle').forEach(function(e){ e.textContent = t; });
+  document.querySelectorAll('.sheetSub').forEach(function(e){ e.textContent = s; });
+  document.getElementById('swipeWord').textContent = type==="kain" ? "jenis kain" : "series";
+  document.getElementById('chipList').textContent = current.map(function(d){return d.code;}).join("  \u00b7  ");
+  track.innerHTML = current.map(slideHTML).join("");
+  dots.innerHTML = current.map(function(_,i){ return '<button data-i="'+i+'" class="dot w-2 h-2 rounded-full transition"></button>'; }).join("");
+  dots.querySelectorAll('.dot').forEach(function(b){ b.onclick=function(){ goTo(+b.dataset.i); }; });
+  sheet.classList.remove('hidden');
+  document.body.style.overflow='hidden';
+  requestAnimationFrame(function(){ panel.classList.remove('translate-y-6','opacity-0'); });
+  track.scrollLeft = 0; setDots(0);
+}
+function closeSheet(){
+  panel.classList.add('translate-y-6','opacity-0');
+  document.body.style.overflow='';
+  setTimeout(function(){ sheet.classList.add('hidden'); }, 260);
+}
+function setDots(i){
+  dots.querySelectorAll('.dot').forEach(function(d,k){
+    d.style.background = k===i ? "var(--accent)" : "rgba(255,255,255,.28)";
+    d.style.width = k===i ? "18px" : "8px";
+  });
+}
+function index(){ return Math.round(track.scrollLeft / track.clientWidth); }
+function goTo(i){
+  i = Math.max(0, Math.min(current.length-1, i));
+  track.scrollTo({left: i*track.clientWidth, behavior:'smooth'});
+  setDots(i);
+}
+track.addEventListener('scroll', function(){ setDots(index()); });
+document.getElementById('prev').onclick = function(){ goTo(index()-1); };
+document.getElementById('next').onclick = function(){ goTo(index()+1); };
+document.getElementById('sheetClose').onclick = closeSheet;
+document.getElementById('sheetBg').onclick = closeSheet;
+document.addEventListener('keydown', function(e){
+  if(sheet.classList.contains('hidden')) return;
+  if(e.key==='Escape') closeSheet();
+  if(e.key==='ArrowRight') goTo(index()+1);
+  if(e.key==='ArrowLeft') goTo(index()-1);
+});
+document.querySelectorAll('[data-sheet]').forEach(function(b){ b.onclick=function(){ openSheet(b.dataset.sheet); }; });
+</script>
+
+</body></html>

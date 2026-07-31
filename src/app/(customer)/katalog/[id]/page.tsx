@@ -395,6 +395,14 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     setCurrentSlide(Math.min(index, media.length - 1));
   };
 
+  const goToSlide = (i: number) => {
+    if (!carouselRef.current) return;
+    const clamped = Math.max(0, Math.min(media.length - 1, i));
+    const itemWidth = carouselRef.current.scrollWidth / media.length;
+    carouselRef.current.scrollTo({ left: clamped * itemWidth, behavior: "smooth" });
+    setCurrentSlide(clamped);
+  };
+
   if (loading) {
     return (
       <section className="min-h-screen flex items-center justify-center" style={{ background: "var(--cream)" }}>
@@ -437,41 +445,52 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         <div className="max-w-7xl mx-auto px-4" style={{ paddingTop: "80px", marginBottom: "32px" }}>
           <Breadcrumb extra={[{ label: product.name }]} />
         </div>
-        {/* Gallery carousel */}
-        <div className="relative pb-4">
-          {/* Wishlist button - mobile */}
-          {isLoggedIn && product && (
-            <button onClick={async () => { const added = await toggleWishlist(product.id); toast.show(added ? "Ditambahkan ke wishlist" : "Dihapus dari wishlist"); }} className="absolute top-4 right-4 z-20 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110" style={{ background: "rgba(255,255,255,.9)", backdropFilter: "blur(8px)", boxShadow: "0 2px 8px rgba(0,0,0,.1)" }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill={isWishlisted(product.id) ? "#e74c3c" : "none"} stroke={isWishlisted(product.id) ? "#e74c3c" : "var(--espresso)"} strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
-            </button>
-          )}
-          <div
-            ref={carouselRef}
-            className="flex overflow-x-auto gap-3 scrollbar-hide px-4 scroll-smooth"
-            onScroll={handleCarouselScroll}
-          >
-            {media.map((item, i) => (
-              <div
-                key={i}
-                className="relative shrink-0 w-[80vw] aspect-[3/4] rounded-xl overflow-hidden cursor-zoom-in"
-                style={{ background: "#e8dfd1" }}
-                onClick={() => { setZoomIndex(i); setZoomOpen(true); }}
-              >
-                <MediaDisplay item={item} poster={product.image} allMedia={media} className="absolute inset-0" />
-                {product.tag && i === 0 && (
-                  <span className="absolute top-3 left-3 px-2.5 py-1 text-[10px] tracking-[0.12em] uppercase font-ui font-medium rounded-sm z-10"
-                    style={{ border: "1px solid var(--gold)", color: "var(--gold)", background: "rgba(248,246,242,.9)" }}>
-                    {product.tag}
-                  </span>
-                )}
-                {item.type === "video" && (
-                  <span className="absolute top-3 right-3 px-2 py-1 text-[9px] tracking-[0.1em] uppercase font-ui font-medium rounded-sm z-10"
-                    style={{ background: "rgba(0,0,0,.5)", color: "white" }}>
-                    Video
-                  </span>
-                )}
-              </div>
-            ))}
+        {/* Gallery */}
+        <div className="relative px-4 pb-1">
+          <div className="relative rounded-3xl overflow-hidden aspect-[4/5]" style={{ background: "#e8dfd1" }}>
+            <div
+              ref={carouselRef}
+              className="h-full flex overflow-x-auto snap-x snap-mandatory scrollbar-hide"
+              onScroll={handleCarouselScroll}
+            >
+              {media.map((item, i) => (
+                <div
+                  key={i}
+                  className="relative shrink-0 w-full h-full snap-center cursor-zoom-in"
+                  onClick={() => { setZoomIndex(i); setZoomOpen(true); }}
+                >
+                  <MediaDisplay item={item} poster={product.image} allMedia={media} className="absolute inset-0" />
+                  {product.tag && i === 0 && (
+                    <span className="absolute top-4 left-4 px-2.5 py-1 text-[10px] tracking-[0.12em] uppercase font-ui font-medium rounded-sm z-10"
+                      style={{ border: "1px solid var(--gold)", color: "var(--gold)", background: "rgba(248,246,242,.9)" }}>
+                      {product.tag}
+                    </span>
+                  )}
+                  {item.type === "video" && (
+                    <span className="absolute top-4 right-4 px-2 py-1 text-[9px] tracking-[0.1em] uppercase font-ui font-medium rounded-sm z-10"
+                      style={{ background: "rgba(0,0,0,.5)", color: "white" }}>
+                      Video
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+            {/* Wishlist button - mobile */}
+            {isLoggedIn && product && (
+              <button onClick={async () => { const added = await toggleWishlist(product.id); toast.show(added ? "Ditambahkan ke wishlist" : "Dihapus dari wishlist"); }} className="absolute top-4 right-4 z-20 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110" style={{ background: "rgba(255,255,255,.9)", backdropFilter: "blur(8px)", boxShadow: "0 2px 8px rgba(0,0,0,.1)" }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill={isWishlisted(product.id) ? "#e74c3c" : "none"} stroke={isWishlisted(product.id) ? "#e74c3c" : "var(--espresso)"} strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
+              </button>
+            )}
+            {media.length > 1 && (
+              <>
+                <button onClick={() => goToSlide(currentSlide - 1)} aria-label="Sebelumnya" className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 z-10" style={{ background: "rgba(255,255,255,.85)" }}>
+                  <ChevronLeft size={16} style={{ color: "var(--espresso)" }} />
+                </button>
+                <button onClick={() => goToSlide(currentSlide + 1)} aria-label="Berikutnya" className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 z-10" style={{ background: "rgba(255,255,255,.85)" }}>
+                  <ChevronRight size={16} style={{ color: "var(--espresso)" }} />
+                </button>
+              </>
+            )}
           </div>
           {/* Dots */}
           {media.length > 1 && (
@@ -484,8 +503,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           )}
         </div>
 
-        {/* Content card */}
-        <div className="relative -mt-4 mx-4 px-5 py-6 rounded-t-2xl" style={{ background: "var(--cream)", boxShadow: "0 -4px 20px -8px rgba(42,33,27,.08)" }}>
+        {/* Info */}
+        <div className="relative mt-5 px-5 pb-6">
           <p className="text-[10px] tracking-[0.12em] uppercase font-ui mb-1.5" style={{ color: "var(--stone)" }}>
             {product.category}
             {product.jenis_kain?.name && (
@@ -498,67 +517,72 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
             {product.name}{selectedColor && <span style={{ color: "var(--gold)" }}> — {selectedColor}</span>}
           </h1>
-          {/* Price display — CYP or Fixed */}
-          {isCYP ? (
-            <div className="mb-4">
-              <p className="text-[10px] tracking-[0.1em] uppercase font-ui mb-1" style={{ color: "var(--stone)" }}>Harga Minimum</p>
-              <p className="text-[1.3rem] font-ui font-semibold mb-1" style={{ color: "var(--gold)" }}>
-                Rp {minimumPrice.toLocaleString("id-ID")}
-              </p>
-              <p className="text-[11px] font-ui mb-3" style={{ color: "var(--stone)" }}>Pilih harga terbaikmu</p>
-              {/* Quick select buttons */}
-              <div className="flex flex-wrap gap-1.5 mb-2">
-                {quickPrices.map((qp) => {
-                  const isActive = !isCustomPrice && selectedPrice === qp.value;
-                  const isRecommended = qp.highlight;
-                  return (
-                    <button key={qp.value} onClick={() => handleQuickPrice(qp.value)}
-                      className="px-3 py-1.5 text-[11px] font-ui rounded-sm transition-all"
-                      style={{
-                        background: isActive ? (isRecommended ? "var(--gold)" : "var(--espresso)") : "transparent",
-                        color: isActive ? "white" : (isRecommended ? "var(--gold)" : "var(--coffee)"),
-                        border: `1.5px solid ${isActive ? (isRecommended ? "var(--gold)" : "var(--espresso)") : (isRecommended ? "var(--gold)" : "rgba(201,183,156,.3)")}`,
-                      }}>
-                      {isRecommended && "★ "}{qp.label} — Rp {qp.value.toLocaleString("id-ID")}
-                    </button>
-                  );
-                })}
-                <button onClick={handleCustomPriceToggle}
-                  className="px-3 py-1.5 text-[11px] font-ui rounded-sm transition-all"
-                  style={{ background: isCustomPrice ? "var(--espresso)" : "transparent", color: isCustomPrice ? "var(--cream)" : "var(--coffee)", border: `1px solid ${isCustomPrice ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
-                  Pilih Harga Lainnya
-                </button>
-              </div>
-              {/* Custom price input */}
-              {isCustomPrice && (
-                <div className="mt-2">
-                  <input type="text" value={customPriceInput} onChange={(e) => handleCustomPriceChange(e.target.value)}
-                    placeholder={`Min. Rp ${minimumPrice.toLocaleString("id-ID")}`}
-                    className="w-full px-3 py-2.5 text-[13px] font-ui rounded-sm outline-none"
-                    style={{ background: "transparent", border: `1px solid ${customPriceError ? "#e74c3c" : "rgba(201,183,156,.3)"}`, color: "var(--espresso)" }} />
-                  {customPriceError && <p className="text-[11px] font-ui mt-1" style={{ color: "#e74c3c" }}>{customPriceError}</p>}
+          {/* Price card */}
+          <div className="mt-6 mb-5 rounded-2xl p-5" style={{ background: "var(--cream-bright)", border: "1px solid rgba(201,183,156,.25)" }}>
+            {isCYP ? (
+              <div>
+                <p className="text-[10px] tracking-[0.1em] uppercase font-ui mb-1" style={{ color: "var(--stone)" }}>Harga Minimum</p>
+                <p className="text-[1.3rem] font-ui font-semibold mb-1" style={{ color: "var(--gold)" }}>
+                  Rp {minimumPrice.toLocaleString("id-ID")}
+                </p>
+                <p className="text-[11px] font-ui mb-3" style={{ color: "var(--stone)" }}>Pilih harga terbaikmu</p>
+                {/* Quick select buttons */}
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {quickPrices.map((qp) => {
+                    const isActive = !isCustomPrice && selectedPrice === qp.value;
+                    const isRecommended = qp.highlight;
+                    return (
+                      <button key={qp.value} onClick={() => handleQuickPrice(qp.value)}
+                        className="px-3 py-1.5 text-[11px] font-ui rounded-sm transition-all"
+                        style={{
+                          background: isActive ? (isRecommended ? "var(--gold)" : "var(--espresso)") : "transparent",
+                          color: isActive ? "white" : (isRecommended ? "var(--gold)" : "var(--coffee)"),
+                          border: `1.5px solid ${isActive ? (isRecommended ? "var(--gold)" : "var(--espresso)") : (isRecommended ? "var(--gold)" : "rgba(201,183,156,.3)")}`,
+                        }}>
+                        {isRecommended && "★ "}{qp.label} — Rp {qp.value.toLocaleString("id-ID")}
+                      </button>
+                    );
+                  })}
+                  <button onClick={handleCustomPriceToggle}
+                    className="px-3 py-1.5 text-[11px] font-ui rounded-sm transition-all"
+                    style={{ background: isCustomPrice ? "var(--espresso)" : "transparent", color: isCustomPrice ? "var(--cream)" : "var(--coffee)", border: `1px solid ${isCustomPrice ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
+                    Pilih Harga Lainnya
+                  </button>
                 </div>
-              )}
-              <p className="text-[10px] font-ui mt-2" style={{ color: "var(--stone)" }}>
-                {cypMicrocopy}
-              </p>
-            </div>
-          ) : (
-            <p className="text-[1.3rem] font-ui font-semibold mb-4" style={{ color: "var(--gold)" }}>
-              Rp {currentPrice.toLocaleString("id-ID")}
-            </p>
-          )}
-          {stock !== null && (
-            <div className="mb-4">
-              {stock === 0 ? (
-                <span className="inline-flex items-center gap-1 text-[11px] font-ui font-medium px-2.5 py-1 rounded-full" style={{ background: "#fde8e8", color: "#c0392b" }}>Habis</span>
-              ) : stock <= 5 ? (
-                <span className="inline-flex items-center gap-1 text-[11px] font-ui font-medium px-2.5 py-1 rounded-full" style={{ background: "#fef3cd", color: "#856404" }}>Stok Menipis — Tersisa {stock}</span>
-              ) : (
-                <span className="inline-flex items-center gap-1 text-[11px] font-ui font-medium px-2.5 py-1 rounded-full" style={{ background: "#e7ecdf", color: "#5b6b45" }}>Tersedia</span>
-              )}
-            </div>
-          )}
+                {/* Custom price input */}
+                {isCustomPrice && (
+                  <div className="mt-2">
+                    <input type="text" value={customPriceInput} onChange={(e) => handleCustomPriceChange(e.target.value)}
+                      placeholder={`Min. Rp ${minimumPrice.toLocaleString("id-ID")}`}
+                      className="w-full px-3 py-2.5 text-[13px] font-ui rounded-sm outline-none"
+                      style={{ background: "transparent", border: `1px solid ${customPriceError ? "#e74c3c" : "rgba(201,183,156,.3)"}`, color: "var(--espresso)" }} />
+                    {customPriceError && <p className="text-[11px] font-ui mt-1" style={{ color: "#e74c3c" }}>{customPriceError}</p>}
+                  </div>
+                )}
+                <p className="text-[10px] font-ui mt-3" style={{ color: "var(--stone)" }}>
+                  {cypMicrocopy}
+                </p>
+              </div>
+            ) : (
+              <div>
+                <p className="text-[10px] tracking-[0.1em] uppercase font-ui mb-1" style={{ color: "var(--stone)" }}>Harga</p>
+                <p className="text-[1.3rem] font-ui font-semibold" style={{ color: "var(--gold)" }}>
+                  Rp {currentPrice.toLocaleString("id-ID")}
+                </p>
+              </div>
+            )}
+            {stock !== null && (
+              <div className="mt-3">
+                {stock === 0 ? (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-ui font-medium px-2.5 py-1 rounded-full" style={{ background: "#fde8e8", color: "#c0392b" }}>Habis</span>
+                ) : stock <= 5 ? (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-ui font-medium px-2.5 py-1 rounded-full" style={{ background: "#fef3cd", color: "#856404" }}>Stok Menipis — Tersisa {stock}</span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-ui font-medium px-2.5 py-1 rounded-full" style={{ background: "#e7ecdf", color: "#5b6b45" }}>Tersedia</span>
+                )}
+              </div>
+            )}
+          </div>
           <p className="text-[13px] leading-relaxed font-ui mb-5" style={{ color: "rgba(42,33,27,.8)" }}>
             {getDescription(product)}
           </p>
@@ -590,26 +614,22 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               <p className="text-[10px] tracking-[0.1em] uppercase font-ui font-medium mb-2.5" style={{ color: "var(--espresso)" }}>
                 Series — <span style={{ color: "var(--gold)" }}>{product.series}</span>
               </p>
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-wrap gap-2">
                 {availableSeries.map((s) => {
                   const isActive = s.id === product.id;
                   return (
                     <a
                       key={s.id}
                       href={`/katalog/${s.id}?color=${encodeURIComponent(selectedColor)}&size=${encodeURIComponent(selectedSize)}`}
-                      className="flex items-center justify-between px-3.5 py-2.5 rounded-lg transition-all duration-200"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[12px] font-ui transition-all duration-200"
                       style={{
-                        background: isActive ? "rgba(42,33,27,.06)" : "transparent",
-                        border: `1.5px solid ${isActive ? "var(--espresso)" : "rgba(201,183,156,.25)"}`,
+                        background: isActive ? "var(--espresso)" : "var(--cream-bright)",
+                        color: isActive ? "var(--cream)" : "var(--coffee)",
+                        border: `1px solid ${isActive ? "var(--espresso)" : "rgba(201,183,156,.3)"}`,
                       }}
                     >
-                      <div className="flex items-center gap-2.5">
-                        <span className="text-[13px] font-medium font-ui" style={{ color: isActive ? "var(--espresso)" : "var(--coffee)" }}>
-                          {s.series}
-                        </span>
-                        {isActive && <span className="text-[9px] tracking-[0.1em] uppercase px-1.5 py-0.5 rounded-sm font-medium" style={{ background: "var(--gold)", color: "white" }}>Aktif</span>}
-                      </div>
-                      <span className="text-[12px] font-ui font-medium" style={{ color: "var(--gold)" }}>
+                      <span className="font-medium">{s.series}</span>
+                      <span style={{ color: isActive ? "rgba(248,245,241,.75)" : "var(--gold)" }}>
                         {s.create_your_price_enabled && s.minimum_price
                           ? `Mulai Rp ${s.minimum_price.toLocaleString("id-ID")}`
                           : `Rp ${s.price.toLocaleString("id-ID")}`
@@ -716,29 +736,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         </div>
         <div className="grid grid-cols-2 gap-10 lg:gap-14">
           {/* Gallery */}
-          <div className="flex gap-3">
-            {media.length > 1 && (
-              <div className="flex flex-col gap-2 shrink-0">
-                {media.map((item, i) => (
-                  <button key={i} onClick={() => setActiveIndex(i)}
-                    className="relative w-[68px] aspect-[3/4] rounded-lg overflow-hidden transition-all duration-200 shrink-0"
-                    style={{ border: activeIndex === i ? "2px solid var(--gold)" : "1px solid rgba(201,183,156,.25)", opacity: activeIndex === i ? 1 : 0.55 }}
-                    aria-label={`${item.type === "video" ? "Video" : "Foto"} ${i + 1}`}>
-                    {item.type === "video" ? (
-                      <>
-                        <img src={media.find((m) => m.type === "image")?.src || product.image} alt="" className="w-full h-full object-cover" loading="lazy" />
-                        <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(0,0,0,.15)" }}>
-                          <Play size={14} fill="var(--gold)" stroke="none" />
-                        </div>
-                      </>
-                    ) : (
-                      <img src={item.src} alt="" className="w-full h-full object-cover" loading="lazy" />
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
-            <div className="relative w-full max-h-[560px] lg:max-h-[640px] rounded-2xl overflow-hidden cursor-zoom-in" style={{ background: "#e8dfd1" }} onClick={() => { setZoomIndex(activeIndex); setZoomOpen(true); }}>
+          <div className="lg:sticky lg:top-24">
+            <div className="relative w-full aspect-[4/5] rounded-3xl overflow-hidden cursor-zoom-in" style={{ background: "#e8dfd1" }} onClick={() => { setZoomIndex(activeIndex); setZoomOpen(true); }}>
               <AnimatePresence mode="wait">
                 <motion.div key={activeIndex} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }} className="absolute inset-0">
                   <MediaDisplay item={activeMedia} poster={product.image} allMedia={media} className="w-full h-full" />
@@ -757,7 +756,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 </span>
               )}
               {activeMedia.type === "video" && (
-                <span className="absolute top-4 right-4 px-2.5 py-1 text-[10px] tracking-[0.1em] uppercase font-ui font-medium rounded-sm z-10"
+                <span className="absolute bottom-4 left-4 px-2.5 py-1 text-[10px] tracking-[0.1em] uppercase font-ui font-medium rounded-sm z-10"
                   style={{ background: "rgba(0,0,0,.5)", color: "white" }}>Video</span>
               )}
               {media.length > 1 && (
@@ -775,6 +774,37 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 </>
               )}
             </div>
+            {/* Dots */}
+            {media.length > 1 && (
+              <div className="flex justify-center gap-1.5 mt-3">
+                {media.map((_, i) => (
+                  <span key={i} className="rounded-full transition-all duration-300"
+                    style={{ background: i === activeIndex ? "var(--gold)" : "rgba(201,183,156,.4)", width: i === activeIndex ? "16px" : "6px", height: "6px" }} />
+                ))}
+              </div>
+            )}
+            {/* Thumbnails */}
+            {media.length > 1 && (
+              <div className="mt-4 grid grid-cols-4 gap-2">
+                {media.map((item, i) => (
+                  <button key={i} onClick={() => setActiveIndex(i)}
+                    className="relative aspect-square rounded-lg overflow-hidden transition-all duration-200"
+                    style={{ boxShadow: activeIndex === i ? "0 0 0 2px var(--espresso)" : "0 0 0 1px rgba(201,183,156,.3)" }}
+                    aria-label={`${item.type === "video" ? "Video" : "Foto"} ${i + 1}`}>
+                    {item.type === "video" ? (
+                      <>
+                        <img src={media.find((m) => m.type === "image")?.src || product.image} alt="" className="w-full h-full object-cover" loading="lazy" />
+                        <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(0,0,0,.15)" }}>
+                          <Play size={14} fill="var(--gold)" stroke="none" />
+                        </div>
+                      </>
+                    ) : (
+                      <img src={item.src} alt="" className="w-full h-full object-cover" loading="lazy" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Info */}
@@ -791,67 +821,72 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
               {product.name}{selectedColor && <span style={{ color: "var(--gold)" }}> — {selectedColor}</span>}
             </h1>
-            {/* Price display — CYP or Fixed */}
-            {isCYP ? (
-              <div className="mb-5">
-                <p className="text-[11px] tracking-[0.1em] uppercase font-ui mb-1" style={{ color: "var(--stone)" }}>Harga Minimum</p>
-                <p className="text-[20px] sm:text-[22px] font-ui font-semibold mb-1" style={{ color: "var(--gold)" }}>
-                  Rp {minimumPrice.toLocaleString("id-ID")}
-                </p>
-                <p className="text-[12px] font-ui mb-3" style={{ color: "var(--stone)" }}>Pilih harga terbaikmu</p>
-                {/* Quick select buttons */}
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {quickPrices.map((qp) => {
-                    const isActive = !isCustomPrice && selectedPrice === qp.value;
-                    const isRecommended = qp.highlight;
-                    return (
-                      <button key={qp.value} onClick={() => handleQuickPrice(qp.value)}
-                        className="px-4 py-2 text-[12px] font-ui rounded-sm transition-all"
-                        style={{
-                          background: isActive ? (isRecommended ? "var(--gold)" : "var(--espresso)") : "transparent",
-                          color: isActive ? "white" : (isRecommended ? "var(--gold)" : "var(--coffee)"),
-                          border: `1.5px solid ${isActive ? (isRecommended ? "var(--gold)" : "var(--espresso)") : (isRecommended ? "var(--gold)" : "rgba(201,183,156,.3)")}`,
-                        }}>
-                        {isRecommended && "★ "}{qp.label} — Rp {qp.value.toLocaleString("id-ID")}
-                      </button>
-                    );
-                  })}
-                  <button onClick={handleCustomPriceToggle}
-                    className="px-4 py-2 text-[12px] font-ui rounded-sm transition-all"
-                    style={{ background: isCustomPrice ? "var(--espresso)" : "transparent", color: isCustomPrice ? "var(--cream)" : "var(--coffee)", border: `1px solid ${isCustomPrice ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
-                    Pilih Harga Lainnya
-                  </button>
-                </div>
-                {/* Custom price input */}
-                {isCustomPrice && (
-                  <div className="mt-2">
-                    <input type="text" value={customPriceInput} onChange={(e) => handleCustomPriceChange(e.target.value)}
-                      placeholder={`Min. Rp ${minimumPrice.toLocaleString("id-ID")}`}
-                      className="w-full px-3 py-2.5 text-[14px] font-ui rounded-sm outline-none"
-                      style={{ background: "transparent", border: `1px solid ${customPriceError ? "#e74c3c" : "rgba(201,183,156,.3)"}`, color: "var(--espresso)" }} />
-                    {customPriceError && <p className="text-[11px] font-ui mt-1" style={{ color: "#e74c3c" }}>{customPriceError}</p>}
+            {/* Price card */}
+            <div className="mt-2 mb-8 rounded-2xl p-6" style={{ background: "var(--cream-bright)", border: "1px solid rgba(201,183,156,.25)" }}>
+              {isCYP ? (
+                <div>
+                  <p className="text-[11px] tracking-[0.1em] uppercase font-ui mb-1" style={{ color: "var(--stone)" }}>Harga Minimum</p>
+                  <p className="text-[20px] sm:text-[22px] font-ui font-semibold mb-1" style={{ color: "var(--gold)" }}>
+                    Rp {minimumPrice.toLocaleString("id-ID")}
+                  </p>
+                  <p className="text-[12px] font-ui mb-3" style={{ color: "var(--stone)" }}>Pilih harga terbaikmu</p>
+                  {/* Quick select buttons */}
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {quickPrices.map((qp) => {
+                      const isActive = !isCustomPrice && selectedPrice === qp.value;
+                      const isRecommended = qp.highlight;
+                      return (
+                        <button key={qp.value} onClick={() => handleQuickPrice(qp.value)}
+                          className="px-4 py-2 text-[12px] font-ui rounded-sm transition-all"
+                          style={{
+                            background: isActive ? (isRecommended ? "var(--gold)" : "var(--espresso)") : "transparent",
+                            color: isActive ? "white" : (isRecommended ? "var(--gold)" : "var(--coffee)"),
+                            border: `1.5px solid ${isActive ? (isRecommended ? "var(--gold)" : "var(--espresso)") : (isRecommended ? "var(--gold)" : "rgba(201,183,156,.3)")}`,
+                          }}>
+                          {isRecommended && "★ "}{qp.label} — Rp {qp.value.toLocaleString("id-ID")}
+                        </button>
+                      );
+                    })}
+                    <button onClick={handleCustomPriceToggle}
+                      className="px-4 py-2 text-[12px] font-ui rounded-sm transition-all"
+                      style={{ background: isCustomPrice ? "var(--espresso)" : "transparent", color: isCustomPrice ? "var(--cream)" : "var(--coffee)", border: `1px solid ${isCustomPrice ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
+                      Pilih Harga Lainnya
+                    </button>
                   </div>
-                )}
-                <p className="text-[11px] font-ui mt-2" style={{ color: "var(--stone)" }}>
-                  {cypMicrocopy}
-                </p>
-              </div>
-            ) : (
-              <p className="text-[20px] sm:text-[22px] font-ui font-semibold mb-4" style={{ color: "var(--gold)" }}>
-                Rp {currentPrice.toLocaleString("id-ID")}
-              </p>
-            )}
-            {stock !== null && (
-              <div className="mb-5">
-                {stock === 0 ? (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-ui font-medium px-2.5 py-1 rounded-full" style={{ background: "#fde8e8", color: "#c0392b" }}>Habis</span>
-                ) : stock <= 5 ? (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-ui font-medium px-2.5 py-1 rounded-full" style={{ background: "#fef3cd", color: "#856404" }}>Stok Menipis — Tersisa {stock}</span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-ui font-medium px-2.5 py-1 rounded-full" style={{ background: "#e7ecdf", color: "#5b6b45" }}>Tersedia</span>
-                )}
-              </div>
-            )}
+                  {/* Custom price input */}
+                  {isCustomPrice && (
+                    <div className="mt-2">
+                      <input type="text" value={customPriceInput} onChange={(e) => handleCustomPriceChange(e.target.value)}
+                        placeholder={`Min. Rp ${minimumPrice.toLocaleString("id-ID")}`}
+                        className="w-full px-3 py-2.5 text-[14px] font-ui rounded-sm outline-none"
+                        style={{ background: "transparent", border: `1px solid ${customPriceError ? "#e74c3c" : "rgba(201,183,156,.3)"}`, color: "var(--espresso)" }} />
+                      {customPriceError && <p className="text-[11px] font-ui mt-1" style={{ color: "#e74c3c" }}>{customPriceError}</p>}
+                    </div>
+                  )}
+                  <p className="text-[11px] font-ui mt-3" style={{ color: "var(--stone)" }}>
+                    {cypMicrocopy}
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-[11px] tracking-[0.1em] uppercase font-ui mb-1" style={{ color: "var(--stone)" }}>Harga</p>
+                  <p className="text-[20px] sm:text-[22px] font-ui font-semibold" style={{ color: "var(--gold)" }}>
+                    Rp {currentPrice.toLocaleString("id-ID")}
+                  </p>
+                </div>
+              )}
+              {stock !== null && (
+                <div className="mt-3">
+                  {stock === 0 ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-ui font-medium px-2.5 py-1 rounded-full" style={{ background: "#fde8e8", color: "#c0392b" }}>Habis</span>
+                  ) : stock <= 5 ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-ui font-medium px-2.5 py-1 rounded-full" style={{ background: "#fef3cd", color: "#856404" }}>Stok Menipis — Tersisa {stock}</span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-ui font-medium px-2.5 py-1 rounded-full" style={{ background: "#e7ecdf", color: "#5b6b45" }}>Tersedia</span>
+                  )}
+                </div>
+              )}
+            </div>
             <p className="text-sm sm:text-[15px] leading-relaxed font-ui mb-8" style={{ color: "rgba(42,33,27,.8)" }}>
               {getDescription(product)}
             </p>
@@ -881,26 +916,22 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 <p className="text-[11px] sm:text-[12px] tracking-[0.12em] uppercase font-ui font-medium mb-3" style={{ color: "var(--espresso)" }}>
                   Series — <span style={{ color: "var(--gold)" }}>{product.series}</span>
                 </p>
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-wrap gap-2">
                   {availableSeries.map((s) => {
                     const isActive = s.id === product.id;
                     return (
                       <a
                         key={s.id}
                         href={`/katalog/${s.id}?color=${encodeURIComponent(selectedColor)}&size=${encodeURIComponent(selectedSize)}`}
-                        className="flex items-center justify-between px-4 py-3 rounded-lg transition-all duration-200"
+                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-[13px] font-ui transition-all duration-200"
                         style={{
-                          background: isActive ? "rgba(42,33,27,.06)" : "transparent",
-                          border: `1.5px solid ${isActive ? "var(--espresso)" : "rgba(201,183,156,.25)"}`,
+                          background: isActive ? "var(--espresso)" : "var(--cream-bright)",
+                          color: isActive ? "var(--cream)" : "var(--coffee)",
+                          border: `1px solid ${isActive ? "var(--espresso)" : "rgba(201,183,156,.3)"}`,
                         }}
                       >
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm font-medium font-ui" style={{ color: isActive ? "var(--espresso)" : "var(--coffee)" }}>
-                            {s.series}
-                          </span>
-                          {isActive && <span className="text-[9px] tracking-[0.1em] uppercase px-1.5 py-0.5 rounded-sm font-medium" style={{ background: "var(--gold)", color: "white" }}>Aktif</span>}
-                        </div>
-                        <span className="text-[13px] font-ui font-medium" style={{ color: "var(--gold)" }}>
+                        <span className="font-medium">{s.series}</span>
+                        <span style={{ color: isActive ? "rgba(248,245,241,.75)" : "var(--gold)" }}>
                           {s.create_your_price_enabled && s.minimum_price
                             ? `Mulai Rp ${s.minimum_price.toLocaleString("id-ID")}`
                             : `Rp ${s.price.toLocaleString("id-ID")}`
