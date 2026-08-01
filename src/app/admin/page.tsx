@@ -245,23 +245,46 @@ function AdminPageInner() {
   }
 
   async function updateOrderStatus(orderId: string, newStatus: string) {
-    const { error } = await supabase.from("orders").update({ status: newStatus }).eq("id", orderId);
-    if (!error) {
+    try {
+      const res = await fetch("/api/admin/orders", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId, status: newStatus }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.showToast("error", data.error || "Gagal memperbarui status");
+        return;
+      }
       setOrders((prev) => prev.map((o) => o.id === orderId ? { ...o, status: newStatus } : o));
       setSelectedOrder((prev) => prev && prev.id === orderId ? { ...prev, status: newStatus } : prev);
       toast.showToast("success", "Status pesanan berhasil diperbarui");
+    } catch (err) {
+      console.error("Update status error:", err);
+      toast.showToast("error", "Gagal memperbarui status, coba lagi");
     }
   }
 
   async function deleteOrder(orderId: string) {
     showConfirm("Hapus Pesanan?", "Yakin ingin menghapus pesanan ini? Tindakan ini tidak bisa dibatalkan.", async () => {
-      const { error } = await supabase.from("order_items").delete().eq("order_id", orderId);
-      if (!error) {
-        await supabase.from("orders").delete().eq("id", orderId);
+      try {
+        const res = await fetch("/api/admin/orders", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ orderId }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          toast.showToast("error", data.error || "Gagal menghapus pesanan");
+          return;
+        }
         setOrders((prev) => prev.filter((o) => o.id !== orderId));
         setSelectedOrder(null);
         setDeleteConfirmOrder(null);
         toast.showToast("success", "Pesanan berhasil dihapus");
+      } catch (err) {
+        console.error("Delete order error:", err);
+        toast.showToast("error", "Gagal menghapus pesanan, coba lagi");
       }
     });
   }
