@@ -664,6 +664,20 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             </div>
           )}
 
+          {/* Sizes — dipindah dekat gallery */}
+          <div className="mb-5">
+            <p className="text-[10px] tracking-[0.1em] uppercase font-ui font-medium mb-2.5" style={{ color: "var(--espresso)" }}>Ukuran</p>
+            <div className="flex gap-1.5">
+              {availableSizes.map((s) => (
+                <button key={s} onClick={() => setSelectedSize(s)}
+                  className="w-10 h-10 flex items-center justify-center text-[12px] font-ui font-medium rounded-sm transition-all duration-200"
+                  style={{ background: selectedSize === s ? "var(--espresso)" : "transparent", color: selectedSize === s ? "var(--cream)" : "var(--coffee)", border: `1px solid ${selectedSize === s ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Price card */}
           <div className="mb-5 rounded-2xl p-5" style={{ background: "var(--cream-bright)", border: "1px solid rgba(201,183,156,.25)" }}>
             {isCYP ? (
@@ -758,20 +772,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               </div>
             </div>
           )}
-
-          {/* Sizes */}
-          <div className="mb-5">
-            <p className="text-[10px] tracking-[0.1em] uppercase font-ui font-medium mb-2.5" style={{ color: "var(--espresso)" }}>Ukuran</p>
-            <div className="flex gap-1.5">
-              {availableSizes.map((s) => (
-                <button key={s} onClick={() => setSelectedSize(s)}
-                  className="w-10 h-10 flex items-center justify-center text-[12px] font-ui font-medium rounded-sm transition-all duration-200"
-                  style={{ background: selectedSize === s ? "var(--espresso)" : "transparent", color: selectedSize === s ? "var(--cream)" : "var(--coffee)", border: `1px solid ${selectedSize === s ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
-                  {s}
-                </button>
-              ))}
-            </div>
-          </div>
 
           {/* Notes */}
           <div className="mb-5">
