@@ -38,7 +38,18 @@ export async function DELETE(request: NextRequest) {
 
     const supabaseAdmin = getSupabaseAdmin();
 
-    // Delete order items first
+    // Delete voucher usages first (foreign key reference)
+    const { error: voucherError } = await supabaseAdmin
+      .from("voucher_usages")
+      .delete()
+      .eq("order_id", orderId);
+
+    if (voucherError) {
+      console.error("[ADMIN] Failed to delete voucher usages:", voucherError);
+      return NextResponse.json({ error: "Gagal menghapus data voucher", detail: voucherError.message }, { status: 500 });
+    }
+
+    // Delete order items
     const { error: itemsError } = await supabaseAdmin
       .from("order_items")
       .delete()
