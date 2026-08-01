@@ -39,10 +39,13 @@ export async function DELETE(request: NextRequest) {
     const supabaseAdmin = getSupabaseAdmin();
 
     // Delete voucher usages first (foreign key reference)
-    const { error: voucherError } = await supabaseAdmin
+    const { data: deletedVouchers, error: voucherError } = await supabaseAdmin
       .from("voucher_usages")
       .delete()
-      .eq("order_id", orderId);
+      .eq("order_id", orderId)
+      .select();
+
+    console.log("[ADMIN] Voucher usages delete result:", { deleted: deletedVouchers?.length ?? 0, error: voucherError?.message });
 
     if (voucherError) {
       console.error("[ADMIN] Failed to delete voucher usages:", voucherError);
