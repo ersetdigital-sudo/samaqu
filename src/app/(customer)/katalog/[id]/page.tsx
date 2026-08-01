@@ -3,10 +3,10 @@
 import { useState, use, useRef, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Minus, Plus, ChevronLeft, ChevronRight, ChevronDown, Play, ShoppingCart } from "lucide-react";
+import { Minus, Plus, ChevronLeft, ChevronRight, ChevronDown, ChevronRight as ChevronRightIcon, Play, ShoppingCart } from "lucide-react";
 import ImageZoom, { type ZoomMedia } from "@/components/ImageZoom";
 import JenisKainModal from "@/components/JenisKainModal";
-import { getKainSwatchColor } from "@/components/KainSeriesModal";
+import KainSeriesModal, { getKainSwatchColor } from "@/components/KainSeriesModal";
 import Breadcrumb from "@/components/Breadcrumb";
 import { colorMap, type Product, type MediaItem } from "@/lib/katalog-data";
 import { getProductById, getAvailableSeries, getProducts, type SeriesOption } from "@/lib/db";
@@ -17,6 +17,34 @@ import { supabase } from "@/lib/supabase";
 import { useWishlist } from "@/lib/use-wishlist";
 
 const FALLBACK_SIZES = ["S", "M", "L", "XL", "XXL"];
+
+/* ── Info Link Button (sama dengan katalog) ── */
+function InfoLinkButton({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full flex items-center gap-3 px-4 sm:px-5 py-3.5 sm:py-3 rounded-full transition-all duration-200 hover:bg-[rgba(181,140,74,.09)]"
+      style={{
+        border: "1px solid rgba(181,140,74,.35)",
+        background: "rgba(181,140,74,.05)",
+      }}
+    >
+      <span
+        className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-ui font-bold"
+        style={{ background: "rgba(181,140,74,.14)", color: "var(--gold)" }}
+      >
+        i
+      </span>
+      <span
+        className="flex-1 text-left text-[13px] sm:text-sm font-ui font-medium"
+        style={{ color: "var(--gold)" }}
+      >
+        {label}
+      </span>
+      <ChevronRightIcon size={16} strokeWidth={1.75} className="shrink-0" style={{ color: "var(--gold)" }} />
+    </button>
+  );
+}
 
 function waLink(product: Product, size: string, color: string, qty: number, notes: string, price: number) {
   const msg = `Halo Admin SAMAQU, saya ingin memesan:\n\nProduk: ${product.name}\nKain: ${product.kain || "-"}\nWarna: ${color}\nUkuran: ${size}\nJumlah: ${qty}\n${notes ? `Catatan: ${notes}\n` : ""}\nTotal: Rp ${(price * qty).toLocaleString("id-ID")}\n\nMohon konfirmasi ketersediaan. Terima kasih!`;
@@ -199,6 +227,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const [currentSlide, setCurrentSlide] = useState(0);
   const [zoomOpen, setZoomOpen] = useState(false);
   const [kainModalOpen, setKainModalOpen] = useState(false);
+  const [infoSheet, setInfoSheet] = useState<"kain" | "series" | null>(null);
   const [zoomIndex, setZoomIndex] = useState(0);
   const [availableSeries, setAvailableSeries] = useState<SeriesOption[]>([]);
   const [activeSeriesId, setActiveSeriesId] = useState<string | null>(null);
@@ -734,6 +763,20 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             </div>
           )}
 
+          {/* Info buttons — Perbedaan Jenis Kain & Series (mobile) */}
+          {product.category && (
+            <div className="flex flex-col gap-3 mb-5">
+              <InfoLinkButton
+                label={`Perbedaan Jenis Kain ${product.category}`}
+                onClick={() => setInfoSheet("kain")}
+              />
+              <InfoLinkButton
+                label={`Perbedaan Series ${product.category}`}
+                onClick={() => setInfoSheet("series")}
+              />
+            </div>
+          )}
+
           {/* Sizes */}
           <div className="mb-5">
             <p className="text-[10px] tracking-[0.1em] uppercase font-ui font-medium mb-2.5" style={{ color: "var(--espresso)" }}>Ukuran</p>
@@ -1077,6 +1120,20 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               </div>
             )}
 
+            {/* Info buttons — Perbedaan Jenis Kain & Series (desktop) */}
+            {product.category && (
+              <div className="flex flex-col gap-3 mb-7">
+                <InfoLinkButton
+                  label={`Perbedaan Jenis Kain ${product.category}`}
+                  onClick={() => setInfoSheet("kain")}
+                />
+                <InfoLinkButton
+                  label={`Perbedaan Series ${product.category}`}
+                  onClick={() => setInfoSheet("series")}
+                />
+              </div>
+            )}
+
             <div className="mb-7">
               <p className="text-[11px] sm:text-[12px] tracking-[0.12em] uppercase font-ui font-medium mb-3" style={{ color: "var(--espresso)" }}>Ukuran</p>
               <div className="flex flex-wrap gap-2">
@@ -1168,6 +1225,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         isOpen={kainModalOpen}
         onClose={() => setKainModalOpen(false)}
       />
+
+      {/* Kain & Series Info Modal (sama dengan katalog) */}
+      <KainSeriesModal type={infoSheet} onClose={() => setInfoSheet(null)} />
     </section>
   );
 }
