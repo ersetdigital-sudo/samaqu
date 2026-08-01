@@ -202,6 +202,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const [availableSeries, setAvailableSeries] = useState<SeriesOption[]>([]);
   const [activeSeriesId, setActiveSeriesId] = useState<string | null>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
+  const mobileGalleryRef = useRef<HTMLDivElement>(null);
+  const [galleryHighlight, setGalleryHighlight] = useState(false);
   const { addItem } = useCart();
   const toast = useToast();
   const storeSettings = useStoreSettings();
@@ -423,6 +425,29 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   function handleSeriesSelect(seriesId: string) {
     if (!isThobe || seriesId === activeSeriesId) return;
     setActiveSeriesId(seriesId);
+
+    // Auto-scroll to gallery on mobile only
+    if (typeof window !== "undefined" && window.innerWidth < 768 && mobileGalleryRef.current) {
+      const galleryRect = mobileGalleryRef.current.getBoundingClientRect();
+      const scrollDistanceFromGallery = galleryRect.top;
+
+      // Only scroll if customer is more than 300px away from gallery
+      if (scrollDistanceFromGallery < -300) {
+        // Calculate target position: gallery top with some padding (80px for navbar)
+        const targetScroll = window.scrollY + galleryRect.top - 80;
+
+        window.scrollTo({
+          top: targetScroll,
+          behavior: "smooth",
+        });
+
+        // Add highlight effect after scroll completes
+        setTimeout(() => {
+          setGalleryHighlight(true);
+          setTimeout(() => setGalleryHighlight(false), 500);
+        }, 400);
+      }
+    }
   }
 
   const handleCarouselScroll = () => {
@@ -484,7 +509,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           <Breadcrumb extra={[{ label: product.name }]} />
         </div>
         {/* Gallery */}
-        <div className="relative px-4 pb-1">
+        <div ref={mobileGalleryRef} className={`relative px-4 pb-1 transition-all duration-300 ${galleryHighlight ? "ring-2 ring-[var(--gold)] ring-offset-2" : ""}`}>
           <div className="relative rounded-3xl overflow-hidden aspect-[3/4]" style={{ background: "#e8dfd1" }}>
             <div
               ref={carouselRef}
