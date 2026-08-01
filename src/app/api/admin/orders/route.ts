@@ -30,6 +30,7 @@ export async function PATCH(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const { orderId } = await request.json();
+    console.log("[ADMIN] Delete order request:", orderId);
 
     if (!orderId) {
       return NextResponse.json({ error: "Order ID wajib diisi" }, { status: 400 });
@@ -45,7 +46,7 @@ export async function DELETE(request: NextRequest) {
 
     if (itemsError) {
       console.error("[ADMIN] Failed to delete order items:", itemsError);
-      return NextResponse.json({ error: "Gagal menghapus item pesanan" }, { status: 500 });
+      return NextResponse.json({ error: "Gagal menghapus item pesanan", detail: itemsError.message }, { status: 500 });
     }
 
     // Delete the order
@@ -56,12 +57,13 @@ export async function DELETE(request: NextRequest) {
 
     if (orderError) {
       console.error("[ADMIN] Failed to delete order:", orderError);
-      return NextResponse.json({ error: "Gagal menghapus pesanan" }, { status: 500 });
+      return NextResponse.json({ error: "Gagal menghapus pesanan", detail: orderError.message }, { status: 500 });
     }
 
+    console.log("[ADMIN] Order deleted successfully:", orderId);
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch (error: any) {
     console.error("[ADMIN] Delete order error:", error);
-    return NextResponse.json({ error: "Terjadi kesalahan server" }, { status: 500 });
+    return NextResponse.json({ error: "Terjadi kesalahan server", detail: error.message }, { status: 500 });
   }
 }
