@@ -454,16 +454,18 @@ export default function KatalogPage() {
           )}
 
           {/* Info link buttons — Jenis Kain & Series (mobile) */}
-          {category !== "Semua" && (
+          {(category === "Thobe" || category === "Kandora") && (
             <div className="flex flex-col gap-3 pb-4">
               <InfoLinkButton
                 label={`Perbedaan Jenis Kain ${category}`}
                 onClick={() => setInfoSheet("kain")}
               />
-              <InfoLinkButton
-                label={`Perbedaan Series ${category}`}
-                onClick={() => setInfoSheet("series")}
-              />
+              {category === "Thobe" && (
+                <InfoLinkButton
+                  label={`Perbedaan Series ${category}`}
+                  onClick={() => setInfoSheet("series")}
+                />
+              )}
             </div>
           )}
 
@@ -562,16 +564,18 @@ export default function KatalogPage() {
         )}
 
         {/* Info link buttons — Jenis Kain & Series (desktop) */}
-        {category !== "Semua" && (
+        {(category === "Thobe" || category === "Kandora") && (
           <div className="hidden lg:flex flex-col gap-3 py-5">
             <InfoLinkButton
               label={`Perbedaan Jenis Kain ${category}`}
               onClick={() => setInfoSheet("kain")}
             />
-            <InfoLinkButton
-              label={`Perbedaan Series ${category}`}
-              onClick={() => setInfoSheet("series")}
-            />
+            {category === "Thobe" && (
+              <InfoLinkButton
+                label={`Perbedaan Series ${category}`}
+                onClick={() => setInfoSheet("series")}
+              />
+            )}
           </div>
         )}
 
