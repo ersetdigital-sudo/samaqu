@@ -309,7 +309,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
   useEffect(() => {
     if (!id || !selectedColor) return;
-    supabase.from("product_variants").select("size, price_override").eq("product_id", id).eq("color", selectedColor).order("size").then(({ data }) => {
+    supabase.from("product_variants").select("size, price_override").eq("product_id", id).eq("color", selectedColor).order("display_order").then(({ data }) => {
       if (data && data.length > 0) {
         const sizes = data.map((d) => d.size);
         setAvailableSizes(sizes);

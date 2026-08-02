@@ -296,9 +296,10 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
 
       // Delete old variants and re-insert
       await supabase.from("product_variants").delete().eq("product_id", slug);
-      const variantRows = variants.flatMap((v) => v.sizes.map((s) => ({
+      const variantRows = variants.flatMap((v, vi) => v.sizes.map((s, si) => ({
         product_id: slug, color: v.color, hex: v.hex || null, size: s.size, stock: s.stock,
         price_override: s.priceOverride ? parseInt(s.priceOverride) : null, sku: s.sku || null,
+        display_order: vi * 100 + si,
       })));
       if (variantRows.length > 0) await supabase.from("product_variants").upsert(variantRows, { onConflict: "product_id,color,size" });
 
