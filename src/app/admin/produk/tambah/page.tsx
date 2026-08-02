@@ -19,7 +19,7 @@ const SIZES = ["S", "M", "L", "XL", "XXL"] as const;
 function formatRupiah(val: string): string {
   const digits = val.replace(/\D/g, "");
   if (!digits) return "";
-  return parseInt(digits).toLocaleString("id-ID");
+  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 function parseRupiah(formatted: string): string {
   return formatted.replace(/\D/g, "");
@@ -435,7 +435,7 @@ export default function TambahProdukPage() {
                         <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Harga Rekomendasi (Rp)</label>
                         <input type="text" inputMode="numeric" value={formatRupiah(recommendedPrice)} onChange={(e) => setRecommendedPrice(parseRupiah(e.target.value))} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: `1px solid ${errors.recommendedPrice ? "#e74c3c" : "rgba(64,50,37,.15)"}`, background: "white", color: "var(--espresso)" }} placeholder={basePrice ? formatRupiah(String((parseInt(basePrice) || 0) + 30000)) : "379.000"} />
                         {errors.recommendedPrice && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.recommendedPrice}</p>}
-                        <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>Kosongkan = otomatis Harga Dasar + Rp 30.000 ({basePrice ? `Rp ${((parseInt(basePrice) || 0) + 30000).toLocaleString("id-ID")}` : "—"}).</p>
+                        <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>Kosongkan = otomatis Harga Dasar + Rp 30.000 ({basePrice ? `Rp ${formatRupiah(String((parseInt(basePrice) || 0) + 30000))}` : "—"}).</p>
                       </div>
                     </div>
                   )}
@@ -550,7 +550,7 @@ export default function TambahProdukPage() {
                       />
                       <input type="number" value={s.stock || ""} onChange={(e) => updateSizeField(variants[0].color, i, "stock", parseInt(e.target.value) || 0)}
                         placeholder="0" className="rounded-lg px-2.5 py-2 text-sm outline-none text-center" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
-                      <input value={s.priceOverride} onChange={(e) => updateSizeField(variants[0].color, i, "priceOverride", e.target.value)}
+                      <input type="text" inputMode="numeric" value={formatRupiah(s.priceOverride)} onChange={(e) => updateSizeField(variants[0].color, i, "priceOverride", parseRupiah(e.target.value))}
                         placeholder="—" className="rounded-lg px-2.5 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
                       <input value={s.sku} onChange={(e) => updateSizeField(variants[0].color, i, "sku", e.target.value)}
                         placeholder="—" className="rounded-lg px-2.5 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
@@ -620,7 +620,7 @@ export default function TambahProdukPage() {
                           />
                           <input type="number" value={s.stock || ""} onChange={(e) => updateSizeField(activeColor!, i, "stock", parseInt(e.target.value) || 0)}
                             placeholder="0" className="rounded-lg px-2.5 py-2 text-sm outline-none text-center" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
-                          <input value={s.priceOverride} onChange={(e) => updateSizeField(activeColor!, i, "priceOverride", e.target.value)}
+                          <input type="text" inputMode="numeric" value={formatRupiah(s.priceOverride)} onChange={(e) => updateSizeField(activeColor!, i, "priceOverride", parseRupiah(e.target.value))}
                             placeholder="—" className="rounded-lg px-2.5 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
                           <input value={s.sku} onChange={(e) => updateSizeField(activeColor!, i, "sku", e.target.value)}
                             placeholder="—" className="rounded-lg px-2.5 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
@@ -755,8 +755,8 @@ export default function TambahProdukPage() {
               <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{category || "Kategori"}</p>
               <p className="text-lg font-serif italic mt-1.5" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--gold)" }}>
                 {cypEnabled
-                  ? (minimumPrice ? `Rp ${parseInt(minimumPrice).toLocaleString("id-ID")}` : recommendedPrice ? `Rp ${parseInt(recommendedPrice).toLocaleString("id-ID")}` : "Rp 0")
-                  : (basePrice ? `Rp ${parseInt(basePrice).toLocaleString("id-ID")}` : "Rp 0")
+                  ? (minimumPrice ? `Rp ${formatRupiah(minimumPrice)}` : recommendedPrice ? `Rp ${formatRupiah(recommendedPrice)}` : "Rp 0")
+                  : (basePrice ? `Rp ${formatRupiah(basePrice)}` : "Rp 0")
                 }
               </p>
 
