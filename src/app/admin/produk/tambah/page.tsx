@@ -256,6 +256,7 @@ export default function TambahProdukPage() {
     if (cypEnabled && (!minimumPrice || parseInt(minimumPrice) <= 0)) e.minimumPrice = "Harga Minimum wajib diisi jika Create Your Price aktif";
     if (cypEnabled && minimumPrice && basePrice && parseInt(minimumPrice) > parseInt(basePrice)) e.minimumPrice = "Harga Minimum tidak boleh lebih besar dari Harga Dasar";
     if (cypEnabled && recommendedPrice && minimumPrice && parseInt(recommendedPrice) < parseInt(minimumPrice)) e.recommendedPrice = "Harga Rekomendasi tidak boleh kurang dari Harga Minimum";
+    if ((category === "Thobe" || category === "Kandora") && !selectedJenisKainId) e.jenisKain = "Jenis Kain wajib dipilih";
     if (variants.length === 0) e.variants = "Minimal 1 varian warna";
     const hasSize = variants.some((v) => v.sizes.some((s) => s.stock > 0));
     if (!hasSize) e.variants = "Minimal 1 ukuran dengan stok > 0";
@@ -477,7 +478,7 @@ export default function TambahProdukPage() {
                   <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Jenis Kain</label>
                   <div className="flex gap-2">
                     <div className="relative flex-1">
-                      <select value={selectedJenisKainId} onChange={(e) => setSelectedJenisKainId(e.target.value)} className="w-full rounded-xl px-4 py-3 text-sm outline-none appearance-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }}>
+                      <select value={selectedJenisKainId} onChange={(e) => setSelectedJenisKainId(e.target.value)} className="w-full rounded-xl px-4 py-3 text-sm outline-none appearance-none" style={{ border: `1px solid ${errors.jenisKain ? "#e74c3c" : "rgba(64,50,37,.15)"}`, background: "white", color: "var(--espresso)" }}>
                         <option value="">Pilih Jenis Kain</option>
                         {jenisKainList.map((jk) => <option key={jk.id} value={jk.id}>{jk.name}</option>)}
                       </select>
@@ -497,6 +498,7 @@ export default function TambahProdukPage() {
                       </button>
                     )}
                   </div>
+                  {errors.jenisKain && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.jenisKain}</p>}
                   {showNewKainForm && (
                     <div className="mt-3">
                       <JenisKainForm

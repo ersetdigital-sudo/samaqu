@@ -166,11 +166,18 @@ export interface SeriesOption {
   create_your_price_enabled: boolean;
 }
 
-export async function getAvailableSeries(jenisKainId: string, color: string, category?: string): Promise<SeriesOption[]> {
+export async function getAvailableSeries(jenisKainId: string | null | undefined, color: string, category?: string, seriesName?: string): Promise<SeriesOption[]> {
+  if (!jenisKainId && !seriesName) return [];
+
   let query = supabase
     .from("products")
-    .select("id, name, series, price, minimum_price, create_your_price_enabled")
-    .eq("jenis_kain_id", jenisKainId);
+    .select("id, name, series, price, minimum_price, create_your_price_enabled");
+
+  if (jenisKainId) {
+    query = query.eq("jenis_kain_id", jenisKainId);
+  } else if (seriesName) {
+    query = query.eq("series", seriesName);
+  }
 
   // Thobe tidak pakai warna, jadi skip color filter
   if (category !== "Thobe") {
