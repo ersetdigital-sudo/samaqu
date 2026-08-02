@@ -922,6 +922,58 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               <span style={{ color: "var(--gold)" }}>{product.category}</span>
               {" · ready stock"}
             </p>
+            {/* Series Selector — desktop */}
+            {(availableSeries.length > 1 || isThobe) && (
+              <div className="mb-6">
+                <p className="text-[10.5px] tracking-[0.18em] uppercase text-[var(--muted)] mb-2.5">Pilih Series</p>
+                <div className="flex flex-wrap gap-2">
+                  {availableSeries.map((s) => {
+                    const isActive = isThobe ? s.id === activeSeriesId : s.id === product.id;
+                    if (isThobe) {
+                      return (
+                        <button key={s.id} onClick={() => handleSeriesSelect(s.id)}
+                          className="px-4 py-2 rounded-lg text-[12.5px] transition"
+                          style={{ background: isActive ? "var(--espresso)" : "var(--cream-bright)", color: isActive ? "var(--cream)" : "var(--coffee)", border: `1px solid ${isActive ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
+                          <span className="font-medium">{s.series}</span>
+                          <span className="ml-1.5" style={{ color: isActive ? "rgba(248,245,241,.75)" : "var(--gold)" }}>
+                            {s.create_your_price_enabled && s.minimum_price
+                              ? `Mulai Rp ${s.minimum_price.toLocaleString("id-ID")}`
+                              : `Rp ${s.price.toLocaleString("id-ID")}`
+                            }
+                          </span>
+                        </button>
+                      );
+                    }
+                    return (
+                      <a key={s.id} href={`/katalog/${s.id}?color=${encodeURIComponent(selectedColor)}&size=${encodeURIComponent(selectedSize)}`}
+                        className="px-4 py-2 rounded-lg text-[12.5px] transition"
+                        style={{ background: isActive ? "var(--espresso)" : "var(--cream-bright)", color: isActive ? "var(--cream)" : "var(--coffee)", border: `1px solid ${isActive ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
+                        <span className="font-medium">{s.series}</span>
+                        <span className="ml-1.5" style={{ color: isActive ? "rgba(248,245,241,.75)" : "var(--gold)" }}>
+                          {s.create_your_price_enabled && s.minimum_price
+                            ? `Mulai Rp ${s.minimum_price.toLocaleString("id-ID")}`
+                            : `Rp ${s.price.toLocaleString("id-ID")}`
+                          }
+                        </span>
+                      </a>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            {/* Sizes — desktop */}
+            <div className="mb-6">
+              <p className="text-[10.5px] tracking-[0.18em] uppercase text-[var(--muted)] mb-2.5">Pilih Ukuran</p>
+              <div className="flex flex-wrap gap-2">
+                {availableSizes.map((s) => (
+                  <button key={s} onClick={() => setSelectedSize(s)}
+                    className="px-4 py-2 rounded-lg text-[12.5px] transition"
+                    style={{ background: selectedSize === s ? "var(--espresso)" : "var(--cream-bright)", color: selectedSize === s ? "var(--cream)" : "var(--coffee)", border: `1px solid ${selectedSize === s ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
             {/* Price card */}
             <div className="mb-8 rounded-2xl p-6" style={{ background: "var(--cream-bright)", border: "1px solid rgba(201,183,156,.25)" }}>
               {isCYP ? (
