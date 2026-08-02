@@ -252,7 +252,7 @@ export default function TambahProdukPage() {
     const e: Record<string, string> = {};
     if (!name.trim()) e.name = "Nama produk wajib diisi";
     if (!category) e.category = "Kategori wajib dipilih";
-    if (!basePrice || parseInt(basePrice) <= 0) e.basePrice = "Harga wajib diisi";
+    if (!cypEnabled && (!basePrice || parseInt(basePrice) <= 0)) e.basePrice = "Harga wajib diisi";
     if (cypEnabled && (!minimumPrice || parseInt(minimumPrice) <= 0)) e.minimumPrice = "Harga Minimum wajib diisi jika Create Your Price aktif";
     if (cypEnabled && minimumPrice && basePrice && parseInt(minimumPrice) > parseInt(basePrice)) e.minimumPrice = "Harga Minimum tidak boleh lebih besar dari Harga Dasar";
     if (cypEnabled && recommendedPrice && minimumPrice && parseInt(recommendedPrice) < parseInt(minimumPrice)) e.recommendedPrice = "Harga Rekomendasi tidak boleh kurang dari Harga Minimum";
@@ -277,7 +277,7 @@ export default function TambahProdukPage() {
         name,
         category,
         description: description || null,
-        price: parseInt(basePrice),
+        price: cypEnabled ? (parseInt(basePrice) || parseInt(minimumPrice) || 0) : parseInt(basePrice),
         minimum_price: cypEnabled ? parseInt(minimumPrice) : null,
         recommended_price: cypEnabled && recommendedPrice ? parseInt(recommendedPrice) : null,
         create_your_price_enabled: cypEnabled,
