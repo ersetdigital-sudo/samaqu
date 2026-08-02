@@ -12,6 +12,15 @@ import { uploadToCloudinary } from "@/lib/cloudinary";
 const CATEGORIES = ["Thobe", "Kandora", "Koko", "Vest", "Kabak", "Cover & Hanger"] as const;
 const SIZES = ["S", "M", "L", "XL", "XXL"] as const;
 
+function formatRupiah(val: string): string {
+  const digits = val.replace(/\D/g, "");
+  if (!digits) return "";
+  return parseInt(digits).toLocaleString("id-ID");
+}
+function parseRupiah(formatted: string): string {
+  return formatted.replace(/\D/g, "");
+}
+
 interface Variant {
   color: string;
   hex: string;
@@ -378,7 +387,7 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
                   {!cypEnabled && (
                     <div>
                       <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Harga Dasar (Rp)</label>
-                      <input type="number" value={basePrice} onChange={(e) => setBasePrice(e.target.value)} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: `1px solid ${errors.basePrice ? "#e74c3c" : "rgba(64,50,37,.15)"}`, background: "white", color: "var(--espresso)" }} />
+                      <input type="text" inputMode="numeric" value={formatRupiah(basePrice)} onChange={(e) => setBasePrice(parseRupiah(e.target.value))} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: `1px solid ${errors.basePrice ? "#e74c3c" : "rgba(64,50,37,.15)"}`, background: "white", color: "var(--espresso)" }} />
                       <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>Harga terendah / yang tampil di katalog.</p>
                       {errors.basePrice && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.basePrice}</p>}
                     </div>
@@ -407,13 +416,13 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
                     <div className="space-y-3">
                       <div>
                         <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Harga Minimum (Rp) <span style={{ color: "var(--gold)" }}>*</span></label>
-                        <input type="number" value={minimumPrice} onChange={(e) => setMinimumPrice(e.target.value)} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: `1px solid ${errors.minimumPrice ? "#e74c3c" : "rgba(64,50,37,.15)"}`, background: "white", color: "var(--espresso)" }} placeholder="350000" />
+                        <input type="text" inputMode="numeric" value={formatRupiah(minimumPrice)} onChange={(e) => setMinimumPrice(parseRupiah(e.target.value))} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: `1px solid ${errors.minimumPrice ? "#e74c3c" : "rgba(64,50,37,.15)"}`, background: "white", color: "var(--espresso)" }} placeholder="350.000" />
                         {errors.minimumPrice && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.minimumPrice}</p>}
                         <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>Harga terendah yang bisa dipilih customer.</p>
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Harga Rekomendasi (Rp)</label>
-                        <input type="number" value={recommendedPrice} onChange={(e) => setRecommendedPrice(e.target.value)} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: `1px solid ${errors.recommendedPrice ? "#e74c3c" : "rgba(64,50,37,.15)"}`, background: "white", color: "var(--espresso)" }} placeholder={basePrice ? String((parseInt(basePrice) || 0) + 30000) : "379000"} />
+                        <input type="text" inputMode="numeric" value={formatRupiah(recommendedPrice)} onChange={(e) => setRecommendedPrice(parseRupiah(e.target.value))} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: `1px solid ${errors.recommendedPrice ? "#e74c3c" : "rgba(64,50,37,.15)"}`, background: "white", color: "var(--espresso)" }} placeholder={basePrice ? formatRupiah(String((parseInt(basePrice) || 0) + 30000)) : "379.000"} />
                         {errors.recommendedPrice && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.recommendedPrice}</p>}
                         <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>Kosongkan = otomatis Harga Dasar + Rp 30.000 ({basePrice ? `Rp ${((parseInt(basePrice) || 0) + 30000).toLocaleString("id-ID")}` : "—"}).</p>
                       </div>
@@ -684,11 +693,14 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
               <p className="text-sm font-medium" style={{ color: "var(--espresso)" }}>{name || "Nama Produk"}</p>
               <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{category || "Kategori"}</p>
               <p className="text-lg font-serif italic mt-1.5" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--gold)" }}>
-                {basePrice ? `Rp ${parseInt(basePrice).toLocaleString("id-ID")}` : "Rp 0"}
+                {cypEnabled
+                  ? (minimumPrice ? `Rp ${parseInt(minimumPrice).toLocaleString("id-ID")}` : recommendedPrice ? `Rp ${parseInt(recommendedPrice).toLocaleString("id-ID")}` : "Rp 0")
+                  : (basePrice ? `Rp ${parseInt(basePrice).toLocaleString("id-ID")}` : "Rp 0")
+                }
               </p>
 
-              {/* Color swatches */}
-              {variants.length > 0 && (
+              {/* Color swatches — skip for Thobe */}
+              {category !== "Thobe" && variants.length > 0 && (
                 <div className="mt-3 flex flex-wrap gap-2">
                   {variants.map((v) => (
                     <button key={v.color} onClick={() => { setActiveColor(v.color); setPreviewIndex(0); }} className="w-6 h-6 rounded-full transition-transform" style={{ background: v.hex || colorMap[v.color] || "#ccc", border: activeColor === v.color ? "2px solid var(--gold)" : "1px solid rgba(42,33,27,.15)", transform: activeColor === v.color ? "scale(1.15)" : "scale(1)" }} title={v.color} />
