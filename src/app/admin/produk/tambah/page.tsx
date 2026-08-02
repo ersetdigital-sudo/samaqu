@@ -289,8 +289,8 @@ export default function TambahProdukPage() {
       if (productError) throw productError;
 
       // Insert variants
-      const variantRows = variants.flatMap((v) =>
-        v.sizes.map((s) => ({
+      const variantRows = variants.flatMap((v, vi) =>
+        v.sizes.map((s, si) => ({
           product_id: slug,
           color: v.color,
           hex: v.hex || null,
@@ -298,6 +298,7 @@ export default function TambahProdukPage() {
           stock: s.stock,
           price_override: s.priceOverride ? parseInt(s.priceOverride) : null,
           sku: s.sku || null,
+          display_order: vi * 100 + si,
         }))
       );
       if (variantRows.length > 0) {
