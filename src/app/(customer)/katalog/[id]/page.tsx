@@ -580,38 +580,17 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           </p>
           <h1 className="text-[1.5rem] sm:text-[1.8rem] font-semibold leading-tight mb-1.5"
             style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
-            {product.name}{selectedColor && <span style={{ color: "var(--gold)" }}> — {selectedColor}</span>}
+            {product.name}{isThobe && product.series ? <span style={{ color: "var(--gold)" }}> — {product.series}</span> : selectedColor && <span style={{ color: "var(--gold)" }}> — {selectedColor}</span>}
           </h1>
           <p className="text-[11px] font-ui mb-5" style={{ color: "var(--stone)" }}>
-            {isThobe ? (
-              <>
-                {product.jenis_kain?.name && (
-                  <span className="inline-flex items-center gap-1.5">
-                    Jenis kain
-                    <button type="button" onClick={() => setInfoSheet("kain")} className="inline-flex items-center gap-1 underline decoration-dotted underline-offset-2 hover:opacity-70 transition-opacity" style={{ color: "var(--gold)" }}>
-                      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: getKainSwatchColor(product.jenis_kain.name) }} />
-                      {product.jenis_kain.name}
-                    </button>
-                  </span>
-                )}
-                {!product.jenis_kain?.name && product.kain && `Kain ${product.kain}`}
-              </>
-            ) : (
-              <>
-                {product.category}
-                {product.jenis_kain?.name && (
-                  <span className="inline-flex items-center gap-1.5">
-                    —
-                    <button type="button" onClick={() => setInfoSheet("kain")} className="inline-flex items-center gap-1 underline decoration-dotted underline-offset-2 hover:opacity-70 transition-opacity" style={{ color: "var(--gold)" }}>
-                      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: getKainSwatchColor(product.jenis_kain.name) }} />
-                      {product.jenis_kain.name}
-                    </button>
-                  </span>
-                )}
-                {!product.jenis_kain?.name && product.kain && ` — Kain ${product.kain}`}
-                {product.series && ` — ${product.series}`}
-              </>
+            {product.jenis_kain?.name && (
+              <span>
+                Jenis kain <button type="button" onClick={() => setInfoSheet("kain")} className="underline decoration-dotted underline-offset-2 hover:opacity-70 transition-opacity" style={{ color: "var(--gold)" }}>{product.jenis_kain.name}</button>
+              </span>
             )}
+            {!product.jenis_kain?.name && product.kain && <span>Jenis kain {product.kain}</span>}
+            {" · "}
+            <span>{product.category}</span>
             {" · ready stock · garansi tukar ukuran"}
           </p>
 
@@ -619,7 +598,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           {(availableSeries.length > 1 || isThobe) && (
             <div className="mb-5">
               <p className="text-[10px] tracking-[0.1em] uppercase font-ui font-medium mb-2.5" style={{ color: "var(--espresso)" }}>
-                Series — <span style={{ color: "var(--gold)" }}>{product.series}</span>
+                Pilih Series
               </p>
               <div className="flex flex-wrap gap-2">
                 {availableSeries.map((s) => {
@@ -673,7 +652,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
           {/* Sizes — dipindah dekat gallery */}
           <div className="mb-5">
-            <p className="text-[10px] tracking-[0.1em] uppercase font-ui font-medium mb-2.5" style={{ color: "var(--espresso)" }}>Ukuran</p>
+            <p className="text-[10px] tracking-[0.1em] uppercase font-ui font-medium mb-2.5" style={{ color: "var(--espresso)" }}>Pilih Ukuran</p>
             <div className="flex gap-1.5">
               {availableSizes.map((s) => (
                 <button key={s} onClick={() => setSelectedSize(s)}
@@ -765,7 +744,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           {product.category !== "Thobe" && product.colors.length > 0 && !(product.colors.length === 1 && product.colors[0] === "default") && (
             <div className="mb-5">
               <p className="text-[10px] tracking-[0.1em] uppercase font-ui font-medium mb-2.5" style={{ color: "var(--espresso)" }}>
-                Warna — <span style={{ color: "var(--gold)" }}>{selectedColor}</span>
+                Pilih Warna
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {product.colors.map((c) => (
@@ -938,26 +917,15 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             </p>
             <h1 className="text-[2rem] sm:text-[2.5rem] lg:text-[2.8rem] font-semibold leading-tight mb-2"
               style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
-              {product.name}{selectedColor && <span style={{ color: "var(--gold)" }}> — {selectedColor}</span>}
+              {product.name}{isThobe && product.series ? <span style={{ color: "var(--gold)" }}> — {product.series}</span> : selectedColor && <span style={{ color: "var(--gold)" }}> — {selectedColor}</span>}
             </h1>
             <p className="text-[13px] font-ui mb-6" style={{ color: "var(--stone)" }}>
-              {isThobe ? (
-                <>
-                  {product.jenis_kain?.name && (
-                    <>Jenis kain <button type="button" onClick={() => setInfoSheet("kain")} className="underline decoration-dotted underline-offset-2 hover:opacity-70 transition-opacity" style={{ color: "var(--gold)" }}>{product.jenis_kain.name}</button></>
-                  )}
-                  {!product.jenis_kain?.name && product.kain && `Kain ${product.kain}`}
-                </>
-              ) : (
-                <>
-                  {product.category}
-                  {product.jenis_kain?.name && (
-                    <> — <button type="button" onClick={() => setInfoSheet("kain")} className="underline decoration-dotted underline-offset-2 hover:opacity-70 transition-opacity" style={{ color: "var(--gold)" }}>{product.jenis_kain.name}</button></>
-                  )}
-                  {!product.jenis_kain?.name && product.kain && ` — Kain ${product.kain}`}
-                  {product.series && ` — ${product.series}`}
-                </>
+              {product.jenis_kain?.name && (
+                <span>Jenis kain <button type="button" onClick={() => setInfoSheet("kain")} className="underline decoration-dotted underline-offset-2 hover:opacity-70 transition-opacity" style={{ color: "var(--gold)" }}>{product.jenis_kain.name}</button></span>
               )}
+              {!product.jenis_kain?.name && product.kain && <span>Jenis kain {product.kain}</span>}
+              {" · "}
+              <span>{product.category}</span>
               {" · ready stock · garansi tukar ukuran"}
             </p>
             {/* Price card */}
@@ -1038,8 +1006,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             {product.category !== "Thobe" && product.colors.length > 0 && !(product.colors.length === 1 && product.colors[0] === "default") && (
               <div className="mb-7">
                 <p className="text-[11px] sm:text-[12px] tracking-[0.12em] uppercase font-ui font-medium mb-3" style={{ color: "var(--espresso)" }}>
-                  Warna — <span style={{ color: "var(--gold)" }}>{selectedColor}</span>
-                </p>
+                  Pilih Warna
+              </p>
                 <div className="flex flex-wrap gap-2">
                   {product.colors.map((c) => (
                     <button key={c} onClick={() => setSelectedColor(c)}
@@ -1057,7 +1025,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             {(availableSeries.length > 1 || isThobe) && (
               <div className="mb-7">
                 <p className="text-[11px] sm:text-[12px] tracking-[0.12em] uppercase font-ui font-medium mb-3" style={{ color: "var(--espresso)" }}>
-                  Series — <span style={{ color: "var(--gold)" }}>{product.series}</span>
+                  Pilih Series
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {availableSeries.map((s) => {
@@ -1110,7 +1078,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             )}
 
             <div className="mb-7">
-              <p className="text-[11px] sm:text-[12px] tracking-[0.12em] uppercase font-ui font-medium mb-3" style={{ color: "var(--espresso)" }}>Ukuran</p>
+              <p className="text-[11px] sm:text-[12px] tracking-[0.12em] uppercase font-ui font-medium mb-3" style={{ color: "var(--espresso)" }}>Pilih Ukuran</p>
               <div className="flex flex-wrap gap-2">
                 {availableSizes.map((s) => (
                   <button key={s} onClick={() => setSelectedSize(s)}
