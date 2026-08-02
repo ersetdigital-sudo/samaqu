@@ -186,6 +186,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const searchParams = useSearchParams();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
+  const [colorHex, setColorHex] = useState<Record<string, string>>({});
 
   const [selectedColor, setSelectedColor] = useState("");
   const [selectedSize, setSelectedSize] = useState("M");
@@ -230,6 +231,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       setProduct(p);
       setActiveSeriesId(id);
       if (p) {
+        // Warna hex tersimpan (hex bebas dari admin) → fallback colorMap
+        supabase.from("product_variants").select("color, hex").eq("product_id", id).then(({ data }) => {
+          const map: Record<string, string> = {};
+          (data || []).forEach((v) => { if (v.hex) map[v.color] = v.hex; });
+          setColorHex(map);
+        });
         // Read color/size from URL params (preserved from series navigation)
         const urlColor = searchParams.get("color");
         const urlSize = searchParams.get("size");
@@ -765,7 +772,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                   <button key={c} onClick={() => setSelectedColor(c)}
                     className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-ui rounded-sm transition-all duration-200"
                     style={{ background: selectedColor === c ? "var(--espresso)" : "transparent", color: selectedColor === c ? "var(--cream)" : "var(--coffee)", border: `1px solid ${selectedColor === c ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
-                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: colorMap[c] || "#ccc", border: "1px solid rgba(42,33,27,.1)" }} />
+                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: colorHex[c] || colorMap[c] || "#ccc", border: "1px solid rgba(42,33,27,.1)" }} />
                     {c}
                   </button>
                 ))}
@@ -1038,7 +1045,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                     <button key={c} onClick={() => setSelectedColor(c)}
                       className="flex items-center gap-2 px-3 py-2 text-[12px] font-ui rounded-sm transition-all duration-200"
                       style={{ background: selectedColor === c ? "var(--espresso)" : "transparent", color: selectedColor === c ? "var(--cream)" : "var(--coffee)", border: `1px solid ${selectedColor === c ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
-                      <span className="w-3 h-3 rounded-full shrink-0" style={{ background: colorMap[c] || "#ccc", border: "1px solid rgba(42,33,27,.1)" }} />
+                      <span className="w-3 h-3 rounded-full shrink-0" style={{ background: colorHex[c] || colorMap[c] || "#ccc", border: "1px solid rgba(42,33,27,.1)" }} />
                       {c}
                     </button>
                   ))}

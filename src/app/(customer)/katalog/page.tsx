@@ -15,6 +15,7 @@ import {
   type Product,
 } from "@/lib/katalog-data";
 import { getProducts } from "@/lib/db";
+import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/Toast";
 import FilterDrawer, { applyFilters, type FilterState } from "@/components/FilterDrawer";
 import KainSeriesModal, { getKainGradient, getKainSwatchColor } from "@/components/KainSeriesModal";
@@ -110,11 +111,13 @@ function KainSwatchRow({ category, options, selected, onSelect }: { category: Ca
 }
 
 /* ── Product Card ── */
-function ProductCard({ product, index, wishlist }: { product: Product; index: number; wishlist: { isWishlisted: (id: string) => boolean; toggle: (id: string) => Promise<boolean | null>; isLoggedIn: boolean } }) {
+function ProductCard({ product, index, wishlist, colorHex }: { product: Product; index: number; wishlist: { isWishlisted: (id: string) => boolean; toggle: (id: string) => Promise<boolean | null>; isLoggedIn: boolean }; colorHex: Record<string, string> }) {
   const toast = useToast();
   const kainName = product.jenis_kain?.name || product.kain;
   const kainColor = kainName ? getKainSwatchColor(kainName) : null;
-  const dotColor = kainColor || colorMap[product.colors[0]] || "#c9b79c";
+  const c0 = colorHex[`${product.id}::${product.colors[0]}`] || colorMap[product.colors[0]];
+  const c1 = colorHex[`${product.id}::${product.colors[1]}`] || colorMap[product.colors[1]];
+  const dotColor = kainColor || c0 || "#c9b79c";
 
   return (
     <motion.div
@@ -139,7 +142,7 @@ function ProductCard({ product, index, wishlist }: { product: Product; index: nu
         <div
           className="absolute inset-0 transition-transform duration-700 group-hover:scale-[1.04]"
           style={{
-            background: `linear-gradient(135deg, ${colorMap[product.colors[0]] || "#e8dfd1"}44, ${colorMap[product.colors[1]] || "#d4c5a9"}44)`,
+            background: `linear-gradient(135deg, ${c0 || "#e8dfd1"}44, ${c1 || "#d4c5a9"}44)`,
           }}
         />
         {/* Actual product image */}
@@ -237,6 +240,7 @@ export default function KatalogPage() {
   const [infoSheet, setInfoSheet] = useState<"kain" | "series" | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [colorHex, setColorHex] = useState<Record<string, string>>({});
   const wishlist = useWishlist();
 
   /* Fetch products from database */
@@ -244,6 +248,18 @@ export default function KatalogPage() {
     getProducts().then((data) => {
       setProducts(data);
       setLoading(false);
+      // Warna hex tersimpan (hex bebas dari admin) → fallback colorMap
+      if (data.length > 0) {
+        supabase
+          .from("product_variants")
+          .select("product_id, color, hex")
+          .in("product_id", data.map((p) => p.id))
+          .then(({ data: rows }) => {
+            const map: Record<string, string> = {};
+            (rows || []).forEach((v) => { if (v.hex) map[`${v.product_id}::${v.color}`] = v.hex; });
+            setColorHex(map);
+          });
+      }
     });
   }, []);
 
@@ -629,7 +645,7 @@ export default function KatalogPage() {
             >
               <AnimatePresence mode="popLayout">
                 {visible.map((p, i) => (
-                  <ProductCard key={p.id} product={p} index={i} wishlist={wishlist} />
+                  <ProductCard key={p.id} product={p} index={i} wishlist={wishlist} colorHex={colorHex} />
                 ))}
               </AnimatePresence>
             </motion.div>

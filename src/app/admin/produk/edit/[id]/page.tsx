@@ -2,7 +2,7 @@
 
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Plus, X, Upload, Image as ImageIcon, Video, Loader2, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus, X, Upload, Image as ImageIcon, Video, Loader2, Trash2, ChevronDown } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { colorMap } from "@/lib/katalog-data";
 import AdminShell from "@/components/AdminShell";
@@ -11,10 +11,10 @@ import { uploadToCloudinary } from "@/lib/cloudinary";
 
 const CATEGORIES = ["Thobe", "Kandora", "Koko", "Vest", "Kabak", "Cover & Hanger"] as const;
 const SIZES = ["S", "M", "L", "XL", "XXL"] as const;
-const COLORS = Object.keys(colorMap);
 
 interface Variant {
   color: string;
+  hex: string;
   sizes: { size: string; stock: number; priceOverride: string; sku: string }[];
 }
 
@@ -48,6 +48,15 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
   const [showNewKainForm, setShowNewKainForm] = useState(false);
   const [jenisKainList, setJenisKainList] = useState<{ id: string; name: string }[]>([]);
 
+  // Series list (dari produk yang sudah ada) + tambah baru
+  const [seriesList, setSeriesList] = useState<string[]>([]);
+  const [showNewSeries, setShowNewSeries] = useState(false);
+  const [newSeriesName, setNewSeriesName] = useState("");
+
+  // Warna custom (hex picker bebas ala editor HTML)
+  const [customHex, setCustomHex] = useState("#141414");
+  const [customColorName, setCustomColorName] = useState("");
+
   // Create Your Price
   const [cypEnabled, setCypEnabled] = useState(false);
   const [minimumPrice, setMinimumPrice] = useState("");
@@ -65,6 +74,12 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
         // Fetch jenis_kain list
         const { data: kainList } = await supabase.from("jenis_kain").select("id, name").order("display_order");
         if (kainList) setJenisKainList(kainList);
+
+        // Fetch daftar series yang sudah ada
+        const { data: allSeries } = await supabase.from("products").select("series");
+        if (allSeries) {
+          setSeriesList([...new Set(allSeries.map((p) => p.series).filter(Boolean))].sort() as string[]);
+        }
 
         // Fetch product
         const { data: product } = await supabase.from("products").select("*").eq("id", id).single();
@@ -87,8 +102,8 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
         const { data: dbVariants } = await supabase.from("product_variants").select("*").eq("product_id", id);
         if (dbVariants && dbVariants.length > 0) {
           const colorGroups: Record<string, Variant> = {};
-          dbVariants.forEach((v: { color: string; size: string; stock: number; price_override: number | null; sku: string | null }) => {
-            if (!colorGroups[v.color]) colorGroups[v.color] = { color: v.color, sizes: [] };
+          dbVariants.forEach((v: { color: string; hex: string | null; size: string; stock: number; price_override: number | null; sku: string | null }) => {
+            if (!colorGroups[v.color]) colorGroups[v.color] = { color: v.color, hex: v.hex || colorMap[v.color] || "#141414", sizes: [] };
             colorGroups[v.color].sizes.push({
               size: v.size,
               stock: v.stock,
@@ -126,10 +141,29 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
     return text.toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
   }
 
-  function addColor(color: string) {
+  function addColor(color: string, hex?: string) {
     if (variants.find((v) => v.color === color)) return;
-    setVariants([...variants, { color, sizes: [{ size: "M", stock: 0, priceOverride: "", sku: "" }] }]);
+    setVariants([...variants, { color, hex: hex || colorMap[color] || "#141414", sizes: [{ size: "M", stock: 0, priceOverride: "", sku: "" }] }]);
     setActiveColor(color);
+  }
+
+  // Tambah warna custom (hex bebas)
+  function addCustomColor() {
+    const nama = customColorName.trim();
+    if (!nama) { alert("Nama warna wajib diisi."); return; }
+    if (variants.find((v) => v.color.toLowerCase() === nama.toLowerCase())) { alert(`Warna "${nama}" sudah ada.`); return; }
+    addColor(nama, customHex);
+    setCustomColorName("");
+  }
+
+  // Tambah series baru
+  function addNewSeries() {
+    const nama = newSeriesName.trim();
+    if (!nama) return;
+    if (!seriesList.find((s) => s.toLowerCase() === nama.toLowerCase())) setSeriesList((prev) => [...prev, nama].sort());
+    setSeries(nama);
+    setShowNewSeries(false);
+    setNewSeriesName("");
   }
 
   function removeColor(color: string) {
@@ -163,6 +197,13 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
     }));
   }
 
+  // Toggle CYP: rekomendasi otomatis Harga Dasar + Rp 30.000 kalau masih kosong (seperti HTML)
+  function toggleCyp() {
+    const next = !cypEnabled;
+    if (next && !recommendedPrice && basePrice) setRecommendedPrice(String((parseInt(basePrice) || 0) + 30000));
+    setCypEnabled(next);
+  }
+
   async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>, color: string) {
     const files = e.target.files;
     if (!files || !activeColor) return;
@@ -192,6 +233,16 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
       if (item?.preview && item.preview !== item.url) URL.revokeObjectURL(item.preview);
       return prev.filter((m) => m.id !== id);
     });
+  }
+
+  // Tambah media via URL (tempel link gambar/video)
+  const [mediaUrl, setMediaUrl] = useState("");
+  function addMediaByUrl() {
+    const u = mediaUrl.trim();
+    if (!u) return;
+    const isVideo = /\.(mp4|webm|ogg|m4v)(\?|#|$)/i.test(u);
+    setMedia((prev) => [...prev, { id: `${Date.now()}-${Math.random().toString(36).slice(2)}`, url: u, isVideo, color: category === "Thobe" ? "default" : activeColor || "default", preview: u, uploading: false }]);
+    setMediaUrl("");
   }
 
   function validate(): boolean {
@@ -232,7 +283,7 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
       // Delete old variants and re-insert
       await supabase.from("product_variants").delete().eq("product_id", slug);
       const variantRows = variants.flatMap((v) => v.sizes.map((s) => ({
-        product_id: slug, color: v.color, size: s.size, stock: s.stock,
+        product_id: slug, color: v.color, hex: v.hex || null, size: s.size, stock: s.stock,
         price_override: s.priceOverride ? parseInt(s.priceOverride) : null, sku: s.sku || null,
       })));
       if (variantRows.length > 0) await supabase.from("product_variants").upsert(variantRows, { onConflict: "product_id,color,size" });
@@ -318,7 +369,7 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
                       <p className="text-sm font-medium" style={{ color: "var(--espresso)" }}>Create Your Price</p>
                       <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>Customer bisa tentukan harga sendiri (minimal = Harga Minimum)</p>
                     </div>
-                    <button type="button" onClick={() => setCypEnabled(!cypEnabled)}
+                    <button type="button" onClick={toggleCyp}
                       className="relative w-11 h-6 rounded-full transition-colors duration-200"
                       style={{ background: cypEnabled ? "var(--gold)" : "rgba(64,50,37,.2)" }}>
                       <span className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200"
@@ -335,9 +386,9 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Harga Rekomendasi (Rp)</label>
-                        <input type="number" value={recommendedPrice} onChange={(e) => setRecommendedPrice(e.target.value)} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: `1px solid ${errors.recommendedPrice ? "#e74c3c" : "rgba(64,50,37,.15)"}`, background: "white", color: "var(--espresso)" }} placeholder="379000" />
+                        <input type="number" value={recommendedPrice} onChange={(e) => setRecommendedPrice(e.target.value)} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: `1px solid ${errors.recommendedPrice ? "#e74c3c" : "rgba(64,50,37,.15)"}`, background: "white", color: "var(--espresso)" }} placeholder={basePrice ? String((parseInt(basePrice) || 0) + 30000) : "379000"} />
                         {errors.recommendedPrice && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.recommendedPrice}</p>}
-                        <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>Opsi &quot;Rekomendasi Samaqu&quot; di halaman produk. Opsional — kosongkan jika tidak ingin menampilkan.</p>
+                        <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>Kosongkan = otomatis Harga Dasar + Rp 30.000 ({basePrice ? `Rp ${((parseInt(basePrice) || 0) + 30000).toLocaleString("id-ID")}` : "—"}).</p>
                       </div>
                     </div>
                   )}
@@ -375,7 +426,33 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Series</label>
-                  <input value={series} onChange={(e) => setSeries(e.target.value)} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="Contoh: Jiharkah, Zahwan, Duha" />
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <select value={series} onChange={(e) => setSeries(e.target.value)} className="w-full rounded-xl px-4 py-3 text-sm outline-none appearance-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }}>
+                        <option value="">— Pilih series —</option>
+                        {seriesList.map((s) => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                      <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--text-muted)" }} />
+                    </div>
+                    <button type="button" onClick={() => setShowNewSeries(!showNewSeries)} className="px-3 py-2 rounded-xl text-xs font-medium shrink-0" style={{ border: "1px dashed rgba(181,140,74,.4)", color: "var(--gold)" }}>
+                      + Baru
+                    </button>
+                  </div>
+                  {showNewSeries && (
+                    <div className="mt-2.5 flex gap-2">
+                      <input
+                        value={newSeriesName}
+                        onChange={(e) => setNewSeriesName(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addNewSeries(); } }}
+                        placeholder="Nama series baru…"
+                        autoFocus
+                        className="flex-1 rounded-xl px-4 py-2.5 text-sm outline-none"
+                        style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }}
+                      />
+                      <button type="button" onClick={addNewSeries} className="px-4 py-2 rounded-xl text-xs font-semibold text-white shrink-0" style={{ background: "var(--gold)" }}>Tambah</button>
+                    </div>
+                  )}
+                  <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>Pilih series yang sudah ada, atau tambah baru.</p>
                 </div>
               </div>
             </div>
@@ -421,15 +498,24 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
                   <div className="flex flex-wrap gap-2 mb-4">
                     {variants.map((v) => (
                       <button key={v.color} onClick={() => { setActiveColor(v.color); setPreviewIndex(0); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all" style={{ background: activeColor === v.color ? "var(--espresso)" : "transparent", color: activeColor === v.color ? "var(--cream)" : "var(--coffee)", border: `1px solid ${activeColor === v.color ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
-                        <span className="w-3 h-3 rounded-full" style={{ background: colorMap[v.color] || "#ccc", border: "1px solid rgba(42,33,27,.1)" }} />
+                        <span className="w-3 h-3 rounded-full" style={{ background: v.hex || colorMap[v.color] || "#ccc", border: "1px solid rgba(42,33,27,.1)" }} />
                         {v.color}
                         <button onClick={(e) => { e.stopPropagation(); removeColor(v.color); }} className="ml-1 hover:opacity-60"><X size={12} /></button>
                       </button>
                     ))}
-                    <select onChange={(e) => { if (e.target.value) addColor(e.target.value); e.target.value = ""; }} className="appearance-none px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer" style={{ border: "1px dashed rgba(201,183,156,.4)", color: "var(--gold)", background: "transparent" }}>
-                      <option value="">+ Tambah Warna</option>
-                      {COLORS.filter((c) => !variants.find((v) => v.color === c)).map((c) => <option key={c} value={c}>{c}</option>)}
-                    </select>
+                    {/* form warna custom: hex picker + nama */}
+                    <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-full text-xs" style={{ border: "1px dashed rgba(201,183,156,.4)", color: "var(--gold)" }}>
+                      <input type="color" value={customHex} onChange={(e) => setCustomHex(e.target.value)} className="w-6 h-6 rounded-full border-0 cursor-pointer p-0 bg-transparent" title="Pilih warna" />
+                      <input
+                        value={customColorName}
+                        onChange={(e) => setCustomColorName(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustomColor(); } }}
+                        placeholder="Nama warna…"
+                        className="w-[110px] bg-transparent outline-none text-xs"
+                        style={{ color: "var(--espresso)" }}
+                      />
+                      <button type="button" onClick={addCustomColor} className="font-semibold hover:opacity-70">+</button>
+                    </div>
                   </div>
                   {activeVariant && (
                     <div className="space-y-3">
@@ -479,6 +565,13 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
                     <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>JPG, PNG, WebP (10MB) · MP4, WebM (50MB)</p>
                     <input type="file" multiple accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" onChange={(e) => handleFileSelect(e, category === "Thobe" ? "default" : activeColor || "default")} className="hidden" />
                   </label>
+
+                  {/* atau tempel URL */}
+                  <div className="flex gap-2 mt-2.5">
+                    <input value={mediaUrl} onChange={(e) => setMediaUrl(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addMediaByUrl(); } }} placeholder="atau tempel URL gambar / video…" className="flex-1 rounded-xl px-4 py-2.5 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
+                    <button type="button" onClick={addMediaByUrl} className="px-4 py-2 rounded-xl text-xs font-semibold text-white shrink-0" style={{ background: "var(--gold)" }}>Tambah</button>
+                  </div>
+                  <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>Foto pertama = foto utama di katalog.</p>
                   {activeMedia.length > 0 && (
                     <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 mt-4">
                       {activeMedia.map((m, idx) => (
@@ -487,6 +580,9 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
                           {m.uploading ? <div className="absolute inset-0 flex items-center justify-center"><Loader2 size={20} className="animate-spin" style={{ color: "var(--gold)" }} /></div>
                             : m.isVideo ? <video src={m.url || m.preview} className="w-full h-full object-cover" muted loop playsInline />
                             : <img src={m.url || m.preview} alt="" className="w-full h-full object-cover" />}
+                          {idx === 0 && !m.uploading && !m.error && (
+                            <span className="absolute bottom-1.5 left-1.5 rounded px-1.5 py-0.5 text-[9px] font-medium text-white" style={{ background: "rgba(0,0,0,.65)" }}>Utama</span>
+                          )}
                           <button onClick={(e) => { e.stopPropagation(); removeMedia(m.id); }} className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: "rgba(0,0,0,.6)", color: "white" }}><X size={12} /></button>
                         </div>
                       ))}
@@ -550,7 +646,7 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
               {variants.length > 0 && (
                 <div className="mt-3 flex flex-wrap gap-2">
                   {variants.map((v) => (
-                    <button key={v.color} onClick={() => { setActiveColor(v.color); setPreviewIndex(0); }} className="w-6 h-6 rounded-full transition-transform" style={{ background: colorMap[v.color] || "#ccc", border: activeColor === v.color ? "2px solid var(--gold)" : "1px solid rgba(42,33,27,.15)", transform: activeColor === v.color ? "scale(1.15)" : "scale(1)" }} title={v.color} />
+                    <button key={v.color} onClick={() => { setActiveColor(v.color); setPreviewIndex(0); }} className="w-6 h-6 rounded-full transition-transform" style={{ background: v.hex || colorMap[v.color] || "#ccc", border: activeColor === v.color ? "2px solid var(--gold)" : "1px solid rgba(42,33,27,.15)", transform: activeColor === v.color ? "scale(1.15)" : "scale(1)" }} title={v.color} />
                   ))}
                 </div>
               )}
