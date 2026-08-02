@@ -365,6 +365,7 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
                         const val = e.target.value;
                         setCategory(val);
                         if (val !== "Thobe") setSeries("");
+                        if (val !== "Thobe" && val !== "Kandora") setSelectedJenisKainId("");
                       }} className="w-full rounded-xl px-4 py-3 text-sm outline-none appearance-none" style={{ border: `1px solid ${errors.category ? "#e74c3c" : "rgba(64,50,37,.15)"}`, background: "white", color: "var(--espresso)" }}>
                         <option value="">Pilih kategori</option>
                         {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
@@ -430,6 +431,7 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
                     </div>
                   )}
                 </div>
+                {(category === "Thobe" || category === "Kandora") && (
                 <div>
                   <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Jenis Kain</label>
                   <div className="flex gap-2">
@@ -467,6 +469,7 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
                     </div>
                   )}
                 </div>
+                )}
                 {category === "Thobe" && (
                 <div>
                   <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Jenis Series</label>

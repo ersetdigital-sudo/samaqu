@@ -463,7 +463,7 @@ export default function KatalogPage() {
             </div>
           </div>
 
-          {category !== "Semua" && (
+          {(category === "Thobe" || category === "Kandora") && (
             <div className="pb-5">
               <KainSwatchRow category={category} options={kainOptionsForCategory} selected={selectedKain} onSelect={setSelectedKain} />
             </div>
@@ -573,7 +573,7 @@ export default function KatalogPage() {
           </div>
         </div>
 
-        {category !== "Semua" && (
+        {(category === "Thobe" || category === "Kandora") && (
           <div className="hidden lg:block pt-5">
             <KainSwatchRow category={category} options={kainOptionsForCategory} selected={selectedKain} onSelect={setSelectedKain} />
           </div>
