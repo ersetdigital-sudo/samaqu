@@ -75,16 +75,17 @@ export default function TambahProdukPage() {
   const [media, setMedia] = useState<MediaFile[]>([]);
   const [previewIndex, setPreviewIndex] = useState(0);
 
-  // Fetch jenis_kain list + daftar series yang sudah ada
+  // Fetch jenis_kain list + daftar series dari tabel product_series
   useEffect(() => {
     supabase.from("jenis_kain").select("id, name").order("display_order").then(({ data }) => {
       if (data) setJenisKainList(data);
     });
-    supabase.from("products").select("series").then(({ data }) => {
-      const defaults = ["Jiharkah", "Imron", "Bayati", "Nahawand", "Karim", "Imalah"];
-      const fromDb = (data || []).map((p) => p.series).filter(Boolean) as string[];
-      const list = [...new Set([...defaults, ...fromDb])].sort();
-      setSeriesList(list);
+    supabase.from("product_series").select("name").order("name").then(({ data }) => {
+      if (data && data.length > 0) {
+        setSeriesList(data.map((r) => r.name));
+      } else {
+        setSeriesList(["Jiharkah", "Imron", "Bayati", "Nahawand", "Karim", "Imalah"]);
+      }
     });
   }, []);
 
@@ -121,11 +122,14 @@ export default function TambahProdukPage() {
     setCustomColorName("");
   }
 
-  // Tambah series baru
-  function addNewSeries() {
+  // Tambah series baru → simpan ke Supabase
+  async function addNewSeries() {
     const nama = newSeriesName.trim();
     if (!nama) return;
-    if (!seriesList.find((s) => s.toLowerCase() === nama.toLowerCase())) setSeriesList((prev) => [...prev, nama].sort());
+    if (!seriesList.find((s) => s.toLowerCase() === nama.toLowerCase())) {
+      await supabase.from("product_series").upsert({ name: nama }, { onConflict: "name" });
+      setSeriesList((prev) => [...prev, nama].sort());
+    }
     setSeries(nama);
     setShowNewSeries(false);
     setNewSeriesName("");

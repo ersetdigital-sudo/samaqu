@@ -75,11 +75,13 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
         const { data: kainList } = await supabase.from("jenis_kain").select("id, name").order("display_order");
         if (kainList) setJenisKainList(kainList);
 
-        // Fetch daftar series yang sudah ada + defaults
-        const { data: allSeries } = await supabase.from("products").select("series");
-        const defaults = ["Jiharkah", "Imron", "Bayati", "Nahawand", "Karim", "Imalah"];
-        const fromDb = (allSeries || []).map((p) => p.series).filter(Boolean) as string[];
-        setSeriesList([...new Set([...defaults, ...fromDb])].sort() as string[]);
+        // Fetch daftar series dari tabel product_series
+        const { data: allSeries } = await supabase.from("product_series").select("name").order("name");
+        if (allSeries && allSeries.length > 0) {
+          setSeriesList(allSeries.map((r) => r.name));
+        } else {
+          setSeriesList(["Jiharkah", "Imron", "Bayati", "Nahawand", "Karim", "Imalah"]);
+        }
 
         // Fetch product
         const { data: product } = await supabase.from("products").select("*").eq("id", id).single();
@@ -156,11 +158,14 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
     setCustomColorName("");
   }
 
-  // Tambah series baru
-  function addNewSeries() {
+  // Tambah series baru → simpan ke Supabase
+  async function addNewSeries() {
     const nama = newSeriesName.trim();
     if (!nama) return;
-    if (!seriesList.find((s) => s.toLowerCase() === nama.toLowerCase())) setSeriesList((prev) => [...prev, nama].sort());
+    if (!seriesList.find((s) => s.toLowerCase() === nama.toLowerCase())) {
+      await supabase.from("product_series").upsert({ name: nama }, { onConflict: "name" });
+      setSeriesList((prev) => [...prev, nama].sort());
+    }
     setSeries(nama);
     setShowNewSeries(false);
     setNewSeriesName("");
