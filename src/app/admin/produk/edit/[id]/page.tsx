@@ -75,11 +75,11 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
         const { data: kainList } = await supabase.from("jenis_kain").select("id, name").order("display_order");
         if (kainList) setJenisKainList(kainList);
 
-        // Fetch daftar series yang sudah ada
+        // Fetch daftar series yang sudah ada + defaults
         const { data: allSeries } = await supabase.from("products").select("series");
-        if (allSeries) {
-          setSeriesList([...new Set(allSeries.map((p) => p.series).filter(Boolean))].sort() as string[]);
-        }
+        const defaults = ["Jiharkah", "Imron", "Bayati", "Nahawand", "Karim", "Imalah"];
+        const fromDb = (allSeries || []).map((p) => p.series).filter(Boolean) as string[];
+        setSeriesList([...new Set([...defaults, ...fromDb])].sort() as string[]);
 
         // Fetch product
         const { data: product } = await supabase.from("products").select("*").eq("id", id).single();
