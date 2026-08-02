@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, use, useRef, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Minus, Plus, ChevronLeft, ChevronRight, ChevronDown, Play, ShoppingCart } from "lucide-react";
 import ImageZoom, { type ZoomMedia } from "@/components/ImageZoom";
@@ -182,7 +182,6 @@ function RelatedProductCard({ p }: { p: Product }) {
 
 export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
@@ -211,6 +210,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const { isWishlisted, toggle: toggleWishlist, isLoggedIn } = useWishlist();
   const cypMicrocopy = product?.cyp_microcopy_override || storeSettings.cyp_microcopy || "Harga Minimum boleh dipilih. Itulah alasan kami membuat Create Your Price.";
   const isThobe = product?.category === "Thobe";
+  // ID produk yang sedang ditampilkan (bisa beda dari URL slug saat ganti series)
+  const displayId = activeSeriesId || id;
 
   // Supabase images per color
   const [supabaseMedia, setSupabaseMedia] = useState<MediaItem[]>([]);
@@ -263,12 +264,18 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     });
   }, [id]);
 
-  // For Thobe: fetch new product data when activeSeriesId changes (without navigating)
+  // Fetch new product data when activeSeriesId changes (without navigating)
   useEffect(() => {
-    if (!activeSeriesId || activeSeriesId === id || !isThobe) return;
+    if (!activeSeriesId || activeSeriesId === id) return;
     getProductById(activeSeriesId).then((p) => {
       if (p) {
         setProduct(p);
+        // Fetch color hex for the new product
+        supabase.from("product_variants").select("color, hex").eq("product_id", activeSeriesId).then(({ data }) => {
+          const map: Record<string, string> = {};
+          (data || []).forEach((v) => { if (v.hex) map[v.color] = v.hex; });
+          setColorHex(map);
+        });
         // Fetch gallery for the new product
         supabase.from("product_images").select("url, color, is_video, display_order").eq("product_id", activeSeriesId).order("display_order").then(({ data }) => {
           if (data && data.length > 0) {
@@ -282,8 +289,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             setSupabaseMedia([]);
           }
         });
-        // Reset gallery index
+        // Reset gallery index & color
         setActiveIndex(0);
+        setSelectedColor(p.colors[0] || "");
       }
     });
   }, [activeSeriesId, id, isThobe]);
@@ -308,8 +316,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   }, [product?.jenis_kain_id, product?.series, selectedColor]);
 
   useEffect(() => {
-    if (!id || !selectedColor) return;
-    supabase.from("product_variants").select("size, price_override").eq("product_id", id).eq("color", selectedColor).order("display_order").then(({ data }) => {
+    if (!displayId || !selectedColor) return;
+    supabase.from("product_variants").select("size, price_override").eq("product_id", displayId).eq("color", selectedColor).order("display_order").then(({ data }) => {
       if (data && data.length > 0) {
         const sizes = data.map((d) => d.size);
         setAvailableSizes(sizes);
@@ -318,15 +326,15 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         setAvailableSizes(FALLBACK_SIZES);
       }
     });
-  }, [id, selectedColor]);
+  }, [displayId, selectedColor]);
 
   useEffect(() => {
-    if (!id || !selectedColor || !selectedSize) { setVariantPrice(null); setStock(null); return; }
-    supabase.from("product_variants").select("price_override, stock").eq("product_id", id).eq("color", selectedColor).eq("size", selectedSize).single().then(({ data }) => {
+    if (!displayId || !selectedColor || !selectedSize) { setVariantPrice(null); setStock(null); return; }
+    supabase.from("product_variants").select("price_override, stock").eq("product_id", displayId).eq("color", selectedColor).eq("size", selectedSize).single().then(({ data }) => {
       setVariantPrice(data?.price_override ?? null);
       setStock(data?.stock ?? null);
     });
-  }, [id, selectedColor, selectedSize]);
+  }, [displayId, selectedColor, selectedSize]);
 
   const currentPrice = variantPrice ?? product?.price ?? 0;
   const isCYP = product?.create_your_price_enabled ?? false;
@@ -404,7 +412,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     console.log("[CYP] handleAddToCart:", { isCYP, selectedPrice, minimumPrice, finalCYPPrice, effectivePrice, colorImage });
 
     addItem({
-      id: product.id,
+      id: displayId,
       name: product.name,
       image: colorImage,
       price: isCYP ? minimumPrice : currentPrice,
@@ -430,7 +438,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   }
 
   function handleSeriesSelect(seriesId: string) {
-    if (!isThobe || seriesId === activeSeriesId) return;
+    if (seriesId === activeSeriesId) return;
     setActiveSeriesId(seriesId);
 
     // Auto-scroll to gallery on mobile only
@@ -547,8 +555,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             </div>
             {/* Wishlist button - mobile */}
             {isLoggedIn && product && (
-              <button onClick={async () => { const added = await toggleWishlist(product.id); toast.show(added ? "Ditambahkan ke wishlist" : "Dihapus dari wishlist"); }} className="absolute top-4 right-4 z-20 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110" style={{ background: "rgba(255,255,255,.9)", backdropFilter: "blur(8px)", boxShadow: "0 2px 8px rgba(0,0,0,.1)" }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill={isWishlisted(product.id) ? "#e74c3c" : "none"} stroke={isWishlisted(product.id) ? "#e74c3c" : "var(--espresso)"} strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
+              <button onClick={async () => { const added = await toggleWishlist(displayId); toast.show(added ? "Ditambahkan ke wishlist" : "Dihapus dari wishlist"); }} className="absolute top-4 right-4 z-20 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110" style={{ background: "rgba(255,255,255,.9)", backdropFilter: "blur(8px)", boxShadow: "0 2px 8px rgba(0,0,0,.1)" }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill={isWishlisted(displayId) ? "#e74c3c" : "none"} stroke={isWishlisted(displayId) ? "#e74c3c" : "var(--espresso)"} strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
               </button>
             )}
             {media.length > 1 && (
@@ -598,7 +606,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               </p>
               <div className="flex flex-wrap gap-2">
                 {availableSeries.map((s) => {
-                  const isActive = isThobe ? s.id === activeSeriesId : s.id === product.id;
+                  const isActive = isThobe ? s.id === activeSeriesId : s.id === displayId;
                   if (isThobe) {
                     return (
                       <button
@@ -622,10 +630,10 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                     );
                   }
                   return (
-                    <a
+                    <button
                       key={s.id}
-                      href={`/katalog/${s.id}?color=${encodeURIComponent(selectedColor)}&size=${encodeURIComponent(selectedSize)}`}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[12px] font-ui transition-all duration-200"
+                      onClick={() => handleSeriesSelect(s.id)}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[12px] font-ui transition-all duration-200 cursor-pointer"
                       style={{
                         background: isActive ? "var(--espresso)" : "var(--cream-bright)",
                         color: isActive ? "var(--cream)" : "var(--coffee)",
@@ -639,7 +647,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                           : `Rp ${s.price.toLocaleString("id-ID")}`
                         }
                       </span>
-                    </a>
+                    </button>
                   );
                 })}
               </div>
@@ -838,8 +846,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               </AnimatePresence>
               {/* Wishlist button - desktop */}
               {isLoggedIn && (
-              <button onClick={(e) => { e.stopPropagation(); toggleWishlist(product.id).then((added) => toast.show(added ? "Ditambahkan ke wishlist" : "Dihapus dari wishlist")); }} className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110" style={{ background: "rgba(255,255,255,.9)", backdropFilter: "blur(8px)", boxShadow: "0 2px 8px rgba(0,0,0,.1)" }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill={isWishlisted(product.id) ? "#e74c3c" : "none"} stroke={isWishlisted(product.id) ? "#e74c3c" : "var(--espresso)"} strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
+              <button onClick={(e) => { e.stopPropagation(); toggleWishlist(displayId).then((added) => toast.show(added ? "Ditambahkan ke wishlist" : "Dihapus dari wishlist")); }} className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110" style={{ background: "rgba(255,255,255,.9)", backdropFilter: "blur(8px)", boxShadow: "0 2px 8px rgba(0,0,0,.1)" }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill={isWishlisted(displayId) ? "#e74c3c" : "none"} stroke={isWishlisted(displayId) ? "#e74c3c" : "var(--espresso)"} strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
               </button>
               )}
               {product.tag && (
@@ -922,7 +930,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 <p className="text-[10.5px] tracking-[0.18em] uppercase text-[var(--muted)] mb-2.5">Pilih Series</p>
                 <div className="flex flex-wrap gap-2">
                   {availableSeries.map((s) => {
-                    const isActive = isThobe ? s.id === activeSeriesId : s.id === product.id;
+                    const isActive = isThobe ? s.id === activeSeriesId : s.id === displayId;
                     if (isThobe) {
                       return (
                         <button key={s.id} onClick={() => handleSeriesSelect(s.id)}
@@ -939,8 +947,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                       );
                     }
                     return (
-                      <a key={s.id} href={`/katalog/${s.id}?color=${encodeURIComponent(selectedColor)}&size=${encodeURIComponent(selectedSize)}`}
-                        className="px-4 py-2 rounded-lg text-[12.5px] transition"
+                      <button key={s.id} onClick={() => handleSeriesSelect(s.id)}
+                        className="px-4 py-2 rounded-lg text-[12.5px] transition cursor-pointer"
                         style={{ background: isActive ? "var(--espresso)" : "var(--cream-bright)", color: isActive ? "var(--cream)" : "var(--coffee)", border: `1px solid ${isActive ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
                         <span className="font-medium">{s.series}</span>
                         <span className="ml-1.5" style={{ color: isActive ? "rgba(248,245,241,.75)" : "var(--gold)" }}>
@@ -949,7 +957,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                             : `Rp ${s.price.toLocaleString("id-ID")}`
                           }
                         </span>
-                      </a>
+                      </button>
                     );
                   })}
                 </div>
