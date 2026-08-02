@@ -441,6 +441,17 @@ export default function TambahProdukPage() {
                     <button type="button" onClick={() => setShowNewKainForm(!showNewKainForm)} className="px-3 py-2 rounded-xl text-xs font-medium shrink-0" style={{ border: "1px dashed rgba(181,140,74,.4)", color: "var(--gold)" }}>
                       + Baru
                     </button>
+                    {selectedJenisKainId && (
+                      <button type="button" onClick={async () => {
+                        const jk = jenisKainList.find((j) => j.id === selectedJenisKainId);
+                        if (!confirm(`Hapus jenis kain "${jk?.name}" dari database?`)) return;
+                        await supabase.from("jenis_kain").delete().eq("id", selectedJenisKainId);
+                        setJenisKainList((prev) => prev.filter((j) => j.id !== selectedJenisKainId));
+                        setSelectedJenisKainId("");
+                      }} className="px-3 py-2 rounded-xl text-xs font-medium shrink-0" style={{ border: "1px solid rgba(231,76,60,.3)", color: "#e74c3c" }}>
+                        Hapus
+                      </button>
+                    )}
                   </div>
                   {showNewKainForm && (
                     <div className="mt-3">
