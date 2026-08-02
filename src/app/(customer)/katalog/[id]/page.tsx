@@ -580,18 +580,14 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           </p>
           <h1 className="text-[1.5rem] sm:text-[1.8rem] font-semibold leading-tight mb-1.5"
             style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
-            {product.name}{isThobe && product.series ? <span style={{ color: "var(--gold)" }}> — {product.series}</span> : selectedColor && <span style={{ color: "var(--gold)" }}> — {selectedColor}</span>}
+            {product.name}{product.jenis_kain?.name ? <span style={{ color: "var(--gold)" }}> — Kain {product.jenis_kain.name}</span> : product.kain ? <span style={{ color: "var(--gold)" }}> — Kain {product.kain}</span> : selectedColor ? <span style={{ color: "var(--gold)" }}> — {selectedColor}</span> : null}
           </h1>
-          <p className="text-[11px] font-ui mb-5" style={{ color: "var(--stone)" }}>
-            {product.jenis_kain?.name && (
-              <span>
-                Jenis kain <button type="button" onClick={() => setInfoSheet("kain")} className="underline decoration-dotted underline-offset-2 hover:opacity-70 transition-opacity" style={{ color: "var(--gold)" }}>{product.jenis_kain.name}</button>
-              </span>
-            )}
-            {!product.jenis_kain?.name && product.kain && <span>Jenis kain {product.kain}</span>}
+          <p className="text-[13px] font-ui mb-5" style={{ color: "var(--stone)" }}>
+            {product.jenis_kain?.name && <span>Jenis kain <span style={{ color: "var(--gold)" }}>{product.jenis_kain.name}</span></span>}
+            {!product.jenis_kain?.name && product.kain && <span>Jenis kain <span style={{ color: "var(--gold)" }}>{product.kain}</span></span>}
             {" · "}
-            <span>{product.category}</span>
-            {" · ready stock · garansi tukar ukuran"}
+            <span style={{ color: "var(--gold)" }}>{product.category}</span>
+            {" · ready stock"}
           </p>
 
           {/* Series Selector — selalu tampilkan untuk Thobe */}
@@ -917,16 +913,14 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             </p>
             <h1 className="text-[2rem] sm:text-[2.5rem] lg:text-[2.8rem] font-semibold leading-tight mb-2"
               style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
-              {product.name}{isThobe && product.series ? <span style={{ color: "var(--gold)" }}> — {product.series}</span> : selectedColor && <span style={{ color: "var(--gold)" }}> — {selectedColor}</span>}
+              {product.name}{product.jenis_kain?.name ? <span style={{ color: "var(--gold)" }}> — Kain {product.jenis_kain.name}</span> : product.kain ? <span style={{ color: "var(--gold)" }}> — Kain {product.kain}</span> : selectedColor ? <span style={{ color: "var(--gold)" }}> — {selectedColor}</span> : null}
             </h1>
             <p className="text-[13px] font-ui mb-6" style={{ color: "var(--stone)" }}>
-              {product.jenis_kain?.name && (
-                <span>Jenis kain <button type="button" onClick={() => setInfoSheet("kain")} className="underline decoration-dotted underline-offset-2 hover:opacity-70 transition-opacity" style={{ color: "var(--gold)" }}>{product.jenis_kain.name}</button></span>
-              )}
-              {!product.jenis_kain?.name && product.kain && <span>Jenis kain {product.kain}</span>}
+              {product.jenis_kain?.name && <span>Jenis kain <span style={{ color: "var(--gold)" }}>{product.jenis_kain.name}</span></span>}
+              {!product.jenis_kain?.name && product.kain && <span>Jenis kain <span style={{ color: "var(--gold)" }}>{product.kain}</span></span>}
               {" · "}
-              <span>{product.category}</span>
-              {" · ready stock · garansi tukar ukuran"}
+              <span style={{ color: "var(--gold)" }}>{product.category}</span>
+              {" · ready stock"}
             </p>
             {/* Price card */}
             <div className="mb-8 rounded-2xl p-6" style={{ background: "var(--cream-bright)", border: "1px solid rgba(201,183,156,.25)" }}>
