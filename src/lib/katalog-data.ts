@@ -46,6 +46,7 @@ export interface Product {
   minimum_price?: number | null;
   recommended_price?: number | null;
   create_your_price_enabled?: boolean;
+  cyp_microcopy_override?: string | null;
 }
 
 /* ── Color hex map ── */

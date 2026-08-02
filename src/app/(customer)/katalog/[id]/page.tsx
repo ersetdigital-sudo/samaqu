@@ -209,7 +209,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const toast = useToast();
   const storeSettings = useStoreSettings();
   const { isWishlisted, toggle: toggleWishlist, isLoggedIn } = useWishlist();
-  const cypMicrocopy = storeSettings.cyp_microcopy || "Harga Minimum boleh dipilih. Itulah alasan kami membuat Create Your Price.";
+  const cypMicrocopy = product?.cyp_microcopy_override || storeSettings.cyp_microcopy || "Harga Minimum boleh dipilih. Itulah alasan kami membuat Create Your Price.";
   const isThobe = product?.category === "Thobe";
 
   // Supabase images per color
