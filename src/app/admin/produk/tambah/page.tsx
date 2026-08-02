@@ -469,6 +469,16 @@ export default function TambahProdukPage() {
                     <button type="button" onClick={() => setShowNewSeries(!showNewSeries)} className="px-3 py-2 rounded-xl text-xs font-medium shrink-0" style={{ border: "1px dashed rgba(181,140,74,.4)", color: "var(--gold)" }}>
                       + Baru
                     </button>
+                    {series && (
+                      <button type="button" onClick={async () => {
+                        if (!confirm(`Hapus series "${series}" dari database?`)) return;
+                        await supabase.from("product_series").delete().eq("name", series);
+                        setSeriesList((prev) => prev.filter((s) => s !== series));
+                        setSeries("");
+                      }} className="px-3 py-2 rounded-xl text-xs font-medium shrink-0" style={{ border: "1px solid rgba(231,76,60,.3)", color: "#e74c3c" }}>
+                        Hapus
+                      </button>
+                    )}
                   </div>
                   {showNewSeries && (
                     <div className="mt-2.5 flex gap-2">
