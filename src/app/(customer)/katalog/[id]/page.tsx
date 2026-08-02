@@ -615,8 +615,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             {" · ready stock · garansi tukar ukuran"}
           </p>
 
-          {/* Series Selector — dipindah ke dekat gallery */}
-          {availableSeries.length > 1 && (
+          {/* Series Selector — selalu tampilkan untuk Thobe */}
+          {(availableSeries.length > 1 || isThobe) && (
             <div className="mb-5">
               <p className="text-[10px] tracking-[0.1em] uppercase font-ui font-medium mb-2.5" style={{ color: "var(--espresso)" }}>
                 Series — <span style={{ color: "var(--gold)" }}>{product.series}</span>
@@ -761,8 +761,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
           <div className="h-px mb-5" style={{ background: "rgba(201,183,156,.2)" }} />
 
-          {/* Colors — sembunyikan kalau cuma "default" (Thobe internal) */}
-          {product.colors.length > 0 && !(product.colors.length === 1 && product.colors[0] === "default") && (
+          {/* Colors — sembunyikan untuk Thobe (pakai series, bukan warna) */}
+          {product.category !== "Thobe" && product.colors.length > 0 && !(product.colors.length === 1 && product.colors[0] === "default") && (
             <div className="mb-5">
               <p className="text-[10px] tracking-[0.1em] uppercase font-ui font-medium mb-2.5" style={{ color: "var(--espresso)" }}>
                 Warna — <span style={{ color: "var(--gold)" }}>{selectedColor}</span>
@@ -1035,7 +1035,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             </p>
             <div className="h-px mb-7" style={{ background: "rgba(201,183,156,.2)" }} />
 
-            {product.colors.length > 0 && !(product.colors.length === 1 && product.colors[0] === "default") && (
+            {product.category !== "Thobe" && product.colors.length > 0 && !(product.colors.length === 1 && product.colors[0] === "default") && (
               <div className="mb-7">
                 <p className="text-[11px] sm:text-[12px] tracking-[0.12em] uppercase font-ui font-medium mb-3" style={{ color: "var(--espresso)" }}>
                   Warna — <span style={{ color: "var(--gold)" }}>{selectedColor}</span>
@@ -1054,7 +1054,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             )}
 
             {/* Series Selector — Desktop */}
-            {availableSeries.length > 1 && (
+            {(availableSeries.length > 1 || isThobe) && (
               <div className="mb-7">
                 <p className="text-[11px] sm:text-[12px] tracking-[0.12em] uppercase font-ui font-medium mb-3" style={{ color: "var(--espresso)" }}>
                   Series — <span style={{ color: "var(--gold)" }}>{product.series}</span>
