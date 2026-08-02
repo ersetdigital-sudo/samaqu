@@ -296,6 +296,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     });
   }, [activeSeriesId, id, isThobe]);
 
+  // Reset variant state when switching series (avoid stale data from old product)
+  useEffect(() => {
+    setVariantPrice(null);
+    setStock(null);
+  }, [displayId]);
+
   // Reset gallery index when color changes
   useEffect(() => {
     setActiveIndex(0);
@@ -324,13 +330,16 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         if (!sizes.includes(selectedSize)) setSelectedSize(sizes[0]);
       } else {
         setAvailableSizes(FALLBACK_SIZES);
+        setVariantPrice(null);
+        setStock(null);
       }
     });
   }, [displayId, selectedColor]);
 
   useEffect(() => {
     if (!displayId || !selectedColor || !selectedSize) { setVariantPrice(null); setStock(null); return; }
-    supabase.from("product_variants").select("price_override, stock").eq("product_id", displayId).eq("color", selectedColor).eq("size", selectedSize).single().then(({ data }) => {
+    supabase.from("product_variants").select("price_override, stock").eq("product_id", displayId).eq("color", selectedColor).eq("size", selectedSize).maybeSingle().then(({ data, error }) => {
+      if (error) { setVariantPrice(null); setStock(null); return; }
       setVariantPrice(data?.price_override ?? null);
       setStock(data?.stock ?? null);
     });
@@ -511,7 +520,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const media = selectedColor
     ? baseMedia.filter((m) => !m.color || m.color === selectedColor)
     : baseMedia;
-  const activeMedia = media[activeIndex];
+  const activeMedia = media[activeIndex] ?? { src: product.image, type: "image" as const };
 
   return (
     <section className="min-h-screen" style={{ background: "var(--cream)" }}>
