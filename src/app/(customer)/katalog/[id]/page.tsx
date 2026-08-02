@@ -668,9 +668,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 <p className="text-[1.3rem] font-ui font-semibold mb-1" style={{ color: "var(--gold)" }}>
                   Rp {minimumPrice.toLocaleString("id-ID")}
                 </p>
-                <p className="text-[10.5px] leading-relaxed font-ui mb-3" style={{ color: "var(--stone)" }}>
-                  *Harga ini belum termasuk Kabak &amp; Cover Hanger, karena itu dijual terpisah.
-                </p>
                 <p className="text-[11px] font-ui mb-3" style={{ color: "var(--stone)" }}>Pilih harga terbaikmu</p>
                 {/* Quick select buttons */}
                 <div className="flex flex-wrap gap-1.5 mb-2">
@@ -714,9 +711,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 <p className="text-[10px] tracking-[0.1em] uppercase font-ui mb-1" style={{ color: "var(--stone)" }}>Harga</p>
                 <p className="text-[1.3rem] font-ui font-semibold mb-1" style={{ color: "var(--gold)" }}>
                   Rp {currentPrice.toLocaleString("id-ID")}
-                </p>
-                <p className="text-[10.5px] leading-relaxed font-ui" style={{ color: "var(--stone)" }}>
-                  *Harga ini belum termasuk Kabak &amp; Cover Hanger, karena itu dijual terpisah.
                 </p>
               </div>
             )}
@@ -982,9 +976,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                   <p className="text-[20px] sm:text-[22px] font-ui font-semibold mb-1" style={{ color: "var(--gold)" }}>
                     Rp {minimumPrice.toLocaleString("id-ID")}
                   </p>
-                  <p className="text-[11.5px] leading-relaxed font-ui mb-3" style={{ color: "var(--stone)" }}>
-                    *Harga ini belum termasuk Kabak &amp; Cover Hanger, karena itu dijual terpisah.
-                  </p>
                   <p className="text-[12px] font-ui mb-3" style={{ color: "var(--stone)" }}>Pilih harga terbaikmu</p>
                   {/* Quick select buttons */}
                   <div className="flex flex-wrap gap-2 mb-2">
@@ -1028,9 +1019,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                   <p className="text-[11px] tracking-[0.1em] uppercase font-ui mb-1" style={{ color: "var(--stone)" }}>Harga</p>
                   <p className="text-[20px] sm:text-[22px] font-ui font-semibold mb-1" style={{ color: "var(--gold)" }}>
                     Rp {currentPrice.toLocaleString("id-ID")}
-                  </p>
-                  <p className="text-[11.5px] leading-relaxed font-ui" style={{ color: "var(--stone)" }}>
-                    *Harga ini belum termasuk Kabak &amp; Cover Hanger, karena itu dijual terpisah.
                   </p>
                 </div>
               )}
