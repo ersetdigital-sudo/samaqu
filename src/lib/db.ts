@@ -22,6 +22,7 @@ export interface DbProduct {
   minimum_price: number | null;
   recommended_price: number | null;
   create_your_price_enabled: boolean;
+  cyp_microcopy_override: string | null;
   // Joined relation (optional, only when fetched with join)
   jenis_kain?: JenisKain | null;
 }
@@ -54,6 +55,7 @@ function dbProductToProduct(db: DbProduct): Product {
     minimum_price: db.minimum_price,
     recommended_price: db.recommended_price,
     create_your_price_enabled: db.create_your_price_enabled ?? false,
+    cyp_microcopy_override: db.cyp_microcopy_override || null,
     tag: (db.tag as Product["tag"]) || undefined,
     note: db.note || undefined,
     image: db.image || "",

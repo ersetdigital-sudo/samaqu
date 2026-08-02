@@ -8,6 +8,7 @@ import { colorMap } from "@/lib/katalog-data";
 import AdminShell from "@/components/AdminShell";
 import JenisKainForm from "@/components/JenisKainForm";
 import { uploadToCloudinary } from "@/lib/cloudinary";
+import { useStoreSettings } from "@/lib/store-settings";
 
 const CATEGORIES = ["Thobe", "Kandora", "Koko", "Vest", "Kabak", "Cover & Hanger"] as const;
 const SIZES = ["S", "M", "L", "XL", "XXL"] as const;
@@ -41,6 +42,7 @@ interface MediaFile {
 export default function EditProdukPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
+  const storeSettings = useStoreSettings();
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -70,6 +72,8 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
   const [cypEnabled, setCypEnabled] = useState(false);
   const [minimumPrice, setMinimumPrice] = useState("");
   const [recommendedPrice, setRecommendedPrice] = useState("");
+  const [useCustomCypMicrocopy, setUseCustomCypMicrocopy] = useState(false);
+  const [cypMicrocopyOverride, setCypMicrocopyOverride] = useState("");
 
   const [variants, setVariants] = useState<Variant[]>([]);
   const [activeColor, setActiveColor] = useState<string | null>(null);
@@ -108,6 +112,8 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
         setCypEnabled(product.create_your_price_enabled || false);
         setMinimumPrice(product.minimum_price ? String(product.minimum_price) : "");
         setRecommendedPrice(product.recommended_price ? String(product.recommended_price) : "");
+        setCypMicrocopyOverride(product.cyp_microcopy_override || "");
+        setUseCustomCypMicrocopy(!!product.cyp_microcopy_override);
 
         // Fetch variants
         const { data: dbVariants } = await supabase.from("product_variants").select("*").eq("product_id", id);
@@ -285,6 +291,7 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
         minimum_price: cypEnabled ? parseInt(minimumPrice) : null,
         recommended_price: cypEnabled && recommendedPrice ? parseInt(recommendedPrice) : null,
         create_your_price_enabled: cypEnabled,
+        cyp_microcopy_override: useCustomCypMicrocopy && cypMicrocopyOverride.trim() ? cypMicrocopyOverride.trim() : null,
         weight: weight ? parseInt(weight) : null,
         image: media.find((m) => m.url)?.url || "",
         images: media.filter((m) => m.url).map((m) => m.url),
@@ -427,6 +434,31 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
                         <input type="text" inputMode="numeric" value={formatRupiah(recommendedPrice)} onChange={(e) => setRecommendedPrice(parseRupiah(e.target.value))} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: `1px solid ${errors.recommendedPrice ? "#e74c3c" : "rgba(64,50,37,.15)"}`, background: "white", color: "var(--espresso)" }} placeholder={basePrice ? formatRupiah(String((parseInt(basePrice) || 0) + 30000)) : "379.000"} />
                         {errors.recommendedPrice && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.recommendedPrice}</p>}
                         <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>Kosongkan = otomatis Harga Dasar + Rp 30.000 ({basePrice ? `Rp ${formatRupiah(String((parseInt(basePrice) || 0) + 30000))}` : "—"}).</p>
+                      </div>
+                      <div className="p-3 rounded-xl" style={{ background: "rgba(255,255,255,.5)", border: "1px solid rgba(64,50,37,.08)" }}>
+                        <div className="flex items-center justify-between gap-3 mb-2">
+                          <div>
+                            <p className="text-sm font-medium" style={{ color: "var(--espresso)" }}>Microcopy CYP (khusus produk ini)</p>
+                            <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>Teks kecil di bawah opsi harga pada halaman produk.</p>
+                          </div>
+                          <button type="button" onClick={() => setUseCustomCypMicrocopy((v) => !v)}
+                            className="relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0"
+                            style={{ background: useCustomCypMicrocopy ? "var(--gold)" : "rgba(64,50,37,.2)" }}>
+                            <span className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200"
+                              style={{ transform: useCustomCypMicrocopy ? "translateX(20px)" : "translateX(0)" }} />
+                          </button>
+                        </div>
+                        {useCustomCypMicrocopy ? (
+                          <>
+                            <textarea value={cypMicrocopyOverride} onChange={(e) => setCypMicrocopyOverride(e.target.value.slice(0, 120))} rows={2} maxLength={120} placeholder="Tulis teks khusus produk ini..."
+                              className="w-full rounded-xl px-4 py-2.5 text-sm outline-none resize-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
+                            <p className="text-[11px] mt-1 text-right" style={{ color: cypMicrocopyOverride.length >= 120 ? "#e74c3c" : "var(--text-muted)" }}>{cypMicrocopyOverride.length}/120</p>
+                          </>
+                        ) : (
+                          <p className="text-[12px] leading-relaxed px-3 py-2.5 rounded-xl" style={{ background: "rgba(64,50,37,.04)", color: "var(--text-muted)", fontStyle: "italic" }}>
+                            {storeSettings.cyp_microcopy || "Harga Minimum boleh dipilih. Itulah alasan kami membuat Create Your Price."}
+                          </p>
+                        )}
                       </div>
                     </div>
                   )}
