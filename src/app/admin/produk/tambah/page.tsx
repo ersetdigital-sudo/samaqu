@@ -81,10 +81,10 @@ export default function TambahProdukPage() {
       if (data) setJenisKainList(data);
     });
     supabase.from("products").select("series").then(({ data }) => {
-      if (data) {
-        const list = [...new Set(data.map((p) => p.series).filter(Boolean))].sort();
-        setSeriesList(list as string[]);
-      }
+      const defaults = ["Jiharkah", "Imron", "Bayati", "Nahawand", "Karim", "Imalah"];
+      const fromDb = (data || []).map((p) => p.series).filter(Boolean) as string[];
+      const list = [...new Set([...defaults, ...fromDb])].sort();
+      setSeriesList(list);
     });
   }, []);
 
