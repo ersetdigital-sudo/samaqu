@@ -1053,7 +1053,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               <div className="mb-7">
                 <p className="text-[11px] sm:text-[12px] tracking-[0.12em] uppercase font-ui font-medium mb-3" style={{ color: "var(--espresso)" }}>
                   Pilih Warna
-              </p>
+                </p>
                 <div className="flex flex-wrap gap-2">
                   {product.colors.map((c) => (
                     <button key={c} onClick={() => setSelectedColor(c)}
@@ -1066,75 +1066,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 </div>
               </div>
             )}
-
-            {/* Series Selector — Desktop */}
-            {(availableSeries.length > 1 || isThobe) && (
-              <div className="mb-7">
-                <p className="text-[11px] sm:text-[12px] tracking-[0.12em] uppercase font-ui font-medium mb-3" style={{ color: "var(--espresso)" }}>
-                  Pilih Series
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {availableSeries.map((s) => {
-                    const isActive = isThobe ? s.id === activeSeriesId : s.id === product.id;
-                    if (isThobe) {
-                      return (
-                        <button
-                          key={s.id}
-                          onClick={() => handleSeriesSelect(s.id)}
-                          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-[13px] font-ui transition-all duration-200 cursor-pointer"
-                          style={{
-                            background: isActive ? "var(--espresso)" : "var(--cream-bright)",
-                            color: isActive ? "var(--cream)" : "var(--coffee)",
-                            border: `1px solid ${isActive ? "var(--espresso)" : "rgba(201,183,156,.3)"}`,
-                          }}
-                        >
-                          <span className="font-medium">{s.series}</span>
-                          <span style={{ color: isActive ? "rgba(248,245,241,.75)" : "var(--gold)" }}>
-                            {s.create_your_price_enabled && s.minimum_price
-                              ? `Mulai Rp ${s.minimum_price.toLocaleString("id-ID")}`
-                              : `Rp ${s.price.toLocaleString("id-ID")}`
-                            }
-                          </span>
-                        </button>
-                      );
-                    }
-                    return (
-                      <a
-                        key={s.id}
-                        href={`/katalog/${s.id}?color=${encodeURIComponent(selectedColor)}&size=${encodeURIComponent(selectedSize)}`}
-                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-[13px] font-ui transition-all duration-200"
-                        style={{
-                          background: isActive ? "var(--espresso)" : "var(--cream-bright)",
-                          color: isActive ? "var(--cream)" : "var(--coffee)",
-                          border: `1px solid ${isActive ? "var(--espresso)" : "rgba(201,183,156,.3)"}`,
-                        }}
-                      >
-                        <span className="font-medium">{s.series}</span>
-                        <span style={{ color: isActive ? "rgba(248,245,241,.75)" : "var(--gold)" }}>
-                          {s.create_your_price_enabled && s.minimum_price
-                            ? `Mulai Rp ${s.minimum_price.toLocaleString("id-ID")}`
-                            : `Rp ${s.price.toLocaleString("id-ID")}`
-                          }
-                        </span>
-                      </a>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            <div className="mb-7">
-              <p className="text-[11px] sm:text-[12px] tracking-[0.12em] uppercase font-ui font-medium mb-3" style={{ color: "var(--espresso)" }}>Pilih Ukuran</p>
-              <div className="flex flex-wrap gap-2">
-                {availableSizes.map((s) => (
-                  <button key={s} onClick={() => setSelectedSize(s)}
-                    className="w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center text-[13px] font-ui font-medium rounded-sm transition-all duration-200"
-                    style={{ background: selectedSize === s ? "var(--espresso)" : "transparent", color: selectedSize === s ? "var(--cream)" : "var(--coffee)", border: `1px solid ${selectedSize === s ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
-                    {s}
-                  </button>
-                ))}
-              </div>
-            </div>
 
             <div className="mb-7">
               <p className="text-[11px] sm:text-[12px] tracking-[0.12em] uppercase font-ui font-medium mb-3" style={{ color: "var(--espresso)" }}>Catatan (Opsional)</p>
