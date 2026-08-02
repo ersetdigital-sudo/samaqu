@@ -359,7 +359,11 @@ export default function TambahProdukPage() {
                 <div>
                   <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Kategori <span style={{ color: "var(--gold)" }}>*</span></label>
                   <div className="relative">
-                    <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full rounded-xl px-4 py-3 text-sm outline-none appearance-none" style={{ border: `1px solid ${errors.category ? "#e74c3c" : "rgba(64,50,37,.15)"}`, background: "white", color: "var(--espresso)" }}>
+                    <select value={category} onChange={(e) => {
+                      const val = e.target.value;
+                      setCategory(val);
+                      if (val !== "Thobe") setSeries("");
+                    }} className="w-full rounded-xl px-4 py-3 text-sm outline-none appearance-none" style={{ border: `1px solid ${errors.category ? "#e74c3c" : "rgba(64,50,37,.15)"}`, background: "white", color: "var(--espresso)" }}>
                       <option value="">Pilih kategori</option>
                       {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
                     </select>
@@ -438,12 +442,13 @@ export default function TambahProdukPage() {
                     </div>
                   )}
                 </div>
+                {category === "Thobe" && (
                 <div>
-                  <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Series</label>
+                  <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Jenis Series</label>
                   <div className="flex gap-2">
                     <div className="relative flex-1">
                       <select value={series} onChange={(e) => setSeries(e.target.value)} className="w-full rounded-xl px-4 py-3 text-sm outline-none appearance-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }}>
-                        <option value="">— Pilih series —</option>
+                        <option value="">Semua series</option>
                         {seriesList.map((s) => <option key={s} value={s}>{s}</option>)}
                       </select>
                       <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--text-muted)" }} />
@@ -466,8 +471,9 @@ export default function TambahProdukPage() {
                       <button type="button" onClick={addNewSeries} className="px-4 py-2 rounded-xl text-xs font-semibold text-white shrink-0" style={{ background: "var(--gold)" }}>Tambah</button>
                     </div>
                   )}
-                  <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>Pilih series yang sudah ada, atau tambah baru.</p>
+                  <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>Pilih <b>Semua series</b> kalau produk ini tersedia di semua series. Series diatur di tab Series & Harga.</p>
                 </div>
+                )}
               </div>
             </div>
 
