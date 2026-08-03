@@ -574,7 +574,9 @@ function CheckoutContent() {
       if (err instanceof Error && err.name === "TimeoutError") {
         console.error("[CHECKOUT] ❌ Request timed out after 30s");
       }
-      setErrors({ submit: "Terjadi kesalahan. Silakan coba lagi." });
+      // Tampilkan pesan error dari server (misal "Stok tidak mencukupi") supaya jelas
+      const msg = err instanceof Error && err.message ? err.message : "Terjadi kesalahan. Silakan coba lagi.";
+      setErrors({ submit: msg });
     } finally {
       setSubmitting(false);
       console.log("[CHECKOUT] 📦 === ORDER SUBMIT END ===");

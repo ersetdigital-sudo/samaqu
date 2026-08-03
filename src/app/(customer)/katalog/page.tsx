@@ -111,13 +111,15 @@ function KainSwatchRow({ category, options, selected, onSelect }: { category: Ca
 }
 
 /* ── Product Card ── */
-function ProductCard({ product, index, wishlist, colorHex }: { product: Product; index: number; wishlist: { isWishlisted: (id: string) => boolean; toggle: (id: string) => Promise<boolean | null>; isLoggedIn: boolean }; colorHex: Record<string, string> }) {
+function ProductCard({ product, index, wishlist, colorHex, totalStock }: { product: Product; index: number; wishlist: { isWishlisted: (id: string) => boolean; toggle: (id: string) => Promise<boolean | null>; isLoggedIn: boolean }; colorHex: Record<string, string>; totalStock: number | null }) {
   const toast = useToast();
   const kainName = product.jenis_kain?.name || product.kain;
   const kainColor = kainName ? getKainSwatchColor(kainName) : null;
   const c0 = colorHex[`${product.id}::${product.colors[0]}`] || colorMap[product.colors[0]];
   const c1 = colorHex[`${product.id}::${product.colors[1]}`] || colorMap[product.colors[1]];
   const dotColor = kainColor || c0 || "#c9b79c";
+  // totalStock null = tidak dikelola / tidak ada varian; 0 = semua varian habis
+  const isSoldOut = totalStock === 0;
 
   return (
     <motion.div
@@ -151,6 +153,7 @@ function ProductCard({ product, index, wishlist, colorHex }: { product: Product;
           alt={product.name}
           className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
           loading="lazy"
+          style={isSoldOut ? { filter: "grayscale(35%)" } : undefined}
           onError={(e) => {
             (e.target as HTMLImageElement).style.display = "none";
           }}
@@ -183,6 +186,15 @@ function ProductCard({ product, index, wishlist, colorHex }: { product: Product;
           className="absolute bottom-3 right-3 w-4 h-4 rounded-full"
           style={{ background: dotColor, boxShadow: "0 0 0 2px white" }}
         />
+        {/* Stok habis badge */}
+        {isSoldOut && (
+          <span
+            className="absolute bottom-3 left-3 px-2.5 py-1 text-[10px] tracking-[0.12em] uppercase font-ui font-medium rounded-sm"
+            style={{ background: "rgba(42,33,27,.72)", color: "white", backdropFilter: "blur(4px)" }}
+          >
+            Stok Habis
+          </span>
+        )}
       </div>
 
       {/* Info */}
@@ -241,6 +253,7 @@ export default function KatalogPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [colorHex, setColorHex] = useState<Record<string, string>>({});
+  const [stockByProduct, setStockByProduct] = useState<Record<string, number>>({});
   const wishlist = useWishlist();
 
   /* Fetch products from database */
@@ -252,12 +265,17 @@ export default function KatalogPage() {
       if (data.length > 0) {
         supabase
           .from("product_variants")
-          .select("product_id, color, hex")
+          .select("product_id, color, hex, stock")
           .in("product_id", data.map((p) => p.id))
           .then(({ data: rows }) => {
             const map: Record<string, string> = {};
-            (rows || []).forEach((v) => { if (v.hex) map[`${v.product_id}::${v.color}`] = v.hex; });
+            const stockMap: Record<string, number> = {};
+            (rows || []).forEach((v) => {
+              if (v.hex) map[`${v.product_id}::${v.color}`] = v.hex;
+              stockMap[v.product_id] = (stockMap[v.product_id] || 0) + (v.stock || 0);
+            });
             setColorHex(map);
+            setStockByProduct(stockMap);
           });
       }
     });
@@ -353,7 +371,7 @@ export default function KatalogPage() {
           itemListElement: products.slice(0, 50).map((p, i) => ({
             "@type": "ListItem",
             position: i + 1,
-            item: { "@type": "Product", name: p.name, sku: p.id, category: p.category, image: p.image, offers: { "@type": "Offer", priceCurrency: "IDR", price: p.price, availability: "https://schema.org/InStock" } },
+            item: { "@type": "Product", name: p.name, sku: p.id, category: p.category, image: p.image, offers: { "@type": "Offer", priceCurrency: "IDR", price: p.price, availability: stockByProduct[p.id] === 0 ? "https://schema.org/OutOfStock" : "https://schema.org/InStock" } },
           })),
         },
       }) }} />
@@ -645,7 +663,7 @@ export default function KatalogPage() {
             >
               <AnimatePresence mode="popLayout">
                 {visible.map((p, i) => (
-                  <ProductCard key={p.id} product={p} index={i} wishlist={wishlist} colorHex={colorHex} />
+                  <ProductCard key={p.id} product={p} index={i} wishlist={wishlist} colorHex={colorHex} totalStock={stockByProduct[p.id] ?? null} />
                 ))}
               </AnimatePresence>
             </motion.div>
