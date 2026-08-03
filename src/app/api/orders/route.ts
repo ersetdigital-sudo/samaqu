@@ -110,6 +110,62 @@ export async function POST(request: NextRequest) {
     const discount = body.discount || 0;
     const total = subtotal - discount + verifiedShippingCost;
 
+    // ── Server-side stock validation + atomic decrement ──
+    // Stok dikurangi DULU secara atomik (RPC samaqu_decrement_stock, row lock FOR UPDATE
+    // + guard stock >= qty). Kalau ada item gagal, semua decrement di-rollback & order ditolak.
+    // Race condition 2 pembeli checkout stok terakhir: hanya 1 yang dapat decrement.
+    const decremented: Array<{ productId: string; color?: string; size?: string; quantity: number }> = [];
+
+    async function rollbackStock() {
+      for (const d of decremented) {
+        await supabase.rpc("samaqu_restore_stock", {
+          p_product_id: d.productId,
+          p_color: d.color || "",
+          p_size: d.size || "",
+          p_qty: d.quantity,
+        });
+      }
+      decremented.length = 0;
+    }
+
+    for (const item of validatedItems) {
+      if (!item.quantity || item.quantity < 1) {
+        console.error("[ORDERS] Stock validation: quantity invalid:", item);
+        await rollbackStock();
+        return NextResponse.json({ error: `Jumlah untuk "${item.name}" tidak valid` }, { status: 400 });
+      }
+
+      // Produk tanpa varian (tidak ada warna/ukuran) → stok tidak dikelola, lewati
+      if (!item.color || !item.size || item.color === "-") {
+        console.log("[ORDERS] Stock validation: skip (tanpa varian):", item.name);
+        continue;
+      }
+
+      const { data: stockOk, error: stockError } = await supabase.rpc("samaqu_decrement_stock", {
+        p_product_id: item.productId,
+        p_color: item.color,
+        p_size: item.size,
+        p_qty: item.quantity,
+      });
+
+      if (stockError) {
+        console.error("[ORDERS] Stock RPC error:", stockError);
+        await rollbackStock();
+        return NextResponse.json({ error: "Gagal memvalidasi stok. Silakan coba lagi." }, { status: 500 });
+      }
+
+      if (!stockOk) {
+        console.error("[ORDERS] Stock INSUFFICIENT:", { name: item.name, color: item.color, size: item.size, qty: item.quantity });
+        await rollbackStock();
+        return NextResponse.json({
+          error: `Stok "${item.name}" (${item.color} / ${item.size}) tidak mencukupi. Silakan kurangi jumlah atau pilih varian lain.`,
+        }, { status: 400 });
+      }
+
+      console.log("[ORDERS] Stock decremented:", { name: item.name, color: item.color, size: item.size, qty: item.quantity });
+      decremented.push({ productId: item.productId, color: item.color, size: item.size, quantity: item.quantity });
+    }
+
     console.log("[ORDERS] Final order:", { orderNumber, subtotal, shippingCost: verifiedShippingCost, discount, total });
 
     // Insert order
@@ -137,6 +193,7 @@ export async function POST(request: NextRequest) {
 
     if (orderError) {
       console.error("[ORDERS] Order insert error:", orderError);
+      await rollbackStock();
       return NextResponse.json({ error: "Gagal menyimpan pesanan" }, { status: 500 });
     }
 
@@ -160,6 +217,10 @@ export async function POST(request: NextRequest) {
 
     if (itemsError) {
       console.error("[ORDERS] Order items insert error:", itemsError);
+      // Rollback: hapus order + kembalikan stok supaya tidak ada data menggantung
+      await supabase.from("orders").delete().eq("id", order.id);
+      await rollbackStock();
+      return NextResponse.json({ error: "Gagal menyimpan detail pesanan" }, { status: 500 });
     }
 
     // Increment voucher used_count + save usage

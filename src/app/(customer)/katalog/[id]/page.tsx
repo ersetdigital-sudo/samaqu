@@ -302,9 +302,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     setStock(null);
   }, [displayId]);
 
-  // Reset gallery index when color changes
+  // Reset gallery when color changes
   useEffect(() => {
     setActiveIndex(0);
+    setCurrentSlide(0);
+    if (carouselRef.current) carouselRef.current.scrollTo({ left: 0 });
   }, [selectedColor]);
 
   // Fetch available series when jenis_kain_id (atau series) / color changes
@@ -346,6 +348,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   }, [displayId, selectedColor, selectedSize]);
 
   const currentPrice = variantPrice ?? product?.price ?? 0;
+  // Stok varian yang sedang dipilih (color + size). null = varian tidak dikelola stoknya
+  const isOutOfStock = stock === 0;
+  const stockExceeded = stock !== null && qty > stock;
   const isCYP = product?.create_your_price_enabled ?? false;
   const minimumPrice = product?.minimum_price ?? currentPrice;
   const recommendedPrice = product?.recommended_price ?? null;
@@ -412,6 +417,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     if (!product) return;
     const finalCYPPrice = selectedPrice || minimumPrice;
     if (isCYP && finalCYPPrice < minimumPrice) return;
+    if (isOutOfStock) { toast.show("Stok habis — produk ini tidak dapat ditambahkan"); return; }
+    if (stockExceeded) { toast.show(`Stok hanya tersisa ${stock} pcs untuk varian ini`); return; }
 
     // Find image for selected color, fallback to main product image
     const colorImage = media.find((m) => m.type === "image" && m.src?.toLowerCase().includes(selectedColor?.toLowerCase() || ""))?.src
@@ -440,6 +447,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   function handleBuyNow() {
     if (!product) return;
     if (!selectedSize) { toast.show("Pilih ukuran terlebih dahulu"); return; }
+    if (isOutOfStock) { toast.show("Stok habis — produk ini tidak dapat dipesan"); return; }
+    if (stockExceeded) { toast.show(`Stok hanya tersisa ${stock} pcs untuk varian ini`); return; }
     const color = selectedColor || product.colors[0] || "-";
     let msg = `Halo, saya mau pesan produk:\n${product.name} - ${color} - Ukuran ${selectedSize}\nHarga: Rp ${effectivePrice.toLocaleString("id-ID")}\nJumlah: ${qty}`;
     if (notes) msg += `\nCatatan: ${notes}`;
@@ -449,28 +458,30 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   function handleSeriesSelect(seriesId: string) {
     if (seriesId === activeSeriesId) return;
     setActiveSeriesId(seriesId);
+    scrollToGalleryOnMobile();
+  }
 
-    // Auto-scroll to gallery on mobile only
-    if (typeof window !== "undefined" && window.innerWidth < 768 && mobileGalleryRef.current) {
-      const galleryRect = mobileGalleryRef.current.getBoundingClientRect();
-      const scrollDistanceFromGallery = galleryRect.top;
+  // Auto-scroll to gallery on mobile only (used saat ganti series maupun warna)
+  function scrollToGalleryOnMobile() {
+    if (typeof window === "undefined" || window.innerWidth >= 768 || !mobileGalleryRef.current) return;
+    const galleryRect = mobileGalleryRef.current.getBoundingClientRect();
+    const scrollDistanceFromGallery = galleryRect.top;
 
-      // Only scroll if customer is more than 300px away from gallery
-      if (scrollDistanceFromGallery < -300) {
-        // Calculate target position: gallery top with some padding (80px for navbar)
-        const targetScroll = window.scrollY + galleryRect.top - 80;
+    // Only scroll if customer is more than 300px away from gallery
+    if (scrollDistanceFromGallery < -300) {
+      // Calculate target position: gallery top with some padding (80px for navbar)
+      const targetScroll = window.scrollY + galleryRect.top - 80;
 
-        window.scrollTo({
-          top: targetScroll,
-          behavior: "smooth",
-        });
+      window.scrollTo({
+        top: targetScroll,
+        behavior: "smooth",
+      });
 
-        // Add highlight effect after scroll completes
-        setTimeout(() => {
-          setGalleryHighlight(true);
-          setTimeout(() => setGalleryHighlight(false), 500);
-        }, 400);
-      }
+      // Add highlight effect after scroll completes
+      setTimeout(() => {
+        setGalleryHighlight(true);
+        setTimeout(() => setGalleryHighlight(false), 500);
+      }, 400);
     }
   }
 
@@ -520,6 +531,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const media = selectedColor
     ? baseMedia.filter((m) => !m.color || m.color === selectedColor)
     : baseMedia;
+  // True kalau produk punya foto spesifik per warna (relasi foto ↔ warna terisi)
+  const hasPerColorMedia = baseMedia.some((m) => m.color);
   const activeMedia = media[activeIndex] ?? { src: product.image, type: "image" as const };
 
   return (
@@ -677,6 +690,25 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             </div>
           </div>
 
+          {/* Colors — tepat setelah Pilih Ukuran (mobile) */}
+          {product.category !== "Thobe" && product.colors.length > 0 && !(product.colors.length === 1 && product.colors[0] === "default") && (
+            <div className="mb-5">
+              <p className="text-[10px] tracking-[0.1em] uppercase font-ui font-medium mb-2.5" style={{ color: "var(--espresso)" }}>
+                Pilih Warna
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {product.colors.map((c) => (
+                  <button key={c} onClick={() => { setSelectedColor(c); if (hasPerColorMedia) scrollToGalleryOnMobile(); }}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-ui rounded-sm transition-all duration-200"
+                    style={{ background: selectedColor === c ? "var(--espresso)" : "transparent", color: selectedColor === c ? "var(--cream)" : "var(--coffee)", border: `1px solid ${selectedColor === c ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
+                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: colorHex[c] || colorMap[c] || "#ccc", border: "1px solid rgba(42,33,27,.1)" }} />
+                    {c}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Price card */}
           <div className="mb-5 rounded-2xl p-5" style={{ background: "var(--cream-bright)", border: "1px solid rgba(201,183,156,.25)" }}>
             {isCYP ? (
@@ -747,25 +779,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
           <div className="h-px mb-5" style={{ background: "rgba(201,183,156,.2)" }} />
 
-          {/* Colors — sembunyikan untuk Thobe (pakai series, bukan warna) */}
-          {product.category !== "Thobe" && product.colors.length > 0 && !(product.colors.length === 1 && product.colors[0] === "default") && (
-            <div className="mb-5">
-              <p className="text-[10px] tracking-[0.1em] uppercase font-ui font-medium mb-2.5" style={{ color: "var(--espresso)" }}>
-                Pilih Warna
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {product.colors.map((c) => (
-                  <button key={c} onClick={() => setSelectedColor(c)}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-ui rounded-sm transition-all duration-200"
-                    style={{ background: selectedColor === c ? "var(--espresso)" : "transparent", color: selectedColor === c ? "var(--cream)" : "var(--coffee)", border: `1px solid ${selectedColor === c ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
-                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: colorHex[c] || colorMap[c] || "#ccc", border: "1px solid rgba(42,33,27,.1)" }} />
-                    {c}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Notes */}
           <div className="mb-5">
             <p className="text-[10px] tracking-[0.1em] uppercase font-ui font-medium mb-2.5" style={{ color: "var(--espresso)" }}>Catatan (Opsional)</p>
@@ -783,7 +796,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 <Minus size={14} />
               </button>
               <span className="w-7 text-center text-sm font-ui font-medium" style={{ color: "var(--espresso)" }}>{qty}</span>
-              <button onClick={() => setQty((q) => q + 1)} className="w-9 h-9 flex items-center justify-center rounded-sm transition-all duration-200 active:scale-95" style={{ border: "1px solid rgba(201,183,156,.3)", color: "var(--espresso)" }} aria-label="Tambah jumlah">
+              <button onClick={() => setQty((q) => q + 1)} disabled={stock !== null && qty >= stock}
+                className="w-9 h-9 flex items-center justify-center rounded-sm transition-all duration-200 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                style={{ border: "1px solid rgba(201,183,156,.3)", color: "var(--espresso)" }} aria-label="Tambah jumlah">
                 <Plus size={14} />
               </button>
             </div>
@@ -821,17 +836,17 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           </div>
           {/* Action buttons */}
           <div className="flex gap-2">
-            <button onClick={handleAddToCart} disabled={isCYP && !isPriceValid}
+            <button onClick={handleAddToCart} disabled={(isCYP && !isPriceValid) || stockExceeded}
               className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[11px] tracking-[0.06em] uppercase font-ui font-semibold transition-all duration-300 active:scale-[0.98] disabled:opacity-40"
               style={{ background: "transparent", color: "var(--gold)", border: "1.5px solid var(--gold)" }}>
               <ShoppingCart size={15} strokeWidth={1.5} />
-              <span>Keranjang</span>
+              <span>{isOutOfStock ? "Stok Habis" : "Keranjang"}</span>
             </button>
-            <button onClick={handleBuyNow}
-              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[11px] tracking-[0.06em] uppercase font-ui font-semibold transition-all duration-300 active:scale-[0.98]"
+            <button onClick={handleBuyNow} disabled={stockExceeded}
+              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[11px] tracking-[0.06em] uppercase font-ui font-semibold transition-all duration-300 active:scale-[0.98] disabled:opacity-40"
               style={{ background: "var(--espresso)", color: "white" }}>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" /></svg>
-              <span>Pesan via WA</span>
+              <span>{isOutOfStock ? "Stok Habis" : "Pesan via WA"}</span>
             </button>
           </div>
         </div>
@@ -1085,22 +1100,22 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               <div className="flex items-center gap-3">
                 <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="w-9 h-9 flex items-center justify-center rounded-sm transition-all duration-200 hover:scale-105" style={{ border: "1px solid rgba(201,183,156,.3)", color: "var(--espresso)" }} aria-label="Kurangi jumlah"><Minus size={14} /></button>
                 <span className="w-8 text-center text-sm font-ui font-medium" style={{ color: "var(--espresso)" }}>{qty}</span>
-                <button onClick={() => setQty((q) => q + 1)} className="w-9 h-9 flex items-center justify-center rounded-sm transition-all duration-200 hover:scale-105" style={{ border: "1px solid rgba(201,183,156,.3)", color: "var(--espresso)" }} aria-label="Tambah jumlah"><Plus size={14} /></button>
+                <button onClick={() => setQty((q) => q + 1)} disabled={stock !== null && qty >= stock} className="w-9 h-9 flex items-center justify-center rounded-sm transition-all duration-200 hover:scale-105 disabled:opacity-40 disabled:cursor-not-allowed" style={{ border: "1px solid rgba(201,183,156,.3)", color: "var(--espresso)" }} aria-label="Tambah jumlah"><Plus size={14} /></button>
               </div>
             </div>
 
             <div className="flex gap-3">
-              <button onClick={handleAddToCart} disabled={isCYP && !isPriceValid}
+              <button onClick={handleAddToCart} disabled={(isCYP && !isPriceValid) || stockExceeded}
                 className="flex-1 flex items-center justify-center gap-2.5 py-4 rounded-sm text-[12px] tracking-[0.08em] uppercase font-ui font-semibold transition-all duration-300 hover:scale-[1.01] disabled:opacity-40"
                 style={{ background: "transparent", color: "var(--gold)", border: "1.5px solid var(--gold)" }}>
                 <ShoppingCart size={16} strokeWidth={1.5} />
-                <span>Keranjang</span>
+                <span>{isOutOfStock ? "Stok Habis" : "Keranjang"}</span>
               </button>
-              <button onClick={handleBuyNow}
-                className="flex-1 flex items-center justify-center gap-2.5 py-4 rounded-sm text-[12px] tracking-[0.08em] uppercase font-ui font-semibold transition-all duration-300 hover:scale-[1.01] hover:shadow-lg"
+              <button onClick={handleBuyNow} disabled={stockExceeded}
+                className="flex-1 flex items-center justify-center gap-2.5 py-4 rounded-sm text-[12px] tracking-[0.08em] uppercase font-ui font-semibold transition-all duration-300 hover:scale-[1.01] hover:shadow-lg disabled:opacity-40"
                 style={{ background: "var(--espresso)", color: "white", boxShadow: "0 8px 28px -8px rgba(45,33,27,.35)" }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" /></svg>
-                <span>Pesan via WA</span>
+                <span>{isOutOfStock ? "Stok Habis" : "Pesan via WA"}</span>
               </button>
             </div>
 
