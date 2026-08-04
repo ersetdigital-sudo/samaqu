@@ -22,6 +22,58 @@ import KainSeriesModal, { getKainGradient, getKainSwatchColor } from "@/componen
 import { SITE_URL } from "@/lib/site-config";
 import { useWishlist } from "@/lib/use-wishlist";
 
+/* ── Katalog grouping: 1 produk utama (name + category) = 1 kartu ──
+   Row per series dikumpulkan ke group; representative = row terlama.
+   Harga kartu = termurah di antara semua series; colors = union semua member. */
+interface CatalogProduct extends Product {
+  availableSeries?: string[];
+}
+
+function effectivePrice(p: Product): number {
+  return p.create_your_price_enabled && p.minimum_price ? p.minimum_price : p.price;
+}
+
+function groupByMainProduct(raw: Product[]): { items: CatalogProduct[]; memberIdsByRep: Record<string, string[]> } {
+  const groups = new Map<string, Product[]>();
+  for (const p of raw) {
+    const key = `${p.category}::${p.name}`;
+    const list = groups.get(key) || [];
+    list.push(p);
+    groups.set(key, list);
+  }
+
+  const items: CatalogProduct[] = [];
+  const memberIdsByRep: Record<string, string[]> = {};
+
+  for (const group of groups.values()) {
+    const rep: CatalogProduct = { ...group[0] };
+    memberIdsByRep[rep.id] = group.map((m) => m.id);
+
+    if (group.length > 1) {
+      const colors = new Set<string>();
+      let cheapest = group[0];
+      let cheapestValue = effectivePrice(group[0]);
+      for (const member of group) {
+        member.colors.forEach((c) => colors.add(c));
+        const value = effectivePrice(member);
+        if (value < cheapestValue) {
+          cheapestValue = value;
+          cheapest = member;
+        }
+      }
+      rep.colors = [...colors];
+      rep.price = cheapestValue;
+      rep.minimum_price = cheapest.minimum_price;
+      rep.create_your_price_enabled = cheapest.create_your_price_enabled;
+      rep.availableSeries = [...new Set(group.map((m) => m.series).filter((s): s is string => !!s))].sort();
+    }
+
+    items.push(rep);
+  }
+
+  return { items, memberIdsByRep };
+}
+
 /* ── Animation ── */
 const cardVariants: Variants = {
   hidden: { opacity: 0, scale: 0.97, y: 16 },
@@ -111,7 +163,7 @@ function KainSwatchRow({ category, options, selected, onSelect }: { category: Ca
 }
 
 /* ── Product Card ── */
-function ProductCard({ product, index, wishlist, colorHex, totalStock }: { product: Product; index: number; wishlist: { isWishlisted: (id: string) => boolean; toggle: (id: string) => Promise<boolean | null>; isLoggedIn: boolean }; colorHex: Record<string, string>; totalStock: number | null }) {
+function ProductCard({ product, index, wishlist, colorHex, totalStock }: { product: CatalogProduct; index: number; wishlist: { isWishlisted: (id: string) => boolean; toggle: (id: string) => Promise<boolean | null>; isLoggedIn: boolean }; colorHex: Record<string, string>; totalStock: number | null }) {
   const toast = useToast();
   const kainName = product.jenis_kain?.name || product.kain;
   const kainColor = kainName ? getKainSwatchColor(kainName) : null;
@@ -215,6 +267,13 @@ function ProductCard({ product, index, wishlist, colorHex, totalStock }: { produ
           {product.jenis_kain?.name ? `Kain ${product.jenis_kain.name}` : product.kain ? `Kain ${product.kain}` : product.category}
         </p>
 
+        {/* Series (produk utama dengan beberapa series) — info tanpa memecah card */}
+        {product.availableSeries && product.availableSeries.length > 1 && (
+          <p className="mt-1 text-[10.5px] font-ui line-clamp-1" style={{ color: "var(--stone)" }}>
+            {product.availableSeries.length} series · {product.availableSeries.join(" · ")}
+          </p>
+        )}
+
         {/* Price */}
         <p className="mt-1.5 text-[12.5px] font-ui" style={{ color: "var(--stone)" }}>
           Mulai{" "}
@@ -281,6 +340,18 @@ export default function KatalogPage() {
     });
   }, []);
 
+  /* Grouping: 1 kartu per produk utama (name + category), series digabung jadi 1 */
+  const { items: catalogItems, memberIdsByRep } = useMemo(() => groupByMainProduct(products), [products]);
+
+  /* Stok gabungan per group (sum semua series member) untuk badge stok kartu */
+  const groupStock = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const [repId, memberIds] of Object.entries(memberIdsByRep)) {
+      map[repId] = memberIds.reduce((sum, id) => sum + (stockByProduct[id] || 0), 0);
+    }
+    return map;
+  }, [stockByProduct, memberIdsByRep]);
+
   /* Reset sub-filters when category changes */
   useEffect(() => {
     setSelectedKain(null);
@@ -294,9 +365,9 @@ export default function KatalogPage() {
     return [...new Set(products.filter((p) => p.category === category && (p.jenis_kain?.name || p.kain)).map((p) => (p.jenis_kain?.name || p.kain) as string))];
   }, [products, category]);
 
-  /* Filtered products */
+  /* Filtered products (sudah di-group per produk utama) */
   const filtered = useMemo(() => {
-    let result = [...products];
+    let result = [...catalogItems];
 
     if (category !== "Semua") {
       result = result.filter((p) => p.category === category);
@@ -308,7 +379,7 @@ export default function KatalogPage() {
       result = result.filter((p) => p.colors.includes(selectedColor));
     }
     if (selectedSeries) {
-      result = result.filter((p) => p.series === selectedSeries);
+      result = result.filter((p) => p.series === selectedSeries || (p.availableSeries && p.availableSeries.includes(selectedSeries)));
     }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -317,7 +388,8 @@ export default function KatalogPage() {
           p.name.toLowerCase().includes(q) ||
           p.category.toLowerCase().includes(q) ||
           ((p.jenis_kain?.name || p.kain) && (p.jenis_kain?.name || p.kain)!.toLowerCase().includes(q)) ||
-          (p.series && p.series.toLowerCase().includes(q))
+          (p.series && p.series.toLowerCase().includes(q)) ||
+          (p.availableSeries && p.availableSeries.some((s) => s.toLowerCase().includes(q)))
       );
     }
 
@@ -329,7 +401,7 @@ export default function KatalogPage() {
     }
 
     return result;
-  }, [products, category, selectedKain, selectedColor, selectedSeries, sort, searchQuery, drawerFilters]);
+  }, [catalogItems, category, selectedKain, selectedColor, selectedSeries, sort, searchQuery, drawerFilters]);
 
   const visible = filtered.slice(0, visibleCount);
   const hasMore = visibleCount < filtered.length;
@@ -367,11 +439,11 @@ export default function KatalogPage() {
         url: `${SITE_URL}/katalog`,
         mainEntity: {
           "@type": "ItemList",
-          numberOfItems: products.length,
-          itemListElement: products.slice(0, 50).map((p, i) => ({
+          numberOfItems: catalogItems.length,
+          itemListElement: catalogItems.slice(0, 50).map((p, i) => ({
             "@type": "ListItem",
             position: i + 1,
-            item: { "@type": "Product", name: p.name, sku: p.id, category: p.category, image: p.image, offers: { "@type": "Offer", priceCurrency: "IDR", price: p.price, availability: stockByProduct[p.id] === 0 ? "https://schema.org/OutOfStock" : "https://schema.org/InStock" } },
+            item: { "@type": "Product", name: p.name, sku: p.id, category: p.category, image: p.image, offers: { "@type": "Offer", priceCurrency: "IDR", price: p.price, availability: groupStock[p.id] === 0 ? "https://schema.org/OutOfStock" : "https://schema.org/InStock" } },
           })),
         },
       }) }} />
@@ -663,7 +735,7 @@ export default function KatalogPage() {
             >
               <AnimatePresence mode="popLayout">
                 {visible.map((p, i) => (
-                  <ProductCard key={p.id} product={p} index={i} wishlist={wishlist} colorHex={colorHex} totalStock={stockByProduct[p.id] ?? null} />
+                  <ProductCard key={p.id} product={p} index={i} wishlist={wishlist} colorHex={colorHex} totalStock={groupStock[p.id] ?? null} />
                 ))}
               </AnimatePresence>
             </motion.div>
