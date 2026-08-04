@@ -7,7 +7,7 @@ import { getThumbnailFromImages } from "@/lib/product-thumbnail";
 import {
   LayoutDashboard, ShoppingBag, Package, Users, FileText, Settings,
   Search, Bell, Menu, X, ChevronDown, Plus, TrendingUp, Eye, Edit,
-  DollarSign, ShoppingCart, UserPlus, Box, LogOut, Lock, Mail, Loader2, Trash2, Upload, Ticket,
+  DollarSign, ShoppingCart, UserPlus, Box, LogOut, Lock, Mail, Loader2, Trash2, Upload, Ticket, Star,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { User } from "@supabase/supabase-js";
@@ -512,6 +512,14 @@ function AdminPageInner() {
           >
             <Ticket size={20} strokeWidth={1.6} />
             <span>Voucher</span>
+          </Link>
+          <Link
+            href="/admin/testimoni"
+            className="sidebar-link w-full text-left"
+            onClick={() => setSidebarOpen(false)}
+          >
+            <Star size={20} strokeWidth={1.6} />
+            <span>Testimoni</span>
           </Link>
         </nav>
 
