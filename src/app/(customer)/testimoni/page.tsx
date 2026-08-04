@@ -1,17 +1,31 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { Star, CheckCircle, MessageCircle, Quote, Shirt, Ruler, Headphones, Heart } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Star, CheckCircle, MessageCircle, Quote, Shirt, Ruler, Headphones, Heart, X, Play } from "lucide-react";
 import Breadcrumb from "@/components/Breadcrumb";
 import { getTestimonials, type DbTestimonial } from "@/lib/db";
 import { getWhatsAppLink } from "@/lib/store-settings";
+import { supabase } from "@/lib/supabase";
+
+interface Product {
+  id: string;
+  name: string;
+  category: string;
+}
 
 interface Testimoni {
   name: string;
   cat: string;
   text: string;
   img?: string;
+  rating: number;
+  verified: boolean;
+  product_id: string | null;
+  series_name: string | null;
+  product_name?: string;
+  product_category?: string;
+  video_url?: string;
 }
 
 const headerVariants = {
@@ -38,28 +52,171 @@ const FEEL_ITEMS = [
   { icon: <Headphones size={20} strokeWidth={1.5} />, title: "Pelayanan", desc: "Dari konsultasi sebelum order, proses 1–2 hari kerja, sampai bantuan retur — tim kami mendampingi di setiap tahap." },
 ];
 
+function TestimonialCard({ t, onImageClick }: { t: Testimoni; onImageClick: (url: string) => void }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="rounded-2xl overflow-hidden flex flex-col"
+      style={{ background: "white", border: "1px solid rgba(23,20,15,.08)", boxShadow: "0 1px 2px rgba(23,20,15,.05)" }}
+    >
+      {/* Header: Avatar + Name + Rating */}
+      <div className="px-4 pt-4 pb-3 flex items-center gap-3">
+        <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-sm font-semibold" style={{ background: "var(--espresso)", color: "var(--gold)", fontFamily: "Georgia, serif" }}>
+          {getInitials(t.name)}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-semibold truncate" style={{ color: "var(--espresso)" }}>{t.name}</p>
+            {t.verified && <CheckCircle size={12} style={{ color: "var(--gold)" }} />}
+          </div>
+          <div className="flex gap-0.5 mt-0.5">
+            {Array.from({ length: 5 }, (_, i) => (
+              <Star key={i} size={12} fill={i < t.rating ? "var(--gold)" : "none"} stroke="var(--gold)" strokeWidth={1.5} />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Product Info Badge */}
+      {t.product_name && (
+        <div className="px-4 pb-3">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full font-medium" style={{ background: "rgba(181,140,74,.08)", color: "var(--gold)" }}>
+              <Shirt size={10} strokeWidth={2} />
+              {t.product_name}
+            </span>
+            {t.series_name && (
+              <span className="text-[11px] px-2 py-0.5 rounded-full font-medium" style={{ background: "rgba(42,33,27,.06)", color: "var(--stone)" }}>
+                {t.series_name}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Review Text */}
+      <div className="px-4 pb-3 flex-1">
+        <p className="text-[13px] leading-relaxed line-clamp-4" style={{ color: "var(--text-secondary)" }}>
+          {t.text}
+        </p>
+      </div>
+
+      {/* Media */}
+      {(t.img || t.video_url) && (
+        <div className="px-4 pb-4">
+          {t.video_url ? (
+            <button
+              onClick={() => onImageClick(t.video_url!)}
+              className="relative w-full aspect-video rounded-xl overflow-hidden group cursor-pointer"
+              style={{ background: "#e8dfd1" }}
+            >
+              <img src={t.img || t.video_url} alt="" className="w-full h-full object-cover" />
+              <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(0,0,0,.2)" }}>
+                <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "var(--gold)", boxShadow: "0 4px 12px rgba(181,140,74,.4)" }}>
+                  <Play size={20} fill="white" stroke="none" className="ml-0.5" />
+                </div>
+              </div>
+            </button>
+          ) : (
+            <button
+              onClick={() => onImageClick(t.img!)}
+              className="w-full rounded-xl overflow-hidden cursor-pointer"
+            >
+              <img src={t.img} alt="" className="w-full h-auto object-cover max-h-48" loading="lazy" />
+            </button>
+          )}
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
+function ImageLightbox({ url, onClose }: { url: string; onClose: () => void }) {
+  const isVideo = url.includes(".mp4") || url.includes("video");
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: "rgba(0,0,0,.85)" }}
+      onClick={onClose}
+    >
+      <button onClick={onClose} className="absolute top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center" style={{ background: "rgba(255,255,255,.15)" }}>
+        <X size={20} color="white" />
+      </button>
+      <motion.div
+        initial={{ scale: 0.9 }}
+        animate={{ scale: 1 }}
+        exit={{ scale: 0.9 }}
+        className="max-w-4xl max-h-[90vh] w-full"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {isVideo ? (
+          <video src={url} controls className="w-full h-full object-contain rounded-xl" />
+        ) : (
+          <img src={url} alt="" className="w-full h-full object-contain rounded-xl" />
+        )}
+      </motion.div>
+    </motion.div>
+  );
+}
+
 export default function TestimoniPage() {
   const [testimoniData, setTestimoniData] = useState<Testimoni[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [filterCategory, setFilterCategory] = useState<string>("Semua");
 
   useEffect(() => {
-    getTestimonials().then((data) => {
-      setTestimoniData(data.map((t) => ({
-        name: t.customer_name,
-        cat: t.category,
-        text: t.content,
-        img: t.image_url || undefined,
-      })));
-    });
+    async function loadData() {
+      const [testimonialData, productData] = await Promise.all([
+        getTestimonials(),
+        supabase.from("products").select("id, name, category"),
+      ]);
+
+      const productsMap = new Map((productData.data || []).map((p: Product) => [p.id, p]));
+
+      const mapped: Testimoni[] = testimonialData.map((t) => {
+        const product = t.product_id ? productsMap.get(t.product_id) : null;
+        return {
+          name: t.customer_name,
+          cat: product?.category || t.category,
+          text: t.content,
+          img: t.image_url || undefined,
+          rating: t.rating,
+          verified: t.verified,
+          product_id: t.product_id,
+          series_name: t.series_name,
+          product_name: product?.name,
+          product_category: product?.category,
+          video_url: t.video_url || undefined,
+        };
+      });
+      setTestimoniData(mapped);
+      setLoading(false);
+    }
+    loadData();
   }, []);
 
-  // Fill 6 slots — use real data if available, otherwise placeholder
-  const slots = Array.from({ length: 6 }, (_, i) => testimoniData[i] || null);
+  // Get unique categories from testimonials
+  const categories = useMemo(() => {
+    const cats = new Set(testimoniData.map((t) => t.cat).filter(Boolean));
+    return ["Semua", ...Array.from(cats)];
+  }, [testimoniData]);
+
+  // Filter testimonials
+  const filteredTestimonials = useMemo(() => {
+    if (filterCategory === "Semua") return testimoniData;
+    return testimoniData.filter((t) => t.cat === filterCategory);
+  }, [testimoniData, filterCategory]);
 
   return (
     <section className="min-h-screen" style={{ background: "var(--cream)" }}>
       {/* ═══ HERO ═══ */}
       <div className="relative overflow-hidden" style={{ background: "var(--espresso)", color: "var(--cream)" }}>
-        {/* Background image overlay */}
         <div className="absolute inset-0 opacity-20" style={{ backgroundImage: "url(/hero-testimoni.jpg)", backgroundSize: "cover", backgroundPosition: "center" }} />
         <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(23,20,15,.8), rgba(23,20,15,.88), rgba(23,20,15,1))" }} />
         <div className="pointer-events-none absolute -right-20 -top-24 h-72 w-72 rounded-full blur-3xl" style={{ background: "rgba(190,139,60,.14)" }} />
@@ -72,7 +229,7 @@ export default function TestimoniPage() {
                   <motion.p variants={headerVariants} className="flex items-center gap-2 text-[11px] sm:text-[12px] tracking-[0.32em] uppercase mb-4 font-ui font-medium" style={{ color: "var(--gold)" }}>
                     <Star size={14} strokeWidth={2} fill="var(--gold)" stroke="var(--gold)" /> Review Samaqu
                   </motion.p>
-                  <motion.h1 variants={headerVariants} className="text-[2.6rem] sm:text-5xl lg:text-[3.7rem] font-semibold leading-[1.05] tracking-tight mb-3" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--cream)" }}>
+                  <motion.h1 variants={headerVariants} className="text-[2rem] sm:text-5xl lg:text-[3.7rem] font-semibold leading-[1.05] tracking-tight mb-3" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--cream)" }}>
                     Apa Kata <span style={{ color: "var(--gold)" }}>Mereka?</span>
                   </motion.h1>
                   <motion.p variants={headerVariants} className="text-[11px] sm:text-xs font-bold uppercase tracking-[0.08em] mb-4" style={{ color: "rgba(212,197,181,.5)" }}>
@@ -144,113 +301,45 @@ export default function TestimoniPage() {
         <Breadcrumb />
       </div>
 
-      {/* ═══ INTRO CERITA ═══ */}
-      <div className="max-w-[1200px] mx-auto px-5 sm:px-8 lg:px-14 pb-12">
-        <div className="rounded-2xl p-6 sm:p-9" style={{ background: "white", border: "1px solid rgba(23,20,15,.1)", boxShadow: "0 1px 2px rgba(23,20,15,.05), 0 6px 18px -12px rgba(23,20,15,.18)" }}>
-          <div className="grid gap-7 md:grid-cols-[auto_1fr] md:items-start">
-            <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0" style={{ background: "var(--cream-2, #eae4d9)", color: "var(--gold)" }}>
-              <Quote size={24} strokeWidth={1.5} />
-            </div>
-            <div>
-              <h2 className="text-[1.5rem] sm:text-[2rem] font-semibold leading-snug" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
-                Lihat pengalaman mereka yang sudah membeli, memakai, dan{" "}
-                <span style={{ color: "var(--gold)" }}>merasakan sendiri</span> produk Samaqu.
-              </h2>
-              <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                <p className="text-[0.95rem] leading-relaxed" style={{ color: "rgba(42,33,27,.5)" }}>
-                  Setiap pesan di bawah ini adalah cerita nyata dari pelanggan yang telah mempercayakan pilihannya kepada kami.
-                </p>
-                <p className="text-[0.95rem] leading-relaxed" style={{ color: "rgba(42,33,27,.5)" }}>
-                  Terima kasih sudah menjadi bagian dari perjalanan Samaqu.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ═══ SCREENSHOT TESTIMONI ═══ */}
+      {/* ═══ FILTER + GRID ═══ */}
       <div className="max-w-[1200px] mx-auto px-5 sm:px-8 lg:px-14 pb-16">
-        <div className="flex items-end justify-between gap-4 mb-5">
-          <h2 className="flex items-center gap-2.5 text-[1.35rem] sm:text-[1.6rem] font-semibold" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "var(--cream-2, #eae4d9)", color: "var(--gold)" }}>
-              <MessageCircle size={16} strokeWidth={1.5} />
-            </div>
-            Screenshot Testimoni
-          </h2>
-          <span className="hidden text-xs font-semibold" style={{ color: "rgba(42,33,27,.35)" }}>6 Slot</span>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
-          {slots.map((t, i) => (
-            <motion.figure
-              key={i}
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
-            >
-              <div className="aspect-[9/14] rounded-2xl overflow-hidden flex flex-col items-center justify-center gap-3 p-4 text-center" style={{ border: "1.5px dashed rgba(23,20,15,.22)", background: "repeating-linear-gradient(135deg, rgba(23,20,15,.028) 0 1px, transparent 1px 11px), var(--bg-secondary, #eae4d9)" }}>
-                {t?.img ? (
-                  <img src={t.img} alt={`Testimoni ${t.name}`} className="w-full h-full object-cover" loading="lazy" />
-                ) : (
-                  <>
-                    <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "rgba(23,20,15,.06)", color: "var(--ink-35, #9b9285)" }}>
-                      <MessageCircle size={22} strokeWidth={1.5} />
-                    </div>
-                    <p className="text-xs font-bold leading-snug" style={{ color: "rgba(42,33,27,.7)" }}>Screenshot<br />Testimoni Pelanggan</p>
-                    <span className="text-[10px] font-semibold" style={{ color: "rgba(42,33,27,.35)" }}>Slot {String(i + 1).padStart(2, "0")}</span>
-                  </>
-                )}
-              </div>
-              {t && (
-                <figcaption className="mt-2.5 flex items-center gap-1.5 text-xs font-medium" style={{ color: "rgba(42,33,27,.5)" }}>
-                  <CheckCircle size={12} strokeWidth={2} style={{ color: "var(--gold)" }} /> {t.name}
-                </figcaption>
-              )}
-            </motion.figure>
-          ))}
-        </div>
-
-
-      </div>
-
-      {/* ═══ YANG MEREKA RASAKAN ═══ */}
-      <div className="max-w-[1200px] mx-auto px-5 sm:px-8 lg:px-14 pb-16">
-        <div className="flex items-end justify-between gap-4 mb-5">
-          <h2 className="flex items-center gap-2.5 text-[1.35rem] sm:text-[1.6rem] font-semibold" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "var(--cream-2, #eae4d9)", color: "var(--gold)" }}>
-              <Star size={16} strokeWidth={1.5} />
-            </div>
-            Yang Mereka Rasakan
-          </h2>
-          <span className="hidden text-xs font-semibold" style={{ color: "rgba(42,33,27,.35)" }}>4 Poin</span>
-        </div>
-
-        <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
-          {FEEL_ITEMS.map((item) => (
-            <div key={item.title} className="rounded-2xl flex gap-4 p-5" style={{ background: "white", border: "1px solid rgba(23,20,15,.1)", boxShadow: "0 1px 2px rgba(23,20,15,.05)" }}>
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: "var(--cream-2, #eae4d9)", color: "var(--gold)" }}>
-                {item.icon}
-              </div>
-              <div>
-                <h3 className="text-base font-bold" style={{ color: "var(--espresso)" }}>{item.title}</h3>
-                <p className="mt-1.5 text-sm leading-relaxed" style={{ color: "rgba(42,33,27,.5)" }}>{item.desc}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Link ke FAQ */}
-        <a href="/faq" className="mt-4 rounded-2xl flex items-center gap-4 p-5 transition-all duration-200 hover:shadow-md" style={{ background: "white", border: "1px solid rgba(23,20,15,.1)" }}>
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: "var(--cream-2, #eae4d9)", color: "var(--gold)" }}>
-            <MessageCircle size={20} strokeWidth={1.5} />
+        {/* Filter */}
+        {categories.length > 2 && (
+          <div className="flex items-center gap-2 mb-8 overflow-x-auto pb-2">
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setFilterCategory(cat)}
+                className="px-4 py-2 text-[12px] font-ui font-medium rounded-full whitespace-nowrap transition-all duration-200"
+                style={{
+                  background: filterCategory === cat ? "var(--espresso)" : "transparent",
+                  color: filterCategory === cat ? "var(--cream)" : "var(--coffee)",
+                  border: `1px solid ${filterCategory === cat ? "var(--espresso)" : "rgba(201,183,156,.3)"}`,
+                }}
+              >
+                {cat}
+              </button>
+            ))}
           </div>
-          <div className="flex-1">
-            <p className="text-sm font-bold" style={{ color: "var(--espresso)" }}>Punya pertanyaan lain?</p>
-            <p className="text-xs" style={{ color: "rgba(42,33,27,.35)" }}>Buka Pusat Bantuan Samaqu — 27 pertanyaan terjawab</p>
+        )}
+
+        {/* Grid */}
+        {loading ? (
+          <div className="text-center py-20">
+            <div className="w-6 h-6 border-2 rounded-full animate-spin mx-auto" style={{ borderColor: "rgba(201,183,156,.3)", borderTopColor: "var(--gold)" }} />
           </div>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" style={{ color: "rgba(42,33,27,.35)" }}><path d="m9 6 6 6-6 6" /></svg>
-        </a>
+        ) : filteredTestimonials.length === 0 ? (
+          <div className="text-center py-20">
+            <MessageCircle size={34} strokeWidth={1.4} className="mx-auto mb-4" style={{ color: "var(--gold)" }} />
+            <p className="text-sm font-ui" style={{ color: "var(--stone)" }}>Belum ada testimoni untuk kategori ini.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {filteredTestimonials.map((t, i) => (
+              <TestimonialCard key={`${t.name}-${i}`} t={t} onImageClick={setLightboxUrl} />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* ═══ CTA ═══ */}
@@ -278,6 +367,11 @@ export default function TestimoniPage() {
           </div>
         </div>
       </section>
+
+      {/* Lightbox */}
+      <AnimatePresence>
+        {lightboxUrl && <ImageLightbox url={lightboxUrl} onClose={() => setLightboxUrl(null)} />}
+      </AnimatePresence>
 
       {/* Marquee animation */}
       <style jsx global>{`
