@@ -157,6 +157,7 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [name, setName] = useState("");
+  const [originalName, setOriginalName] = useState("");
   const [slug, setSlug] = useState("");
   const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
@@ -193,6 +194,8 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
   const [selectedSeries, setSelectedSeries] = useState<string[]>([]);
   const [seriesBlocks, setSeriesBlocks] = useState<Record<string, SeriesBlock>>({});
   const [activeSeriesTab, setActiveSeriesTab] = useState<string | null>(null);
+  // Series duplikat (2+ row dgn nama series sama) yang terdeteksi saat load — informatif saja
+  const [duplicateSeriesWarning, setDuplicateSeriesWarning] = useState<string[]>([]);
 
   // Load existing product data
   useEffect(() => {
@@ -215,6 +218,7 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
         if (!product) { router.push("/admin"); return; }
 
         setName(product.name);
+        setOriginalName(product.name);
         setSlug(product.id);
         setCategory(product.category);
         setDescription(product.description || "");
@@ -229,21 +233,35 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
         setCypMicrocopyOverride(product.cyp_microcopy_override || "");
         setUseCustomCypMicrocopy(!!product.cyp_microcopy_override);
 
-        // Thobe multi-series: load siblings (same name + category)
+        // Thobe multi-series: load siblings (same name + category).
+        // PENTING: selalu muat mode multi-series untuk Thobe, meskipun cuma 1 row —
+        // kalau tidak, checklist series tidak ter-restore dan save akan membuat row baru.
         if (product.category === "Thobe" && product.name) {
           const { data: siblings } = await supabase
             .from("products")
-            .select("id, name, series, price, minimum_price, recommended_price, create_your_price_enabled, cyp_microcopy_override, image, images")
+            .select("id, name, series, price, minimum_price, recommended_price, create_your_price_enabled, cyp_microcopy_override, image, images, created_at")
             .eq("category", "Thobe")
-            .eq("name", product.name);
+            .eq("name", product.name)
+            .order("created_at", { ascending: true });
 
-          if (siblings && siblings.length > 1) {
+          if (siblings && siblings.length > 0) {
             // Multiple series products exist for this name
             const blocks: Record<string, SeriesBlock> = {};
             const seriesNames: string[] = [];
+            const seenSeries = new Set<string>();
+            const duplicateSeries: string[] = [];
 
             for (const sib of siblings) {
               if (!sib.series) continue;
+              // Dedupe: kalau ada 2+ row dgn series sama (duplikat data), pakai row
+              // yang paling lama (created_at pertama) & catat sebagai peringatan —
+              // jangan hapus otomatis, biar admin putuskan via laporan audit.
+              const seriesKey = sib.series.toLowerCase();
+              if (seenSeries.has(seriesKey)) {
+                if (!duplicateSeries.includes(sib.series)) duplicateSeries.push(sib.series);
+                continue;
+              }
+              seenSeries.add(seriesKey);
               seriesNames.push(sib.series);
 
               // Fetch variants for this sibling
@@ -279,6 +297,7 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
 
             setSelectedSeries(seriesNames);
             setSeriesBlocks(blocks);
+            setDuplicateSeriesWarning(duplicateSeries);
             // Set active tab to the current product's series
             if (product.series && blocks[product.series]) {
               setActiveSeriesTab(product.series);
@@ -601,12 +620,15 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
     try {
       if (category === "Thobe" && selectedSeries.length > 0) {
         // ── Thobe multi-series: update/create product rows per series ──
-        const currentIds = new Set<string>();
         for (const seriesName of selectedSeries) {
           const block = seriesBlocks[seriesName];
           if (!block) continue;
-          const seriesSlug = block.productId || `${slug}-${seriesName.toLowerCase().replace(/\s+/g, "-")}`;
-          currentIds.add(seriesSlug);
+          const seriesNameSlug = seriesName.toLowerCase().replace(/\s+/g, "-");
+          // ID stabil: row yang sudah ada di-update pakai ID-nya, sehingga URL &
+          // semua data (checklist, harga, foto, stok) tetap terjaga. Row baru
+          // dibuat dari base ID nama produk — BUKAN dari ID row saat ini —
+          // supaya ID tidak menumpuk (mis. ...-bayati-bayati-bayati) tiap save.
+          const seriesSlug = block.productId || `${generateSlug(name) || slug}-${seriesNameSlug}`;
           const blockPrice = block.cypEnabled
             ? (parseInt(block.price) || parseInt(block.minimumPrice) || 0)
             : parseInt(block.price);
@@ -647,11 +669,14 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
           if (imageRows.length > 0) await supabase.from("product_images").insert(imageRows);
         }
 
-        // Delete sibling products that are no longer selected
-        const { data: oldSiblings } = await supabase.from("products").select("id").eq("category", "Thobe").eq("name", name);
+        // Hapus row produk Thobe senama (nama sekarang + nama asli untuk kasus
+        // rename) yang series-nya TIDAK dicentang lagi. Duplikat (series sama,
+        // ID berbeda) tidak dihapus otomatis — keputusan ada di laporan audit.
+        const namesToCheck = Array.from(new Set([name, originalName].filter(Boolean)));
+        const { data: oldSiblings } = await supabase.from("products").select("id, series").eq("category", "Thobe").in("name", namesToCheck);
         if (oldSiblings) {
           for (const old of oldSiblings) {
-            if (!currentIds.has(old.id)) {
+            if (!old.series || !selectedSeries.includes(old.series)) {
               await supabase.from("product_variants").delete().eq("product_id", old.id);
               await supabase.from("product_images").delete().eq("product_id", old.id);
               await supabase.from("products").delete().eq("id", old.id);
@@ -789,6 +814,11 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
                 {category === "Thobe" && (
                 <div><label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Series</label>
                   {errors.series && <p className="text-[11px] mb-2" style={{ color: "#e74c3c" }}>{errors.series}</p>}
+                  {duplicateSeriesWarning.length > 0 && (
+                    <p className="text-[11px] mb-2 rounded-lg px-3 py-2" style={{ background: "rgba(231,76,60,.08)", border: "1px solid rgba(231,76,60,.2)", color: "#c0392b" }}>
+                      Peringatan: ada {duplicateSeriesWarning.length} series yang datanya duplikat di database ({duplicateSeriesWarning.join(", ")}). Yang tampil di sini adalah entri terlama. Harap bersihkan lewat laporan audit sebelum disimpan agar tidak tersimpan data ganda.
+                    </p>
+                  )}
                   <div className="flex flex-wrap gap-2 mb-3">
                     {seriesList.map((s) => (<button key={s} type="button" onClick={() => toggleSeries(s)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all" style={{ background: selectedSeries.includes(s) ? "var(--espresso)" : "transparent", color: selectedSeries.includes(s) ? "var(--cream)" : "var(--coffee)", border: `1px solid ${selectedSeries.includes(s) ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>{selectedSeries.includes(s) && <span className="text-[10px]">✓</span>}{s}</button>))}
                     <button type="button" onClick={() => setShowNewSeries(!showNewSeries)} className="px-3 py-1.5 rounded-full text-xs font-medium shrink-0" style={{ border: "1px dashed rgba(181,140,74,.4)", color: "var(--gold)" }}>+ Baru</button>
