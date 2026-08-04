@@ -320,7 +320,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       setAvailableSeries([]);
       return;
     }
-    getAvailableSeries(product.jenis_kain_id, selectedColor || "", product.category, product.series || undefined).then(setAvailableSeries);
+    getAvailableSeries(product.jenis_kain_id, selectedColor || "", product.category, product.series || undefined, product.name || undefined).then(setAvailableSeries);
   }, [product?.jenis_kain_id, product?.series, selectedColor]);
 
   useEffect(() => {
