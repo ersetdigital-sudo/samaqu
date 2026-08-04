@@ -6,7 +6,7 @@ const navLinks = [
   { href: "/katalog", label: "Katalog" },
   { href: "/testimoni", label: "Testimoni" },
   { href: "/tentang-kami", label: "Tentang Kami" },
-  { href: "/#faq", label: "FAQ" },
+  { href: "/faq", label: "FAQ" },
   {
     href: "https://instagram.com/samaqu.id",
     label: "Instagram",
@@ -16,7 +16,7 @@ const navLinks = [
 
 const helpLinks = [
   { href: "/cara-pesan", label: "CARA PESAN" },
-  { href: "/#faq", label: "FAQ" },
+  { href: "/faq", label: "FAQ" },
   { href: "/#size", label: "PANDUAN UKURAN" },
   { href: "/create-your-price", label: "CREATE YOUR PRICE" },
 ];
