@@ -1,19 +1,18 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Star, CheckCircle, MessageCircle, Play, ChevronDown, Loader2 } from "lucide-react";
+import { Star, CheckCircle, MessageCircle, Quote, Shirt, Ruler, Headphones, Heart } from "lucide-react";
 import Breadcrumb from "@/components/Breadcrumb";
 import { getTestimonials, type DbTestimonial } from "@/lib/db";
 import { getWhatsAppLink } from "@/lib/store-settings";
-import {
-  testimoniCategories,
-  type Testimoni,
-  type TestimoniType,
-  type TestimoniCat,
-} from "./testimoni-data";
 
-const PAGE = 6;
+interface Testimoni {
+  name: string;
+  cat: string;
+  text: string;
+  img?: string;
+}
 
 const headerVariants = {
   hidden: { opacity: 0, y: 18 },
@@ -24,303 +23,269 @@ function getInitials(name: string) {
   return name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 }
 
-function StarRating({ n }: { n: number }) {
-  return (
-    <div className="flex gap-px">
-      {Array.from({ length: 5 }, (_, i) => (
-        <Star key={i} className="w-[11px] h-[11px] sm:w-[13px] sm:h-[13px]" fill={i < n ? "var(--gold)" : "none"} stroke="var(--gold)" strokeWidth={1.5} />
-      ))}
-    </div>
-  );
-}
+const TRUST_ITEMS = [
+  "Kualitas Sama",
+  "Create Your Price",
+  "Jahitan Rapi",
+  "Kirim Seluruh Indonesia",
+  "Konsultasi Size Gratis",
+];
 
-function TestimoniCard({ t }: { t: Testimoni }) {
-  const [ytPlaying, setYtPlaying] = useState(false);
-
-  return (
-    <motion.article
-      initial={{ opacity: 0, y: 16, scale: 0.97 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-      className="tcard break-inside-avoid mb-4 sm:mb-5 lg:mb-6"
-    >
-      <div
-        className="group bg-white overflow-hidden transition-all duration-300"
-        style={{ borderRadius: "0.125rem", boxShadow: "0 2px 12px -4px rgba(43,38,32,.06)", border: "1px solid rgba(201,183,156,.12)" }}
-      >
-        {/* ── Photo ── */}
-        {t.type === "photo" && t.img && (
-          <div className="relative aspect-[4/5] overflow-hidden" style={{ background: "#e8dfd1" }}>
-            <img src={t.img} alt={`${t.name} mengenakan ${t.cat}`} loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
-            {t.cap && (
-              <div className="absolute inset-x-0 bottom-0 p-3 pt-10" style={{ background: "linear-gradient(to top, rgba(45,33,27,.85), transparent)" }}>
-                <p className="text-[11px] sm:text-xs font-ui font-medium" style={{ color: "var(--cream)" }}>{t.cap}</p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ── Video ── */}
-        {t.type === "video" && t.img && (
-          <div className="relative aspect-[4/5] overflow-hidden" style={{ background: "#e8dfd1" }}>
-            {ytPlaying && t.yt ? (
-              <iframe className="absolute inset-0 w-full h-full" src={`https://www.youtube-nocookie.com/embed/${t.yt}?autoplay=1&rel=0`} title="Video testimoni" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
-            ) : (
-              <button type="button" className="absolute inset-0 cursor-pointer border-0 p-0 bg-transparent text-left w-full h-full" onClick={() => setYtPlaying(true)} aria-label={`Putar video ${t.name}`}>
-                <img src={t.img} alt={`${t.name} — ${t.cat}`} loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
-                <div className="absolute inset-0" style={{ background: "rgba(45,33,27,.25)" }} />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="tplay w-11 h-11 sm:w-14 sm:h-14 rounded-full flex items-center justify-center" style={{ background: "var(--gold)", boxShadow: "0 4px 12px rgba(181,140,74,.4)" }}>
-                    <Play className="w-4 h-4 sm:w-5 sm:h-5 ml-0.5" fill="white" stroke="none" />
-                  </span>
-                </div>
-                {t.cap && (
-                  <div className="absolute inset-x-0 bottom-0 p-3 pt-10" style={{ background: "linear-gradient(to top, rgba(45,33,27,.85), transparent)" }}>
-                    <p className="text-[11px] sm:text-xs font-ui font-medium" style={{ color: "var(--cream)" }}>{t.cap}</p>
-                  </div>
-                )}
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* ── Content ── */}
-        <div className="p-4 sm:p-5">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center overflow-hidden shrink-0" style={{ background: "var(--espresso)", color: "var(--gold)", fontFamily: "Georgia, serif", fontSize: "0.625rem", fontWeight: 600, lineHeight: 1 }}>
-              {getInitials(t.name)}
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[13px] sm:text-sm font-ui font-medium truncate" style={{ color: "var(--espresso)" }}>{t.name}</p>
-              <div className="mt-0.5"><StarRating n={t.rating} /></div>
-            </div>
-          </div>
-          <div className="mt-3 flex items-center gap-2 flex-wrap">
-            <span className="text-[10px] sm:text-[11px] tracking-[0.06em] uppercase font-ui font-medium rounded-full px-2 py-0.5" style={{ background: "rgba(181,140,74,.08)", color: "var(--gold)" }}>{t.cat}</span>
-            {t.verified && (
-              <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-ui font-medium rounded-full px-2 py-0.5" style={{ background: "rgba(181,140,74,.08)", color: "var(--gold)" }}>
-                <CheckCircle className="w-[10px] h-[10px] sm:w-[11px] sm:h-[11px]" strokeWidth={2.5} />
-                Terverifikasi
-              </span>
-            )}
-          </div>
-          <p className="mt-3 text-[13px] sm:text-sm font-ui leading-relaxed" style={{ color: "var(--text-secondary)" }}>{t.text}</p>
-          <p className="mt-3 text-[11px] sm:text-xs font-ui" style={{ color: "var(--stone)" }}>{t.date}</p>
-        </div>
-      </div>
-    </motion.article>
-  );
-}
+const FEEL_ITEMS = [
+  { icon: <Star size={20} strokeWidth={1.5} />, title: "Kualitas", desc: "Produk, bahan, jahitan, dan finishing tetap sama — berapa pun harga yang kamu pilih di atas Harga Minimum." },
+  { icon: <Heart size={20} strokeWidth={1.5} />, title: "Kenyamanan", desc: "Setiap jenis kain punya karakter berbeda — ketebalan, kenyamanan, hingga tampilan. Nyaman dipakai sepanjang hari." },
+  { icon: <Ruler size={20} strokeWidth={1.5} />, title: "Ukuran", desc: "Panduan Size dan Rekomendasi Size berdasarkan tinggi serta berat badan. Masih ragu? Tim Samaqu siap membantu." },
+  { icon: <Headphones size={20} strokeWidth={1.5} />, title: "Pelayanan", desc: "Dari konsultasi sebelum order, proses 1–2 hari kerja, sampai bantuan retur — tim kami mendampingi di setiap tahap." },
+];
 
 export default function TestimoniPage() {
-  const [filterType, setFilterType] = useState<TestimoniType | "all">("all");
-  const [filterCat, setFilterCat] = useState<TestimoniCat | "all">("all");
-  const [shown, setShown] = useState(PAGE);
-  const [loading, setLoading] = useState(false);
   const [testimoniData, setTestimoniData] = useState<Testimoni[]>([]);
 
-  /* Fetch testimonials from database */
   useEffect(() => {
     getTestimonials().then((data) => {
-      const mapped: Testimoni[] = data.map((t) => ({
+      setTestimoniData(data.map((t) => ({
         name: t.customer_name,
-        type: t.type as TestimoniType,
-        cat: t.category as TestimoniCat,
-        rating: t.rating,
-        verified: t.verified,
-        date: new Date(t.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }),
-        img: t.image_url || undefined,
-        yt: t.video_url || undefined,
-        cap: t.caption || undefined,
+        cat: t.category,
         text: t.content,
-      }));
-      setTestimoniData(mapped);
+        img: t.image_url || undefined,
+      })));
     });
   }, []);
 
-  const filtered = useMemo(() => testimoniData.filter((t) => {
-    const okType = filterType === "all" || t.type === filterType;
-    const okCat = filterCat === "all" || t.cat === filterCat;
-    return okType && okCat;
-  }), [filterType, filterCat, testimoniData]);
-
-  const visible = useMemo(() => filtered.slice(0, shown), [filtered, shown]);
-  const hasMore = shown < filtered.length;
-
-  const handleLoadMore = useCallback(() => {
-    setLoading(true);
-    setTimeout(() => { setShown((s) => s + PAGE); setLoading(false); }, 300);
-  }, []);
+  // Fill 6 slots — use real data if available, otherwise placeholder
+  const slots = Array.from({ length: 6 }, (_, i) => testimoniData[i] || null);
 
   return (
     <section className="min-h-screen" style={{ background: "var(--cream)" }}>
-      {/* ═══ HERO / HEADER ═══ */}
+      {/* ═══ HERO ═══ */}
       <div className="relative overflow-hidden" style={{ background: "var(--espresso)", color: "var(--cream)" }}>
-        <div className="absolute inset-0 opacity-[.12]" style={{ background: "radial-gradient(circle at 30% 20%, var(--gold) 0, transparent 45%), radial-gradient(circle at 80% 90%, #9d7a3a 0, transparent 40%)" }} />
-        <div className="relative pt-28 sm:pt-32 lg:pt-36 pb-12 sm:pb-16">
-          <div className="max-w-[1200px] mx-auto px-5 sm:px-8 lg:px-14 text-center">
-            <motion.div initial="hidden" animate="visible" variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.1 } } }}>
-              <motion.p variants={headerVariants} className="text-[11px] sm:text-[12px] tracking-[0.32em] uppercase mb-4 font-ui font-medium" style={{ color: "var(--gold)" }}>
-                Testimoni Pelanggan
-              </motion.p>
-              <motion.h1 variants={headerVariants} className="text-[2rem] sm:text-5xl lg:text-6xl font-semibold leading-[1.05] tracking-tight mb-4" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--cream)" }}>
-                Apa Kata Mereka
-              </motion.h1>
-              <motion.p variants={headerVariants} className="text-sm sm:text-base leading-relaxed max-w-lg mx-auto font-ui" style={{ color: "rgba(212,197,181,.8)" }}>
-                Kepercayaan dari pelanggan yang sudah merasakan kualitas busana muslim premium kami.
-              </motion.p>
-            </motion.div>
+        {/* Background image overlay */}
+        <div className="absolute inset-0 opacity-20" style={{ backgroundImage: "url(/hero-testimoni.jpg)", backgroundSize: "cover", backgroundPosition: "center" }} />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(23,20,15,.8), rgba(23,20,15,.88), rgba(23,20,15,1))" }} />
+        <div className="pointer-events-none absolute -right-20 -top-24 h-72 w-72 rounded-full blur-3xl" style={{ background: "rgba(190,139,60,.14)" }} />
 
-            {/* Rating card */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3, duration: 0.5 }}
-              className="mt-8 sm:mt-10 inline-flex flex-col sm:flex-row items-center gap-3 sm:gap-6 rounded-xl px-6 sm:px-8 py-4 sm:py-5"
-              style={{ border: "1px solid rgba(90,74,63,.5)", background: "rgba(61,47,38,.4)", backdropFilter: "blur(8px)" }}
-            >
-              <div className="flex items-center gap-2">
-                <span className="text-[1.6rem] sm:text-4xl font-semibold leading-none" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--gold)" }}>4.9</span>
-                <div className="flex gap-0.5">{Array.from({ length: 5 }, (_, i) => <Star key={i} className="w-4 h-4 sm:w-5 sm:h-5" fill="var(--gold)" stroke="var(--gold)" />)}</div>
+        <div className="relative pt-28 sm:pt-32 lg:pt-36 pb-12 sm:pb-16">
+          <div className="max-w-[1200px] mx-auto px-5 sm:px-8 lg:px-14">
+            <div className="grid gap-10 md:grid-cols-[1.05fr_0.95fr] md:items-center">
+              <div>
+                <motion.div initial="hidden" animate="visible" variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.1 } } }}>
+                  <motion.p variants={headerVariants} className="flex items-center gap-2 text-[11px] sm:text-[12px] tracking-[0.32em] uppercase mb-4 font-ui font-medium" style={{ color: "var(--gold)" }}>
+                    <Star size={14} strokeWidth={2} fill="var(--gold)" stroke="var(--gold)" /> Review Samaqu
+                  </motion.p>
+                  <motion.h1 variants={headerVariants} className="text-[2.6rem] sm:text-5xl lg:text-[3.7rem] font-semibold leading-[1.05] tracking-tight mb-3" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--cream)" }}>
+                    Apa Kata <span style={{ color: "var(--gold)" }}>Mereka?</span>
+                  </motion.h1>
+                  <motion.p variants={headerVariants} className="text-[11px] sm:text-xs font-bold uppercase tracking-[0.08em] mb-4" style={{ color: "rgba(212,197,181,.5)" }}>
+                    Jangan hanya percaya kata kami.
+                  </motion.p>
+                  <motion.p variants={headerVariants} className="text-sm sm:text-base leading-relaxed max-w-lg font-ui" style={{ color: "rgba(212,197,181,.7)" }}>
+                    Kualitas, kenyamanan, ukuran, pelayanan, hingga pengalaman menerima Samaqu.{" "}
+                    <strong className="font-bold" style={{ color: "#f4e7d2" }}>Biar mereka yang bercerita.</strong>
+                  </motion.p>
+                </motion.div>
+
+                <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="mt-7 flex flex-wrap gap-3">
+                  <a href="#koleksi" className="inline-flex items-center gap-2 rounded-full px-6 py-3 text-[12px] tracking-[0.06em] uppercase font-ui font-semibold transition-all duration-200" style={{ background: "var(--gold)", color: "white", boxShadow: "0 10px 24px -14px rgba(190,139,60,.9)" }}>
+                    <Shirt size={16} strokeWidth={1.5} /> Lihat Koleksi
+                  </a>
+                  <a href={getWhatsAppLink("Halo SAMAQU, saya ingin konsultasi produk")} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full px-6 py-3 text-[12px] tracking-[0.06em] uppercase font-ui font-semibold transition-all duration-200" style={{ border: "1px solid rgba(244,240,233,.14)", color: "var(--cream)" }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.9-4.45 9.9-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2zm0 18.15h-.01a8.2 8.2 0 0 1-4.19-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.2 8.2 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.25-8.24a8.2 8.2 0 0 1 8.24 8.25c0 4.54-3.7 8.23-8.24 8.23zm4.52-6.16c-.25-.12-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.13-.16.25-.64.8-.79.97-.14.16-.29.18-.54.06-.25-.12-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.01-.38.11-.5.11-.11.25-.29.37-.43.13-.15.17-.25.25-.42.08-.16.04-.31-.02-.43-.06-.12-.56-1.34-.76-1.84-.2-.48-.4-.42-.56-.43h-.48c-.16 0-.43.06-.66.31-.22.25-.86.85-.86 2.07 0 1.22.89 2.4 1.01 2.56.12.16 1.75 2.67 4.23 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.14-1.18-.06-.1-.22-.16-.47-.28z" /></svg>
+                    Konsultasi via WhatsApp
+                  </a>
+                </motion.div>
               </div>
-              <span className="hidden sm:block h-8 w-px" style={{ background: "rgba(90,74,63,.5)" }} />
-              <p className="text-[13px] sm:text-sm font-ui" style={{ color: "rgba(212,197,181,.8)" }}>
-                dari <span className="font-semibold" style={{ color: "var(--cream)" }}>500+ ulasan</span> pelanggan
-              </p>
-            </motion.div>
+
+              {/* Rating card */}
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="rounded-2xl p-6 sm:p-7" style={{ background: "var(--espresso)", border: "1px solid rgba(244,240,233,.14)" }}>
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] tracking-[0.15em] uppercase font-ui font-bold" style={{ color: "rgba(244,240,233,.45)" }}>Rating Pelanggan</p>
+                  <div className="flex gap-0.5">{Array.from({ length: 5 }, (_, i) => <Star key={i} size={14} fill="var(--gold)" stroke="var(--gold)" />)}</div>
+                </div>
+                <p className="mt-4 text-[0.95rem] leading-relaxed font-ui" style={{ color: "rgba(244,240,233,.85)" }}>
+                  &quot;Bahannya jatuh, jahitannya rapi, dan ukurannya pas sesuai rekomendasi tim. Packing-nya juga aman.&quot;
+                </p>
+                <div className="mt-5 grid grid-cols-3 gap-4 pt-5" style={{ borderTop: "1px solid rgba(244,240,233,.14)" }}>
+                  <div>
+                    <p className="text-xl font-extrabold" style={{ color: "var(--cream)" }}>100%</p>
+                    <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wider" style={{ color: "rgba(244,240,233,.45)" }}>Cerita Nyata</p>
+                  </div>
+                  <div>
+                    <p className="text-xl font-extrabold" style={{ color: "var(--cream)" }}>1–2</p>
+                    <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wider" style={{ color: "rgba(244,240,233,.45)" }}>Hari Proses</p>
+                  </div>
+                  <div>
+                    <p className="text-xl font-extrabold" style={{ color: "var(--cream)" }}>34</p>
+                    <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wider" style={{ color: "rgba(244,240,233,.45)" }}>Provinsi</p>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
           </div>
+        </div>
+      </div>
+
+      {/* ═══ MARQUEE ═══ */}
+      <div className="overflow-hidden py-3.5" style={{ background: "var(--bg-secondary, #eae4d9)", borderTop: "1px solid rgba(23,20,15,.1)", borderBottom: "1px solid rgba(23,20,15,.1)" }}>
+        <div className="marquee-track flex" style={{ width: "max-content" }}>
+          {[0, 1].map((set) => (
+            <div key={set} className="flex shrink-0 items-center gap-7 pr-7 text-[11px] font-semibold uppercase tracking-[0.1em]" style={{ color: "rgba(42,33,27,.5)" }}>
+              {TRUST_ITEMS.map((item) => (
+                <span key={`${set}-${item}`} className="flex items-center gap-2">
+                  <CheckCircle size={13} strokeWidth={2} style={{ color: "var(--gold)" }} /> {item}
+                </span>
+              ))}
+            </div>
+          ))}
         </div>
       </div>
 
       {/* ═══ BREADCRUMB ═══ */}
-      <div className="max-w-[1200px] mx-auto px-5 sm:px-8 lg:px-14" style={{ paddingTop: "40px", paddingBottom: "32px" }}>
+      <div className="max-w-[1200px] mx-auto px-5 sm:px-8 lg:px-14" style={{ paddingTop: "40px", paddingBottom: "24px" }}>
         <Breadcrumb />
       </div>
 
-      {/* ═══ FILTER TABS ═══ */}
-      <div className="max-w-[1200px] mx-auto px-5 sm:px-8 lg:px-14">
-        {/* Mobile: scrollable chips + dropdown */}
-        <div className="lg:hidden">
-          <div className="py-4 overflow-x-auto scrollbar-hide">
-            <div className="flex items-center gap-2.5">
-              {(["all", "photo", "video"] as const).map((type) => (
-                <button
-                  key={type}
-                  onClick={() => { setFilterType(type); setShown(PAGE); }}
-                  className="relative px-4 py-2.5 text-[12px] tracking-[0.06em] font-ui font-medium rounded-full transition-all duration-300 whitespace-nowrap"
-                  style={{
-                    background: filterType === type ? "var(--espresso)" : "transparent",
-                    color: filterType === type ? "var(--cream)" : "var(--coffee)",
-                    border: `1px solid ${filterType === type ? "var(--espresso)" : "rgba(201,183,156,.3)"}`,
-                  }}
-                >
-                  {type === "all" ? "Semua" : type === "photo" ? "Foto" : "Video"}
-                </button>
-              ))}
+      {/* ═══ INTRO CERITA ═══ */}
+      <div className="max-w-[1200px] mx-auto px-5 sm:px-8 lg:px-14 pb-12">
+        <div className="rounded-2xl p-6 sm:p-9" style={{ background: "white", border: "1px solid rgba(23,20,15,.1)", boxShadow: "0 1px 2px rgba(23,20,15,.05), 0 6px 18px -12px rgba(23,20,15,.18)" }}>
+          <div className="grid gap-7 md:grid-cols-[auto_1fr] md:items-start">
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0" style={{ background: "var(--cream-2, #eae4d9)", color: "var(--gold)" }}>
+              <Quote size={24} strokeWidth={1.5} />
             </div>
-          </div>
-          <div className="flex items-center justify-between pb-4">
-            <div className="relative">
-              <select
-                value={filterCat}
-                onChange={(e) => { setFilterCat(e.target.value as TestimoniCat | "all"); setShown(PAGE); }}
-                className="appearance-none text-[12px] font-ui rounded-full pl-4 pr-9 py-2.5 cursor-pointer outline-none transition-all duration-200"
-                style={{ border: "1px solid rgba(201,183,156,.3)", background: "transparent", color: "var(--coffee)" }}
-              >
-                <option value="all">Semua Produk</option>
-                {testimoniCategories.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
-              </select>
-              <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--stone)" }} />
+            <div>
+              <h2 className="text-[1.5rem] sm:text-[2rem] font-semibold leading-snug" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
+                Lihat pengalaman mereka yang sudah membeli, memakai, dan{" "}
+                <span style={{ color: "var(--gold)" }}>merasakan sendiri</span> produk Samaqu.
+              </h2>
+              <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                <p className="text-[0.95rem] leading-relaxed" style={{ color: "rgba(42,33,27,.5)" }}>
+                  Setiap pesan di bawah ini adalah cerita nyata dari pelanggan yang telah mempercayakan pilihannya kepada kami.
+                </p>
+                <p className="text-[0.95rem] leading-relaxed" style={{ color: "rgba(42,33,27,.5)" }}>
+                  Terima kasih sudah menjadi bagian dari perjalanan Samaqu.
+                </p>
+              </div>
             </div>
-          </div>
-        </div>
-
-        {/* Desktop: inline tabs + dropdown */}
-        <div className="hidden lg:flex items-center justify-between py-5 border-b" style={{ borderColor: "rgba(216,196,168,.2)" }}>
-          <div className="flex items-center gap-6 text-sm font-ui font-medium" style={{ color: "var(--stone)" }}>
-            {(["all", "photo", "video"] as const).map((type) => (
-              <button
-                key={type}
-                onClick={() => { setFilterType(type); setShown(PAGE); }}
-                className="relative py-1 transition-colors duration-200"
-                style={{ color: filterType === type ? "var(--espresso)" : undefined }}
-              >
-                {type === "all" ? "Semua" : type === "photo" ? "Foto" : "Video"}
-                {filterType === type && (
-                  <motion.div layoutId="dt-tab" className="absolute left-0 right-0 -bottom-0.5 h-0.5 rounded-sm" style={{ background: "var(--gold)" }} />
-                )}
-              </button>
-            ))}
-          </div>
-          <div className="relative">
-            <select
-              value={filterCat}
-              onChange={(e) => { setFilterCat(e.target.value as TestimoniCat | "all"); setShown(PAGE); }}
-              className="appearance-none text-[13px] font-ui rounded-full pl-4 pr-9 py-2 cursor-pointer outline-none transition-all duration-200"
-              style={{ border: "1px solid rgba(201,183,156,.3)", background: "transparent", color: "var(--coffee)" }}
-            >
-              <option value="all">Semua Produk</option>
-              {testimoniCategories.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
-            </select>
-            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--stone)" }} />
           </div>
         </div>
       </div>
 
-      {/* ═══ MASONRY GRID ═══ */}
-      <div className="max-w-[1200px] mx-auto px-5 sm:px-8 lg:px-14 py-8 sm:py-12">
-        {visible.length === 0 ? (
-          <div className="text-center py-20">
-            <div className="mx-auto w-20 h-20 rounded-full flex items-center justify-center mb-6" style={{ background: "var(--bg-secondary, #f0ebe5)" }}>
-              <MessageCircle size={34} strokeWidth={1.4} style={{ color: "var(--gold)" }} />
+      {/* ═══ SCREENSHOT TESTIMONI ═══ */}
+      <div className="max-w-[1200px] mx-auto px-5 sm:px-8 lg:px-14 pb-16">
+        <div className="flex items-end justify-between gap-4 mb-5">
+          <h2 className="flex items-center gap-2.5 text-[1.35rem] sm:text-[1.6rem] font-semibold" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "var(--cream-2, #eae4d9)", color: "var(--gold)" }}>
+              <MessageCircle size={16} strokeWidth={1.5} />
             </div>
-            <h3 className="text-2xl font-ui" style={{ color: "var(--espresso)" }}>Belum ada testimoni untuk kategori ini</h3>
-            <p className="mt-2 text-sm font-ui" style={{ color: "var(--stone)" }}>Coba pilih filter atau kategori produk lain.</p>
-          </div>
-        ) : (
-          <div className="masonry-grid">
-            {visible.map((t) => <TestimoniCard key={`${t.name}-${t.date}`} t={t} />)}
-          </div>
-        )}
+            Screenshot Testimoni
+          </h2>
+          <span className="hidden text-xs font-semibold" style={{ color: "rgba(42,33,27,.35)" }}>6 Slot</span>
+        </div>
 
-        {hasMore && (
-          <div className="mt-10 sm:mt-12 flex justify-center">
-            <button onClick={handleLoadMore} disabled={loading}
-              className="inline-flex items-center gap-2 rounded-full px-8 py-3.5 text-[12px] tracking-[0.1em] uppercase font-ui font-medium transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg"
-              style={{ background: "var(--espresso)", color: "var(--cream)", boxShadow: "0 4px 16px -4px rgba(42,33,27,.2)" }}>
-              {loading ? <><Loader2 size={14} className="animate-spin" /> Memuat…</> : "Muat Lebih Banyak"}
-            </button>
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
+          {slots.map((t, i) => (
+            <motion.figure
+              key={i}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.05 }}
+            >
+              <div className="aspect-[9/14] rounded-2xl overflow-hidden flex flex-col items-center justify-center gap-3 p-4 text-center" style={{ border: "1.5px dashed rgba(23,20,15,.22)", background: "repeating-linear-gradient(135deg, rgba(23,20,15,.028) 0 1px, transparent 1px 11px), var(--bg-secondary, #eae4d9)" }}>
+                {t?.img ? (
+                  <img src={t.img} alt={`Testimoni ${t.name}`} className="w-full h-full object-cover" loading="lazy" />
+                ) : (
+                  <>
+                    <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "rgba(23,20,15,.06)", color: "var(--ink-35, #9b9285)" }}>
+                      <MessageCircle size={22} strokeWidth={1.5} />
+                    </div>
+                    <p className="text-xs font-bold leading-snug" style={{ color: "rgba(42,33,27,.7)" }}>Screenshot<br />Testimoni Pelanggan</p>
+                    <span className="text-[10px] font-semibold" style={{ color: "rgba(42,33,27,.35)" }}>Slot {String(i + 1).padStart(2, "0")}</span>
+                  </>
+                )}
+              </div>
+              {t && (
+                <figcaption className="mt-2.5 flex items-center gap-1.5 text-xs font-medium" style={{ color: "rgba(42,33,27,.5)" }}>
+                  <CheckCircle size={12} strokeWidth={2} style={{ color: "var(--gold)" }} /> {t.name}
+                </figcaption>
+              )}
+            </motion.figure>
+          ))}
+        </div>
+
+        <p className="mt-6 flex items-center justify-center gap-2 text-xs" style={{ color: "rgba(42,33,27,.35)" }}>
+          <MessageCircle size={12} strokeWidth={1.5} />
+          Kirimkan screenshot testimoni aslinya — kami pasang ke enam slot di atas.
+        </p>
+      </div>
+
+      {/* ═══ YANG MEREKA RASAKAN ═══ */}
+      <div className="max-w-[1200px] mx-auto px-5 sm:px-8 lg:px-14 pb-16">
+        <div className="flex items-end justify-between gap-4 mb-5">
+          <h2 className="flex items-center gap-2.5 text-[1.35rem] sm:text-[1.6rem] font-semibold" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "var(--cream-2, #eae4d9)", color: "var(--gold)" }}>
+              <Star size={16} strokeWidth={1.5} />
+            </div>
+            Yang Mereka Rasakan
+          </h2>
+          <span className="hidden text-xs font-semibold" style={{ color: "rgba(42,33,27,.35)" }}>4 Poin</span>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
+          {FEEL_ITEMS.map((item) => (
+            <div key={item.title} className="rounded-2xl flex gap-4 p-5" style={{ background: "white", border: "1px solid rgba(23,20,15,.1)", boxShadow: "0 1px 2px rgba(23,20,15,.05)" }}>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: "var(--cream-2, #eae4d9)", color: "var(--gold)" }}>
+                {item.icon}
+              </div>
+              <div>
+                <h3 className="text-base font-bold" style={{ color: "var(--espresso)" }}>{item.title}</h3>
+                <p className="mt-1.5 text-sm leading-relaxed" style={{ color: "rgba(42,33,27,.5)" }}>{item.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Link ke FAQ */}
+        <a href="/faq" className="mt-4 rounded-2xl flex items-center gap-4 p-5 transition-all duration-200 hover:shadow-md" style={{ background: "white", border: "1px solid rgba(23,20,15,.1)" }}>
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: "var(--cream-2, #eae4d9)", color: "var(--gold)" }}>
+            <MessageCircle size={20} strokeWidth={1.5} />
           </div>
-        )}
+          <div className="flex-1">
+            <p className="text-sm font-bold" style={{ color: "var(--espresso)" }}>Punya pertanyaan lain?</p>
+            <p className="text-xs" style={{ color: "rgba(42,33,27,.35)" }}>Buka Pusat Bantuan Samaqu — 27 pertanyaan terjawab</p>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" style={{ color: "rgba(42,33,27,.35)" }}><path d="m9 6 6 6-6 6" /></svg>
+        </a>
       </div>
 
       {/* ═══ CTA ═══ */}
-      <section style={{ background: "var(--bg-secondary, #efe8e0)", borderTop: "1px solid rgba(201,183,156,.15)" }}>
-        <div className="max-w-4xl mx-auto px-5 sm:px-8 py-16 sm:py-24 text-center">
-          <div className="mx-auto mb-6 h-px w-16" style={{ background: "linear-gradient(to right, transparent, var(--gold), transparent)" }} />
-          <h2 className="text-[1.6rem] sm:text-4xl lg:text-5xl font-semibold leading-tight" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
-            Punya Cerita dengan SAMAQU?
+      <section id="koleksi" className="relative overflow-hidden" style={{ background: "var(--espresso)", color: "var(--cream)" }}>
+        <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full blur-3xl" style={{ background: "rgba(190,139,60,.14)" }} />
+        <div className="relative max-w-4xl mx-auto px-5 sm:px-8 py-16 sm:py-20 text-center">
+          <div className="mx-auto mb-5 w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: "var(--ink, #17140f)", color: "var(--gold)" }}>
+            <Shirt size={28} strokeWidth={1.5} />
+          </div>
+          <p className="text-[11px] tracking-[0.2em] uppercase font-ui font-medium mb-3" style={{ color: "var(--gold)" }}>Sudah Siap Merasakan Sendiri?</p>
+          <h2 className="text-[1.6rem] sm:text-[2.3rem] font-semibold leading-tight" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>
+            Temukan produk Samaqu<br className="hidden sm:block" /> yang <span style={{ color: "var(--gold)" }}>sesuai denganmu.</span>
           </h2>
-          <p className="mt-5 text-sm sm:text-base font-ui leading-relaxed max-w-xl mx-auto" style={{ color: "var(--text-secondary)" }}>
-            Bagikan pengalaman Anda — kirim foto, video, atau ulasan mengenakan busana SAMAQU. Setiap cerita Anda sangat berarti bagi kami.
+          <p className="mt-3 text-sm leading-relaxed max-w-md mx-auto" style={{ color: "rgba(244,240,233,.65)" }}>
+            Jadilah bagian dari mereka yang telah merasakan kualitasnya.
           </p>
-          <a href={getWhatsAppLink("Halo SAMAQU, saya ingin mengirim testimoni saya")}
-            className="mt-8 inline-flex items-center gap-2.5 rounded-full px-8 py-4 text-[12px] tracking-[0.08em] uppercase font-ui font-semibold transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg"
-            style={{ background: "var(--espresso)", color: "var(--cream)", boxShadow: "0 8px 28px -8px rgba(45,33,27,.35)" }}>
-            <svg width={18} height={18} viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.9-4.45 9.9-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2zm0 18.15h-.01a8.2 8.2 0 0 1-4.19-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.2 8.2 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.25-8.24a8.2 8.2 0 0 1 8.24 8.25c0 4.54-3.7 8.23-8.24 8.23zm4.52-6.16c-.25-.12-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.13-.16.25-.64.8-.79.97-.14.16-.29.18-.54.06-.25-.12-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.01-.38.11-.5.11-.11.25-.29.37-.43.13-.15.17-.25.25-.42.08-.16.04-.31-.02-.43-.06-.12-.56-1.34-.76-1.84-.2-.48-.4-.42-.56-.43h-.48c-.16 0-.43.06-.66.31-.22.25-.86.85-.86 2.07 0 1.22.89 2.4 1.01 2.56.12.16 1.75 2.67 4.23 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.14-1.18-.06-.1-.22-.16-.47-.28z" /></svg>
-            Kirim Testimoni Anda
-          </a>
+          <div className="mt-7 flex flex-col sm:flex-row items-center justify-center gap-3 max-w-md mx-auto">
+            <a href="/katalog" className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full px-6 py-3.5 text-[12px] tracking-[0.06em] uppercase font-ui font-semibold transition-all duration-200" style={{ background: "var(--gold)", color: "white", boxShadow: "0 10px 24px -14px rgba(190,139,60,.9)" }}>
+              <Shirt size={16} strokeWidth={1.5} /> Lihat Koleksi
+            </a>
+            <a href={getWhatsAppLink("Halo SAMAQU, saya ingin konsultasi produk")} target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full px-6 py-3.5 text-[12px] tracking-[0.06em] uppercase font-ui font-semibold transition-all duration-200" style={{ border: "1px solid rgba(244,240,233,.14)", color: "var(--cream)" }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.9-4.45 9.9-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2zm0 18.15h-.01a8.2 8.2 0 0 1-4.19-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.2 8.2 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.25-8.24a8.2 8.2 0 0 1 8.24 8.25c0 4.54-3.7 8.23-8.24 8.23zm4.52-6.16c-.25-.12-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.13-.16.25-.64.8-.79.97-.14.16-.29.18-.54.06-.25-.12-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.01-.38.11-.5.11-.11.25-.29.37-.43.13-.15.17-.25.25-.42.08-.16.04-.31-.02-.43-.06-.12-.56-1.34-.76-1.84-.2-.48-.4-.42-.56-.43h-.48c-.16 0-.43.06-.66.31-.22.25-.86.85-.86 2.07 0 1.22.89 2.4 1.01 2.56.12.16 1.75 2.67 4.23 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.14-1.18-.06-.1-.22-.16-.47-.28z" /></svg>
+              Konsultasi WhatsApp
+            </a>
+          </div>
         </div>
       </section>
 
+      {/* Marquee animation */}
       <style jsx global>{`
-        .masonry-grid { column-count: 1; column-gap: 1rem; }
-        @media (min-width: 640px) { .masonry-grid { column-count: 2; column-gap: 1.25rem; } }
-        @media (min-width: 1024px) { .masonry-grid { column-count: 3; column-gap: 1.5rem; } }
-        @media (min-width: 1440px) { .masonry-grid { column-count: 4; } }
-
-        .tplay { transition: transform .25s ease; }
-        .group:hover .tplay { transform: scale(1.08); }
+        @keyframes marquee-x { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+        .marquee-track { animation: marquee-x 40s linear infinite; }
       `}</style>
     </section>
   );
