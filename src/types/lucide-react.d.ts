@@ -46,6 +46,10 @@ declare module "lucide-react" {
   export const RefreshCw: FC<IconProps>;
   export const RotateCcw: FC<IconProps>;
   export const Ruler: FC<IconProps>;
+  export const Quote: FC<IconProps>;
+  export const Shirt: FC<IconProps>;
+  export const Heart: FC<IconProps>;
+  export const Headphones: FC<IconProps>;
   export const Scissors: FC<IconProps>;
   export const Search: FC<IconProps>;
   export const Settings: FC<IconProps>;
