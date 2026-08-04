@@ -712,21 +712,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             </div>
           )}
 
-          {/* Sizes — dipindah dekat gallery */}
-          <div className="mb-5">
-            <p className="text-[10px] tracking-[0.1em] uppercase font-ui font-medium mb-2.5" style={{ color: "var(--espresso)" }}>Pilih Ukuran</p>
-            <div className="flex gap-1.5">
-              {availableSizes.map((s) => (
-                <button key={s} onClick={() => setSelectedSize(s)}
-                  className="w-10 h-10 flex items-center justify-center text-[12px] font-ui font-medium rounded-sm transition-all duration-200"
-                  style={{ background: selectedSize === s ? "var(--espresso)" : "transparent", color: selectedSize === s ? "var(--cream)" : "var(--coffee)", border: `1px solid ${selectedSize === s ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
-                  {s}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Colors — tepat setelah Pilih Ukuran (mobile) */}
+          {/* Colors — TAMPIL DI ATAS Pilih Ukuran (khusus produk dengan varian warna) */}
           {product.category !== "Thobe" && product.colors.length > 0 && !(product.colors.length === 1 && product.colors[0] === "default") && (
             <div className="mb-5">
               <p className="text-[10px] tracking-[0.1em] uppercase font-ui font-medium mb-2.5" style={{ color: "var(--espresso)" }}>
@@ -744,6 +730,20 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               </div>
             </div>
           )}
+
+          {/* Sizes */}
+          <div className="mb-5">
+            <p className="text-[10px] tracking-[0.1em] uppercase font-ui font-medium mb-2.5" style={{ color: "var(--espresso)" }}>Pilih Ukuran</p>
+            <div className="flex gap-1.5">
+              {availableSizes.map((s) => (
+                <button key={s} onClick={() => setSelectedSize(s)}
+                  className="w-10 h-10 flex items-center justify-center text-[12px] font-ui font-medium rounded-sm transition-all duration-200"
+                  style={{ background: selectedSize === s ? "var(--espresso)" : "transparent", color: selectedSize === s ? "var(--cream)" : "var(--coffee)", border: `1px solid ${selectedSize === s ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
 
           {/* Price card */}
           <div className="mb-5 rounded-2xl p-5" style={{ background: "var(--cream-bright)", border: "1px solid rgba(201,183,156,.25)" }}>
@@ -1022,6 +1022,24 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 </div>
               </div>
             )}
+            {/* Colors — TAMPIL DI ATAS Pilih Ukuran (khusus produk dengan varian warna) */}
+            {product.category !== "Thobe" && product.colors.length > 0 && !(product.colors.length === 1 && product.colors[0] === "default") && (
+              <div className="mb-6">
+                <p className="text-[11px] sm:text-[12px] tracking-[0.12em] uppercase font-ui font-medium mb-3" style={{ color: "var(--espresso)" }}>
+                  Pilih Warna
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {product.colors.map((c) => (
+                    <button key={c} onClick={() => setSelectedColor(c)}
+                      className="flex items-center gap-2 px-3 py-2 text-[12px] font-ui rounded-sm transition-all duration-200"
+                      style={{ background: selectedColor === c ? "var(--espresso)" : "transparent", color: selectedColor === c ? "var(--cream)" : "var(--coffee)", border: `1px solid ${selectedColor === c ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
+                      <span className="w-3 h-3 rounded-full shrink-0" style={{ background: colorHex[c] || colorMap[c] || "#ccc", border: "1px solid rgba(42,33,27,.1)" }} />
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             {/* Sizes — desktop */}
             <div className="mb-6">
               <p className="text-[10.5px] tracking-[0.18em] uppercase text-[var(--muted)] mb-2.5">Pilih Ukuran</p>
@@ -1103,24 +1121,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               {getDescription(product)}
             </p>
             <div className="h-px mb-7" style={{ background: "rgba(201,183,156,.2)" }} />
-
-            {product.category !== "Thobe" && product.colors.length > 0 && !(product.colors.length === 1 && product.colors[0] === "default") && (
-              <div className="mb-7">
-                <p className="text-[11px] sm:text-[12px] tracking-[0.12em] uppercase font-ui font-medium mb-3" style={{ color: "var(--espresso)" }}>
-                  Pilih Warna
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {product.colors.map((c) => (
-                    <button key={c} onClick={() => setSelectedColor(c)}
-                      className="flex items-center gap-2 px-3 py-2 text-[12px] font-ui rounded-sm transition-all duration-200"
-                      style={{ background: selectedColor === c ? "var(--espresso)" : "transparent", color: selectedColor === c ? "var(--cream)" : "var(--coffee)", border: `1px solid ${selectedColor === c ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
-                      <span className="w-3 h-3 rounded-full shrink-0" style={{ background: colorHex[c] || colorMap[c] || "#ccc", border: "1px solid rgba(42,33,27,.1)" }} />
-                      {c}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
 
             <div className="mb-7">
               <p className="text-[11px] sm:text-[12px] tracking-[0.12em] uppercase font-ui font-medium mb-3" style={{ color: "var(--espresso)" }}>Catatan (Opsional)</p>
