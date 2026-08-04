@@ -28,7 +28,7 @@ const NAV_ITEMS: NavItem[] = [
 const BANTUAN_LINKS = [
   { label: "PANDUAN UKURAN", href: "/#size", Icon: Ruler },
   { label: "CARA PESAN", href: "/cara-pesan", Icon: ListChecks },
-  { label: "FAQ", href: "/#faq", Icon: Question },
+  { label: "FAQ", href: "/faq", Icon: Question },
   { label: "CREATE YOUR PRICE", href: "/create-your-price", Icon: Question },
 ];
 
