@@ -27,8 +27,17 @@ const FAQ_CATEGORIES: FaqCategory[] = [
   { name: "Pengiriman", icon: <Truck size={18} strokeWidth={1.5} />, desc: "Proses, estimasi, resi, luar negeri", key: "kirim" },
   { name: "Produk, Kain & Size", icon: <Tag size={18} strokeWidth={1.5} />, desc: "Jenis kain, series, ukuran, perawatan", key: "produk" },
   { name: "Retur & Garansi", icon: <RotateCcw size={18} strokeWidth={1.5} />, desc: "Tukar produk, produk salah atau rusak", key: "retur" },
-  { name: "Paling Populer", icon: <Sparkles size={18} strokeWidth={1.5} />, desc: "Pertanyaan yang paling sering ditanyakan", key: "popular" },
 ];
+
+// Map DB category values to our FAQ_CATEGORIES
+const CATEGORY_MAP: Record<string, string> = {
+  "Order & Pembayaran": "order",
+  "Pengiriman": "kirim",
+  "Produk, Kain & Size": "produk",
+  "Retur & Garansi": "retur",
+  "Populer": "popular",
+  "Lainnya": "lainnya",
+};
 
 const POPULAR_QUESTIONS = [
   { q: "Apa itu Create Your Price?", icon: <Package size={16} strokeWidth={1.5} /> },
@@ -102,15 +111,28 @@ export default function FaqPage() {
   useEffect(() => {
     async function fetchFaqs() {
       try {
-        const { data } = await supabase.from("faq_items").select("*").eq("is_active", true).order("display_order");
+        const { data, error } = await supabase.from("faq_items").select("*").eq("is_active", true).order("display_order");
+        if (error) {
+          console.error("[FAQ] Fetch error:", error);
+        }
         if (data) {
-          const mapped = (data as FaqItem[]).map((f) => ({
-            ...f,
-            category: f.category || "Lainnya",
-          }));
+          // Map category to our keys - handle missing category column
+          const mapped = (data as Record<string, unknown>[]).map((f, i) => {
+            const rawCat = (f.category as string) || "";
+            const catKey = CATEGORY_MAP[rawCat] || "lainnya";
+            return {
+              id: f.id as string,
+              question: f.question as string,
+              answer: f.answer as string,
+              category: catKey,
+              display_order: (f.display_order as number) || i,
+            };
+          });
           setFaqs(mapped);
         }
-      } catch { /* use defaults */ }
+      } catch (e) {
+        console.error("[FAQ] Error:", e);
+      }
       setLoading(false);
     }
     fetchFaqs();
@@ -119,6 +141,7 @@ export default function FaqPage() {
   const totalFaqs = faqs.length;
 
   const popularFaqs = useMemo(() => {
+    // Match by question text since category might not be set
     return faqs.filter((f) => POPULAR_QUESTIONS.some((pq) => pq.q === f.question)).slice(0, 6);
   }, [faqs]);
 
@@ -134,21 +157,34 @@ export default function FaqPage() {
     return result;
   }, [faqs, searchQuery, activeFilter]);
 
+  // Group FAQs by category key
   const faqsByCategory = useMemo(() => {
     const map: Record<string, FaqItem[]> = {};
     for (const cat of FAQ_CATEGORIES) {
-      map[cat.key] = faqs.filter((f) => f.category === cat.name);
+      map[cat.key] = faqs.filter((f) => f.category === cat.key);
     }
+    // Also group "lainnya" and any unmatched
+    map["lainnya"] = faqs.filter((f) => f.category === "lainnya" || !CATEGORY_MAP[Object.keys(CATEGORY_MAP).find((k) => CATEGORY_MAP[k] === f.category) || ""]);
     return map;
   }, [faqs]);
 
   const categoryCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const cat of FAQ_CATEGORIES) {
-      counts[cat.key] = faqs.filter((f) => f.category === cat.name).length;
+      counts[cat.key] = faqs.filter((f) => f.category === cat.key).length;
     }
+    counts["lainnya"] = faqs.filter((f) => f.category === "lainnya").length;
     return counts;
   }, [faqs]);
+
+  // Determine which categories have FAQs
+  const categoriesWithFaqs = useMemo(() => {
+    const active = FAQ_CATEGORIES.filter((cat) => (categoryCounts[cat.key] || 0) > 0);
+    if (categoryCounts["lainnya"] > 0) {
+      active.push({ name: "Lainnya", icon: <MessageCircle size={18} strokeWidth={1.5} />, desc: "Pertanyaan lainnya", key: "lainnya" });
+    }
+    return active;
+  }, [categoryCounts]);
 
   return (
     <section className="min-h-screen" style={{ background: "var(--cream)" }}>
@@ -270,7 +306,8 @@ export default function FaqPage() {
                   transition={{ delay: i * 0.04 }}
                   onClick={() => {
                     setOpenItem(faq.id);
-                    document.getElementById(`faq-section-${faq.category}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    const section = document.getElementById(`faq-list`);
+                    if (section) section.scrollIntoView({ behavior: "smooth", block: "start" });
                   }}
                   className="text-left p-4 rounded-xl transition-all duration-200 hover:shadow-md group"
                   style={{ background: "white", border: "1px solid rgba(23,20,15,.08)" }}
@@ -332,12 +369,30 @@ export default function FaqPage() {
                   <ChevronRight size={16} style={{ color: "rgba(42,33,27,.35)" }} />
                 </button>
               ))}
+              {/* "Lainnya" row if there are unmatched FAQs */}
+              {categoryCounts["lainnya"] > 0 && (
+                <button
+                  onClick={() => setActiveFilter("lainnya")}
+                  className="w-full flex items-center gap-4 px-5 py-4 text-left transition-all duration-200"
+                  style={{ borderBottom: "1px solid rgba(23,20,15,.06)" }}
+                >
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: "rgba(181,140,74,.08)", color: "var(--gold)" }}>
+                    <MessageCircle size={18} strokeWidth={1.5} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold" style={{ color: "var(--espresso)" }}>Lainnya</p>
+                    <p className="text-xs mt-0.5" style={{ color: "rgba(42,33,27,.35)" }}>Pertanyaan lainnya</p>
+                  </div>
+                  <span className="hidden text-xs font-semibold sm:block" style={{ color: "rgba(42,33,27,.35)" }}>{categoryCounts["lainnya"]} Pertanyaan</span>
+                  <ChevronRight size={16} style={{ color: "rgba(42,33,27,.35)" }} />
+                </button>
+              )}
             </div>
           </section>
         )}
 
         {/* ═══ FAQ LIST ═══ */}
-        <div className="mt-12 sm:mt-16">
+        <div id="faq-list" className="mt-12 sm:mt-16">
           {loading ? (
             <div className="text-center py-20">
               <div className="w-6 h-6 border-2 rounded-full animate-spin mx-auto" style={{ borderColor: "rgba(201,183,156,.3)", borderTopColor: "var(--gold)" }} />
@@ -370,36 +425,66 @@ export default function FaqPage() {
             </div>
           ) : (
             /* Category Sections */
-            FAQ_CATEGORIES.map((cat) => {
-              const catFaqs = faqsByCategory[cat.key] || [];
-              if (catFaqs.length === 0) return null;
+            <>
+              {categoriesWithFaqs.length > 0 ? (
+                categoriesWithFaqs.map((cat) => {
+                  const catFaqs = faqsByCategory[cat.key] || [];
+                  if (catFaqs.length === 0) return null;
 
-              return (
-                <div key={cat.key} id={`faq-section-${cat.name}`} className="mb-12 scroll-mt-28">
-                  <div className="flex items-center gap-2.5 mb-4">
-                    <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "rgba(181,140,74,.08)", color: "var(--gold)" }}>
-                      {cat.icon}
+                  return (
+                    <div key={cat.key} className="mb-12">
+                      <div className="flex items-center gap-2.5 mb-4">
+                        <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "rgba(181,140,74,.08)", color: "var(--gold)" }}>
+                          {cat.icon}
+                        </div>
+                        <div>
+                          <p className="text-[10px] tracking-[0.15em] uppercase font-ui font-bold" style={{ color: "var(--gold)" }}>{cat.name}</p>
+                          <p className="text-xs" style={{ color: "rgba(42,33,27,.35)" }}>{catFaqs.length} Pertanyaan</p>
+                        </div>
+                      </div>
+
+                      <div>
+                        {catFaqs.map((faq, i) => (
+                          <FaqAccordionItem
+                            key={faq.id}
+                            item={faq}
+                            index={i}
+                            isOpen={openItem === faq.id}
+                            onToggle={() => setOpenItem(openItem === faq.id ? null : faq.id)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                /* No FAQs at all - show all FAQs in a single list */
+                faqs.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-2.5 mb-4">
+                      <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "rgba(181,140,74,.08)", color: "var(--gold)" }}>
+                        <MessageCircle size={18} strokeWidth={1.5} />
+                      </div>
+                      <div>
+                        <p className="text-[10px] tracking-[0.15em] uppercase font-ui font-bold" style={{ color: "var(--gold)" }}>Semua Pertanyaan</p>
+                        <p className="text-xs" style={{ color: "rgba(42,33,27,.35)" }}>{faqs.length} Pertanyaan</p>
+                      </div>
                     </div>
                     <div>
-                      <p className="text-[10px] tracking-[0.15em] uppercase font-ui font-bold" style={{ color: "var(--gold)" }}>{cat.name}</p>
-                      <p className="text-xs" style={{ color: "rgba(42,33,27,.35)" }}>{catFaqs.length} Pertanyaan</p>
+                      {faqs.map((faq, i) => (
+                        <FaqAccordionItem
+                          key={faq.id}
+                          item={faq}
+                          index={i}
+                          isOpen={openItem === faq.id}
+                          onToggle={() => setOpenItem(openItem === faq.id ? null : faq.id)}
+                        />
+                      ))}
                     </div>
                   </div>
-
-                  <div>
-                    {catFaqs.map((faq, i) => (
-                      <FaqAccordionItem
-                        key={faq.id}
-                        item={faq}
-                        index={i}
-                        isOpen={openItem === faq.id}
-                        onToggle={() => setOpenItem(openItem === faq.id ? null : faq.id)}
-                      />
-                    ))}
-                  </div>
-                </div>
-              );
-            })
+                )
+              )}
+            </>
           )}
         </div>
 
