@@ -550,8 +550,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const media = selectedColor
     ? baseMedia.filter((m) => !m.color || m.color === selectedColor)
     : baseMedia;
-  // True kalau produk punya foto spesifik per warna (relasi foto ↔ warna terisi)
-  const hasPerColorMedia = baseMedia.some((m) => m.color);
   // Setiap video diberi poster foto yang BEDA (hindari foto utama muncul 3×:
   // poster utama + thumbnail video 1 + thumbnail video 2 semuanya foto pertama)
   const usedPosters = new Set<string>();
@@ -720,7 +718,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {product.colors.map((c) => (
-                  <button key={c} onClick={() => { setSelectedColor(c); if (hasPerColorMedia) scrollToGalleryOnMobile(); }}
+                  <button key={c} onClick={() => { setSelectedColor(c); scrollToGalleryOnMobile(); }}
                     className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-ui rounded-sm transition-all duration-200"
                     style={{ background: selectedColor === c ? "var(--espresso)" : "transparent", color: selectedColor === c ? "var(--cream)" : "var(--coffee)", border: `1px solid ${selectedColor === c ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
                     <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: colorHex[c] || colorMap[c] || "#ccc", border: "1px solid rgba(42,33,27,.1)" }} />
