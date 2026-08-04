@@ -269,18 +269,15 @@ function ProductCard({ product, index, wishlist, colorHex, totalStock }: { produ
 
         {/* Series — Konsep 2: info kecil di bawah kain, clean & premium */}
         {product.availableSeries && product.availableSeries.length > 1 && (
-          <p className="mt-1.5 flex items-center gap-1.5 text-[10.5px] font-ui line-clamp-1" style={{ color: "var(--stone)" }}>
-            {/* Small series icon */}
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 opacity-60">
-              <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
-              <path d="m3.3 7 8.7 5 8.7-5" />
-              <path d="M12 22V12" />
-            </svg>
-            {product.availableSeries.length <= 3 ? (
-              <span>{product.availableSeries.join(" · ")}</span>
-            ) : (
-              <span>{product.availableSeries.slice(0, 2).join(" · ")} · +{product.availableSeries.length - 2}</span>
-            )}
+          <p className="mt-1.5 inline-flex items-center gap-1.5 text-[10.5px] font-ui" style={{ color: "var(--stone)" }}>
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full" style={{ background: "rgba(181,140,74,.08)", border: "1px solid rgba(181,140,74,.2)" }}>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" style={{ color: "var(--gold)" }}>
+                <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
+                <path d="m3.3 7 8.7 5 8.7-5" />
+                <path d="M12 22V12" />
+              </svg>
+              {product.availableSeries.length} series tersedia
+            </span>
           </p>
         )}
 
