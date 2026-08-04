@@ -361,7 +361,12 @@ export default function FaqPage() {
               {FAQ_CATEGORIES.map((cat) => (
                 <button
                   key={cat.key}
-                  onClick={() => setActiveFilter(cat.key)}
+                  onClick={() => {
+                    setActiveFilter(cat.key);
+                    setTimeout(() => {
+                      document.getElementById("faq-list")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }, 100);
+                  }}
                   className="w-full flex items-center gap-4 px-5 py-4 text-left transition-all duration-200"
                   style={{ borderBottom: "1px solid rgba(23,20,15,.06)" }}
                 >
@@ -404,12 +409,26 @@ export default function FaqPage() {
             <div className="text-center py-20">
               <div className="w-6 h-6 border-2 rounded-full animate-spin mx-auto" style={{ borderColor: "rgba(201,183,156,.3)", borderTopColor: "var(--gold)" }} />
             </div>
-          ) : searchQuery.trim() ? (
-            /* Search Results */
+          ) : searchQuery.trim() || activeFilter !== "all" ? (
+            /* Search Results or Filtered by Category */
             <div>
-              <p className="text-sm font-ui mb-6" style={{ color: "rgba(42,33,27,.5)" }}>
-                {filteredFaqs.length} hasil untuk &quot;{searchQuery}&quot;
-              </p>
+              <div className="flex items-center justify-between mb-6">
+                <p className="text-sm font-ui" style={{ color: "rgba(42,33,27,.5)" }}>
+                  {searchQuery.trim()
+                    ? `${filteredFaqs.length} hasil untuk "${searchQuery}"`
+                    : `${filteredFaqs.length} pertanyaan`
+                  }
+                </p>
+                {activeFilter !== "all" && (
+                  <button
+                    onClick={() => setActiveFilter("all")}
+                    className="text-xs font-semibold px-3 py-1.5 rounded-full transition-all"
+                    style={{ background: "var(--espresso)", color: "var(--cream)" }}
+                  >
+                    Tampilkan Semua
+                  </button>
+                )}
+              </div>
               {filteredFaqs.length === 0 ? (
                 <div className="text-center py-16 rounded-2xl" style={{ background: "white", border: "1px solid rgba(23,20,15,.08)" }}>
                   <p className="text-sm font-ui" style={{ color: "rgba(42,33,27,.5)" }}>Tidak ada pertanyaan yang cocok. Coba kata kunci lain atau{" "}
