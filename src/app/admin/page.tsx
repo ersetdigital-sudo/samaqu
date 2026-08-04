@@ -45,6 +45,15 @@ interface Product {
   image: string;
   minimum_price?: number | null;
   create_your_price_enabled?: boolean;
+  series?: string | null;
+  kain?: string | null;
+  colors?: string[];
+  jenis_kain?: { name: string } | null;
+}
+
+interface AdminCatalogProduct extends Product {
+  availableSeries?: string[];
+  memberIds?: string[];
 }
 
 const navItems = [
@@ -69,6 +78,45 @@ const panelTitles: Record<Panel, { title: string; sub: string }> = {
 
 function money(n: number) {
   return "Rp " + n.toLocaleString("id-ID");
+}
+
+function effectivePrice(p: Product): number {
+  return p.create_your_price_enabled && p.minimum_price ? p.minimum_price : p.price;
+}
+
+function groupByMainProduct(raw: Product[]): AdminCatalogProduct[] {
+  const groups = new Map<string, Product[]>();
+  for (const p of raw) {
+    const key = `${p.category}::${p.name}`;
+    const list = groups.get(key) || [];
+    list.push(p);
+    groups.set(key, list);
+  }
+
+  const items: AdminCatalogProduct[] = [];
+  for (const group of groups.values()) {
+    const rep: AdminCatalogProduct = { ...group[0], memberIds: group.map((m) => m.id) };
+
+    if (group.length > 1) {
+      let cheapest = group[0];
+      let cheapestValue = effectivePrice(group[0]);
+      for (const member of group) {
+        const value = effectivePrice(member);
+        if (value < cheapestValue) {
+          cheapestValue = value;
+          cheapest = member;
+        }
+      }
+      rep.price = cheapestValue;
+      rep.minimum_price = cheapest.minimum_price;
+      rep.create_your_price_enabled = cheapest.create_your_price_enabled;
+      rep.availableSeries = [...new Set(group.map((m) => m.series).filter((s): s is string => !!s))].sort();
+    }
+
+    items.push(rep);
+  }
+
+  return items;
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -126,6 +174,8 @@ function AdminPageInner() {
     });
     return result;
   }, [orders, products]);
+
+  const catalogItems = useMemo(() => groupByMainProduct(products), [products]);
 
   // All useEffect hooks
   useEffect(() => {
@@ -229,13 +279,15 @@ function AdminPageInner() {
     setConfirmModal({ open: true, title, message, onConfirm });
   }
 
-  async function handleDeleteProduct(id: string, name: string) {
-    showConfirm("Hapus Produk?", `Yakin ingin menghapus "${name}"? Tindakan ini tidak bisa dibatalkan.`, async () => {
+  async function handleDeleteProduct(id: string, name: string, memberIds?: string[]) {
+    const ids = memberIds && memberIds.length > 0 ? memberIds : [id];
+    const label = ids.length > 1 ? `"${name}" (${ids.length} produk)` : `"${name}"`;
+    showConfirm("Hapus Produk?", `Yakin ingin menghapus ${label}? Tindakan ini tidak bisa dibatalkan.`, async () => {
       try {
-        await supabase.from("product_images").delete().eq("product_id", id);
-        await supabase.from("product_variants").delete().eq("product_id", id);
-        await supabase.from("products").delete().eq("id", id);
-        setProducts((prev) => prev.filter((p) => p.id !== id));
+        await supabase.from("product_images").delete().in("product_id", ids);
+        await supabase.from("product_variants").delete().in("product_id", ids);
+        await supabase.from("products").delete().in("id", ids);
+        setProducts((prev) => prev.filter((p) => !ids.includes(p.id)));
         toast.showToast("success", "Produk berhasil dihapus");
       } catch (err) {
         console.error("Delete error:", err);
@@ -655,23 +707,52 @@ function AdminPageInner() {
                     </Link>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                    {products.map((p) => (
+                    {catalogItems.map((p) => (
                       <div key={p.id} className="card overflow-hidden group">
+                        {/* Image */}
                         <div className="relative aspect-[4/5] overflow-hidden" style={{ background: "#e8dfd1" }}>
                           <img src={productThumbnails[p.id] || p.image || ""} alt={p.name} className="w-full h-full object-cover" loading="lazy" />
                           <span className="absolute top-3 left-3 badge" style={{ background: "rgba(255,255,255,.8)", color: "var(--espresso)" }}>{p.category}</span>
                         </div>
-                        <div className="p-4">
-                          <h3 className="font-semibold text-sm leading-snug">{p.name}</h3>
-                          <p className="text-[15px] sm:text-base font-ui font-medium mt-2" style={{ color: "var(--gold)" }}>
-                            {p.create_your_price_enabled && p.minimum_price
-                              ? `Mulai dari Rp ${p.minimum_price.toLocaleString("id-ID")}`
-                              : `Rp ${p.price.toLocaleString("id-ID")}`}
+                        {/* Info */}
+                        <div className="p-4 flex flex-col">
+                          {/* Name */}
+                          <h3 className="font-semibold text-sm leading-snug" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
+                            {p.name}
+                          </h3>
+                          {/* Kain */}
+                          {(p.jenis_kain?.name || p.kain) && (
+                            <p className="mt-1 text-[11px] font-ui" style={{ color: "var(--gold)" }}>
+                              Kain {p.jenis_kain?.name || p.kain}
+                            </p>
+                          )}
+                          {/* Series info */}
+                          {p.availableSeries && p.availableSeries.length > 1 && (
+                            <p className="mt-1.5 inline-flex items-center gap-1.5 text-[10.5px] font-ui" style={{ color: "var(--text-muted)" }}>
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full" style={{ background: "rgba(181,140,74,.08)", border: "1px solid rgba(181,140,74,.2)" }}>
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" style={{ color: "var(--gold)" }}>
+                                  <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
+                                  <path d="m3.3 7 8.7 5 8.7-5" />
+                                  <path d="M12 22V12" />
+                                </svg>
+                                {p.availableSeries.length} series tersedia
+                              </span>
+                            </p>
+                          )}
+                          {/* Price */}
+                          <p className="mt-2 text-[12.5px] font-ui" style={{ color: "var(--text-muted)" }}>
+                            Mulai{" "}
+                            <span className="font-medium" style={{ color: "var(--espresso)" }}>
+                              {p.create_your_price_enabled && p.minimum_price
+                                ? `Rp ${p.minimum_price.toLocaleString("id-ID")}`
+                                : `Rp ${p.price.toLocaleString("id-ID")}`}
+                            </span>
                           </p>
+                          {/* Actions */}
                           <div className="flex gap-2 mt-3">
                             <Link href={`/admin/produk/edit/${p.id}`} className="flex-1 text-xs font-semibold py-2 rounded-lg text-center" style={{ border: "1px solid rgba(64,50,37,.15)" }}>Edit</Link>
                             <Link href={`/admin/produk/detail/${p.id}`} className="flex-1 text-xs font-semibold py-2 rounded-lg text-center text-white" style={{ background: "var(--gold)" }}>Detail</Link>
-                            <button onClick={() => handleDeleteProduct(p.id, p.name)} className="flex-1 text-xs font-semibold py-2 rounded-lg text-center" style={{ border: "1px solid rgba(231,76,60,.3)", color: "#e74c3c" }}>Hapus</button>
+                            <button onClick={() => handleDeleteProduct(p.id, p.name, p.memberIds)} className="flex-1 text-xs font-semibold py-2 rounded-lg text-center" style={{ border: "1px solid rgba(231,76,60,.3)", color: "#e74c3c" }}>Hapus</button>
                           </div>
                         </div>
                       </div>
