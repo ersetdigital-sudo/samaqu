@@ -166,7 +166,7 @@ export interface SeriesOption {
   create_your_price_enabled: boolean;
 }
 
-export async function getAvailableSeries(jenisKainId: string | null | undefined, color: string, category?: string, seriesName?: string): Promise<SeriesOption[]> {
+export async function getAvailableSeries(jenisKainId: string | null | undefined, color: string, category?: string, seriesName?: string, productName?: string): Promise<SeriesOption[]> {
   if (!jenisKainId && !seriesName) return [];
 
   let query = supabase
@@ -179,8 +179,10 @@ export async function getAvailableSeries(jenisKainId: string | null | undefined,
     query = query.eq("series", seriesName);
   }
 
-  // Thobe tidak pakai warna, jadi skip color filter
-  if (category !== "Thobe") {
+  // Thobe: filter by product name (warna) supaya series dari warna lain tidak muncul
+  if (category === "Thobe" && productName) {
+    query = query.eq("name", productName);
+  } else if (category !== "Thobe") {
     query = query.contains("colors", [color]);
   }
 
@@ -188,8 +190,15 @@ export async function getAvailableSeries(jenisKainId: string | null | undefined,
 
   if (error || !data) return [];
 
+  // Deduplicate: jika ada 2+ produk dengan series name yang sama, ambil yang pertama
+  const seen = new Set<string>();
   return data
     .filter((p: { series: string | null }) => p.series)
+    .filter((p: { series: string }) => {
+      if (seen.has(p.series)) return false;
+      seen.add(p.series);
+      return true;
+    })
     .map((p: { id: string; name: string; series: string; price: number; minimum_price: number | null; create_your_price_enabled: boolean }) => ({
       id: p.id,
       name: p.name,
