@@ -141,8 +141,15 @@ export default function FaqPage() {
   const totalFaqs = faqs.length;
 
   const popularFaqs = useMemo(() => {
-    // Match by question text since category might not be set
-    return faqs.filter((f) => POPULAR_QUESTIONS.some((pq) => pq.q === f.question)).slice(0, 6);
+    // Try exact match first
+    const exact = faqs.filter((f) => POPULAR_QUESTIONS.some((pq) => pq.q === f.question));
+    if (exact.length >= 6) return exact.slice(0, 6);
+    // Try partial match (contains key words)
+    const keywords = ["create your price", "harga minimum", "kualitas", "ukuran", "stok", "hubungi", "pesan", "cara memesan"];
+    const partial = faqs.filter((f) => keywords.some((k) => f.question.toLowerCase().includes(k)));
+    if (partial.length >= 6) return partial.slice(0, 6);
+    // Fallback: just take first 6
+    return faqs.slice(0, 6);
   }, [faqs]);
 
   const filteredFaqs = useMemo(() => {
