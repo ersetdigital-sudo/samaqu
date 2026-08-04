@@ -19,7 +19,7 @@ interface CategoryImage { id: string; name: string; description: string; image_u
 interface OrderStep { id: string; step_number: number; title: string; description: string; }
 interface GaransiItem { id: string; title: string; description: string; display_order: number; }
 interface TrustBadge { id: string; label: string; display_order: number; }
-interface FaqItem { id: string; question: string; answer: string; display_order: number; }
+interface FaqItem { id: string; question: string; answer: string; category: string; display_order: number; }
 interface MarqueeItem { id: string; label: string; display_order: number; }
 
 export default function KontenWebsitePage() {
@@ -177,7 +177,7 @@ export default function KontenWebsitePage() {
     setSaving(true);
     const latest = editFaqsRef.current;
     await safeDeleteAll("faq_items");
-    if (latest.length > 0) await supabase.from("faq_items").insert(latest.map((f, i) => ({ question: f.question, answer: f.answer, display_order: i })));
+    if (latest.length > 0) await supabase.from("faq_items").insert(latest.map((f, i) => ({ question: f.question, answer: f.answer, category: f.category || "Lainnya", display_order: i })));
     const { data: refetched } = await supabase.from("faq_items").select("*").order("display_order");
     setFaqs(refetched || []); setEditModal(null); setSaving(false);
     toast.showToast("success", "FAQ berhasil disimpan");
@@ -388,11 +388,18 @@ export default function KontenWebsitePage() {
                       {editFaqs.length > 1 && <button onClick={() => setEditFaqs(editFaqs.filter((_, j) => j !== i))} className="p-1 hover:bg-red-50 rounded"><Trash2 size={14} style={{ color: "#e74c3c" }} /></button>}
                     </div>
                     <input value={f.question} onChange={(e) => { const u = [...editFaqs]; u[i] = { ...u[i], question: e.target.value }; setEditFaqs(u); }} placeholder="Pertanyaan" className="w-full rounded-lg px-3 py-2 text-sm outline-none mb-1" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white" }} />
-                    <textarea value={f.answer} onChange={(e) => { const u = [...editFaqs]; u[i] = { ...u[i], answer: e.target.value }; setEditFaqs(u); }} placeholder="Jawaban" rows={2} className="w-full rounded-lg px-3 py-2 text-sm outline-none resize-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white" }} />
+                    <textarea value={f.answer} onChange={(e) => { const u = [...editFaqs]; u[i] = { ...u[i], answer: e.target.value }; setEditFaqs(u); }} placeholder="Jawaban" rows={2} className="w-full rounded-lg px-3 py-2 text-sm outline-none resize-none mb-2" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white" }} />
+                    <select value={f.category || ""} onChange={(e) => { const u = [...editFaqs]; u[i] = { ...u[i], category: e.target.value }; setEditFaqs(u); }} className="w-full rounded-lg px-3 py-2 text-sm outline-none appearance-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }}>
+                      <option value="">Pilih Kategori</option>
+                      <option value="Order & Pembayaran">Order & Pembayaran</option>
+                      <option value="Pengiriman">Pengiriman</option>
+                      <option value="Produk, Kain & Size">Produk, Kain & Size</option>
+                      <option value="Retur & Garansi">Retur & Garansi</option>
+                    </select>
                   </div>
                 ))}
               </div>
-              {editFaqs.length < 10 && <button onClick={() => setEditFaqs([...editFaqs, { id: String(Date.now()), question: "", answer: "", display_order: editFaqs.length }])} className="flex items-center gap-1.5 text-sm font-medium mb-4" style={{ color: "var(--gold)" }}><Plus size={14} /> Tambah</button>}
+              {editFaqs.length < 30 && <button onClick={() => setEditFaqs([...editFaqs, { id: String(Date.now()), question: "", answer: "", category: "", display_order: editFaqs.length }])} className="flex items-center gap-1.5 text-sm font-medium mb-4" style={{ color: "var(--gold)" }}><Plus size={14} /> Tambah</button>}
               <div className="flex gap-3"><button onClick={() => setEditModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-medium" style={{ border: "1px solid rgba(64,50,37,.15)" }}>Batal</button><button onClick={saveFaqs} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: "var(--gold)" }}>{saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null} Simpan</button></div>
             </motion.div>
           </motion.div>
