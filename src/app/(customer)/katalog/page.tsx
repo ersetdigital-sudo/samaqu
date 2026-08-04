@@ -267,10 +267,20 @@ function ProductCard({ product, index, wishlist, colorHex, totalStock }: { produ
           {product.jenis_kain?.name ? `Kain ${product.jenis_kain.name}` : product.kain ? `Kain ${product.kain}` : product.category}
         </p>
 
-        {/* Series (produk utama dengan beberapa series) — info tanpa memecah card */}
+        {/* Series — Konsep 2: info kecil di bawah kain, clean & premium */}
         {product.availableSeries && product.availableSeries.length > 1 && (
-          <p className="mt-1 text-[10.5px] font-ui line-clamp-1" style={{ color: "var(--stone)" }}>
-            {product.availableSeries.length} series · {product.availableSeries.join(" · ")}
+          <p className="mt-1.5 flex items-center gap-1.5 text-[10.5px] font-ui line-clamp-1" style={{ color: "var(--stone)" }}>
+            {/* Small series icon */}
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 opacity-60">
+              <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
+              <path d="m3.3 7 8.7 5 8.7-5" />
+              <path d="M12 22V12" />
+            </svg>
+            {product.availableSeries.length <= 3 ? (
+              <span>{product.availableSeries.join(" · ")}</span>
+            ) : (
+              <span>{product.availableSeries.slice(0, 2).join(" · ")} · +{product.availableSeries.length - 2}</span>
+            )}
           </p>
         )}
 
