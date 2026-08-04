@@ -36,7 +36,15 @@ function getDescription(product: Product): string {
 }
 
 /* ── Media renderer ── */
-function MediaDisplay({ item, poster, className, style, allMedia }: { item: MediaItem; poster?: string; className?: string; style?: React.CSSProperties; allMedia?: MediaItem[] }) {
+type GalleryMedia = MediaItem & { poster?: string };
+
+// Hapus media dengan URL yang sama (duplikat di data) — pertahankan urutan
+function dedupeByUrl(list: MediaItem[]): MediaItem[] {
+  const seen = new Set<string>();
+  return list.filter((m) => (seen.has(m.src) ? false : (seen.add(m.src), true)));
+}
+
+function MediaDisplay({ item, poster, className, style, allMedia }: { item: GalleryMedia; poster?: string; className?: string; style?: React.CSSProperties; allMedia?: MediaItem[] }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(false);
 
@@ -534,15 +542,34 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   }
 
   // Use Supabase images if available, otherwise fall back to static data
-  const baseMedia = supabaseMedia.length > 0
-    ? supabaseMedia
-    : (product.media.length > 0 ? product.media : [{ src: product.image, type: "image" as const }]);
+  const baseMedia = dedupeByUrl(
+    supabaseMedia.length > 0
+      ? supabaseMedia
+      : (product.media.length > 0 ? product.media : [{ src: product.image, type: "image" as const }])
+  );
   const media = selectedColor
     ? baseMedia.filter((m) => !m.color || m.color === selectedColor)
     : baseMedia;
   // True kalau produk punya foto spesifik per warna (relasi foto ↔ warna terisi)
   const hasPerColorMedia = baseMedia.some((m) => m.color);
-  const activeMedia = media[activeIndex] ?? { src: product.image, type: "image" as const };
+  // Setiap video diberi poster foto yang BEDA (hindari foto utama muncul 3×:
+  // poster utama + thumbnail video 1 + thumbnail video 2 semuanya foto pertama)
+  const usedPosters = new Set<string>();
+  const galleryMedia: GalleryMedia[] = media.map((m) => {
+    if (m.type !== "video") return m;
+    const poster = media.find((x) => x.type === "image" && !usedPosters.has(x.src))?.src || product.image;
+    usedPosters.add(poster);
+    return { ...m, poster };
+  });
+  const safeActiveIndex = Math.min(activeIndex, galleryMedia.length - 1);
+  const activeMedia = galleryMedia[safeActiveIndex] ?? { src: product.image, type: "image" as const };
+  // Thumbnail tidak memuat ulang item yang tampil sama dengan item aktif
+  // (bandingkan visual yang benar-benar dirender: poster utk video, src utk foto)
+  // supaya gambar utama tidak terduplikasi di strip thumbnail.
+  const activeVisualSrc = activeMedia.type === "video" ? activeMedia.poster || product.image : activeMedia.src;
+  const thumbnails = galleryMedia
+    .map((item, i) => ({ item, index: i }))
+    .filter(({ item }) => (item.type === "video" ? item.poster || product.image : item.src) !== activeVisualSrc);
 
   return (
     <section className="min-h-screen" style={{ background: "var(--cream)" }}>
@@ -562,13 +589,13 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               className="h-full flex overflow-x-auto snap-x snap-mandatory scrollbar-hide"
               onScroll={handleCarouselScroll}
             >
-              {media.map((item, i) => (
+              {galleryMedia.map((item, i) => (
                 <div
                   key={i}
                   className="relative shrink-0 w-full h-full snap-center cursor-zoom-in"
                   onClick={() => { setZoomIndex(i); setZoomOpen(true); }}
                 >
-                  <MediaDisplay item={item} poster={product.image} allMedia={media} className="absolute inset-0" />
+                  <MediaDisplay item={item} poster={item.poster || product.image} allMedia={galleryMedia} className="absolute inset-0" />
                   {product.tag && i === 0 && (
                     <span className="absolute top-4 left-4 px-2.5 py-1 text-[10px] tracking-[0.12em] uppercase font-ui font-medium rounded-sm z-10"
                       style={{ border: "1px solid var(--gold)", color: "var(--gold)", background: "rgba(248,246,242,.9)" }}>
@@ -874,7 +901,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             <div className="relative w-full aspect-[3/4] rounded-3xl overflow-hidden cursor-zoom-in" style={{ background: "#e8dfd1" }} onClick={() => { setZoomIndex(activeIndex); setZoomOpen(true); }}>
               <AnimatePresence mode="wait">
                 <motion.div key={activeIndex} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }} className="absolute inset-0">
-                  <MediaDisplay item={activeMedia} poster={product.image} allMedia={media} className="w-full h-full" />
+                  <MediaDisplay item={activeMedia} poster={activeMedia.poster || product.image} allMedia={galleryMedia} className="w-full h-full" />
                 </motion.div>
               </AnimatePresence>
               {/* Wishlist button - desktop */}
@@ -917,18 +944,17 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 ))}
               </div>
             )}
-            {/* Thumbnails */}
+            {/* Thumbnails — tanpa item yang sedang tampil (hindari gambar utama duplikat) */}
             {media.length > 1 && (
               <div className="mt-4 grid grid-cols-4 gap-2">
-                {media.map((item, i) => (
-                  <button key={i} onClick={() => setActiveIndex(i)}
+                {thumbnails.map(({ item, index }) => (
+                  <button key={index} onClick={() => setActiveIndex(index)}
                     className="relative aspect-square rounded-lg overflow-hidden transition-all duration-200"
-                    style={{ boxShadow: activeIndex === i ? "0 0 0 2px var(--espresso)" : "0 0 0 1px rgba(201,183,156,.3)" }}
-                    aria-label={`${item.type === "video" ? "Video" : "Foto"} ${i + 1}`}>
+                    style={{ boxShadow: activeIndex === index ? "0 0 0 2px var(--espresso)" : "0 0 0 1px rgba(201,183,156,.3)" }}
+                    aria-label={`${item.type === "video" ? "Video" : "Foto"} ${index + 1}`}>
                     {item.type === "video" ? (
                       <>
-                        <img src={media.find((m) => m.type === "image")?.src || product.image} alt="" className="w-full h-full object-cover" loading="lazy" />
-                        <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(0,0,0,.15)" }}>
+                        <div className="w-full h-full flex items-center justify-center" style={{ background: "rgba(232,223,209,.7)" }}>
                           <Play size={14} fill="var(--gold)" stroke="none" />
                         </div>
                       </>
@@ -1161,7 +1187,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           IMAGE/VIDEO ZOOM LIGHTBOX
       ══════════════════════════════════════════ */}
       <ImageZoom
-        media={media}
+        media={galleryMedia}
         initialIndex={zoomIndex}
         alt={product.name}
         isOpen={zoomOpen}

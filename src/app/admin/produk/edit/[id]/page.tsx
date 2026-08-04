@@ -196,6 +196,10 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
   const [activeSeriesTab, setActiveSeriesTab] = useState<string | null>(null);
   // Series duplikat (2+ row dgn nama series sama) yang terdeteksi saat load — informatif saja
   const [duplicateSeriesWarning, setDuplicateSeriesWarning] = useState<string[]>([]);
+  // Series yang benar-benar ter-load dari DB saat halaman dibuka — dipakai utk
+  // membatasi penghapusan saat save: hanya row yang sudah ada & dicabut checklist-nya
+  // yang dihapus, supaya hydrate yang gagal/parsial tidak menghapus data.
+  const [originalSelectedSeries, setOriginalSelectedSeries] = useState<string[]>([]);
 
   // Load existing product data
   useEffect(() => {
@@ -245,26 +249,37 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
             .order("created_at", { ascending: true });
 
           if (siblings && siblings.length > 0) {
-            // Multiple series products exist for this name
             const blocks: Record<string, SeriesBlock> = {};
             const seriesNames: string[] = [];
-            const seenSeries = new Set<string>();
             const duplicateSeries: string[] = [];
-
-            for (const sib of siblings) {
+            // Kelompokkan sibling per series (case-insensitive), urut paling lama dulu.
+            const rowQueue = [...siblings].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+            const rowsBySeries = new Map<string, typeof rowQueue>();
+            for (const sib of rowQueue) {
               if (!sib.series) continue;
-              // Dedupe: kalau ada 2+ row dgn series sama (duplikat data), pakai row
-              // yang paling lama (created_at pertama) & catat sebagai peringatan —
-              // jangan hapus otomatis, biar admin putuskan via laporan audit.
               const seriesKey = sib.series.toLowerCase();
-              if (seenSeries.has(seriesKey)) {
-                if (!duplicateSeries.includes(sib.series)) duplicateSeries.push(sib.series);
-                continue;
-              }
-              seenSeries.add(seriesKey);
-              seriesNames.push(sib.series);
+              const list = rowsBySeries.get(seriesKey) || [];
+              list.push(sib);
+              rowsBySeries.set(seriesKey, list);
+            }
 
-              // Fetch variants for this sibling
+            for (const [seriesKey, rows] of rowsBySeries) {
+              const label = rows[0].series;
+              if (rows.length > 1 && !duplicateSeries.includes(label)) duplicateSeries.push(label);
+              // Pilih row terbaik utk block: yang PUNYA varian (biar varian tidak
+              // "hilang" saat edit), kalau semua tanpa varian pakai row terlama.
+              let chosen = rows[0];
+              let chosenCount = 0;
+              const { count } = await supabase.from("product_variants").select("id", { count: "exact", head: true }).eq("product_id", chosen.id);
+              chosenCount = count || 0;
+              for (const row of rows) {
+                if (row === chosen) continue;
+                const { count: rowCount } = await supabase.from("product_variants").select("id", { count: "exact", head: true }).eq("product_id", row.id);
+                if ((rowCount || 0) > chosenCount) { chosen = row; chosenCount = rowCount || 0; }
+              }
+              const sib = chosen;
+
+              // Fetch variants for the chosen sibling
               const { data: sibVariants } = await supabase.from("product_variants").select("*").eq("product_id", sib.id);
               const colorGroups: Record<string, Variant> = {};
               if (sibVariants) {
@@ -274,13 +289,14 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
                 });
               }
 
-              // Fetch images for this sibling
+              // Fetch images for the chosen sibling
               const { data: sibImages } = await supabase.from("product_images").select("*").eq("product_id", sib.id).order("display_order");
               const sibMedia: MediaFile[] = sibImages ? sibImages.map((img: { id: string; url: string; is_video: boolean; color: string }) => ({
                 id: img.id, url: img.url, isVideo: img.is_video, color: img.color, preview: img.url, uploading: false,
               })) : [];
 
               const varList = Object.values(colorGroups);
+              seriesNames.push(sib.series);
               blocks[sib.series] = {
                 productId: sib.id,
                 price: String(sib.price || ""),
@@ -295,21 +311,29 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
               };
             }
 
-            setSelectedSeries(seriesNames);
-            setSeriesBlocks(blocks);
-            setDuplicateSeriesWarning(duplicateSeries);
-            // Set active tab to the current product's series
-            if (product.series && blocks[product.series]) {
-              setActiveSeriesTab(product.series);
+            // Kalau TIDAK ada satupun sibling yang punya nama series → jangan
+            // masuk mode multi-series (varian/stok jangan dikosongkan). Fall
+            // through ke load normal supaya produk dgn series null tetap diedit.
+            if (seriesNames.length === 0) {
+              setDuplicateSeriesWarning(duplicateSeries);
             } else {
-              setActiveSeriesTab(seriesNames[0] || null);
-            }
+              setSelectedSeries(seriesNames);
+              setOriginalSelectedSeries(seriesNames);
+              setSeriesBlocks(blocks);
+              setDuplicateSeriesWarning(duplicateSeries);
+              // Set active tab to the current product's series
+              if (product.series && blocks[product.series]) {
+                setActiveSeriesTab(product.series);
+              } else {
+                setActiveSeriesTab(seriesNames[0] || null);
+              }
 
-            // Don't load into global states for Thobe
-            setVariants([]);
-            setMedia([]);
-            setLoading(false);
-            return;
+              // Don't load into global states for Thobe
+              setVariants([]);
+              setMedia([]);
+              setLoading(false);
+              return;
+            }
           }
         }
 
@@ -670,13 +694,16 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
         }
 
         // Hapus row produk Thobe senama (nama sekarang + nama asli untuk kasus
-        // rename) yang series-nya TIDAK dicentang lagi. Duplikat (series sama,
-        // ID berbeda) tidak dihapus otomatis — keputusan ada di laporan audit.
+        // rename) yang series-nya TIDAK dicentang lagi. Hanya row yang SEMULA
+        // ter-load (originalSelectedSeries) yang boleh dihapus — row lain (mis.
+        // series yang sempat gagal di-hydrate) TIDAK disentuh, supaya edit yang
+        // tidak disengaja tidak menghapus data. Duplikat (series sama, ID berbeda)
+        // tidak dihapus otomatis — keputusan ada di laporan audit.
         const namesToCheck = Array.from(new Set([name, originalName].filter(Boolean)));
         const { data: oldSiblings } = await supabase.from("products").select("id, series").eq("category", "Thobe").in("name", namesToCheck);
         if (oldSiblings) {
           for (const old of oldSiblings) {
-            if (!old.series || !selectedSeries.includes(old.series)) {
+            if (old.series && originalSelectedSeries.includes(old.series) && !selectedSeries.includes(old.series)) {
               await supabase.from("product_variants").delete().eq("product_id", old.id);
               await supabase.from("product_images").delete().eq("product_id", old.id);
               await supabase.from("products").delete().eq("id", old.id);
