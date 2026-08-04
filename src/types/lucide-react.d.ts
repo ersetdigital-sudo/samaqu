@@ -47,6 +47,7 @@ declare module "lucide-react" {
   export const RotateCcw: FC<IconProps>;
   export const Ruler: FC<IconProps>;
   export const Quote: FC<IconProps>;
+  export const Sparkles: FC<IconProps>;
   export const Shirt: FC<IconProps>;
   export const Heart: FC<IconProps>;
   export const Headphones: FC<IconProps>;
@@ -72,4 +73,23 @@ declare module "lucide-react" {
   export const XCircle: FC<IconProps>;
   export const ZoomIn: FC<IconProps>;
   export const ZoomOut: FC<IconProps>;
+  // Dashboard agency icons
+  export const Repeat: FC<IconProps>;
+  export const BarChart3: FC<IconProps>;
+  export const MessageSquare: FC<IconProps>;
+  export const Users2: FC<IconProps>;
+  export const Megaphone: FC<IconProps>;
+  export const Layers: FC<IconProps>;
+  export const ClipboardList: FC<IconProps>;
+  export const CreditCard: FC<IconProps>;
+  export const Puzzle: FC<IconProps>;
+  export const HelpCircle: FC<IconProps>;
+  export const Download: FC<IconProps>;
+  export const MoreHorizontal: FC<IconProps>;
+  export const ArrowUpRight: FC<IconProps>;
+  export const Trophy: FC<IconProps>;
+  export const Target: FC<IconProps>;
+  export const Moon: FC<IconProps>;
+  export const Sun: FC<IconProps>;
+  export type LucideIcon = FC<IconProps>;
 }
