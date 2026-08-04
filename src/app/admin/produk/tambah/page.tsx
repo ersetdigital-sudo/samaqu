@@ -10,6 +10,7 @@ import {
 import { supabase } from "@/lib/supabase";
 import AdminShell from "@/components/AdminShell";
 import JenisKainForm from "@/components/JenisKainForm";
+import PresetColorPicker from "@/components/PresetColorPicker";
 import { colorMap } from "@/lib/katalog-data";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import { useStoreSettings } from "@/lib/store-settings";
@@ -78,9 +79,7 @@ export default function TambahProdukPage() {
   const [showNewSeries, setShowNewSeries] = useState(false);
   const [newSeriesName, setNewSeriesName] = useState("");
 
-  // Warna custom (hex picker bebas ala editor HTML)
-  const [customHex, setCustomHex] = useState("#141414");
-  const [customColorName, setCustomColorName] = useState("");
+  // Warna custom dikelola di dalam PresetColorPicker (state lokal komponen)
 
   // Jenis Kain list
   const [jenisKainList, setJenisKainList] = useState<{ id: string; name: string }[]>([]);
@@ -141,15 +140,6 @@ export default function TambahProdukPage() {
     if (variants.find((v) => v.color === color)) return;
     setVariants([...variants, { color, hex: hex || colorMap[color] || "#141414", sizes: [{ size: "M", stock: 0, priceOverride: "", sku: "" }] }]);
     setActiveColor(color);
-  }
-
-  // Tambah warna custom (hex bebas)
-  function addCustomColor() {
-    const nama = customColorName.trim();
-    if (!nama) { alert("Nama warna wajib diisi."); return; }
-    if (variants.find((v) => v.color.toLowerCase() === nama.toLowerCase())) { alert(`Warna "${nama}" sudah ada.`); return; }
-    addColor(nama, customHex);
-    setCustomColorName("");
   }
 
   // Tambah series baru → simpan ke Supabase
@@ -1053,13 +1043,7 @@ export default function TambahProdukPage() {
                         <button onClick={(e) => { e.stopPropagation(); removeColor(v.color); }} className="ml-1 hover:opacity-60"><X size={12} /></button>
                       </button>
                     ))}
-                    <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-full text-xs" style={{ border: "1px dashed rgba(201,183,156,.4)", color: "var(--gold)" }}>
-                      <input type="color" value={customHex} onChange={(e) => setCustomHex(e.target.value)} className="w-6 h-6 rounded-full border-0 cursor-pointer p-0 bg-transparent" title="Pilih warna" />
-                      <input value={customColorName} onChange={(e) => setCustomColorName(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustomColor(); } }}
-                        placeholder="Nama warna…" className="w-[110px] bg-transparent outline-none text-xs" style={{ color: "var(--espresso)" }} />
-                      <button type="button" onClick={addCustomColor} className="font-semibold hover:opacity-70">+</button>
-                    </div>
+                    <PresetColorPicker existing={variants.map((v) => v.color)} onAdd={addColor} />
                   </div>
                   {activeVariant && (
                     <div className="space-y-3">
