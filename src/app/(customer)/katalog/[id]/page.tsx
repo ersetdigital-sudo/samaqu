@@ -378,16 +378,18 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const [isCustomPrice, setIsCustomPrice] = useState(false);
   const [customPriceError, setCustomPriceError] = useState("");
 
-  // Initialize selectedPrice when product loads (always sync with minimumPrice)
+  // Initialize selectedPrice when product loads (default to recommended, fallback to minimum)
   useEffect(() => {
     if (product && isCYP && minimumPrice > 0) {
-      setSelectedPrice(minimumPrice);
-      console.log("[CYP] Initialized selectedPrice:", minimumPrice);
+      const initialPrice = recommendedPrice && recommendedPrice > minimumPrice ? recommendedPrice : minimumPrice;
+      setSelectedPrice(initialPrice);
+      console.log("[CYP] Initialized selectedPrice:", initialPrice, "(recommended:", recommendedPrice, "minimum:", minimumPrice, ")");
     }
-  }, [product?.id, isCYP, minimumPrice]);
+  }, [product?.id, isCYP, minimumPrice, recommendedPrice]);
 
-  // Price to use for cart/checkout — fallback to minimumPrice if selectedPrice is 0
-  const effectivePrice = isCYP ? (selectedPrice || minimumPrice) : currentPrice;
+  // Price to use for cart/checkout — fallback to recommendedPrice, then minimumPrice
+  const defaultCYPPrice = recommendedPrice && recommendedPrice > minimumPrice ? recommendedPrice : minimumPrice;
+  const effectivePrice = isCYP ? (selectedPrice || defaultCYPPrice) : currentPrice;
 
   // Quick select options — 3 choices: Minimum, Recommended, Custom
   const quickPrices = isCYP && minimumPrice > 0 ? [
@@ -432,7 +434,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
   function handleAddToCart() {
     if (!product) return;
-    const finalCYPPrice = selectedPrice || minimumPrice;
+    const finalCYPPrice = selectedPrice || defaultCYPPrice;
     if (isCYP && finalCYPPrice < minimumPrice) return;
     if (isOutOfStock) { toast.show("Stok habis — produk ini tidak dapat ditambahkan"); return; }
     if (stockExceeded) { toast.show(`Stok hanya tersisa ${stock} pcs untuk varian ini`); return; }
