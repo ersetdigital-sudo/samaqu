@@ -1,14 +1,28 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Edit, Trash2, X, Star, Loader2, CheckCircle, Upload } from "lucide-react";
+import { Plus, Edit, Trash2, X, Star, Loader2, CheckCircle, Upload, Search } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/AdminToast";
 import ConfirmModal from "@/components/ConfirmModal";
 import AdminShell from "@/components/AdminShell";
 
 const CATEGORIES = ["Thobe", "Kandora", "Koko", "Vest", "Kabak", "Cover & Hanger"] as const;
+
+interface Product {
+  id: string;
+  name: string;
+  category: string;
+  series: string | null;
+  jenis_kain_id: string | null;
+}
+
+interface SeriesOption {
+  id: string;
+  series: string;
+  price: number;
+}
 
 interface Testimoni {
   id: string;
@@ -21,7 +35,14 @@ interface Testimoni {
   image_url: string | null;
   video_url: string | null;
   caption: string | null;
+  product_id: string | null;
+  series_name: string | null;
   created_at: string;
+}
+
+interface TestimoniWithProduct extends Testimoni {
+  product_name?: string;
+  product_category?: string;
 }
 
 const DEFAULT_FORM = {
@@ -34,21 +55,41 @@ const DEFAULT_FORM = {
   image_url: "",
   video_url: "",
   caption: "",
+  product_id: "",
+  series_name: "",
 };
 
 export default function AdminTestimoniPage() {
-  const [testimonials, setTestimonials] = useState<Testimoni[]>([]);
+  const [testimonials, setTestimonials] = useState<TestimoniWithProduct[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [availableSeries, setAvailableSeries] = useState<SeriesOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [editModal, setEditModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(DEFAULT_FORM);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [productSearch, setProductSearch] = useState("");
+  const [showProductDropdown, setShowProductDropdown] = useState(false);
   const [confirmModal, setConfirmModal] = useState<{ open: boolean; onConfirm: () => void }>({ open: false, onConfirm: () => {} });
   const toast = useToast();
 
   const CLOUDINARY_CLOUD = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD || "dgtixuop0";
   const CLOUDINARY_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_PRESET || "samaqu_unsigned";
+
+  // Filter products based on search
+  const filteredProducts = useMemo(() => {
+    if (!productSearch.trim()) return products.slice(0, 20);
+    const q = productSearch.toLowerCase();
+    return products.filter((p) =>
+      p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q)
+    ).slice(0, 20);
+  }, [products, productSearch]);
+
+  // Get selected product name
+  const selectedProduct = useMemo(() => {
+    return products.find((p) => p.id === form.product_id);
+  }, [products, form.product_id]);
 
   async function handleMediaUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -80,22 +121,74 @@ export default function AdminTestimoniPage() {
   }
 
   useEffect(() => {
-    fetchTestimonials();
+    loadData();
   }, []);
 
-  async function fetchTestimonials() {
-    const { data } = await supabase.from("testimonials").select("*").order("created_at", { ascending: false });
-    if (data) setTestimonials(data as Testimoni[]);
+  async function loadData() {
+    setLoading(true);
+    const [testimonialsRes, productsRes] = await Promise.all([
+      supabase.from("testimonials").select("*").order("created_at", { ascending: false }),
+      supabase.from("products").select("id, name, category, series, jenis_kain_id").order("name"),
+    ]);
+    if (testimonialsRes.data) {
+      // Join product names
+      const productsMap = new Map((productsRes.data || []).map((p) => [p.id, p]));
+      const enriched = (testimonialsRes.data as Testimoni[]).map((t) => ({
+        ...t,
+        product_name: t.product_id ? productsMap.get(t.product_id)?.name : undefined,
+        product_category: t.product_id ? productsMap.get(t.product_id)?.category : undefined,
+      }));
+      setTestimonials(enriched);
+    }
+    if (productsRes.data) setProducts(productsRes.data as Product[]);
     setLoading(false);
   }
+
+  // Fetch series when product changes
+  useEffect(() => {
+    if (!form.product_id) {
+      setAvailableSeries([]);
+      return;
+    }
+    async function fetchSeries() {
+      const product = products.find((p) => p.id === form.product_id);
+      if (!product) return;
+
+      // If product has jenis_kain_id, fetch series from other products with same jenis_kain_id
+      if (product.jenis_kain_id) {
+        const { data } = await supabase
+          .from("products")
+          .select("id, name, series, price")
+          .eq("jenis_kain_id", product.jenis_kain_id)
+          .not("series", "is", null)
+          .order("name");
+        if (data) {
+          const seriesMap = new Map<string, SeriesOption>();
+          data.forEach((p) => {
+            if (p.series && !seriesMap.has(p.series)) {
+              seriesMap.set(p.series, { id: p.id, series: p.series, price: p.price });
+            }
+          });
+          setAvailableSeries(Array.from(seriesMap.values()));
+        }
+      } else if (product.series) {
+        // Product has a direct series field
+        setAvailableSeries([{ id: product.id, series: product.series, price: 0 }]);
+      } else {
+        setAvailableSeries([]);
+      }
+    }
+    fetchSeries();
+  }, [form.product_id, products]);
 
   function openAdd() {
     setEditingId(null);
     setForm({ ...DEFAULT_FORM });
+    setProductSearch("");
     setEditModal(true);
   }
 
-  function openEdit(t: Testimoni) {
+  function openEdit(t: TestimoniWithProduct) {
     setEditingId(t.id);
     setForm({
       customer_name: t.customer_name,
@@ -107,7 +200,10 @@ export default function AdminTestimoniPage() {
       image_url: t.image_url || "",
       video_url: t.video_url || "",
       caption: t.caption || "",
+      product_id: t.product_id || "",
+      series_name: t.series_name || "",
     });
+    setProductSearch(t.product_name || "");
     setEditModal(true);
   }
 
@@ -118,35 +214,29 @@ export default function AdminTestimoniPage() {
     }
     setSaving(true);
     try {
+      const dataToSave = {
+        customer_name: form.customer_name,
+        content: form.content,
+        rating: form.rating,
+        category: form.category,
+        type: form.type,
+        verified: form.verified,
+        image_url: form.image_url || null,
+        video_url: form.video_url || null,
+        caption: form.caption || null,
+        product_id: form.product_id || null,
+        series_name: form.series_name || null,
+      };
+
       if (editingId) {
-        await supabase.from("testimonials").update({
-          customer_name: form.customer_name,
-          content: form.content,
-          rating: form.rating,
-          category: form.category,
-          type: form.type,
-          verified: form.verified,
-          image_url: form.image_url || null,
-          video_url: form.video_url || null,
-          caption: form.caption || null,
-        }).eq("id", editingId);
+        await supabase.from("testimonials").update(dataToSave).eq("id", editingId);
         toast.showToast("success", "Testimoni berhasil diupdate");
       } else {
-        await supabase.from("testimonials").insert({
-          customer_name: form.customer_name,
-          content: form.content,
-          rating: form.rating,
-          category: form.category,
-          type: form.type,
-          verified: form.verified,
-          image_url: form.image_url || null,
-          video_url: form.video_url || null,
-          caption: form.caption || null,
-        });
+        await supabase.from("testimonials").insert(dataToSave);
         toast.showToast("success", "Testimoni berhasil ditambahkan");
       }
       setEditModal(false);
-      fetchTestimonials();
+      loadData();
     } catch {
       toast.showToast("error", "Gagal menyimpan testimoni");
     }
@@ -192,12 +282,29 @@ export default function AdminTestimoniPage() {
                 <div className="flex items-center gap-2 mb-1">
                   <p className="text-sm font-semibold truncate" style={{ color: "var(--espresso)" }}>{t.customer_name}</p>
                   {t.verified && <CheckCircle size={12} style={{ color: "var(--gold)" }} />}
-                  <span className="text-[10px] uppercase px-1.5 py-0.5 rounded-full" style={{ background: "rgba(181,140,74,.08)", color: "var(--gold)" }}>{t.category}</span>
                 </div>
+                {/* Product info */}
+                {t.product_name && (
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <span className="text-[11px] px-2 py-0.5 rounded-full font-medium" style={{ background: "rgba(181,140,74,.08)", color: "var(--gold)" }}>
+                      {t.product_name}
+                    </span>
+                    {t.series_name && (
+                      <span className="text-[11px] px-2 py-0.5 rounded-full font-medium" style={{ background: "rgba(42,33,27,.06)", color: "var(--stone)" }}>
+                        {t.series_name}
+                      </span>
+                    )}
+                  </div>
+                )}
                 <div className="flex gap-0.5 mb-1.5">
                   {Array.from({ length: 5 }, (_, i) => <Star key={i} size={12} fill={i < t.rating ? "var(--gold)" : "none"} stroke="var(--gold)" />)}
                 </div>
-                <p className="text-[13px] leading-relaxed" style={{ color: "var(--text-secondary)" }}>{t.content}</p>
+                <p className="text-[13px] leading-relaxed line-clamp-2" style={{ color: "var(--text-secondary)" }}>{t.content}</p>
+                {t.image_url && (
+                  <div className="mt-2 flex gap-2">
+                    <img src={t.image_url} alt="" className="w-12 h-12 rounded-lg object-cover" />
+                  </div>
+                )}
               </div>
               <div className="flex gap-2 shrink-0">
                 <button onClick={() => openEdit(t)} className="p-2 rounded-lg hover:bg-[var(--bg-tertiary)]" style={{ color: "var(--text-muted)" }}><Edit size={16} /></button>
@@ -244,6 +351,75 @@ export default function AdminTestimoniPage() {
                     </select>
                   </div>
                 </div>
+
+                {/* Product Selector */}
+                <div>
+                  <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Produk yang direview (opsional)</label>
+                  <div className="relative">
+                    <div className="flex items-center gap-2 rounded-xl px-4 py-3" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white" }}>
+                      <Search size={16} style={{ color: "var(--text-muted)" }} />
+                      <input
+                        value={productSearch}
+                        onChange={(e) => {
+                          setProductSearch(e.target.value);
+                          setShowProductDropdown(true);
+                          if (!e.target.value) setForm({ ...form, product_id: "", series_name: "" });
+                        }}
+                        onFocus={() => setShowProductDropdown(true)}
+                        placeholder="Cari nama produk..."
+                        className="flex-1 text-sm outline-none"
+                        style={{ color: "var(--espresso)" }}
+                      />
+                      {form.product_id && (
+                        <button onClick={() => { setForm({ ...form, product_id: "", series_name: "" }); setProductSearch(""); }} className="p-1">
+                          <X size={14} style={{ color: "var(--text-muted)" }} />
+                        </button>
+                      )}
+                    </div>
+                    {showProductDropdown && filteredProducts.length > 0 && (
+                      <div className="absolute z-10 w-full mt-1 rounded-xl max-h-48 overflow-y-auto" style={{ background: "white", border: "1px solid rgba(64,50,37,.15)", boxShadow: "0 4px 12px rgba(0,0,0,.1)" }}>
+                        {filteredProducts.map((p) => (
+                          <button
+                            key={p.id}
+                            onClick={() => {
+                              setForm({ ...form, product_id: p.id, category: p.category, series_name: "" });
+                              setProductSearch(p.name);
+                              setShowProductDropdown(false);
+                            }}
+                            className="w-full text-left px-4 py-2.5 text-sm hover:bg-[var(--bg-secondary)] transition-colors"
+                            style={{ borderBottom: "1px solid rgba(64,50,37,.06)" }}
+                          >
+                            <span style={{ color: "var(--espresso)" }}>{p.name}</span>
+                            <span className="ml-2 text-[11px]" style={{ color: "var(--text-muted)" }}>— {p.category}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {selectedProduct && (
+                    <p className="mt-1 text-[11px]" style={{ color: "var(--text-muted)" }}>
+                      Dipilih: {selectedProduct.name} — {selectedProduct.category}
+                    </p>
+                  )}
+                </div>
+
+                {/* Series Selector (depend on product) */}
+                {availableSeries.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Series (opsional)</label>
+                    <select
+                      value={form.series_name}
+                      onChange={(e) => setForm({ ...form, series_name: e.target.value })}
+                      className="w-full rounded-xl px-4 py-3 text-sm outline-none appearance-none"
+                      style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }}
+                    >
+                      <option value="">Tanpa Series</option>
+                      {availableSeries.map((s) => (
+                        <option key={s.id} value={s.series}>{s.series}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
                 {/* Media upload */}
                 <div>
