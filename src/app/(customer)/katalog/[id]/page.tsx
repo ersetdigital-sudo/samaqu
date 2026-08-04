@@ -644,12 +644,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           </p>
           <h1 className="text-[1.5rem] sm:text-[1.8rem] font-semibold leading-tight mb-1.5"
             style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
-              {product.name}{product.jenis_kain?.name ? <span style={{ color: "var(--gold)" }}> — Kain {product.jenis_kain.name}</span> : product.kain ? <span style={{ color: "var(--gold)" }}> — Kain {product.kain}</span> : product.series ? <span style={{ color: "var(--gold)" }}> — {product.series}</span> : selectedColor && selectedColor !== "default" ? <span style={{ color: "var(--gold)" }}> — {selectedColor}</span> : null}
+              {product.name}{product.category === "Koko" ? (selectedColor && selectedColor !== "default" ? <span style={{ color: "var(--gold)" }}> - {selectedColor}</span> : null) : product.jenis_kain?.name ? <span style={{ color: "var(--gold)" }}> — Kain {product.jenis_kain.name}</span> : product.kain ? <span style={{ color: "var(--gold)" }}> — Kain {product.kain}</span> : product.series ? <span style={{ color: "var(--gold)" }}> — {product.series}</span> : selectedColor && selectedColor !== "default" ? <span style={{ color: "var(--gold)" }}> — {selectedColor}</span> : null}
           </h1>
           <p className="text-[13px] font-ui mb-5" style={{ color: "var(--stone)" }}>
-            {product.jenis_kain?.name && <span>Jenis kain <span style={{ color: "var(--gold)" }}>{product.jenis_kain.name}</span></span>}
-            {!product.jenis_kain?.name && product.kain && <span>Jenis kain <span style={{ color: "var(--gold)" }}>{product.kain}</span></span>}
-            {(product.jenis_kain?.name || product.kain) && " · "}
+            {product.category !== "Koko" && product.jenis_kain?.name && <span>Jenis kain <span style={{ color: "var(--gold)" }}>{product.jenis_kain.name}</span></span>}
+            {product.category !== "Koko" && !product.jenis_kain?.name && product.kain && <span>Jenis kain <span style={{ color: "var(--gold)" }}>{product.kain}</span></span>}
+            {product.category !== "Koko" && (product.jenis_kain?.name || product.kain) && " · "}
             <span style={{ color: "var(--gold)" }}>{product.category}</span>
             {" · ready stock"}
           </p>
@@ -972,12 +972,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             </p>
             <h1 className="text-[2rem] sm:text-[2.5rem] lg:text-[2.8rem] font-semibold leading-tight mb-2"
               style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
-            {product.name}{product.jenis_kain?.name ? <span style={{ color: "var(--gold)" }}> — Kain {product.jenis_kain.name}</span> : product.kain ? <span style={{ color: "var(--gold)" }}> — Kain {product.kain}</span> : product.series ? <span style={{ color: "var(--gold)" }}> — {product.series}</span> : selectedColor && selectedColor !== "default" ? <span style={{ color: "var(--gold)" }}> — {selectedColor}</span> : null}
+            {product.name}{product.category === "Koko" ? (selectedColor && selectedColor !== "default" ? <span style={{ color: "var(--gold)" }}> - {selectedColor}</span> : null) : product.jenis_kain?.name ? <span style={{ color: "var(--gold)" }}> — Kain {product.jenis_kain.name}</span> : product.kain ? <span style={{ color: "var(--gold)" }}> — Kain {product.kain}</span> : product.series ? <span style={{ color: "var(--gold)" }}> — {product.series}</span> : selectedColor && selectedColor !== "default" ? <span style={{ color: "var(--gold)" }}> — {selectedColor}</span> : null}
             </h1>
             <p className="text-[13px] font-ui mb-6" style={{ color: "var(--stone)" }}>
-              {product.jenis_kain?.name && <span>Jenis kain <span style={{ color: "var(--gold)" }}>{product.jenis_kain.name}</span></span>}
-              {!product.jenis_kain?.name && product.kain && <span>Jenis kain <span style={{ color: "var(--gold)" }}>{product.kain}</span></span>}
-              {(product.jenis_kain?.name || product.kain) && " · "}
+              {product.category !== "Koko" && product.jenis_kain?.name && <span>Jenis kain <span style={{ color: "var(--gold)" }}>{product.jenis_kain.name}</span></span>}
+              {product.category !== "Koko" && !product.jenis_kain?.name && product.kain && <span>Jenis kain <span style={{ color: "var(--gold)" }}>{product.kain}</span></span>}
+              {product.category !== "Koko" && (product.jenis_kain?.name || product.kain) && " · "}
               <span style={{ color: "var(--gold)" }}>{product.category}</span>
               {" · ready stock"}
             </p>
