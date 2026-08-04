@@ -1,12 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion, Variants } from "framer-motion";
 import { ChevronDown } from "lucide-react";
-import { supabase } from "@/lib/supabase";
 
-/* ─── Default Data ─── */
-const DEFAULT_FAQS = [
+/* ─── Hardcoded Data (homepage only) ─── */
+const HOME_FAQS = [
   {
     q: "Bagaimana cara memesan produk SAMAQU?",
     a: "Pilih produk dari katalog, cek panduan size, lalu klik tombol WhatsApp untuk menghubungi admin. Admin akan membantu konfirmasi ketersediaan hingga pembayaran.",
@@ -17,7 +16,7 @@ const DEFAULT_FAQS = [
   },
   {
     q: "Bagaimana jika saya ragu memilih ukuran?",
-    a: "Gunakan panduan size kami sebagai acuan awal. Jika masih ragu, cukup chat admin dengan menyebutkan tinggi dan postur tubuhmu — kami bantu menentukan ukuran yang paling pas.",
+    a: "Gunakan panduan size kami sebagai acuan awal. Jika masih ragu, cukup chat admin dengan menyebutkan tinggi dan postur tubuhmu — kami bantu menentukan ukuran yang paling sesuai.",
   },
   {
     q: "Apakah bisa pesan dalam jumlah banyak / grosir?",
@@ -61,7 +60,7 @@ function FaqItem({
   onToggle,
 }: {
   index: number;
-  item: (typeof DEFAULT_FAQS)[number];
+  item: (typeof HOME_FAQS)[number];
   isOpen: boolean;
   onToggle: () => void;
 }) {
@@ -137,17 +136,6 @@ function FaqItem({
 /* ─── Section ─── */
 export default function Faq() {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
-  const [faqs, setFaqs] = useState(DEFAULT_FAQS);
-
-  useEffect(() => {
-    async function fetch() {
-      try {
-        const { data } = await supabase.from("faq_items").select("*").order("display_order");
-        if (data && data.length > 0) setFaqs(data.map((f: { question: string; answer: string }) => ({ q: f.question, a: f.answer })));
-      } catch { /* use defaults */ }
-    }
-    fetch();
-  }, []);
 
   return (
     <section
@@ -217,7 +205,7 @@ export default function Faq() {
               viewport={{ once: true, margin: "-60px" }}
               variants={containerVariants}
             >
-              {faqs.map((item, i) => (
+              {HOME_FAQS.map((item, i) => (
                 <FaqItem
                   key={i}
                   index={i}
