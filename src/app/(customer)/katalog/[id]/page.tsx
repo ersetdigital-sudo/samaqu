@@ -201,6 +201,10 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const [zoomIndex, setZoomIndex] = useState(0);
   const [availableSeries, setAvailableSeries] = useState<SeriesOption[]>([]);
   const [activeSeriesId, setActiveSeriesId] = useState<string | null>(null);
+  // Series yang sedang dimuat datanya — dipakai untuk skip refetch ganda
+  // (mount & klik series yang sama), TANPA menghalangi reload saat kembali
+  // ke series dasar (id URL) yang state-nya sudah berganti.
+  const loadedSeriesIdRef = useRef<string | null>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
   const mobileGalleryRef = useRef<HTMLDivElement>(null);
   const [galleryHighlight, setGalleryHighlight] = useState(false);
@@ -231,6 +235,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     getProductById(id).then((p) => {
       setProduct(p);
       setActiveSeriesId(id);
+      loadedSeriesIdRef.current = id;
       if (p) {
         // Warna hex tersimpan (hex bebas dari admin) → fallback colorMap
         supabase.from("product_variants").select("color, hex").eq("product_id", id).then(({ data }) => {
@@ -266,7 +271,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
   // Fetch new product data when activeSeriesId changes (without navigating)
   useEffect(() => {
-    if (!activeSeriesId || activeSeriesId === id) return;
+    // Skip refetch hanya jika produk tersebut memang sudah dimuat (ref),
+    // bukan karena id-nya sama dengan slug URL — kembalinya ke series dasar
+    // TETAP harus me-refresh foto & data (fix bug: foto tidak berganti).
+    if (!activeSeriesId || loadedSeriesIdRef.current === activeSeriesId) return;
+    loadedSeriesIdRef.current = activeSeriesId;
     getProductById(activeSeriesId).then((p) => {
       if (p) {
         setProduct(p);
