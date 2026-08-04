@@ -484,7 +484,7 @@ export default function FaqPage() {
                   );
                 })
               ) : (
-                /* No FAQs at all - show all FAQs in a single list */
+                /* No categorized FAQs - show all in a single list */
                 faqs.length > 0 && (
                   <div>
                     <div className="flex items-center gap-2.5 mb-4">
