@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { colorMap } from "@/lib/katalog-data";
 import AdminShell from "@/components/AdminShell";
 import JenisKainForm from "@/components/JenisKainForm";
+import PresetColorPicker from "@/components/PresetColorPicker";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import { useStoreSettings } from "@/lib/store-settings";
 
@@ -174,9 +175,7 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
   const [showNewSeries, setShowNewSeries] = useState(false);
   const [newSeriesName, setNewSeriesName] = useState("");
 
-  // Warna custom (hex picker bebas ala editor HTML)
-  const [customHex, setCustomHex] = useState("#141414");
-  const [customColorName, setCustomColorName] = useState("");
+  // Warna custom dikelola di dalam PresetColorPicker (state lokal komponen)
 
   // Create Your Price
   const [cypEnabled, setCypEnabled] = useState(false);
@@ -385,15 +384,6 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
     if (variants.find((v) => v.color === color)) return;
     setVariants([...variants, { color, hex: hex || colorMap[color] || "#141414", sizes: [{ size: "M", stock: 0, priceOverride: "", sku: "" }] }]);
     setActiveColor(color);
-  }
-
-  // Tambah warna custom (hex bebas)
-  function addCustomColor() {
-    const nama = customColorName.trim();
-    if (!nama) { alert("Nama warna wajib diisi."); return; }
-    if (variants.find((v) => v.color.toLowerCase() === nama.toLowerCase())) { alert(`Warna "${nama}" sudah ada.`); return; }
-    addColor(nama, customHex);
-    setCustomColorName("");
   }
 
   // Tambah series baru → simpan ke Supabase (defined in Thobe multi-series helpers below)
@@ -876,7 +866,7 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
                 {errors.variants && <p className="text-[12px] mb-3" style={{ color: "#e74c3c" }}>{errors.variants}</p>}
                 <div className="flex flex-wrap gap-2 mb-4">
                   {variants.map((v) => (<button key={v.color} onClick={() => { setActiveColor(v.color); setPreviewIndex(0); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all" style={{ background: activeColor === v.color ? "var(--espresso)" : "transparent", color: activeColor === v.color ? "var(--cream)" : "var(--coffee)", border: `1px solid ${activeColor === v.color ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}><span className="w-3 h-3 rounded-full" style={{ background: v.hex || colorMap[v.color] || "#ccc", border: "1px solid rgba(42,33,27,.1)" }} />{v.color}<button onClick={(e) => { e.stopPropagation(); removeColor(v.color); }} className="ml-1 hover:opacity-60"><X size={12} /></button></button>))}
-                  <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-full text-xs" style={{ border: "1px dashed rgba(201,183,156,.4)", color: "var(--gold)" }}><input type="color" value={customHex} onChange={(e) => setCustomHex(e.target.value)} className="w-6 h-6 rounded-full border-0 cursor-pointer p-0 bg-transparent" /><input value={customColorName} onChange={(e) => setCustomColorName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustomColor(); } }} placeholder="Nama warna…" className="w-[110px] bg-transparent outline-none text-xs" style={{ color: "var(--espresso)" }} /><button type="button" onClick={addCustomColor} className="font-semibold hover:opacity-70">+</button></div>
+                  <PresetColorPicker existing={variants.map((v) => v.color)} onAdd={addColor} />
                 </div>
                 {activeVariant && (<div className="space-y-3"><p className="text-sm font-medium" style={{ color: "var(--espresso)" }}>Ukuran untuk <span style={{ color: "var(--gold)" }}>{activeColor}</span></p>
                   <div className="grid grid-cols-[72px_80px_112px_112px_36px] gap-2 text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}><span>Ukuran</span><span>Stok</span><span>Harga Khusus</span><span>SKU</span><span></span></div>
