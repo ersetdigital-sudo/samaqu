@@ -111,7 +111,7 @@ export default function FaqPage() {
   useEffect(() => {
     async function fetchFaqs() {
       try {
-        const { data, error } = await supabase.from("faq_items").select("*").eq("is_active", true).order("display_order");
+        const { data, error } = await supabase.from("faq_items").select("*").eq("is_active", true).eq("type", "full").order("display_order");
         if (error) {
           console.error("[FAQ] Fetch error:", error);
         }

@@ -19,7 +19,7 @@ interface CategoryImage { id: string; name: string; description: string; image_u
 interface OrderStep { id: string; step_number: number; title: string; description: string; }
 interface GaransiItem { id: string; title: string; description: string; display_order: number; }
 interface TrustBadge { id: string; label: string; display_order: number; }
-interface FaqItem { id: string; question: string; answer: string; category: string; display_order: number; }
+interface FaqItem { id: string; question: string; answer: string; category: string; type: string; display_order: number; }
 interface MarqueeItem { id: string; label: string; display_order: number; }
 
 export default function KontenWebsitePage() {
@@ -29,6 +29,7 @@ export default function KontenWebsitePage() {
   const [garansi, setGaransi] = useState<GaransiItem[]>([]);
   const [badges, setBadges] = useState<TrustBadge[]>([]);
   const [faqs, setFaqs] = useState<FaqItem[]>([]);
+  const [homeFaqs, setHomeFaqs] = useState<FaqItem[]>([]);
   const [marquee, setMarquee] = useState<MarqueeItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [editModal, setEditModal] = useState<string | null>(null);
@@ -70,13 +71,14 @@ export default function KontenWebsitePage() {
 
   async function loadData() {
     setLoading(true);
-    const [heroRes, catRes, stepsRes, garansiRes, badgesRes, faqsRes, marqueeRes] = await Promise.all([
+    const [heroRes, catRes, stepsRes, garansiRes, badgesRes, faqsRes, homeFaqsRes, marqueeRes] = await Promise.all([
       supabase.from("hero_content").select("*").eq("id", 1).single(),
       supabase.from("category_images").select("*").order("display_order"),
       supabase.from("order_steps").select("*").order("step_number"),
       supabase.from("garansi_items").select("*").order("display_order"),
       supabase.from("trust_badges").select("*").order("display_order"),
-      supabase.from("faq_items").select("*").order("display_order"),
+      supabase.from("faq_items").select("*").eq("type", "full").order("display_order"),
+      supabase.from("faq_items").select("*").eq("type", "home").order("display_order"),
       supabase.from("marquee_items").select("*").order("display_order"),
     ]);
     if (heroRes.data) setHero(heroRes.data);
@@ -85,6 +87,7 @@ export default function KontenWebsitePage() {
     if (garansiRes.data) setGaransi(garansiRes.data);
     if (badgesRes.data) setBadges(badgesRes.data);
     if (faqsRes.data) setFaqs(faqsRes.data);
+    if (homeFaqsRes.data) setHomeFaqs(homeFaqsRes.data);
     if (marqueeRes.data) setMarquee(marqueeRes.data);
     setLoading(false);
   }
@@ -171,16 +174,27 @@ export default function KontenWebsitePage() {
     revalidateHomepage();
   }
 
-  // FAQ handlers
-  function openFaqEdit() { setEditFaqs(faqs.map((f) => ({ ...f }))); setEditModal("faq"); }
+  // FAQ handlers (type: full)
+  const [editFaqsType, setEditFaqsType] = useState<"full" | "home">("full");
+  function openFaqEdit() { setEditFaqsType("full"); setEditFaqs(faqs.map((f) => ({ ...f }))); setEditModal("faq"); }
+  function openHomeFaqEdit() { setEditFaqsType("home"); setEditFaqs(homeFaqs.map((f) => ({ ...f }))); setEditModal("faq"); }
   async function saveFaqs() {
     setSaving(true);
     const latest = editFaqsRef.current;
-    await safeDeleteAll("faq_items");
-    if (latest.length > 0) await supabase.from("faq_items").insert(latest.map((f, i) => ({ question: f.question, answer: f.answer, category: f.category || "Lainnya", display_order: i })));
-    const { data: refetched } = await supabase.from("faq_items").select("*").order("display_order");
-    setFaqs(refetched || []); setEditModal(null); setSaving(false);
-    toast.showToast("success", "FAQ berhasil disimpan");
+    const type = editFaqsType;
+    // Delete only items of this type
+    const { data: existing } = await supabase.from("faq_items").select("id").eq("type", type);
+    if (existing && existing.length > 0) {
+      await supabase.from("faq_items").delete().in("id", existing.map((e) => e.id));
+    }
+    if (latest.length > 0) await supabase.from("faq_items").insert(latest.map((f, i) => ({ question: f.question, answer: f.answer, category: f.category || "Lainnya", type, display_order: i, is_active: true })));
+    // Refetch both types
+    const [refetched, refetchedHome] = await Promise.all([
+      supabase.from("faq_items").select("*").eq("type", "full").order("display_order"),
+      supabase.from("faq_items").select("*").eq("type", "home").order("display_order"),
+    ]);
+    setFaqs(refetched.data || []); setHomeFaqs(refetchedHome.data || []); setEditModal(null); setSaving(false);
+    toast.showToast("success", `FAQ ${type === "home" ? "Homepage" : "Lengkap"} berhasil disimpan`);
     revalidateHomepage();
   }
 
@@ -208,7 +222,8 @@ export default function KontenWebsitePage() {
     { key: "kategori", title: "Kategori Koleksi", desc: `${categories.length} kategori`, active: categories.length > 0, edit: openCategoryEdit },
     { key: "steps", title: "Cara Pemesanan", desc: `${steps.length} langkah`, active: steps.length > 0, edit: openStepsEdit },
     { key: "garansi", title: "Jaminan SAMAQU", desc: `${garansi.length} jaminan + ${badges.length} badges`, active: true, edit: openGaransiEdit },
-    { key: "faq", title: "FAQ", desc: `${faqs.length} pertanyaan`, active: true, edit: openFaqEdit },
+    { key: "faq-home", title: "FAQ Homepage", desc: `${homeFaqs.length} pertanyaan (tampil di section homepage)`, active: true, edit: openHomeFaqEdit },
+    { key: "faq-full", title: "FAQ Lengkap (Halaman /faq)", desc: `${faqs.length} pertanyaan (tampil di halaman terpisah)`, active: true, edit: openFaqEdit },
     { key: "marquee", title: "Trust Marquee", desc: `${marquee.length} item scrolling`, active: true, edit: openMarqueeEdit },
   ];
 
@@ -399,7 +414,7 @@ export default function KontenWebsitePage() {
                   </div>
                 ))}
               </div>
-              {editFaqs.length < 30 && <button onClick={() => setEditFaqs([...editFaqs, { id: String(Date.now()), question: "", answer: "", category: "", display_order: editFaqs.length }])} className="flex items-center gap-1.5 text-sm font-medium mb-4" style={{ color: "var(--gold)" }}><Plus size={14} /> Tambah</button>}
+              {editFaqs.length < 30 && <button onClick={() => setEditFaqs([...editFaqs, { id: String(Date.now()), question: "", answer: "", category: "", type: editFaqsType, display_order: editFaqs.length }])} className="flex items-center gap-1.5 text-sm font-medium mb-4" style={{ color: "var(--gold)" }}><Plus size={14} /> Tambah</button>}
               <div className="flex gap-3"><button onClick={() => setEditModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-medium" style={{ border: "1px solid rgba(64,50,37,.15)" }}>Batal</button><button onClick={saveFaqs} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: "var(--gold)" }}>{saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null} Simpan</button></div>
             </motion.div>
           </motion.div>

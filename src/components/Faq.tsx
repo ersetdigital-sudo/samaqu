@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, Variants } from "framer-motion";
 import { ChevronDown } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
-/* ─── Hardcoded Data (homepage only) ─── */
-const HOME_FAQS = [
+/* ─── Default Data (fallback jika DB kosong) ─── */
+const DEFAULT_FAQS = [
   {
     q: "Bagaimana cara memesan produk SAMAQU?",
     a: "Pilih produk dari katalog, cek panduan size, lalu klik tombol WhatsApp untuk menghubungi admin. Admin akan membantu konfirmasi ketersediaan hingga pembayaran.",
@@ -60,7 +61,7 @@ function FaqItem({
   onToggle,
 }: {
   index: number;
-  item: (typeof HOME_FAQS)[number];
+  item: (typeof DEFAULT_FAQS)[number];
   isOpen: boolean;
   onToggle: () => void;
 }) {
@@ -136,6 +137,17 @@ function FaqItem({
 /* ─── Section ─── */
 export default function Faq() {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
+  const [faqs, setFaqs] = useState(DEFAULT_FAQS);
+
+  useEffect(() => {
+    async function fetch() {
+      try {
+        const { data } = await supabase.from("faq_items").select("*").eq("type", "home").eq("is_active", true).order("display_order");
+        if (data && data.length > 0) setFaqs(data.map((f: { question: string; answer: string }) => ({ q: f.question, a: f.answer })));
+      } catch { /* use defaults */ }
+    }
+    fetch();
+  }, []);
 
   return (
     <section
@@ -205,7 +217,7 @@ export default function Faq() {
               viewport={{ once: true, margin: "-60px" }}
               variants={containerVariants}
             >
-              {HOME_FAQS.map((item, i) => (
+              {faqs.map((item, i) => (
                 <FaqItem
                   key={i}
                   index={i}
