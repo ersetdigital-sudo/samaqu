@@ -211,10 +211,7 @@ export default function TestimoniPage() {
           ))}
         </div>
 
-        <p className="mt-6 flex items-center justify-center gap-2 text-xs" style={{ color: "rgba(42,33,27,.35)" }}>
-          <MessageCircle size={12} strokeWidth={1.5} />
-          Kirimkan screenshot testimoni aslinya — kami pasang ke enam slot di atas.
-        </p>
+
       </div>
 
       {/* ═══ YANG MEREKA RASAKAN ═══ */}
