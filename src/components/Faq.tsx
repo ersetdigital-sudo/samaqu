@@ -176,7 +176,7 @@ export default function Faq() {
                   color: "var(--gold)",
                 }}
               >
-                {t("faqHome.eyebrow")}
+                {t("eyebrow")}
               </span>
               <h2
                 id="faq-heading"
@@ -186,13 +186,13 @@ export default function Faq() {
                   color: "var(--espresso)",
                 }}
               >
-                {t("faqHome.title")}
+                {t("title")}
               </h2>
               <p
                 className="mt-6 max-w-xs text-base leading-relaxed"
                 style={{ color: "rgba(42,33,27,.7)" }}
               >
-                {t("faqHome.subtitle")}
+                {t("subtitle")}
               </p>
               <div
                 className="mt-8 h-px w-16"
@@ -202,7 +202,7 @@ export default function Faq() {
                 className="mt-6 max-w-xs text-sm leading-relaxed"
                 style={{ color: "rgba(42,33,27,.55)" }}
               >
-                {t("faqHome.helpText")}
+                {t("helpText")}
               </p>
             </motion.div>
           </div>

@@ -157,7 +157,7 @@ export default function Testimoni() {
             className="text-[11px] sm:text-[12px] tracking-[0.32em] uppercase mb-4 font-ui"
             style={{ color: "var(--gold)" }}
           >
-            {t("testimoniHome.eyebrow")}
+            {t("eyebrow")}
           </motion.p>
           <motion.h2
             variants={headerVariants}
@@ -167,7 +167,7 @@ export default function Testimoni() {
               color: "var(--espresso)",
             }}
           >
-            {t("testimoniHome.title")}
+            {t("title")}
           </motion.h2>
           <motion.p
             variants={headerVariants}

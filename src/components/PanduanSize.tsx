@@ -18,13 +18,13 @@ export default function PanduanSize() {
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div className="fade-up">
             <p className="text-[12px] tracking-[0.32em] uppercase mb-4" style={{ color: "var(--gold)" }}>
-              {t("sizeGuide.eyebrow")}
+              {t("eyebrow")}
             </p>
             <h2
               className="text-3xl sm:text-5xl font-medium mb-6"
               style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}
             >
-              {t("sizeGuide.title")}
+              {t("title")}
             </h2>
             <p className="leading-[1.75] mb-8 text-sm sm:text-base" style={{ color: "var(--coffee)" }}>
               Tidak perlu bingung menentukan ukuran. Lihat Size Chart setiap produk dan gunakan Rekomendasi Size yang tersedia untuk membantu menemukan ukuran yang sesuai dengan tinggi dan berat badanmu.
@@ -34,7 +34,7 @@ export default function PanduanSize() {
               className="inline-flex items-center gap-2 rounded-full px-7 py-4 text-[12px] tracking-[0.18em] uppercase text-white transition hover:opacity-90"
               style={{ background: "var(--espresso)" }}
             >
-              {t("sizeGuide.cta")}
+              {t("cta")}
             </a>
           </div>
 

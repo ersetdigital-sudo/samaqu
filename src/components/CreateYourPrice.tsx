@@ -30,16 +30,16 @@ export default function CreateYourPrice() {
             <div className="flex items-center gap-4">
               <span className="h-px w-10" style={{ background: "var(--gold)" }} />
               <p className="text-[11px] sm:text-xs font-medium uppercase tracking-[0.32em] font-ui" style={{ color: "var(--gold)" }}>
-                {t("cyp.eyebrow")}
+                {t("eyebrow")}
               </p>
             </div>
 
             <h1 className="mt-7 text-4xl sm:text-5xl lg:text-6xl xl:text-[4.25rem] leading-[1.08] font-medium" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>
-              {t("cyp.title")}
+              {t("title")}
             </h1>
 
             <p className="mt-8 text-base sm:text-lg leading-relaxed font-ui" style={{ color: "#d4c4b4" }}>
-              {t("cyp.desc")}
+              {t("desc")}
             </p>
 
             <div className="mt-10 flex flex-col sm:flex-row sm:items-center gap-4">
@@ -48,7 +48,7 @@ export default function CreateYourPrice() {
                 className="group inline-flex items-center justify-center gap-3 rounded-full px-8 py-4 text-[11px] font-semibold uppercase tracking-[0.2em] font-ui text-white transition-transform duration-300 hover:-translate-y-0.5"
                 style={{ background: "var(--gold)" }}
               >
-                {t("cyp.ctaLearn")}
+                {t("ctaLearn")}
                 <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
               </Link>
             </div>
@@ -57,9 +57,9 @@ export default function CreateYourPrice() {
 
             <dl className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-6">
               {[
-                { num: "1", desc: t("cyp.step1Desc") },
-                { num: "2", desc: t("cyp.step2Desc") },
-                { num: "3", desc: t("cyp.step3Desc") },
+                { num: "1", desc: t("step1Desc") },
+                { num: "2", desc: t("step2Desc") },
+                { num: "3", desc: t("step3Desc") },
               ].map((step) => (
                 <div key={step.num}>
                   <dt className="text-3xl" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--gold)" }}>{step.num}</dt>
@@ -83,10 +83,10 @@ export default function CreateYourPrice() {
                 }}
               >
                 <div className="flex items-center justify-between">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.28em] font-ui" style={{ color: "var(--gold)" }}>{t("cyp.cardTitle")}</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.28em] font-ui" style={{ color: "var(--gold)" }}>{t("cardTitle")}</p>
                   <span className="rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] font-ui"
                     style={{ background: "rgba(162,133,95,.18)", color: "var(--gold)" }}>
-                    {t("cyp.cardBadge")}
+                    {t("cardBadge")}
                   </span>
                 </div>
 
@@ -94,7 +94,7 @@ export default function CreateYourPrice() {
                   {fmt(price)}
                 </p>
                 <p className="mt-3 text-sm font-ui" style={{ color: "#a89a90" }}>
-                  {t("cyp.minLabel")} <span style={{ color: "var(--cream)" }}>{fmt(minPrice)}</span>{t("cyp.minNote")}
+                  {t("minLabel")} <span style={{ color: "var(--cream)" }}>{fmt(minPrice)}</span>{t("minNote")}
                 </p>
 
                 <input
@@ -111,7 +111,7 @@ export default function CreateYourPrice() {
                   }}
                 />
                 <div className="mt-3 flex justify-between text-[11px] uppercase tracking-[0.18em] font-ui" style={{ color: "#8a7a70" }}>
-                  <span>{t("cyp.sliderMin")}</span>
+                  <span>{t("sliderMin")}</span>
                   <span>{fmt(maxPrice)}</span>
                 </div>
 
@@ -119,9 +119,9 @@ export default function CreateYourPrice() {
 
                 <ul className="space-y-4 text-sm font-ui" style={{ color: "#d4c4b4" }}>
                   {[
-                    t("cyp.benefit1"),
-                    t("cyp.benefit2"),
-                    t("cyp.benefit3"),
+                    t("benefit1"),
+                    t("benefit2"),
+                    t("benefit3"),
                   ].map((text) => (
                     <li key={text} className="flex items-start gap-3">
                       <span style={{ color: "var(--gold)" }}>✓</span> {text}
