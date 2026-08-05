@@ -165,18 +165,24 @@ function KainSwatchRow({ category, options, selected, onSelect }: { category: Ca
 /* ── Stock Threshold ── */
 const LOW_STOCK_THRESHOLD = 3;
 
+/* ── Badge Styles ── */
+const BADGE_STYLES: Record<string, { label: string; bg: string; color: string; border?: string }> = {
+  terlaris: { label: "Terlaris", bg: "var(--gold)", color: "white" },
+  rekomendasi: { label: "Rekomendasi", bg: "rgba(248,246,242,.92)", color: "var(--espresso)", border: "1px solid rgba(201,183,156,.3)" },
+  new: { label: "New", bg: "#e7ecdf", color: "#5b6b45" },
+};
+
 /* ── Product Card ── */
 function ProductCard({ product, index, wishlist, colorHex, totalStock }: { product: CatalogProduct; index: number; wishlist: { isWishlisted: (id: string) => boolean; toggle: (id: string) => Promise<boolean | null>; isLoggedIn: boolean }; colorHex: Record<string, string>; totalStock: number | null }) {
   const toast = useToast();
   const kainName = product.jenis_kain?.name || product.kain;
-  const kainColor = kainName ? getKainSwatchColor(kainName) : null;
   const c0 = colorHex[`${product.id}::${product.colors[0]}`] || colorMap[product.colors[0]];
   const c1 = colorHex[`${product.id}::${product.colors[1]}`] || colorMap[product.colors[1]];
-  const dotColor = kainColor || c0 || "#c9b79c";
   // Stock status
   const isSoldOut = totalStock === 0;
   const isLowStock = totalStock !== null && totalStock > 0 && totalStock <= LOW_STOCK_THRESHOLD;
-  const isAvailable = totalStock !== null && totalStock > LOW_STOCK_THRESHOLD;
+  // Badge
+  const badge = product.badge_type ? BADGE_STYLES[product.badge_type] : null;
 
   return (
     <motion.div
@@ -229,19 +235,6 @@ function ProductCard({ product, index, wishlist, colorHex, totalStock }: { produ
           <svg width="15" height="15" viewBox="0 0 24 24" fill={wishlist.isWishlisted(product.id) ? "#e74c3c" : "none"} stroke={wishlist.isWishlisted(product.id) ? "#e74c3c" : "var(--espresso)"} strokeWidth="1.8"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
         </button>
         )}
-        {/* Tag */}
-        {product.tag && (
-          <span
-            className="absolute top-3 right-3 px-2.5 py-1 text-[10px] tracking-[0.12em] uppercase font-ui font-medium rounded-sm"
-            style={{
-              border: "1px solid var(--gold)",
-              color: "var(--gold)",
-              background: "rgba(248,246,242,.9)",
-            }}
-          >
-            {product.tag}
-          </span>
-        )}
         {/* Sold Out badge — top right */}
         {isSoldOut && (
           <span
@@ -251,11 +244,15 @@ function ProductCard({ product, index, wishlist, colorHex, totalStock }: { produ
             Sold Out
           </span>
         )}
-        {/* Kain / color dot */}
-        <span
-          className="absolute bottom-3 right-3 w-4 h-4 rounded-full"
-          style={{ background: dotColor, boxShadow: "0 0 0 2px white" }}
-        />
+        {/* Dynamic Badge — top right (below sold out if both) */}
+        {!isSoldOut && badge && (
+          <span
+            className="absolute top-3 right-3 px-2.5 py-1 text-[10px] tracking-[0.12em] uppercase font-ui font-semibold rounded-full z-10"
+            style={{ background: badge.bg, color: badge.color, border: badge.border || "none" }}
+          >
+            {badge.label}
+          </span>
+        )}
       </div>
 
       {/* Info */}

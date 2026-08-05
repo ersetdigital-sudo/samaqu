@@ -73,6 +73,7 @@ export default function TambahProdukPage() {
   const [catatanHarga, setCatatanHarga] = useState("");
   const [selectedJenisKainId, setSelectedJenisKainId] = useState<string>("");
   const [showNewKainForm, setShowNewKainForm] = useState(false);
+  const [badgeType, setBadgeType] = useState<string>("");
 
   // Series list (dari produk yang sudah ada) + tambah baru
   const [seriesList, setSeriesList] = useState<string[]>([]);
@@ -514,6 +515,7 @@ export default function TambahProdukPage() {
             jenis_kain_id: selectedJenisKainId || null,
             series: seriesName,
             catatan_harga: catatanHarga.trim() || null,
+            badge_type: badgeType || null,
           }, { onConflict: "id" });
           if (productError) throw productError;
 
@@ -565,6 +567,7 @@ export default function TambahProdukPage() {
           jenis_kain_id: selectedJenisKainId || null,
           series: series.trim() || null,
           catatan_harga: catatanHarga.trim() || null,
+          badge_type: badgeType || null,
         }, { onConflict: "id" });
         if (productError) throw productError;
 
@@ -704,6 +707,20 @@ export default function TambahProdukPage() {
                   <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>Untuk hitung ongkir. Kosongkan = default per kategori.</p>
                 </div>
                 )}
+                {/* Badge Katalog */}
+                <div>
+                  <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Badge Katalog (opsional)</label>
+                  <div className="relative">
+                    <select value={badgeType} onChange={(e) => setBadgeType(e.target.value)} className="w-full rounded-xl px-4 py-3 text-sm outline-none appearance-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }}>
+                      <option value="">Tanpa Badge</option>
+                      <option value="terlaris">Terlaris</option>
+                      <option value="rekomendasi">Rekomendasi</option>
+                      <option value="new">New</option>
+                    </select>
+                    <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--text-muted)" }} />
+                  </div>
+                  <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>Badge yang tampil di pojok kanan atas foto card katalog.</p>
+                </div>
                 {/* Create Your Price Toggle — hidden untuk Thobe (CYP per-series) */}
                 {category !== "Thobe" && (
                 <div className="p-4 rounded-xl" style={{ background: cypEnabled ? "rgba(181,140,74,.06)" : "rgba(64,50,37,.02)", border: `1px solid ${cypEnabled ? "rgba(181,140,74,.3)" : "rgba(64,50,37,.1)"}` }}>

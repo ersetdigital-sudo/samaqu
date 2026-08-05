@@ -34,6 +34,7 @@ export interface Product {
   price: number;
   weight?: number; // grams, used for shipping cost calculation
   tag?: "Baru" | "Eksklusif";
+  badge_type?: string | null;
   note?: string;
   image: string;
   images: string[];
