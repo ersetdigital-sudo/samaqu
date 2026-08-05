@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useTranslations } from "next-intl";
+import { useSafeTranslations } from "@/lib/safe-i18n";
 import { supabase } from "@/lib/supabase";
 import { getWhatsAppLink } from "@/lib/store-settings";
 
@@ -22,7 +22,7 @@ const DEFAULTS = {
 };
 
 export default function Hero() {
-  const t = useTranslations("hero");
+  const t = useSafeTranslations("hero");
   const videoRef = useRef<HTMLVideoElement>(null);
   const [shouldPlay, setShouldPlay] = useState(false);
   const [muted, setMuted] = useState(false);
