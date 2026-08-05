@@ -1,6 +1,7 @@
 "use client";
 
 import { motion, Variants } from "framer-motion";
+import { useSafeTranslations } from "@/lib/safe-i18n";
 
 /* ─── Data ─── */
 const reviews = [
@@ -136,6 +137,7 @@ function TestimonialCard({ t }: { t: (typeof reviews)[number] }) {
 
 /* ─── Section ─── */
 export default function Testimoni() {
+  const t = useSafeTranslations("testimoniHome");
   return (
     <section
       className="py-12 sm:py-20 lg:py-32 px-4 sm:px-8"
@@ -155,7 +157,7 @@ export default function Testimoni() {
             className="text-[11px] sm:text-[12px] tracking-[0.32em] uppercase mb-4 font-ui"
             style={{ color: "var(--gold)" }}
           >
-            Kata Mereka
+            {t("testimoniHome.eyebrow")}
           </motion.p>
           <motion.h2
             variants={headerVariants}
@@ -165,7 +167,7 @@ export default function Testimoni() {
               color: "var(--espresso)",
             }}
           >
-            Dirasakan Langsung oleh Mereka.
+            {t("testimoniHome.title")}
           </motion.h2>
           <motion.p
             variants={headerVariants}

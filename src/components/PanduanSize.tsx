@@ -1,3 +1,7 @@
+"use client";
+
+import { useSafeTranslations } from "@/lib/safe-i18n";
+
 const sizes = [
   { size: "S", tinggi: "160–165", dada: "52", panjang: "140" },
   { size: "M", tinggi: "166–171", dada: "55", panjang: "145" },
@@ -7,19 +11,20 @@ const sizes = [
 ];
 
 export default function PanduanSize() {
+  const t = useSafeTranslations("sizeGuide");
   return (
     <section id="size" className="py-14 sm:py-24 lg:py-32" style={{ background: "var(--cream)" }}>
       <div className="max-w-[1200px] mx-auto px-5 sm:px-8">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div className="fade-up">
             <p className="text-[12px] tracking-[0.32em] uppercase mb-4" style={{ color: "var(--gold)" }}>
-              Panduan Ukuran
+              {t("sizeGuide.eyebrow")}
             </p>
             <h2
               className="text-3xl sm:text-5xl font-medium mb-6"
               style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}
             >
-              Temukan Ukuran yang Paling Pas untukmu.
+              {t("sizeGuide.title")}
             </h2>
             <p className="leading-[1.75] mb-8 text-sm sm:text-base" style={{ color: "var(--coffee)" }}>
               Tidak perlu bingung menentukan ukuran. Lihat Size Chart setiap produk dan gunakan Rekomendasi Size yang tersedia untuk membantu menemukan ukuran yang sesuai dengan tinggi dan berat badanmu.
@@ -29,7 +34,7 @@ export default function PanduanSize() {
               className="inline-flex items-center gap-2 rounded-full px-7 py-4 text-[12px] tracking-[0.18em] uppercase text-white transition hover:opacity-90"
               style={{ background: "var(--espresso)" }}
             >
-              Lihat Panduan Ukuran
+              {t("sizeGuide.cta")}
             </a>
           </div>
 

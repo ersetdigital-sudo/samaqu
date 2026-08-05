@@ -1,6 +1,7 @@
 "use client";
 
 import { useStoreSettings, getWhatsAppLink } from "@/lib/store-settings";
+import { useSafeTranslations } from "@/lib/safe-i18n";
 
 const navLinks = [
   { href: "/katalog", label: "Katalog" },
@@ -22,6 +23,7 @@ const helpLinks = [
 ];
 
 export default function Footer() {
+  const t = useSafeTranslations("footer");
   const settings = useStoreSettings();
   const instagramUrl = settings.instagram_url || "";
 
@@ -63,14 +65,14 @@ export default function Footer() {
               className="text-xs sm:text-sm max-w-xs leading-[1.75] font-ui"
               style={{ color: "var(--sand)" }}
             >
-              Untuk orang biasa yang sedang bertumbuh. Kualitas terbaik dengan harga yang lebih mudah dijangkau.
+              {t("footer.tagline")}
             </p>
           </div>
 
           {/* Column 2: Navigasi */}
           <div>
             <p className="text-[11px] tracking-[0.22em] uppercase font-ui font-semibold mb-3 sm:mb-4" style={{ color: "var(--gold)" }}>
-              Navigasi
+              {t("footer.nav")}
             </p>
             <nav aria-label="Navigasi footer" className="flex flex-col gap-2 sm:gap-2.5">
               {navLinks.map((link) => (
@@ -91,7 +93,7 @@ export default function Footer() {
           {/* Column 3: Bantuan */}
           <div>
             <p className="text-[11px] tracking-[0.22em] uppercase font-ui font-semibold mb-3 sm:mb-4" style={{ color: "var(--gold)" }}>
-              Bantuan
+              {t("footer.help")}
             </p>
             <nav aria-label="Bantuan footer" className="flex flex-col gap-2 sm:gap-2.5">
               {helpLinks.map((link) => (
@@ -110,7 +112,7 @@ export default function Footer() {
           {/* Column 4: Terhubung */}
           <div>
             <p className="text-[11px] tracking-[0.22em] uppercase font-ui font-semibold mb-3 sm:mb-4" style={{ color: "var(--gold)" }}>
-              Terhubung
+              {t("footer.connected")}
             </p>
             <div className="flex items-center gap-3">
               {instagramUrl && (
@@ -151,7 +153,7 @@ export default function Footer() {
           className="pt-5 sm:pt-8 text-[11px] sm:text-xs font-ui text-center"
           style={{ color: "rgba(216,196,168,.5)" }}
         >
-          <p>&copy; 2026 SAMAQU. Semua hak cipta dilindungi. Dibuat dengan kepedulian &amp; rasa bangga.</p>
+          <p>{t("footer.copyright")}</p>
         </div>
       </div>
     </footer>

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, Variants } from "framer-motion";
 import Image from "next/image";
 import { supabase } from "@/lib/supabase";
+import { useSafeTranslations } from "@/lib/safe-i18n";
 
 /* ─── Animation ─── */
 const containerVariants: Variants = {
@@ -175,6 +176,7 @@ const DEFAULT_BADGES = ["100% Original", "Packing Aman", "Support Personal"];
 
 /* ─── Section ─── */
 export default function Garansi() {
+  const t = useSafeTranslations("garansi");
   const [guarantees, setGuarantees] = useState(DEFAULT_GUARANTEES);
   const [badges, setBadges] = useState(DEFAULT_BADGES);
 
@@ -239,7 +241,7 @@ export default function Garansi() {
                 <svg className="h-3 w-3 sm:h-3.5 sm:w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
                 </svg>
-                Ketenangan Berbelanja
+                {t("garansi.badge")}
               </motion.span>
 
               <motion.h2
@@ -247,8 +249,8 @@ export default function Garansi() {
                 className="mt-4 sm:mt-7 text-[2rem] sm:text-6xl md:text-7xl lg:text-[5.5rem] leading-[0.92] font-semibold"
                 style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}
               >
-                Jaminan
-                <span className="block italic" style={{ color: "var(--gold)" }}>SAMAQU</span>
+                {t("garansi.titleLine1")}
+                <span className="block italic" style={{ color: "var(--gold)" }}>{t("garansi.titleLine2")}</span>
               </motion.h2>
 
               <motion.p
@@ -256,12 +258,12 @@ export default function Garansi() {
                 className="mt-4 sm:mt-6 max-w-md text-sm sm:text-lg leading-relaxed font-ui"
                 style={{ color: "var(--text-secondary)" }}
               >
-                Kami tahu setiap rupiah yang kamu keluarkan adalah hasil kerja kerasmu. Karena itu kami ingin setiap pembelian terasa layak.
+                {t("garansi.subtitle")}
               </motion.p>
 
               {/* Inline mini features */}
               <motion.div variants={headerVariants} className="mt-6 sm:mt-9 flex flex-wrap items-center gap-x-6 sm:gap-x-8 gap-y-3 sm:gap-y-4">
-                {["100% Terjamin", "Pengiriman Cepat", "Layanan Ramah"].map((label) => (
+                {[t("garansi.mini1"), t("garansi.mini2"), t("garansi.mini3")].map((label) => (
                   <div key={label} className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-medium font-ui" style={{ color: "var(--espresso)" }}>
                     <svg className="h-3.5 w-3.5 sm:h-[18px] sm:w-[18px]" style={{ color: "var(--gold)" }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />

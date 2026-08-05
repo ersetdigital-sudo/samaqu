@@ -21,6 +21,7 @@ import FilterDrawer, { applyFilters, type FilterState } from "@/components/Filte
 import KainSeriesModal, { getKainGradient, getKainSwatchColor } from "@/components/KainSeriesModal";
 import { SITE_URL } from "@/lib/site-config";
 import { useWishlist } from "@/lib/use-wishlist";
+import { useSafeTranslations } from "@/lib/safe-i18n";
 
 /* ── Katalog grouping: 1 produk utama (name + category) = 1 kartu ──
    Row per series dikumpulkan ke group; representative = row terlama.
@@ -123,6 +124,7 @@ function InfoLinkButton({ label, onClick }: { label: string; onClick: () => void
 
 /* ── Jenis Kain swatch selector (katalog listing) ── */
 function KainSwatchRow({ category, options, selected, onSelect }: { category: Category; options: string[]; selected: string | null; onSelect: (v: string | null) => void }) {
+  const t = useSafeTranslations("katalog");
   if (options.length === 0) return null;
   return (
     <div>
@@ -140,7 +142,7 @@ function KainSwatchRow({ category, options, selected, onSelect }: { category: Ca
           }}
         >
           <span className="w-6 h-6 rounded-full shrink-0" style={{ background: "linear-gradient(135deg,#141414,#CDBFB0)" }} />
-          Semua
+          {t("all")}
         </button>
         {options.map((k) => (
           <button
@@ -174,6 +176,7 @@ const BADGE_STYLES: Record<string, { label: string; bg: string; color: string; b
 
 /* ── Product Card ── */
 function ProductCard({ product, index, wishlist, colorHex, totalStock }: { product: CatalogProduct; index: number; wishlist: { isWishlisted: (id: string) => boolean; toggle: (id: string) => Promise<boolean | null>; isLoggedIn: boolean }; colorHex: Record<string, string>; totalStock: number | null }) {
+  const t = useSafeTranslations("katalog");
   const toast = useToast();
   const kainName = product.jenis_kain?.name || product.kain;
   const c0 = colorHex[`${product.id}::${product.colors[0]}`] || colorMap[product.colors[0]];
@@ -241,7 +244,7 @@ function ProductCard({ product, index, wishlist, colorHex, totalStock }: { produ
             className="absolute top-3 right-3 px-2.5 py-1 text-[10px] tracking-[0.12em] uppercase font-ui font-semibold rounded-full z-10"
             style={{ background: "var(--espresso)", color: "white" }}
           >
-            Sold Out
+            {t("soldOut")}
           </span>
         )}
         {/* Dynamic Badge — top right (below sold out if both) */}
@@ -250,7 +253,7 @@ function ProductCard({ product, index, wishlist, colorHex, totalStock }: { produ
             className="absolute top-3 right-3 px-2.5 py-1 text-[10px] tracking-[0.12em] uppercase font-ui font-semibold rounded-full z-10"
             style={{ background: badge.bg, color: badge.color, border: badge.border || "none" }}
           >
-            {badge.label}
+            {product.badge_type === "terlaris" ? t("badgeTerlaris") : product.badge_type === "rekomendasi" ? t("badgeRekomendasi") : t("badgeNew")}
           </span>
         )}
       </div>
@@ -283,7 +286,7 @@ function ProductCard({ product, index, wishlist, colorHex, totalStock }: { produ
                   <path d="m3.3 7 8.7 5 8.7-5" />
                   <path d="M12 22V12" />
                 </svg>
-                {product.availableSeries.length} series tersedia
+                {t("seriesAvail", { count: String(product.availableSeries.length) })}
               </span>
             </p>
           )}
@@ -292,13 +295,13 @@ function ProductCard({ product, index, wishlist, colorHex, totalStock }: { produ
         {/* Stock status — microcopy above price */}
         {!isSoldOut && totalStock !== null && (
           <p className="mt-1 text-[10.5px] font-ui line-clamp-1" style={{ color: isLowStock ? "#b45309" : "#6b8a5e" }}>
-            {isLowStock ? `Menipis — sisa ${totalStock}` : "Ready stock"}
+            {isLowStock ? t("lowStock", { count: String(totalStock) }) : t("readyStock")}
           </p>
         )}
 
         {/* Price */}
         <p className="mt-1 text-[12.5px] font-ui" style={{ color: "var(--stone)" }}>
-          Mulai{" "}
+          {t("starting")}{" "}
           <span className="font-medium" style={{ color: "var(--espresso)" }}>
             Rp {(product.create_your_price_enabled && product.minimum_price ? product.minimum_price : product.price).toLocaleString("id-ID")}
           </span>
@@ -306,7 +309,7 @@ function ProductCard({ product, index, wishlist, colorHex, totalStock }: { produ
 
         {/* Lihat Detail button */}
         <span className="mt-auto pt-3 w-full rounded-lg border border-[var(--espresso)] px-3 py-2.5 text-[12.5px] text-[var(--espresso)] font-ui font-medium flex items-center justify-center gap-1.5 transition-all duration-200 group-hover:bg-[var(--espresso)] group-hover:text-white">
-          {isSoldOut ? "Lihat Detail" : "Lihat Detail"} <ChevronRight size={14} strokeWidth={2} />
+          {isSoldOut ? t("viewDetail") : t("viewDetail")} <ChevronRight size={14} strokeWidth={2} />
         </span>
       </div>
       </Link>
@@ -320,6 +323,7 @@ function ProductCard({ product, index, wishlist, colorHex, totalStock }: { produ
    MAIN PAGE
 ══════════════════════════════════════════ */
 export default function KatalogPage() {
+  const t = useSafeTranslations("katalog");
   const [category, setCategory] = useState<Category | "Semua">("Semua");
   const [selectedKain, setSelectedKain] = useState<string | null>(null);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
@@ -486,7 +490,7 @@ export default function KatalogPage() {
               className="text-[11px] sm:text-[12px] tracking-[0.32em] uppercase mb-4 font-ui font-medium"
               style={{ color: "var(--gold)" }}
             >
-              Koleksi Lengkap
+              {t("eyebrow")}
             </motion.p>
             <motion.h1
               variants={headerVariants}
@@ -496,14 +500,14 @@ export default function KatalogPage() {
                 color: "var(--espresso)",
               }}
             >
-              Katalog Samaqu
+              {t("title")}
             </motion.h1>
             <motion.p
               variants={headerVariants}
               className="text-sm sm:text-base leading-relaxed max-w-lg font-ui"
               style={{ color: "var(--text-secondary)" }}
             >
-              Temukan busana muslim premium yang sesuai dengan gaya dan kebutuhan Anda.
+              {t("subtitle")}
             </motion.p>
           </motion.div>
         </div>
@@ -537,7 +541,7 @@ export default function KatalogPage() {
                 setSearchQuery(e.target.value);
                 setVisibleCount(12);
               }}
-              placeholder="Cari jubah, thobe, koko..."
+              placeholder={t("search")}
               className="w-full pl-9 pr-4 py-3 text-[14px] font-ui outline-none transition-all duration-200"
               style={{
                 background: "transparent",
@@ -608,7 +612,7 @@ export default function KatalogPage() {
               }}
             >
               <SlidersHorizontal size={14} strokeWidth={1.5} />
-              Filter
+              {t("filter")}
               {drawerFilterCount > 0 && (
                 <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-[10px] font-ui font-bold"
                   style={{ background: "var(--gold)", color: "white" }}>
@@ -623,9 +627,9 @@ export default function KatalogPage() {
                 className="appearance-none px-4 py-2.5 pr-9 text-[12px] font-ui rounded-full cursor-pointer transition-all duration-200"
                 style={{ border: "1px solid rgba(201,183,156,.3)", background: "transparent", color: "var(--coffee)" }}
               >
-                <option value="newest">Terbaru</option>
-                <option value="az">Nama A-Z</option>
-                <option value="popular">Terpopuler</option>
+                <option value="newest">{t("sortNew")}</option>
+                <option value="az">{t("sortAZ")}</option>
+                <option value="popular">{t("sortPop")}</option>
               </select>
               <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--stone)" }} />
             </div>
@@ -661,7 +665,7 @@ export default function KatalogPage() {
               }}
             >
               <SlidersHorizontal size={14} strokeWidth={1.5} />
-              Filter
+              {t("filter")}
               {drawerFilterCount > 0 && (
                 <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-[10px] font-ui font-bold"
                   style={{ background: "var(--gold)", color: "white" }}>
@@ -676,9 +680,9 @@ export default function KatalogPage() {
                 className="appearance-none px-4 py-2.5 pr-9 text-[12px] font-ui rounded-full cursor-pointer transition-all duration-200"
                 style={{ border: "1px solid rgba(201,183,156,.3)", background: "transparent", color: "var(--coffee)" }}
               >
-                <option value="newest">Terbaru</option>
-                <option value="az">Nama A-Z</option>
-                <option value="popular">Terpopuler</option>
+                <option value="newest">{t("sortNew")}</option>
+                <option value="az">{t("sortAZ")}</option>
+                <option value="popular">{t("sortPop")}</option>
               </select>
               <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--stone)" }} />
             </div>
@@ -727,7 +731,7 @@ export default function KatalogPage() {
               className="text-[11px] font-ui underline transition-colors hover:text-gold"
               style={{ color: "var(--stone)" }}
             >
-              Reset Filter
+              {t("reset")}
             </button>
           </div>
         )}
@@ -739,14 +743,14 @@ export default function KatalogPage() {
           /* Empty State */
           <div className="text-center py-20">
             <p className="text-lg font-medium mb-3" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
-              Belum ada produk yang cocok dengan filter ini.
+              {t("emptyState")}
             </p>
             <button
               onClick={resetAll}
               className="mt-2 px-6 py-2.5 text-[12px] tracking-[0.08em] uppercase font-ui font-medium rounded-full transition-all duration-200 hover:opacity-80"
               style={{ background: "var(--espresso)", color: "var(--cream)" }}
             >
-              Reset Filter
+              {t("reset")}
             </button>
           </div>
         ) : (
@@ -774,7 +778,7 @@ export default function KatalogPage() {
                     boxShadow: "0 4px 16px -4px rgba(42,33,27,.2)",
                   }}
                 >
-                  Muat Lebih Banyak
+                  {t("loadMore")}
                 </button>
               </div>
             )}
