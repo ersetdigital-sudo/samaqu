@@ -34,7 +34,6 @@ type NavLinkItem = { label: string; href: string; hasDropdown?: false; Icon?: Ic
 function getMobileExtraItems(t: (key: string) => string): NavLinkItem[] {
   return [
     { label: t("nav.tentang"), href: "/tentang-kami", Icon: BookOpen },
-    { label: t("nav.sama_quran"), href: "/sama-quran", Icon: BookOpen },
   ];
 }
 
