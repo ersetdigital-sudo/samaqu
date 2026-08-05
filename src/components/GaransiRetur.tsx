@@ -219,7 +219,7 @@ export default function GaransiRetur() {
           <div className="relative">
             <div className="absolute -inset-4 rounded-[2rem] bg-sand/50 -z-10" />
             <img
-              src="/garansi/11d82eb0-b3c6-4435-bb98-4c699c73408a.png"
+              src="/garansi/hero-web.png"
               alt="Produk SAMAQU"
               className="w-full rounded-[1.5rem] object-cover aspect-[4/3] md:aspect-[5/4] shadow-[0_20px_60px_-20px_rgba(28,26,23,.35)]"
             />
@@ -326,9 +326,9 @@ export default function GaransiRetur() {
         </div>
         <div className="order-1 md:order-2 relative">
           <div className="absolute -inset-4 rounded-[2rem] bg-sand/50 -z-10" />
-          <img
-            src="/garansi/aa47e170-1dc5-4c93-88b2-32e49931472c.png"
-            alt="Customer SAMAQU"
+            <img
+              src="/garansi/cta-web.png"
+              alt="Customer SAMAQU"
             className="w-full rounded-[1.5rem] object-cover aspect-[4/5] max-h-[520px] shadow-[0_20px_60px_-20px_rgba(28,26,23,.35)]"
           />
         </div>
