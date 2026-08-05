@@ -474,9 +474,9 @@ export default function KatalogPage() {
         },
       }) }} />
       {/* ── Page Header ── */}
-      <div className="pt-28 sm:pt-32 lg:pt-36 pb-12 sm:pb-16">
+      <div className="pt-24 pb-6 sm:pt-32 sm:pb-16 lg:pt-36 lg:pb-16">
         <div className="max-w-[1200px] mx-auto px-5 sm:px-8 lg:px-14">
-          <div style={{ marginBottom: "32px" }}>
+          <div className="mb-3 sm:mb-8">
             <Breadcrumb />
           </div>
 
@@ -487,14 +487,14 @@ export default function KatalogPage() {
           >
             <motion.p
               variants={headerVariants}
-              className="text-[11px] sm:text-[12px] tracking-[0.32em] uppercase mb-4 font-ui font-medium"
+              className="text-[11px] sm:text-[12px] tracking-[0.32em] uppercase mb-2 sm:mb-4 font-ui font-medium"
               style={{ color: "var(--gold)" }}
             >
               {t("eyebrow")}
             </motion.p>
             <motion.h1
               variants={headerVariants}
-              className="text-[2rem] sm:text-5xl lg:text-6xl font-semibold leading-[1.05] tracking-tight mb-4"
+              className="text-[1.5rem] sm:text-5xl lg:text-6xl font-semibold leading-[1.05] tracking-tight mb-2 sm:mb-4"
               style={{
                 fontFamily: "var(--font-cormorant), Georgia, serif",
                 color: "var(--espresso)",
@@ -504,7 +504,7 @@ export default function KatalogPage() {
             </motion.h1>
             <motion.p
               variants={headerVariants}
-              className="text-sm sm:text-base leading-relaxed max-w-lg font-ui"
+              className="text-[13px] sm:text-base leading-relaxed max-w-lg font-ui"
               style={{ color: "var(--text-secondary)" }}
             >
               {t("subtitle")}
@@ -516,7 +516,7 @@ export default function KatalogPage() {
       {/* ── Controls: Search + Filter + Sort (desktop unified, mobile 2-row) ── */}
       <div className="max-w-[1200px] mx-auto px-5 sm:px-8 lg:px-14">
         {/* Row 1: Search bar */}
-        <div className="mb-6 lg:mb-8">
+        <div className="mb-3 sm:mb-6 lg:mb-8">
           <div className="lg:max-w-none lg:ml-0 max-w-md ml-auto relative">
             <div className="absolute left-0 top-1/2 -translate-y-1/2 pointer-events-none">
               <svg
@@ -560,7 +560,7 @@ export default function KatalogPage() {
 
         {/* Row 2 (mobile): Category chips scrollable + Filter/Sort — mobile only */}
         <div className="lg:hidden">
-          <div className="py-4 overflow-x-auto scrollbar-hide">
+          <div className="py-2 sm:py-4 overflow-x-auto scrollbar-hide">
             <div className="flex items-center gap-2.5">
               {(["Semua", ...allCategories] as const).map((cat) => (
                 <button
@@ -580,14 +580,14 @@ export default function KatalogPage() {
           </div>
 
           {(category === "Thobe" || category === "Kandora") && (
-            <div className="pb-5">
+            <div className="pb-3 sm:pb-5">
               <KainSwatchRow category={category} options={kainOptionsForCategory} selected={selectedKain} onSelect={setSelectedKain} />
             </div>
           )}
 
           {/* Info link buttons — Jenis Kain & Series (mobile) */}
           {(category === "Thobe" || category === "Kandora") && (
-            <div className="flex flex-col gap-3 pb-4">
+            <div className="flex flex-col gap-3 pb-2 sm:pb-4">
               <InfoLinkButton
                 label={`Perbedaan Jenis Kain ${category}`}
                 onClick={() => setInfoSheet("kain")}
@@ -601,7 +601,7 @@ export default function KatalogPage() {
             </div>
           )}
 
-          <div className="flex items-center justify-between pb-4">
+          <div className="flex items-center justify-between pb-2 sm:pb-4">
             <button
               onClick={() => setFilterDrawerOpen(true)}
               className="relative flex items-center gap-2 px-4 py-2.5 text-[12px] font-ui rounded-full transition-all duration-200"
@@ -738,7 +738,7 @@ export default function KatalogPage() {
       </div>
 
       {/* ── Product Grid ── */}
-      <div className="max-w-[1200px] mx-auto px-5 sm:px-8 lg:px-14 py-8 sm:py-12">
+      <div className="max-w-[1200px] mx-auto px-5 sm:px-8 lg:px-14 py-4 sm:py-12">
         {filtered.length === 0 ? (
           /* Empty State */
           <div className="text-center py-20">
