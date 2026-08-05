@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDown, ShoppingBag, Home, User } from "lucide-react";
@@ -11,30 +12,29 @@ import ProfileDropdown from "@/components/ProfileDropdown";
 import { useCart } from "@/lib/cart-context";
 import CartDrawer from "@/components/CartDrawer";
 import { getWhatsAppLink } from "@/lib/store-settings";
-import { useLocale } from "@/lib/locale-context";
-import { t } from "@/lib/translations";
+import { locales, type Locale } from "@/i18n/config";
 
 /* ── Nav data ── */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type IconComponent = React.ComponentType<any>;
 type NavItem = { label: string; href: string; hasDropdown?: false; Icon?: IconComponent } | { label: string; hasDropdown: true; Icon?: IconComponent };
 
-function getNavItems(locale: string): NavItem[] {
+function getNavItems(t: (key: string) => string): NavItem[] {
   return [
-    { label: t("nav.home", locale), href: "/", Icon: Home },
-    { label: t("nav.katalog", locale), href: "/katalog", Icon: Storefront },
-    { label: t("nav.testimoni", locale), href: "/testimoni", Icon: MessageCircle },
-    { label: t("nav.tentang", locale), href: "/tentang-kami", Icon: BookOpen },
-    { label: t("nav.bantuan", locale), hasDropdown: true, Icon: Question },
+    { label: t("nav.home"), href: "/", Icon: Home },
+    { label: t("nav.katalog"), href: "/katalog", Icon: Storefront },
+    { label: t("nav.testimoni"), href: "/testimoni", Icon: MessageCircle },
+    { label: t("nav.tentang"), href: "/tentang-kami", Icon: BookOpen },
+    { label: t("nav.bantuan"), hasDropdown: true, Icon: Question },
   ];
 }
 
-function getBantuanLinks(locale: string) {
+function getBantuanLinks(t: (key: string) => string) {
   return [
-    { label: t("nav.panduan", locale), href: "/#size", Icon: Ruler },
-    { label: t("nav.cara_pesan", locale), href: "/cara-pesan", Icon: ListChecks },
-    { label: t("nav.faq", locale), href: "/faq", Icon: Question },
-    { label: t("nav.cyp", locale), href: "/create-your-price", Icon: Question },
+    { label: t("nav.panduan"), href: "/#size", Icon: Ruler },
+    { label: t("nav.cara_pesan"), href: "/cara-pesan", Icon: ListChecks },
+    { label: t("nav.faq"), href: "/faq", Icon: Question },
+    { label: t("nav.cyp"), href: "/create-your-price", Icon: Question },
   ];
 }
 
@@ -46,14 +46,19 @@ function resolveHref(href: string, isHome: boolean): string {
 
 export default function Navbar() {
   const pathname = usePathname();
-  const isHome = pathname === "/";
-  const { locale, setLocale } = useLocale();
+  const router = useRouter();
+  const locale = useLocale() as Locale;
+  const t = useTranslations();
+  const isHome = pathname === `/${locale}` || pathname === "/";
   const [openDropdown, setOpenDropdown] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [mobileBantuanOpen, setMobileBantuanOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const navItems = getNavItems(t);
+  const bantuanLinks = getBantuanLinks(t);
 
   /* ── Scroll: transparent over hero → solid after hero ── */
   const onScroll = useCallback(() => {
@@ -84,6 +89,13 @@ export default function Navbar() {
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, [openDropdown]);
+
+  /* ── Switch locale ── */
+  function switchLocale(nextLocale: Locale) {
+    // Remove current locale prefix from pathname
+    const pathWithoutLocale = pathname.replace(new RegExp(`^/(id|en)`), "") || "/";
+    router.push(`/${nextLocale}${pathWithoutLocale}`);
+  }
 
   /* ── Styles ── */
   const shellStyle = scrolled
@@ -118,7 +130,7 @@ export default function Navbar() {
             >
               {/* Logo */}
               <a
-                href="/"
+                href={`/${locale}`}
                 className="inline-flex items-center leading-none shrink-0 cursor-pointer"
                 aria-label="SAMAQU — kembali ke beranda"
               >
@@ -134,13 +146,14 @@ export default function Navbar() {
 
               {/* Desktop nav */}
               <nav className="hidden lg:flex items-center gap-1" style={{ color: linkColor }}>
-                {getNavItems(locale).map((item) => {
+                {navItems.map((item) => {
+                  const href = item.hasDropdown ? "#" : `/${locale}${item.href === "/" ? "" : item.href}`;
                   if (!item.hasDropdown) {
-                    const isActive = pathname === item.href;
+                    const isActive = pathname === href || pathname === `${href}/`;
                     return (
                       <Link
                         key={item.label}
-                        href={item.href}
+                        href={href}
                         className={`rounded-full px-4 py-2 text-[13px] tracking-[0.14em] uppercase font-ui font-medium transition-colors ${
                           isActive ? "text-gold" : "hover:text-gold"
                         }`}
@@ -184,10 +197,10 @@ export default function Navbar() {
                               backdropFilter: "blur(16px)",
                             }}
                           >
-                            {getBantuanLinks(locale).map((link) => (
+                            {bantuanLinks.map((link) => (
                               <Link
                                 key={link.label}
-                                href={resolveHref(link.href, isHome)}
+                                href={`/${locale}${resolveHref(link.href, isHome)}`}
                                 onClick={() => setOpenDropdown(false)}
                                 className="flex w-full items-center rounded-xl px-3.5 py-2.5 text-sm font-ui font-medium transition-colors hover:bg-[rgba(201,183,156,.15)]"
                                 style={{ color: "var(--espresso)" }}
@@ -207,7 +220,7 @@ export default function Navbar() {
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                                   <path d="M17.6 6.3A7.85 7.85 0 0 0 12 4a7.94 7.94 0 0 0-6.9 11.9L4 20l4.2-1.1A7.9 7.9 0 0 0 12 19.9 7.94 7.94 0 0 0 17.6 6.3Z" />
                                 </svg>
-                                Chat Admin
+                                {t("nav.chat_admin")}
                               </a>
                             </div>
                           </motion.div>
@@ -222,26 +235,19 @@ export default function Navbar() {
               <div className="flex items-center gap-3 sm:gap-4">
                 {/* Language switcher */}
                 <div className="flex items-center rounded-full overflow-hidden" style={{ border: `1px solid ${scrolled ? "rgba(64,50,37,.2)" : "rgba(248,245,241,.25)"}` }}>
-                  <button
-                    onClick={() => setLocale("id")}
-                    className="px-2.5 py-1.5 text-[10px] font-ui font-bold tracking-wider transition-all duration-200"
-                    style={{
-                      background: locale === "id" ? (scrolled ? "var(--espresso)" : "rgba(248,245,241,.9)") : "transparent",
-                      color: locale === "id" ? (scrolled ? "var(--cream)" : "var(--espresso)") : (scrolled ? "rgba(64,50,37,.5)" : "rgba(248,245,241,.5)"),
-                    }}
-                  >
-                    ID
-                  </button>
-                  <button
-                    onClick={() => setLocale("en")}
-                    className="px-2.5 py-1.5 text-[10px] font-ui font-bold tracking-wider transition-all duration-200"
-                    style={{
-                      background: locale === "en" ? (scrolled ? "var(--espresso)" : "rgba(248,245,241,.9)") : "transparent",
-                      color: locale === "en" ? (scrolled ? "var(--cream)" : "var(--espresso)") : (scrolled ? "rgba(64,50,37,.5)" : "rgba(248,245,241,.5)"),
-                    }}
-                  >
-                    EN
-                  </button>
+                  {locales.map((loc) => (
+                    <button
+                      key={loc}
+                      onClick={() => switchLocale(loc)}
+                      className="px-2.5 py-1.5 text-[10px] font-ui font-bold tracking-wider transition-all duration-200 uppercase"
+                      style={{
+                        background: locale === loc ? (scrolled ? "var(--espresso)" : "rgba(248,245,241,.9)") : "transparent",
+                        color: locale === loc ? (scrolled ? "var(--cream)" : "var(--espresso)") : (scrolled ? "rgba(64,50,37,.5)" : "rgba(248,245,241,.5)"),
+                      }}
+                    >
+                      {loc}
+                    </button>
+                  ))}
                 </div>
 
                 {/* Profile — desktop only */}
@@ -283,8 +289,10 @@ export default function Navbar() {
           onClose={() => setMenuOpen(false)}
           isHome={isHome}
           locale={locale}
+          t={t}
           bantuanOpen={mobileBantuanOpen}
           toggleBantuan={() => setMobileBantuanOpen((v) => !v)}
+          switchLocale={switchLocale}
         />
       </MobileDrawer>
 
@@ -299,28 +307,33 @@ function DrawerNavContent({
   onClose,
   isHome,
   locale,
+  t,
   bantuanOpen,
   toggleBantuan,
+  switchLocale,
 }: {
   onClose: () => void;
   isHome: boolean;
-  locale: string;
+  locale: Locale;
+  t: (key: string) => string;
   bantuanOpen: boolean;
   toggleBantuan: () => void;
+  switchLocale: (locale: Locale) => void;
 }) {
   const pathname = usePathname();
-  const navItems = getNavItems(locale);
-  const bantuanLinks = getBantuanLinks(locale);
+  const navItems = getNavItems(t);
+  const bantuanLinks = getBantuanLinks(t);
 
   return (
     <nav className="flex flex-col h-full" role="navigation" aria-label="Menu mobile">
       <ul className="flex flex-col" role="list">
         {navItems.map((item) => {
+          const href = item.hasDropdown ? "#" : `/${locale}${item.href === "/" ? "" : item.href}`;
           if (!item.hasDropdown) {
             return (
               <li key={item.label}>
                 <a
-                  href={item.href}
+                  href={href}
                   className="flex items-center gap-4 px-6 py-4 text-[13px] tracking-[0.18em] uppercase font-ui transition-colors duration-200 hover:text-gold hover:bg-[var(--sand-2)]"
                   style={{
                     color: "var(--espresso)",
@@ -370,7 +383,7 @@ function DrawerNavContent({
                     {bantuanLinks.map((link) => (
                       <a
                         key={link.label}
-                        href={resolveHref(link.href, isHome)}
+                        href={`/${locale}${resolveHref(link.href, isHome)}`}
                         className="flex items-center gap-4 pl-14 pr-6 py-3.5 text-[12px] tracking-[0.16em] uppercase font-ui transition-colors duration-200 hover:text-gold hover:bg-[var(--sand-2)]"
                         style={{
                           color: "var(--espresso)",
@@ -393,10 +406,32 @@ function DrawerNavContent({
       {/* Spacer */}
       <div className="flex-1" />
 
+      {/* Language switcher in drawer */}
+      <div className="px-6 pb-2">
+        <div className="flex items-center gap-3 py-3" style={{ borderBottom: "1px solid rgba(201,183,156,.12)" }}>
+          <span className="text-[13px] tracking-[0.18em] uppercase font-ui" style={{ color: "var(--espresso)" }}>Bahasa</span>
+          <div className="flex items-center rounded-full overflow-hidden" style={{ border: "1px solid rgba(64,50,37,.2)" }}>
+            {locales.map((loc) => (
+              <button
+                key={loc}
+                onClick={() => switchLocale(loc)}
+                className="px-3 py-1.5 text-[11px] font-ui font-bold tracking-wider transition-all duration-200 uppercase"
+                style={{
+                  background: locale === loc ? "var(--espresso)" : "transparent",
+                  color: locale === loc ? "var(--cream)" : "rgba(64,50,37,.5)",
+                }}
+              >
+                {loc}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* Account link */}
       <div className="px-6 pb-2">
         <a
-          href="/akun"
+          href={`/${locale}/akun`}
           className="flex items-center gap-4 px-0 py-3 text-[13px] tracking-[0.18em] uppercase font-ui transition-colors duration-200 hover:text-gold"
           style={{
             color: "var(--espresso)",
@@ -405,7 +440,7 @@ function DrawerNavContent({
           onClick={onClose}
         >
           <User size={22} strokeWidth={1.5} style={{ color: "var(--gold)" }} />
-          {t("nav.account", locale)}
+          {t("nav.account")}
         </a>
       </div>
 
@@ -422,7 +457,7 @@ function DrawerNavContent({
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
             <path d="M17.6 6.3A7.85 7.85 0 0 0 12 4a7.94 7.94 0 0 0-6.9 11.9L4 20l4.2-1.1A7.9 7.9 0 0 0 12 19.9 7.94 7.94 0 0 0 17.6 6.3Z" />
           </svg>
-          {t("nav.chat_admin", locale)}
+          {t("nav.chat_admin")}
         </a>
         <p className="text-center text-[10px] tracking-[0.2em] uppercase mt-4 font-ui" style={{ color: "var(--stone)" }}>
           SAMAQU — Busana Muslim Premium

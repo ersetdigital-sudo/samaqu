@@ -1,0 +1,66 @@
+{
+  "nav": {
+    "home": "Home",
+    "katalog": "Catalog",
+    "testimoni": "Testimonials",
+    "tentang": "About Us",
+    "bantuan": "Help",
+    "panduan": "Size Guide",
+    "cara_pesan": "How to Order",
+    "faq": "FAQ",
+    "cyp": "Create Your Price",
+    "account": "Account",
+    "chat_admin": "Chat Admin"
+  },
+  "hero": {
+    "eyebrow": "Premium Muslim Menswear",
+    "title1": "Clothing That Matters",
+    "title2": "Accompanying Every Moment.",
+    "desc": "Designed with premium materials, precise cuts, and details made for comfort in every activity.",
+    "cta1": "View Collection",
+    "cta2": "Contact Admin",
+    "feature1": "6 Exclusive Collections",
+    "feature2": "Various Fabric Types",
+    "feature3": "Complete Size Guide"
+  },
+  "katalog": {
+    "title": "SAMAQU Catalog",
+    "subtitle": "Find premium muslim wear that matches your style and needs.",
+    "search": "Search thobe, koko...",
+    "all": "All",
+    "filter": "Filter",
+    "sort_new": "Newest",
+    "sort_az": "Name A-Z",
+    "sort_pop": "Popular",
+    "load_more": "Load More",
+    "detail": "View Detail",
+    "starting": "Starting",
+    "sold_out": "Sold Out",
+    "low_stock": "Low Stock — only",
+    "ready_stock": "Ready stock",
+    "series_avail": "series available",
+    "no_result": "No products match this filter.",
+    "reset": "Reset Filter"
+  },
+  "testimoni": {
+    "eyebrow": "SAMAQU Reviews",
+    "title": "What {highlight}They Say?",
+    "subtitle": "Don't just take our word for it.",
+    "desc": "Quality, comfort, sizing, service, and the experience of receiving Samaqu. Let them tell their stories.",
+    "cta_title": "Ready to Experience It Yourself?",
+    "cta_desc": "Find the SAMAQU product that suits you and become part of those who have experienced our quality.",
+    "cta_collection": "View Collection",
+    "cta whatsapp": "Consult via WhatsApp"
+  },
+  "footer": {
+    "desc": "Same quality for everyone. You decide the price.",
+    "pages": "Pages",
+    "contact": "Contact Us",
+    "copyright": "All rights reserved."
+  },
+  "common": {
+    "whatsapp": "WhatsApp",
+    "instagram": "Instagram",
+    "email": "Email"
+  }
+}

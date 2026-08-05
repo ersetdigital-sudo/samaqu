@@ -1,0 +1,66 @@
+{
+  "nav": {
+    "home": "Home",
+    "katalog": "Katalog",
+    "testimoni": "Testimoni",
+    "tentang": "Tentang Kami",
+    "bantuan": "Bantuan",
+    "panduan": "Panduan Ukuran",
+    "cara_pesan": "Cara Pesan",
+    "faq": "FAQ",
+    "cyp": "Create Your Price",
+    "account": "Account",
+    "chat_admin": "Chat Admin"
+  },
+  "hero": {
+    "eyebrow": "Premium Muslim Menswear",
+    "title1": "Busana yang Layak",
+    "title2": "Menemani Setiap Momen.",
+    "desc": "Dirancang dengan material pilihan, potongan yang presisi, dan detail yang dibuat untuk kenyamanan dalam setiap aktivitas.",
+    "cta1": "Lihat Koleksi",
+    "cta2": "Hubungi Admin",
+    "feature1": "6 Koleksi Eksklusif",
+    "feature2": "Berbagai Jenis Kain",
+    "feature3": "Panduan Size Lengkap"
+  },
+  "katalog": {
+    "title": "Katalog Samaqu",
+    "subtitle": "Temukan busana muslim premium yang sesuai dengan gaya dan kebutuhan Anda.",
+    "search": "Cari jubah, thobe, koko...",
+    "all": "Semua",
+    "filter": "Filter",
+    "sort_new": "Terbaru",
+    "sort_az": "Nama A-Z",
+    "sort_pop": "Terpopuler",
+    "load_more": "Muat Lebih Banyak",
+    "detail": "Lihat Detail",
+    "starting": "Mulai",
+    "sold_out": "Sold Out",
+    "low_stock": "Menipis — sisa",
+    "ready_stock": "Ready stock",
+    "series_avail": "series tersedia",
+    "no_result": "Belum ada produk yang cocok dengan filter ini.",
+    "reset": "Reset Filter"
+  },
+  "testimoni": {
+    "eyebrow": "Review Samaqu",
+    "title": "Apa Kata {highlight}Mereka?",
+    "subtitle": "Jangan hanya percaya kata kami.",
+    "desc": "Kualitas, kenyamanan, ukuran, pelayanan, hingga pengalaman menerima Samaqu. Biar mereka yang bercerita.",
+    "cta_title": "Sudah Siap Merasakan Sendiri?",
+    "cta_desc": "Temukan produk Samaqu yang sesuai denganmu dan jadilah bagian dari mereka yang telah merasakan kualitasnya.",
+    "cta collection": "Lihat Koleksi",
+    "cta whatsapp": "Konsultasi via WhatsApp"
+  },
+  "footer": {
+    "desc": "Kualitas yang sama untuk semua. Kamu yang menentukan harganya.",
+    "pages": "Halaman",
+    "contact": "Hubungi Kami",
+    "copyright": "Semua hak dilindungi."
+  },
+  "common": {
+    "whatsapp": "WhatsApp",
+    "instagram": "Instagram",
+    "email": "Email"
+  }
+}
