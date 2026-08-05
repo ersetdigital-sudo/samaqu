@@ -77,6 +77,7 @@ interface KainSeriesItem {
   gradient: string;
   points: KainSeriesPoint[];
   fit: string;
+  price?: string;
 }
 
 const ACCENT_ON_DARK = "#e0be8a";
@@ -94,6 +95,7 @@ const KAIN: KainSeriesItem[] = [
       { icon: AirIcon, title: "Adem & nyaman", desc: "Sirkulasi udara baik, nyaman dipakai seharian." },
     ],
     fit: "Aktivitas formal, acara penting, dan tampilan premium sehari-hari.",
+    price: "Rp 329.000",
   },
   {
     code: "B.02",
@@ -106,6 +108,7 @@ const KAIN: KainSeriesItem[] = [
       { icon: AirIcon, title: "Breathable", desc: "Cocok untuk cuaca panas maupun ruang ber-AC." },
     ],
     fit: "Kerja, kajian, dan pemakaian harian yang tetap rapi.",
+    price: "Rp 379.000",
   },
   {
     code: "A.02",
@@ -118,6 +121,7 @@ const KAIN: KainSeriesItem[] = [
       { icon: AirIcon, title: "Sangat adem", desc: "Pilihan terbaik untuk suhu panas." },
     ],
     fit: "Perjalanan, aktivitas outdoor, dan pemakaian santai.",
+    price: "Rp 324.000",
   },
   {
     code: "C.01",
@@ -130,6 +134,7 @@ const KAIN: KainSeriesItem[] = [
       { icon: AirIcon, title: "Mudah dirawat", desc: "Cepat kering dan tidak rewel saat disetrika." },
     ],
     fit: "Pemakaian harian, ibadah, dan acara keluarga.",
+    price: "Rp 254.000",
   },
 ];
 
@@ -220,6 +225,11 @@ function Slide({ item }: { item: KainSeriesItem }) {
           >
             {item.tag}
           </span>
+          {item.price && (
+            <p className="mt-3 text-[13px] font-medium font-ui" style={{ color: ACCENT_ON_DARK }}>
+              Harga mulai dari: {item.price}
+            </p>
+          )}
           <div className="mt-3.5 h-px w-12" style={{ background: "var(--gold)" }} />
           <div
             className="hidden md:flex mt-5 rounded-2xl p-3.5 gap-3"
