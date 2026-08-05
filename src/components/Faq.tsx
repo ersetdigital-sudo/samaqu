@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, Variants } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { useSafeTranslations } from "@/lib/safe-i18n";
 
 /* ─── Default Data (fallback jika DB kosong) ─── */
 const DEFAULT_FAQS = [
@@ -136,6 +137,7 @@ function FaqItem({
 
 /* ─── Section ─── */
 export default function Faq() {
+  const t = useSafeTranslations("faqHome");
   const [openIndex, setOpenIndex] = useState<number | null>(0);
   const [faqs, setFaqs] = useState(DEFAULT_FAQS);
 
@@ -174,7 +176,7 @@ export default function Faq() {
                   color: "var(--gold)",
                 }}
               >
-                Pertanyaan Umum
+                {t("faqHome.eyebrow")}
               </span>
               <h2
                 id="faq-heading"
@@ -184,14 +186,13 @@ export default function Faq() {
                   color: "var(--espresso)",
                 }}
               >
-                FAQ
+                {t("faqHome.title")}
               </h2>
               <p
                 className="mt-6 max-w-xs text-base leading-relaxed"
                 style={{ color: "rgba(42,33,27,.7)" }}
               >
-                Temukan jawaban untuk pertanyaan umum seputar produk dan
-                pemesanan.
+                {t("faqHome.subtitle")}
               </p>
               <div
                 className="mt-8 h-px w-16"
@@ -201,8 +202,7 @@ export default function Faq() {
                 className="mt-6 max-w-xs text-sm leading-relaxed"
                 style={{ color: "rgba(42,33,27,.55)" }}
               >
-                Masih ada yang ingin ditanyakan? Tim kami dengan senang hati
-                membantu kapan pun kamu butuh.
+                {t("faqHome.helpText")}
               </p>
             </motion.div>
           </div>
