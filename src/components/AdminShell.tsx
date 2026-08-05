@@ -60,7 +60,7 @@ export default function AdminShell({ children, onLogout }: { children: ReactNode
           ))}
 
           <p className="px-3 text-[11px] font-semibold uppercase tracking-wider mb-2 mt-6" style={{ color: "#8f8680" }}>Lainnya</p>
-          {navItems.slice(5).map((item) => (
+          {navItems.slice(4).map((item) => (
             <Link
               key={item.label}
               href={item.href}
