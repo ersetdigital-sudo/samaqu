@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { useLocale, useTranslations } from "next-intl";
+import { useSafeLocale, useSafeTranslations } from "@/lib/safe-i18n";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDown, ShoppingBag, Home, User } from "lucide-react";
@@ -47,8 +47,8 @@ function resolveHref(href: string, isHome: boolean): string {
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
-  const locale = useLocale() as Locale;
-  const t = useTranslations();
+  const locale = useSafeLocale() as Locale;
+  const t = useSafeTranslations();
   const isHome = pathname === `/${locale}` || pathname === "/";
   const [openDropdown, setOpenDropdown] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
