@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  LayoutDashboard, ShoppingBag, Package, Users, FileText, Settings,
+  LayoutDashboard, ShoppingBag, Package, Users, FileText,
   Search, Bell, Menu, LogOut, X, Ticket,
 } from "lucide-react";
 import { useToast } from "@/components/AdminToast";
@@ -17,10 +17,10 @@ const navItems = [
   { href: "/admin", label: "Produk", icon: Package },
   { href: "/admin", label: "Pelanggan", icon: Users },
   { href: "/admin/konten-website", label: "Konten Website", icon: FileText },
+  { href: "/admin", label: "Produk Pilihan", icon: Package },
+  { href: "/admin/voucher", label: "Voucher", icon: Ticket },
   { href: "/admin/testimoni", label: "Testimoni", icon: FileText },
   { href: "/admin/garansi-retur-page", label: "Halaman Garansi & Retur", icon: FileText },
-  { href: "/admin/voucher", label: "Voucher", icon: Ticket },
-  { href: "/admin", label: "Pengaturan", icon: Settings },
 ];
 
 export default function AdminShell({ children, onLogout }: { children: ReactNode; onLogout?: () => void }) {
@@ -47,7 +47,7 @@ export default function AdminShell({ children, onLogout }: { children: ReactNode
 
         <nav className="flex-1 px-4 py-5 space-y-1.5">
           <p className="px-3 text-[11px] font-semibold uppercase tracking-wider mb-2" style={{ color: "#8f8680" }}>Menu Utama</p>
-          {navItems.slice(0, 5).map((item) => (
+          {navItems.slice(0, 4).map((item) => (
             <Link
               key={item.label}
               href={item.href}
