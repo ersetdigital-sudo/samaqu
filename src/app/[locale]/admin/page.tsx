@@ -521,6 +521,14 @@ function AdminPageInner() {
             <Star size={20} strokeWidth={1.6} />
             <span>Testimoni</span>
           </Link>
+          <Link
+            href="/admin/garansi-retur-page"
+            className="sidebar-link w-full text-left"
+            onClick={() => setSidebarOpen(false)}
+          >
+            <FileText size={20} strokeWidth={1.6} />
+            <span>Halaman Garansi &amp; Retur</span>
+          </Link>
         </nav>
 
         <div className="px-4 pb-6">
