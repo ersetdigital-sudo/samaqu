@@ -27,7 +27,7 @@ export default function CaraPesanPage() {
     <section className="min-h-screen" style={{ background: "var(--cream)" }}>
       {/* Hero */}
       <div style={{ background: "var(--espresso)", color: "var(--cream)" }}>
-        <div className="max-w-6xl mx-auto px-5 sm:px-8 py-16 sm:py-24 grid lg:grid-cols-2 gap-12 items-center">
+        <div className="max-w-6xl mx-auto px-5 sm:px-8 pt-24 pb-16 sm:py-24 grid lg:grid-cols-2 gap-12 items-center">
           <div>
             <p className="text-xs tracking-[0.3em] uppercase font-ui mb-5" style={{ color: "var(--gold)" }}>{t("heroEyebrow")}</p>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl leading-[1.08] font-medium" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>
