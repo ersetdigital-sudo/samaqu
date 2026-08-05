@@ -11,6 +11,7 @@ export interface DbProduct {
   colors: string[];
   price: number;
   tag: string | null;
+  badge_type: string | null;
   note: string | null;
   image: string;
   images: string[];
@@ -59,6 +60,7 @@ function dbProductToProduct(db: DbProduct): Product {
     create_your_price_enabled: db.create_your_price_enabled ?? false,
     cyp_microcopy_override: db.cyp_microcopy_override || null,
     tag: (db.tag as Product["tag"]) || undefined,
+    badge_type: db.badge_type || null,
     note: db.note || undefined,
     image: db.image || "",
     images,
