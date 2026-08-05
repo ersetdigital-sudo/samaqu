@@ -24,8 +24,15 @@ function getNavItems(t: (key: string) => string): NavItem[] {
     { label: t("nav.home"), href: "/", Icon: Home },
     { label: t("nav.katalog"), href: "/katalog", Icon: Storefront },
     { label: t("nav.testimoni"), href: "/testimoni", Icon: MessageCircle },
-    { label: t("nav.tentang"), href: "/tentang-kami", Icon: BookOpen },
     { label: t("nav.bantuan"), hasDropdown: true, Icon: Question },
+  ];
+}
+
+type NavLinkItem = { label: string; href: string; hasDropdown?: false; Icon?: IconComponent };
+
+function getMobileExtraItems(t: (key: string) => string): NavLinkItem[] {
+  return [
+    { label: t("nav.tentang"), href: "/tentang-kami", Icon: BookOpen },
   ];
 }
 
@@ -322,6 +329,7 @@ function DrawerNavContent({
 }) {
   const pathname = usePathname();
   const navItems = getNavItems(t);
+  const extraItems = getMobileExtraItems(t);
   const bantuanLinks = getBantuanLinks(t);
 
   return (
@@ -401,6 +409,24 @@ function DrawerNavContent({
             </li>
           );
         })}
+
+        {/* Extra items (mobile only) — Tentang Kami */}
+        {extraItems.map((item) => (
+          <li key={item.label}>
+            <a
+              href={`/${locale}${item.href === "/" ? "" : item.href}`}
+              className="flex items-center gap-4 px-6 py-4 text-[13px] tracking-[0.18em] uppercase font-ui transition-colors duration-200 hover:text-gold hover:bg-[var(--sand-2)]"
+              style={{
+                color: "var(--espresso)",
+                borderBottom: "1px solid rgba(201,183,156,.12)",
+              }}
+              onClick={onClose}
+            >
+              {item.Icon && <item.Icon size={22} weight="light" style={{ color: "var(--gold)" }} />}
+              {item.label}
+            </a>
+          </li>
+        ))}
       </ul>
 
       {/* Spacer */}

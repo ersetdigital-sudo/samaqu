@@ -3,29 +3,35 @@
 import { useStoreSettings, getWhatsAppLink } from "@/lib/store-settings";
 import { useSafeTranslations } from "@/lib/safe-i18n";
 
-const navLinks = [
-  { href: "/katalog", label: "Katalog" },
-  { href: "/testimoni", label: "Testimoni" },
-  { href: "/tentang-kami", label: "Tentang Kami" },
-  { href: "/faq", label: "FAQ" },
-  {
-    href: "https://instagram.com/samaqu.id",
-    label: "Instagram",
-    external: true,
-  },
-];
+function getNavLinks(t: (key: string) => string) {
+  return [
+    { href: "/katalog", label: t("nav.katalog") },
+    { href: "/testimoni", label: t("nav.testimoni") },
+    { href: "/tentang-kami", label: t("nav.tentang") },
+    { href: "/faq", label: t("nav.faq") },
+    {
+      href: "https://instagram.com/samaqu.id",
+      label: "Instagram",
+      external: true,
+    },
+  ];
+}
 
-const helpLinks = [
-  { href: "/cara-pesan", label: "CARA PESAN" },
-  { href: "/faq", label: "FAQ" },
-  { href: "/#size", label: "PANDUAN UKURAN" },
-  { href: "/create-your-price", label: "CREATE YOUR PRICE" },
-];
+function getHelpLinks(t: (key: string) => string) {
+  return [
+    { href: "/cara-pesan", label: t("nav.cara_pesan") },
+    { href: "/faq", label: t("nav.faq") },
+    { href: "/#size", label: t("nav.panduan") },
+    { href: "/create-your-price", label: t("nav.cyp") },
+  ];
+}
 
 export default function Footer() {
-  const t = useSafeTranslations("footer");
+  const t = useSafeTranslations();
   const settings = useStoreSettings();
   const instagramUrl = settings.instagram_url || "";
+  const navLinks = getNavLinks(t);
+  const helpLinks = getHelpLinks(t);
 
   return (
     <footer className="relative pt-12 sm:pt-20 pb-20 sm:pb-14 overflow-hidden" style={{ background: "#1a120f" }}>
@@ -65,14 +71,14 @@ export default function Footer() {
               className="text-xs sm:text-sm max-w-xs leading-[1.75] font-ui"
               style={{ color: "var(--sand)" }}
             >
-              {t("tagline")}
+              {t("footer.tagline")}
             </p>
           </div>
 
           {/* Column 2: Navigasi */}
           <div>
             <p className="text-[11px] tracking-[0.22em] uppercase font-ui font-semibold mb-3 sm:mb-4" style={{ color: "var(--gold)" }}>
-              {t("nav")}
+              {t("footer.nav")}
             </p>
             <nav aria-label="Navigasi footer" className="flex flex-col gap-2 sm:gap-2.5">
               {navLinks.map((link) => (
@@ -93,7 +99,7 @@ export default function Footer() {
           {/* Column 3: Bantuan */}
           <div>
             <p className="text-[11px] tracking-[0.22em] uppercase font-ui font-semibold mb-3 sm:mb-4" style={{ color: "var(--gold)" }}>
-              {t("help")}
+              {t("footer.help")}
             </p>
             <nav aria-label="Bantuan footer" className="flex flex-col gap-2 sm:gap-2.5">
               {helpLinks.map((link) => (
@@ -112,7 +118,7 @@ export default function Footer() {
           {/* Column 4: Terhubung */}
           <div>
             <p className="text-[11px] tracking-[0.22em] uppercase font-ui font-semibold mb-3 sm:mb-4" style={{ color: "var(--gold)" }}>
-              {t("connected")}
+              {t("footer.connected")}
             </p>
             <div className="flex items-center gap-3">
               {instagramUrl && (
@@ -153,7 +159,7 @@ export default function Footer() {
           className="pt-5 sm:pt-8 text-[11px] sm:text-xs font-ui text-center"
           style={{ color: "rgba(216,196,168,.5)" }}
         >
-          <p>{t("copyright")}</p>
+          <p>{t("footer.copyright")}</p>
         </div>
       </div>
     </footer>
