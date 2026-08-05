@@ -12,26 +12,31 @@ import { useCart } from "@/lib/cart-context";
 import CartDrawer from "@/components/CartDrawer";
 import { getWhatsAppLink } from "@/lib/store-settings";
 import { useLocale } from "@/lib/locale-context";
+import { t } from "@/lib/translations";
 
 /* ── Nav data ── */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type IconComponent = React.ComponentType<any>;
 type NavItem = { label: string; href: string; hasDropdown?: false; Icon?: IconComponent } | { label: string; hasDropdown: true; Icon?: IconComponent };
 
-const NAV_ITEMS: NavItem[] = [
-  { label: "Home", href: "/", Icon: Home },
-  { label: "Katalog", href: "/katalog", Icon: Storefront },
-  { label: "Testimoni", href: "/testimoni", Icon: MessageCircle },
-  { label: "Tentang Kami", href: "/tentang-kami", Icon: BookOpen },
-  { label: "Bantuan", hasDropdown: true, Icon: Question },
-];
+function getNavItems(locale: string): NavItem[] {
+  return [
+    { label: t("nav.home", locale), href: "/", Icon: Home },
+    { label: t("nav.katalog", locale), href: "/katalog", Icon: Storefront },
+    { label: t("nav.testimoni", locale), href: "/testimoni", Icon: MessageCircle },
+    { label: t("nav.tentang", locale), href: "/tentang-kami", Icon: BookOpen },
+    { label: t("nav.bantuan", locale), hasDropdown: true, Icon: Question },
+  ];
+}
 
-const BANTUAN_LINKS = [
-  { label: "PANDUAN UKURAN", href: "/#size", Icon: Ruler },
-  { label: "CARA PESAN", href: "/cara-pesan", Icon: ListChecks },
-  { label: "FAQ", href: "/faq", Icon: Question },
-  { label: "CREATE YOUR PRICE", href: "/create-your-price", Icon: Question },
-];
+function getBantuanLinks(locale: string) {
+  return [
+    { label: t("nav.panduan", locale), href: "/#size", Icon: Ruler },
+    { label: t("nav.cara_pesan", locale), href: "/cara-pesan", Icon: ListChecks },
+    { label: t("nav.faq", locale), href: "/faq", Icon: Question },
+    { label: t("nav.cyp", locale), href: "/create-your-price", Icon: Question },
+  ];
+}
 
 /* ── Resolve anchor href: if not on home, prefix with / ── */
 function resolveHref(href: string, isHome: boolean): string {
@@ -129,7 +134,7 @@ export default function Navbar() {
 
               {/* Desktop nav */}
               <nav className="hidden lg:flex items-center gap-1" style={{ color: linkColor }}>
-                {NAV_ITEMS.map((item) => {
+                {getNavItems(locale).map((item) => {
                   if (!item.hasDropdown) {
                     const isActive = pathname === item.href;
                     return (
@@ -179,7 +184,7 @@ export default function Navbar() {
                               backdropFilter: "blur(16px)",
                             }}
                           >
-                            {BANTUAN_LINKS.map((link) => (
+                            {getBantuanLinks(locale).map((link) => (
                               <Link
                                 key={link.label}
                                 href={resolveHref(link.href, isHome)}
@@ -277,6 +282,7 @@ export default function Navbar() {
         <DrawerNavContent
           onClose={() => setMenuOpen(false)}
           isHome={isHome}
+          locale={locale}
           bantuanOpen={mobileBantuanOpen}
           toggleBantuan={() => setMobileBantuanOpen((v) => !v)}
         />
@@ -292,20 +298,24 @@ export default function Navbar() {
 function DrawerNavContent({
   onClose,
   isHome,
+  locale,
   bantuanOpen,
   toggleBantuan,
 }: {
   onClose: () => void;
   isHome: boolean;
+  locale: string;
   bantuanOpen: boolean;
   toggleBantuan: () => void;
 }) {
   const pathname = usePathname();
+  const navItems = getNavItems(locale);
+  const bantuanLinks = getBantuanLinks(locale);
 
   return (
     <nav className="flex flex-col h-full" role="navigation" aria-label="Menu mobile">
       <ul className="flex flex-col" role="list">
-        {NAV_ITEMS.map((item) => {
+        {navItems.map((item) => {
           if (!item.hasDropdown) {
             return (
               <li key={item.label}>
@@ -357,7 +367,7 @@ function DrawerNavContent({
                     transition={{ duration: 0.25 }}
                     className="overflow-hidden"
                   >
-                    {BANTUAN_LINKS.map((link) => (
+                    {bantuanLinks.map((link) => (
                       <a
                         key={link.label}
                         href={resolveHref(link.href, isHome)}
@@ -395,7 +405,7 @@ function DrawerNavContent({
           onClick={onClose}
         >
           <User size={22} strokeWidth={1.5} style={{ color: "var(--gold)" }} />
-          Account
+          {t("nav.account", locale)}
         </a>
       </div>
 
@@ -412,7 +422,7 @@ function DrawerNavContent({
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
             <path d="M17.6 6.3A7.85 7.85 0 0 0 12 4a7.94 7.94 0 0 0-6.9 11.9L4 20l4.2-1.1A7.9 7.9 0 0 0 12 19.9 7.94 7.94 0 0 0 17.6 6.3Z" />
           </svg>
-          Chat Admin
+          {t("nav.chat_admin", locale)}
         </a>
         <p className="text-center text-[10px] tracking-[0.2em] uppercase mt-4 font-ui" style={{ color: "var(--stone)" }}>
           SAMAQU — Busana Muslim Premium
