@@ -213,10 +213,10 @@ export default function Navbar() {
                 })}
               </nav>
 
-              {/* Right: language switcher (mobile) + profile (desktop) + cart + hamburger */}
+              {/* Right: language switcher + profile (desktop) + cart + hamburger */}
               <div className="flex items-center gap-3 sm:gap-4">
-                {/* Language switcher — mobile only */}
-                <div className="lg:hidden flex items-center rounded-full overflow-hidden" style={{ border: `1px solid ${scrolled ? "rgba(64,50,37,.2)" : "rgba(248,245,241,.25)"}` }}>
+                {/* Language switcher */}
+                <div className="flex items-center rounded-full overflow-hidden" style={{ border: `1px solid ${scrolled ? "rgba(64,50,37,.2)" : "rgba(248,245,241,.25)"}` }}>
                   <button
                     onClick={() => setLocale("id")}
                     className="px-2.5 py-1.5 text-[10px] font-ui font-bold tracking-wider transition-all duration-200"
