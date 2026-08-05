@@ -23,7 +23,7 @@ const DEFAULTS = {
 export default function Hero() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [shouldPlay, setShouldPlay] = useState(false);
-  const [muted, setMuted] = useState(true);
+  const [muted, setMuted] = useState(false);
   const [heroData, setHeroData] = useState(DEFAULTS);
 
   // Fetch hero content from Supabase
@@ -67,7 +67,14 @@ export default function Hero() {
 
   useEffect(() => {
     if (!shouldPlay || !videoRef.current) return;
-    videoRef.current.play().catch(() => {});
+    videoRef.current.play().catch(() => {
+      // Jika autoplay dengan suara diblokir, fallback ke muted
+      setMuted(true);
+      if (videoRef.current) {
+        videoRef.current.muted = true;
+        videoRef.current.play().catch(() => {});
+      }
+    });
   }, [shouldPlay]);
 
   useEffect(() => {
@@ -258,20 +265,23 @@ export default function Hero() {
       {shouldPlay && (
         <button
           onClick={toggleMute}
-          className="absolute bottom-6 right-5 sm:right-8 z-10 flex items-center justify-center w-10 h-10 rounded-full transition-all duration-300 hover:scale-110"
+          className={`absolute bottom-6 right-5 sm:right-8 z-10 flex items-center gap-2 rounded-full transition-all duration-300 hover:scale-105 ${muted ? "px-4 py-2.5" : "w-10 h-10 justify-center"}`}
           style={{
-            background: "rgba(0,0,0,.35)",
+            background: muted ? "var(--gold)" : "rgba(0,0,0,.35)",
             backdropFilter: "blur(8px)",
-            border: "1px solid rgba(248,245,241,.15)",
+            border: muted ? "none" : "1px solid rgba(248,245,241,.15)",
           }}
           aria-label={muted ? "Nyalakan suara" : "Matikan suara"}
         >
           {muted ? (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(248,245,241,.8)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M11 5L6 9H2v6h4l5 4V5z" />
-              <line x1="23" y1="9" x2="17" y2="15" />
-              <line x1="17" y1="9" x2="23" y2="15" />
-            </svg>
+            <>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M11 5L6 9H2v6h4l5 4V5z" />
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+                <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+              </svg>
+              <span className="text-[11px] font-semibold text-white">Nyalakan Suara</span>
+            </>
           ) : (
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(248,245,241,.8)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M11 5L6 9H2v6h4l5 4V5z" />
