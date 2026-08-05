@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getWhatsAppLink } from "@/lib/store-settings";
+import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 
 interface CategoryItem {
@@ -53,7 +53,7 @@ export default function Koleksi() {
         <div className="mt-6 sm:mt-8 lg:mt-10 grid grid-cols-2 gap-2.5 sm:gap-4 lg:gap-5">
 
           {/* Thobe — tall (left col, spans 2 rows) */}
-          <article className="card group relative overflow-hidden rounded-[14px] sm:rounded-[22px] shadow-[0_18px_40px_-18px_rgba(42,33,27,.55)] row-span-2 min-h-[340px] sm:min-h-[460px] lg:min-h-[560px]" style={{ background: "var(--espresso)" }}>
+          <Link href="/katalog" className="card group relative overflow-hidden rounded-[14px] sm:rounded-[22px] shadow-[0_18px_40px_-18px_rgba(42,33,27,.55)] row-span-2 min-h-[340px] sm:min-h-[460px] lg:min-h-[560px]" style={{ background: "var(--espresso)" }}>
             <img src={categories[0]?.image_url} alt="Thobe" className="absolute inset-0 h-full w-full object-cover transition-transform duration-[800ms] ease-[cubic-bezier(.2,.7,.2,1)] group-hover:scale-[1.06]" />
             <span className="absolute top-2.5 left-2.5 sm:top-4 sm:left-4 z-20 rounded-full px-2 py-0.5 sm:px-3 sm:py-1 text-[8px] sm:text-[10px] font-semibold tracking-[0.18em] uppercase text-white" style={{ background: "var(--gold)" }}>Best Seller</span>
             <div className="absolute inset-0 card-shade" />
@@ -66,10 +66,10 @@ export default function Koleksi() {
                 <span className="text-[11px] sm:text-base">→</span>
               </span>
             </div>
-          </article>
+          </Link>
 
           {/* Koko — wide (right col, row 1) */}
-          <article className="card group relative overflow-hidden rounded-[14px] sm:rounded-[22px] shadow-[0_18px_40px_-18px_rgba(42,33,27,.55)] min-h-[160px] sm:min-h-[220px] lg:min-h-[270px]" style={{ background: "var(--espresso)" }}>
+          <Link href="/katalog" className="card group relative overflow-hidden rounded-[14px] sm:rounded-[22px] shadow-[0_18px_40px_-18px_rgba(42,33,27,.55)] min-h-[160px] sm:min-h-[220px] lg:min-h-[270px]" style={{ background: "var(--espresso)" }}>
             <img src={categories[2]?.image_url} alt="Koko" className="absolute inset-0 h-full w-full object-cover object-[62%_35%] transition-transform duration-[800ms] ease-[cubic-bezier(.2,.7,.2,1)] group-hover:scale-[1.06]" />
             <div className="absolute inset-0 wide-shade" />
             <div className="absolute inset-0 z-10 flex items-end justify-between gap-2 sm:gap-4 p-3 sm:p-6">
@@ -81,10 +81,10 @@ export default function Koleksi() {
                 <span className="text-[11px] sm:text-base">→</span>
               </span>
             </div>
-          </article>
+          </Link>
 
           {/* Vest — wide (right col, row 2) */}
-          <article className="card group relative overflow-hidden rounded-[14px] sm:rounded-[22px] shadow-[0_18px_40px_-18px_rgba(42,33,27,.55)] min-h-[160px] sm:min-h-[220px] lg:min-h-[270px]" style={{ background: "var(--espresso)" }}>
+          <Link href="/katalog" className="card group relative overflow-hidden rounded-[14px] sm:rounded-[22px] shadow-[0_18px_40px_-18px_rgba(42,33,27,.55)] min-h-[160px] sm:min-h-[220px] lg:min-h-[270px]" style={{ background: "var(--espresso)" }}>
             <img src={categories[3]?.image_url} alt="Vest" className="absolute inset-0 h-full w-full object-cover object-[55%_18%] transition-transform duration-[800ms] ease-[cubic-bezier(.2,.7,.2,1)] group-hover:scale-[1.06]" />
             <div className="absolute inset-0 wide-shade" />
             <div className="absolute inset-0 z-10 flex items-end justify-between gap-2 sm:gap-4 p-3 sm:p-6">
@@ -96,10 +96,10 @@ export default function Koleksi() {
                 <span className="text-[11px] sm:text-base">→</span>
               </span>
             </div>
-          </article>
+          </Link>
 
           {/* Kandora — tall (left col, spans 2 rows) */}
-          <article className="card group relative overflow-hidden rounded-[14px] sm:rounded-[22px] shadow-[0_18px_40px_-18px_rgba(42,33,27,.55)] row-span-2 min-h-[340px] sm:min-h-[460px] lg:min-h-[560px]" style={{ background: "var(--espresso)" }}>
+          <Link href="/katalog" className="card group relative overflow-hidden rounded-[14px] sm:rounded-[22px] shadow-[0_18px_40px_-18px_rgba(42,33,27,.55)] row-span-2 min-h-[340px] sm:min-h-[460px] lg:min-h-[560px]" style={{ background: "var(--espresso)" }}>
             <img src={categories[1]?.image_url} alt="Kandora" className="absolute inset-0 h-full w-full object-cover transition-transform duration-[800ms] ease-[cubic-bezier(.2,.7,.2,1)] group-hover:scale-[1.06]" />
             <div className="absolute inset-0 card-shade" />
             <div className="absolute inset-x-0 bottom-0 z-10 flex items-end justify-between gap-2 sm:gap-4 p-3 sm:p-6">
@@ -107,14 +107,14 @@ export default function Koleksi() {
                 <h2 className="text-lg sm:text-3xl font-semibold text-[#f1e9dd]" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Kandora</h2>
                 <p className="mt-0.5 sm:mt-1 max-w-[8rem] sm:max-w-[14rem] text-[10px] sm:text-[13px] leading-snug text-[#d4c7ba] line-clamp-2">{categories[1]?.description}</p>
               </div>
-              <span className="shrink-0 grid h-7 w-7 sm:h-11 sm:w-11 place-items-center rounded-full border backdrop-blur-sm text-[#f1e9dd] transition hover:bg-[#f1e9dd] hover:text-[var(--espresso)]" style={{ borderColor: "rgba(212,199,186,.5)", background: "rgba(42,33,27,.3)" }}>
+              <span className="shrink-0 grid h-7 w-7 sm:h-11 sm:w-11 place-items-center rounded-full border backdrop-blur-sm text-[#f1e9dd] transition hover:bg-[#f1e9dd] hover:text-[var(--espresso)]" style={{ borderColor: "rgba(212,199,186,.5)" }}>
                 <span className="text-[11px] sm:text-base">→</span>
               </span>
             </div>
-          </article>
+          </Link>
 
           {/* Kabak — wide (right col, row 3) */}
-          <article className="card group relative overflow-hidden rounded-[14px] sm:rounded-[22px] shadow-[0_18px_40px_-18px_rgba(42,33,27,.55)] min-h-[160px] sm:min-h-[220px] lg:min-h-[270px]" style={{ background: "#0d0d0d" }}>
+          <Link href="/katalog" className="card group relative overflow-hidden rounded-[14px] sm:rounded-[22px] shadow-[0_18px_40px_-18px_rgba(42,33,27,.55)] min-h-[160px] sm:min-h-[220px] lg:min-h-[270px]" style={{ background: "#0d0d0d" }}>
             <img src={categories[4]?.image_url} alt="Kabak" className="absolute inset-0 h-full w-full object-cover object-[50%_55%] transition-transform duration-[800ms] ease-[cubic-bezier(.2,.7,.2,1)] group-hover:scale-[1.06]" />
             <div className="absolute inset-0 wide-shade" />
             <div className="absolute inset-0 z-10 flex items-end justify-between gap-2 sm:gap-4 p-3 sm:p-6">
@@ -126,10 +126,10 @@ export default function Koleksi() {
                 <span className="text-[11px] sm:text-base">→</span>
               </span>
             </div>
-          </article>
+          </Link>
 
           {/* Cover Hanger — wide (right col, row 4) */}
-          <article className="card group relative overflow-hidden rounded-[14px] sm:rounded-[22px] shadow-[0_18px_40px_-18px_rgba(42,33,27,.55)] min-h-[160px] sm:min-h-[220px] lg:min-h-[270px]" style={{ background: "var(--espresso)" }}>
+          <Link href="/katalog" className="card group relative overflow-hidden rounded-[14px] sm:rounded-[22px] shadow-[0_18px_40px_-18px_rgba(42,33,27,.55)] min-h-[160px] sm:min-h-[220px] lg:min-h-[270px]" style={{ background: "var(--espresso)" }}>
             <img src={categories[5]?.image_url} alt="Cover Hanger" className="absolute inset-0 h-full w-full object-cover object-[62%_45%] transition-transform duration-[800ms] ease-[cubic-bezier(.2,.7,.2,1)] group-hover:scale-[1.06]" />
             <div className="absolute inset-0 wide-shade" />
             <div className="absolute inset-0 z-10 flex items-end justify-between gap-2 sm:gap-4 p-3 sm:p-6">
@@ -141,19 +141,19 @@ export default function Koleksi() {
                 <span className="text-[11px] sm:text-base">→</span>
               </span>
             </div>
-          </article>
+          </Link>
 
         </div>
 
         {/* CTA */}
         <div className="mt-8 sm:mt-10 lg:mt-12 flex justify-center">
-          <a
+          <Link
             href="/katalog"
             className="inline-flex items-center gap-2 sm:gap-3 rounded-full px-6 py-3 sm:px-8 sm:py-4 text-[11px] sm:text-[12px] font-semibold uppercase tracking-[0.14em] sm:tracking-[0.16em] transition hover:bg-[var(--gold)]"
             style={{ background: "var(--espresso)", color: "#f1e9dd" }}
           >
             Lihat Katalog Selengkapnya <span aria-hidden="true">→</span>
-          </a>
+          </Link>
         </div>
       </div>
 
