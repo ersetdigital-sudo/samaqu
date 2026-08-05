@@ -79,22 +79,27 @@ function TestimonialCard({ t, onImageClick }: { t: Testimoni; onImageClick: (url
         </div>
       </div>
 
-      {/* Product Info Badge */}
-      {t.product_name && (
-        <div className="px-4 pb-3">
-          <div className="flex items-center gap-1.5 flex-wrap">
+      {/* Product Info Badge — always show */}
+      <div className="px-4 pb-3">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {t.product_name ? (
             <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full font-medium" style={{ background: "rgba(181,140,74,.08)", color: "var(--gold)" }}>
               <Shirt size={10} strokeWidth={2} />
               {t.product_name}
             </span>
-            {t.series_name && (
-              <span className="text-[11px] px-2 py-0.5 rounded-full font-medium" style={{ background: "rgba(42,33,27,.06)", color: "var(--stone)" }}>
-                {t.series_name}
-              </span>
-            )}
-          </div>
+          ) : t.cat ? (
+            <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full font-medium" style={{ background: "rgba(181,140,74,.08)", color: "var(--gold)" }}>
+              <Shirt size={10} strokeWidth={2} />
+              {t.cat}
+            </span>
+          ) : null}
+          {t.series_name && (
+            <span className="text-[11px] px-2 py-0.5 rounded-full font-medium" style={{ background: "rgba(42,33,27,.06)", color: "var(--stone)" }}>
+              {t.series_name}
+            </span>
+          )}
         </div>
-      )}
+      </div>
 
       {/* Review Text */}
       <div className="px-4 pb-3 flex-1">
