@@ -4,13 +4,14 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, ShoppingBag, Home } from "lucide-react";
+import { ChevronDown, ShoppingBag, Home, User } from "lucide-react";
 import { MobileDrawer, MobileDrawerCtx } from "@/components/ui/drawer";
 import { Storefront, BookOpen, Ruler, ListChecks, Question, ChatCircle as MessageCircle } from "@phosphor-icons/react";
 import ProfileDropdown from "@/components/ProfileDropdown";
 import { useCart } from "@/lib/cart-context";
 import CartDrawer from "@/components/CartDrawer";
 import { getWhatsAppLink } from "@/lib/store-settings";
+import { useLocale } from "@/lib/locale-context";
 
 /* ── Nav data ── */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -41,6 +42,7 @@ function resolveHref(href: string, isHome: boolean): string {
 export default function Navbar() {
   const pathname = usePathname();
   const isHome = pathname === "/";
+  const { locale, setLocale } = useLocale();
   const [openDropdown, setOpenDropdown] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -211,9 +213,37 @@ export default function Navbar() {
                 })}
               </nav>
 
-              {/* Right: profile + cart + hamburger */}
-              <div className="flex items-center gap-4">
-                <ProfileDropdown />
+              {/* Right: language switcher (mobile) + profile (desktop) + cart + hamburger */}
+              <div className="flex items-center gap-3 sm:gap-4">
+                {/* Language switcher — mobile only */}
+                <div className="lg:hidden flex items-center rounded-full overflow-hidden" style={{ border: `1px solid ${scrolled ? "rgba(64,50,37,.2)" : "rgba(248,245,241,.25)"}` }}>
+                  <button
+                    onClick={() => setLocale("id")}
+                    className="px-2.5 py-1.5 text-[10px] font-ui font-bold tracking-wider transition-all duration-200"
+                    style={{
+                      background: locale === "id" ? (scrolled ? "var(--espresso)" : "rgba(248,245,241,.9)") : "transparent",
+                      color: locale === "id" ? (scrolled ? "var(--cream)" : "var(--espresso)") : (scrolled ? "rgba(64,50,37,.5)" : "rgba(248,245,241,.5)"),
+                    }}
+                  >
+                    ID
+                  </button>
+                  <button
+                    onClick={() => setLocale("en")}
+                    className="px-2.5 py-1.5 text-[10px] font-ui font-bold tracking-wider transition-all duration-200"
+                    style={{
+                      background: locale === "en" ? (scrolled ? "var(--espresso)" : "rgba(248,245,241,.9)") : "transparent",
+                      color: locale === "en" ? (scrolled ? "var(--cream)" : "var(--espresso)") : (scrolled ? "rgba(64,50,37,.5)" : "rgba(248,245,241,.5)"),
+                    }}
+                  >
+                    EN
+                  </button>
+                </div>
+
+                {/* Profile — desktop only */}
+                <div className="hidden lg:block">
+                  <ProfileDropdown />
+                </div>
+
                 <button
                   onClick={() => setCartOpen(true)}
                   className="relative grid place-items-center w-10 h-10 transition-colors duration-500 cursor-pointer"
@@ -352,6 +382,22 @@ function DrawerNavContent({
 
       {/* Spacer */}
       <div className="flex-1" />
+
+      {/* Account link */}
+      <div className="px-6 pb-2">
+        <a
+          href="/akun"
+          className="flex items-center gap-4 px-0 py-3 text-[13px] tracking-[0.18em] uppercase font-ui transition-colors duration-200 hover:text-gold"
+          style={{
+            color: "var(--espresso)",
+            borderBottom: "1px solid rgba(201,183,156,.12)",
+          }}
+          onClick={onClose}
+        >
+          <User size={22} strokeWidth={1.5} style={{ color: "var(--gold)" }} />
+          Account
+        </a>
+      </div>
 
       {/* CTA area */}
       <div className="p-6 space-y-3 border-t" style={{ borderColor: "rgba(201,183,156,.15)" }}>
