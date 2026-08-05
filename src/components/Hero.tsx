@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useTranslations } from "next-intl";
 import { supabase } from "@/lib/supabase";
 import { getWhatsAppLink } from "@/lib/store-settings";
 
@@ -21,6 +22,7 @@ const DEFAULTS = {
 };
 
 export default function Hero() {
+  const t = useTranslations("hero");
   const videoRef = useRef<HTMLVideoElement>(null);
   const [shouldPlay, setShouldPlay] = useState(false);
   const [muted, setMuted] = useState(false);
@@ -228,7 +230,7 @@ export default function Hero() {
                 className="group inline-flex items-center gap-2.5 sm:gap-3 rounded-lg px-6 sm:px-8 py-3.5 sm:py-4 text-[11px] sm:text-[12px] tracking-[0.16em] sm:tracking-[0.18em] uppercase transition hover:opacity-95 w-full sm:w-auto justify-center"
                 style={{ background: "var(--gold)", color: "white" }}
               >
-                Lihat Koleksi
+                {t("cta1")}
                 <svg
                   className="transition-transform duration-500 group-hover:translate-x-1"
                   width="16"
@@ -250,7 +252,7 @@ export default function Hero() {
                 className="group inline-flex items-center gap-2 py-3.5 sm:py-4 text-[11px] sm:text-[12px] tracking-[0.16em] sm:tracking-[0.18em] capitalize sm:uppercase transition"
                 style={{ color: "var(--cream)" }}
               >
-                Hubungi Admin
+                {t("cta2")}
                 <span
                   className="w-6 h-px transition-all duration-500 group-hover:w-9"
                   style={{ background: "var(--gold)" }}
@@ -280,7 +282,7 @@ export default function Hero() {
                 <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
                 <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
               </svg>
-              <span className="text-[11px] font-semibold text-white">Nyalakan Suara</span>
+              <span className="text-[11px] font-semibold text-white">{t("mute")}</span>
             </>
           ) : (
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(248,245,241,.8)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -301,7 +303,7 @@ export default function Hero() {
           className="text-[10px] tracking-[0.32em] uppercase"
           style={{ color: "rgba(248,245,241,.7)" }}
         >
-          Scroll
+          {t("scroll")}
         </span>
         <span
           className="w-6 h-10 rounded-full border flex items-start justify-center p-1.5"
