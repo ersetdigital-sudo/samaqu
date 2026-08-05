@@ -21,7 +21,7 @@ export default function Instagram() {
           >
             @samaqu.id
           </h2>
-          <p className="leading-[1.75] text-sm sm:text-base truncate sm:line-clamp-none px-4 sm:px-0" style={{ color: "var(--coffee)" }}>
+          <p className="leading-[1.75] text-sm sm:text-base px-4 sm:px-0" style={{ color: "var(--coffee)" }}>
             Tentang produk, orang biasa, perjuangan, dan cerita-cerita kecil dari mereka yang terus bertumbuh.
           </p>
         </div>
