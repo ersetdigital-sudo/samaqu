@@ -1,7 +1,8 @@
 "use client";
 
-import { useSafeTranslations } from "@/lib/safe-i18n";
+import { useState, useEffect } from "react";
 import { getWhatsAppLink } from "@/lib/store-settings";
+import { supabase } from "@/lib/supabase";
 
 /* ── Check Icon ── */
 function CheckIcon() {
@@ -173,8 +174,65 @@ function ClockIcon() {
   );
 }
 
+/* ── Default content ── */
+const DEFAULTS = {
+  hero_title: "Garansi & Kebijakan Retur",
+  hero_kicker: "BELANJA AMAN, HAK ANDA TERLINDUNGI",
+  hero_description: "Kami memastikan setiap pembelian memberikan ketenangan. Kenali garansi dan kebijakan retur kami untuk pengalaman belanja yang lebih baik.",
+  hero_bullet1: "Garansi produk cacat produksi",
+  hero_bullet2: "Retur dalam 7 hari kerja",
+  hero_bullet3: "Konsultasi sebelum retur",
+  hero_closing: "Kami percaya transparansi adalah awal dari kepercayaan. Jika ada masalah, hubungi kami — kami siap membantu.",
+  hero_cta_text: "Ajukan Retur via WhatsApp",
+  hero_image_url: "/garansi/hero-web.png",
+  garansi_title: "Yang Kami Jamin",
+  garansi_desc: "Setiap produk SAMAQU memiliki jaminan untuk memastikan Anda mendapatkan yang terbaik.",
+  garansi1_title: "Produk Sampai dengan Aman",
+  garansi1_desc: "Kami memastikan setiap pesanan dikemas rapi dan terlindungi. Jika produk rusak atau cacat saat pengiriman, kami akan menggantinya dengan yang baru.",
+  garansi2_title: "Garansi Penggantian Produk",
+  garansi2_desc: "Jika Anda menerima produk dengan cacat produksi (jahitan lepas, bahan robek, atau ketidaksesuaian warna), hubungi kami dalam waktu 7 hari kerja.",
+  garansi2_note: "Sertakan foto produk dan nomor pesanan saat menghubungi.",
+  garansi3_title: "Konsultasi Ukuran Gratis",
+  garansi3_desc: "Sebelum membeli, Anda bisa berkonsultasi dengan admin kami untuk memastikan ukuran yang tepat. Kami bantu menemukan yang paling nyaman.",
+  garansi3_note: "",
+  retur_title: "Kebijakan Retur",
+  retur_desc: "Kami menerima retur dalam kondisi tertentu untuk memastikan kepuasan Anda.",
+  retur1: "Kemasan asli masih utuh dan belum dibuka",
+  retur2: "Label dan tag produk masih terpasang",
+  retur3: "Dalam waktu 7 hari kerja sejak barang diterima",
+  retur4: "Bukti pembelian atau screenshot order",
+  cara_title: "Cara Mengajukan Retur",
+  cara1: "Hubungi admin via WhatsApp dan sertakan nomor pesanan serta alasan retur.",
+  cara2: "Kirim foto produk yang ingin diretur beserta kondisi kemasan.",
+  cara3: "Tunggu konfirmasi dari admin mengenai persetujuan retur.",
+  cara4: "Kirim produk ke alamat yang telah ditentukan dan konfirmasi resi pengiriman.",
+  no_retur_title: "Yang Tidak Dapat Diretur",
+  no_retur_desc: "Beberapa kondisi berikut tidak memenuhi syarat retur:",
+  no_retur1: "Produk sudah dipakai atau dicuci",
+  no_retur2: "Perubahan warna akibat pemakaian",
+  no_retur3: "Ukuran sudah disesuaikan permintaan",
+  no_retur4: "Kerusakan akibat pemakaian tidak tepat",
+  no_retur5: "Kerusakan akibat pencucian tidak sesuai",
+  cta_title: "Butuh Bantuan?",
+  cta_desc1: "Jika Anda memiliki pertanyaan tentang garansi atau ingin mengajukan retur, jangan ragu untuk menghubungi admin kami.",
+  cta_desc2: "Tim kami siap membantu Anda dengan sepenuh hati.",
+  cta_button_text: "Hubungi Admin",
+  cta_image_url: "/garansi/cta-web.png",
+};
+
 export default function GaransiRetur() {
-  const t = useSafeTranslations("garansiRetur");
+  const [c, setC] = useState(DEFAULTS);
+
+  useEffect(() => {
+    supabase
+      .from("garansi_retur_page")
+      .select("*")
+      .eq("id", 1)
+      .single()
+      .then(({ data }) => {
+        if (data) setC((prev) => ({ ...prev, ...data }));
+      });
+  }, []);
 
   return (
     <main>
@@ -183,34 +241,34 @@ export default function GaransiRetur() {
         <div className="mx-auto max-w-6xl px-5 pt-24 pb-10 md:pt-32 md:py-24 grid md:grid-cols-2 gap-10 md:gap-14 items-center">
           <div>
             <h1 className="font-display text-4xl sm:text-5xl md:text-6xl leading-[1.05] font-semibold text-espresso">
-              {t("heroTitle")}
+              {c.hero_title}
             </h1>
-            <p className="tracking-[.28em] uppercase text-[.68rem] mt-4 text-gold">{t("heroKicker")}</p>
+            <p className="tracking-[.28em] uppercase text-[.68rem] mt-4 text-gold">{c.hero_kicker}</p>
             <p className="mt-5 text-[15px] md:text-base text-stone leading-relaxed max-w-md">
-              {t("heroDesc")}
+              {c.hero_description}
             </p>
             <ul className="mt-6 space-y-3 max-w-md">
               <li className="flex gap-3 items-start">
                 <span className="mt-[7px] w-1.5 h-1.5 rounded-full bg-gold shrink-0" />
-                <span className="text-[15px] text-stone">{t("heroBullet1")}</span>
+                <span className="text-[15px] text-stone">{c.hero_bullet1}</span>
               </li>
               <li className="flex gap-3 items-start">
                 <span className="mt-[7px] w-1.5 h-1.5 rounded-full bg-gold shrink-0" />
-                <span className="text-[15px] text-stone">{t("heroBullet2")}</span>
+                <span className="text-[15px] text-stone">{c.hero_bullet2}</span>
               </li>
               <li className="flex gap-3 items-start">
                 <span className="mt-[7px] w-1.5 h-1.5 rounded-full bg-gold shrink-0" />
-                <span className="text-[15px] text-stone">{t("heroBullet3")}</span>
+                <span className="text-[15px] text-stone">{c.hero_bullet3}</span>
               </li>
             </ul>
             <p className="mt-6 text-[15px] text-stone leading-relaxed max-w-md">
-              {t("heroClosing")}
+              {c.hero_closing}
             </p>
             <a
               href="#retur"
               className="inline-flex mt-8 items-center gap-2 bg-espresso text-cream px-7 py-3 rounded-full text-sm tracking-wide hover:bg-coffee transition"
             >
-              {t("heroCta")}
+              {c.hero_cta_text}
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
                 <path d="M5 12h14M13 6l6 6-6 6" />
               </svg>
@@ -219,7 +277,7 @@ export default function GaransiRetur() {
           <div className="relative">
             <div className="absolute -inset-4 rounded-[2rem] bg-sand/50 -z-10" />
             <img
-              src="/garansi/hero-web.png"
+              src={c.hero_image_url}
               alt="Produk SAMAQU"
               className="w-full rounded-[1.5rem] object-cover aspect-[4/3] md:aspect-[5/4] shadow-[0_20px_60px_-20px_rgba(28,26,23,.35)]"
             />
@@ -230,24 +288,24 @@ export default function GaransiRetur() {
       {/* ── GARANSI ── */}
       <section className="mx-auto max-w-6xl px-5 py-12 md:py-16">
         <div>
-          <h2 className="font-display text-2xl md:text-4xl text-gold">{t("garansiTitle")}</h2>
+          <h2 className="font-display text-2xl md:text-4xl text-gold">{c.garansi_title}</h2>
           <div className="rule mt-3" />
-          <p className="mt-4 text-[15px] text-stone max-w-2xl">{t("garansiDesc")}</p>
+          <p className="mt-4 text-[15px] text-stone max-w-2xl">{c.garansi_desc}</p>
         </div>
         <div className="mt-8 grid gap-5 md:grid-cols-3">
           <GuaranteeCard
-            title={t("garansi1Title")}
-            desc={t("garansi1Desc")}
+            title={c.garansi1_title}
+            desc={c.garansi1_desc}
           />
           <GuaranteeCard
-            title={t("garansi2Title")}
-            desc={t("garansi2Desc")}
-            note={t("garansi2Note")}
+            title={c.garansi2_title}
+            desc={c.garansi2_desc}
+            note={c.garansi2_note}
           />
           <GuaranteeCard
-            title={t("garansi3Title")}
-            desc={t("garansi3Desc")}
-            note={t("garansi3Note")}
+            title={c.garansi3_title}
+            desc={c.garansi3_desc}
+            note={c.garansi3_note}
             isWarning
           />
         </div>
@@ -257,15 +315,15 @@ export default function GaransiRetur() {
       <section id="retur" className="py-12 md:py-16" style={{ background: "rgba(233,220,203,.45)" }}>
         <div className="mx-auto max-w-6xl px-5">
           <div>
-            <h2 className="font-display text-2xl md:text-4xl text-gold">{t("returTitle")}</h2>
+            <h2 className="font-display text-2xl md:text-4xl text-gold">{c.retur_title}</h2>
             <div className="rule mt-3" />
-            <p className="mt-4 text-[15px] text-stone max-w-2xl">{t("returDesc")}</p>
+            <p className="mt-4 text-[15px] text-stone max-w-2xl">{c.retur_desc}</p>
           </div>
           <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-            <ReturnPolicyItem icon={<PackageIcon />} desc={t("retur1")} />
-            <ReturnPolicyItem icon={<TagIcon />} desc={t("retur2")} />
-            <ReturnPolicyItem icon={<BoxIcon />} desc={t("retur3")} />
-            <ReturnPolicyItem icon={<ClockIcon />} desc={t("retur4")} />
+            <ReturnPolicyItem icon={<PackageIcon />} desc={c.retur1} />
+            <ReturnPolicyItem icon={<TagIcon />} desc={c.retur2} />
+            <ReturnPolicyItem icon={<BoxIcon />} desc={c.retur3} />
+            <ReturnPolicyItem icon={<ClockIcon />} desc={c.retur4} />
           </div>
         </div>
       </section>
@@ -273,14 +331,14 @@ export default function GaransiRetur() {
       {/* ── CARA MENGAJUKAN ── */}
       <section className="mx-auto max-w-6xl px-5 py-12 md:py-16">
         <div>
-          <h2 className="font-display text-2xl md:text-4xl text-gold">{t("caraTitle")}</h2>
+          <h2 className="font-display text-2xl md:text-4xl text-gold">{c.cara_title}</h2>
           <div className="rule mt-3" />
         </div>
         <ol className="mt-8 grid gap-4 md:grid-cols-2 list-none p-0">
-          <StepItem num={1} desc={t("cara1")} />
-          <StepItem num={2} desc={t("cara2")} />
-          <StepItem num={3} desc={t("cara3")} />
-          <StepItem num={4} desc={t("cara4")} />
+          <StepItem num={1} desc={c.cara1} />
+          <StepItem num={2} desc={c.cara2} />
+          <StepItem num={3} desc={c.cara3} />
+          <StepItem num={4} desc={c.cara4} />
         </ol>
       </section>
 
@@ -288,15 +346,15 @@ export default function GaransiRetur() {
       <section className="py-12 md:py-16" style={{ background: "#1C1A17" }}>
         <div className="mx-auto max-w-6xl px-5">
           <div>
-            <h2 className="font-display text-2xl md:text-4xl" style={{ color: "#D8B98C" }}>{t("noReturTitle")}</h2>
-            <p className="mt-4 text-[15px] max-w-2xl" style={{ color: "rgba(246,239,231,.65)" }}>{t("noReturDesc")}</p>
+            <h2 className="font-display text-2xl md:text-4xl" style={{ color: "#D8B98C" }}>{c.no_retur_title}</h2>
+            <p className="mt-4 text-[15px] max-w-2xl" style={{ color: "rgba(246,239,231,.65)" }}>{c.no_retur_desc}</p>
           </div>
           <div className="mt-8 grid grid-cols-2 md:grid-cols-5 gap-4">
-            <NonReturnableItem icon={<ShirtIcon />} desc={t("noRetur1")} />
-            <NonReturnableItem icon={<ColorIcon />} desc={t("noRetur2")} />
-            <NonReturnableItem icon={<RulerIcon />} desc={t("noRetur3")} />
-            <NonReturnableItem icon={<UsedIcon />} desc={t("noRetur4")} />
-            <NonReturnableItem icon={<DamageIcon />} desc={t("noRetur5")} />
+            <NonReturnableItem icon={<ShirtIcon />} desc={c.no_retur1} />
+            <NonReturnableItem icon={<ColorIcon />} desc={c.no_retur2} />
+            <NonReturnableItem icon={<RulerIcon />} desc={c.no_retur3} />
+            <NonReturnableItem icon={<UsedIcon />} desc={c.no_retur4} />
+            <NonReturnableItem icon={<DamageIcon />} desc={c.no_retur5} />
           </div>
         </div>
       </section>
@@ -304,13 +362,13 @@ export default function GaransiRetur() {
       {/* ── BANTUAN CTA ── */}
       <section className="mx-auto max-w-6xl px-5 py-12 md:py-20 grid md:grid-cols-2 gap-10 items-center">
         <div className="order-2 md:order-1">
-          <h2 className="font-display text-2xl md:text-4xl text-gold">{t("ctaTitle")}</h2>
+          <h2 className="font-display text-2xl md:text-4xl text-gold">{c.cta_title}</h2>
           <div className="rule mt-3" />
           <p className="mt-5 text-[15px] text-stone leading-relaxed max-w-md">
-            {t("ctaDesc1")}
+            {c.cta_desc1}
           </p>
           <p className="mt-4 text-[15px] text-stone leading-relaxed max-w-md">
-            {t("ctaDesc2")}
+            {c.cta_desc2}
           </p>
           <a
             href={getWhatsAppLink("Halo Admin SAMAQU, saya ingin bertanya soal garansi atau retur.")}
@@ -321,16 +379,16 @@ export default function GaransiRetur() {
             <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
               <path d="M20 3.9A10 10 0 0 0 3.5 15.6L2 22l6.6-1.7A10 10 0 1 0 20 3.9Zm-8 16.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3.9 1 1-3.8-.2-.3A8.2 8.2 0 1 1 12 20.1Zm4.5-6.1c-.2-.1-1.4-.7-1.6-.8s-.4-.1-.6.1-.6.8-.8 1-.3.2-.5 0a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.6-1.2a.6.6 0 0 0 0-.6c0-.2-.6-1.4-.8-1.9s-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3A2.9 2.9 0 0 0 6.4 10c0 1.3.9 2.5 1 2.7s1.8 3 4.5 4.1a5.1 5.1 0 0 0 3.1.5 2.6 2.6 0 0 0 1.7-1.2 2.1 2.1 0 0 0 .1-1.2c0-.1-.2-.2-.4-.3Z" />
             </svg>
-            {t("ctaButton")}
+            {c.cta_button_text}
           </a>
         </div>
         <div className="order-1 md:order-2 relative">
           <div className="absolute -inset-4 rounded-[2rem] bg-sand/50 -z-10" />
             <img
-              src="/garansi/cta-web.png"
+              src={c.cta_image_url}
               alt="Customer SAMAQU"
-            className="w-full rounded-[1.5rem] object-cover aspect-[4/5] max-h-[520px] shadow-[0_20px_60px_-20px_rgba(28,26,23,.35)]"
-          />
+              className="w-full rounded-[1.5rem] object-cover aspect-[4/5] max-h-[520px] shadow-[0_20px_60px_-20px_rgba(28,26,23,.35)]"
+            />
         </div>
       </section>
     </main>
