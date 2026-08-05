@@ -162,6 +162,9 @@ function KainSwatchRow({ category, options, selected, onSelect }: { category: Ca
   );
 }
 
+/* ── Stock Threshold ── */
+const LOW_STOCK_THRESHOLD = 3;
+
 /* ── Product Card ── */
 function ProductCard({ product, index, wishlist, colorHex, totalStock }: { product: CatalogProduct; index: number; wishlist: { isWishlisted: (id: string) => boolean; toggle: (id: string) => Promise<boolean | null>; isLoggedIn: boolean }; colorHex: Record<string, string>; totalStock: number | null }) {
   const toast = useToast();
@@ -170,8 +173,10 @@ function ProductCard({ product, index, wishlist, colorHex, totalStock }: { produ
   const c0 = colorHex[`${product.id}::${product.colors[0]}`] || colorMap[product.colors[0]];
   const c1 = colorHex[`${product.id}::${product.colors[1]}`] || colorMap[product.colors[1]];
   const dotColor = kainColor || c0 || "#c9b79c";
-  // totalStock null = tidak dikelola / tidak ada varian; 0 = semua varian habis
+  // Stock status
   const isSoldOut = totalStock === 0;
+  const isLowStock = totalStock !== null && totalStock > 0 && totalStock <= LOW_STOCK_THRESHOLD;
+  const isAvailable = totalStock !== null && totalStock > LOW_STOCK_THRESHOLD;
 
   return (
     <motion.div
@@ -205,11 +210,15 @@ function ProductCard({ product, index, wishlist, colorHex, totalStock }: { produ
           alt={product.name}
           className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
           loading="lazy"
-          style={isSoldOut ? { filter: "grayscale(35%)" } : undefined}
+          style={isSoldOut ? { filter: "grayscale(35%) brightness(.85)" } : undefined}
           onError={(e) => {
             (e.target as HTMLImageElement).style.display = "none";
           }}
         />
+        {/* Sold out overlay */}
+        {isSoldOut && (
+          <div className="absolute inset-0 pointer-events-none" style={{ background: "rgba(42,33,27,.18)" }} />
+        )}
         {/* Wishlist heart button */}
         {wishlist.isLoggedIn && (
         <button
@@ -233,20 +242,20 @@ function ProductCard({ product, index, wishlist, colorHex, totalStock }: { produ
             {product.tag}
           </span>
         )}
+        {/* Sold Out badge — top right */}
+        {isSoldOut && (
+          <span
+            className="absolute top-3 right-3 px-2.5 py-1 text-[10px] tracking-[0.12em] uppercase font-ui font-semibold rounded-full z-10"
+            style={{ background: "var(--espresso)", color: "white" }}
+          >
+            Sold Out
+          </span>
+        )}
         {/* Kain / color dot */}
         <span
           className="absolute bottom-3 right-3 w-4 h-4 rounded-full"
           style={{ background: dotColor, boxShadow: "0 0 0 2px white" }}
         />
-        {/* Stok habis badge */}
-        {isSoldOut && (
-          <span
-            className="absolute bottom-3 left-3 px-2.5 py-1 text-[10px] tracking-[0.12em] uppercase font-ui font-medium rounded-sm"
-            style={{ background: "rgba(42,33,27,.72)", color: "white", backdropFilter: "blur(4px)" }}
-          >
-            Stok Habis
-          </span>
-        )}
       </div>
 
       {/* Info */}
@@ -267,7 +276,7 @@ function ProductCard({ product, index, wishlist, colorHex, totalStock }: { produ
           {product.jenis_kain?.name ? `Kain ${product.jenis_kain.name}` : product.kain ? `Kain ${product.kain}` : product.category}
         </p>
 
-        {/* Series — fixed height slot, invisible spacer when no series */}
+        {/* Series — fixed height slot */}
         <div className="mt-1.5 min-h-[22px]">
           {product.availableSeries && product.availableSeries.length > 1 && (
             <p className="inline-flex items-center gap-1.5 text-[10.5px] font-ui" style={{ color: "var(--stone)" }}>
@@ -283,8 +292,15 @@ function ProductCard({ product, index, wishlist, colorHex, totalStock }: { produ
           )}
         </div>
 
+        {/* Stock status — microcopy above price */}
+        {!isSoldOut && totalStock !== null && (
+          <p className="mt-1 text-[10.5px] font-ui line-clamp-1" style={{ color: isLowStock ? "#b45309" : "#6b8a5e" }}>
+            {isLowStock ? `Menipis — sisa ${totalStock}` : "Ready stock"}
+          </p>
+        )}
+
         {/* Price */}
-        <p className="mt-1.5 text-[12.5px] font-ui" style={{ color: "var(--stone)" }}>
+        <p className="mt-1 text-[12.5px] font-ui" style={{ color: "var(--stone)" }}>
           Mulai{" "}
           <span className="font-medium" style={{ color: "var(--espresso)" }}>
             Rp {(product.create_your_price_enabled && product.minimum_price ? product.minimum_price : product.price).toLocaleString("id-ID")}
@@ -292,8 +308,8 @@ function ProductCard({ product, index, wishlist, colorHex, totalStock }: { produ
         </p>
 
         {/* Lihat Detail button */}
-        <span className="mt-3 w-full rounded-lg border border-[var(--espresso)] px-3 py-2.5 text-[12.5px] text-[var(--espresso)] font-ui font-medium flex items-center justify-center gap-1.5 transition-all duration-200 group-hover:bg-[var(--espresso)] group-hover:text-white">
-          Lihat Detail <ChevronRight size={14} strokeWidth={2} />
+        <span className="mt-auto pt-3 w-full rounded-lg border border-[var(--espresso)] px-3 py-2.5 text-[12.5px] text-[var(--espresso)] font-ui font-medium flex items-center justify-center gap-1.5 transition-all duration-200 group-hover:bg-[var(--espresso)] group-hover:text-white">
+          {isSoldOut ? "Lihat Detail" : "Lihat Detail"} <ChevronRight size={14} strokeWidth={2} />
         </span>
       </div>
       </Link>
