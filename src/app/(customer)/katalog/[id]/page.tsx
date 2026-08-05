@@ -662,46 +662,24 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               <p className="text-[10px] tracking-[0.1em] uppercase font-ui font-medium mb-2.5" style={{ color: "var(--espresso)" }}>
                 Pilih Series
               </p>
-              <div className="flex flex-wrap gap-2">
+              <div className="grid grid-cols-2 gap-2 md:flex md:flex-wrap md:gap-2.5">
                 {availableSeries.map((s) => {
                   const isActive = isThobe ? s.id === activeSeriesId : s.id === displayId;
-                  if (isThobe) {
-                    return (
-                      <button
-                        key={s.id}
-                        onClick={() => handleSeriesSelect(s.id)}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[12px] font-ui transition-all duration-200 cursor-pointer"
-                        style={{
-                          background: isActive ? "var(--espresso)" : "var(--cream-bright)",
-                          color: isActive ? "var(--cream)" : "var(--coffee)",
-                          border: `1px solid ${isActive ? "var(--espresso)" : "rgba(201,183,156,.3)"}`,
-                        }}
-                      >
-                        <span className="font-medium">{s.series}</span>
-                        <span style={{ color: isActive ? "rgba(248,245,241,.75)" : "var(--gold)" }}>
-                          {s.create_your_price_enabled && s.minimum_price
-                            ? `Mulai Rp ${s.minimum_price.toLocaleString("id-ID")}`
-                            : `Rp ${s.price.toLocaleString("id-ID")}`
-                          }
-                        </span>
-                      </button>
-                    );
-                  }
                   return (
                     <button
                       key={s.id}
                       onClick={() => handleSeriesSelect(s.id)}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[12px] font-ui transition-all duration-200 cursor-pointer"
+                      className="inline-flex items-center justify-between gap-1.5 px-3 py-2.5 md:px-3.5 md:py-2 rounded-lg text-[11px] md:text-[12px] font-ui transition-all duration-200 cursor-pointer min-w-0"
                       style={{
                         background: isActive ? "var(--espresso)" : "var(--cream-bright)",
                         color: isActive ? "var(--cream)" : "var(--coffee)",
                         border: `1px solid ${isActive ? "var(--espresso)" : "rgba(201,183,156,.3)"}`,
                       }}
                     >
-                      <span className="font-medium">{s.series}</span>
-                      <span style={{ color: isActive ? "rgba(248,245,241,.75)" : "var(--gold)" }}>
+                      <span className="font-medium truncate">{s.series}</span>
+                      <span className="text-[10px] md:text-[11px] shrink-0" style={{ color: isActive ? "rgba(248,245,241,.75)" : "var(--gold)" }}>
                         {s.create_your_price_enabled && s.minimum_price
-                          ? `Mulai Rp ${s.minimum_price.toLocaleString("id-ID")}`
+                          ? `Rp ${s.minimum_price.toLocaleString("id-ID")}`
                           : `Rp ${s.price.toLocaleString("id-ID")}`
                         }
                       </span>

@@ -188,7 +188,7 @@ export async function getAvailableSeries(jenisKainId: string | null | undefined,
     query = query.contains("colors", [color]);
   }
 
-  const { data, error } = await query.order("series");
+  const { data, error } = await query.order("created_at");
 
   if (error || !data) return [];
 
