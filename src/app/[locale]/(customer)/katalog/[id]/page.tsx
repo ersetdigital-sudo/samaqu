@@ -679,8 +679,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                       <span className="font-medium truncate">{s.series}</span>
                       <span className="text-[10px] md:text-[11px] shrink-0" style={{ color: isActive ? "rgba(248,245,241,.75)" : "var(--gold)" }}>
                         {s.create_your_price_enabled && s.minimum_price
-                          ? `Rp ${s.minimum_price.toLocaleString("id-ID")}`
-                          : `Rp ${s.price.toLocaleString("id-ID")}`
+                          ? `mulai dari Rp ${s.minimum_price.toLocaleString("id-ID")}`
+                          : `mulai dari Rp ${s.price.toLocaleString("id-ID")}`
                         }
                       </span>
                     </button>
@@ -976,8 +976,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                           <span className="font-medium">{s.series}</span>
                           <span className="ml-1.5" style={{ color: isActive ? "rgba(248,245,241,.75)" : "var(--gold)" }}>
                             {s.create_your_price_enabled && s.minimum_price
-                              ? `Mulai Rp ${s.minimum_price.toLocaleString("id-ID")}`
-                              : `Rp ${s.price.toLocaleString("id-ID")}`
+                              ? `mulai dari Rp ${s.minimum_price.toLocaleString("id-ID")}`
+                              : `mulai dari Rp ${s.price.toLocaleString("id-ID")}`
                             }
                           </span>
                         </button>
@@ -990,8 +990,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                         <span className="font-medium">{s.series}</span>
                         <span className="ml-1.5" style={{ color: isActive ? "rgba(248,245,241,.75)" : "var(--gold)" }}>
                           {s.create_your_price_enabled && s.minimum_price
-                            ? `Mulai Rp ${s.minimum_price.toLocaleString("id-ID")}`
-                            : `Rp ${s.price.toLocaleString("id-ID")}`
+                            ? `mulai dari Rp ${s.minimum_price.toLocaleString("id-ID")}`
+                            : `mulai dari Rp ${s.price.toLocaleString("id-ID")}`
                           }
                         </span>
                       </button>
