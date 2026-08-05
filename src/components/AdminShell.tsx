@@ -18,6 +18,7 @@ const navItems = [
   { href: "/admin", label: "Pelanggan", icon: Users },
   { href: "/admin/konten-website", label: "Konten Website", icon: FileText },
   { href: "/admin/testimoni", label: "Testimoni", icon: FileText },
+  { href: "/admin/garansi-retur-page", label: "Halaman Garansi & Retur", icon: FileText },
   { href: "/admin/voucher", label: "Voucher", icon: Ticket },
   { href: "/admin", label: "Pengaturan", icon: Settings },
 ];
