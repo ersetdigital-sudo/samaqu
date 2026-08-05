@@ -9,6 +9,7 @@
     "cara_pesan": "How to Order",
     "faq": "FAQ",
     "cyp": "Create Your Price",
+    "sama_quran": "Sama Quran",
     "account": "Account",
     "chat_admin": "Chat Admin",
     "bantuan_title": "Need help? Contact us."
@@ -297,5 +298,42 @@
     "delete": "Delete",
     "edit": "Edit",
     "add": "Add"
+  },
+  "samaQuran": {
+    "heroTitle": "Sama Quran",
+    "heroDesc": "A value we hope to carry for a lifetime.",
+    "heroCta1": "Discover the Meaning",
+    "heroCta2": "Join Us",
+    "maknaIntro": "Samaqu stands for :",
+    "maknaTitle": "Sama Quran.",
+    "maknaDesc1": "For us, being with the Quran is not about memorizing 30 juz, 20 juz, or even 10 juz.",
+    "maknaDesc2": "Sama Quran is about making the Quran a part of our life.",
+    "makna": {
+      "read": "Reading it",
+      "memorize": "Memorizing it",
+      "study": "Studying it",
+      "teach": "Teaching it",
+      "practice": "Practicing it",
+      "love": "Loving it"
+    },
+    "maknaClosing": "You don't have to wait until you're perfect to start being with the Quran.",
+    "perjalananTitle": "Whatever Your Journey,<br><span class=\"text-gold\">Stay With the Quran.</span>",
+    "perjalananDesc1": "We are all walking a different journey.",
+    "perjalananDesc2": "Some are studying, working, building dreams, bettering themselves, or trying to mend a life that feels heavy.",
+    "perjalananDesc3": "But whatever it is, one thing must never be left behind: never let the journey take us away from the Quran.",
+    "perjalananQuote": "Because in the end, it is not only about how we live our life. It is also about how we close it.",
+    "hidupTitle": "Live with the Quran.\nReturn with the Quran.",
+    "hidupDesc1": "That is the hope we carry through the name Samaqu.",
+    "hidupDesc2": "May Sama Quran be more than a brand name — may it be a value that lives within us, and within anyone who wishes to carry it.",
+    "hidupDesc3": "We want this value to be preserved not only through what we say, but through what we do.",
+    "values": {
+      "design": "Design that<br>Inspires",
+      "quality": "Products of<br>Quality",
+      "detail": "Details that<br>Respect",
+      "benefit": "Benefit for<br>Others"
+    },
+    "ctaTitle": "Sama Quran",
+    "ctaDesc": "Living with it. And hoping to return with it.",
+    "ctaBack": "Back to top"
   }
 }

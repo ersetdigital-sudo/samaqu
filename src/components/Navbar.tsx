@@ -24,6 +24,7 @@ function getNavItems(t: (key: string) => string): NavItem[] {
     { label: t("nav.home"), href: "/", Icon: Home },
     { label: t("nav.katalog"), href: "/katalog", Icon: Storefront },
     { label: t("nav.testimoni"), href: "/testimoni", Icon: MessageCircle },
+    { label: t("nav.sama_quran"), href: "/sama-quran", Icon: BookOpen },
     { label: t("nav.bantuan"), hasDropdown: true, Icon: Question },
   ];
 }
@@ -33,6 +34,7 @@ type NavLinkItem = { label: string; href: string; hasDropdown?: false; Icon?: Ic
 function getMobileExtraItems(t: (key: string) => string): NavLinkItem[] {
   return [
     { label: t("nav.tentang"), href: "/tentang-kami", Icon: BookOpen },
+    { label: t("nav.sama_quran"), href: "/sama-quran", Icon: BookOpen },
   ];
 }
 
