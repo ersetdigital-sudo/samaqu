@@ -76,11 +76,14 @@ function StepItem({ num, desc }: { num: number; desc: string }) {
 /* ── Non-Returnable Item ── */
 function NonReturnableItem({ icon, desc }: { icon: React.ReactNode; desc: string }) {
   return (
-    <div className="rounded-2xl border border-white/12 p-5 text-center">
-      <span className="mx-auto mb-3 w-10 h-10 rounded-full border border-gold/40 text-gold grid place-items-center">
+    <div className="rounded-2xl p-5 text-center" style={{ border: "1px solid rgba(255,255,255,.12)" }}>
+      <span
+        className="mx-auto mb-3 w-10 h-10 rounded-full grid place-items-center"
+        style={{ border: "1px solid rgba(216,185,140,.4)", color: "#D8B98C" }}
+      >
         {icon}
       </span>
-      <p className="text-[13.5px] text-white/75">{desc}</p>
+      <p className="text-[13.5px]" style={{ color: "rgba(246,239,231,.75)" }}>{desc}</p>
     </div>
   );
 }
@@ -285,8 +288,8 @@ export default function GaransiRetur() {
       <section className="py-12 md:py-16" style={{ background: "#1C1A17" }}>
         <div className="mx-auto max-w-6xl px-5">
           <div>
-            <h2 className="font-display text-2xl md:text-4xl text-gold-light">{t("noReturTitle")}</h2>
-            <p className="mt-4 text-[15px] text-white/65 max-w-2xl">{t("noReturDesc")}</p>
+            <h2 className="font-display text-2xl md:text-4xl" style={{ color: "#D8B98C" }}>{t("noReturTitle")}</h2>
+            <p className="mt-4 text-[15px] max-w-2xl" style={{ color: "rgba(246,239,231,.65)" }}>{t("noReturDesc")}</p>
           </div>
           <div className="mt-8 grid grid-cols-2 md:grid-cols-5 gap-4">
             <NonReturnableItem icon={<ShirtIcon />} desc={t("noRetur1")} />
