@@ -53,20 +53,6 @@ export default function CreateYourPrice() {
               </Link>
             </div>
 
-            <div className="mt-12 h-px" style={{ background: "linear-gradient(90deg, rgba(241,233,221,.35), rgba(241,233,221,0))" }} />
-
-            <dl className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-6">
-              {[
-                { num: "1", desc: t("step1Desc") },
-                { num: "2", desc: t("step2Desc") },
-                { num: "3", desc: t("step3Desc") },
-              ].map((step) => (
-                <div key={step.num}>
-                  <dt className="text-3xl" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--gold)" }}>{step.num}</dt>
-                  <dd className="mt-2 text-sm leading-relaxed font-ui" style={{ color: "#a89a90" }}>{step.desc}</dd>
-                </div>
-              ))}
-            </dl>
           </div>
 
           {/* Right: Interactive card */}
