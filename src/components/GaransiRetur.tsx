@@ -177,7 +177,7 @@ export default function GaransiRetur() {
     <main>
       {/* ── HERO ── */}
       <section className="relative overflow-hidden">
-        <div className="mx-auto max-w-6xl px-5 pt-12 pb-10 md:py-20 grid md:grid-cols-2 gap-10 md:gap-14 items-center">
+        <div className="mx-auto max-w-6xl px-5 pt-24 pb-10 md:pt-32 md:py-24 grid md:grid-cols-2 gap-10 md:gap-14 items-center">
           <div>
             <h1 className="font-display text-4xl sm:text-5xl md:text-6xl leading-[1.05] font-semibold text-espresso">
               {t("heroTitle")}
