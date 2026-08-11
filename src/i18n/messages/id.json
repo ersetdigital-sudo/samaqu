@@ -50,7 +50,10 @@
     "step3Desc": "Hubungi admin via WhatsApp untuk konfirmasi ketersediaan dan pemesanan.",
     "step4Title": "Selesai",
     "step4Desc": "Bayar, pesanan diproses, dan busana pilihanmu segera dalam perjalanan.",
-    "cta": "Mulai Pesan Sekarang"
+    "cta": "Mulai Pesan Sekarang",
+    "ariaSteps": "Empat langkah cara pemesanan",
+    "whatsappMsg": "Halo Admin SAMAQU, saya tertarik dengan koleksi Anda dan ingin bertanya soal pemesanan.",
+    "ariaCta": "Mulai pesan sekarang via WhatsApp"
   },
   "cyp": {
     "eyebrow": "Create Your Price",
@@ -257,6 +260,7 @@
   "caraPesanPage": {
     "heroEyebrow": "Panduan Pemesanan",
     "heroTitle": "Cara Pemesanan",
+    "heroTitleAccent": "Pemesanan",
     "heroSubtitle": "Pilih cara yang paling nyaman untukmu.",
     "heroDesc": "Di Samaqu, kamu bisa melakukan pemesanan langsung melalui website atau dibantu oleh Admin melalui WhatsApp. Apa pun pilihanmu, kami siap membuat prosesnya tetap mudah.",
     "heroCtaWeb": "Pesan via Website",
@@ -298,10 +302,14 @@
     "sizeCtaGuide": "Lihat Panduan Ukuran",
     "sizeCtaAdmin": "Konsultasi dengan Admin",
     "closingTitle": "Pilih Sendiri atau Dibantu.",
+    "closingTitleAccent": "Dibantu",
     "closingDesc": "Belanja langsung melalui website jika kamu sudah yakin dengan pilihanmu. Atau hubungi Admin jika kamu membutuhkan bantuan.",
     "closingTagline": "Dua cara. Sama-sama mudah.",
     "closingCtaWeb": "Mulai Belanja",
-    "closingCtaWa": "Hubungi Admin"
+    "closingCtaWa": "Hubungi Admin",
+    "waLink1": "Halo Admin SAMAQU, saya ingin bertanya soal pemesanan.",
+    "waLink2": "Halo Admin SAMAQU, saya butuh bantuan menentukan ukuran.",
+    "waLink3": "Halo Admin SAMAQU, saya butuh bantuan."
   },
   "cypPage": {
     "heroTitle": "Create Your Price",
@@ -432,5 +440,11 @@
     "ctaDesc1": "Jika kamu masih memiliki pertanyaan seputar garansi atau retur, jangan ragu untuk menghubungi tim kami. Kami akan membantu dengan senang hati.",
     "ctaDesc2": "Karena bagi kami, kepuasan dan kenyamanan kamu adalah bagian penting dari perjalanan SAMAQU.",
     "ctaButton": "Hubungi Admin"
+  },
+  "autoCTA": {
+    "tooltip": "Butuh bantuan? Chat Admin",
+    "closeLabel": "Tutup",
+    "whatsappMsg": "Halo Admin SAMAQU, saya tertarik dengan koleksi Anda dan ingin bertanya soal pemesanan.",
+    "ariaLabel": "Chat Admin via WhatsApp"
   }
 }

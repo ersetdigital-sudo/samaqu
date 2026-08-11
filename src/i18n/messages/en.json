@@ -50,7 +50,10 @@
     "step3Desc": "Contact admin via WhatsApp to confirm availability and place your order.",
     "step4Title": "Done",
     "step4Desc": "Pay, your order is processed, and your chosen attire is on its way.",
-    "cta": "Start Ordering Now"
+    "cta": "Start Ordering Now",
+    "ariaSteps": "Four steps to place your order",
+    "whatsappMsg": "Hello SAMAQU Admin, I'm interested in your collection and would like to ask about ordering.",
+    "ariaCta": "Start ordering now via WhatsApp"
   },
   "cyp": {
     "eyebrow": "Create Your Price",
@@ -257,6 +260,7 @@
   "caraPesanPage": {
     "heroEyebrow": "Ordering Guide",
     "heroTitle": "How to Order",
+    "heroTitleAccent": "Order",
     "heroSubtitle": "Choose the way that's most comfortable for you.",
     "heroDesc": "At Samaqu, you can order directly through our website or get personal assistance via WhatsApp. Whichever you prefer, we'll make the process smooth and easy.",
     "heroCtaWeb": "Order via Website",
@@ -298,10 +302,14 @@
     "sizeCtaGuide": "View Size Guide",
     "sizeCtaAdmin": "Consult with Admin",
     "closingTitle": "Do It Yourself or Let Us Help.",
+    "closingTitleAccent": "Help",
     "closingDesc": "Order directly through the website if you know exactly what you want. Or reach out to our Admin if you'd prefer a helping hand.",
     "closingTagline": "Two ways. Both easy.",
     "closingCtaWeb": "Start Shopping",
-    "closingCtaWa": "Contact Admin"
+    "closingCtaWa": "Contact Admin",
+    "waLink1": "Hello SAMAQU Admin, I'd like to ask about placing an order.",
+    "waLink2": "Hello SAMAQU Admin, I need help finding the right size.",
+    "waLink3": "Hello SAMAQU Admin, I need assistance."
   },
   "cypPage": {
     "heroTitle": "Create Your Price",
@@ -432,5 +440,11 @@
     "ctaDesc1": "If you still have questions about warranty or returns, don't hesitate to contact our team. We'll be happy to help.",
     "ctaDesc2": "Because for us, your satisfaction and comfort are an important part of the SAMAQU journey.",
     "ctaButton": "Contact Admin"
+  },
+  "autoCTA": {
+    "tooltip": "Need help? Chat Admin",
+    "closeLabel": "Close",
+    "whatsappMsg": "Hello SAMAQU Admin, I'm interested in your collection and would like to ask about ordering.",
+    "ariaLabel": "Chat Admin via WhatsApp"
   }
 }

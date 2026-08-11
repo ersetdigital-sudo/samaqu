@@ -6,14 +6,7 @@ import { CoatHanger, Ruler, ChatCircle, Package } from "@phosphor-icons/react";
 import { supabase } from "@/lib/supabase";
 import { useSafeTranslations } from "@/lib/safe-i18n";
 
-/* ─── Default Data ─── */
-const DEFAULT_STEPS = [
-  { title: "Pilih Produk", desc: "Jelajahi katalog dan tentukan koleksi favoritmu — dari Thobe hingga Vest.", Icon: CoatHanger },
-  { title: "Cek Ukuran", desc: "Gunakan panduan size kami agar potongan pas dan nyaman dikenakan.", Icon: Ruler },
-  { title: "Chat Admin", desc: "Hubungi admin via WhatsApp untuk konfirmasi ketersediaan dan pemesanan.", Icon: ChatCircle },
-  { title: "Selesai", desc: "Bayar, pesanan diproses, dan busana pilihanmu segera dalam perjalanan.", Icon: Package },
-];
-
+/* ─── Default Data (fallback icons only — text comes from i18n) ─── */
 const STEP_ICONS = [CoatHanger, Ruler, ChatCircle, Package];
 
 import { getWhatsAppLink } from "@/lib/store-settings";
@@ -42,7 +35,7 @@ function StepItem({
   step,
   index,
 }: {
-  step: (typeof DEFAULT_STEPS)[number];
+  step: { title: string; desc: string; Icon: typeof CoatHanger };
   index: number;
 }) {
   return (
@@ -138,7 +131,16 @@ function TimelineTrack() {
 /* ─── Section ─── */
 export default function CaraPemesanan() {
   const t = useSafeTranslations("caraPesan");
-  const [steps, setSteps] = useState(DEFAULT_STEPS);
+
+  // i18n-based steps
+  const i18nSteps = [
+    { title: t("step1Title"), desc: t("step1Desc"), Icon: STEP_ICONS[0] },
+    { title: t("step2Title"), desc: t("step2Desc"), Icon: STEP_ICONS[1] },
+    { title: t("step3Title"), desc: t("step3Desc"), Icon: STEP_ICONS[2] },
+    { title: t("step4Title"), desc: t("step4Desc"), Icon: STEP_ICONS[3] },
+  ];
+
+  const [steps, setSteps] = useState(i18nSteps);
 
   useEffect(() => {
     async function fetchSteps() {
@@ -151,7 +153,7 @@ export default function CaraPemesanan() {
             Icon: STEP_ICONS[i] || Package,
           })));
         }
-      } catch { /* use defaults */ }
+      } catch { /* use i18n defaults */ }
     }
     fetchSteps();
   }, []);
@@ -260,7 +262,7 @@ export default function CaraPemesanan() {
           <motion.div
             className="relative z-10 grid grid-cols-4 gap-8 lg:gap-12"
             role="list"
-            aria-label="Empat langkah cara pemesanan"
+            aria-label={t("ariaSteps")}
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-60px" }}
@@ -290,10 +292,10 @@ export default function CaraPemesanan() {
               color: "#fff",
               boxShadow: "0 8px 24px rgba(184,145,70,.25)",
             }}
-            href={getWhatsAppLink("Halo Admin SAMAQU, saya tertarik dengan koleksi Anda dan ingin bertanya soal pemesanan.")}
+            href={getWhatsAppLink(t("whatsappMsg"))}
             target="_blank"
             rel="noopener"
-            aria-label="Mulai pesan sekarang via WhatsApp"
+            aria-label={t("ariaCta")}
           >
             <svg
               width="19"

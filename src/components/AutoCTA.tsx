@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import { getWhatsAppLink } from "@/lib/store-settings";
+import { useSafeTranslations } from "@/lib/safe-i18n";
 
 function WhatsAppIcon() {
   return (
@@ -14,6 +15,7 @@ function WhatsAppIcon() {
 }
 
 export default function AutoCTA() {
+  const t = useSafeTranslations("autoCTA");
   const [visible, setVisible] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
   const showTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -118,12 +120,12 @@ export default function AutoCTA() {
                   onClick={handleClose}
                   className="absolute -top-2 -right-2 w-5 h-5 rounded-full flex items-center justify-center transition-opacity hover:opacity-70"
                   style={{ background: "var(--espresso)", color: "var(--ivory)" }}
-                  aria-label="Tutup"
+                  aria-label={t("closeLabel")}
                 >
                   <X size={10} />
                 </button>
                 <p className="relative text-[12px] sm:text-[13px] font-ui leading-snug" style={{ color: "var(--espresso)" }}>
-                  Butuh bantuan? <span className="font-medium">Chat Admin</span>
+                  {t("tooltip")}
                 </p>
               </motion.div>
             )}
@@ -131,7 +133,7 @@ export default function AutoCTA() {
 
           {/* FAB Button */}
           <a
-            href={getWhatsAppLink("Halo Admin SAMAQU, saya tertarik dengan koleksi Anda dan ingin bertanya soal pemesanan.")}
+            href={getWhatsAppLink(t("whatsappMsg"))}
             target="_blank"
             rel="noopener"
             className="relative flex items-center justify-center w-14 h-14 rounded-full transition-transform duration-300 hover:scale-105"
@@ -140,7 +142,7 @@ export default function AutoCTA() {
               border: "1px solid var(--gold)",
               boxShadow: "0 8px 24px -6px rgba(42,33,27,.35)",
             }}
-            aria-label="Chat Admin via WhatsApp"
+            aria-label={t("ariaLabel")}
           >
             <span
               className="absolute inset-0 rounded-full animate-ping"
