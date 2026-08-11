@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Ruler, Loader2, ArrowLeft, MessageCircle } from "lucide-react";
+import { Ruler, Loader2, ArrowLeft, MessageCircle, Eye, X, ChevronLeft, ChevronRight } from "lucide-react";
 import Breadcrumb from "@/components/Breadcrumb";
 import { useSafeTranslations } from "@/lib/safe-i18n";
 import { supabase } from "@/lib/supabase";
@@ -25,15 +25,28 @@ const CATEGORY_TABS = [
   "Rekomendasi Size",
 ];
 
+const CATEGORY_DESC: Record<string, string> = {
+  Thobe: "Potongan panjang klasik, adem, dan berwibawa",
+  Kandora: "Elegan untuk sehari-hari maupun formal",
+  Koko: "Modern dan nyaman untuk shalat",
+  Vest: "Presisi untuk tampilan berkelas",
+  Kabak: "Premium berkualitas tinggi",
+  "Rekomendasi Size": "Panduan ukuran berdasarkan tinggi & berat badan",
+};
+
 const headerVariants = {
   hidden: { opacity: 0, y: 18 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" as const } },
 };
 
-const tabVariants = {
-  hidden: { opacity: 0, y: 12 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: "easeOut" as const } },
-  exit: { opacity: 0, y: -8, transition: { duration: 0.2 } },
+const cardVariants = {
+  hidden: { opacity: 0, y: 24 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] as const } },
+};
+
+const containerVariants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.08 } },
 };
 
 export default function PanduanUkuranPage() {
@@ -41,6 +54,7 @@ export default function PanduanUkuranPage() {
   const [sizeGuides, setSizeGuides] = useState<SizeGuideImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("Semua");
+  const [lightboxGuide, setLightboxGuide] = useState<SizeGuideImage | null>(null);
 
   useEffect(() => {
     async function loadSizeGuides() {
@@ -60,6 +74,14 @@ export default function PanduanUkuranPage() {
       : sizeGuides.filter((g) => g.category === activeTab && g.image_url);
 
   const hasImages = sizeGuides.some((g) => g.image_url);
+
+  function getAdjacentGuide(direction: "prev" | "next") {
+    if (!lightboxGuide) return null;
+    const idx = filteredGuides.findIndex((g) => g.id === lightboxGuide.id);
+    if (idx === -1) return null;
+    if (direction === "next") return filteredGuides[(idx + 1) % filteredGuides.length];
+    return filteredGuides[(idx - 1 + filteredGuides.length) % filteredGuides.length];
+  }
 
   return (
     <section className="min-h-screen" style={{ background: "var(--cream)" }}>
@@ -141,37 +163,49 @@ export default function PanduanUkuranPage() {
               <p className="text-sm font-semibold font-ui mb-1" style={{ color: "var(--espresso)" }}>{t("emptyTitle")}</p>
               <p className="text-xs font-ui" style={{ color: "var(--stone)" }}>{t("emptyDesc")}</p>
             </motion.div>
-          ) : activeTab === "Semua" ? (
-            <motion.div key="all" variants={tabVariants} initial="hidden" animate="visible" exit="exit" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {filteredGuides.map((guide) => (
-                <div key={guide.id} className="rounded-2xl overflow-hidden bg-white" style={{ boxShadow: "0 2px 12px rgba(43,38,32,.06)", border: "1px solid rgba(201,183,156,.15)" }}>
-                  <div className="px-4 py-3 flex items-center gap-2" style={{ borderBottom: "1px solid rgba(201,183,156,.12)" }}>
-                    <Ruler size={14} strokeWidth={1.8} style={{ color: "var(--gold)" }} />
-                    <p className="text-[12px] font-semibold font-ui tracking-wide uppercase" style={{ color: "var(--espresso)" }}>{guide.category}</p>
-                  </div>
-                  <div className="p-2">
-                    <img src={guide.image_url} alt={`Panduan Ukuran ${guide.category}`} className="w-full h-auto rounded-lg" loading="lazy" />
-                  </div>
-                </div>
-              ))}
-            </motion.div>
           ) : (
-            <motion.div key={activeTab} variants={tabVariants} initial="hidden" animate="visible" exit="exit" className="max-w-3xl mx-auto">
+            <motion.div key={activeTab} variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {filteredGuides.map((guide) => (
-                <div key={guide.id} className="rounded-2xl overflow-hidden bg-white" style={{ boxShadow: "0 8px 40px -16px rgba(43,38,32,.15)" }}>
-                  <div className="px-6 py-4 flex items-center gap-3" style={{ borderBottom: "1px solid rgba(201,183,156,.12)" }}>
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "var(--sand-2)" }}>
-                      <Ruler size={16} strokeWidth={1.8} style={{ color: "var(--gold)" }} />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold font-ui" style={{ color: "var(--espresso)" }}>{guide.category}</p>
-                      <p className="text-[11px] font-ui" style={{ color: "var(--stone)" }}>{t("imageNote")}</p>
+                <motion.div
+                  key={guide.id}
+                  variants={cardVariants}
+                  whileHover={{ y: -4, transition: { duration: 0.2 } }}
+                  className="group rounded-2xl overflow-hidden bg-white flex flex-col"
+                  style={{ boxShadow: "0 2px 12px rgba(43,38,32,.06)", border: "1px solid rgba(201,183,156,.15)" }}
+                >
+                  {/* Thumbnail */}
+                  <div className="relative aspect-[4/3] overflow-hidden" style={{ background: "var(--sand-2)" }}>
+                    <img
+                      src={guide.image_url}
+                      alt={`Panduan Ukuran ${guide.category}`}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ background: "rgba(23,20,15,.35)" }}>
+                      <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "var(--gold)", boxShadow: "0 4px 16px rgba(190,139,60,.5)" }}>
+                        <Eye size={20} color="white" strokeWidth={1.8} />
+                      </div>
                     </div>
                   </div>
-                  <div className="p-3">
-                    <img src={guide.image_url} alt={`Panduan Ukuran ${guide.category}`} className="w-full h-auto rounded-xl" loading="lazy" />
+
+                  {/* Info + Button */}
+                  <div className="p-4 flex flex-col flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Ruler size={14} strokeWidth={1.8} style={{ color: "var(--gold)" }} />
+                      <p className="text-[13px] font-semibold font-ui" style={{ color: "var(--espresso)" }}>{guide.category}</p>
+                    </div>
+                    <p className="text-[11px] font-ui mb-4 flex-1" style={{ color: "var(--stone)" }}>
+                      {CATEGORY_DESC[guide.category] || "Panduan ukuran lengkap"}
+                    </p>
+                    <button
+                      onClick={() => setLightboxGuide(guide)}
+                      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-[12px] font-ui font-semibold transition-all duration-200 cursor-pointer"
+                      style={{ background: "var(--espresso)", color: "var(--cream)" }}
+                    >
+                      <Eye size={14} strokeWidth={1.8} /> Lihat Detail
+                    </button>
                   </div>
-                </div>
+                </motion.div>
               ))}
             </motion.div>
           )}
@@ -195,6 +229,72 @@ export default function PanduanUkuranPage() {
           </div>
         )}
       </div>
+
+      {/* ═══ LIGHTBOX ═══ */}
+      <AnimatePresence>
+        {lightboxGuide && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8"
+            style={{ background: "rgba(0,0,0,.88)" }}
+            onClick={() => setLightboxGuide(null)}
+          >
+            {/* Close */}
+            <button
+              onClick={() => setLightboxGuide(null)}
+              className="absolute top-4 right-4 sm:top-6 sm:right-6 w-10 h-10 rounded-full flex items-center justify-center z-50 transition-colors"
+              style={{ background: "rgba(255,255,255,.12)" }}
+            >
+              <X size={20} color="white" />
+            </button>
+
+            {/* Prev */}
+            {filteredGuides.length > 1 && (
+              <button
+                onClick={(e) => { e.stopPropagation(); const prev = getAdjacentGuide("prev"); if (prev) setLightboxGuide(prev); }}
+                className="absolute left-2 sm:left-6 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center z-50 transition-colors"
+                style={{ background: "rgba(255,255,255,.12)" }}
+              >
+                <ChevronLeft size={22} color="white" />
+              </button>
+            )}
+
+            {/* Next */}
+            {filteredGuides.length > 1 && (
+              <button
+                onClick={(e) => { e.stopPropagation(); const next = getAdjacentGuide("next"); if (next) setLightboxGuide(next); }}
+                className="absolute right-2 sm:right-6 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center z-50 transition-colors"
+                style={{ background: "rgba(255,255,255,.12)" }}
+              >
+                <ChevronRight size={22} color="white" />
+              </button>
+            )}
+
+            {/* Image */}
+            <motion.div
+              initial={{ scale: 0.92, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.92, opacity: 0 }}
+              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+              className="max-w-4xl max-h-[85vh] w-full flex flex-col items-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <p className="text-[11px] tracking-[0.2em] uppercase font-ui font-medium mb-3" style={{ color: "rgba(255,255,255,.6)" }}>
+                {lightboxGuide.category}
+              </p>
+              <div className="rounded-2xl overflow-hidden w-full" style={{ boxShadow: "0 20px 60px -16px rgba(0,0,0,.5)" }}>
+                <img
+                  src={lightboxGuide.image_url}
+                  alt={`Panduan Ukuran ${lightboxGuide.category}`}
+                  className="w-full h-auto max-h-[75vh] object-contain"
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 }
