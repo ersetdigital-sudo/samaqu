@@ -39,7 +39,7 @@ function getMobileExtraItems(t: (key: string) => string): NavLinkItem[] {
 
 function getBantuanLinks(t: (key: string) => string) {
   return [
-    { label: t("nav.panduan"), href: "/#size", Icon: Ruler },
+    { label: t("nav.panduan"), href: "/panduan-ukuran", Icon: Ruler },
     { label: t("nav.cara_pesan"), href: "/cara-pesan", Icon: ListChecks },
     { label: t("nav.faq"), href: "/faq", Icon: Question },
     { label: t("nav.garansi_retur"), href: "/garansi-retur", Icon: Question },

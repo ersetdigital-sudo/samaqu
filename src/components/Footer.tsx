@@ -21,7 +21,7 @@ function getHelpLinks(t: (key: string) => string) {
   return [
     { href: "/cara-pesan", label: t("nav.cara_pesan") },
     { href: "/faq", label: t("nav.faq") },
-    { href: "/#size", label: t("nav.panduan") },
+    { href: "/panduan-ukuran", label: t("nav.panduan") },
     { href: "/create-your-price", label: t("nav.cyp") },
   ];
 }
