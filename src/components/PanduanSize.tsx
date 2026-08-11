@@ -30,7 +30,7 @@ export default function PanduanSize() {
               Tidak perlu bingung menentukan ukuran. Lihat Size Chart setiap produk dan gunakan Rekomendasi Size yang tersedia untuk membantu menemukan ukuran yang sesuai dengan tinggi dan berat badanmu.
             </p>
             <a
-              href="#"
+              href="/panduan-ukuran"
               className="inline-flex items-center gap-2 rounded-full px-7 py-4 text-[12px] tracking-[0.18em] uppercase text-white transition hover:opacity-90"
               style={{ background: "var(--espresso)" }}
             >
