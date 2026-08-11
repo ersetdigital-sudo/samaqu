@@ -104,7 +104,13 @@
   "sizeGuide": {
     "eyebrow": "Size Guide",
     "title": "Find the Perfect Fit for You.",
-    "cta": "View Size Guide"
+    "desc": "View the size guide for each of our product categories. Select the tab for the product type you're looking for.",
+    "cta": "Consult Size via WhatsApp",
+    "imageNote": "Size guide photo from admin",
+    "emptyTitle": "No size guide yet",
+    "emptyDesc": "The size guide for this category is not available yet. Please contact admin for size consultation.",
+    "tabAll": "All",
+    "tabRekomendasi": "Size Recommendation"
   },
   "faqHome": {
     "eyebrow": "General Questions",
