@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { useSafeTranslations } from "@/lib/safe-i18n";
 
 interface CategoryItem {
   name: string;
@@ -20,6 +21,7 @@ const FALLBACK_CATEGORIES: CategoryItem[] = [
 ];
 
 export default function Koleksi() {
+  const t = useSafeTranslations("koleksiHome");
   const [categories, setCategories] = useState<CategoryItem[]>(FALLBACK_CATEGORIES);
 
   useEffect(() => {
@@ -33,20 +35,20 @@ export default function Koleksi() {
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-10 sm:py-16 lg:py-20">
 
         {/* Header */}
-        <p className="text-[10px] sm:text-[11px] tracking-[0.28em] uppercase mb-3 sm:mb-5" style={{ color: "#5a5a5a" }}>Katalog Samaqu</p>
+        <p className="text-[10px] sm:text-[11px] tracking-[0.28em] uppercase mb-3 sm:mb-5" style={{ color: "#5a5a5a" }}>{t("eyebrow")}</p>
 
         <h1
           className="text-[1.65rem] sm:text-4xl md:text-5xl lg:text-[3.4rem] font-semibold leading-[1.08] tracking-tight max-w-2xl"
           style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}
         >
-          Pilih yang Membuatmu{" "}
+          {t("titleLine1")}{" "}
           <br className="hidden sm:block" />
-          <span className="italic font-normal" style={{ color: "var(--gold)" }}>Lebih </span>
-          Percaya Diri
+          <span className="italic font-normal" style={{ color: "var(--gold)" }}>{t("titleAccent")} </span>
+          {t("titleLine2")}
         </h1>
 
         <p className="mt-3 sm:mt-5 max-w-xl text-[13px] sm:text-[15px] leading-relaxed" style={{ color: "#5a5a5a" }}>
-          Dibuat dengan perhatian pada kualitas, kepedulian, dan rasa bangga untuk menemani berbagai aktivitasmu — dari keseharian hingga momen istimewa.
+          {t("desc")}
         </p>
 
         {/* Grid — same 2-column layout on all breakpoints */}
@@ -55,7 +57,7 @@ export default function Koleksi() {
           {/* Thobe — tall (left col, spans 2 rows) */}
           <Link href="/katalog" className="card group relative overflow-hidden rounded-[14px] sm:rounded-[22px] shadow-[0_18px_40px_-18px_rgba(42,33,27,.55)] row-span-2 min-h-[340px] sm:min-h-[460px] lg:min-h-[560px]" style={{ background: "var(--espresso)" }}>
             <img src={categories[0]?.image_url} alt="Thobe" className="absolute inset-0 h-full w-full object-cover transition-transform duration-[800ms] ease-[cubic-bezier(.2,.7,.2,1)] group-hover:scale-[1.06]" />
-            <span className="absolute top-2.5 left-2.5 sm:top-4 sm:left-4 z-20 rounded-full px-2 py-0.5 sm:px-3 sm:py-1 text-[8px] sm:text-[10px] font-semibold tracking-[0.18em] uppercase text-white" style={{ background: "var(--gold)" }}>Best Seller</span>
+            <span className="absolute top-2.5 left-2.5 sm:top-4 sm:left-4 z-20 rounded-full px-2 py-0.5 sm:px-3 sm:py-1 text-[8px] sm:text-[10px] font-semibold tracking-[0.18em] uppercase text-white" style={{ background: "var(--gold)" }}>{t("bestSeller")}</span>
             <div className="absolute inset-0 card-shade" />
             <div className="absolute inset-x-0 bottom-0 z-10 flex items-end justify-between gap-2 sm:gap-4 p-3 sm:p-6">
               <div>
@@ -152,7 +154,7 @@ export default function Koleksi() {
             className="inline-flex items-center gap-2 sm:gap-3 rounded-full px-6 py-3 sm:px-8 sm:py-4 text-[11px] sm:text-[12px] font-semibold uppercase tracking-[0.14em] sm:tracking-[0.16em] transition hover:bg-[var(--gold)]"
             style={{ background: "var(--espresso)", color: "#f1e9dd" }}
           >
-            Lihat Katalog Selengkapnya <span aria-hidden="true">→</span>
+            {t("cta")} <span aria-hidden="true">→</span>
           </Link>
         </div>
       </div>

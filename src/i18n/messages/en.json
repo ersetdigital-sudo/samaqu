@@ -446,5 +446,14 @@
     "closeLabel": "Close",
     "whatsappMsg": "Hello SAMAQU Admin, I'm interested in your collection and would like to ask about ordering.",
     "ariaLabel": "Chat Admin via WhatsApp"
+  },
+  "koleksiHome": {
+    "eyebrow": "Samaqu Catalog",
+    "titleLine1": "Choose What Makes You",
+    "titleAccent": "More",
+    "titleLine2": "Confident",
+    "desc": "Crafted with care, quality, and pride to accompany every moment of your life — from everyday routines to special occasions.",
+    "bestSeller": "Best Seller",
+    "cta": "View Full Catalog"
   }
 }

@@ -446,5 +446,14 @@
     "closeLabel": "Tutup",
     "whatsappMsg": "Halo Admin SAMAQU, saya tertarik dengan koleksi Anda dan ingin bertanya soal pemesanan.",
     "ariaLabel": "Chat Admin via WhatsApp"
+  },
+  "koleksiHome": {
+    "eyebrow": "Katalog Samaqu",
+    "titleLine1": "Pilih yang Membuatmu",
+    "titleAccent": "Lebih",
+    "titleLine2": "Percaya Diri",
+    "desc": "Dibuat dengan perhatian pada kualitas, kepedulian, dan rasa bangga untuk menemani berbagai aktivitasmu — dari keseharian hingga momen istimewa.",
+    "bestSeller": "Best Seller",
+    "cta": "Lihat Katalog Selengkapnya"
   }
 }
