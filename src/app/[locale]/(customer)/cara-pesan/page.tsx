@@ -132,7 +132,7 @@ export default function CaraPesanPage() {
             <p className="italic text-xl font-ui mt-2" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--text-secondary)" }}>{t("sizeSubtitle")}</p>
             <p className="mt-5 font-ui leading-relaxed" style={{ color: "var(--text-secondary)" }}>{t("sizeDesc")}</p>
             <div className="mt-8 flex flex-col sm:flex-row gap-3">
-              <Link href="/#size" className="text-center rounded-full px-7 py-3.5 text-sm font-medium font-ui text-white transition-colors hover:opacity-90" style={{ background: "var(--espresso)" }}>{t("sizeCtaGuide")}</Link>
+              <Link href="/panduan-ukuran" className="text-center rounded-full px-7 py-3.5 text-sm font-medium font-ui text-white transition-colors hover:opacity-90" style={{ background: "var(--espresso)" }}>{t("sizeCtaGuide")}</Link>
               <a href={getWhatsAppLink("Halo Admin SAMAQU, saya butuh bantuan menentukan ukuran.")} target="_blank" rel="noopener" className="text-center rounded-full px-7 py-3.5 text-sm font-ui border transition-colors hover:bg-[var(--bg-tertiary, #e5d8cb)]" style={{ borderColor: "rgba(42,33,27,.25)", color: "var(--espresso)" }}>{t("sizeCtaAdmin")}</a>
             </div>
           </div>
