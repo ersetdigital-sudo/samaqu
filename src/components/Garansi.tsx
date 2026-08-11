@@ -92,86 +92,6 @@ const guarantees = [
   },
 ];
 
-const trustBadges = [
-  {
-    label: "100% Original",
-    icon: (
-      <svg
-        className="h-4 w-4 sm:h-[18px] sm:w-[18px]"
-        style={{ color: "var(--gold)" }}
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M12 2 4 5v6c0 5 3.4 7.8 8 9 4.6-1.2 8-4 8-9V5l-8-3Z" />
-        <path d="m9 12 2 2 4-4" />
-      </svg>
-    ),
-  },
-  {
-    label: "Packing Aman",
-    icon: (
-      <svg
-        className="h-4 w-4 sm:h-[18px] sm:w-[18px]"
-        style={{ color: "var(--gold)" }}
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="m7.5 4.3 9 5.2v9L7.5 13V4.3Z" />
-        <path d="M16.5 9.5 21 7V16l-4.5 2.5" />
-        <path d="M3 7v9l4.5 2.5M3 7l4.5-2.7L12 7 7.5 9.5 3 7Z" />
-      </svg>
-    ),
-  },
-  {
-    label: "Support Personal",
-    icon: (
-      <svg
-        className="h-4 w-4 sm:h-[18px] sm:w-[18px]"
-        style={{ color: "var(--gold)" }}
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M18 20a6 6 0 0 0-12 0" />
-        <circle cx="12" cy="9" r="4" />
-      </svg>
-    ),
-  },
-];
-
-/* ─── Default data (title + description only, icon mapped by index) ─── */
-const DEFAULT_GUARANTEES = [
-  { title: "Garansi Kualitas Produk", description: "Kami peduli pada setiap produk yang kami buat. Karena itu, setiap produk melewati proses pengecekan kualitas sebelum dikirim." },
-  { title: "Garansi Uang Kembali", description: "Kami ingin setiap transaksi terjadi atas dasar saling ridha. Jika produk yang kamu terima dirasa tidak sesuai, kami siap memberikan garansi uang kembali sesuai ketentuan." },
-  { title: "Garansi Tukar Ukuran", description: "Ukuran kurang pas? Kami siap membantu proses penukaran agar kamu mendapatkan ukuran yang lebih sesuai." },
-  { title: "Pelayanan yang Ramah", description: "Dari konsultasi hingga setelah pembelian, tim kami siap membantu dengan ramah, jujur, dan sepenuh hati." },
-];
-
-/* Icons mapped by index (not stored in DB) */
-const GUARANTEE_ICONS = [
-  // 1. Shield — Garansi Kualitas Produk
-  <svg key="shield" className="h-5 w-5 sm:h-7 sm:w-7" viewBox="0 0 24 24" fill="none" stroke="var(--espresso)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" /><path stroke="var(--gold)" d="m9 12 2 2 4-4" /></svg>,
-  // 2. RotateCcw — Garansi Uang Kembali
-  <svg key="refund" className="h-5 w-5 sm:h-7 sm:w-7" viewBox="0 0 24 24" fill="none" stroke="var(--espresso)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /><path stroke="var(--gold)" d="M12 7v5l4 2" /></svg>,
-  // 3. Ruler — Garansi Tukar Ukuran
-  <svg key="ruler" className="h-5 w-5 sm:h-7 sm:w-7" viewBox="0 0 24 24" fill="none" stroke="var(--espresso)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.4 2.4 0 0 1 0-3.4l2.6-2.6a2.4 2.4 0 0 1 3.4 0Z" /><path stroke="var(--gold)" d="m14.5 12.5 2-2M11.5 9.5l2-2M8.5 6.5l2-2M17.5 15.5l2-2" /></svg>,
-  // 4. Chat — Pelayanan yang Ramah
-  <svg key="chat" className="h-5 w-5 sm:h-7 sm:w-7" viewBox="0 0 24 24" fill="none" stroke="var(--espresso)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z" /><path stroke="var(--gold)" d="M8 10h.01M12 10h.01M16 10h.01" /></svg>,
-];
-
-const DEFAULT_BADGES = ["100% Original", "Packing Aman", "Support Personal"];
-
 /* ─── Section ─── */
 export default function Garansi() {
   const t = useSafeTranslations("garansi");
@@ -185,6 +105,11 @@ export default function Garansi() {
   ];
 
   // i18n-based trust badges
+  const trustBadges = [
+    { icon: <svg className="h-4 w-4 sm:h-[18px] sm:w-[18px]" style={{ color: "var(--gold)" }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2 4 5v6c0 5 3.4 7.8 8 9 4.6-1.2 8-4 8-9V5l-8-3Z" /><path d="m9 12 2 2 4-4" /></svg> },
+    { icon: <svg className="h-4 w-4 sm:h-[18px] sm:w-[18px]" style={{ color: "var(--gold)" }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><path d="m3.27 6.96 8.73 5.05 8.73-5.05" /><path d="M12 22.08V12" /></svg> },
+    { icon: <svg className="h-4 w-4 sm:h-[18px] sm:w-[18px]" style={{ color: "var(--gold)" }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z" /><path stroke="var(--gold)" d="M8 10h.01M12 10h.01M16 10h.01" /></svg> },
+  ];
   const trustBadgeLabels = [t("badge1"), t("badge2"), t("badge3")];
 
   return (
