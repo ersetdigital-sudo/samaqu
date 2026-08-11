@@ -27,7 +27,7 @@ export default function PanduanSize() {
               {t("title")}
             </h2>
             <p className="leading-[1.75] mb-8 text-sm sm:text-base" style={{ color: "var(--coffee)" }}>
-              Tidak perlu bingung menentukan ukuran. Lihat Size Chart setiap produk dan gunakan Rekomendasi Size yang tersedia untuk membantu menemukan ukuran yang sesuai dengan tinggi dan berat badanmu.
+              {t("desc")}
             </p>
             <a
               href="/panduan-ukuran"

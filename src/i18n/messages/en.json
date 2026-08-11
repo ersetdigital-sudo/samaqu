@@ -26,7 +26,10 @@
     "cta1": "View Collection",
     "cta2": "Contact Admin",
     "mute": "Turn On Sound",
-    "scroll": "Scroll"
+    "scroll": "Scroll",
+    "whatsappMsg": "Hello SAMAQU Admin, I'm interested in your collection and would like to ask about ordering.",
+    "unmute": "Turn on sound",
+    "muteLabel": "Turn off sound"
   },
   "trust": {
     "item1": "Consistent Quality",
@@ -105,15 +108,24 @@
     "eyebrow": "Size Guide",
     "title": "Find the Perfect Fit for You.",
     "cta": "View Size Guide",
-    "desc": "View the size guide for each of our product categories. Select the tab for the product type you're looking for.",
+    "desc": "Check the size guide for each of our product categories. Select the tab that matches the product you're looking for.",
     "imageNote": "Size guide photo from admin",
-    "emptyTitle": "No size guide yet",
-    "emptyDesc": "The size guide for this category is not available yet. Please contact admin for size consultation.",
+    "emptyTitle": "No size guide available yet",
+    "emptyDesc": "Size guide for this category is not yet available. Please contact admin for size consultation.",
     "tabAll": "All",
     "tabRekomendasi": "Size Recommendation",
-    "pageDesc": "Complete size guide for each SAMAQU product category. View size photos and recommendations based on your height and weight.",
+    "pageDesc": "Complete size guide for every SAMAQU product category. View size photos and get recommendations based on your height and weight.",
     "backToHome": "Back to Home",
-    "consultWA": "Consult via WhatsApp"
+    "consultWA": "Consult via WhatsApp",
+    "viewDetail": "View Detail",
+    "loading": "Loading size guide...",
+    "stillUnsure": "Still unsure about your size?",
+    "descThobe": "Classic long cut, cool and dignified",
+    "descKandora": "Elegant for daily or formal wear",
+    "descKoko": "Modern and comfortable for prayers",
+    "descVest": "Precision for a classy look",
+    "descRekomendasi": "Size guide based on height & weight",
+    "descDefault": "Complete size guide"
   },
   "faqHome": {
     "eyebrow": "General Questions",

@@ -16,20 +16,20 @@ interface SizeGuideImage {
 }
 
 const CATEGORY_TABS = [
-  "Semua",
-  "Thobe",
-  "Kandora",
-  "Koko",
-  "Vest",
-  "Rekomendasi Size",
+  { key: "tabAll", value: "Semua" },
+  { key: null, value: "Thobe" },
+  { key: null, value: "Kandora" },
+  { key: null, value: "Koko" },
+  { key: null, value: "Vest" },
+  { key: "tabRekomendasi", value: "Rekomendasi Size" },
 ];
 
-const CATEGORY_DESC: Record<string, string> = {
-  Thobe: "Potongan panjang klasik, adem, dan berwibawa",
-  Kandora: "Elegan untuk sehari-hari maupun formal",
-  Koko: "Modern dan nyaman untuk shalat",
-  Vest: "Presisi untuk tampilan berkelas",
-  "Rekomendasi Size": "Panduan ukuran berdasarkan tinggi & berat badan",
+const CATEGORY_DESC_KEYS: Record<string, string> = {
+  Thobe: "descThobe",
+  Kandora: "descKandora",
+  Koko: "descKoko",
+  Vest: "descVest",
+  "Rekomendasi Size": "descRekomendasi",
 };
 
 const headerVariants = {
@@ -125,22 +125,23 @@ export default function PanduanUkuranPage() {
         {/* Tabs */}
         <div className="flex items-center gap-2 mb-8 overflow-x-auto pb-2">
           {CATEGORY_TABS.map((tab) => {
-            const guideForTab = sizeGuides.find((g) => g.category === tab);
-            const isSemua = tab === "Semua";
+            const guideForTab = sizeGuides.find((g) => g.category === tab.value);
+            const isSemua = tab.value === "Semua";
             const hasTabImage = isSemua ? hasImages : guideForTab?.image_url;
+            const label = tab.key ? t(tab.key) : tab.value;
             return (
               <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
+                key={tab.value}
+                onClick={() => setActiveTab(tab.value)}
                 className="px-4 py-2 text-[12px] font-ui font-medium rounded-full whitespace-nowrap transition-all duration-200"
                 style={{
-                  background: activeTab === tab ? "var(--espresso)" : "transparent",
-                  color: activeTab === tab ? "var(--cream)" : "var(--coffee)",
-                  border: `1px solid ${activeTab === tab ? "var(--espresso)" : "rgba(201,183,156,.3)"}`,
+                  background: activeTab === tab.value ? "var(--espresso)" : "transparent",
+                  color: activeTab === tab.value ? "var(--cream)" : "var(--coffee)",
+                  border: `1px solid ${activeTab === tab.value ? "var(--espresso)" : "rgba(201,183,156,.3)"}`,
                   opacity: !hasTabImage && !isSemua ? 0.5 : 1,
                 }}
               >
-                {tab}
+                {label}
               </button>
             );
           })}
@@ -151,7 +152,7 @@ export default function PanduanUkuranPage() {
           {loading ? (
             <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center py-20">
               <Loader2 size={24} className="animate-spin mx-auto mb-3" style={{ color: "var(--gold)" }} />
-              <p className="text-sm font-ui" style={{ color: "var(--stone)" }}>Memuat panduan ukuran...</p>
+              <p className="text-sm font-ui" style={{ color: "var(--stone)" }}>{t("loading")}</p>
             </motion.div>
           ) : filteredGuides.length === 0 ? (
             <motion.div key="empty" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="text-center py-20 rounded-2xl" style={{ background: "white", border: "1px solid rgba(201,183,156,.2)" }}>
@@ -193,14 +194,14 @@ export default function PanduanUkuranPage() {
                       <p className="text-[13px] font-semibold font-ui" style={{ color: "var(--espresso)" }}>{guide.category}</p>
                     </div>
                     <p className="text-[11px] font-ui mb-4 flex-1" style={{ color: "var(--stone)" }}>
-                      {CATEGORY_DESC[guide.category] || "Panduan ukuran lengkap"}
+                      {t(CATEGORY_DESC_KEYS[guide.category] || "descDefault")}
                     </p>
                     <button
                       onClick={() => setLightboxGuide(guide)}
                       className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-[12px] font-ui font-semibold transition-all duration-200 cursor-pointer"
                       style={{ background: "var(--espresso)", color: "var(--cream)" }}
                     >
-                      <Eye size={14} strokeWidth={1.8} /> Lihat Detail
+                      <Eye size={14} strokeWidth={1.8} /> {t("viewDetail")}
                     </button>
                   </div>
                 </motion.div>
@@ -212,9 +213,9 @@ export default function PanduanUkuranPage() {
         {/* CTA */}
         {!loading && (
           <div className="text-center mt-12">
-            <p className="text-sm font-ui mb-4" style={{ color: "var(--stone)" }}>
-              Masih ragu soal ukuran?
-            </p>
+              <p className="text-sm font-ui mb-4" style={{ color: "var(--stone)" }}>
+                {t("stillUnsure")}
+              </p>
             <a
               href={getWhatsAppLink("Halo SAMAQU, saya ingin konsultasi ukuran")}
               target="_blank"
