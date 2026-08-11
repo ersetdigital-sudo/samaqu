@@ -24,9 +24,25 @@ export default function Koleksi() {
   const t = useSafeTranslations("koleksiHome");
   const [categories, setCategories] = useState<CategoryItem[]>(FALLBACK_CATEGORIES);
 
+  // i18n descriptions override DB content
+  const descMap: Record<string, string> = {
+    Thobe: t("descThobe"),
+    Kandora: t("descKandora"),
+    Koko: t("descKoko"),
+    Vest: t("descVest"),
+    Kabak: t("descKabak"),
+    "Cover Hanger": t("descCoverHanger"),
+  };
+
   useEffect(() => {
-    supabase.from("category_images").select("name, description, image_url").order("display_order").then(({ data, error }) => {
-      if (!error && data && data.length > 0) setCategories(data);
+    supabase.from("category_images").select("name, image_url").order("display_order").then(({ data, error }) => {
+      if (!error && data && data.length > 0) {
+        setCategories(data.map((c) => ({
+          name: c.name,
+          description: descMap[c.name] || c.name,
+          image_url: c.image_url,
+        })));
+      }
     });
   }, []);
 
