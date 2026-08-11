@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useRef } from "react";
 import { motion, useInView, Variants } from "framer-motion";
 import { CoatHanger, Ruler, ChatCircle, Package } from "@phosphor-icons/react";
-import { supabase } from "@/lib/supabase";
 import { useSafeTranslations } from "@/lib/safe-i18n";
 
 /* ─── Default Data (fallback icons only — text comes from i18n) ─── */
@@ -132,31 +131,13 @@ function TimelineTrack() {
 export default function CaraPemesanan() {
   const t = useSafeTranslations("caraPesan");
 
-  // i18n-based steps
-  const i18nSteps = [
+  // Always use i18n translations for text content
+  const steps = [
     { title: t("step1Title"), desc: t("step1Desc"), Icon: STEP_ICONS[0] },
     { title: t("step2Title"), desc: t("step2Desc"), Icon: STEP_ICONS[1] },
     { title: t("step3Title"), desc: t("step3Desc"), Icon: STEP_ICONS[2] },
     { title: t("step4Title"), desc: t("step4Desc"), Icon: STEP_ICONS[3] },
   ];
-
-  const [steps, setSteps] = useState(i18nSteps);
-
-  useEffect(() => {
-    async function fetchSteps() {
-      try {
-        const { data } = await supabase.from("order_steps").select("*").order("step_number");
-        if (data && data.length > 0) {
-          setSteps(data.map((s: { title: string; description: string }, i: number) => ({
-            title: s.title,
-            desc: s.description,
-            Icon: STEP_ICONS[i] || Package,
-          })));
-        }
-      } catch { /* use i18n defaults */ }
-    }
-    fetchSteps();
-  }, []);
 
   return (
     <section
