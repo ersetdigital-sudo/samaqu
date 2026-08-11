@@ -21,7 +21,6 @@ const CATEGORY_TABS = [
   "Kandora",
   "Koko",
   "Vest",
-  "Kabak",
   "Rekomendasi Size",
 ];
 
@@ -30,7 +29,6 @@ const CATEGORY_DESC: Record<string, string> = {
   Kandora: "Elegan untuk sehari-hari maupun formal",
   Koko: "Modern dan nyaman untuk shalat",
   Vest: "Presisi untuk tampilan berkelas",
-  Kabak: "Premium berkualitas tinggi",
   "Rekomendasi Size": "Panduan ukuran berdasarkan tinggi & berat badan",
 };
 
