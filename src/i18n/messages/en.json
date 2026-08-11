@@ -105,7 +105,9 @@
     "value2": "Neat",
     "value2Desc": "Precise Stitching",
     "value3": "Elegant",
-    "value3Desc": "Classy Design"
+    "value3Desc": "Classy Design",
+    "desc1": "We know what it's like to be striving, growing, and building a future with what we have. That's why SAMAQU exists with one simple belief: ordinary people also deserve the best quality.",
+    "desc2": "We craft our products with genuine care, offer more accessible pricing, and continuously seek ways to benefit more people through what we build."
   },
   "sizeGuide": {
     "eyebrow": "Size Guide",
@@ -134,7 +136,17 @@
     "eyebrow": "General Questions",
     "title": "FAQ",
     "subtitle": "Find answers to common questions about our products and ordering.",
-    "helpText": "Still have questions? Our team is happy to help anytime."
+    "helpText": "Still have questions? Our team is happy to help anytime.",
+    "q1": "How do I order SAMAQU products?",
+    "a1": "Choose a product from the catalog, check the size guide, then tap the WhatsApp button to contact our admin. They'll help with availability confirmation through to payment.",
+    "q2": "Are SAMAQU materials comfortable and breathable?",
+    "a2": "Absolutely. We select quality materials that are cool, lightweight, and breathable — comfortable for worship, daily wear, or special occasions for extended periods.",
+    "q3": "What if I'm unsure about choosing the right size?",
+    "a3": "Use our size guide as a starting point. If you're still unsure, simply chat with our admin mentioning your height and body type — we'll help find the best-fitting size.",
+    "q4": "Can I place bulk or wholesale orders?",
+    "a4": "Of course. We serve personal, family, and community orders. For wholesale purchases, special pricing is available — share your needs and our team will put together the best deal.",
+    "q5": "Is there a warranty on the products?",
+    "a5": "Every product goes through stitching and material checks before shipping. If there's any issue with your order, contact our admin and we'll help resolve it wholeheartedly."
   },
   "finalCta": {
     "eyebrow": "Your Journey Continues",

@@ -105,7 +105,9 @@
     "value2": "Rapi",
     "value2Desc": "Jahitan Teliti",
     "value3": "Elegan",
-    "value3Desc": "Desain Berkelas"
+    "value3Desc": "Desain Berkelas",
+    "desc1": "Kami tahu rasanya sedang berjuang, bertumbuh, dan membangun masa depan dengan apa yang kita punya. Karena itu Samaqu hadir dengan satu keyakinan sederhana: Orang biasa juga berhak mendapatkan kualitas terbaik.",
+    "desc2": "Kami membuat produk dengan sungguh-sungguh, memberikan harga yang lebih mudah dijangkau, dan terus mencari cara agar apa yang kami bangun bisa memberikan manfaat bagi lebih banyak orang."
   },
   "sizeGuide": {
     "eyebrow": "Panduan Ukuran",
@@ -134,7 +136,17 @@
     "eyebrow": "Pertanyaan Umum",
     "title": "FAQ",
     "subtitle": "Temukan jawaban untuk pertanyaan umum seputar produk dan pemesanan.",
-    "helpText": "Masih ada yang ingin ditanyakan? Tim kami dengan senang hati membantu."
+    "helpText": "Masih ada yang ingin ditanyakan? Tim kami dengan senang hati membantu.",
+    "q1": "Bagaimana cara memesan produk SAMAQU?",
+    "a1": "Pilih produk dari katalog, cek panduan size, lalu klik tombol WhatsApp untuk menghubungi admin. Admin akan membantu konfirmasi ketersediaan hingga pembayaran.",
+    "q2": "Apakah bahan SAMAQU nyaman dan adem?",
+    "a2": "Sangat. Kami memilih bahan berkualitas yang adem, ringan, dan tidak panas saat dikenakan — nyaman untuk ibadah, keseharian, maupun acara istimewa dalam waktu lama.",
+    "q3": "Bagaimana jika saya ragu memilih ukuran?",
+    "a3": "Gunakan panduan size kami sebagai acuan awal. Jika masih ragu, cukup chat admin dengan menyebutkan tinggi dan postur tubuhmu — kami bantu menentukan ukuran yang paling sesuai.",
+    "q4": "Apakah bisa pesan dalam jumlah banyak / grosir?",
+    "a4": "Tentu. Kami melayani pemesanan pribadi, keluarga, hingga komunitas. Untuk pembelian grosir tersedia penawaran khusus — ceritakan kebutuhanmu dan tim kami susun harga terbaik.",
+    "q5": "Apakah ada garansi untuk produk?",
+    "a5": "Setiap produk melewati pengecekan jahitan dan bahan sebelum dikirim. Bila ada ketidaksesuaian pada pesanan, hubungi admin kami dan akan kami bantu dengan sepenuh hati."
   },
   "finalCta": {
     "eyebrow": "Perjalananmu Masih Panjang",

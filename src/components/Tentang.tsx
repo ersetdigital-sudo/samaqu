@@ -19,10 +19,10 @@ export default function Tentang() {
             {t("title")}
           </h2>
           <p className="leading-[1.75] mb-5 text-sm sm:text-base" style={{ color: "var(--coffee)" }}>
-            Kami tahu rasanya sedang berjuang, bertumbuh, dan membangun masa depan dengan apa yang kita punya. Karena itu Samaqu hadir dengan satu keyakinan sederhana: Orang biasa juga berhak mendapatkan kualitas terbaik.
+            {t("desc1")}
           </p>
           <p className="leading-[1.75] mb-6 text-sm sm:text-base" style={{ color: "var(--coffee)" }}>
-            Kami membuat produk dengan sungguh-sungguh, memberikan harga yang lebih mudah dijangkau, dan terus mencari cara agar apa yang kami bangun bisa memberikan manfaat bagi lebih banyak orang.
+            {t("desc2")}
           </p>
           <a
             href="https://samaqu.vercel.app/tentang-kami"

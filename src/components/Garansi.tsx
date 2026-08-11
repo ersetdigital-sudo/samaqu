@@ -1,9 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { motion, Variants } from "framer-motion";
 import Image from "next/image";
-import { supabase } from "@/lib/supabase";
 import { useSafeTranslations } from "@/lib/safe-i18n";
 
 /* ─── Animation ─── */
@@ -177,22 +175,17 @@ const DEFAULT_BADGES = ["100% Original", "Packing Aman", "Support Personal"];
 /* ─── Section ─── */
 export default function Garansi() {
   const t = useSafeTranslations("garansi");
-  const [guarantees, setGuarantees] = useState(DEFAULT_GUARANTEES);
-  const [badges, setBadges] = useState(DEFAULT_BADGES);
 
-  useEffect(() => {
-    async function fetch() {
-      try {
-        const [gRes, bRes] = await Promise.all([
-          supabase.from("garansi_items").select("*").order("display_order"),
-          supabase.from("trust_badges").select("*").order("display_order"),
-        ]);
-        if (gRes.data && gRes.data.length > 0) setGuarantees(gRes.data.map((g: { title: string; description: string }) => ({ title: g.title, description: g.description })));
-        if (bRes.data && bRes.data.length > 0) setBadges(bRes.data.map((b: { label: string }) => b.label));
-      } catch { /* use defaults */ }
-    }
-    fetch();
-  }, []);
+  // i18n-based guarantees
+  const guarantees = [
+    { title: t("card1Title"), description: t("card1Desc") },
+    { title: t("card2Title"), description: t("card2Desc") },
+    { title: t("card3Title"), description: t("card3Desc") },
+    { title: t("card4Title"), description: t("card4Desc") },
+  ];
+
+  // i18n-based trust badges
+  const trustBadgeLabels = [t("badge1"), t("badge2"), t("badge3")];
 
   return (
     <section
@@ -354,10 +347,10 @@ export default function Garansi() {
         >
           <ul className="flex flex-wrap items-center justify-center gap-x-4 sm:gap-x-10 gap-y-2 sm:gap-y-3">
             {trustBadges.map((badge, i) => (
-              <motion.li key={badge.label} variants={headerVariants} className="flex items-center gap-1.5 sm:gap-2">
+              <motion.li key={i} variants={headerVariants} className="flex items-center gap-1.5 sm:gap-2">
                 {badge.icon}
                 <span className="text-xs sm:text-sm font-medium font-ui" style={{ color: "var(--espresso)" }}>
-                  {badge.label}
+                  {trustBadgeLabels[i]}
                 </span>
                 {i < trustBadges.length - 1 && (
                   <span className="hidden sm:block h-4 w-px ml-10" style={{ background: "rgba(42,33,27,.10)" }} aria-hidden="true" />
