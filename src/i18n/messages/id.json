@@ -26,7 +26,10 @@
     "cta1": "Lihat Koleksi",
     "cta2": "Hubungi Admin",
     "mute": "Nyalakan Suara",
-    "scroll": "Scroll"
+    "scroll": "Scroll",
+    "whatsappMsg": "Halo Admin SAMAQU, saya tertarik dengan koleksi Anda dan ingin bertanya soal pemesanan.",
+    "unmute": "Nyalakan suara",
+    "muteLabel": "Matikan suara"
   },
   "trust": {
     "item1": "Kualitas Sama",
@@ -113,7 +116,16 @@
     "tabRekomendasi": "Rekomendasi Size",
     "pageDesc": "Panduan ukuran lengkap untuk setiap kategori produk SAMAQU. Lihat foto ukuran dan rekomendasi size berdasarkan tinggi serta berat badanmu.",
     "backToHome": "Kembali ke Beranda",
-    "consultWA": "Konsultasi via WhatsApp"
+    "consultWA": "Konsultasi via WhatsApp",
+    "viewDetail": "Lihat Detail",
+    "loading": "Memuat panduan ukuran...",
+    "stillUnsure": "Masih ragu soal ukuran?",
+    "descThobe": "Potongan panjang klasik, adem, dan berwibawa",
+    "descKandora": "Elegan untuk sehari-hari maupun formal",
+    "descKoko": "Modern dan nyaman untuk shalat",
+    "descVest": "Presisi untuk tampilan berkelas",
+    "descRekomendasi": "Panduan ukuran berdasarkan tinggi & berat badan",
+    "descDefault": "Panduan ukuran lengkap"
   },
   "faqHome": {
     "eyebrow": "Pertanyaan Umum",

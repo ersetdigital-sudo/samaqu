@@ -28,23 +28,28 @@ export default function Hero() {
   const [muted, setMuted] = useState(false);
   const [heroData, setHeroData] = useState(DEFAULTS);
 
-  // Fetch hero content from Supabase
+  // i18n text overrides — always use translations for text content
+  const heroText = {
+    eyebrow_text: t("eyebrow"),
+    title_line1: t("title1"),
+    title_line2: t("title2"),
+    description: t("desc"),
+    feature1: t("feature1"),
+    feature2: t("feature2"),
+    feature3: t("feature3"),
+  };
+
+  // Fetch hero content from Supabase — only for visual settings (colors)
   useEffect(() => {
     async function fetchHero() {
       try {
         const { data } = await supabase.from("hero_content").select("*").eq("id", 1).single();
         if (data && data.is_active) {
-          setHeroData({
-            eyebrow_text: data.eyebrow_text || DEFAULTS.eyebrow_text,
-            title_line1: data.title_line1 || DEFAULTS.title_line1,
-            title_line2: data.title_line2 ?? DEFAULTS.title_line2,
+          setHeroData((prev) => ({
+            ...prev,
             title_line1_color: data.title_line1_color || DEFAULTS.title_line1_color,
             title_line2_color: data.title_line2_color || DEFAULTS.title_line2_color,
-            description: data.description || DEFAULTS.description,
-            feature1: data.feature1 || DEFAULTS.feature1,
-            feature2: data.feature2 || DEFAULTS.feature2,
-            feature3: data.feature3 || DEFAULTS.feature3,
-          });
+          }));
         }
       } catch {
         // Silent fail - use defaults
@@ -171,11 +176,11 @@ export default function Hero() {
                 className="w-6 sm:w-8 h-px"
                 style={{ background: "var(--gold)" }}
               />
-              {heroData.eyebrow_text}
+              {heroText.eyebrow_text}
             </p>
 
             <h1 className="mb-5 sm:mb-6">
-              {heroData.title_line1 && (
+              {heroText.title_line1 && (
                 <span
                   className="hero-anim hero-line block font-semibold tracking-[-0.02em] leading-[1.08] text-[8.5vw] sm:text-[3.4rem] lg:text-[3.6rem] xl:text-[3.9rem]"
                   style={{
@@ -183,10 +188,10 @@ export default function Hero() {
                     color: heroData.title_line1_color || "#f8f5f1",
                   }}
                 >
-                  {heroData.title_line1}
+                  {heroText.title_line1}
                 </span>
               )}
-              {heroData.title_line2 && (
+              {heroText.title_line2 && (
                 <span
                   className="hero-anim hero-line block font-semibold tracking-[-0.02em] leading-[1.08] text-[8.5vw] sm:text-[3.4rem] lg:text-[3.6rem] xl:text-[3.9rem]"
                   style={{
@@ -194,7 +199,7 @@ export default function Hero() {
                     color: heroData.title_line2_color || "#e0b563",
                   }}
                 >
-                  {heroData.title_line2}
+                  {heroText.title_line2}
                 </span>
               )}
             </h1>
@@ -203,7 +208,7 @@ export default function Hero() {
               className="hero-anim hero-line text-[14px] sm:text-[15px] lg:text-base leading-relaxed max-w-md sm:max-w-lg mb-5 sm:mb-6"
               style={{ color: "rgba(248,245,241,.85)" }}
             >
-              {heroData.description}
+              {heroText.description}
             </p>
 
             <ul
@@ -212,15 +217,15 @@ export default function Hero() {
             >
               <li className="flex items-center gap-2 sm:gap-2.5">
                 <CheckIcon />
-                {heroData.feature1}
+                {heroText.feature1}
               </li>
               <li className="flex items-center gap-2 sm:gap-2.5">
                 <CheckIcon />
-                {heroData.feature2}
+                {heroText.feature2}
               </li>
               <li className="flex items-center gap-2 sm:gap-2.5">
                 <CheckIcon />
-                {heroData.feature3}
+                {heroText.feature3}
               </li>
             </ul>
 
@@ -246,7 +251,7 @@ export default function Hero() {
                 </svg>
               </a>
               <a
-                href={getWhatsAppLink("Halo Admin SAMAQU, saya tertarik dengan koleksi Anda dan ingin bertanya soal pemesanan.")}
+                href={getWhatsAppLink(t("whatsappMsg"))}
                 target="_blank"
                 rel="noopener"
                 className="group inline-flex items-center gap-2 py-3.5 sm:py-4 text-[11px] sm:text-[12px] tracking-[0.16em] sm:tracking-[0.18em] capitalize sm:uppercase transition"
@@ -273,7 +278,7 @@ export default function Hero() {
             backdropFilter: "blur(8px)",
             border: muted ? "none" : "1px solid rgba(248,245,241,.15)",
           }}
-          aria-label={muted ? "Nyalakan suara" : "Matikan suara"}
+          aria-label={muted ? t("unmute") : t("muteLabel")}
         >
           {muted ? (
             <>
