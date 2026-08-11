@@ -31,7 +31,7 @@ export default function CaraPesanPage() {
           <div>
             <p className="text-xs tracking-[0.3em] uppercase font-ui mb-5" style={{ color: "var(--gold)" }}>{t("heroEyebrow")}</p>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl leading-[1.08] font-medium" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>
-              {t("heroTitle")} <span className="italic" style={{ color: "var(--gold)" }}>{t("heroTitle") === "Cara Pemesanan" ? "Pemesanan" : "Order"}</span>
+              {t("heroTitle")} <span className="italic" style={{ color: "var(--gold)" }}>{t("heroTitleAccent")}</span>
             </h1>
             <p className="text-2xl sm:text-3xl mt-4 font-ui" style={{ color: "#d4c4b4", fontFamily: "var(--font-cormorant), Georgia, serif" }}>
               {t("heroSubtitle")}
@@ -114,7 +114,7 @@ export default function CaraPesanPage() {
               </div>
             ))}
           </div>
-          <a href={getWhatsAppLink("Halo Admin SAMAQU, saya ingin bertanya soal pemesanan.")} target="_blank" rel="noopener"
+          <a href={getWhatsAppLink(t("waLink1"))} target="_blank" rel="noopener"
             className="mt-10 inline-flex items-center gap-2 rounded-full px-8 py-3.5 text-sm font-medium font-ui text-white transition-colors hover:opacity-90"
             style={{ background: "var(--espresso)" }}>
             <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm5.3 14.1c-.2.6-1.3 1.2-1.8 1.2-.5 0-2.4-.3-4.6-2.4-2.2-2.1-2.6-3.9-2.7-4.4-.1-.5.4-1.6 1-1.9.2-.1.5-.1.7 0l.9 1.7c.1.2 0 .5-.1.7l-.4.5c-.1.2-.2.4 0 .7.2.4.8 1.2 1.4 1.7.7.6 1.4.9 1.7 1 .2.1.4 0 .6-.2l.5-.6c.2-.2.4-.3.7-.2l1.6.8c.3.1.4.6.3 1.1Z" /></svg>
@@ -133,7 +133,7 @@ export default function CaraPesanPage() {
             <p className="mt-5 font-ui leading-relaxed" style={{ color: "var(--text-secondary)" }}>{t("sizeDesc")}</p>
             <div className="mt-8 flex flex-col sm:flex-row gap-3">
               <Link href="/panduan-ukuran" className="text-center rounded-full px-7 py-3.5 text-sm font-medium font-ui text-white transition-colors hover:opacity-90" style={{ background: "var(--espresso)" }}>{t("sizeCtaGuide")}</Link>
-              <a href={getWhatsAppLink("Halo Admin SAMAQU, saya butuh bantuan menentukan ukuran.")} target="_blank" rel="noopener" className="text-center rounded-full px-7 py-3.5 text-sm font-ui border transition-colors hover:bg-[var(--bg-tertiary, #e5d8cb)]" style={{ borderColor: "rgba(42,33,27,.25)", color: "var(--espresso)" }}>{t("sizeCtaAdmin")}</a>
+              <a href={getWhatsAppLink(t("waLink2"))} target="_blank" rel="noopener" className="text-center rounded-full px-7 py-3.5 text-sm font-ui border transition-colors hover:bg-[var(--bg-tertiary, #e5d8cb)]" style={{ borderColor: "rgba(42,33,27,.25)", color: "var(--espresso)" }}>{t("sizeCtaAdmin")}</a>
             </div>
           </div>
         </div>
@@ -143,13 +143,13 @@ export default function CaraPesanPage() {
       <section className="py-16 sm:py-24 text-center" style={{ background: "var(--espresso)", color: "var(--cream)" }}>
         <div className="max-w-3xl mx-auto px-5 sm:px-8">
           <h2 className="text-3xl sm:text-5xl leading-tight" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>
-            {t("closingTitle")} <span className="italic" style={{ color: "var(--gold)" }}>{t("closingTitle").includes("Dibantu") ? "Dibantu" : "Help"}</span>.
+            {t("closingTitle")} <span className="italic" style={{ color: "var(--gold)" }}>{t("closingTitleAccent")}</span>.
           </h2>
           <p className="mt-6 font-ui leading-relaxed" style={{ color: "#d4c4b4" }}>{t("closingDesc")}</p>
           <p className="italic text-2xl mt-6" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--gold)" }}>{t("closingTagline")}</p>
           <div className="mt-10 flex flex-col sm:flex-row gap-3 justify-center">
             <Link href="/katalog" className="rounded-full px-8 py-3.5 text-sm font-medium font-ui transition-colors hover:opacity-90" style={{ background: "var(--cream)", color: "var(--espresso)" }}>{t("closingCtaWeb")}</Link>
-            <a href={getWhatsAppLink("Halo Admin SAMAQU, saya butuh bantuan.")} target="_blank" rel="noopener" className="rounded-full px-8 py-3.5 text-sm font-ui border transition-colors hover:bg-white/10" style={{ borderColor: "rgba(241,233,221,.4)" }}>{t("closingCtaWa")}</a>
+            <a href={getWhatsAppLink(t("waLink3"))} target="_blank" rel="noopener" className="rounded-full px-8 py-3.5 text-sm font-ui border transition-colors hover:bg-white/10" style={{ borderColor: "rgba(241,233,221,.4)" }}>{t("closingCtaWa")}</a>
           </div>
         </div>
       </section>
