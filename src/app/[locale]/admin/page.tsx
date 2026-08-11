@@ -7,7 +7,7 @@ import { getThumbnailFromImages } from "@/lib/product-thumbnail";
 import {
   LayoutDashboard, ShoppingBag, Package, Users, FileText, Settings,
   Search, Bell, Menu, X, ChevronDown, Plus, TrendingUp, Eye, Edit,
-  DollarSign, ShoppingCart, UserPlus, Box, LogOut, Lock, Mail, Loader2, Trash2, Upload, Ticket, Star,
+  DollarSign, ShoppingCart, UserPlus, Box, LogOut, Lock, Mail, Loader2, Trash2, Upload, Ticket, Star, Ruler,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { User } from "@supabase/supabase-js";
@@ -520,6 +520,14 @@ function AdminPageInner() {
           >
             <Star size={20} strokeWidth={1.6} />
             <span>Testimoni</span>
+          </Link>
+          <Link
+            href="/admin/ukuran-produk"
+            className="sidebar-link w-full text-left"
+            onClick={() => setSidebarOpen(false)}
+          >
+            <Ruler size={20} strokeWidth={1.6} />
+            <span>Panduan Ukuran</span>
           </Link>
           <Link
             href="/admin/garansi-retur-page"

@@ -104,7 +104,13 @@
   "sizeGuide": {
     "eyebrow": "Panduan Ukuran",
     "title": "Temukan Ukuran yang Paling Pas untukmu.",
-    "cta": "Lihat Panduan Ukuran"
+    "desc": "Lihat panduan ukuran untuk setiap kategori produk kami. Pilih tab sesuai jenis produk yang kamu cari.",
+    "cta": "Konsultasi Ukuran via WhatsApp",
+    "imageNote": "Foto panduan ukuran dari admin",
+    "emptyTitle": "Belum ada panduan ukuran",
+    "emptyDesc": "Panduan ukuran untuk kategori ini belum tersedia. Silakan hubungi admin untuk konsultasi ukuran.",
+    "tabAll": "Semua",
+    "tabRekomendasi": "Rekomendasi Size"
   },
   "faqHome": {
     "eyebrow": "Pertanyaan Umum",
