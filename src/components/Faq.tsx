@@ -1,34 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion, Variants } from "framer-motion";
 import { ChevronDown } from "lucide-react";
-import { supabase } from "@/lib/supabase";
 import { useSafeTranslations } from "@/lib/safe-i18n";
-
-/* ─── Default Data (fallback jika DB kosong) ─── */
-const DEFAULT_FAQS = [
-  {
-    q: "Bagaimana cara memesan produk SAMAQU?",
-    a: "Pilih produk dari katalog, cek panduan size, lalu klik tombol WhatsApp untuk menghubungi admin. Admin akan membantu konfirmasi ketersediaan hingga pembayaran.",
-  },
-  {
-    q: "Apakah bahan SAMAQU nyaman dan adem?",
-    a: "Sangat. Kami memilih bahan berkualitas yang adem, ringan, dan tidak panas saat dikenakan — nyaman untuk ibadah, keseharian, maupun acara istimewa dalam waktu lama.",
-  },
-  {
-    q: "Bagaimana jika saya ragu memilih ukuran?",
-    a: "Gunakan panduan size kami sebagai acuan awal. Jika masih ragu, cukup chat admin dengan menyebutkan tinggi dan postur tubuhmu — kami bantu menentukan ukuran yang paling sesuai.",
-  },
-  {
-    q: "Apakah bisa pesan dalam jumlah banyak / grosir?",
-    a: "Tentu. Kami melayani pemesanan pribadi, keluarga, hingga komunitas. Untuk pembelian grosir tersedia penawaran khusus — ceritakan kebutuhanmu dan tim kami susun harga terbaik.",
-  },
-  {
-    q: "Apakah ada garansi untuk produk?",
-    a: "Setiap produk melewati pengecekan jahitan dan bahan sebelum dikirim. Bila ada ketidaksesuaian pada pesanan, hubungi admin kami dan akan kami bantu dengan sepenuh hati.",
-  },
-];
 
 /* ─── Animation ─── */
 const headerVariants: Variants = {
@@ -139,17 +114,14 @@ function FaqItem({
 export default function Faq() {
   const t = useSafeTranslations("faqHome");
   const [openIndex, setOpenIndex] = useState<number | null>(0);
-  const [faqs, setFaqs] = useState(DEFAULT_FAQS);
 
-  useEffect(() => {
-    async function fetch() {
-      try {
-        const { data } = await supabase.from("faq_items").select("*").eq("type", "home").eq("is_active", true).order("display_order");
-        if (data && data.length > 0) setFaqs(data.map((f: { question: string; answer: string }) => ({ q: f.question, a: f.answer })));
-      } catch { /* use defaults */ }
-    }
-    fetch();
-  }, []);
+  const faqs = [
+    { q: t("q1"), a: t("a1") },
+    { q: t("q2"), a: t("a2") },
+    { q: t("q3"), a: t("a3") },
+    { q: t("q4"), a: t("a4") },
+    { q: t("q5"), a: t("a5") },
+  ];
 
   return (
     <section
