@@ -2,20 +2,21 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-
-const DEFAULT_ITEMS = ["Material Premium", "Jahitan Presisi", "Nyaman Dipakai", "Desain Modern"];
+import { useSafeTranslations } from "@/lib/safe-i18n";
 
 export default function TrustMarquee() {
-  const [items, setItems] = useState(DEFAULT_ITEMS);
+  const t = useSafeTranslations("trust");
+  const defaultItems = [t("item1"), t("item2"), t("item3"), t("item4"), t("item5")];
+  const [items, setItems] = useState<string[]>(defaultItems);
 
   useEffect(() => {
-    async function fetch() {
+    async function fetchItems() {
       try {
         const { data } = await supabase.from("marquee_items").select("*").order("display_order");
         if (data && data.length > 0) setItems(data.map((m: { label: string }) => m.label));
       } catch { /* use defaults */ }
     }
-    fetch();
+    fetchItems();
   }, []);
 
   return (
