@@ -174,7 +174,7 @@ export default function Testimoni() {
             className="text-sm sm:text-base leading-[1.75] font-ui"
             style={{ color: "var(--coffee)" }}
           >
-            Bukan kami yang perlu meyakinkanmu. Dengarkan pengalaman mereka yang sudah memakai Samaqu.
+            {t("subtitle")}
           </motion.p>
         </motion.div>
 

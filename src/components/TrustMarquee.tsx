@@ -1,23 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabase";
 import { useSafeTranslations } from "@/lib/safe-i18n";
 
 export default function TrustMarquee() {
   const t = useSafeTranslations("trust");
-  const defaultItems = [t("item1"), t("item2"), t("item3"), t("item4"), t("item5")];
-  const [items, setItems] = useState<string[]>(defaultItems);
-
-  useEffect(() => {
-    async function fetchItems() {
-      try {
-        const { data } = await supabase.from("marquee_items").select("*").order("display_order");
-        if (data && data.length > 0) setItems(data.map((m: { label: string }) => m.label));
-      } catch { /* use defaults */ }
-    }
-    fetchItems();
-  }, []);
+  const items = [t("item1"), t("item2"), t("item3"), t("item4"), t("item5")];
 
   return (
     <div
