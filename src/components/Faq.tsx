@@ -37,7 +37,7 @@ function FaqItem({
   onToggle,
 }: {
   index: number;
-  item: (typeof DEFAULT_FAQS)[number];
+  item: { q: string; a: string };
   isOpen: boolean;
   onToggle: () => void;
 }) {
