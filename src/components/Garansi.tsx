@@ -28,80 +28,23 @@ const headerVariants: Variants = {
   },
 };
 
-/* ─── Feature cards data ─── */
-const guarantees = [
-  {
-    id: 1,
-    title: "Kualitas Terjamin",
-    desc: "Setiap produk melewati pengecekan jahitan dan bahan sebelum dikirim.",
-    icon: (
-      <svg
-        className="h-5 w-5 sm:h-7 sm:w-7"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="var(--espresso)"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
-        <path stroke="var(--gold)" d="m9 12 2 2 4-4" />
-      </svg>
-    ),
-  },
-  {
-    id: 2,
-    title: "Pengiriman Aman",
-    desc: "Dikemas rapi dan terlindungi agar sampai dalam kondisi sempurna.",
-    icon: (
-      <svg
-        className="h-5 w-5 sm:h-7 sm:w-7"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="var(--espresso)"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M20.5 7.3 12 12l-8.5-4.7" />
-        <path d="M12 12v9.2" />
-        <path d="M20.5 7.3 12 2.6 3.5 7.3v9.4L12 21.4l8.5-4.7V7.3Z" />
-        <path d="m7.75 4.95 8.5 4.7v3.3" stroke="var(--gold)" strokeWidth="2" />
-        <path d="M14.6 11.15v3.25l1.65.9" stroke="var(--gold)" strokeWidth="2" />
-      </svg>
-    ),
-  },
-  {
-    id: 3,
-    title: "Layanan Ramah",
-    desc: "Admin siap membantu dari pemilihan size hingga setelah pembelian.",
-    icon: (
-      <svg
-        className="h-5 w-5 sm:h-7 sm:w-7"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="var(--espresso)"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z" />
-        <path stroke="var(--gold)" d="M8 10h.01M12 10h.01M16 10h.01" />
-      </svg>
-    ),
-  },
+/* ─── Card icons (static) ─── */
+const CARD_ICONS = [
+  <svg key="shield" className="h-5 w-5 sm:h-7 sm:w-7" viewBox="0 0 24 24" fill="none" stroke="var(--espresso)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" /><path stroke="var(--gold)" d="m9 12 2 2 4-4" /></svg>,
+  <svg key="box" className="h-5 w-5 sm:h-7 sm:w-7" viewBox="0 0 24 24" fill="none" stroke="var(--espresso)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20.5 7.3 12 12l-8.5-4.7" /><path d="M12 12v9.2" /><path d="M20.5 7.3 12 2.6 3.5 7.3v9.4L12 21.4l8.5-4.7V7.3Z" /><path d="m7.75 4.95 8.5 4.7v3.3" stroke="var(--gold)" strokeWidth="2" /><path d="M14.6 11.15v3.25l1.65.9" stroke="var(--gold)" strokeWidth="2" /></svg>,
+  <svg key="ruler" className="h-5 w-5 sm:h-7 sm:w-7" viewBox="0 0 24 24" fill="none" stroke="var(--espresso)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.4 2.4 0 0 1 0-3.4l2.6-2.6a2.4 2.4 0 0 1 3.4 0Z" /><path d="m14.5 12.5 2-2" /><path d="m11.5 9.5 2-2" /><path d="m8.5 6.5 2-2" /></svg>,
+  <svg key="chat" className="h-5 w-5 sm:h-7 sm:w-7" viewBox="0 0 24 24" fill="none" stroke="var(--espresso)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z" /><path stroke="var(--gold)" d="M8 10h.01M12 10h.01M16 10h.01" /></svg>,
 ];
 
 /* ─── Section ─── */
 export default function Garansi() {
   const t = useSafeTranslations("garansi");
 
-  // i18n-based guarantees
   const guarantees = [
-    { title: t("card1Title"), description: t("card1Desc") },
-    { title: t("card2Title"), description: t("card2Desc") },
-    { title: t("card3Title"), description: t("card3Desc") },
-    { title: t("card4Title"), description: t("card4Desc") },
+    { title: t("card1Title"), description: t("card1Desc"), icon: CARD_ICONS[0] },
+    { title: t("card2Title"), description: t("card2Desc"), icon: CARD_ICONS[1] },
+    { title: t("card3Title"), description: t("card3Desc"), icon: CARD_ICONS[2] },
+    { title: t("card4Title"), description: t("card4Desc"), icon: CARD_ICONS[3] },
   ];
 
   // i18n-based trust badges
@@ -226,7 +169,7 @@ export default function Garansi() {
                 style={{ borderColor: "rgba(42,33,27,.10)" }}
               >
                 <div className="g-icon flex h-10 w-10 items-center justify-center rounded-xl mb-3" style={{ background: "var(--beige)" }}>
-                  {GUARANTEE_ICONS[i] || <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--espresso)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" /><path stroke="var(--gold)" d="m9 12 2 2 4-4" /></svg>}
+                  {g.icon}
                 </div>
                 <h3 className="text-[1.15rem] font-semibold leading-tight" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
                   {g.title}
@@ -248,7 +191,7 @@ export default function Garansi() {
                 style={{ borderColor: "rgba(42,33,27,.10)" }}
               >
                 <div className="g-icon flex h-14 w-14 items-center justify-center rounded-2xl" style={{ background: "var(--beige)" }}>
-                  {GUARANTEE_ICONS[i] || <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--espresso)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" /><path stroke="var(--gold)" d="m9 12 2 2 4-4" /></svg>}
+                  {g.icon}
                 </div>
                 <h3 className="mt-6 text-[1.7rem] font-semibold leading-tight" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
                   {g.title}
