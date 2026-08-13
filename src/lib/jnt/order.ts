@@ -71,7 +71,7 @@ export async function createOrder(params: {
   const dataParam = JSON.stringify({ detail: [detail] });
   const dataSign = generateSignature(dataParam, config.orderKey);
 
-  console.log("[J&T Order] Request:", { url, orderid: params.orderid, dataSign: dataSign.slice(0, 8) + "..." });
+  console.log("[J&T Order] Request:", { url, orderid: params.orderId, dataSign: dataSign.slice(0, 8) + "..." });
 
   const formData = new URLSearchParams();
   formData.append("data_param", dataParam);
