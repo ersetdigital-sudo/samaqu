@@ -1,13 +1,11 @@
 import { NextResponse } from "next/server";
-import { checkTariff } from "@/lib/jnt";
 import { trackShipment } from "@/lib/jnt/track";
 import { getJntConfig } from "@/lib/jnt/config";
 
 export async function GET() {
   const results: Record<string, unknown> = {};
-
-  // 1. Check config (tanpa expose keys)
   const config = getJntConfig();
+
   results.config = {
     env: config.env,
     hasOrderUsername: !!config.orderUsername,
@@ -20,30 +18,64 @@ export async function GET() {
     hasCompanyId: !!config.companyId,
   };
 
-  // 2. Test Tariff Check (JKT → JKT, 1kg)
+  // Test 1: Tariff — raw fetch tanpa signature (sandbox mode)
   try {
-    const tariff = await checkTariff({
+    const tariffUrl = "https://demo-general.inuat-jntexpress.id/jandt_track/inquiry.action";
+    const tariffData = JSON.stringify({
       weight: 1,
-      originCode: "JKT",
-      destAreaCode: "JKT",
+      sendSiteCode: "JAKARTA",
+      destAreaCode: "KALIDERES",
+      cusName: config.tariffCusName,
+      productType: "EZ",
     });
-    results.tariff = {
-      success: tariff.success,
-      services: tariff.services,
-      raw: tariff.raw,
-    };
+
+    console.log("[J&T Test] Tariff raw request:", tariffData);
+
+    const tariffRes = await fetch(tariffUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ data: tariffData, sign: "" }).toString(),
+    });
+
+    const tariffRaw = await tariffRes.text();
+    console.log("[J&T Test] Tariff raw response:", tariffRaw);
+    results.tariff_raw = tariffRaw;
   } catch (err: unknown) {
-    results.tariff = { error: err instanceof Error ? err.message : String(err) };
+    results.tariff_raw = { error: err instanceof Error ? err.message : String(err) };
   }
 
-  // 3. Test Track (dummy AWB — expect error, tapi biar tau response format)
+  // Test 2: Tariff — dengan signature
+  try {
+    const { generateSignature } = await import("@/lib/jnt/signature");
+    const tariffUrl = "https://demo-general.inuat-jntexpress.id/jandt_track/inquiry.action";
+    const tariffData = JSON.stringify({
+      weight: 1,
+      sendSiteCode: "JAKARTA",
+      destAreaCode: "KALIDERES",
+      cusName: config.tariffCusName,
+      productType: "EZ",
+    });
+    const sign = generateSignature(tariffData, config.tariffKey);
+
+    console.log("[J&T Test] Tariff signed request:", { data: tariffData, sign });
+
+    const tariffRes = await fetch(tariffUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ data: tariffData, sign }).toString(),
+    });
+
+    const tariffRaw = await tariffRes.text();
+    console.log("[J&T Test] Tariff signed response:", tariffRaw);
+    results.tariff_signed = tariffRaw;
+  } catch (err: unknown) {
+    results.tariff_signed = { error: err instanceof Error ? err.message : String(err) };
+  }
+
+  // Test 3: Track
   try {
     const track = await trackShipment("JD0000000000");
-    results.track = {
-      success: track.success,
-      data: track.data,
-      error: track.error,
-    };
+    results.track = { success: track.success, data: track.data, error: track.error };
   } catch (err: unknown) {
     results.track = { error: err instanceof Error ? err.message : String(err) };
   }
