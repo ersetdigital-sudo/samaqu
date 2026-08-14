@@ -3,11 +3,13 @@ import type { JntConfig } from "./types";
 const BASE_URLS = {
   testing: {
     order: "https://demo-ecommerce.inuat-jntexpress.id/jts-idn-ecommerce-api/api/order/create",
+    cancel: "https://demo-ecommerce.inuat-jntexpress.id/jts-idn-ecommerce-api/api/order/cancel",
     tariff: "https://demo-general.inuat-jntexpress.id/jandt_track/inquiry.action",
     track: "https://demo-general.inuat-jntexpress.id/jandt_track/track/trackAction!tracking.action",
   },
   production: {
     order: "",
+    cancel: "",
     tariff: "",
     track: "",
   },
@@ -27,7 +29,7 @@ export function getJntConfig(): JntConfig {
   };
 }
 
-export function getJntBaseUrl(endpoint: "order" | "tariff" | "track"): string {
+export function getJntBaseUrl(endpoint: "order" | "cancel" | "tariff" | "track"): string {
   const env = (process.env.JNT_ENV as "testing" | "production") || "testing";
   return BASE_URLS[env][endpoint];
 }
