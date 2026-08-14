@@ -202,6 +202,7 @@ function CheckoutContent() {
   const [kecamatanName, setKecamatanName] = useState("");
   const [originId, setOriginId] = useState<number | null>(null);
   const [enabledCouriers, setEnabledCouriers] = useState<string[]>([]);
+  const [shippingProvider, setShippingProvider] = useState<"rajaongkir" | "jnt">("rajaongkir");
   const [settingsLoaded, setSettingsLoaded] = useState(false);
   const lastResolvedRef = useRef<string>("");
 
@@ -212,7 +213,7 @@ function CheckoutContent() {
       try {
         const { data: settings, error } = await supabase
           .from("store_settings")
-          .select("origin_district_id, origin_province_id, origin_city_id, enabled_couriers")
+          .select("origin_district_id, origin_province_id, origin_city_id, enabled_couriers, shipping_provider")
           .eq("id", 1)
           .single();
 
@@ -241,6 +242,11 @@ function CheckoutContent() {
           } catch (e) {
             console.error("[CHECKOUT] ❌ Failed to parse enabled_couriers:", e);
           }
+        }
+
+        if (settings?.shipping_provider) {
+          setShippingProvider(settings.shipping_provider);
+          console.log("[CHECKOUT] ⚙️ Shipping provider:", settings.shipping_provider);
         }
       } catch (e) {
         console.error("[CHECKOUT] ❌ Gagal load store settings:", e);
@@ -357,22 +363,42 @@ function CheckoutContent() {
     setShippingError(null);
 
     try {
-      const destId = await resolveDestinationId(addr, signal);
-      if (!destId) {
-        console.error("[CHECKOUT] ❌ Destination ID not found!");
-        setShippingError("Kecamatan tujuan tidak ditemukan di sistem kurir. Pastikan nama kecamatan benar.");
-        setLoadingCost(false);
-        return;
-      }
+      let opts: ShipOpt[] = [];
 
-      // Update local address with resolved district_id if not cached
-      if (!addr.district_id) {
-        setSavedAddresses((prev) =>
-          prev.map((a) => (a.id === addr.id ? { ...a, district_id: destId } : a))
-        );
-      }
+      if (shippingProvider === "jnt") {
+        // J&T API: use city/district names directly
+        if (!addr.kecamatan) {
+          setShippingError("Kecamatan tidak tersedia di alamat ini.");
+          setLoadingCost(false);
+          return;
+        }
+        const jntRes = await fetch("/api/shipping/jnt-cost", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ city: addr.city || "DEPOK", district: addr.kecamatan, weight: berat }),
+          signal: signal ?? AbortSignal.timeout(15000),
+        });
+        const jntJson = await jntRes.json();
+        if (jntJson.error) throw new Error(jntJson.error);
+        opts = jntJson.data || [];
+      } else {
+        // RajaOngkir: resolve destination ID first
+        const destId = await resolveDestinationId(addr, signal);
+        if (!destId) {
+          console.error("[CHECKOUT] ❌ Destination ID not found!");
+          setShippingError("Kecamatan tujuan tidak ditemukan di sistem kurir. Pastikan nama kecamatan benar.");
+          setLoadingCost(false);
+          return;
+        }
 
-      const opts = await fetchShippingCost(originId, destId, berat, enabledCouriers, signal);
+        if (!addr.district_id) {
+          setSavedAddresses((prev) =>
+            prev.map((a) => (a.id === addr.id ? { ...a, district_id: destId } : a))
+          );
+        }
+
+        opts = await fetchShippingCost(originId, destId, berat, enabledCouriers, signal);
+      }
 
       if (opts.length === 0) {
         console.warn("[CHECKOUT] ⚠️ No shipping options returned!");
@@ -393,7 +419,7 @@ function CheckoutContent() {
     } finally {
       setLoadingCost(false);
     }
-  }, [originId, berat, enabledCouriers]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [originId, berat, enabledCouriers, shippingProvider]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-calculate when default address is selected and settings are loaded
   const shippingCalcTimerRef = useRef<NodeJS.Timeout | null>(null);

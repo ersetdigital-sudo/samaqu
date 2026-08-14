@@ -853,6 +853,9 @@ function AdminPageInner() {
                   {/* Shipping Origin */}
                   <ShippingOriginSection />
 
+                  {/* Shipping Provider */}
+                  <ShippingProviderSection />
+
                   {/* Courier Selection */}
                   <CourierSettingsSection />
 
@@ -1257,6 +1260,65 @@ function ShippingOriginSection() {
           </button>
         )}
       </div>
+    </div>
+  );
+}
+
+function ShippingProviderSection() {
+  const [provider, setProvider] = useState<"rajaongkir" | "jnt">("rajaongkir");
+  const [original, setOriginal] = useState<"rajaongkir" | "jnt">("rajaongkir");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const toast = useToast();
+
+  useEffect(() => {
+    supabase.from("store_settings").select("shipping_provider").eq("id", 1).single().then(({ data }) => {
+      if (data?.shipping_provider) {
+        setProvider(data.shipping_provider);
+        setOriginal(data.shipping_provider);
+      }
+      setLoading(false);
+    });
+  }, []);
+
+  const dirty = provider !== original;
+
+  async function handleSave() {
+    setSaving(true);
+    await supabase.from("store_settings").upsert({ id: 1, shipping_provider: provider, updated_at: new Date().toISOString() });
+    setOriginal(provider);
+    setSaving(false);
+    toast.showToast("success", "Provider pengiriman disimpan");
+  }
+
+  if (loading) return <div className="card p-6 max-w-2xl"><Loader2 size={20} className="animate-spin" style={{ color: "var(--gold)" }} /></div>;
+
+  return (
+    <div className="card p-6 max-w-2xl space-y-4">
+      <h3 className="text-lg font-semibold" style={{ color: "var(--espresso)" }}>Provider Pengiriman</h3>
+      <p className="text-xs" style={{ color: "var(--text-muted)" }}>Pilih provider ongkir yang dipakai di checkout. J&T API = langsung ke J&T tanpa perantara. RajaOngkir = semua ekspedisi via RajaOngkir.</p>
+      <div className="flex gap-3">
+        {([
+          { value: "rajaongkir" as const, label: "RajaOngkir", desc: "Semua ekspedisi (JNE, SiCepat, J&T, dll)" },
+          { value: "jnt" as const, label: "J&T API Langsung", desc: "Hanya J&T, tanpa perantara" },
+        ]).map((opt) => (
+          <label key={opt.value} className="flex-1 flex items-center gap-3 rounded-xl px-4 py-3 cursor-pointer transition-all" style={{ border: `1.5px solid ${provider === opt.value ? "var(--gold)" : "rgba(64,50,37,.15)"}`, background: provider === opt.value ? "rgba(181,140,74,.04)" : "white" }}>
+            <input type="radio" name="shipping_provider" checked={provider === opt.value} onChange={() => setProvider(opt.value)} className="sr-only" />
+            <span className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0" style={{ border: `2px solid ${provider === opt.value ? "var(--gold)" : "var(--text-muted)"}`, background: provider === opt.value ? "var(--gold)" : "transparent" }}>
+              {provider === opt.value && <span className="w-2 h-2 rounded-full bg-white" />}
+            </span>
+            <div>
+              <span className="text-sm font-medium" style={{ color: "var(--espresso)" }}>{opt.label}</span>
+              <p className="text-xs" style={{ color: "var(--text-muted)" }}>{opt.desc}</p>
+            </div>
+          </label>
+        ))}
+      </div>
+      {dirty && (
+        <button onClick={handleSave} disabled={saving} className="text-sm font-semibold px-5 py-2.5 rounded-xl text-white" style={{ background: "linear-gradient(135deg, var(--gold), #96742f)" }}>
+          {saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null} Simpan Perubahan
+        </button>
+      )}
     </div>
   );
 }
