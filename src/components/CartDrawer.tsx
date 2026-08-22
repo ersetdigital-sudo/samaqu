@@ -111,7 +111,7 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
                     <AnimatePresence>
                       {items.map((item, i) => (
                         <motion.div
-                          key={`${item.id}-${item.color}-${item.size}`}
+                          key={`${item.id}-${item.color}-${item.size}-${item.series ?? ""}`}
                           layout
                           initial={{ opacity: 0, y: 8 }}
                           animate={{ opacity: 1, y: 0 }}

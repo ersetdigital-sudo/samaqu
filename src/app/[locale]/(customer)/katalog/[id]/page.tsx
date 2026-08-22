@@ -466,6 +466,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       price: isCYP ? minimumPrice : currentPrice,
       color: selectedColor || product.colors[0] || "-",
       size: selectedSize,
+      series: availableSeries.find((s) => s.id === displayId)?.series || product.series || undefined,
       qty,
       notes: notes || undefined,
       // CYP fields
@@ -489,10 +490,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     if (!selectedSize) { toast.show("Pilih ukuran terlebih dahulu"); return; }
     if (isOutOfStock) { toast.show("Stok habis — produk ini tidak dapat dipesan"); return; }
     if (stockExceeded) { toast.show(`Stok hanya tersisa ${stock} pcs untuk varian ini`); return; }
+    const seriesName = availableSeries.find((s) => s.id === displayId)?.series || product.series || "";
     const color = selectedColor || product.colors[0] || "-";
-    let msg = `Halo, saya mau pesan produk:\n${product.name} - ${color} - Ukuran ${selectedSize}\nHarga: Rp ${effectivePrice.toLocaleString("id-ID")}\nJumlah: ${qty}`;
+    const variantParts = [seriesName, color !== "default" ? color : null].filter(Boolean).join(" - ");
+    let msg = `Halo, saya mau pesan produk:\n${product.name}${variantParts ? " - " + variantParts : ""} - Ukuran ${selectedSize}\nHarga: Rp ${effectivePrice.toLocaleString("id-ID")}\nJumlah: ${qty}`;
     if (notes) msg += `\nCatatan: ${notes}`;
-    // Meta Pixel: WhatsAppClick (Beli Sekarang)
     trackWhatsAppClick("product_detail", displayId);
     window.open(getWhatsAppLink(msg), "_blank");
   }
