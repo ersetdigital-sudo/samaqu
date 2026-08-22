@@ -11,6 +11,7 @@ export interface CartItem {
   color: string;
   size: string;
   series?: string;
+  kain?: string;
   qty: number;
   notes?: string;
   // Create Your Price

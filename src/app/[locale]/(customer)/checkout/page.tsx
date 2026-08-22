@@ -946,7 +946,7 @@ function CheckoutContent() {
                     <div className="flex-1 min-w-0">
                       <p className="text-[13px] sm:text-sm font-ui font-medium leading-snug" style={{ color: "var(--espresso)" }}>{item.name}</p>
                       <p className="text-[11px] sm:text-xs font-ui mt-0.5" style={{ color: "var(--text-muted)" }}>
-                        {[item.series, (item.color !== "-" && item.color !== "default") ? `Warna: ${item.color}` : null, `Ukuran: ${item.size}`, `×${item.qty}`].filter(Boolean).join(' · ')}
+                        {[item.kain ? `Kain ${item.kain}` : null, item.series, (item.color !== "-" && item.color !== "default") ? `Warna: ${item.color}` : null, `Ukuran: ${item.size}`, `×${item.qty}`].filter(Boolean).join(' · ')}
                       </p>
                       {item.create_your_price_enabled && item.customer_price && (
                         <p className="text-[10px] sm:text-[11px] font-ui mt-0.5" style={{ color: "var(--gold)" }}>Harga pilihanmu</p>

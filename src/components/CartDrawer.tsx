@@ -135,19 +135,25 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
                               </button>
                             </div>
                             <div className="flex items-center gap-1 mt-0.5">
+                              {item.kain && (
+                                <span className="text-[10px] font-ui" style={{ color: "var(--coffee)" }}>
+                                  Kain {item.kain}
+                                </span>
+                              )}
+                              {item.kain && item.series && <span className="text-[9px]" style={{ color: "var(--clay)" }}>·</span>}
                               {item.series && (
                                 <span className="text-[10px] font-ui" style={{ color: "var(--coffee)" }}>
                                   {item.series}
                                 </span>
                               )}
-                              {item.series && item.color !== "-" && item.color !== "default" && <span className="text-[9px]" style={{ color: "var(--clay)" }}>·</span>}
+                              {((item.kain || item.series) && item.color !== "-" && item.color !== "default") && <span className="text-[9px]" style={{ color: "var(--clay)" }}>·</span>}
                               {item.color !== "-" && item.color !== "default" && (
                                 <span className="flex items-center gap-1 text-[10px] font-ui" style={{ color: "var(--coffee)" }}>
                                   <span className="w-2 h-2 rounded-full shrink-0" style={{ background: colorMap[item.color] || "#ccc", border: "1px solid rgba(42,33,27,.1)" }} />
                                   {item.color}
                                 </span>
                               )}
-                              {(item.series || (item.color !== "-" && item.color !== "default")) && <span className="text-[9px]" style={{ color: "var(--clay)" }}>|</span>}
+                              <span className="text-[9px]" style={{ color: "var(--clay)" }}>|</span>
                               <span className="text-[10px] font-ui" style={{ color: "var(--coffee)" }}>UK {item.size}</span>
                             </div>
                             <div className="flex items-center justify-between mt-1.5">
