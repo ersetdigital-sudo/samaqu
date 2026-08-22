@@ -491,8 +491,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     if (isOutOfStock) { toast.show("Stok habis — produk ini tidak dapat dipesan"); return; }
     if (stockExceeded) { toast.show(`Stok hanya tersisa ${stock} pcs untuk varian ini`); return; }
     const seriesName = availableSeries.find((s) => s.id === displayId)?.series || product.series || "";
+    const kainName = product.jenis_kain?.name || product.kain || "";
     const color = selectedColor || product.colors[0] || "-";
-    const variantParts = [seriesName, color !== "default" ? color : null].filter(Boolean).join(" - ");
+    const variantParts = [kainName, seriesName, color !== "default" ? color : null].filter(Boolean).join(" - ");
     let msg = `Halo, saya mau pesan produk:\n${product.name}${variantParts ? " - " + variantParts : ""} - Ukuran ${selectedSize}\nHarga: Rp ${effectivePrice.toLocaleString("id-ID")}\nJumlah: ${qty}`;
     if (notes) msg += `\nCatatan: ${notes}`;
     trackWhatsAppClick("product_detail", displayId);
