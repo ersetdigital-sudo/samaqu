@@ -26,7 +26,7 @@ export default function Hero() {
   const t = useSafeTranslations("hero");
   const videoRef = useRef<HTMLVideoElement>(null);
   const [shouldPlay, setShouldPlay] = useState(false);
-  const [muted, setMuted] = useState(false);
+  const [muted, setMuted] = useState(true);
   const [heroData, setHeroData] = useState(DEFAULTS);
 
   // i18n text overrides — always use translations for text content
@@ -75,14 +75,7 @@ export default function Hero() {
 
   useEffect(() => {
     if (!shouldPlay || !videoRef.current) return;
-    videoRef.current.play().catch(() => {
-      // Jika autoplay dengan suara diblokir, fallback ke muted
-      setMuted(true);
-      if (videoRef.current) {
-        videoRef.current.muted = true;
-        videoRef.current.play().catch(() => {});
-      }
-    });
+    videoRef.current.play().catch(() => {});
   }, [shouldPlay]);
 
   useEffect(() => {
