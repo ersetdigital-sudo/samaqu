@@ -466,6 +466,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       price: isCYP ? minimumPrice : currentPrice,
       color: selectedColor || product.colors[0] || "-",
       size: selectedSize,
+      series: availableSeries.find((s) => s.id === displayId)?.series || product.series || undefined,
       qty,
       notes: notes || undefined,
       // CYP fields
