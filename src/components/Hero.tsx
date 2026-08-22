@@ -18,7 +18,6 @@ const DEFAULTS = {
 export default function Hero() {
   const t = useSafeTranslations("hero");
   const videoRef = useRef<HTMLVideoElement>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
   const [muted, setMuted] = useState(true);
   const [showUnmuteHint, setShowUnmuteHint] = useState(true);
   const [heroData, setHeroData] = useState(DEFAULTS);
@@ -59,7 +58,8 @@ export default function Hero() {
     }
   }, []);
 
-  // Auto-unmute after first user interaction
+  // Auto-unmute after first real user gesture (click/touch only —
+  // scroll is NOT a valid gesture for unmuted playback on iOS and pauses the video)
   useEffect(() => {
     function handleInteraction() {
       if (hasInteracted.current) return;
@@ -73,12 +73,10 @@ export default function Hero() {
 
     window.addEventListener("click", handleInteraction, { once: true });
     window.addEventListener("touchstart", handleInteraction, { once: true });
-    window.addEventListener("scroll", handleInteraction, { once: true });
 
     return () => {
       window.removeEventListener("click", handleInteraction);
       window.removeEventListener("touchstart", handleInteraction);
-      window.removeEventListener("scroll", handleInteraction);
     };
   }, []);
 
@@ -107,30 +105,6 @@ export default function Hero() {
       el.style.transitionDelay = `${0.15 + idx * 0.11}s`;
       requestAnimationFrame(() => el.classList.add("is-in"));
     });
-  }, []);
-
-  // Parallax depth — content drifts up & fades as user scrolls away
-  useEffect(() => {
-    const reduce = window.matchMedia("(prefers-reduced-motion:reduce)").matches;
-    if (reduce) return;
-    let raf = 0;
-    function onScroll() {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => {
-        const el = contentRef.current;
-        if (!el) return;
-        const y = window.scrollY;
-        if (y < window.innerHeight * 1.2) {
-          el.style.transform = `translateY(${y * 0.16}px)`;
-          el.style.opacity = String(Math.max(0, 1 - y / (window.innerHeight * 0.75)));
-        }
-      });
-    }
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      cancelAnimationFrame(raf);
-    };
   }, []);
 
   return (
@@ -211,7 +185,7 @@ export default function Hero() {
       </div>
 
       {/* ── Content ── */}
-      <div ref={contentRef} className="relative z-10 h-full will-change-transform">
+      <div className="relative z-10 h-full">
         <div
           className="max-w-[1240px] mx-auto px-5 sm:px-10 lg:px-16 xl:pl-24 flex flex-col justify-end pt-[96px] sm:pt-[110px] lg:pt-[130px] pb-24 lg:pb-28"
           style={{ minHeight: "100dvh" }}
