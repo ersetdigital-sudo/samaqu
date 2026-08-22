@@ -25,7 +25,7 @@ interface OrderData {
   shipping_method: string;
   payment_method: string;
   created_at: string;
-  order_items: { product_name: string; color: string; size: string; quantity: number; price: number }[];
+  order_items: { product_name: string; color: string; size: string; series?: string | null; kain?: string | null; quantity: number; price: number }[];
 }
 
 function CheckoutSuccessContent() {
@@ -195,7 +195,7 @@ function CheckoutSuccessContent() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium font-ui truncate" style={{ color: "var(--espresso)" }}>{item.product_name}</p>
-                <p className="text-xs font-ui" style={{ color: "var(--text-muted)" }}>{item.quantity} item · {item.color} / {item.size}</p>
+                <p className="text-xs font-ui" style={{ color: "var(--text-muted)" }}>{[item.kain ? `Kain ${item.kain}` : null, item.series, item.color, item.size].filter(Boolean).join(' · ')} · {item.quantity} item</p>
               </div>
               <p className="text-sm font-medium font-ui shrink-0" style={{ color: "var(--espresso)" }}>Rp {(item.price * item.quantity).toLocaleString("id-ID")}</p>
             </div>
