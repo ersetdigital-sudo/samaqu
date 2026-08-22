@@ -10,6 +10,7 @@ export interface CartItem {
   price: number;           // base price (fixed) or minimum_price (CYP)
   color: string;
   size: string;
+  series?: string;
   qty: number;
   notes?: string;
   // Create Your Price
@@ -40,7 +41,7 @@ function cartReducer(state: CartState, action: CartAction): CartState {
   switch (action.type) {
     case "ADD": {
       const existing = state.items.findIndex(
-        (i) => i.id === action.item.id && i.color === action.item.color && i.size === action.item.size
+        (i) => i.id === action.item.id && i.color === action.item.color && i.size === action.item.size && (i.series ?? "") === (action.item.series ?? "")
       );
       if (existing >= 0) {
         const items = [...state.items];

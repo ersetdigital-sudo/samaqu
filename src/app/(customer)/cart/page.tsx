@@ -85,7 +85,7 @@ export default function CartPage() {
               <AnimatePresence>
                 {items.map((item, i) => (
                   <motion.div
-                    key={`${item.id}-${item.color}-${item.size}`}
+                    key={`${item.id}-${item.color}-${item.size}-${item.series ?? ""}`}
                     layout
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -110,13 +110,19 @@ export default function CartPage() {
                           </button>
                         </div>
                         <div className="flex items-center gap-1.5 mt-0.5">
-                          {item.color !== "-" && (
+                          {item.series && (
+                            <span className="text-[11px] font-ui" style={{ color: "var(--coffee)" }}>
+                              {item.series}
+                            </span>
+                          )}
+                          {item.series && item.color !== "-" && item.color !== "default" && <span className="text-[10px]" style={{ color: "var(--clay)" }}>·</span>}
+                          {item.color !== "-" && item.color !== "default" && (
                             <span className="flex items-center gap-1 text-[11px] font-ui" style={{ color: "var(--coffee)" }}>
                               <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: colorMap[item.color] || "#ccc", border: "1px solid rgba(42,33,27,.1)" }} />
                               {item.color}
                             </span>
                           )}
-                          {item.color !== "-" && <span className="text-[10px]" style={{ color: "var(--clay)" }}>|</span>}
+                          {(item.series || (item.color !== "-" && item.color !== "default")) && <span className="text-[10px]" style={{ color: "var(--clay)" }}>|</span>}
                           <span className="text-[11px] font-ui" style={{ color: "var(--coffee)" }}>UK {item.size}</span>
                         </div>
                         {/* CYP price or fixed price */}
