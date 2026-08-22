@@ -7,6 +7,7 @@ import { getProductById, weightMap } from "@/lib/katalog-data";
 import { useCart } from "@/lib/cart-context";
 import { supabase } from "@/lib/supabase";
 import { getWhatsAppLink } from "@/lib/store-settings";
+import { trackInitiateCheckout, sendCAPIEvent } from "@/lib/meta-pixel";
 
 interface PaymentMethod {
   id: string;
@@ -327,6 +328,19 @@ function CheckoutContent() {
       console.log("[CHECKOUT] ⚖️ Weight (product mode):", w, "g (unit:", unitWeight, "× qty:", qty, ")");
     }
   }, [isCartMode, items, qty, product]);
+
+  // Meta Pixel: InitiateCheckout (fire once on mount)
+  useEffect(() => {
+    if (isCartMode && items.length > 0) {
+      const contentIds = items.map(i => i.id);
+      const total = items.reduce((sum, item) => sum + item.price * item.qty, 0);
+      const { eventId } = trackInitiateCheckout(total, items.length, contentIds);
+      sendCAPIEvent("InitiateCheckout", eventId, { value: total, currency: "IDR", content_ids: contentIds, num_items: items.length });
+    } else if (!isCartMode && product) {
+      const { eventId } = trackInitiateCheckout(product.price * qty, qty, [product.id]);
+      sendCAPIEvent("InitiateCheckout", eventId, { value: product.price * qty, currency: "IDR", content_ids: [product.id], num_items: qty });
+    }
+  }, []); // Empty deps = fire once on mount
 
   // ── Auto-trigger shipping calculation ──
   const calculateShipping = useCallback(async (addr: SavedAddress, signal?: AbortSignal) => {

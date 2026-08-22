@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
+import { trackWhatsAppClick } from "@/lib/meta-pixel";
 
 /* ── Agent data ── */
 const agents = [
@@ -141,6 +142,7 @@ export default function FloatingWhatsApp() {
                   href={waLink(agent.phone, agent.message)}
                   target="_blank"
                   rel="noopener"
+                  onClick={() => trackWhatsAppClick("floating_widget")}
                   className="flex items-center gap-3.5 px-5 py-4 transition-all duration-200 group"
                   style={{
                     borderBottom:

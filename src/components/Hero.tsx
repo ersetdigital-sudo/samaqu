@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useSafeTranslations } from "@/lib/safe-i18n";
 import { supabase } from "@/lib/supabase";
 import { getWhatsAppLink } from "@/lib/store-settings";
+import { trackWhatsAppClick } from "@/lib/meta-pixel";
 
 /* ── Video sources ── */
 const HERO_VIDEO = "/video/Thobe%20Gabungan%20Imron%20dan%20Jiharkah%20Deep%20maroon%20B-02%20Ambience.mp4";
@@ -254,6 +255,7 @@ export default function Hero() {
                 href={getWhatsAppLink(t("whatsappMsg"))}
                 target="_blank"
                 rel="noopener"
+                onClick={() => trackWhatsAppClick("hero")}
                 className="group inline-flex items-center gap-2 py-3.5 sm:py-4 text-[11px] sm:text-[12px] tracking-[0.16em] sm:tracking-[0.18em] capitalize sm:uppercase transition"
                 style={{ color: "var(--cream)" }}
               >

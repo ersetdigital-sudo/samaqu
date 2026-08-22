@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import { getWhatsAppLink } from "@/lib/store-settings";
+import { trackWhatsAppClick } from "@/lib/meta-pixel";
 import { useSafeTranslations } from "@/lib/safe-i18n";
 
 function WhatsAppIcon() {
@@ -136,6 +137,7 @@ export default function AutoCTA() {
             href={getWhatsAppLink(t("whatsappMsg"))}
             target="_blank"
             rel="noopener"
+            onClick={() => trackWhatsAppClick("auto_cta")}
             className="relative flex items-center justify-center w-14 h-14 rounded-full transition-transform duration-300 hover:scale-105"
             style={{
               background: "var(--espresso)",
