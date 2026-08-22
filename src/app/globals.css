@@ -59,16 +59,68 @@
   animation: kenBurns 11s ease-out both;
 }
 
-/* ── Staggered entrance for hero content ── */
-@keyframes heroRise {
-  from { opacity: 0; transform: translateY(34px); }
-  to { opacity: 1; transform: none; }
-}
-.hero-anim {
+/* ── Hero: staggered premium entrance ── */
+/* Fade-rise for regular items */
+.hero-enter {
   opacity: 0;
+  transform: translateY(26px);
+  transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1), transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.hero-in {
-  animation: heroRise 0.85s cubic-bezier(0.16, 0.7, 0.3, 1) both;
+/* Line mask reveal for display typography */
+.hero-mask {
+  transform: translateY(112%);
+  transition: transform 1.05s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.hero-enter.is-in {
+  opacity: 1;
+  transform: translateY(0);
+}
+.hero-mask.is-in {
+  transform: translateY(0);
+}
+
+/* ── Hero: Ken Burns ambient zoom on video ── */
+@keyframes heroKenBurns {
+  from { transform: scale(1.02); }
+  to { transform: scale(1.1); }
+}
+.hero-kenburns {
+  animation: heroKenBurns 26s ease-in-out infinite alternate;
+}
+
+/* ── Hero: ambient breathing gold glow ── */
+@keyframes heroGlow {
+  0%, 100% { opacity: 0.35; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.12); }
+}
+.hero-glow {
+  left: -12%;
+  bottom: -28%;
+  width: 64vw;
+  height: 64vw;
+  max-width: 820px;
+  max-height: 820px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(224,181,99,.16) 0%, rgba(224,181,99,.05) 42%, transparent 68%);
+  filter: blur(10px);
+  animation: heroGlow 9s ease-in-out infinite;
+}
+
+/* ── Hero: filmic grain ── */
+.hero-noise {
+  opacity: 0.07;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 220 220' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 220px 220px;
+}
+
+/* ── Hero: pulsing gold dot (ambient attention) ── */
+@keyframes heroPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(224,181,99,.45); }
+  60% { box-shadow: 0 0 0 6px rgba(224,181,99,0); }
+}
+.hero-pulse-dot {
+  animation: heroPulse 2.6s ease-out infinite;
 }
 
 /* ── Scroll indicator dot ── */
@@ -371,8 +423,11 @@ details[open] .faq-plus {
 /* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
   .hero-slide.is-active .hero-media { animation: none; }
-  .hero-anim { opacity: 1; }
-  .hero-in { animation: none; }
+  .hero-enter { opacity: 1; transform: none; transition: none; }
+  .hero-mask { transform: none; transition: none; }
+  .hero-kenburns { animation: none; }
+  .hero-glow { animation: none; opacity: 0.4; }
+  .hero-pulse-dot { animation: none; }
   .scroll-dot { animation: none; opacity: 1; }
   .fade-up { opacity: 1; transform: none; transition: none; }
   .marquee { animation: none; }
