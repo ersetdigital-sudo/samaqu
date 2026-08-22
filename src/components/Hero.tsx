@@ -194,7 +194,7 @@ export default function Hero() {
             {/* Eyebrow */}
             <p
               data-hero-stagger
-              className="hero-enter self-start flex items-center gap-2.5 md:gap-3.5 rounded-full px-3.5 py-2 md:px-0 md:py-0 md:rounded-none text-[9px] md:text-[10.5px] tracking-[0.3em] md:tracking-[0.4em] uppercase mb-6 md:mb-8 bg-[rgba(10,7,5,.52)] md:bg-transparent backdrop-blur-md md:backdrop-blur-0 border border-[rgba(224,181,99,.28)] md:border-0"
+              className="hero-enter self-start w-fit flex items-center gap-2.5 md:gap-3.5 rounded-full px-3.5 py-2 md:px-0 md:py-0 md:rounded-none md:w-auto text-[9px] md:text-[10.5px] tracking-[0.3em] md:tracking-[0.4em] uppercase mb-6 md:mb-8 bg-[rgba(10,7,5,.52)] md:bg-transparent backdrop-blur-md md:backdrop-blur-0 border border-[rgba(224,181,99,.28)] md:border-0"
               style={{ color: "var(--sand)" }}
             >
               <span className="hero-pulse-dot w-1.5 h-1.5 rounded-full shrink-0" style={{ background: "var(--gold)" }} />
