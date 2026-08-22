@@ -25,9 +25,10 @@ const DEFAULTS = {
 export default function Hero() {
   const t = useSafeTranslations("hero");
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [shouldPlay, setShouldPlay] = useState(false);
   const [muted, setMuted] = useState(true);
+  const [showUnmuteHint, setShowUnmuteHint] = useState(true);
   const [heroData, setHeroData] = useState(DEFAULTS);
+  const hasInteracted = useRef(false);
 
   // i18n text overrides — always use translations for text content
   const heroText = {
@@ -59,32 +60,53 @@ export default function Hero() {
     fetchHero();
   }, []);
 
+  // Start video playback (always muted first for autoplay policy)
   useEffect(() => {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduce) return;
 
-    // Detect slow connection
     const conn = (navigator as any).connection;
     if (conn) {
       const effectiveType = conn.effectiveType as string;
       if (effectiveType === "slow-2g" || effectiveType === "2g") return;
     }
 
-    setShouldPlay(true);
+    if (videoRef.current) {
+      videoRef.current.play().catch(() => {});
+    }
   }, []);
 
+  // Try to unmute after user interacts with page
   useEffect(() => {
-    if (!shouldPlay || !videoRef.current) return;
-    videoRef.current.play().catch(() => {});
-  }, [shouldPlay]);
+    function handleInteraction() {
+      if (hasInteracted.current) return;
+      hasInteracted.current = true;
+      if (videoRef.current) {
+        videoRef.current.muted = false;
+        setMuted(false);
+        setShowUnmuteHint(false);
+      }
+    }
 
-  useEffect(() => {
-    if (!videoRef.current) return;
-    videoRef.current.muted = muted;
-  }, [muted]);
+    window.addEventListener("click", handleInteraction, { once: true });
+    window.addEventListener("touchstart", handleInteraction, { once: true });
+    window.addEventListener("scroll", handleInteraction, { once: true });
+
+    return () => {
+      window.removeEventListener("click", handleInteraction);
+      window.removeEventListener("touchstart", handleInteraction);
+      window.removeEventListener("scroll", handleInteraction);
+    };
+  }, []);
 
   function toggleMute() {
-    setMuted((v) => !v);
+    if (videoRef.current) {
+      const newMuted = !muted;
+      videoRef.current.muted = newMuted;
+      setMuted(newMuted);
+      setShowUnmuteHint(false);
+      hasInteracted.current = true;
+    }
   }
 
   useEffect(() => {
@@ -108,19 +130,38 @@ export default function Hero() {
     >
       {/* ── Video background ── */}
       <div className="absolute inset-0">
-        {/* Video */}
-        {shouldPlay && (
-          <video
-            ref={videoRef}
-            className="absolute inset-0 w-full h-full object-cover"
-            autoPlay
-            muted={muted}
-            loop
-            playsInline
-            preload="auto"
+        {/* Video — always rendered, starts muted for autoplay */}
+        <video
+          ref={videoRef}
+          className="absolute inset-0 w-full h-full object-cover"
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="auto"
+        >
+          <source src={HERO_VIDEO} type="video/mp4" />
+        </video>
+
+        {/* Unmute hint — shows until user interacts */}
+        {showUnmuteHint && (
+          <button
+            onClick={toggleMute}
+            className="absolute bottom-20 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-4 py-2.5 rounded-full text-[11px] tracking-[0.1em] uppercase font-ui font-medium transition-all duration-300 hover:scale-105"
+            style={{
+              background: "rgba(0,0,0,.5)",
+              backdropFilter: "blur(8px)",
+              color: "var(--cream)",
+              border: "1px solid rgba(255,255,255,.15)",
+            }}
           >
-            <source src={HERO_VIDEO} type="video/mp4" />
-          </video>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+              <line x1="23" y1="9" x2="17" y2="15" />
+              <line x1="17" y1="9" x2="23" y2="15" />
+            </svg>
+            Klik untuk suara
+          </button>
         )}
       </div>
 
@@ -264,35 +305,33 @@ export default function Hero() {
       </div>
 
       {/* Mute/Unmute toggle */}
-      {shouldPlay && (
-        <button
-          onClick={toggleMute}
-          className={`absolute bottom-6 right-5 sm:right-8 z-10 flex items-center gap-2 rounded-full transition-all duration-300 hover:scale-105 ${muted ? "px-4 py-2.5" : "w-10 h-10 justify-center"}`}
-          style={{
-            background: muted ? "var(--gold)" : "rgba(0,0,0,.35)",
-            backdropFilter: "blur(8px)",
-            border: muted ? "none" : "1px solid rgba(248,245,241,.15)",
-          }}
-          aria-label={muted ? t("unmute") : t("muteLabel")}
-        >
-          {muted ? (
-            <>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M11 5L6 9H2v6h4l5 4V5z" />
-                <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
-                <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
-              </svg>
-              <span className="text-[11px] font-semibold text-white">{t("mute")}</span>
-            </>
-          ) : (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(248,245,241,.8)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <button
+        onClick={toggleMute}
+        className={`absolute bottom-6 right-5 sm:right-8 z-10 flex items-center gap-2 rounded-full transition-all duration-300 hover:scale-105 ${muted ? "px-4 py-2.5" : "w-10 h-10 justify-center"}`}
+        style={{
+          background: muted ? "var(--gold)" : "rgba(0,0,0,.35)",
+          backdropFilter: "blur(8px)",
+          border: muted ? "none" : "1px solid rgba(248,245,241,.15)",
+        }}
+        aria-label={muted ? t("unmute") : t("muteLabel")}
+      >
+        {muted ? (
+          <>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M11 5L6 9H2v6h4l5 4V5z" />
               <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
               <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
             </svg>
-          )}
-        </button>
-      )}
+            <span className="text-[11px] font-semibold text-white">{t("mute")}</span>
+          </>
+        ) : (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(248,245,241,.8)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M11 5L6 9H2v6h4l5 4V5z" />
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+          </svg>
+        )}
+      </button>
 
       {/* Scroll indicator */}
       <a
