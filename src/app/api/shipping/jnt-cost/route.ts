@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { checkTariff } from "@/lib/jnt/tariff";
 import { getJntConfig } from "@/lib/jnt/config";
+import { getSendSiteCode, resolveTariffCodes } from "@/lib/jnt/area-mapping";
 
 const costCache = new Map<string, { data: unknown; ts: number }>();
 const CACHE_TTL_MS = 10 * 60 * 1000;
@@ -21,8 +22,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "J&T API belum dikonfigurasi" }, { status: 500 });
     }
 
-    const originCode = "DEPOK";
-    const cacheKey = `${originCode}-${district}-${weight}`;
+    const resolved = resolveTariffCodes(city, district);
+    const originCode = getSendSiteCode("DEPOK") || "DEPOK";
+    const cacheKey = `${originCode}-${resolved.destAreaCode}-${weight}`;
     const cached = costCache.get(cacheKey);
     if (cached && Date.now() - cached.ts < CACHE_TTL_MS) {
       return NextResponse.json(cached.data);
@@ -31,7 +33,7 @@ export async function POST(req: Request) {
     const result = await checkTariff({
       weight: weight / 1000,
       originCode,
-      destAreaCode: district.toUpperCase(),
+      destAreaCode: resolved.destAreaCode,
     });
 
     if (!result.success || result.services.length === 0) {
