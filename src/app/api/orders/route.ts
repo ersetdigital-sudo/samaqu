@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     // For CYP items: verify customer_price >= minimum_price from DB
     // For fixed items: use price as-is
     console.log("[ORDERS] Validating item prices...");
-    const validatedItems: Array<{ productId: string; name: string; image?: string; color?: string; size?: string; quantity: number; price: number; customer_price: number | null; minimum_price: number | null; create_your_price_enabled: boolean }> = [];
+    const validatedItems: Array<{ productId: string; name: string; image?: string; color?: string; size?: string; series?: string; kain?: string; quantity: number; price: number; customer_price: number | null; minimum_price: number | null; create_your_price_enabled: boolean }> = [];
 
     for (const item of items) {
       if (item.create_your_price_enabled) {
@@ -207,6 +207,8 @@ export async function POST(request: NextRequest) {
       product_image: item.image || null,
       color: item.color || null,
       size: item.size || null,
+      series: item.series || null,
+      kain: item.kain || null,
       quantity: item.quantity || 1,
       price: item.price,
       customer_price: item.customer_price,

@@ -48,3 +48,9 @@ session-*.md
 pdf-preview/
 *.pdf
 .mimocode/
+
+.commandcode/
+dev-server.log
+template jnt terbaru.xlsx
+database-lokasi-samaqu.csv
+
