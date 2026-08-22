@@ -139,11 +139,11 @@ export default function Hero() {
       className="relative w-full overflow-hidden"
       style={{ background: "var(--espresso)", minHeight: "100dvh" }}
     >
-      {/* ── Video background (Ken Burns ambient motion) ── */}
+      {/* ── Video background ── */}
       <div className="absolute inset-0 overflow-hidden">
         <video
           ref={videoRef}
-          className="hero-kenburns absolute inset-0 w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-cover"
           autoPlay
           muted
           loop

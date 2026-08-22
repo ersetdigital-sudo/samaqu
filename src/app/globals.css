@@ -79,15 +79,6 @@
   transform: translateY(0);
 }
 
-/* ── Hero: Ken Burns ambient zoom on video ── */
-@keyframes heroKenBurns {
-  from { transform: scale(1.02); }
-  to { transform: scale(1.1); }
-}
-.hero-kenburns {
-  animation: heroKenBurns 26s ease-in-out infinite alternate;
-}
-
 /* ── Hero: ambient breathing gold glow ── */
 @keyframes heroGlow {
   0%, 100% { opacity: 0.35; transform: scale(1); }
@@ -107,9 +98,10 @@
 }
 
 /* ── Hero: filmic grain ── */
+/* No mix-blend-mode: blending over a playing video forces re-compositing
+   every frame and drops FPS. Plain low-opacity texture is cheap. */
 .hero-noise {
-  opacity: 0.07;
-  mix-blend-mode: overlay;
+  opacity: 0.05;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 220 220' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   background-size: 220px 220px;
 }
@@ -425,7 +417,6 @@ details[open] .faq-plus {
   .hero-slide.is-active .hero-media { animation: none; }
   .hero-enter { opacity: 1; transform: none; transition: none; }
   .hero-mask { transform: none; transition: none; }
-  .hero-kenburns { animation: none; }
   .hero-glow { animation: none; opacity: 0.4; }
   .hero-pulse-dot { animation: none; }
   .scroll-dot { animation: none; opacity: 1; }
