@@ -939,13 +939,15 @@ function CheckoutContent() {
             {isCartMode ? (
               <div className="space-y-4">
                 {items.map((item) => (
-                  <div key={`${item.id}-${item.color}-${item.size}`} className="flex gap-3 sm:gap-4">
+                  <div key={`${item.id}-${item.color}-${item.size}-${item.series ?? ""}`} className="flex gap-3 sm:gap-4">
                     <div className="w-16 h-20 sm:w-20 sm:h-24 rounded-lg flex-shrink-0 overflow-hidden" style={{ background: "#e8dfd1" }}>
                       <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-[13px] sm:text-sm font-ui font-medium leading-snug" style={{ color: "var(--espresso)" }}>{item.name}</p>
-                      <p className="text-[11px] sm:text-xs font-ui mt-0.5" style={{ color: "var(--text-muted)" }}>Warna: {item.color} · Ukuran: {item.size} · ×{item.qty}</p>
+                      <p className="text-[11px] sm:text-xs font-ui mt-0.5" style={{ color: "var(--text-muted)" }}>
+                        {[item.series, (item.color !== "-" && item.color !== "default") ? `Warna: ${item.color}` : null, `Ukuran: ${item.size}`, `×${item.qty}`].filter(Boolean).join(' · ')}
+                      </p>
                       {item.create_your_price_enabled && item.customer_price && (
                         <p className="text-[10px] sm:text-[11px] font-ui mt-0.5" style={{ color: "var(--gold)" }}>Harga pilihanmu</p>
                       )}
