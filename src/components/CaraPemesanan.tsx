@@ -1,129 +1,191 @@
 "use client";
 
 import { useRef } from "react";
-import { motion, useInView, Variants } from "framer-motion";
+import { motion, useInView, type Variants } from "framer-motion";
 import { CoatHanger, Ruler, ChatCircle, Package } from "@phosphor-icons/react";
 import { useSafeTranslations } from "@/lib/safe-i18n";
+import { getWhatsAppLink } from "@/lib/store-settings";
+import { trackWhatsAppClick } from "@/lib/meta-pixel";
 
 /* ─── Default Data (fallback icons only — text comes from i18n) ─── */
 const STEP_ICONS = [CoatHanger, Ruler, ChatCircle, Package];
 
-import { getWhatsAppLink } from "@/lib/store-settings";
-
 /* ─── Animation ─── */
+const PREMIUM_EASE = [0.22, 1, 0.36, 1] as const;
+
 const headerVariants: Variants = {
   hidden: { opacity: 0, y: 18 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.5, ease: "easeOut" },
+    transition: { duration: 0.7, ease: PREMIUM_EASE },
   },
 };
 
-const stepVariants: Variants = {
-  hidden: { opacity: 0, y: 22 },
+const cardVariants: Variants = {
+  hidden: { opacity: 0, y: 28 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
+    transition: { duration: 0.75, ease: PREMIUM_EASE },
   },
 };
 
-/* ─── Step ─── */
-function StepItem({
-  step,
-  index,
-}: {
-  step: { title: string; desc: string; Icon: typeof CoatHanger };
-  index: number;
-}) {
+/* ─── Shared atoms ─── */
+
+function StepIconBadge({ Icon, compact }: { Icon: typeof CoatHanger; compact?: boolean }) {
+  return (
+    <span
+      className={`relative inline-flex items-center justify-center rounded-full shrink-0 ${compact ? "w-9 h-9" : "w-11 h-11"}`}
+      style={{ background: "var(--espresso)", boxShadow: "0 10px 26px -10px rgba(45,33,27,.45)" }}
+    >
+      <Icon size={compact ? 16 : 20} weight="light" style={{ color: "var(--gold-light)" }} />
+      <span
+        className="absolute inset-0 rounded-full pointer-events-none"
+        style={{ border: "1px solid rgba(212,165,116,.25)" }}
+      />
+    </span>
+  );
+}
+
+function GhostNumber({ n, className }: { n: number; className?: string }) {
+  return (
+    <span
+      aria-hidden
+      className={`select-none font-medium leading-none ${className || ""}`}
+      style={{
+        fontFamily: "var(--font-cormorant), Georgia, serif",
+        color: "rgba(216,196,168,.5)",
+      }}
+    >
+      {String(n).padStart(2, "0")}
+    </span>
+  );
+}
+
+/* ─── Mobile: compact editorial 2×2 grid ─── */
+function MobileGrid({ steps }: { steps: { title: string; desc: string; Icon: typeof CoatHanger }[] }) {
   return (
     <motion.div
-      variants={stepVariants}
-      className="step group relative z-10 text-center"
+      className="md:hidden grid grid-cols-2 gap-3"
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, margin: "-60px" }}
+      variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.1 } } }}
+      role="list"
+      aria-label={steps.map((s) => s.title).join(", ")}
     >
-      {/* Marker circle */}
-      <div className="marker mx-auto mb-5 sm:mb-6 w-[64px] h-[64px] sm:w-[78px] sm:h-[78px] rounded-full flex items-center justify-center transition-all duration-450 group-hover:scale-105 group-hover:shadow-lg"
-        style={{
-          background: "var(--bg-primary)",
-          border: "1.5px solid var(--warm-sand)",
-        }}
-      >
-        <span className="step-icon w-6 h-6 sm:w-7 sm:h-7 transition-all duration-450 group-hover:scale-110" style={{ color: "var(--espresso)" }}>
-          <step.Icon size={28} weight="light" />
-        </span>
-      </div>
+      {steps.map((step, i) => (
+        <motion.div key={i} role="listitem" variants={cardVariants} className="group relative h-full">
+          <div
+            className="relative h-full rounded-2xl p-4 overflow-hidden transition-transform duration-300 active:scale-[0.985]"
+            style={{
+              background: "rgba(255,255,255,.85)",
+              border: "1px solid rgba(216,196,168,.35)",
+              boxShadow: "0 14px 34px -20px rgba(45,33,27,.28)",
+            }}
+          >
+            {/* Ghost numeral */}
+            <GhostNumber
+              n={i + 1}
+              className="absolute -top-1 right-2 text-[3.2rem] transition-colors duration-500 group-hover:text-[rgba(181,140,74,.35)]"
+            />
+            {/* Gold hairline accent */}
+            <span
+              className="absolute left-0 top-4 bottom-4 w-[2px] rounded-full"
+              style={{ background: "linear-gradient(180deg, var(--gold), transparent)" }}
+            />
 
-      {/* Number */}
-      <div
-        className="marker-num mb-2 text-[1.6rem] sm:text-[2rem] font-bold leading-none transition-colors duration-450 group-hover:text-gold"
-        style={{
-          fontFamily: "var(--font-cormorant), Georgia, serif",
-          color: "var(--warm-sand)",
-        }}
-      >
-        {String(index + 1).padStart(2, "0")}
-      </div>
-
-      {/* Title */}
-      <h3
-        className="step-title text-[1.25rem] sm:text-[1.5rem] font-semibold mb-2 transition-colors duration-400 group-hover:text-gold"
-        style={{ color: "var(--espresso)" }}
-      >
-        {step.title}
-      </h3>
-
-      {/* Description */}
-      <p
-        className="step-desc text-[0.9rem] sm:text-[0.94rem] leading-[1.7] max-w-[15rem] mx-auto"
-        style={{ color: "rgba(42,33,27,.72)" }}
-      >
-        {step.desc}
-      </p>
+            <div className="relative">
+              <StepIconBadge Icon={step.Icon} compact />
+              <p
+                className="mt-3.5 text-[8.5px] font-medium uppercase tracking-[0.3em] font-ui"
+                style={{ color: "var(--gold)" }}
+              >
+                {String(i + 1).padStart(2, "0")}
+              </p>
+              <h3 className="mt-1 text-[13.5px] font-semibold leading-snug font-ui" style={{ color: "var(--espresso)" }}>
+                {step.title}
+              </h3>
+            </div>
+            <p
+              className="relative mt-2 text-[11px] leading-[1.55] font-ui"
+              style={{ color: "rgba(42,33,27,.68)" }}
+            >
+              {step.desc}
+            </p>
+          </div>
+        </motion.div>
+      ))}
     </motion.div>
   );
 }
 
-/* ─── Timeline Track ─── */
-function TimelineTrack() {
+/* ─── Desktop: editorial 4-column with ghost numerals ─── */
+function DesktopJourney({ steps }: { steps: { title: string; desc: string; Icon: typeof CoatHanger }[] }) {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: "-100px" });
 
   return (
-    <>
-      {/* Desktop horizontal */}
-      <div
-        ref={ref}
-        className="hidden md:block absolute top-[39px] left-[12.5%] right-[12.5%] h-[2px] rounded-full overflow-hidden z-0"
+    <div ref={ref} className="hidden md:block relative">
+      {/* Connector line */}
+      <span
+        className="absolute top-[55px] left-[9%] right-[9%] h-px overflow-hidden"
         style={{ background: "rgba(216,196,168,.45)" }}
       >
-        <motion.div
-          className="absolute inset-0 origin-left"
-          style={{
-            background: "linear-gradient(90deg, var(--gold), var(--gold-dark))",
-          }}
+        <motion.span
+          className="absolute inset-0 origin-left block"
+          style={{ background: "linear-gradient(90deg, var(--gold), var(--gold-deep))" }}
           initial={{ scaleX: 0 }}
           animate={inView ? { scaleX: 1 } : { scaleX: 0 }}
-          transition={{ duration: 1.6, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 1.6, ease: PREMIUM_EASE }}
         />
-      </div>
+      </span>
 
-      {/* Mobile vertical */}
-      <div
-        className="md:hidden absolute top-[32px] bottom-[32px] left-[32px] w-[2px] rounded-full overflow-hidden z-0"
-        style={{ background: "rgba(216,196,168,.35)" }}
+      <motion.div
+        className="relative grid grid-cols-4 gap-8 lg:gap-10"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-60px" }}
+        variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.12 } } }}
+        role="list"
+        aria-label={steps.map((s) => s.title).join(", ")}
       >
-        <motion.div
-          className="absolute inset-0 origin-top"
-          style={{
-            background: "linear-gradient(180deg, var(--gold), var(--gold-dark))",
-          }}
-          initial={{ scaleY: 0 }}
-          animate={inView ? { scaleY: 1 } : { scaleY: 0 }}
-          transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
-        />
-      </div>
-    </>
+        {steps.map((step, i) => (
+          <motion.div key={i} role="listitem" variants={cardVariants} className="group relative">
+            {/* Ghost numeral — behind everything */}
+            <GhostNumber
+              n={i + 1}
+              className="absolute -top-[46px] left-1 text-[7.5rem] lg:text-[8.5rem] transition-all duration-700 group-hover:text-[rgba(181,140,74,.4)] group-hover:-translate-y-1.5"
+            />
+
+            {/* Icon badge on the connector line */}
+            <div className="relative z-10 mb-7">
+              <StepIconBadge Icon={step.Icon} />
+            </div>
+
+            {/* Hairline under badge */}
+            <span
+              className="block w-10 h-px mb-5 transition-all duration-500 group-hover:w-16"
+              style={{ background: "var(--gold)" }}
+            />
+
+            <h3
+              className="relative z-10 text-[1.35rem] lg:text-[1.5rem] font-semibold mb-2.5 font-ui"
+              style={{ color: "var(--espresso)" }}
+            >
+              {step.title}
+            </h3>
+            <p
+              className="relative z-10 text-[0.9rem] leading-[1.7] max-w-[16rem] font-ui"
+              style={{ color: "rgba(42,33,27,.68)" }}
+            >
+              {step.desc}
+            </p>
+          </motion.div>
+        ))}
+      </motion.div>
+    </div>
   );
 }
 
@@ -131,7 +193,6 @@ function TimelineTrack() {
 export default function CaraPemesanan() {
   const t = useSafeTranslations("caraPesan");
 
-  // Always use i18n translations for text content
   const steps = [
     { title: t("step1Title"), desc: t("step1Desc"), Icon: STEP_ICONS[0] },
     { title: t("step2Title"), desc: t("step2Desc"), Icon: STEP_ICONS[1] },
@@ -142,38 +203,42 @@ export default function CaraPemesanan() {
   return (
     <section
       id="cara-pesan"
-      className="relative px-5 sm:px-6 py-14 sm:py-24 lg:py-32 overflow-hidden"
+      className="relative px-5 sm:px-6 py-16 sm:py-24 lg:py-32 overflow-hidden"
       style={{
         background:
-          "radial-gradient(circle at 15% 10%, rgba(216,196,168,.14), transparent 45%), radial-gradient(circle at 85% 90%, rgba(184,145,70,.08), transparent 45%), var(--bg-primary)",
+          "radial-gradient(circle at 12% 0%, rgba(216,196,168,.16), transparent 42%), radial-gradient(circle at 88% 100%, rgba(184,145,70,.09), transparent 42%), var(--bg-primary)",
       }}
       aria-labelledby="cara-pesan-title"
     >
+      {/* Ambient gold hairline at top */}
+      <span
+        className="absolute top-0 left-1/2 -translate-x-1/2 w-[min(420px,70vw)] h-px"
+        style={{ background: "linear-gradient(90deg,transparent,rgba(184,145,70,.5),transparent)" }}
+        aria-hidden
+      />
+
       <div className="mx-auto max-w-6xl">
         {/* ── Header ── */}
         <motion.div
-          className="text-center mb-6 sm:mb-14 lg:mb-20"
+          className="text-center mb-12 sm:mb-16 lg:mb-24"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-80px" }}
-          variants={{
-            hidden: {},
-            visible: { transition: { staggerChildren: 0.1 } },
-          }}
+          variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.1 } } }}
         >
           <motion.p
             variants={headerVariants}
-            className="eyebrow inline-flex items-center gap-3 sm:gap-4 text-[0.72rem] font-medium uppercase tracking-[0.28em] font-ui"
+            className="inline-flex items-center gap-3 text-[0.68rem] font-medium uppercase tracking-[0.32em] font-ui"
             style={{ color: "var(--gold)" }}
           >
-            <span className="w-6 sm:w-[26px] h-px" style={{ background: "var(--warm-sand)" }} />
+            <span className="w-7 h-px" style={{ background: "linear-gradient(90deg,transparent,var(--gold))" }} />
             {t("eyebrow")}
-            <span className="w-6 sm:w-[26px] h-px" style={{ background: "var(--warm-sand)" }} />
+            <span className="w-7 h-px" style={{ background: "linear-gradient(90deg,var(--gold),transparent)" }} />
           </motion.p>
           <motion.h2
             variants={headerVariants}
             id="cara-pesan-title"
-            className="mt-5 text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-tight"
+            className="mt-5 text-[2.6rem] sm:text-5xl lg:text-[3.6rem] font-semibold tracking-[-0.015em] leading-[1.05]"
             style={{
               fontFamily: "var(--font-cormorant), Georgia, serif",
               color: "var(--espresso)",
@@ -183,119 +248,55 @@ export default function CaraPemesanan() {
           </motion.h2>
           <motion.p
             variants={headerVariants}
-            className="mx-auto mt-5 max-w-xl text-base leading-relaxed font-ui"
+            className="mx-auto mt-5 max-w-xl text-[15px] leading-[1.75] font-ui"
             style={{ color: "var(--text-secondary)" }}
           >
             {t("subtitle")}
           </motion.p>
         </motion.div>
 
-        {/* ── Mobile: 2x2 compact grid ── */}
-        <motion.div
-          className="md:hidden grid grid-cols-2 gap-3"
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-60px" }}
-          variants={{
-            hidden: {},
-            visible: { transition: { staggerChildren: 0.08 } },
-          }}
-        >
-          {steps.map((step, i) => (
-            <motion.div
-              key={i}
-              variants={stepVariants}
-              className="group relative rounded-xl border bg-white/80 p-3.5 overflow-hidden transition-all duration-300 hover:shadow-md"
-              style={{ borderColor: "rgba(216,196,168,.25)" }}
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <step.Icon size={20} weight="light" style={{ color: "var(--gold)" }} />
-                <span
-                  className="text-[1.3rem] font-bold leading-none"
-                  style={{
-                    fontFamily: "var(--font-cormorant), Georgia, serif",
-                    color: "var(--espresso)",
-                  }}
-                >
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-              </div>
-              <h3
-                className="text-sm font-semibold mb-1 font-ui"
-                style={{ color: "var(--espresso)" }}
-              >
-                {step.title}
-              </h3>
-              <p
-                className="text-[11px] leading-snug font-ui"
-                style={{ color: "rgba(42,33,27,.65)" }}
-              >
-                {step.desc}
-              </p>
-            </motion.div>
-          ))}
-        </motion.div>
-
-        {/* ── Desktop: horizontal timeline ── */}
-        <div className="hidden md:block timeline relative">
-          <TimelineTrack />
-
-          <motion.div
-            className="relative z-10 grid grid-cols-4 gap-8 lg:gap-12"
-            role="list"
-            aria-label={t("ariaSteps")}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-60px" }}
-            variants={{
-              hidden: {},
-              visible: { transition: { staggerChildren: 0.12 } },
-            }}
-          >
-            {steps.map((step, i) => (
-              <StepItem key={i} step={step} index={i} />
-            ))}
-          </motion.div>
-        </div>
+        {/* ── Steps ── */}
+        <MobileGrid steps={steps} />
+        <DesktopJourney steps={steps} />
 
         {/* ── CTA ── */}
         <motion.div
-          className="text-center mt-16 sm:mt-20 lg:mt-24"
+          className="text-center mt-14 sm:mt-20 lg:mt-24"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-40px" }}
-          transition={{ duration: 0.5, delay: 0.5 }}
+          transition={{ duration: 0.7, delay: 0.35, ease: PREMIUM_EASE }}
         >
           <a
-            className="cta group inline-flex items-center gap-2.5 rounded-full px-7 sm:px-9 py-3.5 sm:py-4 text-[0.85rem] sm:text-[0.9rem] font-semibold uppercase tracking-[0.08em] font-ui transition-all duration-350 hover:-translate-y-0.5 hover:scale-[1.02] hover:shadow-lg"
+            className="group relative inline-flex items-center gap-2.5 overflow-hidden rounded-full px-8 sm:px-9 py-4 text-[0.8rem] sm:text-[0.85rem] font-semibold uppercase tracking-[0.18em] font-ui transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.97]"
             style={{
               background: "var(--gold)",
               color: "#fff",
-              boxShadow: "0 8px 24px rgba(184,145,70,.25)",
+              boxShadow: "0 18px 44px -14px rgba(184,145,70,.55)",
             }}
             href={getWhatsAppLink(t("whatsappMsg"))}
             target="_blank"
             rel="noopener"
+            onClick={() => trackWhatsAppClick("cara_pemesanan")}
             aria-label={t("ariaCta")}
           >
-            <svg
-              width="19"
-              height="19"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              aria-hidden="true"
-            >
+            <span
+              className="absolute inset-0 translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]"
+              style={{ background: "var(--gold-deep)" }}
+              aria-hidden
+            />
+            <svg className="relative" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2zm0 18.15h-.01a8.2 8.2 0 0 1-4.19-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.23 8.23 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.25-8.24 2.2 0 4.27.86 5.83 2.42a8.19 8.19 0 0 1 2.41 5.83c0 4.54-3.7 8.24-8.24 8.24zm4.52-6.17c-.25-.12-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.13-.16.25-.64.8-.79.97-.14.16-.29.18-.54.06-.25-.12-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.12-.14.16-.25.25-.41.08-.16.04-.31-.02-.43-.06-.12-.56-1.34-.76-1.84-.2-.48-.4-.42-.56-.43h-.48c-.16 0-.43.06-.66.31-.22.25-.87.85-.87 2.07 0 1.22.89 2.4 1.01 2.57.12.16 1.75 2.67 4.23 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.14-1.18-.06-.11-.22-.17-.47-.29z" />
             </svg>
-            {t("cta")}
+            <span className="relative">{t("cta")}</span>
             <svg
-              className="cta-arrow transition-transform duration-350 group-hover:translate-x-1"
-              width="19"
-              height="19"
+              className="relative transition-transform duration-500 group-hover:translate-x-1"
+              width="17"
+              height="17"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
-              strokeWidth="2"
+              strokeWidth="1.8"
               strokeLinecap="round"
               strokeLinejoin="round"
               aria-hidden="true"
