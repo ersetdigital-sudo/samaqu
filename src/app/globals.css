@@ -79,6 +79,14 @@
   transform: translateY(0);
 }
 
+/* ── Hero: title legibility over bright video frames ── */
+.hero-title-shadow {
+  text-shadow:
+    0 1px 2px rgba(14,10,7,.35),
+    0 2px 14px rgba(14,10,7,.45),
+    0 8px 32px rgba(14,10,7,.5);
+}
+
 /* ── Hero: ambient breathing gold glow ── */
 @keyframes heroGlow {
   0%, 100% { opacity: 0.35; transform: scale(1); }
