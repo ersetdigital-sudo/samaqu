@@ -14,6 +14,7 @@ import { useToast } from "@/components/Toast";
 import { getWhatsAppLink, useStoreSettings } from "@/lib/store-settings";
 import { supabase } from "@/lib/supabase";
 import { useWishlist } from "@/lib/use-wishlist";
+import { trackViewContent, trackAddToCart, trackWhatsAppClick, sendCAPIEvent } from "@/lib/meta-pixel";
 
 const FALLBACK_SIZES = ["S", "M", "L", "XL", "XXL"];
 
@@ -262,6 +263,18 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     });
   }, [id, searchParams]);
 
+  // Meta Pixel: ViewContent
+  useEffect(() => {
+    if (product) {
+      trackViewContent({
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        category: product.category,
+      });
+    }
+  }, [product?.id]);
+
   // Fetch images from Supabase product_images table
   useEffect(() => {
     if (!id) return;
@@ -461,6 +474,14 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       create_your_price_enabled: isCYP || undefined,
     });
     toast.show("Ditambahkan ke keranjang");
+
+    // Meta Pixel: AddToCart
+    trackAddToCart({
+      id: displayId,
+      name: product.name,
+      price: isCYP ? minimumPrice : currentPrice,
+      quantity: qty,
+    });
   }
 
   function handleBuyNow() {
@@ -471,6 +492,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     const color = selectedColor || product.colors[0] || "-";
     let msg = `Halo, saya mau pesan produk:\n${product.name} - ${color} - Ukuran ${selectedSize}\nHarga: Rp ${effectivePrice.toLocaleString("id-ID")}\nJumlah: ${qty}`;
     if (notes) msg += `\nCatatan: ${notes}`;
+    // Meta Pixel: WhatsAppClick (Beli Sekarang)
+    trackWhatsAppClick("product_detail", displayId);
     window.open(getWhatsAppLink(msg), "_blank");
   }
 

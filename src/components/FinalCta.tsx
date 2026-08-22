@@ -2,6 +2,7 @@
 
 import { motion, Variants } from "framer-motion";
 import { getWhatsAppLink } from "@/lib/store-settings";
+import { trackWhatsAppClick } from "@/lib/meta-pixel";
 import { useSafeTranslations } from "@/lib/safe-i18n";
 
 const revealVariants: Variants = {
@@ -106,6 +107,7 @@ export default function FinalCta() {
               href={getWhatsAppLink("Halo Admin SAMAQU, saya tertarik dengan koleksi Anda dan ingin bertanya soal pemesanan.")}
               target="_blank"
               rel="noopener"
+              onClick={() => trackWhatsAppClick("final_cta")}
               className="inline-flex items-center gap-2.5 rounded-full px-7 sm:px-9 py-3.5 sm:py-4 text-[0.82rem] sm:text-[0.9rem] font-semibold uppercase tracking-[0.1em] font-ui transition-all duration-350 hover:-translate-y-0.5 hover:scale-[1.02] hover:shadow-lg w-full sm:w-auto justify-center"
               style={{
                 background: "var(--gold)",

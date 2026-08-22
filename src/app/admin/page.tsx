@@ -865,6 +865,9 @@ function AdminPageInner() {
                   {/* Social Media */}
                   <SocialMediaSection />
 
+                  {/* Meta Pixel */}
+                  <MetaPixelSection />
+
                   {/* Payment Methods */}
                   <PaymentMethodsSection />
                   <QrisEwalletSection />
@@ -2014,6 +2017,141 @@ function StatCard({ icon, label, value, badge, badgeColor }: { icon: React.React
       </div>
       <p className="text-sm mt-4" style={{ color: "var(--text-muted)" }}>{label}</p>
       <p className="text-2xl font-bold mt-1" style={{ color: "var(--espresso)" }}>{value}</p>
+    </div>
+  );
+}
+
+function MetaPixelSection() {
+  const [pixelId, setPixelId] = useState("");
+  const [accessToken, setAccessToken] = useState("");
+  const [testEventCode, setTestEventCode] = useState("");
+  const [enabled, setEnabled] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [showToken, setShowToken] = useState(false);
+  const [maskedToken, setMaskedToken] = useState("");
+  const toast = useToast();
+
+  useEffect(() => {
+    supabase.from("store_settings").select("meta_pixel_id, meta_access_token, meta_pixel_enabled, meta_test_event_code").eq("id", 1).single().then(({ data }) => {
+      if (data) {
+        setPixelId(data.meta_pixel_id || "");
+        setEnabled(data.meta_pixel_enabled || false);
+        setTestEventCode(data.meta_test_event_code || "");
+        const token = data.meta_access_token || "";
+        if (token) {
+          setMaskedToken(`${token.slice(0, 10)}${"*".repeat(Math.max(0, token.length - 14))}${token.slice(-4)}`);
+        }
+      }
+      setLoading(false);
+    });
+  }, []);
+
+  async function handleSave() {
+    if (enabled && !pixelId.trim()) {
+      toast.showToast("error", "Pixel ID wajib diisi jika tracking diaktifkan");
+      return;
+    }
+    setSaving(true);
+    const updates: Record<string, any> = {
+      id: 1,
+      meta_pixel_id: pixelId.trim() || null,
+      meta_pixel_enabled: enabled,
+      meta_test_event_code: testEventCode.trim() || null,
+      updated_at: new Date().toISOString(),
+    };
+    if (accessToken.trim()) {
+      updates.meta_access_token = accessToken.trim();
+    }
+    const { error } = await supabase.from("store_settings").upsert(updates);
+    if (error) {
+      toast.showToast("error", "Gagal menyimpan pengaturan Meta Pixel");
+    } else {
+      if (accessToken.trim()) {
+        const token = accessToken.trim();
+        setMaskedToken(`${token.slice(0, 10)}${"*".repeat(Math.max(0, token.length - 14))}${token.slice(-4)}`);
+        setAccessToken("");
+        setShowToken(false);
+      }
+      toast.showToast("success", "Pengaturan Meta Pixel disimpan");
+    }
+    setSaving(false);
+  }
+
+  if (loading) return <div className="card p-6 max-w-2xl"><Loader2 size={20} className="animate-spin" style={{ color: "var(--gold)" }} /></div>;
+
+  return (
+    <div className="card p-6 max-w-2xl space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold" style={{ color: "var(--espresso)" }}>Meta Pixel</h3>
+          <p className="text-xs" style={{ color: "var(--text-muted)" }}>Konfigurasi Meta Pixel untuk tracking iklan Facebook/Instagram.</p>
+        </div>
+        <span className="text-[11px] font-medium px-2.5 py-1 rounded-full" style={{ background: enabled ? "#e7ecdf" : "rgba(64,50,37,.06)", color: enabled ? "#5b6b45" : "var(--text-muted)" }}>
+          {enabled ? "Aktif" : "Nonaktif"}
+        </span>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <button onClick={() => setEnabled(!enabled)} className="relative w-11 h-6 rounded-full transition-colors duration-200" style={{ background: enabled ? "var(--gold)" : "rgba(64,50,37,.15)" }}>
+          <span className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200" style={{ transform: enabled ? "translateX(20px)" : "translateX(0)" }} />
+        </button>
+        <span className="text-sm" style={{ color: "var(--text-secondary)" }}>{enabled ? "Tracking aktif di seluruh website" : "Tracking nonaktif"}</span>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Pixel ID</label>
+        <input
+          value={pixelId}
+          onChange={(e) => setPixelId(e.target.value)}
+          className="w-full rounded-xl px-4 py-2.5 bg-white text-sm outline-none font-mono"
+          style={{ border: "1px solid rgba(64,50,37,.1)" }}
+          placeholder="contoh: 123456789012345"
+        />
+        <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>Temukan di Meta Events Manager → Settings → Pixel ID.</p>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Access Token (CAPI)</label>
+        {maskedToken && (
+          <div className="flex items-center gap-2 text-sm font-mono mb-2" style={{ color: "var(--text-secondary)" }}>
+            <span>Token tersimpan:</span>
+            <span className="px-2 py-1 rounded" style={{ background: "rgba(64,50,37,.06)" }}>{maskedToken}</span>
+          </div>
+        )}
+        <div className="relative">
+          <input
+            type={showToken ? "text" : "password"}
+            value={accessToken}
+            onChange={(e) => setAccessToken(e.target.value)}
+            className="w-full rounded-xl px-4 py-2.5 pr-10 bg-white text-sm outline-none font-mono"
+            style={{ border: "1px solid rgba(64,50,37,.1)" }}
+            placeholder={maskedToken ? "Masukkan token baru untuk mengganti" : "Masukkan System User Access Token"}
+          />
+          <button type="button" onClick={() => setShowToken(!showToken)} className="absolute right-3 top-1/2 -translate-y-1/2 text-xs" style={{ color: "var(--text-muted)" }}>
+            {showToken ? "🙈" : "👁️"}
+          </button>
+        </div>
+        <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>Digunakan untuk Conversions API (CAPI). Buat di Meta Business Suite → System Users.</p>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Test Event Code</label>
+        <input
+          value={testEventCode}
+          onChange={(e) => setTestEventCode(e.target.value)}
+          className="w-full rounded-xl px-4 py-2.5 bg-white text-sm outline-none font-mono"
+          style={{ border: "1px solid rgba(64,50,37,.1)" }}
+          placeholder="contoh: TEST12345"
+        />
+        <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>Untuk testing di Meta Events Manager → Test Events. Kosongkan di production.</p>
+      </div>
+
+      <div className="flex gap-3 pt-2">
+        <button onClick={handleSave} disabled={saving} className="text-sm font-semibold px-5 py-2.5 rounded-xl text-white" style={{ background: "linear-gradient(135deg, var(--gold), #96742f)" }}>
+          {saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null} Simpan
+        </button>
+      </div>
     </div>
   );
 }

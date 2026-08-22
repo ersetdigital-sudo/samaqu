@@ -2,6 +2,7 @@
 
 import { MessageCircle } from "lucide-react";
 import { getWhatsAppLink } from "@/lib/store-settings";
+import { trackWhatsAppClick } from "@/lib/meta-pixel";
 
 export default function WhatsAppFloat() {
   return (
@@ -9,6 +10,7 @@ export default function WhatsAppFloat() {
       href={getWhatsAppLink("Halo Admin SAMAQU, saya tertarik dengan koleksi Anda dan ingin bertanya soal pemesanan.")}
       target="_blank"
       rel="noopener"
+      onClick={() => trackWhatsAppClick("float_button")}
       aria-label="Butuh bantuan? Chat Admin SAMAQU via WhatsApp"
       className="fixed bottom-4 right-4 sm:bottom-5 sm:right-5 z-50 inline-flex items-center gap-2 sm:gap-2.5 rounded-full px-3.5 py-3 sm:px-5 sm:py-3.5 text-white transition-all duration-300 hover:scale-105 hover:shadow-lg group"
       style={{

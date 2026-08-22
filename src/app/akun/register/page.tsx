@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { User, Mail, Phone, Lock, Loader2 } from "lucide-react";
 import { registerCustomer } from "@/lib/customer-auth";
+import { trackCompleteRegistration, sendCAPIEvent } from "@/lib/meta-pixel";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -23,6 +24,9 @@ export default function RegisterPage() {
     setLoading(true);
     const result = await registerCustomer(email, password, name, whatsapp);
     if (result.error) { setError(result.error); setLoading(false); return; }
+    // Meta Pixel: CompleteRegistration
+    const { eventId } = trackCompleteRegistration("email");
+    sendCAPIEvent("CompleteRegistration", eventId, { status: "registered" }, { email, phone: whatsapp });
     router.push("/akun");
   }
 

@@ -22,6 +22,7 @@ import KainSeriesModal, { getKainGradient, getKainSwatchColor } from "@/componen
 import { SITE_URL } from "@/lib/site-config";
 import { useWishlist } from "@/lib/use-wishlist";
 import { useSafeTranslations } from "@/lib/safe-i18n";
+import { trackSearch } from "@/lib/meta-pixel";
 
 /* ── Katalog grouping: 1 produk utama (name + category) = 1 kartu ──
    Row per series dikumpulkan ke group; representative = row terlama.
@@ -384,6 +385,13 @@ export default function KatalogPage() {
     setSelectedColor(null);
     setSelectedSeries(null);
   }, [category]);
+
+  // Meta Pixel: Search tracking (debounced)
+  useEffect(() => {
+    if (!searchQuery.trim()) return;
+    const timer = setTimeout(() => trackSearch(searchQuery), 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   /* Jenis kain yang tersedia untuk kategori yang sedang aktif (dari data produk live) */
   const kainOptionsForCategory = useMemo(() => {
