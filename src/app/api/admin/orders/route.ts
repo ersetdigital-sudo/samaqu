@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
-import { cancelOrder } from "@/lib/jnt";
 
 export async function PATCH(request: NextRequest) {
   try {
@@ -31,6 +30,7 @@ export async function PATCH(request: NextRequest) {
       const cancelId = order.jnt_order_id || order.awb_no;
       console.log("[ADMIN] Cancelling J&T order:", cancelId);
 
+      const { cancelOrder } = await import("@/lib/jnt");
       const cancelResult = await cancelOrder({ orderId: cancelId, remark: "Dibatalkan oleh admin" });
       console.log("[ADMIN] J&T cancel result:", cancelResult);
 
