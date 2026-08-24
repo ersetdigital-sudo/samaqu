@@ -963,6 +963,12 @@ function AdminPageInner() {
                       <span className="text-sm font-medium" style={{ color: "var(--espresso)" }}>{selectedOrder.shipping_method}</span>
                       <span className="text-sm font-semibold" style={{ color: "var(--espresso)" }}>{money(selectedOrder.shipping_cost)}</span>
                     </div>
+                    {selectedOrder.awb_no && (
+                      <div className="flex justify-between items-center mt-2 pt-2" style={{ borderTop: "1px solid rgba(64,50,37,.06)" }}>
+                        <span className="text-sm" style={{ color: "var(--text-muted)" }}>No. Resi</span>
+                        <span className="text-sm font-semibold font-mono" style={{ color: "var(--gold)" }}>{selectedOrder.awb_no}</span>
+                      </div>
+                    )}
                   </div>
                 )}
 
