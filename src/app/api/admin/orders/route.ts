@@ -5,6 +5,7 @@ export async function PATCH(request: NextRequest) {
   try {
     const { orderId, orderNumber, status, action } = await request.json();
     const identifier = orderNumber || orderId;
+    console.log("[ADMIN] PATCH request:", { identifier, status, action });
 
     if (!identifier) {
       return NextResponse.json({ error: "Order ID wajib diisi" }, { status: 400 });
@@ -65,14 +66,14 @@ export async function PATCH(request: NextRequest) {
       .eq("order_number", identifier);
 
     if (error) {
-      console.error("[ADMIN] Failed to update order status:", error);
-      return NextResponse.json({ error: "Gagal memperbarui status pesanan" }, { status: 500 });
+      console.error("[ADMIN] Failed to update order status:", JSON.stringify(error));
+      return NextResponse.json({ error: "Gagal memperbarui status pesanan", detail: error.message, code: error.code }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("[ADMIN] Update order status error:", error);
-    return NextResponse.json({ error: "Terjadi kesalahan server" }, { status: 500 });
+  } catch (error: any) {
+    console.error("[ADMIN] Update order status error:", error?.message, error?.stack);
+    return NextResponse.json({ error: "Terjadi kesalahan server", detail: error?.message }, { status: 500 });
   }
 }
 

@@ -5,6 +5,7 @@ export async function PATCH(request: NextRequest) {
   try {
     const { orderId, orderNumber, status, action } = await request.json();
     const identifier = orderNumber || orderId;
+    console.log("[ADMIN] PATCH request:", { identifier, status, action });
 
     if (!identifier) {
       return NextResponse.json({ error: "Order ID wajib diisi" }, { status: 400 });
