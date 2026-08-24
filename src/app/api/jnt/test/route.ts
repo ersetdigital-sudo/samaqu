@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { trackShipment } from "@/lib/jnt/track";
-import { getJntConfig } from "@/lib/jnt/config";
+import { getJntConfig, getJntBaseUrl } from "@/lib/jnt/config";
 import { generateSignature } from "@/lib/jnt/signature";
 import { getOriginCode, getReceiverArea, getSendSiteCode, resolveTariffCodes, getCode3ByDistrict } from "@/lib/jnt/area-mapping";
 
@@ -36,7 +36,7 @@ export async function GET() {
 
   // Test 1: Tariff — DEPOK → WOYLA
   try {
-    const tariffUrl = "https://demo-general.inuat-jntexpress.id/jandt_track/inquiry.action";
+    const tariffUrl = getJntBaseUrl("tariff");
     const tariffData = JSON.stringify({
       weight: 1,
       sendSiteCode: depokSendSite || "DEPOK",
@@ -71,7 +71,7 @@ export async function GET() {
 
   // Test 3: Order — create test order (JAKARTA → WOYLA)
   try {
-    const orderUrl = "https://demo-ecommerce.inuat-jntexpress.id/jts-idn-ecommerce-api/api/order/create";
+    const orderUrl = getJntBaseUrl("order");
     const testOrderId = "TEST-" + Date.now();
 
     const now = new Date();
