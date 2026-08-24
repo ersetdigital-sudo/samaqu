@@ -3,9 +3,10 @@ import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
 export async function PATCH(request: NextRequest) {
   try {
-    const { orderId, status, action } = await request.json();
+    const { orderId, orderNumber, status, action } = await request.json();
+    const identifier = orderNumber || orderId;
 
-    if (!orderId) {
+    if (!identifier) {
       return NextResponse.json({ error: "Order ID wajib diisi" }, { status: 400 });
     }
 
@@ -16,7 +17,7 @@ export async function PATCH(request: NextRequest) {
       const { data: order, error: fetchError } = await supabaseAdmin
         .from("orders")
         .select("awb_no, jnt_order_id")
-        .eq("id", orderId)
+        .eq("order_number", identifier)
         .single();
 
       if (fetchError || !order) {
@@ -43,7 +44,7 @@ export async function PATCH(request: NextRequest) {
       const { error } = await supabaseAdmin
         .from("orders")
         .update({ status: "dibatalkan" })
-        .eq("id", orderId);
+        .eq("order_number", identifier);
 
       if (error) {
         console.error("[ADMIN] Failed to update order status after J&T cancel:", error);
@@ -61,7 +62,7 @@ export async function PATCH(request: NextRequest) {
     const { error } = await supabaseAdmin
       .from("orders")
       .update({ status })
-      .eq("id", orderId);
+      .eq("order_number", identifier);
 
     if (error) {
       console.error("[ADMIN] Failed to update order status:", error);
@@ -77,20 +78,34 @@ export async function PATCH(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const { orderId } = await request.json();
-    console.log("[ADMIN] Delete order request:", orderId);
+    const { orderId, orderNumber } = await request.json();
+    const identifier = orderNumber || orderId;
+    console.log("[ADMIN] Delete order request:", identifier);
 
-    if (!orderId) {
+    if (!identifier) {
       return NextResponse.json({ error: "Order ID wajib diisi" }, { status: 400 });
     }
 
     const supabaseAdmin = getSupabaseAdmin();
 
+    // Lookup UUID id from order_number
+    const { data: order } = await supabaseAdmin
+      .from("orders")
+      .select("id")
+      .eq("order_number", identifier)
+      .single();
+
+    if (!order) {
+      return NextResponse.json({ error: "Pesanan tidak ditemukan" }, { status: 404 });
+    }
+
+    const uuidId = order.id;
+
     // Delete voucher usages first (foreign key reference)
     const { data: deletedVouchers, error: voucherError } = await supabaseAdmin
       .from("voucher_usages")
       .delete()
-      .eq("order_id", orderId)
+      .eq("order_id", uuidId)
       .select();
 
     console.log("[ADMIN] Voucher usages delete result:", { deleted: deletedVouchers?.length ?? 0, error: voucherError?.message });
@@ -104,7 +119,7 @@ export async function DELETE(request: NextRequest) {
     const { error: itemsError } = await supabaseAdmin
       .from("order_items")
       .delete()
-      .eq("order_id", orderId);
+      .eq("order_id", uuidId);
 
     if (itemsError) {
       console.error("[ADMIN] Failed to delete order items:", itemsError);
@@ -115,14 +130,14 @@ export async function DELETE(request: NextRequest) {
     const { error: orderError } = await supabaseAdmin
       .from("orders")
       .delete()
-      .eq("id", orderId);
+      .eq("id", uuidId);
 
     if (orderError) {
       console.error("[ADMIN] Failed to delete order:", orderError);
       return NextResponse.json({ error: "Gagal menghapus pesanan", detail: orderError.message }, { status: 500 });
     }
 
-    console.log("[ADMIN] Order deleted successfully:", orderId);
+    console.log("[ADMIN] Order deleted successfully:", identifier);
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error("[ADMIN] Delete order error:", error);

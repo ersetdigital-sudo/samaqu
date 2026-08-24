@@ -297,20 +297,20 @@ function AdminPageInner() {
     });
   }
 
-  async function updateOrderStatus(orderId: string, newStatus: string) {
+  async function updateOrderStatus(orderNumber: string, newStatus: string) {
     try {
       const res = await fetch("/api/admin/orders", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId, status: newStatus }),
+        body: JSON.stringify({ orderNumber, status: newStatus }),
       });
       const data = await res.json();
       if (!res.ok) {
         toast.showToast("error", data.error || "Gagal memperbarui status");
         return;
       }
-      setOrders((prev) => prev.map((o) => o.id === orderId ? { ...o, status: newStatus } : o));
-      setSelectedOrder((prev) => prev && prev.id === orderId ? { ...prev, status: newStatus } : prev);
+      setOrders((prev) => prev.map((o) => o.order_number === orderNumber ? { ...o, status: newStatus } : o));
+      setSelectedOrder((prev) => prev && prev.order_number === orderNumber ? { ...prev, status: newStatus } : prev);
       toast.showToast("success", "Status pesanan berhasil diperbarui");
     } catch (err) {
       console.error("Update status error:", err);
@@ -318,20 +318,20 @@ function AdminPageInner() {
     }
   }
 
-  async function deleteOrder(orderId: string) {
+  async function deleteOrder(orderNumber: string) {
     showConfirm("Hapus Pesanan?", "Yakin ingin menghapus pesanan ini? Tindakan ini tidak bisa dibatalkan.", async () => {
       try {
         const res = await fetch("/api/admin/orders", {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ orderId }),
+          body: JSON.stringify({ orderNumber }),
         });
         const data = await res.json();
         if (!res.ok) {
           toast.showToast("error", data.error || "Gagal menghapus pesanan");
           return;
         }
-        setOrders((prev) => prev.filter((o) => o.id !== orderId));
+        setOrders((prev) => prev.filter((o) => o.order_number !== orderNumber));
         setSelectedOrder(null);
         setDeleteConfirmOrder(null);
         toast.showToast("success", "Pesanan berhasil dihapus");
@@ -348,15 +348,15 @@ function AdminPageInner() {
         const res = await fetch("/api/admin/orders", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ orderId: order.id, action: "cancelJnt" }),
+          body: JSON.stringify({ orderNumber: order.order_number, action: "cancelJnt" }),
         });
         const data = await res.json();
         if (!res.ok) {
           toast.showToast("error", data.error || "Gagal membatalkan J&T");
           return;
         }
-        setOrders((prev) => prev.map((o) => o.id === order.id ? { ...o, status: "dibatalkan" } : o));
-        setSelectedOrder((prev) => prev && prev.id === order.id ? { ...prev, status: "dibatalkan" } : prev);
+        setOrders((prev) => prev.map((o) => o.order_number === order.order_number ? { ...o, status: "dibatalkan" } : o));
+        setSelectedOrder((prev) => prev && prev.order_number === order.order_number ? { ...prev, status: "dibatalkan" } : prev);
         toast.showToast("success", "Berhasil membatalkan pesanan di J&T");
       } catch (err) {
         console.error("Cancel J&T error:", err);
@@ -927,7 +927,7 @@ function AdminPageInner() {
                   <p className="text-[11px] tracking-[0.15em] uppercase mb-3 font-medium" style={{ color: "var(--text-muted)" }}>Ubah Status</p>
                   <div className="flex flex-wrap gap-2">
                     {["pending", "diproses", "selesai", "dibatalkan"].map((s) => (
-                      <button key={s} onClick={() => updateOrderStatus(selectedOrder.id, s)} className="text-xs px-4 py-2 rounded-lg font-medium transition-all" style={{ background: selectedOrder.status === s ? "var(--gold)" : "transparent", color: selectedOrder.status === s ? "#fff" : "var(--text-secondary)", border: selectedOrder.status === s ? "none" : "1px solid rgba(64,50,37,.15)" }}>
+                      <button key={s} onClick={() => updateOrderStatus(selectedOrder.order_number, s)} className="text-xs px-4 py-2 rounded-lg font-medium transition-all" style={{ background: selectedOrder.status === s ? "var(--gold)" : "transparent", color: selectedOrder.status === s ? "#fff" : "var(--text-secondary)", border: selectedOrder.status === s ? "none" : "1px solid rgba(64,50,37,.15)" }}>
                         {s.charAt(0).toUpperCase() + s.slice(1)}
                       </button>
                     ))}
@@ -1024,7 +1024,7 @@ function AdminPageInner() {
                       Batalkan J&T
                     </button>
                   )}
-                  <button onClick={(e) => { e.stopPropagation(); deleteOrder(selectedOrder.id); }} className="text-xs font-medium px-4 py-2 rounded-lg" style={{ border: "1px solid rgba(231,76,60,.3)", color: "#e74c3c" }}>
+                  <button onClick={(e) => { e.stopPropagation(); deleteOrder(selectedOrder.order_number); }} className="text-xs font-medium px-4 py-2 rounded-lg" style={{ border: "1px solid rgba(231,76,60,.3)", color: "#e74c3c" }}>
                     Hapus Pesanan
                   </button>
                 </div>
