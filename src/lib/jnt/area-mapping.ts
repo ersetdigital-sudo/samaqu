@@ -27,6 +27,8 @@ const byLocalDistrictOnly = new Map<string, JntAreaRow[]>(); // "KEC"
 const byJntDistrict = new Map<string, JntAreaRow>(); // "JNTKEC|JNTKOTA"
 const cityToCode3 = new Map<string, string>(); // "LOCAL_KOTA" | "JNT_KOTA" → code3
 const cityToSendSite = new Map<string, string>(); // same keys → JNT city name
+const districtToCode3 = new Map<string, string>(); // "LOCAL_KEC" | "JNT_KEC" → code3
+const districtToSendSite = new Map<string, string>(); // "LOCAL_KEC" | "JNT_KEC" → JNT city name
 
 for (const r of JNT_AREAS) {
   const k1 = `${norm(r.localDistrict)}|${norm(r.localCity)}`;
@@ -42,6 +44,12 @@ for (const r of JNT_AREAS) {
   if (!cityToCode3.has(kj)) cityToCode3.set(kj, r.code3);
   if (!cityToSendSite.has(kc)) cityToSendSite.set(kc, r.jntCity);
   if (!cityToSendSite.has(kj)) cityToSendSite.set(kj, r.jntCity);
+  const kd = norm(r.localDistrict);
+  const kjd = norm(r.jntDistrict);
+  if (!districtToCode3.has(kd)) districtToCode3.set(kd, r.code3);
+  if (!districtToCode3.has(kjd)) districtToCode3.set(kjd, r.code3);
+  if (!districtToSendSite.has(kd)) districtToSendSite.set(kd, r.jntCity);
+  if (!districtToSendSite.has(kjd)) districtToSendSite.set(kjd, r.jntCity);
 }
 
 function findRow(city: string, district: string): JntAreaRow | null {
@@ -72,6 +80,16 @@ export function getReceiverArea(city: string, district: string): string | null {
 /** Tariff Check: origin site name e.g. "DEPOK" */
 export function getSendSiteCode(city: string): string | null {
   return cityToSendSite.get(norm(city)) ?? null;
+}
+
+/** Order API: get code3 by district name (e.g. "WOYLA" → "MEH") */
+export function getCode3ByDistrict(district: string): string | null {
+  return districtToCode3.get(norm(district)) ?? null;
+}
+
+/** Tariff Check: get sendSiteCode by district name */
+export function getSendSiteCodeByDistrict(district: string): string | null {
+  return districtToSendSite.get(norm(district)) ?? null;
 }
 
 /**

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { trackShipment } from "@/lib/jnt/track";
 import { getJntConfig } from "@/lib/jnt/config";
 import { generateSignature } from "@/lib/jnt/signature";
-import { getOriginCode, getReceiverArea, getSendSiteCode, resolveTariffCodes } from "@/lib/jnt/area-mapping";
+import { getOriginCode, getReceiverArea, getSendSiteCode, resolveTariffCodes, getCode3ByDistrict } from "@/lib/jnt/area-mapping";
 
 export async function GET() {
   const results: Record<string, unknown> = {};
@@ -23,7 +23,7 @@ export async function GET() {
   // Resolve area codes using area-mapping
   const depokOrigin = getOriginCode("DEPOK");
   const depokSendSite = getSendSiteCode("DEPOK");
-  const woylaOrigin = getOriginCode("WOYLA");
+  const woylaOrigin = getCode3ByDistrict("WOYLA");
   const woylaReceiverArea = getReceiverArea("MEULABOH", "WOYLA");
   const woylaTariff = resolveTariffCodes("MEULABOH", "WOYLA");
 
