@@ -8,10 +8,10 @@ const BASE_URLS = {
     track: "https://demo-general.inuat-jntexpress.id/jandt_track/track/trackAction!tracking.action",
   },
   production: {
-    order: "",
-    cancel: "",
-    tariff: "",
-    track: "",
+    order: "https://ecommerce.jntexpress.id/jts-idn-ecommerce-api/api/order/create",
+    cancel: "https://api.jet.co.id/jts-idn-ecommerce-api/api/order/cancel",
+    tariff: "https://partner-track.jet.co.id/jandt_track/inquiry.action",
+    track: "https://secure-jk.jet.co.id/jandt-order-web/track/trackAction!tracking.action",
   },
 } as const;
 
