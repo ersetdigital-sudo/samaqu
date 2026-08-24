@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
+import { createOrder, getOriginCode, getDestinationCode, getReceiverArea } from "@/lib/jnt";
 
 function generateOrderNumber(): string {
   const d = new Date();
@@ -238,12 +239,60 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // ── J&T Order Creation ──
+    let awbNo: string | null = null;
+    try {
+      const originCode = getOriginCode("DEPOK") || "DPK";
+      const destCode = getDestinationCode(shipping.city) || "";
+      const receiverArea = getReceiverArea(shipping.city, shipping.district || "") || "";
+
+      const firstItem = validatedItems[0];
+      const goodsDesc = firstItem ? firstItem.name.slice(0, 40) : "Pesanan SAMAQU";
+      const itemName = validatedItems.map((i) => i.name).join(", ").slice(0, 50);
+      const goodsValue = total;
+      const weightKg = shipping.weight ? Math.max(shipping.weight / 1000, 0.1) : 1;
+      const totalQty = validatedItems.reduce((sum, i) => sum + i.quantity, 0);
+
+      console.log("[ORDERS] J&T Order:", { orderNumber, originCode, destCode, receiverArea, weightKg });
+
+      const jntResult = await createOrder({
+        orderId: orderNumber.slice(0, 20),
+        shipperName: "SAMAQU",
+        shipperPhone: "+6281234567890",
+        shipperAddress: "Jl. Depok, Depok, Jawa Barat",
+        originCode,
+        receiverName: customer.name.slice(0, 30),
+        receiverPhone: customer.whatsapp.startsWith("+") ? customer.whatsapp : `+62${customer.whatsapp.replace(/^0/, "")}`,
+        receiverAddress: shipping.address.slice(0, 200),
+        receiverZip: shipping.postalCode || "00000",
+        destinationCode: destCode,
+        receiverArea,
+        qty: totalQty || 1,
+        weight: weightKg,
+        goodsDesc,
+        itemName,
+        goodsValue,
+        cod: body.paymentMethod === "cod" ? total : 0,
+      });
+
+      if (jntResult.success && jntResult.awbNo) {
+        awbNo = jntResult.awbNo;
+        await supabase.from("orders").update({ awb_no: awbNo, jnt_order_id: orderNumber }).eq("id", order.id);
+        console.log("[ORDERS] J&T AWB:", awbNo);
+      } else {
+        console.error("[ORDERS] J&T Order failed:", jntResult.raw);
+      }
+    } catch (jntErr) {
+      console.error("[ORDERS] J&T Order error:", jntErr);
+    }
+
     console.log("[ORDERS] === ORDER SUCCESS ===", orderNumber);
     return NextResponse.json({
       success: true,
       orderNumber,
       orderId: order.id,
       total,
+      awbNo,
     });
   } catch (error) {
     console.error("[ORDERS] === ORDER FAILED ===", error);

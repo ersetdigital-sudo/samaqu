@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="id"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Top Up Mobile Legends — Axivon Games</title>
+<meta name="description" content="Top up diamond Mobile Legends: Bang Bang. Harga termurah, proses instan, tanpa login akun.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#101215; --bg-2:#171a1f; --surface:#1c2026; --line:#262b33;
+    --ink:#eef1f4; --muted:#9aa3ad; --accent:#ff5c2b; --accent-2:#ffb020; --ok:#2fbf71;
+  }
+  body{background:var(--bg);color:var(--ink);font-family:"Plus Jakarta Sans",system-ui,sans-serif;}
+  h1,h2,h3,.display{font-family:"Bricolage Grotesque",system-ui,sans-serif;letter-spacing:-.015em;}
+  .panel{background:var(--bg-2);border:1px solid var(--line);}
+  .card{background:var(--surface);border:1px solid var(--line);}
+  .muted{color:var(--muted);}
+  .btn{background:var(--accent);color:#fff;}
+  .btn:hover{background:#ff7043;}
+  .no-scrollbar::-webkit-scrollbar{display:none;}
+  .no-scrollbar{-ms-overflow-style:none;scrollbar-width:none;}
+  .opt{cursor:pointer;transition:border-color .15s ease,background .15s ease;}
+  .opt:hover{border-color:#3a424e;}
+  .opt input{position:absolute;opacity:0;pointer-events:none;}
+  .opt input:checked + .opt-body{border-color:var(--accent);background:#231a17;}
+  .opt input:checked + .opt-body .tick{opacity:1;}
+  .tick{opacity:0;transition:opacity .15s ease;}
+  .field{background:#12151a;border:1px solid var(--line);}
+  .field:focus{outline:none;border-color:var(--accent);}
+  .step-no{background:var(--accent);color:#fff;}
+  ::selection{background:var(--accent);color:#fff;}
+</style>
+<script src="https://cdn.moda.app/runtime-libs/tailwind-browser-4.1.13-index.global.min.js"></script><style data-moda-export-fonts="true">@font-face { font-family: 'Plus Jakarta Sans'; src: url("../../fonts/plusjakartasans-extralight.ttf") format("truetype"); font-style: normal; font-weight: 200; font-display: swap; }
+@font-face { font-family: 'Plus Jakarta Sans'; src: url("../../fonts/plusjakartasans-extralightitalic.ttf") format("truetype"); font-style: italic; font-weight: 200; font-display: swap; }
+@font-face { font-family: 'Plus Jakarta Sans'; src: url("../../fonts/plusjakartasans-light.ttf") format("truetype"); font-style: normal; font-weight: 300; font-display: swap; }
+@font-face { font-family: 'Plus Jakarta Sans'; src: url("../../fonts/plusjakartasans-lightitalic.ttf") format("truetype"); font-style: italic; font-weight: 300; font-display: swap; }
+@font-face { font-family: 'Plus Jakarta Sans'; src: url("../../fonts/plusjakartasans-regular.ttf") format("truetype"); font-style: normal; font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Plus Jakarta Sans'; src: url("../../fonts/plusjakartasans-italic.ttf") format("truetype"); font-style: italic; font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Plus Jakarta Sans'; src: url("../../fonts/plusjakartasans-medium.ttf") format("truetype"); font-style: normal; font-weight: 500; font-display: swap; }
+@font-face { font-family: 'Plus Jakarta Sans'; src: url("../../fonts/plusjakartasans-mediumitalic.ttf") format("truetype"); font-style: italic; font-weight: 500; font-display: swap; }
+@font-face { font-family: 'Plus Jakarta Sans'; src: url("../../fonts/plusjakartasans-semibold.ttf") format("truetype"); font-style: normal; font-weight: 600; font-display: swap; }
+@font-face { font-family: 'Plus Jakarta Sans'; src: url("../../fonts/plusjakartasans-semibolditalic.ttf") format("truetype"); font-style: italic; font-weight: 600; font-display: swap; }
+@font-face { font-family: 'Plus Jakarta Sans'; src: url("../../fonts/plusjakartasans-bold.ttf") format("truetype"); font-style: normal; font-weight: 700; font-display: swap; }
+@font-face { font-family: 'Plus Jakarta Sans'; src: url("../../fonts/plusjakartasans-bolditalic.ttf") format("truetype"); font-style: italic; font-weight: 700; font-display: swap; }
+@font-face { font-family: 'Plus Jakarta Sans'; src: url("../../fonts/plusjakartasans-extrabold.ttf") format("truetype"); font-style: normal; font-weight: 800; font-display: swap; }
+@font-face { font-family: 'Plus Jakarta Sans'; src: url("../../fonts/plusjakartasans-extrabolditalic.ttf") format("truetype"); font-style: italic; font-weight: 800; font-display: swap; }
+@font-face { font-family: 'Bricolage Grotesque'; src: url("../../fonts/bricolagegrotesque-opsz-wdth-wght--extralight.ttf") format("truetype"); font-style: normal; font-weight: 200; font-display: swap; }
+@font-face { font-family: 'Bricolage Grotesque'; src: url("../../fonts/bricolagegrotesque-opsz-wdth-wght--light.ttf") format("truetype"); font-style: normal; font-weight: 300; font-display: swap; }
+@font-face { font-family: 'Bricolage Grotesque'; src: url("../../fonts/bricolagegrotesque-opsz-wdth-wght--regular.ttf") format("truetype"); font-style: normal; font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Bricolage Grotesque'; src: url("../../fonts/bricolagegrotesque-opsz-wdth-wght--medium.ttf") format("truetype"); font-style: normal; font-weight: 500; font-display: swap; }
+@font-face { font-family: 'Bricolage Grotesque'; src: url("../../fonts/bricolagegrotesque-opsz-wdth-wght--semibold.ttf") format("truetype"); font-style: normal; font-weight: 600; font-display: swap; }
+@font-face { font-family: 'Bricolage Grotesque'; src: url("../../fonts/bricolagegrotesque-opsz-wdth-wght--bold.ttf") format("truetype"); font-style: normal; font-weight: 700; font-display: swap; }
+@font-face { font-family: 'Bricolage Grotesque'; src: url("../../fonts/bricolagegrotesque-opsz-wdth-wght--extrabold.ttf") format("truetype"); font-style: normal; font-weight: 800; font-display: swap; }</style></head>
+<body class="antialiased">
+
+<!-- NAV -->
+<header class="sticky top-0 z-50 bg-[#101215]/95 backdrop-blur border-b border-[#262b33]">
+  <div class="mx-auto max-w-7xl px-4 sm:px-5 h-16 flex items-center gap-3 sm:gap-4">
+    <a href="/" class="shrink-0">
+      <img src="../../images/0be83e1b-d666-4f18-bfdb-6da348303545.svg" alt="Axivon Games" class="h-14 sm:h-24 w-auto -my-2 sm:-my-6">
+    </a>
+    <div class="flex flex-1 min-w-0 items-center gap-2 card rounded-lg px-3 py-2 max-w-md ml-auto">
+      <svg class="w-4 h-4 muted shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.2-3.2"></path></svg>
+      <input type="text" placeholder="Cari game atau voucher…" class="w-full min-w-0 bg-transparent outline-none text-sm placeholder:text-[#6d7681]">
+    </div>
+  </div>
+</header>
+
+<!-- BREADCRUMB -->
+<div class="mx-auto max-w-7xl px-4 sm:px-5 pt-5 text-sm muted flex items-center gap-2">
+  <a href="/" class="hover:text-white transition">Home</a>
+  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"></path></svg>
+  <span class="text-[#eef1f4]">Mobile Legends</span>
+</div>
+
+<main class="mx-auto max-w-7xl px-4 sm:px-5 py-6 grid lg:grid-cols-[330px_1fr] gap-6 items-start">
+
+  <!-- LEFT: GAME INFO -->
+  <aside class="lg:sticky lg:top-24 space-y-4">
+    <div class="panel rounded-xl overflow-hidden">
+      <div class="p-5 flex gap-4 items-center">
+        <img src="../../images/8f47dd26-4142-498f-a61c-14f17dc5cd18.png" alt="Mobile Legends" class="w-20 h-20 rounded-xl object-cover border border-[#262b33]">
+        <div>
+          <span class="text-[10px] font-bold tracking-wide px-2 py-0.5 rounded bg-[#ff5c2b] text-white">TOP UP</span>
+          <h1 class="mt-1.5 text-lg font-extrabold leading-tight">Mobile Legends:<br>Bang Bang</h1>
+          <p class="text-xs muted mt-1">Moonton</p>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 border-t border-[#262b33] text-xs">
+        <div class="px-4 py-3 flex items-center gap-2 border-r border-[#262b33]">
+          <svg class="w-4 h-4 text-[#2fbf71] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4.5 6v6c0 4.2 3.1 7.9 7.5 9 4.4-1.1 7.5-4.8 7.5-9V6Z"></path><path d="m9 12 2 2 4-4"></path></svg>
+          Supply resmi
+        </div>
+        <div class="px-4 py-3 flex items-center gap-2">
+          <svg class="w-4 h-4 text-[#2fbf71] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 1 3 6.7"></path><path d="M3 20v-5h5"></path></svg>
+          Garansi refund
+        </div>
+      </div>
+    </div>
+
+    <div class="panel rounded-xl p-5">
+      <h2 class="font-bold text-sm">Cara top up Mobile Legends</h2>
+      <ol class="mt-3 space-y-2.5 text-sm muted">
+        <li class="flex gap-3"><span class="shrink-0 w-5 h-5 rounded-md bg-[#262b33] grid place-items-center text-[11px] font-bold text-[#eef1f4]">1</span> Masukkan User ID dan Zone ID kamu.</li>
+        <li class="flex gap-3"><span class="shrink-0 w-5 h-5 rounded-md bg-[#262b33] grid place-items-center text-[11px] font-bold text-[#eef1f4]">2</span> Contoh: <span class="text-[#eef1f4]">1234567 (1234)</span>.</li>
+        <li class="flex gap-3"><span class="shrink-0 w-5 h-5 rounded-md bg-[#262b33] grid place-items-center text-[11px] font-bold text-[#eef1f4]">3</span> Pilih nominal diamond yang kamu mau.</li>
+        <li class="flex gap-3"><span class="shrink-0 w-5 h-5 rounded-md bg-[#262b33] grid place-items-center text-[11px] font-bold text-[#eef1f4]">4</span> Pilih metode pembayaran, lalu bayar.</li>
+        <li class="flex gap-3"><span class="shrink-0 w-5 h-5 rounded-md bg-[#262b33] grid place-items-center text-[11px] font-bold text-[#eef1f4]">5</span> Diamond masuk otomatis ke akunmu.</li>
+      </ol>
+    </div>
+
+    <div class="panel rounded-xl p-5">
+      <div class="flex items-center gap-2 text-sm font-semibold">
+        <svg class="w-4 h-4 text-[#ffb020]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v5M12 16h.01"></path></svg>
+        Butuh bantuan?
+      </div>
+      <p class="text-sm muted mt-2">CS aktif 08.00–24.00 WIB, rata-rata balas di bawah 3 menit.</p>
+      <a href="https://wa.me/6281234567890" class="mt-3 inline-flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg card hover:border-[#3a424e] transition">
+        <svg class="w-4 h-4 text-[#2fbf71]" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5.1-1.3A10 10 0 1 0 12 2Zm5.5 14.1c-.2.7-1.3 1.3-1.9 1.4-.5.1-1.1.1-1.8-.1-.4-.1-1-.3-1.7-.6-3-1.3-4.9-4.3-5-4.5-.2-.2-1.2-1.6-1.2-3s.7-2.1 1-2.4c.3-.3.6-.4.8-.4h.6c.2 0 .4 0 .6.5l.9 2.1c.1.2.1.4 0 .6l-.4.6-.3.3c-.1.1-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.3 2.4 1.5.3.1.5.1.6-.1l.9-1c.2-.2.4-.2.6-.1l2 .9c.2.1.4.2.4.3.1.2.1.7-.1 1.3Z"></path></svg>
+        Chat CS
+      </a>
+    </div>
+  </aside>
+
+  <!-- RIGHT: ORDER FLOW -->
+  <div class="space-y-4">
+
+    <!-- NOTICE -->
+    <div class="rounded-xl border border-[#4a3a1c] bg-[#20190d] px-4 py-3 text-sm flex gap-3">
+      <svg class="w-5 h-5 text-[#ffb020] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.9 18a2 2 0 0 0 1.7 3h16.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"></path><path d="M12 9v4M12 17h.01"></path></svg>
+      <span class="min-w-0">Akun harus region Indonesia. Weekly Diamond Pass maksimal 10x dalam 70 hari.</span>
+    </div>
+
+    <!-- TABS -->
+    <div class="panel rounded-xl p-1.5 grid grid-cols-2 gap-1.5 text-sm">
+      <button class="ptab px-4 py-2.5 rounded-lg font-semibold bg-[#eef1f4] text-[#101215]">Pembelian</button>
+      <button class="ptab px-4 py-2.5 rounded-lg font-semibold muted hover:text-white transition">Gift Voucher</button>
+    </div>
+
+    <!-- STEP 1 -->
+    <section class="panel rounded-xl p-5">
+      <div class="flex items-center gap-3">
+        <span class="step-no w-6 h-6 rounded-lg grid place-items-center text-xs font-bold">1</span>
+        <h2 class="font-bold text-lg">Pilih nominal</h2>
+      </div>
+
+      <div class="mt-4 flex gap-2 overflow-x-auto no-scrollbar pb-1 text-sm">
+        <button class="ntab shrink-0 px-3.5 py-1.5 rounded-lg bg-[#eef1f4] text-[#101215] font-semibold">Harga Spesial</button>
+        <button class="ntab shrink-0 px-3.5 py-1.5 rounded-lg card muted hover:text-white transition">MLBB Pass</button>
+        <button class="ntab shrink-0 px-3.5 py-1.5 rounded-lg card muted hover:text-white transition">Elite Bundle</button>
+        <button class="ntab shrink-0 px-3.5 py-1.5 rounded-lg card muted hover:text-white transition">Event</button>
+        <button class="ntab shrink-0 px-3.5 py-1.5 rounded-lg card muted hover:text-white transition">Diamonds</button>
+      </div>
+
+      <h3 class="mt-5 text-sm font-semibold muted">Harga spesial minggu ini</h3>
+      <div class="mt-3 grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
+
+        <label class="opt relative block">
+          <input type="radio" name="nominal" data-label="Weekly Diamond Pass" data-price="32100" checked="">
+          <div class="opt-body card rounded-xl p-4 h-full">
+            <div class="flex items-start justify-between gap-2">
+              <svg class="w-6 h-6 text-[#5bc8ff]" viewBox="0 0 24 24" fill="currentColor"><path d="M6 3h12l4 6-10 12L2 9Z" opacity=".85"></path></svg>
+              <span class="tick w-5 h-5 rounded-full bg-[#ff5c2b] grid place-items-center"><svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"></path></svg></span>
+            </div>
+            <div class="mt-3 font-semibold text-sm leading-snug">Weekly Diamond Pass</div>
+            <div class="text-xs muted mt-0.5">Event Topup +100</div>
+            <div class="mt-3 flex items-baseline gap-2">
+              <span class="text-xs muted line-through">Rp35.000</span>
+              <span class="font-bold text-[#ff5c2b]">Rp32.100</span>
+            </div>
+            <div class="mt-2 inline-flex items-center gap-1.5 text-[11px] muted">
+              <svg class="w-3.5 h-3.5 text-[#ffb020]" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="9"></circle></svg> +321 koin
+            </div>
+          </div>
+        </label>
+
+        <label class="opt relative block">
+          <input type="radio" name="nominal" data-label="Weekly Diamond Pass x3" data-price="96300">
+          <div class="opt-body card rounded-xl p-4 h-full">
+            <div class="flex items-start justify-between gap-2">
+              <svg class="w-6 h-6 text-[#5bc8ff]" viewBox="0 0 24 24" fill="currentColor"><path d="M6 3h12l4 6-10 12L2 9Z" opacity=".85"></path></svg>
+              <span class="tick w-5 h-5 rounded-full bg-[#ff5c2b] grid place-items-center"><svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"></path></svg></span>
+            </div>
+            <div class="mt-3 font-semibold text-sm leading-snug">Weekly Diamond Pass x3</div>
+            <div class="text-xs muted mt-0.5">Event Topup +100</div>
+            <div class="mt-3 flex items-baseline gap-2">
+              <span class="text-xs muted line-through">Rp105.000</span>
+              <span class="font-bold text-[#ff5c2b]">Rp96.300</span>
+            </div>
+            <div class="mt-2 inline-flex items-center gap-1.5 text-[11px] muted">
+              <svg class="w-3.5 h-3.5 text-[#ffb020]" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="9"></circle></svg> +963 koin
+            </div>
+          </div>
+        </label>
+
+        <label class="opt relative block">
+          <input type="radio" name="nominal" data-label="296 Diamonds" data-price="93017">
+          <div class="opt-body card rounded-xl p-4 h-full">
+            <div class="flex items-start justify-between gap-2">
+              <svg class="w-6 h-6 text-[#5bc8ff]" viewBox="0 0 24 24" fill="currentColor"><path d="M6 3h12l4 6-10 12L2 9Z" opacity=".85"></path></svg>
+              <span class="tick w-5 h-5 rounded-full bg-[#ff5c2b] grid place-items-center"><svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"></path></svg></span>
+            </div>
+            <div class="mt-3 font-semibold text-sm leading-snug">296 Diamonds</div>
+            <div class="text-xs muted mt-0.5">256 + 40 bonus</div>
+            <div class="mt-3 flex items-baseline gap-2">
+              <span class="text-xs muted line-through">Rp98.000</span>
+              <span class="font-bold text-[#ff5c2b]">Rp93.017</span>
+            </div>
+            <div class="mt-2 inline-flex items-center gap-1.5 text-[11px] muted">
+              <svg class="w-3.5 h-3.5 text-[#ffb020]" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="9"></circle></svg> +930 koin
+            </div>
+          </div>
+        </label>
+
+        <label class="opt relative block">
+          <input type="radio" name="nominal" data-label="345 Diamonds" data-price="101651">
+          <div class="opt-body card rounded-xl p-4 h-full">
+            <div class="flex items-start justify-between gap-2">
+              <svg class="w-6 h-6 text-[#5bc8ff]" viewBox="0 0 24 24" fill="currentColor"><path d="M6 3h12l4 6-10 12L2 9Z" opacity=".85"></path></svg>
+              <span class="tick w-5 h-5 rounded-full bg-[#ff5c2b] grid place-items-center"><svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"></path></svg></span>
+            </div>
+            <div class="mt-3 font-semibold text-sm leading-snug">345 Diamonds</div>
+            <div class="text-xs muted mt-0.5">301 + 44 bonus</div>
+            <div class="mt-3 flex items-baseline gap-2">
+              <span class="text-xs muted line-through">Rp106.790</span>
+              <span class="font-bold text-[#ff5c2b]">Rp101.651</span>
+            </div>
+            <div class="mt-2 inline-flex items-center gap-1.5 text-[11px] muted">
+              <svg class="w-3.5 h-3.5 text-[#ffb020]" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="9"></circle></svg> +1.016 koin
+            </div>
+          </div>
+        </label>
+
+        <label class="opt relative block">
+          <input type="radio" name="nominal" data-label="86 Diamonds" data-price="24500">
+          <div class="opt-body card rounded-xl p-4 h-full">
+            <div class="flex items-start justify-between gap-2">
+              <svg class="w-6 h-6 text-[#5bc8ff]" viewBox="0 0 24 24" fill="currentColor"><path d="M6 3h12l4 6-10 12L2 9Z" opacity=".85"></path></svg>
+              <span class="tick w-5 h-5 rounded-full bg-[#ff5c2b] grid place-items-center"><svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"></path></svg></span>
+            </div>
+            <div class="mt-3 font-semibold text-sm leading-snug">86 Diamonds</div>
+            <div class="text-xs muted mt-0.5">78 + 8 bonus</div>
+            <div class="mt-3 flex items-baseline gap-2">
+              <span class="text-xs muted line-through">Rp26.000</span>
+              <span class="font-bold text-[#ff5c2b]">Rp24.500</span>
+            </div>
+            <div class="mt-2 inline-flex items-center gap-1.5 text-[11px] muted">
+              <svg class="w-3.5 h-3.5 text-[#ffb020]" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="9"></circle></svg> +245 koin
+            </div>
+          </div>
+        </label>
+
+        <label class="opt relative block">
+          <input type="radio" name="nominal" data-label="Twilight Pass" data-price="149000">
+          <div class="opt-body card rounded-xl p-4 h-full">
+            <div class="flex items-start justify-between gap-2">
+              <svg class="w-6 h-6 text-[#c07bff]" viewBox="0 0 24 24" fill="currentColor"><path d="M6 3h12l4 6-10 12L2 9Z" opacity=".85"></path></svg>
+              <span class="tick w-5 h-5 rounded-full bg-[#ff5c2b] grid place-items-center"><svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"></path></svg></span>
+            </div>
+            <div class="mt-3 font-semibold text-sm leading-snug">Twilight Pass</div>
+            <div class="text-xs muted mt-0.5">Skin + 500 diamond</div>
+            <div class="mt-3 flex items-baseline gap-2">
+              <span class="text-xs muted line-through">Rp159.000</span>
+              <span class="font-bold text-[#ff5c2b]">Rp149.000</span>
+            </div>
+            <div class="mt-2 inline-flex items-center gap-1.5 text-[11px] muted">
+              <svg class="w-3.5 h-3.5 text-[#ffb020]" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="9"></circle></svg> +1.490 koin
+            </div>
+          </div>
+        </label>
+
+      </div>
+    </section>
+
+    <!-- STEP 2 -->
+    <section class="panel rounded-xl p-5">
+      <div class="flex items-center gap-3">
+        <span class="step-no w-6 h-6 rounded-lg grid place-items-center text-xs font-bold">2</span>
+        <h2 class="font-bold text-lg">Masukkan akun</h2>
+      </div>
+      <div class="mt-4 grid sm:grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs font-semibold muted">User ID</label>
+          <input id="uid" type="text" inputmode="numeric" placeholder="1234567" class="field mt-1.5 w-full rounded-lg px-3.5 py-3 text-sm placeholder:text-[#5d6570]">
+        </div>
+        <div>
+          <label class="text-xs font-semibold muted">Zone ID</label>
+          <input id="zid" type="text" inputmode="numeric" placeholder="1234" class="field mt-1.5 w-full rounded-lg px-3.5 py-3 text-sm placeholder:text-[#5d6570]">
+        </div>
+      </div>
+      <p class="mt-3 text-xs muted">Buka game, tap avatar di kiri atas. User ID dan Zone ID ada di bawah nama kamu, contoh <span class="text-[#eef1f4]">1234567 (1234)</span>.</p>
+    </section>
+
+    <!-- STEP 3 -->
+    <section class="panel rounded-xl p-5">
+      <div class="flex items-center gap-3">
+        <span class="step-no w-6 h-6 rounded-lg grid place-items-center text-xs font-bold">3</span>
+        <h2 class="font-bold text-lg">Metode pembayaran</h2>
+      </div>
+      <div class="mt-4 grid sm:grid-cols-3 gap-3">
+        <label class="opt relative block">
+          <input type="radio" name="bayar" data-label="QRIS" data-fee="0" checked="">
+          <div class="opt-body card rounded-xl px-4 py-3 flex items-center justify-between">
+            <div><div class="font-semibold text-sm">QRIS</div><div class="text-xs muted">Semua e-wallet &amp; m-banking</div></div>
+            <span class="tick w-5 h-5 rounded-full bg-[#ff5c2b] grid place-items-center shrink-0"><svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"></path></svg></span>
+          </div>
+        </label>
+        <label class="opt relative block">
+          <input type="radio" name="bayar" data-label="DANA" data-fee="1000">
+          <div class="opt-body card rounded-xl px-4 py-3 flex items-center justify-between">
+            <div><div class="font-semibold text-sm">DANA</div><div class="text-xs muted">Biaya Rp1.000</div></div>
+            <span class="tick w-5 h-5 rounded-full bg-[#ff5c2b] grid place-items-center shrink-0"><svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"></path></svg></span>
+          </div>
+        </label>
+        <label class="opt relative block">
+          <input type="radio" name="bayar" data-label="Transfer BCA" data-fee="2500">
+          <div class="opt-body card rounded-xl px-4 py-3 flex items-center justify-between">
+            <div><div class="font-semibold text-sm">Transfer BCA</div><div class="text-xs muted">Biaya Rp2.500</div></div>
+            <span class="tick w-5 h-5 rounded-full bg-[#ff5c2b] grid place-items-center shrink-0"><svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"></path></svg></span>
+          </div>
+        </label>
+      </div>
+    </section>
+
+    <!-- SUMMARY -->
+    <section class="panel rounded-xl p-5">
+      <h2 class="font-bold text-lg">Ringkasan pesanan</h2>
+      <dl class="mt-4 space-y-2.5 text-sm">
+        <div class="flex justify-between gap-4"><dt class="muted">Produk</dt><dd id="s-item" class="font-semibold text-right">Weekly Diamond Pass</dd></div>
+        <div class="flex justify-between gap-4"><dt class="muted">Akun</dt><dd id="s-akun" class="font-semibold text-right">—</dd></div>
+        <div class="flex justify-between gap-4"><dt class="muted">Pembayaran</dt><dd id="s-bayar" class="font-semibold text-right">QRIS</dd></div>
+        <div class="flex justify-between gap-4"><dt class="muted">Harga</dt><dd id="s-harga" class="font-semibold text-right">Rp32.100</dd></div>
+        <div class="flex justify-between gap-4"><dt class="muted">Biaya layanan</dt><dd id="s-fee" class="font-semibold text-right">Rp0</dd></div>
+      </dl>
+      <div class="mt-4 pt-4 border-t border-[#262b33] flex items-end justify-between gap-4">
+        <div>
+          <div class="text-xs muted">Total bayar</div>
+          <div id="s-total" class="display text-2xl font-extrabold text-[#ff5c2b]">Rp32.100</div>
+        </div>
+        <button id="beli" class="px-6 py-3 rounded-lg btn font-semibold transition">Beli Sekarang</button>
+      </div>
+      <p id="warn" class="hidden mt-3 text-xs text-[#ffb020]">Isi User ID dan Zone ID dulu ya sebelum lanjut bayar.</p>
+    </section>
+  </div>
+</main>
+
+<!-- STICKY MOBILE BAR -->
+<div class="lg:hidden sticky bottom-0 z-40 bg-[#101215]/95 backdrop-blur border-t border-[#262b33] px-4 py-3 flex items-center justify-between gap-4">
+  <div>
+    <div class="text-xs muted">Total bayar</div>
+    <div id="s-total-m" class="font-extrabold text-[#ff5c2b]">Rp32.100</div>
+  </div>
+  <a href="#beli" class="px-5 py-2.5 rounded-lg btn font-semibold text-sm">Beli Sekarang</a>
+</div>
+
+<footer class="border-t border-[#262b33] bg-[#0d0f12] mt-10">
+  <div class="mx-auto max-w-7xl px-4 sm:px-5 py-8 text-xs text-[#6d7681] flex flex-wrap gap-2 justify-between">
+    <span>© 2026 Axivon Games. Semua merek game adalah milik pemiliknya masing-masing.</span>
+    <a href="/" class="hover:text-white transition">Kembali ke beranda</a>
+  </div>
+</footer>
+
+<script>
+  const rupiah = n => 'Rp' + n.toLocaleString('id-ID');
+  const $ = id => document.getElementById(id);
+
+  function update(){
+    const nom = document.querySelector('input[name="nominal"]:checked');
+    const pay = document.querySelector('input[name="bayar"]:checked');
+    const price = Number(nom.dataset.price), fee = Number(pay.dataset.fee);
+    const uid = $('uid').value.trim(), zid = $('zid').value.trim();
+    $('s-item').textContent = nom.dataset.label;
+    $('s-bayar').textContent = pay.dataset.label;
+    $('s-harga').textContent = rupiah(price);
+    $('s-fee').textContent = rupiah(fee);
+    $('s-total').textContent = rupiah(price + fee);
+    $('s-total-m').textContent = rupiah(price + fee);
+    $('s-akun').textContent = uid ? uid + (zid ? ' (' + zid + ')' : '') : '—';
+  }
+
+  document.querySelectorAll('input[name="nominal"],input[name="bayar"]').forEach(el => el.addEventListener('change', update));
+  ['uid','zid'].forEach(id => $(id).addEventListener('input', update));
+
+  $('beli').addEventListener('click', () => {
+    const ok = $('uid').value.trim() && $('zid').value.trim();
+    $('warn').classList.toggle('hidden', !!ok);
+    if (ok) $('beli').textContent = 'Memproses…';
+  });
+
+  document.querySelectorAll('.ntab').forEach(t => t.addEventListener('click', () => {
+    document.querySelectorAll('.ntab').forEach(x => { x.className = 'ntab shrink-0 px-3.5 py-1.5 rounded-lg card muted hover:text-white transition'; });
+    t.className = 'ntab shrink-0 px-3.5 py-1.5 rounded-lg bg-[#eef1f4] text-[#101215] font-semibold';
+  }));
+  document.querySelectorAll('.ptab').forEach(t => t.addEventListener('click', () => {
+    document.querySelectorAll('.ptab').forEach(x => { x.className = 'ptab px-4 py-2.5 rounded-lg font-semibold muted hover:text-white transition'; });
+    t.className = 'ptab px-4 py-2.5 rounded-lg font-semibold bg-[#eef1f4] text-[#101215]';
+  }));
+
+  update();
+</script>
+
+</body></html>
