@@ -2,7 +2,7 @@ export { checkTariff } from "./tariff";
 export { createOrder } from "./order";
 export { trackShipment } from "./track";
 export { cancelOrder } from "./cancel";
-export { getOriginCode, getReceiverArea, getSendSiteCode, getCode3ByDistrict, resolveTariffCodes } from "./area-mapping";
+export { getOriginCode, getDestinationCode, getReceiverArea, getSendSiteCode, getCode3ByDistrict, resolveTariffCodes } from "./area-mapping";
 export { getJntConfig, getJntBaseUrl } from "./config";
 export type {
   TariffRequest,
