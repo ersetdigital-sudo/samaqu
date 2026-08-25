@@ -348,106 +348,54 @@ export default function KainSeriesModal({ type, onClose, category, images }: Kai
             onClick={onClose}
           />
 
-          {/* Panel */}
+          {/* IMAGE MODE: no panel, just images on backdrop */}
+          {hasImages ? (
+            <div className="fixed inset-0 z-[9995]">
+              {/* Close */}
+              <button onClick={onClose} aria-label="Tutup" className="absolute right-4 top-4 z-30 w-9 h-9 rounded-full grid place-items-center transition-colors hover:bg-white/25" style={{ background: "rgba(255,255,255,.12)" }}>
+                <X size={16} color="white" />
+              </button>
+
+              {/* Swipeable images */}
+              <div ref={trackRef} onScroll={handleScroll} className="w-full h-full flex overflow-x-auto snap-x snap-mandatory scrollbar-hide scroll-smooth">
+                {images!.map((img, i) => (
+                  <div key={i} className="shrink-0 w-full h-full snap-start flex items-center justify-center p-4 sm:p-8">
+                    <img src={img.image_url} alt={img.alt_text || title} className="max-w-full max-h-full object-contain rounded-lg" />
+                  </div>
+                ))}
+              </div>
+
+              {/* Arrows */}
+              {images!.length > 1 && (
+                <>
+                  <button onClick={() => goTo(index - 1)} className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full grid place-items-center transition-colors hover:bg-white/25" style={{ background: "rgba(255,255,255,.12)" }}>
+                    <ChevronLeft size={17} color="white" />
+                  </button>
+                  <button onClick={() => goTo(index + 1)} className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full grid place-items-center transition-colors hover:bg-white/25" style={{ background: "rgba(255,255,255,.12)" }}>
+                    <ChevronRight size={17} color="white" />
+                  </button>
+                </>
+              )}
+            </div>
+          ) : (
+          /* TEXT MODE: old panel with cards */
           <motion.div
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 24 }}
             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
             className="fixed inset-0 sm:inset-4 md:inset-6 sm:m-auto z-[9995] sm:max-w-[920px] sm:max-h-[600px] sm:rounded-3xl overflow-hidden flex flex-col"
-            style={{ background: hasImages ? "black" : "#0e0d0c", color: "white" }}
+            style={{ background: "#0e0d0c", color: "white" }}
           >
-            {/* Image mode: swipeable images */}
-            {hasImages ? (
-              <>
-                {/* Desktop: full bleed images, no header/footer */}
-                <div className="hidden sm:block relative flex-1 min-h-0">
-                  <div ref={trackRef} onScroll={handleScroll} className="w-full h-full flex overflow-x-auto snap-x snap-mandatory scrollbar-hide scroll-smooth">
-                    {images!.map((img, i) => (
-                      <div key={i} className="shrink-0 w-full h-full snap-start">
-                        <img src={img.image_url} alt={img.alt_text || title} className="w-full h-full object-contain" />
-                      </div>
-                    ))}
-                  </div>
-                  {images!.length > 1 && (
-                    <>
-                      <button onClick={() => goTo(index - 1)} className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full grid place-items-center transition-colors hover:bg-white/25" style={{ background: "rgba(255,255,255,.12)" }}>
-                        <ChevronLeft size={17} />
-                      </button>
-                      <button onClick={() => goTo(index + 1)} className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full grid place-items-center transition-colors hover:bg-white/25" style={{ background: "rgba(255,255,255,.12)" }}>
-                        <ChevronRight size={17} />
-                      </button>
-                    </>
-                  )}
-                  {images!.length > 1 && (
-                    <div className="absolute inset-x-0 bottom-4 z-20 flex justify-center gap-2.5">
-                      {images!.map((_, i) => (
-                        <button key={i} onClick={() => goTo(i)} className="h-2 rounded-full transition-all"
-                          style={{ width: i === index ? 18 : 8, background: i === index ? "var(--gold)" : "rgba(255,255,255,.4)" }} />
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Mobile: header overlay + swipeable images + footer */}
-                <div className="sm:hidden relative flex-1 min-h-0">
-                  <div ref={trackRef} onScroll={handleScroll} className="w-full h-full flex overflow-x-auto snap-x snap-mandatory scrollbar-hide scroll-smooth">
-                    {images!.map((img, i) => (
-                      <div key={i} className="shrink-0 w-full h-full snap-start">
-                        <img src={img.image_url} alt={img.alt_text || title} className="w-full h-full object-cover" />
-                      </div>
-                    ))}
-                  </div>
-                  <div className="absolute inset-x-0 top-0 z-20 px-6 pt-6 pb-4 text-center pointer-events-none">
-                    <p className="text-[10px] tracking-[0.34em] font-ui" style={{ color: "var(--gold)" }}>SAMAQU</p>
-                    <h2 className="mt-2 text-[21px] font-semibold leading-[1.15] uppercase tracking-[0.04em] max-w-[20ch] mx-auto font-ui">{title}</h2>
-                  </div>
-                  {images!.length > 1 && (
-                    <>
-                      <button onClick={() => goTo(index - 1)} className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full grid place-items-center" style={{ background: "rgba(255,255,255,.12)" }}>
-                        <ChevronLeft size={17} />
-                      </button>
-                      <button onClick={() => goTo(index + 1)} className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full grid place-items-center" style={{ background: "rgba(255,255,255,.12)" }}>
-                        <ChevronRight size={17} />
-                      </button>
-                    </>
-                  )}
-                  {images!.length > 1 && (
-                    <div className="absolute inset-x-0 bottom-[68px] z-20 flex justify-center gap-2.5">
-                      {images!.map((_, i) => (
-                        <button key={i} onClick={() => goTo(i)} className="h-2 rounded-full transition-all"
-                          style={{ width: i === index ? 18 : 8, background: i === index ? "var(--gold)" : "rgba(255,255,255,.4)" }} />
-                      ))}
-                    </div>
-                  )}
-                  <div className="absolute inset-x-0 bottom-0 z-20 rounded-t-3xl px-6 pt-4 pb-5 text-center shadow-[0_-10px_30px_rgba(0,0,0,.35)]"
-                    style={{ background: "var(--cream)", color: "var(--espresso)" }}>
-                    <p className="text-[12.5px] font-medium font-ui">Swipe untuk melihat jenis kain lainnya</p>
-                    <p className="mt-1 text-[12px] font-ui" style={{ color: "var(--stone)" }}>
-                      {images!.map((_, i) => i + 1).join("  ·  ")}
-                    </p>
-                  </div>
-                </div>
-              </>
-            ) : (
-            <>
-            {/* Header (desktop, in flow) */}
+            {/* Header (desktop) */}
             <div className="hidden sm:block shrink-0 px-8 pt-5 pb-3 text-center">
               <p className="text-[10px] tracking-[0.34em] font-ui" style={{ color: "var(--gold)" }}>SAMAQU</p>
-              <h2 className="mt-1.5 text-[20px] lg:text-[24px] font-semibold leading-tight uppercase tracking-[0.04em] font-ui">
-                {title}
-              </h2>
-              <p className="mt-1.5 text-[12px] max-w-[54ch] mx-auto font-ui" style={{ color: "rgba(255,255,255,.6)" }}>
-                {subtitle}
-              </p>
+              <h2 className="mt-1.5 text-[20px] lg:text-[24px] font-semibold leading-tight uppercase tracking-[0.04em] font-ui">{title}</h2>
+              <p className="mt-1.5 text-[12px] max-w-[54ch] mx-auto font-ui" style={{ color: "rgba(255,255,255,.6)" }}>{subtitle}</p>
             </div>
 
             {/* Slides */}
-            <div
-              ref={trackRef}
-              onScroll={handleScroll}
-              className="relative flex-1 min-h-0 flex overflow-x-auto snap-x snap-mandatory scrollbar-hide scroll-smooth"
-            >
+            <div ref={trackRef} onScroll={handleScroll} className="relative flex-1 min-h-0 flex overflow-x-auto snap-x snap-mandatory scrollbar-hide scroll-smooth">
               {items.map((item) => (
                 <Slide key={item.code} item={item} />
               ))}
@@ -456,41 +404,22 @@ export default function KainSeriesModal({ type, onClose, category, images }: Kai
             {/* Header overlay (mobile) */}
             <div className="sm:hidden absolute inset-x-0 top-0 z-20 px-6 pt-6 pb-4 text-center pointer-events-none">
               <p className="text-[10px] tracking-[0.34em] font-ui" style={{ color: "var(--gold)" }}>SAMAQU</p>
-              <h2 className="mt-2 text-[21px] font-semibold leading-[1.15] uppercase tracking-[0.04em] max-w-[16ch] mx-auto font-ui">
-                {title}
-              </h2>
-              <p className="mt-2.5 text-[12px] leading-relaxed max-w-[30ch] mx-auto font-ui" style={{ color: "rgba(255,255,255,.6)" }}>
-                {subtitle}
-              </p>
+              <h2 className="mt-2 text-[21px] font-semibold leading-[1.15] uppercase tracking-[0.04em] max-w-[16ch] mx-auto font-ui">{title}</h2>
+              <p className="mt-2.5 text-[12px] leading-relaxed max-w-[30ch] mx-auto font-ui" style={{ color: "rgba(255,255,255,.6)" }}>{subtitle}</p>
             </div>
 
             {/* Close */}
-            <button
-              onClick={onClose}
-              aria-label="Tutup"
-              className="absolute right-4 top-4 z-30 w-9 h-9 rounded-full grid place-items-center transition-colors hover:bg-white/25"
-              style={{ background: "rgba(255,255,255,.12)" }}
-            >
+            <button onClick={onClose} aria-label="Tutup" className="absolute right-4 top-4 z-30 w-9 h-9 rounded-full grid place-items-center transition-colors hover:bg-white/25" style={{ background: "rgba(255,255,255,.12)" }}>
               <X size={16} />
             </button>
 
             {/* Prev / Next */}
             {items.length > 1 && (
               <>
-                <button
-                  onClick={() => goTo(index - 1)}
-                  aria-label="Sebelumnya"
-                  className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full grid place-items-center transition-colors hover:bg-white/25"
-                  style={{ background: "rgba(255,255,255,.12)" }}
-                >
+                <button onClick={() => goTo(index - 1)} aria-label="Sebelumnya" className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full grid place-items-center transition-colors hover:bg-white/25" style={{ background: "rgba(255,255,255,.12)" }}>
                   <ChevronLeft size={17} />
                 </button>
-                <button
-                  onClick={() => goTo(index + 1)}
-                  aria-label="Berikutnya"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full grid place-items-center transition-colors hover:bg-white/25"
-                  style={{ background: "rgba(255,255,255,.12)" }}
-                >
+                <button onClick={() => goTo(index + 1)} aria-label="Berikutnya" className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full grid place-items-center transition-colors hover:bg-white/25" style={{ background: "rgba(255,255,255,.12)" }}>
                   <ChevronRight size={17} />
                 </button>
               </>
@@ -499,32 +428,19 @@ export default function KainSeriesModal({ type, onClose, category, images }: Kai
             {/* Dots */}
             <div className="absolute inset-x-0 bottom-[104px] sm:static sm:shrink-0 sm:py-3 z-20 flex justify-center gap-2.5">
               {items.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => goTo(i)}
-                  aria-label={`Ke slide ${i + 1}`}
-                  className="h-2 rounded-full transition-all"
-                  style={{
-                    width: i === index ? 18 : 8,
-                    background: i === index ? "var(--gold)" : "rgba(255,255,255,.28)",
-                  }}
-                />
+                <button key={i} onClick={() => goTo(i)} aria-label={`Ke slide ${i + 1}`} className="h-2 rounded-full transition-all"
+                  style={{ width: i === index ? 18 : 8, background: i === index ? "var(--gold)" : "rgba(255,255,255,.28)" }} />
               ))}
             </div>
 
             {/* Footer chip */}
-            <div
-              className="absolute inset-x-0 bottom-0 sm:static sm:shrink-0 z-20 rounded-t-3xl sm:rounded-none px-6 pt-4 pb-5 sm:py-3.5 text-center shadow-[0_-10px_30px_rgba(0,0,0,.35)] sm:shadow-none"
-              style={{ background: "var(--cream)", color: "var(--espresso)" }}
-            >
+            <div className="absolute inset-x-0 bottom-0 sm:static sm:shrink-0 z-20 rounded-t-3xl sm:rounded-none px-6 pt-4 pb-5 sm:py-3.5 text-center shadow-[0_-10px_30px_rgba(0,0,0,.35)] sm:shadow-none"
+              style={{ background: "var(--cream)", color: "var(--espresso)" }}>
               <p className="text-[12.5px] font-medium font-ui">Swipe untuk melihat {swipeWord} lainnya</p>
-              <p className="mt-1 text-[12px] font-ui" style={{ color: "var(--stone)" }}>
-                {items.map((d) => d.code).join("  ·  ")}
-              </p>
+              <p className="mt-1 text-[12px] font-ui" style={{ color: "var(--stone)" }}>{items.map((d) => d.code).join("  ·  ")}</p>
             </div>
-            </>
-            )}
           </motion.div>
+          )}
         </>
       )}
     </AnimatePresence>
