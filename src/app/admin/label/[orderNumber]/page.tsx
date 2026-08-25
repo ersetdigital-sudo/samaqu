@@ -182,7 +182,7 @@ export default function LabelPage() {
 
         {/* Produk */}
         <div style={{ borderTop: "1px solid #ddd", paddingTop: "1.5mm", marginTop: "1mm" }}>
-          <div style={{ fontSize: "7px", fontWeight: "bold", color: "#666", marginBottom: "1mm", textTransform: "uppercase" }}>Barang</div>
+          <div style={{ fontSize: "7px", fontWeight: "bold", color: "#666", marginBottom: "1mm", textTransform: "uppercase" }}>Pesanan</div>
           {order.order_items?.map((item, i) => (
             <div key={i} style={{ fontSize: "8px", marginBottom: "0.5mm", display: "flex", justifyContent: "space-between" }}>
               <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
