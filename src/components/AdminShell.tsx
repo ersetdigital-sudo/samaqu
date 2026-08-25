@@ -24,6 +24,7 @@ const navItems = [
   { href: "/admin/ukuran-produk", label: "Panduan Ukuran", icon: Ruler },
   { href: "/admin/garansi-retur-page", label: "Halaman Garansi & Retur", icon: FileText },
   { href: "/admin/biolink", label: "Biolink", icon: FileText },
+  { href: "/admin/bio-carousel", label: "Foto Carousel", icon: FileText },
 ];
 
 export default function AdminShell({ children, onLogout }: { children: ReactNode; onLogout?: () => void }) {

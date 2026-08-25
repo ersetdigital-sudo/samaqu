@@ -9,7 +9,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-const slides = [
+const FALLBACK_SLIDES = [
   { src: "/bio-images/7ac920f0-0cd1-4296-8604-1ada8c4cd69f.png", alt: "Koleksi Samaqu 1" },
   { src: "/bio-images/1db09a85-30ed-4d90-82d3-267b6618b580.png", alt: "Koleksi Samaqu 2" },
   { src: "/bio-images/f2ed96b8-98b6-4cb0-9859-e62c726b7e4b.png", alt: "Koleksi Samaqu 3" },
@@ -56,10 +56,11 @@ export default function BioLinkPage() {
   const [current, setCurrent] = useState(0);
   const [paused, setPaused] = useState(false);
   const [links, setLinks] = useState<BioLinkItem[]>([]);
+  const [slides, setSlides] = useState(FALLBACK_SLIDES);
 
   const next = useCallback(() => {
     setCurrent((i) => (i + 1) % slides.length);
-  }, []);
+  }, [slides.length]);
 
   const prev = useCallback(() => {
     setCurrent((i) => (i - 1 + slides.length) % slides.length);
@@ -72,6 +73,19 @@ export default function BioLinkPage() {
   }, [paused, next]);
 
   useEffect(() => {
+    // Fetch carousel images from Supabase
+    supabase
+      .from("bio_carousel_images")
+      .select("*")
+      .eq("enabled", true)
+      .order("sort_order")
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          setSlides(data.map((img) => ({ src: img.image_url, alt: img.alt })));
+        }
+      });
+
+    // Fetch bio links
     supabase
       .from("bio_links")
       .select("*")
