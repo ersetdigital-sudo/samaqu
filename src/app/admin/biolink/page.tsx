@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Edit, Trash2, X, Loader2, GripVertical, Link, ExternalLink } from "lucide-react";
+import { Plus, Edit, Trash2, X, Loader2, GripVertical, LinkIcon, ExternalLink } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import AdminShell from "@/components/AdminShell";
 import { useToast } from "@/components/AdminToast";
@@ -203,7 +203,7 @@ export default function BiolinkPage() {
                   <div className="flex items-center justify-between px-5 py-3.5" style={{ borderBottom: "1px solid rgba(64,50,37,.08)", background: "rgba(200,169,126,.06)" }}>
                     <div className="flex items-center gap-2">
                       <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "rgba(200,169,126,.15)" }}>
-                        <Link size={14} style={{ color: "var(--gold)" }} />
+                        <LinkIcon size={14} style={{ color: "var(--gold)" }} />
                       </div>
                       <h2 className="text-sm font-semibold" style={{ color: "var(--espresso)" }}>{section}</h2>
                       <span className="text-[11px] px-2 py-0.5 rounded-full font-medium" style={{ background: "rgba(64,50,37,.06)", color: "var(--text-muted)" }}>{sectionLinks.length}</span>
