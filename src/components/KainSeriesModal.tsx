@@ -278,11 +278,13 @@ function Slide({ item }: { item: KainSeriesItem }) {
 interface KainSeriesModalProps {
   type: "kain" | "series" | null;
   onClose: () => void;
+  category?: string;
+  imageUrl?: string | null;
 }
 
-export default function KainSeriesModal({ type, onClose }: KainSeriesModalProps) {
+export default function KainSeriesModal({ type, onClose, category, imageUrl }: KainSeriesModalProps) {
   const items = type === "kain" ? KAIN : type === "series" ? SERIES : [];
-  const title = type === "kain" ? "Perbedaan Jenis Kain Thobe" : "Perbedaan Series Thobe";
+  const title = type === "kain" ? `Perbedaan Jenis Kain ${category || "Thobe"}` : `Perbedaan Series ${category || "Thobe"}`;
   const subtitle =
     type === "kain"
       ? "Setiap kain punya karakter terbaiknya. Pilih yang paling sesuai untukmu."
@@ -354,6 +356,21 @@ export default function KainSeriesModal({ type, onClose }: KainSeriesModalProps)
             className="fixed inset-0 sm:inset-4 md:inset-6 sm:m-auto z-[9995] sm:max-w-[920px] sm:max-h-[600px] sm:rounded-3xl overflow-hidden flex flex-col"
             style={{ background: "#0e0d0c", color: "white" }}
           >
+            {/* Image mode */}
+            {imageUrl ? (
+              <>
+                <div className="flex-1 min-h-0 flex items-center justify-center p-4">
+                  <img src={imageUrl} alt={title} className="max-w-full max-h-full object-contain rounded-lg" />
+                </div>
+                <div
+                  className="shrink-0 sm:static sm:shrink-0 z-20 rounded-t-3xl sm:rounded-none px-6 pt-4 pb-5 sm:py-3.5 text-center shadow-[0_-10px_30px_rgba(0,0,0,.35)] sm:shadow-none"
+                  style={{ background: "var(--cream)", color: "var(--espresso)" }}
+                >
+                  <p className="text-[13px] font-medium font-ui">{title}</p>
+                </div>
+              </>
+            ) : (
+            <>
             {/* Header (desktop, in flow) */}
             <div className="hidden sm:block shrink-0 px-8 pt-5 pb-3 text-center">
               <p className="text-[10px] tracking-[0.34em] font-ui" style={{ color: "var(--gold)" }}>SAMAQU</p>
@@ -445,6 +462,8 @@ export default function KainSeriesModal({ type, onClose }: KainSeriesModalProps)
                 {items.map((d) => d.code).join("  ·  ")}
               </p>
             </div>
+            </>
+            )}
           </motion.div>
         </>
       )}
