@@ -1027,10 +1027,15 @@ function AdminPageInner() {
                   Hubungi via WhatsApp
                 </a>
                 <div className="flex items-center gap-2">
-                  {selectedOrder.awb_no && selectedOrder.status !== "dibatalkan" && (
+                   {selectedOrder.awb_no && selectedOrder.status !== "dibatalkan" && (
                     <button onClick={(e) => { e.stopPropagation(); cancelJntOrder(selectedOrder); }} className="text-xs font-medium px-4 py-2 rounded-lg" style={{ border: "1px solid rgba(231,76,60,.3)", color: "#e74c3c" }}>
                       Batalkan J&T
                     </button>
+                  )}
+                  {selectedOrder.awb_no && (
+                    <a href={`/admin/label/${selectedOrder.order_number}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-xs font-medium px-4 py-2 rounded-lg" style={{ border: "1px solid rgba(64,50,37,.3)", color: "var(--gold)", textDecoration: "none" }}>
+                      Cetak Label
+                    </a>
                   )}
                    <button onClick={(e) => { e.stopPropagation(); deleteOrder(selectedOrder.order_number); }} className="text-xs font-medium px-4 py-2 rounded-lg" style={{ border: "1px solid rgba(231,76,60,.3)", color: "#e74c3c" }}>
                     Hapus Pesanan
