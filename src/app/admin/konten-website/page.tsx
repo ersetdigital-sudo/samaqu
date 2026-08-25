@@ -221,14 +221,17 @@ export default function KontenWebsitePage() {
   async function saveKatalogInfo() {
     setSaving(true);
     // Delete all and re-insert
-    const { data: existing } = await supabase.from("katalog_info_images").select("id");
+    const { data: existing, error: selErr } = await supabase.from("katalog_info_images").select("id");
+    if (selErr) { console.error("katalog_info select error:", selErr); toast.showToast("error", "Gagal membaca data: " + selErr.message); setSaving(false); return; }
     if (existing && existing.length > 0) {
-      await supabase.from("katalog_info_images").delete().in("id", existing.map((e) => e.id));
+      const { error: delErr } = await supabase.from("katalog_info_images").delete().in("id", existing.map((e) => e.id));
+      if (delErr) { console.error("katalog_info delete error:", delErr); toast.showToast("error", "Gagal hapus: " + delErr.message); setSaving(false); return; }
     }
     if (editKatalogInfo.length > 0) {
-      await supabase.from("katalog_info_images").insert(editKatalogInfo.map((k, i) => ({
+      const { error: insErr } = await supabase.from("katalog_info_images").insert(editKatalogInfo.map((k, i) => ({
         category: k.category, type: k.type, image_url: k.image_url, alt_text: k.alt_text || "", sort_order: i,
       })));
+      if (insErr) { console.error("katalog_info insert error:", insErr); toast.showToast("error", "Gagal simpan: " + insErr.message); setSaving(false); return; }
     }
     const { data: refetched } = await supabase.from("katalog_info_images").select("*").order("sort_order");
     setKatalogInfoImages(refetched || []); setEditModal(null); setSaving(false);
