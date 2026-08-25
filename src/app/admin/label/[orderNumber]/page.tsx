@@ -18,6 +18,7 @@ interface OrderData {
   total: number;
   awb_no: string | null;
   status: string;
+  created_at: string;
   order_items?: { product_name: string; color: string; size: string; series?: string | null; kain?: string | null; quantity: number; price: number }[];
 }
 
@@ -36,13 +37,7 @@ export default function LabelPage() {
         .select("*, order_items(product_name, color, size, quantity, price, series, kain)")
         .eq("order_number", orderNumber)
         .single();
-
-      if (fetchErr || !data) {
-        setError("Pesanan tidak ditemukan");
-        setLoading(false);
-        return;
-      }
-
+      if (fetchErr || !data) { setError("Pesanan tidak ditemukan"); setLoading(false); return; }
       setOrder(data);
       setLoading(false);
     }
@@ -51,24 +46,19 @@ export default function LabelPage() {
 
   useEffect(() => {
     if (!order?.awb_no || !barcodeRef.current) return;
-
-    // Clear previous barcode
     barcodeRef.current.innerHTML = "";
-
-    // Generate barcode using canvas
     const canvas = document.createElement("canvas");
     barcodeRef.current.appendChild(canvas);
-
     // @ts-ignore
     import("jsbarcode").then((mod) => {
       const JsBarcode = mod.default;
       JsBarcode(canvas, order.awb_no!, {
         format: "CODE128",
-        width: 1.8,
-        height: 45,
+        width: 1.6,
+        height: 40,
         displayValue: true,
         font: "monospace",
-        fontSize: 14,
+        fontSize: 11,
         fontOptions: "bold",
         textMargin: 2,
         margin: 0,
@@ -76,140 +66,116 @@ export default function LabelPage() {
     });
   }, [order]);
 
-  useEffect(() => {
-    if (!loading && order && order.awb_no) {
-      // Auto print after render
-      const timer = setTimeout(() => window.print(), 500);
-      return () => clearTimeout(timer);
-    }
-  }, [loading, order]);
-
-  if (loading) {
-    return (
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", fontFamily: "monospace" }}>
-        Memuat label...
-      </div>
-    );
-  }
-
-  if (error || !order) {
-    return (
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", fontFamily: "monospace", color: "red" }}>
-        {error || "Pesanan tidak ditemukan"}
-      </div>
-    );
-  }
+  if (loading) return <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", fontFamily: "sans-serif" }}>Memuat label...</div>;
+  if (error || !order) return <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", fontFamily: "sans-serif", color: "red" }}>{error || "Pesanan tidak ditemukan"}</div>;
 
   const isCod = order.payment_method === "cod";
   const itemsSummary = order.order_items
-    ? order.order_items.map((i) => `${i.product_name} (${i.color}/${i.size}) x${i.quantity}`).join(", ")
+    ? order.order_items.map((i) => `${i.product_name}${i.series ? ` ${i.series}` : ""}${i.kain ? ` (${i.kain})` : ""} ${i.color !== "-" && i.color !== "default" ? i.color : ""} ${i.size} ×${i.quantity}`).join(", ")
     : "-";
+  const printDate = new Date().toLocaleString("id-ID", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  const serviceLabel = order.shipping_method?.toUpperCase() || "EZ";
 
   return (
     <>
       <style>{`
-        @page {
-          width: 100mm;
-          height: 150mm;
-          margin: 0;
-        }
+        @page { width: 78mm; height: 100mm; margin: 0; }
         @media print {
-          body { margin: 0; padding: 0; }
+          body { margin: 0 !important; padding: 0 !important; background: white !important; }
           .no-print { display: none !important; }
-          .label-container { box-shadow: none !important; border: none !important; }
+          .label-wrap { box-shadow: none !important; border: none !important; }
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Consolas', 'Courier New', monospace; background: #f0f0f0; }
+        body { font-family: Arial, Helvetica, sans-serif; background: #e8e8e8; }
       `}</style>
 
+      {/* Print button (hidden on print) */}
       <div className="no-print" style={{ padding: "16px", textAlign: "center" }}>
-        <button
-          onClick={() => window.print()}
-          style={{ padding: "10px 24px", fontSize: "14px", cursor: "pointer", background: "#333", color: "#fff", border: "none", borderRadius: "6px" }}
-        >
+        <button onClick={() => window.print()} style={{ padding: "10px 24px", fontSize: "14px", cursor: "pointer", background: "#333", color: "#fff", border: "none", borderRadius: "6px" }}>
           Cetak Label
         </button>
-        <span style={{ marginLeft: "12px", fontSize: "12px", color: "#666" }}>Label Thermal 100x150mm</span>
+        <span style={{ marginLeft: "12px", fontSize: "12px", color: "#666" }}>Label 78×100mm</span>
       </div>
 
-      <div className="label-container" style={{
-        width: "100mm",
-        height: "150mm",
-        margin: "0 auto",
-        padding: "4mm",
-        background: "#fff",
-        boxShadow: "0 2px 8px rgba(0,0,0,.15)",
-        display: "flex",
-        flexDirection: "column",
-        overflow: "hidden",
-        fontSize: "9px",
-        lineHeight: "1.3",
+      {/* Label */}
+      <div className="label-wrap" style={{
+        width: "78mm", height: "100mm", margin: "0 auto", background: "#fff",
+        boxShadow: "0 2px 8px rgba(0,0,0,.15)", display: "flex", flexDirection: "column",
+        overflow: "hidden", fontSize: "8px", lineHeight: "1.35", color: "#000",
       }}>
-        {/* Header: Pengirim */}
-        <div style={{ borderBottom: "1.5px dashed #333", paddingBottom: "2mm", marginBottom: "2mm" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-            <div>
-              <div style={{ fontSize: "14px", fontWeight: "bold", letterSpacing: "1px" }}>SAMAQU</div>
-              <div style={{ fontSize: "7px", color: "#666", marginTop: "1px" }}>Jl. Depok, Depok, Jawa Barat</div>
-              <div style={{ fontSize: "7px", color: "#666" }}>Telp: +6281234567890</div>
-            </div>
-            <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: "8px", fontWeight: "bold", color: "#c8102e", border: "1px solid #c8102e", padding: "1px 4px", borderRadius: "2px" }}>J&T EXPRESS</div>
-              <div style={{ fontSize: "7px", marginTop: "2px", fontWeight: "bold" }}>{order.shipping_method}</div>
+        {/* Header */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "2.5mm 3mm 2mm", borderBottom: "2px solid #000" }}>
+          <div>
+            <div style={{ fontSize: "18px", fontWeight: "900", letterSpacing: "2px", fontFamily: "Arial, sans-serif" }}>SAMAQU</div>
+            <div style={{ fontSize: "6.5px", color: "#333", marginTop: "1px" }}>@samaqu.id &nbsp;|&nbsp; 0812-3456-7890</div>
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <div style={{ fontSize: "12px", fontWeight: "900", letterSpacing: "0.5px" }}>J&T <span style={{ fontSize: "8px", fontWeight: "400" }}>EXPRESS</span></div>
+            <div style={{ marginTop: "2px" }}>
+              <span style={{ fontSize: "7px", fontWeight: "700", background: "#000", color: "#fff", padding: "1px 5px", borderRadius: "2px" }}>{serviceLabel}</span>
+              <span style={{ fontSize: "6.5px", marginLeft: "3px", fontWeight: "600" }}>REGULAR SERVICE</span>
             </div>
           </div>
         </div>
 
         {/* Barcode */}
-        <div style={{ textAlign: "center", margin: "2mm 0", display: "flex", justifyContent: "center" }}>
-          <div ref={barcodeRef} />
+        <div style={{ textAlign: "center", padding: "2mm 3mm", borderBottom: "1px solid #ccc" }}>
+          <div ref={barcodeRef} style={{ lineHeight: 0 }} />
         </div>
 
         {/* Penerima */}
-        <div style={{ borderTop: "1.5px dashed #333", paddingTop: "2mm", display: "flex", flexDirection: "column" }}>
-          <div style={{ fontSize: "7px", fontWeight: "bold", color: "#666", marginBottom: "1mm", textTransform: "uppercase" }}>Penerima</div>
-          <div style={{ fontSize: "12px", fontWeight: "bold", marginBottom: "1mm" }}>{order.customer_name}</div>
-          <div style={{ fontSize: "8px", marginBottom: "1mm" }}>Telp: {order.customer_whatsapp}</div>
-          <div style={{ fontSize: "8px", marginBottom: "1.5mm", wordBreak: "break-word" }}>
-            {order.shipping_address}, {order.shipping_city} {order.shipping_postal_code || ""}
+        <div style={{ padding: "2mm 3mm", border: "1.5px solid #000", margin: "1.5mm 3mm", borderRadius: "1.5mm" }}>
+          <div style={{ display: "inline-block", fontSize: "6.5px", fontWeight: "700", background: "#000", color: "#fff", padding: "0.5mm 2mm", borderRadius: "1mm", marginBottom: "1.5mm", textTransform: "uppercase" }}>Penerima</div>
+          <div style={{ fontSize: "11px", fontWeight: "700", marginBottom: "0.8mm" }}>{order.customer_name}</div>
+          <div style={{ fontSize: "8px", marginBottom: "0.8mm" }}>{order.customer_whatsapp}</div>
+          <div style={{ fontSize: "7.5px", wordBreak: "break-word", lineHeight: "1.4" }}>
+            {order.shipping_address}, {order.shipping_city}
+            {order.shipping_postal_code ? ` ${order.shipping_postal_code}` : ""}
           </div>
-          {order.shipping_notes && (
-            <div style={{ fontSize: "7px", color: "#666", fontStyle: "italic", marginBottom: "1mm" }}>
-              Catatan: {order.shipping_notes}
-            </div>
-          )}
         </div>
 
-        {/* Produk */}
-        <div style={{ borderTop: "1px solid #ddd", paddingTop: "1.5mm", marginTop: "1mm" }}>
-          <div style={{ fontSize: "7px", fontWeight: "bold", color: "#666", marginBottom: "1mm", textTransform: "uppercase" }}>Pesanan</div>
-          {order.order_items?.map((item, i) => (
-            <div key={i} style={{ fontSize: "8px", marginBottom: "0.5mm", display: "flex", justifyContent: "space-between" }}>
-              <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {item.product_name} {item.series || ""} {item.kain ? `(${item.kain})` : ""} {item.color !== "-" && item.color !== "default" ? item.color : ""} {item.size} ×{item.quantity}
-              </span>
-            </div>
-          ))}
+        {/* ISI KIRIMAN + BERAT */}
+        <div style={{ display: "flex", gap: 0, margin: "0 3mm", borderTop: "1px dashed #999", borderBottom: "1px dashed #999" }}>
+          <div style={{ flex: 1, padding: "1.5mm 3mm 1.5mm 0", borderRight: "1px dashed #999" }}>
+            <div style={{ display: "inline-block", fontSize: "6.5px", fontWeight: "700", background: "#000", color: "#fff", padding: "0.5mm 2mm", borderRadius: "1mm", marginBottom: "1mm", textTransform: "uppercase" }}>Isi Kiriman</div>
+            <div style={{ fontSize: "8px", fontWeight: "600" }}>Pakaian</div>
+          </div>
+          <div style={{ flex: 1, padding: "1.5mm 0 1.5mm 3mm" }}>
+            <div style={{ display: "inline-block", fontSize: "6.5px", fontWeight: "700", background: "#000", color: "#fff", padding: "0.5mm 2mm", borderRadius: "1mm", marginBottom: "1mm", textTransform: "uppercase" }}>Berat</div>
+            <div style={{ fontSize: "8px", fontWeight: "600" }}>1.00 KG</div>
+          </div>
+        </div>
+
+        {/* Pesanan */}
+        <div style={{ padding: "1.5mm 3mm", borderBottom: "1px dashed #999" }}>
+          <div style={{ display: "inline-block", fontSize: "6.5px", fontWeight: "700", background: "#000", color: "#fff", padding: "0.5mm 2mm", borderRadius: "1mm", marginBottom: "1mm", textTransform: "uppercase" }}>Pesanan</div>
+          <div style={{ fontSize: "7.5px", fontFamily: "'Courier New', Courier, monospace", wordBreak: "break-word" }}>{itemsSummary}</div>
+        </div>
+
+        {/* Info Grid */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0, margin: "0 3mm", borderBottom: "1px solid #000" }}>
+          <div style={{ padding: "1.5mm 3mm 1.5mm 0", borderRight: "1px solid #000" }}>
+            <div style={{ fontSize: "6px", color: "#666", textTransform: "uppercase", letterSpacing: "0.5px" }}>Order ID</div>
+            <div style={{ fontSize: "8px", fontWeight: "700", fontFamily: "'Courier New', monospace" }}>{order.order_number}</div>
+          </div>
+          <div style={{ padding: "1.5mm 0 1.5mm 3mm" }}>
+            <div style={{ fontSize: "6px", color: "#666", textTransform: "uppercase", letterSpacing: "0.5px" }}>Layanan</div>
+            <div style={{ fontSize: "8px", fontWeight: "700" }}>{serviceLabel} / Regular Service</div>
+          </div>
+          <div style={{ padding: "1.5mm 3mm 1.5mm 0", borderRight: "1px solid #000", borderTop: "1px solid #000" }}>
+            <div style={{ fontSize: "6px", color: "#666", textTransform: "uppercase", letterSpacing: "0.5px" }}>Biaya (Ongkir)</div>
+            <div style={{ fontSize: "8px", fontWeight: "700" }}>Rp {order.shipping_cost.toLocaleString("id-ID")}</div>
+          </div>
+          <div style={{ padding: "1.5mm 0 1.5mm 3mm", borderTop: "1px solid #000" }}>
+            <div style={{ fontSize: "6px", color: "#666", textTransform: "uppercase", letterSpacing: "0.5px" }}>Tanggal Cetak</div>
+            <div style={{ fontSize: "8px", fontWeight: "700" }}>{printDate}</div>
+          </div>
         </div>
 
         {/* Footer */}
-        <div style={{ borderTop: "1px solid #ccc", paddingTop: "1.5mm", display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
-          <div>
-            {isCod && (
-              <div style={{ fontSize: "10px", fontWeight: "bold", color: "#c8102e" }}>
-                COD: Rp {order.total.toLocaleString("id-ID")}
-              </div>
-            )}
-            {!isCod && (
-              <div style={{ fontSize: "7px", color: "#666" }}>
-                {order.payment_method === "bank" ? "Transfer Bank" : "QRIS"}
-              </div>
-            )}
-          </div>
-          <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: "7px", color: "#666" }}>No. Pesanan</div>
-            <div style={{ fontSize: "8px", fontWeight: "bold" }}>{order.order_number}</div>
-          </div>
+        <div style={{ padding: "1.5mm 3mm", display: "flex", alignItems: "center", gap: "1.5mm", marginTop: "auto" }}>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <div style={{ fontSize: "5.5px", color: "#333", lineHeight: "1.3" }}>Pastikan label ditempel pada paket dengan rapi dan tidak terlipet agar barcode dapat terbaca dengan baik.</div>
         </div>
       </div>
     </>
