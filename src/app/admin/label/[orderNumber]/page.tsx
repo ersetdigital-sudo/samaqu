@@ -18,7 +18,7 @@ interface OrderData {
   total: number;
   awb_no: string | null;
   status: string;
-  order_items?: { product_name: string; color: string; size: string; quantity: number; price: number }[];
+  order_items?: { product_name: string; color: string; size: string; series?: string | null; kain?: string | null; quantity: number; price: number }[];
 }
 
 export default function LabelPage() {
