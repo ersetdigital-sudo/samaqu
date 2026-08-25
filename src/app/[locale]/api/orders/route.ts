@@ -212,6 +212,8 @@ export async function POST(request: NextRequest) {
       price: item.price,
       customer_price: item.customer_price,
       minimum_price: item.minimum_price,
+      series: item.series || null,
+      kain: item.kain || null,
     }));
 
     const { error: itemsError } = await supabase.from("order_items").insert(orderItems);
