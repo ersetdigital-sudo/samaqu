@@ -29,6 +29,7 @@ const cityToCode3 = new Map<string, string>(); // "LOCAL_KOTA" | "JNT_KOTA" → 
 const cityToSendSite = new Map<string, string>(); // same keys → JNT city name
 const districtToCode3 = new Map<string, string>(); // "LOCAL_KEC" | "JNT_KEC" → code3
 const districtToSendSite = new Map<string, string>(); // "LOCAL_KEC" | "JNT_KEC" → JNT city name
+const cityToFirstRow = new Map<string, JntAreaRow>(); // "LOCAL_KOTA" | "JNT_KOTA" → first row
 
 for (const r of JNT_AREAS) {
   const k1 = `${norm(r.localDistrict)}|${norm(r.localCity)}`;
@@ -50,17 +51,28 @@ for (const r of JNT_AREAS) {
   if (!districtToCode3.has(kjd)) districtToCode3.set(kjd, r.code3);
   if (!districtToSendSite.has(kd)) districtToSendSite.set(kd, r.jntCity);
   if (!districtToSendSite.has(kjd)) districtToSendSite.set(kjd, r.jntCity);
+  if (!cityToFirstRow.has(kc)) cityToFirstRow.set(kc, r);
+  if (!cityToFirstRow.has(kj)) cityToFirstRow.set(kj, r);
 }
 
 function findRow(city: string, district: string): JntAreaRow | null {
   const d = norm(district);
   const c = norm(city);
-  return (
+
+  // 1. Exact match: district + city
+  const exact =
     byLocalDistrict.get(`${d}|${c}`) ||
-    byJntDistrict.get(`${d}|${c}`) ||
-    byLocalDistrictOnly.get(d)?.[0] ||
-    null
-  );
+    byJntDistrict.get(`${d}|${c}`);
+  if (exact) return exact;
+
+  // 2. District-only match (multiple cities may share a district name)
+  if (d) {
+    const districtMatch = byLocalDistrictOnly.get(d)?.[0];
+    if (districtMatch) return districtMatch;
+  }
+
+  // 3. City-only fallback
+  return cityToFirstRow.get(c) || null;
 }
 
 /** Order API: 3-char city code for origin/destination_code */
