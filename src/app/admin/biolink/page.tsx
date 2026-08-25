@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Edit, Trash2, X, Loader2, GripVertical, LinkIcon, ExternalLink } from "lucide-react";
+import { Plus, Edit, Trash2, X, Loader2, GripVertical } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import AdminShell from "@/components/AdminShell";
 import { useToast } from "@/components/AdminToast";
@@ -203,7 +203,7 @@ export default function BiolinkPage() {
                   <div className="flex items-center justify-between px-5 py-3.5" style={{ borderBottom: "1px solid rgba(64,50,37,.08)", background: "rgba(200,169,126,.06)" }}>
                     <div className="flex items-center gap-2">
                       <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "rgba(200,169,126,.15)" }}>
-                        <LinkIcon size={14} style={{ color: "var(--gold)" }} />
+                        <GripVertical size={14} style={{ color: "var(--gold)" }} />
                       </div>
                       <h2 className="text-sm font-semibold" style={{ color: "var(--espresso)" }}>{section}</h2>
                       <span className="text-[11px] px-2 py-0.5 rounded-full font-medium" style={{ background: "rgba(64,50,37,.06)", color: "var(--text-muted)" }}>{sectionLinks.length}</span>
@@ -231,7 +231,11 @@ export default function BiolinkPage() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-medium truncate" style={{ color: "var(--espresso)" }}>{link.label}</span>
-                            {link.target === "_blank" && <ExternalLink size={11} style={{ color: "var(--text-muted)" }} />}
+                            {link.target === "_blank" && (
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M15 3h6v6M10 14L21 3M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
+                              </svg>
+                            )}
                           </div>
                           <div className="flex items-center gap-2 mt-0.5">
                             <span className="text-[11px] truncate" style={{ color: "var(--text-muted)" }}>{link.href}</span>
