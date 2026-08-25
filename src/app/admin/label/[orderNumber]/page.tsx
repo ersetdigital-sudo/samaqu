@@ -54,13 +54,13 @@ export default function LabelPage() {
       const JsBarcode = mod.default;
       JsBarcode(canvas, order.awb_no!, {
         format: "CODE128",
-        width: 1.6,
-        height: 40,
+        width: 1.4,
+        height: 32,
         displayValue: true,
         font: "monospace",
-        fontSize: 11,
+        fontSize: 10,
         fontOptions: "bold",
-        textMargin: 2,
+        textMargin: 1,
         margin: 0,
       });
     });
@@ -83,13 +83,12 @@ export default function LabelPage() {
         @media print {
           body { margin: 0 !important; padding: 0 !important; background: white !important; }
           .no-print { display: none !important; }
-          .label-wrap { box-shadow: none !important; border: none !important; }
+          .label-wrap { box-shadow: none !important; }
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: Arial, Helvetica, sans-serif; background: #e8e8e8; }
       `}</style>
 
-      {/* Print button (hidden on print) */}
       <div className="no-print" style={{ padding: "16px", textAlign: "center" }}>
         <button onClick={() => window.print()} style={{ padding: "10px 24px", fontSize: "14px", cursor: "pointer", background: "#333", color: "#fff", border: "none", borderRadius: "6px" }}>
           Cetak Label
@@ -97,85 +96,83 @@ export default function LabelPage() {
         <span style={{ marginLeft: "12px", fontSize: "12px", color: "#666" }}>Label 78×100mm</span>
       </div>
 
-      {/* Label */}
       <div className="label-wrap" style={{
         width: "78mm", height: "100mm", margin: "0 auto", background: "#fff",
         boxShadow: "0 2px 8px rgba(0,0,0,.15)", display: "flex", flexDirection: "column",
-        overflow: "hidden", fontSize: "8px", lineHeight: "1.35", color: "#000",
+        overflow: "hidden", fontSize: "7.5px", lineHeight: "1.3", color: "#000",
       }}>
         {/* Header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "2.5mm 3mm 2mm", borderBottom: "2px solid #000" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "2mm 2.5mm 1.5mm", borderBottom: "2px solid #000" }}>
           <div>
-            <div style={{ fontSize: "18px", fontWeight: "900", letterSpacing: "2px", fontFamily: "Arial, sans-serif" }}>SAMAQU</div>
-            <div style={{ fontSize: "6.5px", color: "#333", marginTop: "1px" }}>@samaqu.id &nbsp;|&nbsp; 0812-3456-7890</div>
+            <div style={{ fontSize: "16px", fontWeight: "900", letterSpacing: "2px" }}>SAMAQU</div>
+            <div style={{ fontSize: "5.5px", color: "#333", marginTop: "0.5px" }}>@samaqu.id | 0812-3456-7890</div>
           </div>
           <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: "12px", fontWeight: "900", letterSpacing: "0.5px" }}>J&T <span style={{ fontSize: "8px", fontWeight: "400" }}>EXPRESS</span></div>
-            <div style={{ marginTop: "2px" }}>
-              <span style={{ fontSize: "7px", fontWeight: "700", background: "#000", color: "#fff", padding: "1px 5px", borderRadius: "2px" }}>{serviceLabel}</span>
-              <span style={{ fontSize: "6.5px", marginLeft: "3px", fontWeight: "600" }}>REGULAR SERVICE</span>
+            <div style={{ fontSize: "11px", fontWeight: "900" }}>J&T <span style={{ fontSize: "7px", fontWeight: "400" }}>EXPRESS</span></div>
+            <div style={{ marginTop: "1px" }}>
+              <span style={{ fontSize: "6px", fontWeight: "700", background: "#000", color: "#fff", padding: "0.3mm 1.5mm", borderRadius: "1mm" }}>{serviceLabel}</span>
+              <span style={{ fontSize: "5.5px", marginLeft: "2px", fontWeight: "600" }}>REGULAR SERVICE</span>
             </div>
           </div>
         </div>
 
         {/* Barcode */}
-        <div style={{ textAlign: "center", padding: "2mm 3mm", borderBottom: "1px solid #ccc" }}>
+        <div style={{ textAlign: "center", padding: "1.5mm 2.5mm", borderBottom: "1px solid #ddd" }}>
           <div ref={barcodeRef} style={{ lineHeight: 0 }} />
         </div>
 
         {/* Penerima */}
-        <div style={{ padding: "2mm 3mm", border: "1.5px solid #000", margin: "1.5mm 3mm", borderRadius: "1.5mm" }}>
-          <div style={{ display: "inline-block", fontSize: "6.5px", fontWeight: "700", background: "#000", color: "#fff", padding: "0.5mm 2mm", borderRadius: "1mm", marginBottom: "1.5mm", textTransform: "uppercase" }}>Penerima</div>
-          <div style={{ fontSize: "11px", fontWeight: "700", marginBottom: "0.8mm" }}>{order.customer_name}</div>
-          <div style={{ fontSize: "8px", marginBottom: "0.8mm" }}>{order.customer_whatsapp}</div>
-          <div style={{ fontSize: "7.5px", wordBreak: "break-word", lineHeight: "1.4" }}>
-            {order.shipping_address}, {order.shipping_city}
-            {order.shipping_postal_code ? ` ${order.shipping_postal_code}` : ""}
+        <div style={{ padding: "1.5mm 2.5mm", border: "1.2px solid #000", margin: "1mm 2.5mm", borderRadius: "1mm" }}>
+          <div style={{ display: "inline-block", fontSize: "5.5px", fontWeight: "700", background: "#000", color: "#fff", padding: "0.3mm 1.5mm", borderRadius: "0.8mm", marginBottom: "1mm", textTransform: "uppercase" }}>Penerima</div>
+          <div style={{ fontSize: "10px", fontWeight: "700", marginBottom: "0.5mm" }}>{order.customer_name}</div>
+          <div style={{ fontSize: "7px", marginBottom: "0.5mm" }}>{order.customer_whatsapp}</div>
+          <div style={{ fontSize: "6.5px", wordBreak: "break-word", lineHeight: "1.35" }}>
+            {order.shipping_address}, {order.shipping_city}{order.shipping_postal_code ? ` ${order.shipping_postal_code}` : ""}
           </div>
         </div>
 
         {/* ISI KIRIMAN + BERAT */}
-        <div style={{ display: "flex", gap: 0, margin: "0 3mm", borderTop: "1px dashed #999", borderBottom: "1px dashed #999" }}>
-          <div style={{ flex: 1, padding: "1.5mm 3mm 1.5mm 0", borderRight: "1px dashed #999" }}>
-            <div style={{ display: "inline-block", fontSize: "6.5px", fontWeight: "700", background: "#000", color: "#fff", padding: "0.5mm 2mm", borderRadius: "1mm", marginBottom: "1mm", textTransform: "uppercase" }}>Isi Kiriman</div>
-            <div style={{ fontSize: "8px", fontWeight: "600" }}>Pakaian</div>
+        <div style={{ display: "flex", margin: "0 2.5mm", borderTop: "1px dashed #999", borderBottom: "1px dashed #999" }}>
+          <div style={{ flex: 1, padding: "1mm 2mm 1mm 0", borderRight: "1px dashed #999" }}>
+            <div style={{ display: "inline-block", fontSize: "5.5px", fontWeight: "700", background: "#000", color: "#fff", padding: "0.3mm 1.5mm", borderRadius: "0.8mm", marginBottom: "0.5mm" }}>Isi Kiriman</div>
+            <div style={{ fontSize: "7px", fontWeight: "600" }}>Pakaian</div>
           </div>
-          <div style={{ flex: 1, padding: "1.5mm 0 1.5mm 3mm" }}>
-            <div style={{ display: "inline-block", fontSize: "6.5px", fontWeight: "700", background: "#000", color: "#fff", padding: "0.5mm 2mm", borderRadius: "1mm", marginBottom: "1mm", textTransform: "uppercase" }}>Berat</div>
-            <div style={{ fontSize: "8px", fontWeight: "600" }}>1.00 KG</div>
+          <div style={{ flex: 1, padding: "1mm 0 1mm 2mm" }}>
+            <div style={{ display: "inline-block", fontSize: "5.5px", fontWeight: "700", background: "#000", color: "#fff", padding: "0.3mm 1.5mm", borderRadius: "0.8mm", marginBottom: "0.5mm" }}>Berat</div>
+            <div style={{ fontSize: "7px", fontWeight: "600" }}>1.00 KG</div>
           </div>
         </div>
 
         {/* Pesanan */}
-        <div style={{ padding: "1.5mm 3mm", borderBottom: "1px dashed #999" }}>
-          <div style={{ display: "inline-block", fontSize: "6.5px", fontWeight: "700", background: "#000", color: "#fff", padding: "0.5mm 2mm", borderRadius: "1mm", marginBottom: "1mm", textTransform: "uppercase" }}>Pesanan</div>
-          <div style={{ fontSize: "7.5px", fontFamily: "'Courier New', Courier, monospace", wordBreak: "break-word" }}>{itemsSummary}</div>
+        <div style={{ padding: "1mm 2.5mm", borderBottom: "1px dashed #999" }}>
+          <div style={{ display: "inline-block", fontSize: "5.5px", fontWeight: "700", background: "#000", color: "#fff", padding: "0.3mm 1.5mm", borderRadius: "0.8mm", marginBottom: "0.5mm" }}>Pesanan</div>
+          <div style={{ fontSize: "6.5px", fontFamily: "'Courier New', Courier, monospace", wordBreak: "break-word" }}>{itemsSummary}</div>
         </div>
 
         {/* Info Grid */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0, margin: "0 3mm", borderBottom: "1px solid #000" }}>
-          <div style={{ padding: "1.5mm 3mm 1.5mm 0", borderRight: "1px solid #000" }}>
-            <div style={{ fontSize: "6px", color: "#666", textTransform: "uppercase", letterSpacing: "0.5px" }}>Order ID</div>
-            <div style={{ fontSize: "8px", fontWeight: "700", fontFamily: "'Courier New', monospace" }}>{order.order_number}</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", margin: "0 2.5mm", borderBottom: "1.2px solid #000" }}>
+          <div style={{ padding: "1mm 2mm 1mm 0", borderRight: "1px solid #000" }}>
+            <div style={{ fontSize: "5px", color: "#666", textTransform: "uppercase", letterSpacing: "0.3px" }}>Order ID</div>
+            <div style={{ fontSize: "6.5px", fontWeight: "700", fontFamily: "'Courier New', monospace" }}>{order.order_number}</div>
           </div>
-          <div style={{ padding: "1.5mm 0 1.5mm 3mm" }}>
-            <div style={{ fontSize: "6px", color: "#666", textTransform: "uppercase", letterSpacing: "0.5px" }}>Layanan</div>
-            <div style={{ fontSize: "8px", fontWeight: "700" }}>{serviceLabel} / Regular Service</div>
+          <div style={{ padding: "1mm 0 1mm 2mm" }}>
+            <div style={{ fontSize: "5px", color: "#666", textTransform: "uppercase", letterSpacing: "0.3px" }}>Layanan</div>
+            <div style={{ fontSize: "6.5px", fontWeight: "700" }}>{serviceLabel} / Regular Service</div>
           </div>
-          <div style={{ padding: "1.5mm 3mm 1.5mm 0", borderRight: "1px solid #000", borderTop: "1px solid #000" }}>
-            <div style={{ fontSize: "6px", color: "#666", textTransform: "uppercase", letterSpacing: "0.5px" }}>Biaya (Ongkir)</div>
-            <div style={{ fontSize: "8px", fontWeight: "700" }}>Rp {order.shipping_cost.toLocaleString("id-ID")}</div>
+          <div style={{ padding: "1mm 2mm 1mm 0", borderRight: "1px solid #000", borderTop: "1px solid #000" }}>
+            <div style={{ fontSize: "5px", color: "#666", textTransform: "uppercase", letterSpacing: "0.3px" }}>Biaya (Ongkir)</div>
+            <div style={{ fontSize: "6.5px", fontWeight: "700" }}>Rp {order.shipping_cost.toLocaleString("id-ID")}</div>
           </div>
-          <div style={{ padding: "1.5mm 0 1.5mm 3mm", borderTop: "1px solid #000" }}>
-            <div style={{ fontSize: "6px", color: "#666", textTransform: "uppercase", letterSpacing: "0.5px" }}>Tanggal Cetak</div>
-            <div style={{ fontSize: "8px", fontWeight: "700" }}>{printDate}</div>
+          <div style={{ padding: "1mm 0 1mm 2mm", borderTop: "1px solid #000" }}>
+            <div style={{ fontSize: "5px", color: "#666", textTransform: "uppercase", letterSpacing: "0.3px" }}>Tanggal Cetak</div>
+            <div style={{ fontSize: "6.5px", fontWeight: "700" }}>{printDate}</div>
           </div>
         </div>
 
         {/* Footer */}
-        <div style={{ padding: "1.5mm 3mm", display: "flex", alignItems: "center", gap: "1.5mm", marginTop: "auto" }}>
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-          <div style={{ fontSize: "5.5px", color: "#333", lineHeight: "1.3" }}>Pastikan label ditempel pada paket dengan rapi dan tidak terlipet agar barcode dapat terbaca dengan baik.</div>
+        <div style={{ padding: "1mm 2.5mm", display: "flex", alignItems: "center", gap: "1mm", marginTop: "auto" }}>
+          <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <div style={{ fontSize: "5px", color: "#333", lineHeight: "1.25" }}>Pastikan label ditempel pada paket dengan rapi dan tidak terlipet agar barcode dapat terbaca dengan baik.</div>
         </div>
       </div>
     </>
