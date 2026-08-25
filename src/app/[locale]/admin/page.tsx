@@ -677,10 +677,9 @@ function AdminPageInner() {
                           <div key={i} className="flex items-center gap-3">
                             <div className="w-11 h-11 rounded-lg shrink-0 overflow-hidden" style={{ background: "#e8dfd1" }}>
                               {p.image ? (
-                                <img src={p.image} alt={p.name} className="w-full h-full object-cover" loading="lazy" />
-                              ) : (
-                                <div className="w-full h-full" style={{ background: `linear-gradient(135deg, ${["#c8b18a,#8b6f42", "#e0d3bd,#b58c4a", "#9c8468,#403225", "#d4a574,#8b6f42", "#bfa789,#6b5d50"][i]})` }} />
-                              )}
+                                <img src={p.image} alt={p.name} className="w-full h-full object-cover" loading="lazy" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; (e.target as HTMLImageElement).nextElementSibling?.classList.remove("hidden"); }} />
+                              ) : null}
+                              <div className={`w-full h-full ${p.image ? "hidden" : ""}`} style={{ background: `linear-gradient(135deg, ${["#c8b18a,#8b6f42", "#e0d3bd,#b58c4a", "#9c8468,#403225", "#d4a574,#8b6f42", "#bfa789,#6b5d50"][i]})` }} />
                             </div>
                             <div className="min-w-0 flex-1">
                               <p className="text-sm font-semibold truncate">{p.name}</p>
