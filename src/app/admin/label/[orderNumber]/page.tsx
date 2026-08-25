@@ -47,20 +47,20 @@ export default function LabelPage() {
   useEffect(() => {
     if (!order?.awb_no || !barcodeRef.current) return;
     barcodeRef.current.innerHTML = "";
-    const canvas = document.createElement("canvas");
-    barcodeRef.current.appendChild(canvas);
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    barcodeRef.current.appendChild(svg);
     // @ts-ignore
     import("jsbarcode").then((mod) => {
       const JsBarcode = mod.default;
-      JsBarcode(canvas, order.awb_no!, {
+      JsBarcode(svg, order.awb_no!, {
         format: "CODE128",
-        width: 1.4,
-        height: 32,
+        width: 2,
+        height: 35,
         displayValue: true,
         font: "monospace",
-        fontSize: 10,
+        fontSize: 11,
         fontOptions: "bold",
-        textMargin: 1,
+        textMargin: 2,
         margin: 0,
       });
     });
@@ -87,6 +87,7 @@ export default function LabelPage() {
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: Arial, Helvetica, sans-serif; background: #e8e8e8; -webkit-font-smoothing: antialiased; }
+        svg { shape-rendering: crispEdges; }
       `}</style>
 
       <div className="no-print" style={{ padding: "16px", textAlign: "center" }}>
