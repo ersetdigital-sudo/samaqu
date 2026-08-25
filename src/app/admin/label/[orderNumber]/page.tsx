@@ -166,11 +166,11 @@ export default function LabelPage() {
         </div>
 
         {/* Penerima */}
-        <div style={{ borderTop: "1.5px dashed #333", paddingTop: "2mm", flex: 1, display: "flex", flexDirection: "column" }}>
+        <div style={{ borderTop: "1.5px dashed #333", paddingTop: "2mm", display: "flex", flexDirection: "column" }}>
           <div style={{ fontSize: "7px", fontWeight: "bold", color: "#666", marginBottom: "1mm", textTransform: "uppercase" }}>Penerima</div>
           <div style={{ fontSize: "12px", fontWeight: "bold", marginBottom: "1mm" }}>{order.customer_name}</div>
           <div style={{ fontSize: "8px", marginBottom: "1mm" }}>Telp: {order.customer_whatsapp}</div>
-          <div style={{ fontSize: "8px", marginBottom: "2mm", wordBreak: "break-word" }}>
+          <div style={{ fontSize: "8px", marginBottom: "1.5mm", wordBreak: "break-word" }}>
             {order.shipping_address}, {order.shipping_city} {order.shipping_postal_code || ""}
           </div>
           {order.shipping_notes && (
@@ -178,6 +178,18 @@ export default function LabelPage() {
               Catatan: {order.shipping_notes}
             </div>
           )}
+        </div>
+
+        {/* Produk */}
+        <div style={{ borderTop: "1px solid #ddd", paddingTop: "1.5mm", marginTop: "1mm" }}>
+          <div style={{ fontSize: "7px", fontWeight: "bold", color: "#666", marginBottom: "1mm", textTransform: "uppercase" }}>Barang</div>
+          {order.order_items?.map((item, i) => (
+            <div key={i} style={{ fontSize: "8px", marginBottom: "0.5mm", display: "flex", justifyContent: "space-between" }}>
+              <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {item.product_name} {item.kain ? `(${item.kain})` : ""} {item.color !== "-" && item.color !== "default" ? item.color : ""} {item.size} ×{item.quantity}
+              </span>
+            </div>
+          ))}
         </div>
 
         {/* Footer */}
