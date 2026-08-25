@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="id"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Samaqu — Bio Link</title>
+<meta name="description" content="Samaqu — Untuk Orang Biasa yang Sedang Bertumbuh. Koleksi, panduan ukuran, dan kontak resmi Samaqu.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&amp;family=Manrope:wght@300;400;500;600&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.moda.app/runtime-libs/swiper-12.2.0/swiper-bundle.min.css">
+<style>
+  :root{
+    --bg:#0d0b0a;
+    --panel:#ece6dd;
+    --panel-2:#e3dcd1;
+    --ink:#1a1613;
+    --muted:#a89c8e;
+    --gold:#c8a97e;
+    --line:rgba(200,169,126,.22);
+  }
+  body{background:var(--bg);color:#f4efe8;font-family:"Manrope",system-ui,sans-serif;}
+  .display{font-family:"Cormorant Garamond",serif;}
+  .shell{max-width:520px;margin:0 auto;}
+  .glow{background:radial-gradient(120% 60% at 50% 0%,rgba(200,169,126,.16),transparent 70%);}
+  .card{background:linear-gradient(180deg,var(--panel),var(--panel-2));color:var(--ink);
+        border-radius:14px;transition:transform .18s ease, box-shadow .18s ease;
+        box-shadow:0 1px 0 rgba(255,255,255,.5) inset, 0 6px 18px rgba(0,0,0,.35);}
+  .card:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(0,0,0,.5);}
+  .sec-label{letter-spacing:.28em;font-size:11px;color:var(--gold);text-transform:uppercase;}
+  .swiper-slide img{width:100%;height:100%;object-fit:cover;display:block;}
+  .swiper-pagination-bullet{background:#fff;opacity:.35;width:6px;height:6px;}
+  .swiper-pagination-bullet-active{opacity:1;background:var(--gold);}
+  .navbtn{width:30px;height:30px;border-radius:999px;background:rgba(0,0,0,.45);
+          display:flex;align-items:center;justify-content:center;color:#fff;backdrop-filter:blur(4px);}
+  .navbtn:hover{background:rgba(0,0,0,.7)}
+  .fade-bottom{position:absolute;inset:auto 0 0 0;height:110px;background:linear-gradient(to top,var(--bg),transparent);}
+  .icon{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+</style>
+<script src="https://cdn.moda.app/runtime-libs/tailwind-browser-4.1.13-index.global.min.js"></script><style data-moda-export-fonts="true">@font-face { font-family: 'Manrope'; src: url("../fonts/manrope-wght--extralight.ttf") format("truetype"); font-style: normal; font-weight: 200; font-display: swap; }
+@font-face { font-family: 'Manrope'; src: url("../fonts/manrope-wght--light.ttf") format("truetype"); font-style: normal; font-weight: 300; font-display: swap; }
+@font-face { font-family: 'Manrope'; src: url("../fonts/manrope-wght--regular.ttf") format("truetype"); font-style: normal; font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Manrope'; src: url("../fonts/manrope-wght--medium.ttf") format("truetype"); font-style: normal; font-weight: 500; font-display: swap; }
+@font-face { font-family: 'Manrope'; src: url("../fonts/manrope-wght--semibold.ttf") format("truetype"); font-style: normal; font-weight: 600; font-display: swap; }
+@font-face { font-family: 'Manrope'; src: url("../fonts/manrope-wght--bold.ttf") format("truetype"); font-style: normal; font-weight: 700; font-display: swap; }
+@font-face { font-family: 'Manrope'; src: url("../fonts/manrope-wght--extrabold.ttf") format("truetype"); font-style: normal; font-weight: 800; font-display: swap; }
+@font-face { font-family: 'Cormorant Garamond'; src: url("../fonts/cormorantgaramond-wght--light.ttf") format("truetype"); font-style: normal; font-weight: 300; font-display: swap; }
+@font-face { font-family: 'Cormorant Garamond'; src: url("../fonts/cormorantgaramond-wght--lightitalic.ttf") format("truetype"); font-style: italic; font-weight: 300; font-display: swap; }
+@font-face { font-family: 'Cormorant Garamond'; src: url("../fonts/cormorantgaramond-wght--regular.ttf") format("truetype"); font-style: normal; font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Cormorant Garamond'; src: url("../fonts/cormorantgaramond-wght--italic.ttf") format("truetype"); font-style: italic; font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Cormorant Garamond'; src: url("../fonts/cormorantgaramond-wght--medium.ttf") format("truetype"); font-style: normal; font-weight: 500; font-display: swap; }
+@font-face { font-family: 'Cormorant Garamond'; src: url("../fonts/cormorantgaramond-wght--mediumitalic.ttf") format("truetype"); font-style: italic; font-weight: 500; font-display: swap; }
+@font-face { font-family: 'Cormorant Garamond'; src: url("../fonts/cormorantgaramond-wght--semibold.ttf") format("truetype"); font-style: normal; font-weight: 600; font-display: swap; }
+@font-face { font-family: 'Cormorant Garamond'; src: url("../fonts/cormorantgaramond-wght--semibolditalic.ttf") format("truetype"); font-style: italic; font-weight: 600; font-display: swap; }
+@font-face { font-family: 'Cormorant Garamond'; src: url("../fonts/cormorantgaramond-wght--bold.ttf") format("truetype"); font-style: normal; font-weight: 700; font-display: swap; }
+@font-face { font-family: 'Cormorant Garamond'; src: url("../fonts/cormorantgaramond-wght--bolditalic.ttf") format("truetype"); font-style: italic; font-weight: 700; font-display: swap; }</style></head>
+<body class="antialiased">
+<main class="shell relative">
+
+  <!-- Carousel -->
+  <section class="relative">
+    <div class="swiper w-full aspect-[1024/682]">
+      <div class="swiper-wrapper">
+        <div class="swiper-slide"><img src="../images/7ac920f0-0cd1-4296-8604-1ada8c4cd69f.png" alt="Koleksi Samaqu 1"></div>
+        <div class="swiper-slide"><img src="../images/1db09a85-30ed-4d90-82d3-267b6618b580.png" alt="Koleksi Samaqu 2"></div>
+        <div class="swiper-slide"><img src="../images/f2ed96b8-98b6-4cb0-9859-e62c726b7e4b.png" alt="Koleksi Samaqu 3"></div>
+        <div class="swiper-slide"><img src="../images/d8d42a74-9658-4d41-a2a6-d6673221aa4a.png" alt="Koleksi Samaqu 4"></div>
+      </div>
+      <div class="swiper-pagination !bottom-3"></div>
+    </div>
+    <button class="navbtn absolute left-3 top-1/2 -translate-y-1/2 z-10" id="prev" aria-label="Sebelumnya">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"></path></svg>
+    </button>
+    <button class="navbtn absolute right-3 top-1/2 -translate-y-1/2 z-10" id="next" aria-label="Berikutnya">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"></path></svg>
+    </button>
+    <div class="fade-bottom pointer-events-none"></div>
+  </section>
+
+  <!-- Header -->
+  <header class="glow px-6 pt-2 pb-7 text-center">
+    <h1 class="display text-4xl sm:text-5xl tracking-[0.32em] pl-[0.32em] font-light">SAMAQU</h1>
+    <p class="display text-lg sm:text-xl mt-2 text-[#e9dfd1]">Untuk Orang Biasa yang Sedang Bertumbuh.</p>
+    <p class="text-[13px] leading-relaxed mt-3 text-[#a89c8e] max-w-[380px] mx-auto">
+      Samaqu hadir untuk menemani perjalananmu, agar tampil lebih percaya diri dan terus bertumbuh untuk memberi manfaat.
+    </p>
+  </header>
+
+  <div class="px-5 pb-10 space-y-7">
+
+    <!-- Belanja -->
+    <section>
+      <div class="flex items-center gap-2 mb-3 px-1">
+        <svg class="icon text-[var(--gold)]" viewBox="0 0 24 24"><circle cx="9" cy="20" r="1.4"></circle><circle cx="18" cy="20" r="1.4"></circle><path d="M2 3h3l2.6 12h11L21 7H6"></path></svg>
+        <span class="sec-label">Belanja</span>
+      </div>
+      <div class="space-y-2.5">
+        <a href="#" class="card flex items-center gap-3 px-4 py-3.5">
+          <svg class="icon shrink-0" viewBox="0 0 24 24"><path d="M6 8h12l1 12H5L6 8z"></path><path d="M9 8V6a3 3 0 0 1 6 0v2"></path></svg>
+          <span class="flex-1">
+            <span class="block text-[14px] font-medium">Lihat Koleksi Samaqu</span>
+            <span class="block text-[11px] text-black/45">Official Website</span>
+          </span>
+          <svg class="icon opacity-40" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"></path></svg>
+        </a>
+        <a href="https://wa.me/6281234567890" target="_blank" rel="noopener" class="card flex items-center gap-3 px-4 py-3.5">
+          <svg class="icon shrink-0" viewBox="0 0 24 24"><path d="M21 11.5a8.5 8.5 0 0 1-12.6 7.4L3 20l1.2-5.2A8.5 8.5 0 1 1 21 11.5z"></path><path d="M8.7 9.2c.3 2.6 3.5 5.4 5.9 5.7l1.2-1.4 1.7 1-.8 1.5c-2.9.6-7.6-3.3-8.6-6.6l1.4-.9 1 1.6-1.8-.9z"></path></svg>
+          <span class="flex-1 text-[14px] font-medium">Pesan via WhatsApp</span>
+          <svg class="icon opacity-40" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"></path></svg>
+        </a>
+      </div>
+    </section>
+
+    <!-- Informasi -->
+    <section>
+      <div class="flex items-center gap-2 mb-3 px-1">
+        <svg class="icon text-[var(--gold)]" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg>
+        <span class="sec-label">Informasi</span>
+      </div>
+      <div class="space-y-2.5">
+        <a href="#" class="card flex items-center gap-3 px-4 py-3.5">
+          <svg class="icon shrink-0" viewBox="0 0 24 24"><path d="M20 12l-8 8-8-8V4h8l8 8z"></path><path d="M8.5 8.5h.01"></path></svg>
+          <span class="flex-1 text-[14px]">Create Your Price</span>
+          <svg class="icon opacity-40" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"></path></svg>
+        </a>
+        <a href="#" class="card flex items-center gap-3 px-4 py-3.5">
+          <svg class="icon shrink-0" viewBox="0 0 24 24"><path d="M15 4l5 5L8 21H3v-5L15 4z"></path></svg>
+          <span class="flex-1 text-[14px]">Panduan Ukuran</span>
+          <svg class="icon opacity-40" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"></path></svg>
+        </a>
+        <a href="#" class="card flex items-center gap-3 px-4 py-3.5">
+          <svg class="icon shrink-0" viewBox="0 0 24 24"><path d="M12 4l2.4 5 5.6.7-4 3.8 1 5.5-5-2.7-5 2.7 1-5.5-4-3.8 5.6-.7L12 4z"></path></svg>
+          <span class="flex-1 text-[14px]">Review Pelanggan</span>
+          <svg class="icon opacity-40" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"></path></svg>
+        </a>
+        <a href="#" class="card flex items-center gap-3 px-4 py-3.5">
+          <svg class="icon shrink-0" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"></rect><path d="M9 3h6v3H9zM9 11h6M9 15h4"></path></svg>
+          <span class="flex-1 text-[14px]">Cara Pemesanan</span>
+          <svg class="icon opacity-40" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"></path></svg>
+        </a>
+        <a href="#" class="card flex items-center gap-3 px-4 py-3.5">
+          <svg class="icon shrink-0" viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4.4-3 7.8-7 9-4-1.2-7-4.6-7-9V6l7-3z"></path><path d="M9 12l2 2 4-4"></path></svg>
+          <span class="flex-1 text-[14px]">Garansi &amp; Retur</span>
+          <svg class="icon opacity-40" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"></path></svg>
+        </a>
+      </div>
+    </section>
+
+    <!-- Tentang -->
+    <section>
+      <div class="flex items-center gap-2 mb-3 px-1">
+        <svg class="icon text-[var(--gold)]" viewBox="0 0 24 24"><path d="M4 21V7l8-4 8 4v14"></path><path d="M10 21v-6h4v6"></path></svg>
+        <span class="sec-label">Tentang Samaqu</span>
+      </div>
+      <div class="space-y-2.5">
+        <a href="#" class="card flex items-center gap-3 px-4 py-3.5">
+          <svg class="icon shrink-0" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="1.5"></rect><path d="M8 7h3M8 11h3M8 15h3M15 7h1M15 11h1M15 15h1"></path></svg>
+          <span class="flex-1 text-[14px]">Tentang Samaqu</span>
+          <svg class="icon opacity-40" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"></path></svg>
+        </a>
+        <a href="#" class="card flex items-center gap-3 px-4 py-3.5">
+          <svg class="icon shrink-0" viewBox="0 0 24 24"><path d="M3 5h6a3 3 0 0 1 3 3v11a3 3 0 0 0-3-3H3V5zM21 5h-6a3 3 0 0 0-3 3v11a3 3 0 0 1 3-3h6V5z"></path></svg>
+          <span class="flex-1 text-[14px]">Sama Quran</span>
+          <svg class="icon opacity-40" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"></path></svg>
+        </a>
+      </div>
+    </section>
+
+    <!-- Ikuti -->
+    <section>
+      <div class="flex items-center gap-2 mb-3 px-1">
+        <svg class="icon text-[var(--gold)]" viewBox="0 0 24 24"><path d="M4 11a9 9 0 0 1 9 9M4 4a16 16 0 0 1 16 16"></path><circle cx="5" cy="19" r="1.4"></circle></svg>
+        <span class="sec-label">Ikuti Samaqu</span>
+      </div>
+      <div class="grid grid-cols-3 gap-2.5">
+        <a href="https://instagram.com/" target="_blank" rel="noopener" class="card flex items-center justify-center gap-1.5 py-3.5 text-[12px] font-medium">
+          <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5"></rect><circle cx="12" cy="12" r="4"></circle><path d="M17 7h.01"></path></svg>Instagram
+        </a>
+        <a href="#" class="card flex items-center justify-center gap-1.5 py-3.5 text-[12px] font-medium">
+          <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"></path></svg>Website
+        </a>
+        <a href="https://wa.me/6281234567890" target="_blank" rel="noopener" class="card flex items-center justify-center gap-1.5 py-3.5 text-[12px] font-medium">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M21 11.5a8.5 8.5 0 0 1-12.6 7.4L3 20l1.2-5.2A8.5 8.5 0 1 1 21 11.5z"></path></svg>WhatsApp
+        </a>
+      </div>
+    </section>
+  </div>
+
+  <footer class="border-t border-[var(--line)] py-6 text-center">
+    <div class="display tracking-[0.42em] pl-[0.42em] text-sm text-[#e9dfd1]">SAMAQU</div>
+    <p class="text-[11px] text-[#6f665c] mt-2">© 2024 Samaqu. All rights reserved.</p>
+  </footer>
+</main>
+
+<script src="https://cdn.moda.app/runtime-libs/swiper-12.2.0/swiper-bundle.min.js"></script>
+<script>
+  new Swiper('.swiper',{
+    loop:true,
+    autoplay:{delay:3800},
+    pagination:{el:'.swiper-pagination',clickable:true},
+    navigation:{nextEl:'#next',prevEl:'#prev'}
+  });
+</script>
+
+</body></html>
