@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard, ShoppingBag, Package, Users, FileText, Settings,
-  Search, Bell, Menu, LogOut, X, Ticket, Ruler,
+  Search, Bell, Menu, LogOut, X, Ticket, Ruler, Link,
 } from "lucide-react";
 import { useToast } from "@/components/AdminToast";
 import ConfirmModal from "@/components/ConfirmModal";
@@ -23,6 +23,7 @@ const navItems = [
   { href: "/admin/testimoni", label: "Testimoni", icon: FileText },
   { href: "/admin/ukuran-produk", label: "Panduan Ukuran", icon: Ruler },
   { href: "/admin/garansi-retur-page", label: "Halaman Garansi & Retur", icon: FileText },
+  { href: "/admin/biolink", label: "Biolink", icon: Link },
 ];
 
 export default function AdminShell({ children, onLogout }: { children: ReactNode; onLogout?: () => void }) {
