@@ -117,7 +117,7 @@ export default function LabelPage() {
         </div>
 
         {/* Barcode */}
-        <div style={{ textAlign: "center", padding: "1.5mm 2.5mm", borderBottom: "1px solid #ddd" }}>
+        <div style={{ textAlign: "center", padding: "1.5mm 2.5mm", borderBottom: "1px solid #ddd", display: "flex", justifyContent: "center" }}>
           <div ref={barcodeRef} style={{ lineHeight: 0 }} />
         </div>
 
