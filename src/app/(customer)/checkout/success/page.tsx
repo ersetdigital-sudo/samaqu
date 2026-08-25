@@ -49,7 +49,7 @@ function CheckoutSuccessContent() {
     async function fetchData() {
       if (!orderId) { setLoading(false); return; }
       const [orderRes, paymentRes, settingsRes, qrisRes] = await Promise.all([
-        supabase.from("orders").select("*, order_items(product_name, color, size, quantity, price)").eq("order_number", orderId).single(),
+        supabase.from("orders").select("*, order_items(product_name, color, size, quantity, price, series, kain)").eq("order_number", orderId).single(),
         supabase.from("payment_methods").select("*").eq("is_active", true).order("display_order"),
         supabase.from("store_settings").select("whatsapp, store_name, tagline").eq("id", 1).single(),
         supabase.from("qris_ewallet_methods").select("*").eq("is_active", true).order("display_order"),

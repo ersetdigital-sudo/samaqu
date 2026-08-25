@@ -33,7 +33,7 @@ export default function LabelPage() {
     async function fetchOrder() {
       const { data, error: fetchErr } = await supabase
         .from("orders")
-        .select("*, order_items(product_name, color, size, quantity, price)")
+        .select("*, order_items(product_name, color, size, quantity, price, series, kain)")
         .eq("order_number", orderNumber)
         .single();
 
