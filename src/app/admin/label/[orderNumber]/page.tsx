@@ -64,9 +64,13 @@ export default function LabelPage() {
       const JsBarcode = mod.default;
       JsBarcode(canvas, order.awb_no!, {
         format: "CODE128",
-        width: 2,
-        height: 50,
-        displayValue: false,
+        width: 1.8,
+        height: 45,
+        displayValue: true,
+        font: "monospace",
+        fontSize: 14,
+        fontOptions: "bold",
+        textMargin: 2,
         margin: 0,
       });
     });
@@ -157,11 +161,8 @@ export default function LabelPage() {
         </div>
 
         {/* Barcode */}
-        <div style={{ textAlign: "center", margin: "2mm 0" }}>
+        <div style={{ textAlign: "center", margin: "2mm 0", display: "flex", justifyContent: "center" }}>
           <div ref={barcodeRef} />
-          <div style={{ fontSize: "12px", fontWeight: "bold", letterSpacing: "2px", marginTop: "1mm" }}>
-            {order.awb_no}
-          </div>
         </div>
 
         {/* Penerima */}
