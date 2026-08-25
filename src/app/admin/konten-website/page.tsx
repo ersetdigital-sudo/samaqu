@@ -21,6 +21,7 @@ interface GaransiItem { id: string; title: string; description: string; display_
 interface TrustBadge { id: string; label: string; display_order: number; }
 interface FaqItem { id: string; question: string; answer: string; category: string; type: string; display_order: number; }
 interface MarqueeItem { id: string; label: string; display_order: number; }
+interface KatalogInfoImage { id: string; category: string; type: string; image_url: string; alt_text: string; sort_order: number; }
 
 export default function KontenWebsitePage() {
   const [hero, setHero] = useState<HeroContent>(HERO_DEFAULTS);
@@ -31,6 +32,7 @@ export default function KontenWebsitePage() {
   const [faqs, setFaqs] = useState<FaqItem[]>([]);
   const [homeFaqs, setHomeFaqs] = useState<FaqItem[]>([]);
   const [marquee, setMarquee] = useState<MarqueeItem[]>([]);
+  const [katalogInfoImages, setKatalogInfoImages] = useState<KatalogInfoImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [editModal, setEditModal] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -51,6 +53,7 @@ export default function KontenWebsitePage() {
   const [editCategories, setEditCategories] = useState<CategoryImage[]>([]);
   const editCategoriesRef = useRef<CategoryImage[]>([]);
   const [uploadingId, setUploadingId] = useState<string | null>(null);
+  const [editKatalogInfo, setEditKatalogInfo] = useState<KatalogInfoImage[]>([]);
 
   // Keep refs in sync with state
   editCategoriesRef.current = editCategories;
@@ -71,7 +74,7 @@ export default function KontenWebsitePage() {
 
   async function loadData() {
     setLoading(true);
-    const [heroRes, catRes, stepsRes, garansiRes, badgesRes, faqsRes, homeFaqsRes, marqueeRes] = await Promise.all([
+    const [heroRes, catRes, stepsRes, garansiRes, badgesRes, faqsRes, homeFaqsRes, marqueeRes, katalogInfoRes] = await Promise.all([
       supabase.from("hero_content").select("*").eq("id", 1).single(),
       supabase.from("category_images").select("*").order("display_order"),
       supabase.from("order_steps").select("*").order("step_number"),
@@ -80,6 +83,7 @@ export default function KontenWebsitePage() {
       supabase.from("faq_items").select("*").eq("type", "full").order("display_order"),
       supabase.from("faq_items").select("*").eq("type", "home").order("display_order"),
       supabase.from("marquee_items").select("*").order("display_order"),
+      supabase.from("katalog_info_images").select("*").order("sort_order"),
     ]);
     if (heroRes.data) setHero(heroRes.data);
     if (catRes.data) setCategories(catRes.data);
@@ -89,6 +93,7 @@ export default function KontenWebsitePage() {
     if (faqsRes.data) setFaqs(faqsRes.data);
     if (homeFaqsRes.data) setHomeFaqs(homeFaqsRes.data);
     if (marqueeRes.data) setMarquee(marqueeRes.data);
+    if (katalogInfoRes.data) setKatalogInfoImages(katalogInfoRes.data);
     setLoading(false);
   }
 
@@ -211,6 +216,42 @@ export default function KontenWebsitePage() {
     revalidateHomepage();
   }
 
+  // Katalog Info Image handlers
+  function openKatalogInfoEdit() { setEditKatalogInfo(katalogInfoImages.map((k) => ({ ...k }))); setEditModal("katalog-info"); }
+  async function saveKatalogInfo() {
+    setSaving(true);
+    // Delete all and re-insert
+    const { data: existing } = await supabase.from("katalog_info_images").select("id");
+    if (existing && existing.length > 0) {
+      await supabase.from("katalog_info_images").delete().in("id", existing.map((e) => e.id));
+    }
+    if (editKatalogInfo.length > 0) {
+      await supabase.from("katalog_info_images").insert(editKatalogInfo.map((k, i) => ({
+        category: k.category, type: k.type, image_url: k.image_url, alt_text: k.alt_text || "", sort_order: i,
+      })));
+    }
+    const { data: refetched } = await supabase.from("katalog_info_images").select("*").order("sort_order");
+    setKatalogInfoImages(refetched || []); setEditModal(null); setSaving(false);
+    toast.showToast("success", "Gambar Info Katalog berhasil disimpan");
+    revalidateHomepage();
+  }
+  async function uploadKatalogInfoImage(idx: number, file: File) {
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("upload_preset", "samaqu_unsigned");
+    const tempId = `uploading-${idx}`;
+    setUploadingId(tempId);
+    try {
+      const res = await fetch(`https://api.cloudinary.com/v1_1/dgtixuop0/image/upload`, { method: "POST", body: fd });
+      const data = await res.json();
+      if (data.secure_url) {
+        const u = [...editKatalogInfo]; u[idx] = { ...u[idx], image_url: data.secure_url }; setEditKatalogInfo(u);
+        toast.showToast("success", "Gambar berhasil diupload");
+      }
+    } catch { toast.showToast("error", "Gagal upload gambar"); }
+    setUploadingId(null);
+  }
+
   function CharCounter({ current, max }: { current: number; max: number }) {
     return <p className="text-[10px] mt-0.5" style={{ color: current > max * 0.9 ? "#8a6f42" : "var(--text-muted)" }}>{current}/{max}</p>;
   }
@@ -225,6 +266,7 @@ export default function KontenWebsitePage() {
     { key: "faq-home", title: "FAQ Homepage", desc: `${homeFaqs.length} pertanyaan (tampil di section homepage)`, active: true, edit: openHomeFaqEdit },
     { key: "faq-full", title: "FAQ Lengkap (Halaman /faq)", desc: `${faqs.length} pertanyaan (tampil di halaman terpisah)`, active: true, edit: openFaqEdit },
     { key: "marquee", title: "Trust Marquee", desc: `${marquee.length} item scrolling`, active: true, edit: openMarqueeEdit },
+    { key: "katalog-info", title: "Gambar Info Katalog", desc: `${katalogInfoImages.length} gambar (Perbedaan Jenis Kain & Series)`, active: katalogInfoImages.length > 0, edit: openKatalogInfoEdit },
   ];
 
   return (
@@ -440,6 +482,75 @@ export default function KontenWebsitePage() {
                 {editMarquee.length < 10 && <button onClick={() => setEditMarquee([...editMarquee, { id: String(Date.now()), label: "", display_order: editMarquee.length }])} className="text-sm font-medium" style={{ color: "var(--gold)" }}><Plus size={14} className="inline mr-1" />Tambah Item</button>}
               </div>
               <div className="flex gap-3"><button onClick={() => setEditModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-medium" style={{ border: "1px solid rgba(64,50,37,.15)" }}>Batal</button><button onClick={saveMarquee} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: "var(--gold)" }}>{saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null} Simpan</button></div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ═══ Gambar Info Katalog Modal ═══ */}
+      <AnimatePresence>
+        {editModal === "katalog-info" && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.4)" }}>
+            <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }} className="card p-6 w-full max-w-lg max-h-[85vh] overflow-y-auto">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-serif italic text-xl" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Gambar Info Katalog</h3>
+                <button onClick={() => setEditModal(null)}><X size={20} style={{ color: "var(--text-muted)" }} /></button>
+              </div>
+              <p className="text-xs mb-4 px-3 py-2.5 rounded-lg" style={{ background: "#f0e7d8", color: "#8a6f42" }}>Upload gambar berukuran 9:16 (portrait) untuk Perbedaan Jenis Kain dan Series. Format JPG/PNG, max 2MB.</p>
+              <div className="space-y-4 mb-4">
+                {editKatalogInfo.map((k, i) => (
+                  <div key={i} className="p-4 rounded-xl" style={{ border: "1px solid rgba(64,50,37,.1)", background: "rgba(255,255,255,.5)" }}>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs font-semibold" style={{ color: "var(--gold)" }}>Gambar {i + 1}</span>
+                      <button onClick={() => setEditKatalogInfo(editKatalogInfo.filter((_, j) => j !== i))} className="p-1 hover:bg-red-50 rounded"><Trash2 size={14} style={{ color: "#e74c3c" }} /></button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 mb-3">
+                      <div>
+                        <label className="block text-[10px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>Kategori</label>
+                        <select value={k.category} onChange={(e) => { const u = [...editKatalogInfo]; u[i] = { ...u[i], category: e.target.value }; setEditKatalogInfo(u); }} className="w-full rounded-lg px-3 py-2 text-sm outline-none appearance-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }}>
+                          <option value="Thobe">Thobe</option>
+                          <option value="Kandora">Kandora</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>Tipe</label>
+                        <select value={k.type} onChange={(e) => { const u = [...editKatalogInfo]; u[i] = { ...u[i], type: e.target.value }; setEditKatalogInfo(u); }} className="w-full rounded-lg px-3 py-2 text-sm outline-none appearance-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }}>
+                          <option value="kain">Perbedaan Jenis Kain</option>
+                          <option value="series">Perbedaan Series</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-20 h-36 rounded-lg overflow-hidden shrink-0 flex items-center justify-center" style={{ border: "1px dashed rgba(64,50,37,.2)", background: "rgba(64,50,37,.02)" }}>
+                        {uploadingId === `uploading-${i}` ? (
+                          <Loader2 size={20} className="animate-spin" style={{ color: "var(--gold)" }} />
+                        ) : k.image_url ? (
+                          <img src={k.image_url} alt={k.alt_text} className="w-full h-full object-cover" />
+                        ) : (
+                          <ImageIcon size={20} style={{ color: "var(--text-muted)" }} />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <label className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium cursor-pointer transition-colors hover:bg-[rgba(64,50,37,.05)]" style={{ border: "1px solid rgba(64,50,37,.15)", color: "var(--gold)" }}>
+                          <Upload size={14} />
+                          {k.image_url ? "Ganti Gambar" : "Upload Gambar"}
+                          <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadKatalogInfoImage(i, f); }} />
+                        </label>
+                        <p className="text-[10px] mt-1" style={{ color: "var(--text-muted)" }}>9:16 portrait, JPG/PNG</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {editKatalogInfo.length < 6 && (
+                <button onClick={() => setEditKatalogInfo([...editKatalogInfo, { id: "new-" + Date.now(), category: "Thobe", type: "kain", image_url: "", alt_text: "", sort_order: editKatalogInfo.length }])} className="flex items-center gap-1.5 text-sm font-medium mb-4" style={{ color: "var(--gold)" }}>
+                  <Plus size={14} /> Tambah Gambar
+                </button>
+              )}
+              <div className="flex gap-3">
+                <button onClick={() => setEditModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-medium" style={{ border: "1px solid rgba(64,50,37,.15)" }}>Batal</button>
+                <button onClick={saveKatalogInfo} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: "var(--gold)" }}>{saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null} Simpan</button>
+              </div>
             </motion.div>
           </motion.div>
         )}

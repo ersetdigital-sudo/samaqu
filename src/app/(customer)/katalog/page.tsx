@@ -336,6 +336,8 @@ export default function KatalogPage() {
   const [loading, setLoading] = useState(true);
   const [colorHex, setColorHex] = useState<Record<string, string>>({});
   const [stockByProduct, setStockByProduct] = useState<Record<string, number>>({});
+  const [katalogInfoImages, setKatalogInfoImages] = useState<{ id: string; category: string; type: string; image_url: string; alt_text: string }[]>([]);
+  const [infoImageFullscreen, setInfoImageFullscreen] = useState<{ url: string; alt: string } | null>(null);
   const wishlist = useWishlist();
 
   /* Fetch products from database */
@@ -360,6 +362,10 @@ export default function KatalogPage() {
             setStockByProduct(stockMap);
           });
       }
+    });
+    // Fetch katalog info images
+    supabase.from("katalog_info_images").select("*").order("sort_order").then(({ data }) => {
+      if (data) setKatalogInfoImages(data);
     });
   }, []);
 
@@ -589,19 +595,16 @@ export default function KatalogPage() {
             </div>
           )}
 
-          {/* Info link buttons — Jenis Kain & Series (mobile) */}
-          {(category === "Thobe" || category === "Kandora") && (
-            <div className="flex flex-col gap-3 pb-4">
-              <InfoLinkButton
-                label={`Perbedaan Jenis Kain ${category}`}
-                onClick={() => setInfoSheet("kain")}
-              />
-              {category === "Thobe" && (
-                <InfoLinkButton
-                  label={`Perbedaan Series ${category}`}
-                  onClick={() => setInfoSheet("series")}
-                />
-              )}
+          {/* Info images — Perbedaan Jenis Kain & Series (mobile) */}
+          {(category === "Thobe" || category === "Kandora") && katalogInfoImages.filter((k) => k.category === category && k.image_url).length > 0 && (
+            <div className="flex gap-3 pb-4 overflow-x-auto">
+              {katalogInfoImages.filter((k) => k.category === category && k.image_url).map((k) => (
+                <button key={k.id} onClick={() => setInfoImageFullscreen({ url: k.image_url, alt: k.alt_text || `Perbedaan ${k.type === "kain" ? "Jenis Kain" : "Series"} ${category}` })} className="shrink-0 w-[140px] rounded-xl overflow-hidden" style={{ border: "1px solid rgba(181,140,74,.2)" }}>
+                  <div className="w-full h-[248px]">
+                    <img src={k.image_url} alt={k.alt_text} className="w-full h-full object-cover" loading="lazy" />
+                  </div>
+                </button>
+              ))}
             </div>
           )}
 
@@ -699,19 +702,16 @@ export default function KatalogPage() {
           </div>
         )}
 
-        {/* Info link buttons — Jenis Kain & Series (desktop) */}
-        {(category === "Thobe" || category === "Kandora") && (
-          <div className="hidden lg:flex flex-col gap-3 py-5">
-            <InfoLinkButton
-              label={`Perbedaan Jenis Kain ${category}`}
-              onClick={() => setInfoSheet("kain")}
-            />
-            {category === "Thobe" && (
-              <InfoLinkButton
-                label={`Perbedaan Series ${category}`}
-                onClick={() => setInfoSheet("series")}
-              />
-            )}
+        {/* Info images — Perbedaan Jenis Kain & Series (desktop) */}
+        {(category === "Thobe" || category === "Kandora") && katalogInfoImages.filter((k) => k.category === category && k.image_url).length > 0 && (
+          <div className="hidden lg:flex gap-3 py-5">
+            {katalogInfoImages.filter((k) => k.category === category && k.image_url).map((k) => (
+              <button key={k.id} onClick={() => setInfoImageFullscreen({ url: k.image_url, alt: k.alt_text || `Perbedaan ${k.type === "kain" ? "Jenis Kain" : "Series"} ${category}` })} className="shrink-0 w-[160px] rounded-xl overflow-hidden" style={{ border: "1px solid rgba(181,140,74,.2)" }}>
+                <div className="w-full h-[284px]">
+                  <img src={k.image_url} alt={k.alt_text} className="w-full h-full object-cover" loading="lazy" />
+                </div>
+              </button>
+            ))}
           </div>
         )}
 
@@ -801,6 +801,18 @@ export default function KatalogPage() {
 
       {/* Kain / Series info sheet */}
       <KainSeriesModal type={infoSheet} onClose={() => setInfoSheet(null)} />
+
+      {/* Fullscreen info image */}
+      <AnimatePresence>
+        {infoImageFullscreen && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.85)" }} onClick={() => setInfoImageFullscreen(null)}>
+            <button onClick={() => setInfoImageFullscreen(null)} className="absolute top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center" style={{ background: "rgba(255,255,255,.15)" }}>
+              <X size={20} color="white" />
+            </button>
+            <motion.img initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} src={infoImageFullscreen.url} alt={infoImageFullscreen.alt} className="max-w-full max-h-[90vh] rounded-xl object-contain" style={{ maxHeight: "90dvh" }} />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 }
