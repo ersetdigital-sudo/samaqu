@@ -195,7 +195,7 @@ function CheckoutSuccessContent() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium font-ui truncate" style={{ color: "var(--espresso)" }}>{item.product_name}</p>
-                <p className="text-xs font-ui" style={{ color: "var(--text-muted)" }}>{[item.kain ? `Kain ${item.kain}` : null, item.series, item.color, item.size].filter(Boolean).join(' · ')} · {item.quantity} item</p>
+                <p className="text-xs font-ui" style={{ color: "var(--text-muted)" }}>{[item.kain ? `Kain ${item.kain}` : null, item.series, (item.color !== "-" && item.color !== "default") ? item.color : null, item.size].filter(Boolean).join(' · ')} · {item.quantity} item</p>
               </div>
               <p className="text-sm font-medium font-ui shrink-0" style={{ color: "var(--espresso)" }}>Rp {(item.price * item.quantity).toLocaleString("id-ID")}</p>
             </div>
