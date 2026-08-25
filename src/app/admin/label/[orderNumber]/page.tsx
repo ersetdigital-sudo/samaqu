@@ -186,7 +186,7 @@ export default function LabelPage() {
           {order.order_items?.map((item, i) => (
             <div key={i} style={{ fontSize: "8px", marginBottom: "0.5mm", display: "flex", justifyContent: "space-between" }}>
               <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {item.product_name} {item.kain ? `(${item.kain})` : ""} {item.color !== "-" && item.color !== "default" ? item.color : ""} {item.size} ×{item.quantity}
+                {item.product_name} {item.series || ""} {item.kain ? `(${item.kain})` : ""} {item.color !== "-" && item.color !== "default" ? item.color : ""} {item.size} ×{item.quantity}
               </span>
             </div>
           ))}
