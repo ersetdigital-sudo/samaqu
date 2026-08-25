@@ -813,7 +813,7 @@ export default function KatalogPage() {
         type={infoSheet}
         onClose={() => setInfoSheet(null)}
         category={category}
-        imageUrl={infoSheet ? katalogInfoImages.find((k) => k.category === category && k.type === infoSheet)?.image_url || null : null}
+        images={infoSheet ? katalogInfoImages.filter((k) => k.category === category && k.type === infoSheet && k.image_url) : []}
       />
     </section>
   );
