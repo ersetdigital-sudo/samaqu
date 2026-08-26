@@ -55,13 +55,15 @@ export default function LabelPage() {
       JsBarcode(svg, order.awb_no!, {
         format: "CODE128",
         width: 2,
-        height: 35,
+        height: 40,
         displayValue: true,
         font: "monospace",
-        fontSize: 11,
+        fontSize: 12,
         fontOptions: "bold",
         textMargin: 2,
         margin: 0,
+        background: "#000000",
+        lineColor: "#000000",
       });
     });
   }, [order]);
@@ -83,11 +85,17 @@ export default function LabelPage() {
         @media print {
           body { margin: 0 !important; padding: 0 !important; background: white !important; }
           .no-print { display: none !important; }
-          .label-wrap { box-shadow: none !important; }
+          .label-wrap { box-shadow: none !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: Arial, Helvetica, sans-serif; background: #e8e8e8; -webkit-font-smoothing: antialiased; }
+        body { font-family: Arial, Helvetica, sans-serif; background: #e8e8e8; -webkit-font-smoothing: antialiased; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; text-rendering: optimizeLegibility; }
         svg { shape-rendering: crispEdges; }
+        @media print {
+          svg { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          .label-wrap { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+          .label-wrap * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+          @page { size: 78mm 100mm; margin: 0; }
+        }
       `}</style>
 
       <div className="no-print" style={{ padding: "16px", textAlign: "center" }}>
