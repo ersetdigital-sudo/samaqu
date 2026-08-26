@@ -62,7 +62,7 @@ export default function LabelPage() {
         fontOptions: "bold",
         textMargin: 2,
         margin: 0,
-        background: "#000000",
+        background: "#FFFFFF",
         lineColor: "#000000",
       });
     });
