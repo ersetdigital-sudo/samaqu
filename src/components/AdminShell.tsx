@@ -6,25 +6,40 @@ import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard, ShoppingBag, Package, Users, FileText, Settings,
-  Search, Bell, Menu, LogOut, X, Ticket, Ruler,
+  Search, Bell, Menu, LogOut, X, Ticket, Ruler, Image,
 } from "lucide-react";
 import { useToast } from "@/components/AdminToast";
 import ConfirmModal from "@/components/ConfirmModal";
 
-const navItems = [
-  { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/admin", label: "Pesanan", icon: ShoppingBag },
-  { href: "/admin", label: "Produk", icon: Package },
-  { href: "/admin", label: "Pelanggan", icon: Users },
-  { href: "/admin/konten-website", label: "Konten Website", icon: FileText },
-  { href: "/admin", label: "Produk Pilihan", icon: Package },
-  { href: "/admin", label: "Pengaturan", icon: Settings },
-  { href: "/admin/voucher", label: "Voucher", icon: Ticket },
-  { href: "/admin/testimoni", label: "Testimoni", icon: FileText },
-  { href: "/admin/ukuran-produk", label: "Panduan Ukuran", icon: Ruler },
-  { href: "/admin/garansi-retur-page", label: "Halaman Garansi & Retur", icon: FileText },
-  { href: "/admin/biolink", label: "Biolink", icon: FileText },
-  { href: "/admin/bio-carousel", label: "Foto Carousel", icon: FileText },
+const navGroups = [
+  {
+    title: "Menu Utama",
+    items: [
+      { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/admin", label: "Pesanan", icon: ShoppingBag },
+      { href: "/admin", label: "Produk", icon: Package },
+      { href: "/admin", label: "Pelanggan", icon: Users },
+    ],
+  },
+  {
+    title: "Biolink",
+    items: [
+      { href: "/admin/biolink", label: "Biolink", icon: FileText },
+      { href: "/admin/bio-carousel", label: "Foto Carousel", icon: Image },
+    ],
+  },
+  {
+    title: "Lainnya",
+    items: [
+      { href: "/admin/konten-website", label: "Konten Website", icon: FileText },
+      { href: "/admin", label: "Produk Pilihan", icon: Package },
+      { href: "/admin", label: "Pengaturan", icon: Settings },
+      { href: "/admin/voucher", label: "Voucher", icon: Ticket },
+      { href: "/admin/testimoni", label: "Testimoni", icon: FileText },
+      { href: "/admin/ukuran-produk", label: "Panduan Ukuran", icon: Ruler },
+      { href: "/admin/garansi-retur-page", label: "Halaman Garansi & Retur", icon: FileText },
+    ],
+  },
 ];
 
 export default function AdminShell({ children, onLogout }: { children: ReactNode; onLogout?: () => void }) {
@@ -49,31 +64,22 @@ export default function AdminShell({ children, onLogout }: { children: ReactNode
           <p className="text-[11px] tracking-[0.28em] uppercase" style={{ color: "#9f9690" }}>Admin Panel</p>
         </div>
 
-        <nav className="flex-1 px-4 py-5 space-y-1.5">
-          <p className="px-3 text-[11px] font-semibold uppercase tracking-wider mb-2" style={{ color: "#8f8680" }}>Menu Utama</p>
-          {navItems.slice(0, 4).map((item) => (
-            <Link
-              key={item.label}
-              href={item.href}
-              className={`sidebar-link w-full text-left ${isActive(item.href) ? "active" : ""}`}
-              onClick={() => setSidebarOpen(false)}
-            >
-              <item.icon size={20} strokeWidth={1.6} />
-              <span className="flex-1">{item.label}</span>
-            </Link>
-          ))}
-
-          <p className="px-3 text-[11px] font-semibold uppercase tracking-wider mb-2 mt-6" style={{ color: "#8f8680" }}>Lainnya</p>
-          {navItems.slice(4).map((item) => (
-            <Link
-              key={item.label}
-              href={item.href}
-              className={`sidebar-link w-full text-left ${isActive(item.href) ? "active" : ""}`}
-              onClick={() => setSidebarOpen(false)}
-            >
-              <item.icon size={20} strokeWidth={1.6} />
-              <span>{item.label}</span>
-            </Link>
+        <nav className="flex-1 px-4 py-5 space-y-6">
+          {navGroups.map((group) => (
+            <div key={group.title} className="space-y-1.5">
+              <p className="px-3 text-[11px] font-semibold uppercase tracking-wider mb-2" style={{ color: "#8f8680" }}>{group.title}</p>
+              {group.items.map((item) => (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  className={`sidebar-link w-full text-left ${isActive(item.href) ? "active" : ""}`}
+                  onClick={() => setSidebarOpen(false)}
+                >
+                  <item.icon size={20} strokeWidth={1.6} />
+                  <span className="flex-1">{item.label}</span>
+                </Link>
+              ))}
+            </div>
           ))}
         </nav>
 
