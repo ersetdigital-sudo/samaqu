@@ -14,6 +14,32 @@ import CartDrawer from "@/components/CartDrawer";
 import { getWhatsAppLink } from "@/lib/store-settings";
 import { locales, type Locale } from "@/i18n/config";
 
+/* ── Language flag icons ── */
+const FLAG_LABELS: Record<Locale, string> = {
+  id: "Bahasa Indonesia",
+  en: "English",
+};
+
+function LocaleFlag({ code }: { code: Locale }) {
+  if (code === "id") {
+    return (
+      <svg viewBox="0 0 18 12" className="block h-3 w-[18px]" aria-hidden="true">
+        <rect width="18" height="6" fill="#CE1126" />
+        <rect y="6" width="18" height="6" fill="#fff" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 18 12" className="block h-3 w-[18px]" aria-hidden="true">
+      <rect width="18" height="12" fill="#012169" />
+      <path d="M0 0 L18 12 M18 0 L0 12" stroke="#fff" strokeWidth="3" />
+      <path d="M0 0 L18 12 M18 0 L0 12" stroke="#C8102E" strokeWidth="1.5" />
+      <path d="M9 0 V12 M0 6 H18" stroke="#fff" strokeWidth="4" />
+      <path d="M9 0 V12 M0 6 H18" stroke="#C8102E" strokeWidth="2" />
+    </svg>
+  );
+}
+
 /* ── Nav data ── */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type IconComponent = React.ComponentType<any>;
@@ -248,13 +274,15 @@ export default function Navbar() {
                     <button
                       key={loc}
                       onClick={() => switchLocale(loc)}
-                      className="px-2.5 py-1.5 text-[10px] font-ui font-bold tracking-wider transition-all duration-200 uppercase"
+                      aria-label={FLAG_LABELS[loc]}
+                      title={FLAG_LABELS[loc]}
+                      className="grid place-items-center px-2.5 py-1.5 transition-all duration-200"
                       style={{
                         background: locale === loc ? (scrolled ? "var(--espresso)" : "rgba(248,245,241,.9)") : "transparent",
-                        color: locale === loc ? (scrolled ? "var(--cream)" : "var(--espresso)") : (scrolled ? "rgba(64,50,37,.5)" : "rgba(248,245,241,.5)"),
+                        opacity: locale === loc ? 1 : 0.6,
                       }}
                     >
-                      {loc}
+                      <LocaleFlag code={loc} />
                     </button>
                   ))}
                 </div>
@@ -443,13 +471,15 @@ function DrawerNavContent({
               <button
                 key={loc}
                 onClick={() => switchLocale(loc)}
-                className="px-3 py-1.5 text-[11px] font-ui font-bold tracking-wider transition-all duration-200 uppercase"
+                aria-label={FLAG_LABELS[loc]}
+                title={FLAG_LABELS[loc]}
+                className="grid place-items-center px-3 py-1.5 transition-all duration-200"
                 style={{
                   background: locale === loc ? "var(--espresso)" : "transparent",
-                  color: locale === loc ? "var(--cream)" : "rgba(64,50,37,.5)",
+                  opacity: locale === loc ? 1 : 0.6,
                 }}
               >
-                {loc}
+                <LocaleFlag code={loc} />
               </button>
             ))}
           </div>
