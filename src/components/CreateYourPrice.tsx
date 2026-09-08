@@ -118,7 +118,7 @@ export default function CreateYourPrice() {
           </ul>
 
           <Link
-            href="#cyp"
+            href="/create-your-price"
             className="mt-10 inline-flex items-center gap-3 rounded-full font-bold text-[13px] tracking-wide px-8 py-4 transition-colors duration-200"
             style={{
               background: "var(--gold-bright, #c9a063)",
