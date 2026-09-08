@@ -110,9 +110,13 @@ export default function Garansi() {
         </p>
 
         {/* 4 guarantee items */}
-        <div className="mt-10 sm:mt-12 grid grid-cols-2 sm:grid-cols-4 gap-y-8 sm:gap-y-10 sm:divide-x" style={{ borderColor: "var(--line, #ddd2c2)" }}>
+        <div className="mt-10 sm:mt-12 grid grid-cols-2 sm:grid-cols-4 gap-y-8 sm:gap-y-10">
           {items.map((item, i) => (
-            <div key={i} className="flex flex-col items-center px-4">
+            <div
+              key={i}
+              className={`flex flex-col items-center px-4 ${i < 3 ? "sm:border-r" : ""}`}
+              style={{ borderColor: "var(--line, #ddd2c2)" }}
+            >
               <span
                 className="grid place-items-center w-[72px] h-[72px] rounded-full"
                 style={{
