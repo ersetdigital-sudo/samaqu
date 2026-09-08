@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import Link from "next/link";
 import { useSafeTranslations } from "@/lib/safe-i18n";
 
@@ -11,113 +11,183 @@ export default function CreateYourPrice() {
   const maxPrice = 599000;
 
   const fmt = (n: number) => `Rp ${n.toLocaleString("id-ID")}`;
+  const pct = ((price - minPrice) / (maxPrice - minPrice)) * 100;
+
+  const note =
+    price === minPrice
+      ? "Harga Minimum. Pilih harga yang terasa ringan untukmu."
+      : price >= maxPrice
+        ? "Terima kasih — dukunganmu membantu lebih banyak orang berbusana baik."
+        : "Hargamu. Terima kasih sudah memilih yang terasa pas untukmu.";
+
+  const handleSlider = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setPrice(Number(e.target.value));
+  }, []);
 
   return (
-    <section className="relative isolate overflow-hidden" style={{ background: "var(--espresso)", color: "var(--cream)" }}>
-      {/* Grain overlay */}
-      <div className="absolute inset-0 pointer-events-none opacity-50"
+    <section
+      id="cyp"
+      className="relative overflow-hidden min-h-screen flex items-center"
+      style={{ background: "var(--espresso-deep, #2a211b)", color: "var(--cream)" }}
+    >
+      {/* Hero photo background */}
+      <div
+        className="absolute inset-0 opacity-40"
         style={{
-          background:
-            "radial-gradient(60% 55% at 18% 20%, rgba(201,168,122,.18), transparent 70%), radial-gradient(45% 45% at 88% 85%, rgba(162,133,95,.20), transparent 70%)",
+          backgroundImage: "url(/images/c8a0800b-b9bb-4b53-bd5e-00f26a500219.png)",
+          backgroundSize: "cover",
+          backgroundPosition: "60% 50%",
         }}
       />
 
-      <div className="relative mx-auto max-w-7xl px-6 sm:px-10 lg:px-14 py-20 sm:py-28 lg:py-36">
-        <div className="grid items-center gap-14 lg:gap-20 lg:grid-cols-[1.05fr_.95fr]">
+      {/* Gradient overlay */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "linear-gradient(to right, #2a211b, rgba(42,33,27,.95) 40%, rgba(42,33,27,.70))",
+        }}
+      />
 
-          {/* Left: Copy */}
-          <div className="max-w-2xl">
-            <div className="flex items-center gap-4">
-              <span className="h-px w-10" style={{ background: "var(--gold)" }} />
-              <p className="text-[11px] sm:text-xs font-medium uppercase tracking-[0.32em] font-ui" style={{ color: "var(--gold)" }}>
-                {t("eyebrow")}
+      {/* Content */}
+      <div className="relative w-full mx-auto max-w-7xl px-5 sm:px-8 py-16 md:py-20 grid lg:grid-cols-[1.05fr_.95fr] gap-12 lg:gap-16 items-center">
+        {/* Left: Copy */}
+        <div>
+          <div className="flex items-center gap-4 mb-6">
+            <span className="h-px w-10" style={{ background: "var(--gold)" }} />
+            <span
+              className="font-semibold font-ui"
+              style={{
+                letterSpacing: "0.28em",
+                fontSize: "11px",
+                color: "var(--gold)",
+              }}
+            >
+              CREATE YOUR PRICE
+            </span>
+          </div>
+
+          <h1
+            className="font-semibold leading-[1.14] max-w-[20ch]"
+            style={{
+              fontFamily: "var(--font-cormorant), Georgia, serif",
+              fontSize: "clamp(36px, 5vw, 58px)",
+            }}
+          >
+            Di Samaqu, Kamu Bisa Memilih Hargamu Sendiri.
+          </h1>
+
+          <ul className="mt-9 space-y-6 max-w-lg">
+            <li className="flex gap-4 items-start">
+              <span className="shrink-0 grid place-items-center w-11 h-11 rounded-full" style={{ background: "#3a2f26" }}>
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="var(--gold-bright, #c9a063)" strokeWidth="1.6">
+                  <circle cx="9" cy="8" r="3" />
+                  <path d="M3 20a6 6 0 0 1 12 0" />
+                  <path d="M16 11a3 3 0 1 0-1-5.8" />
+                  <path d="M18 20a5 5 0 0 0-3-4.6" />
+                </svg>
+              </span>
+              <p className="text-[15px] leading-relaxed pt-2" style={{ color: "#d8cec3" }}>
+                {t("benefit1")}
               </p>
-            </div>
+            </li>
+            <li className="flex gap-4 items-start">
+              <span className="shrink-0 grid place-items-center w-11 h-11 rounded-full" style={{ background: "#3a2f26" }}>
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="var(--gold-bright, #c9a063)" strokeWidth="1.6">
+                  <path d="M3 12V4h8l9 9-8 8-9-9Z" />
+                  <circle cx="7.5" cy="7.5" r="1.3" fill="var(--gold-bright, #c9a063)" stroke="none" />
+                </svg>
+              </span>
+              <p className="text-[15px] leading-relaxed pt-2" style={{ color: "#d8cec3" }}>
+                {t("desc")}
+              </p>
+            </li>
+            <li className="flex gap-4 items-start">
+              <span className="shrink-0 grid place-items-center w-11 h-11 rounded-full" style={{ background: "#3a2f26" }}>
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="var(--gold-bright, #c9a063)" strokeWidth="1.6">
+                  <path d="M4 20V10" />
+                  <path d="M10 20V4" />
+                  <path d="M16 20v-7" />
+                  <path d="M22 20H2" />
+                </svg>
+              </span>
+              <p className="text-[15px] leading-relaxed pt-2" style={{ color: "#d8cec3" }}>
+                Karena kualitas yang baik seharusnya bisa dijangkau lebih banyak orang.
+              </p>
+            </li>
+          </ul>
 
-            <h1 className="mt-7 text-4xl sm:text-5xl lg:text-6xl xl:text-[4.25rem] leading-[1.08] font-medium" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>
-              {t("title")}
-            </h1>
+          <Link
+            href="#cyp"
+            className="mt-10 inline-flex items-center gap-3 rounded-full font-bold text-[13px] tracking-wide px-8 py-4 transition-colors duration-200"
+            style={{
+              background: "var(--gold-bright, #c9a063)",
+              color: "#2a211b",
+            }}
+          >
+            {t("ctaLearn").toUpperCase()}
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M5 12h14M13 6l6 6-6 6" />
+            </svg>
+          </Link>
+        </div>
 
-            <p className="mt-8 text-base sm:text-lg leading-relaxed font-ui" style={{ color: "#d4c4b4" }}>
-              {t("desc")}
-            </p>
-
-            <div className="mt-10 flex flex-col sm:flex-row sm:items-center gap-4">
-              <Link
-                href="/create-your-price"
-                className="group inline-flex items-center justify-center gap-3 rounded-full px-8 py-4 text-[11px] font-semibold uppercase tracking-[0.2em] font-ui text-white transition-transform duration-300 hover:-translate-y-0.5"
-                style={{ background: "var(--gold)" }}
-              >
-                {t("ctaLearn")}
-                <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
-              </Link>
-            </div>
-
+        {/* Right: Interactive card */}
+        <div
+          className="rounded-2xl p-6 sm:p-8 backdrop-blur-sm"
+          style={{
+            border: "1px solid #5a4a3a",
+            background: "rgba(30,24,19,.72)",
+            boxShadow: "0 25px 50px -12px rgba(0,0,0,.4)",
+          }}
+        >
+          <div className="flex items-center justify-between gap-4">
+            <span
+              className="font-semibold font-ui"
+              style={{
+                letterSpacing: "0.28em",
+                fontSize: "11px",
+                color: "var(--gold)",
+              }}
+            >
+              {t("cardTitle").toUpperCase()}
+            </span>
+            <span
+              className="rounded-full text-[11px] font-semibold tracking-wide px-4 py-1.5 font-ui"
+              style={{ background: "#4a3d31", color: "#e6dcd0" }}
+            >
+              {t("cardBadge").toUpperCase()}
+            </span>
           </div>
 
-          {/* Right: Interactive card */}
-          <div className="relative">
-            <div className="relative mx-auto w-full max-w-md lg:max-w-none">
-              <div className="absolute -inset-4 rounded-[2.25rem] opacity-60 blur-2xl"
-                style={{ background: "radial-gradient(60% 60% at 50% 40%, rgba(201,168,122,.22), transparent 70%)" }}
-              />
+          <p
+            className="mt-6 font-bold tabular-nums"
+            style={{ fontSize: "clamp(38px, 4vw, 44px)" }}
+          >
+            {fmt(price)}
+          </p>
+          <p className="mt-2 text-[14px] leading-relaxed" style={{ color: "#c4b8ab" }}>
+            {t("minLabel")}. {note}
+          </p>
 
-              <div className="relative rounded-[1.75rem] p-7 sm:p-9 backdrop-blur"
-                style={{
-                  background: "linear-gradient(160deg, rgba(80,66,56,.65), rgba(42,33,27,.9))",
-                  border: "1px solid rgba(241,233,221,.16)",
-                }}
-              >
-                <div className="flex items-center justify-between">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.28em] font-ui" style={{ color: "var(--gold)" }}>{t("cardTitle")}</p>
-                  <span className="rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] font-ui"
-                    style={{ background: "rgba(162,133,95,.18)", color: "var(--gold)" }}>
-                    {t("cardBadge")}
-                  </span>
-                </div>
-
-                <p className="mt-7 text-5xl sm:text-6xl leading-none font-ui font-semibold" style={{ color: "var(--cream)" }}>
-                  {fmt(price)}
-                </p>
-                <p className="mt-3 text-sm font-ui" style={{ color: "#a89a90" }}>
-                  {t("minLabel")} <span style={{ color: "var(--cream)" }}>{fmt(minPrice)}</span>{t("minNote")}
-                </p>
-
-                <input
-                  type="range"
-                  min={minPrice}
-                  max={maxPrice}
-                  step={5000}
-                  value={price}
-                  onChange={(e) => setPrice(Number(e.target.value))}
-                  className="mt-8 w-full"
-                  style={{
-                    background: "transparent",
-                    cursor: "pointer",
-                  }}
-                />
-                <div className="mt-3 flex justify-between text-[11px] uppercase tracking-[0.18em] font-ui" style={{ color: "#8a7a70" }}>
-                  <span>{t("sliderMin")}</span>
-                  <span>{fmt(maxPrice)}</span>
-                </div>
-
-                <div className="my-8 h-px" style={{ background: "linear-gradient(90deg, rgba(241,233,221,.35), rgba(241,233,221,0))" }} />
-
-                <ul className="space-y-4 text-sm font-ui" style={{ color: "#d4c4b4" }}>
-                  {[
-                    t("benefit1"),
-                    t("benefit2"),
-                    t("benefit3"),
-                  ].map((text) => (
-                    <li key={text} className="flex items-start gap-3">
-                      <span style={{ color: "var(--gold)" }}>✓</span> {text}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
+          <input
+            type="range"
+            min={minPrice}
+            max={maxPrice}
+            step={1000}
+            value={price}
+            onChange={handleSlider}
+            className="cyp-slider mt-7"
+            style={{ "--pct": `${pct}%` } as React.CSSProperties}
+            aria-label="Pilih hargamu"
+          />
+          <div
+            className="mt-3 flex items-center justify-between text-[11px] tracking-wide font-ui"
+            style={{ color: "#9b8d7f" }}
+          >
+            <span>MINIMUM</span>
+            <span>{fmt(maxPrice)}</span>
           </div>
-
         </div>
       </div>
     </section>
