@@ -7,10 +7,7 @@ import Koleksi from "@/components/Koleksi";
 import CreateYourPrice from "@/components/CreateYourPrice";
 import Garansi from "@/components/Garansi";
 import Instagram from "@/components/Instagram";
-import Testimoni from "@/components/Testimoni";
-import Tentang from "@/components/Tentang";
-import PanduanSize from "@/components/PanduanSize";
-import Faq from "@/components/Faq";
+import AboutSamaquLinks from "@/components/AboutSamaquLinks";
 import FinalCta from "@/components/FinalCta";
 import Footer from "@/components/Footer";
 import AutoCTA from "@/components/AutoCTA";
@@ -29,10 +26,7 @@ export default function Home() {
         <CreateYourPrice />
         <Garansi />
         <Instagram />
-        <Testimoni />
-        <Tentang />
-        <PanduanSize />
-        <Faq />
+        <AboutSamaquLinks />
         <FinalCta />
       </main>
       <Footer />
