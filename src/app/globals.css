@@ -433,6 +433,48 @@ details[open] .faq-plus {
   html { scroll-behavior: auto; }
 }
 
+/* ── CYP slider ── */
+.cyp-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  width: 100%;
+}
+.cyp-slider::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--gold-bright) var(--pct, 10%), #4a3d31 var(--pct, 10%));
+}
+.cyp-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 22px;
+  width: 22px;
+  margin-top: -8px;
+  border-radius: 999px;
+  background: var(--gold-bright);
+  border: 3px solid var(--espresso);
+  box-shadow: 0 0 0 1px var(--gold-bright);
+  cursor: pointer;
+}
+.cyp-slider::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: #4a3d31;
+}
+.cyp-slider::-moz-range-progress {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--gold-bright);
+}
+.cyp-slider::-moz-range-thumb {
+  height: 20px;
+  width: 20px;
+  border-radius: 999px;
+  background: var(--gold-bright);
+  border: 3px solid var(--espresso);
+  cursor: pointer;
+}
+
 /* Global cursor pointer for all interactive elements */
 button, a, [role="button"], select, label { cursor: pointer; }
 a { text-decoration: none; }
