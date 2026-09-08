@@ -167,7 +167,7 @@ export default function CreateYourPrice() {
             {fmt(price)}
           </p>
           <p className="mt-2 text-[14px] leading-relaxed" style={{ color: "#c4b8ab" }}>
-            {t("minLabel")}. {note}
+            {note}
           </p>
 
           <input
