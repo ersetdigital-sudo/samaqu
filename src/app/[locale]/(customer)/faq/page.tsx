@@ -23,13 +23,6 @@ interface FaqCategory {
   key: string;
 }
 
-const FAQ_CATEGORIES: FaqCategory[] = [
-  { name: "Order & Pembayaran", icon: <Package size={18} strokeWidth={1.5} />, desc: "Cara pesan, metode bayar, Harga Minimum", key: "order" },
-  { name: "Pengiriman", icon: <Truck size={18} strokeWidth={1.5} />, desc: "Proses, estimasi, resi, luar negeri", key: "kirim" },
-  { name: "Produk, Kain & Size", icon: <Tag size={18} strokeWidth={1.5} />, desc: "Jenis kain, series, ukuran, perawatan", key: "produk" },
-  { name: "Retur & Garansi", icon: <RotateCcw size={18} strokeWidth={1.5} />, desc: "Tukar produk, produk salah atau rusak", key: "retur" },
-];
-
 // Map DB category values to our FAQ_CATEGORIES
 const CATEGORY_MAP: Record<string, string> = {
   "Order & Pembayaran": "order",
@@ -104,6 +97,12 @@ function FaqAccordionItem({ item, index, isOpen, onToggle }: { item: FaqItem; in
 
 export default function FaqPage() {
   const t = useSafeTranslations("faqFull");
+  const FAQ_CATEGORIES: FaqCategory[] = [
+    { name: t("cat1Name"), icon: <Package size={18} strokeWidth={1.5} />, desc: t("cat1Desc"), key: "order" },
+    { name: t("cat2Name"), icon: <Truck size={18} strokeWidth={1.5} />, desc: t("cat2Desc"), key: "kirim" },
+    { name: t("cat3Name"), icon: <Tag size={18} strokeWidth={1.5} />, desc: t("cat3Desc"), key: "produk" },
+    { name: t("cat4Name"), icon: <RotateCcw size={18} strokeWidth={1.5} />, desc: t("cat4Desc"), key: "retur" },
+  ];
   const [faqs, setFaqs] = useState<FaqItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -190,7 +189,7 @@ export default function FaqPage() {
   const categoriesWithFaqs = useMemo(() => {
     const active = FAQ_CATEGORIES.filter((cat) => (categoryCounts[cat.key] || 0) > 0);
     if (categoryCounts["lainnya"] > 0) {
-      active.push({ name: "Lainnya", icon: <MessageCircle size={18} strokeWidth={1.5} />, desc: "Pertanyaan lainnya", key: "lainnya" });
+      active.push({ name: t("otherName"), icon: <MessageCircle size={18} strokeWidth={1.5} />, desc: t("otherDesc"), key: "lainnya" });
     }
     return active;
   }, [categoryCounts]);
@@ -248,7 +247,7 @@ export default function FaqPage() {
                       <Package size={16} strokeWidth={1.5} />
                     </div>
                     <div>
-                      <p className="text-sm font-bold" style={{ color: "var(--cream)" }}>Create Your Price</p>
+                      <p className="text-sm font-bold" style={{ color: "var(--cream)" }}>{t("statCyp")}</p>
                       <p className="mt-0.5 text-xs" style={{ color: "rgba(244,240,233,.55)" }}>{t("helpCyp")}</p>
                     </div>
                   </div>
@@ -257,7 +256,7 @@ export default function FaqPage() {
                       <Truck size={16} strokeWidth={1.5} />
                     </div>
                     <div>
-                      <p className="text-sm font-bold" style={{ color: "var(--cream)" }}>1–2 Hari Kerja</p>
+                      <p className="text-sm font-bold" style={{ color: "var(--cream)" }}>{t("statDelivery")}</p>
                       <p className="mt-0.5 text-xs" style={{ color: "rgba(244,240,233,.55)" }}>{t("helpProcess")}</p>
                     </div>
                   </div>
@@ -266,7 +265,7 @@ export default function FaqPage() {
                       <Tag size={16} strokeWidth={1.5} />
                     </div>
                     <div>
-                      <p className="text-sm font-bold" style={{ color: "var(--cream)" }}>Panduan Size</p>
+                      <p className="text-sm font-bold" style={{ color: "var(--cream)" }}>{t("statSizeGuide")}</p>
                       <p className="mt-0.5 text-xs" style={{ color: "rgba(244,240,233,.55)" }}>{t("helpSize")}</p>
                     </div>
                   </div>
@@ -275,7 +274,7 @@ export default function FaqPage() {
                       <RotateCcw size={16} strokeWidth={1.5} />
                     </div>
                     <div>
-                      <p className="text-sm font-bold" style={{ color: "var(--cream)" }}>Retur Dibantu</p>
+                      <p className="text-sm font-bold" style={{ color: "var(--cream)" }}>{t("statReturnHelp")}</p>
                       <p className="mt-0.5 text-xs" style={{ color: "rgba(244,240,233,.55)" }}>{t("helpReturn")}</p>
                     </div>
                   </div>
@@ -303,7 +302,7 @@ export default function FaqPage() {
                 </div>
                 {t("popular")}
               </h2>
-              <span className="hidden text-xs font-semibold" style={{ color: "rgba(42,33,27,.35)" }}>{popularFaqs.length} Pertanyaan</span>
+              <span className="hidden text-xs font-semibold" style={{ color: "rgba(42,33,27,.35)" }}>{popularFaqs.length} {t("questions")}</span>
             </div>
 
             <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
@@ -394,10 +393,10 @@ export default function FaqPage() {
                     <MessageCircle size={18} strokeWidth={1.5} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold" style={{ color: "var(--espresso)" }}>Lainnya</p>
-                    <p className="text-xs mt-0.5" style={{ color: "rgba(42,33,27,.35)" }}>Pertanyaan lainnya</p>
+                    <p className="text-sm font-bold" style={{ color: "var(--espresso)" }}>{t("otherName")}</p>
+                    <p className="text-xs mt-0.5" style={{ color: "rgba(42,33,27,.35)" }}>{t("otherDesc")}</p>
                   </div>
-                  <span className="hidden text-xs font-semibold sm:block" style={{ color: "rgba(42,33,27,.35)" }}>{categoryCounts["lainnya"]} Pertanyaan</span>
+                  <span className="hidden text-xs font-semibold sm:block" style={{ color: "rgba(42,33,27,.35)" }}>{categoryCounts["lainnya"]} {t("questions")}</span>
                   <ChevronRight size={16} style={{ color: "rgba(42,33,27,.35)" }} />
                 </button>
               )}
@@ -467,7 +466,7 @@ export default function FaqPage() {
                         </div>
                         <div>
                           <p className="text-[10px] tracking-[0.15em] uppercase font-ui font-bold" style={{ color: "var(--gold)" }}>{cat.name}</p>
-                          <p className="text-xs" style={{ color: "rgba(42,33,27,.35)" }}>{catFaqs.length} Pertanyaan</p>
+                          <p className="text-xs" style={{ color: "rgba(42,33,27,.35)" }}>{catFaqs.length} {t("questions")}</p>
                         </div>
                       </div>
 
@@ -531,7 +530,7 @@ export default function FaqPage() {
             </p>
 
             <a
-              href={getWhatsAppLink("Halo SAMAQU, saya ingin bertanya seputar produk")}
+              href={getWhatsAppLink(t("whatsappMsg"))}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 rounded-full px-8 py-4 text-sm font-semibold transition-all duration-200 mt-7"
@@ -542,7 +541,7 @@ export default function FaqPage() {
             </a>
 
             <div className="mx-auto mt-6 grid max-w-sm grid-cols-3 gap-3">
-              <a href={getWhatsAppLink("Halo SAMAQU")} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 rounded-2xl py-4 transition-colors" style={{ border: "1px solid rgba(244,240,233,.14)" }}>
+              <a href={getWhatsAppLink(t("whatsappShort"))} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 rounded-2xl py-4 transition-colors" style={{ border: "1px solid rgba(244,240,233,.14)" }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style={{ color: "rgba(212,197,181,.6)" }}><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.9-4.45 9.9-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2zm0 18.15h-.01a8.2 8.2 0 0 1-4.19-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.2 8.2 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.25-8.24a8.2 8.2 0 0 1 8.24 8.25c0 4.54-3.7 8.23-8.24 8.23zm4.52-6.16c-.25-.12-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.13-.16.25-.64.8-.79.97-.14.16-.29.18-.54.06-.25-.12-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.01-.38.11-.5.11-.11.25-.29.37-.43.13-.15.17-.25.25-.42.08-.16.04-.31-.02-.43-.06-.12-.56-1.34-.76-1.84-.2-.48-.4-.42-.56-.43h-.48c-.16 0-.43.06-.66.31-.22.25-.86.85-.86 2.07 0 1.22.89 2.4 1.01 2.56.12.16 1.75 2.67 4.23 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.14-1.18-.06-.1-.22-.16-.47-.28z" /></svg>
                 <span className="text-xs font-semibold" style={{ color: "var(--cream)" }}>WhatsApp</span>
               </a>
