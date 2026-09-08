@@ -169,126 +169,132 @@ export default function Hero() {
         aria-hidden
       />
 
-      {/* ── Vertical side label (desktop) ── */}
-      <div
-        className="hidden xl:flex absolute left-8 top-1/2 -translate-y-1/2 z-10 flex-col items-center gap-5"
-        aria-hidden
-      >
-        <span className="w-px h-16" style={{ background: "linear-gradient(180deg,transparent,rgba(224,181,99,.6))" }} />
-        <span
-          className="text-[10px] tracking-[0.42em] uppercase"
-          style={{ writingMode: "vertical-rl", color: "rgba(216,196,168,.55)" }}
-        >
-          SAMAQU — {t("eyebrow")}
-        </span>
-        <span className="w-px h-16" style={{ background: "linear-gradient(180deg,rgba(224,181,99,.6),transparent)" }} />
-      </div>
-
       {/* ── Content ── */}
       <div className="relative z-10 h-full">
         <div
           className="max-w-[1240px] mx-auto px-5 sm:px-10 lg:px-16 xl:pl-24 flex flex-col justify-end pt-[96px] sm:pt-[110px] lg:pt-[130px] pb-24 lg:pb-28"
           style={{ minHeight: "100dvh" }}
         >
-          <div className="w-full max-w-[500px] lg:w-[44vw] lg:max-w-[560px]">
-            {/* Eyebrow */}
-            <p
+          <div className="w-full max-w-[620px] lg:w-[50vw] lg:max-w-[660px]">
+            {/* Badge */}
+            <div
               data-hero-stagger
-              className="hero-enter self-start w-fit flex items-center gap-2.5 md:gap-3.5 rounded-full px-3.5 py-2 md:px-0 md:py-0 md:rounded-none text-[9px] md:text-[10.5px] tracking-[0.3em] md:tracking-[0.4em] uppercase mb-6 md:mb-8 bg-[rgba(10,7,5,.52)] md:bg-transparent backdrop-blur-md md:backdrop-filter-none border border-[rgba(224,181,99,.28)] md:border-0"
-              style={{ color: "var(--sand)" }}
+              className="hero-enter inline-flex items-center gap-3 rounded-full px-4 py-2"
+              style={{
+                background: "rgba(0,0,0,.35)",
+                boxShadow: "inset 0 0 0 1px rgba(255,255,255,.1)",
+                backdropFilter: "blur(8px)",
+              }}
             >
-              <span className="hero-pulse-dot w-1.5 h-1.5 rounded-full shrink-0" style={{ background: "var(--gold)" }} />
-              <span className="hidden md:block w-9 h-px" style={{ background: "linear-gradient(90deg,var(--gold),transparent)" }} />
-              {t("eyebrow")}
-            </p>
-
-            {/* Display title — line mask reveal */}
-            <h1 className="mb-6 md:mb-7">
-              <span className="block overflow-hidden pb-[0.08em] -mb-[0.08em]">
-                <span
-                  data-hero-stagger
-                  className="hero-mask hero-title-shadow block font-medium tracking-[-0.015em] leading-[1.05] text-[clamp(2.55rem,11.8vw,4.1rem)]"
-                  style={{
-                    fontFamily: "var(--font-cormorant), Georgia, serif",
-                    color: heroData.title_line1_color,
-                  }}
-                >
-                  {t("title1")}
-                </span>
+              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: "var(--gold)" }} />
+              <span
+                className="font-semibold font-ui"
+                style={{ letterSpacing: "0.26em", fontSize: "11px", color: "var(--gold)" }}
+              >
+                {t("badge")}
               </span>
-              <span className="block overflow-hidden pb-[0.1em] -mb-[0.06em]">
-                <span
-                  data-hero-stagger
-                  className="hero-mask hero-title-shadow block font-medium italic tracking-[-0.01em] leading-[1.06] text-[clamp(2.55rem,11.8vw,4.1rem)]"
-                  style={{
-                    fontFamily: "var(--font-cormorant), Georgia, serif",
-                    color: heroData.title_line2_color,
-                  }}
-                >
-                  {t("title2")}
-                </span>
+            </div>
+
+            {/* Display title */}
+            <h1
+              data-hero-stagger
+              className="hero-enter mt-5 font-semibold"
+              style={{
+                fontFamily: "var(--font-cormorant), Georgia, serif",
+                fontSize: "clamp(40px, 10vw, 62px)",
+                lineHeight: 1.06,
+                color: heroData.title_line1_color,
+              }}
+            >
+              {t("title1")}
+              <span
+                className="block italic font-normal mt-1"
+                style={{ color: heroData.title_line2_color }}
+              >
+                {t("title2")}
               </span>
             </h1>
+
+            {/* Subheadline */}
+            <p
+              data-hero-stagger
+              className="hero-enter italic mt-4"
+              style={{
+                fontFamily: "var(--font-cormorant), Georgia, serif",
+                fontSize: "clamp(19px, 3vw, 22px)",
+                color: "#e8ddcf",
+              }}
+            >
+              {t("subtitle")}
+            </p>
 
             {/* Description */}
             <p
               data-hero-stagger
-              className="hero-enter text-[13px] md:text-[15px] leading-[1.7] md:leading-[1.75] max-w-md mb-6 md:mb-9"
-              style={{ color: "rgba(248,245,241,.9)" }}
+              className="hero-enter mt-5 max-w-[46ch] text-[14px] sm:text-[15px] leading-relaxed font-ui"
+              style={{ color: "var(--sand)" }}
             >
               {t("desc")}
             </p>
 
-            {/* Features — mobile: glass chips / desktop: minimal list */}
+            {/* Feature icons — 3 items */}
             <ul
               data-hero-stagger
-              className="hero-enter flex flex-wrap gap-2 md:gap-x-8 md:gap-y-2 mb-8 md:mb-11 text-[11px] md:text-[13px]"
-              style={{ color: "rgba(248,245,241,.9)" }}
+              className="hero-enter mt-7 flex flex-wrap gap-x-8 gap-y-4"
             >
-              {[t("feature1"), t("feature2"), t("feature3")].map((f) => (
-                <li
-                  key={f}
-                  className="flex items-center gap-2 rounded-full px-3.5 py-2 md:px-0 md:py-0 bg-[rgba(10,7,5,.45)] md:bg-transparent backdrop-blur-md md:backdrop-filter-none border border-[rgba(248,245,241,.12)] md:border-0"
-                >
-                  <svg
-                    className="shrink-0"
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="var(--gold)"
-                    strokeWidth="2.4"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M20 6L9 17l-5-5" />
-                  </svg>
-                  {f}
-                </li>
-              ))}
+              {/* Material Pilihan */}
+              <li className="flex items-center gap-3">
+                <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m12 3 9 5-9 5-9-5 9-5Z" />
+                  <path d="m3 13 9 5 9-5" />
+                </svg>
+                <span className="text-[13px] leading-tight font-ui" style={{ color: "#e3d8cb" }}>
+                  {t("item1")}
+                </span>
+              </li>
+              {/* Cutting Presisi */}
+              <li className="flex items-center gap-3">
+                <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="6" cy="18" r="2.4" />
+                  <circle cx="18" cy="18" r="2.4" />
+                  <path d="M8 16 18 4M16 16 6 4" />
+                </svg>
+                <span className="text-[13px] leading-tight font-ui" style={{ color: "#e3d8cb" }}>
+                  {t("item2")}
+                </span>
+              </li>
+              {/* Create Your Price */}
+              <li className="flex items-center gap-3">
+                <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 12V4h8l9 9-8 8-9-9Z" />
+                  <circle cx="7.5" cy="7.5" r="1.2" fill="var(--gold)" stroke="none" />
+                </svg>
+                <span className="text-[13px] leading-tight font-ui" style={{ color: "#e3d8cb" }}>
+                  {t("item3")}
+                </span>
+              </li>
             </ul>
 
             {/* CTAs */}
-            <div data-hero-stagger className="hero-enter flex flex-col sm:flex-row sm:items-center gap-3.5 sm:gap-7">
+            <div data-hero-stagger className="hero-enter mt-7 flex flex-col sm:flex-row gap-3 sm:gap-4">
+              {/* Primary — gold filled */}
               <a
                 href="/katalog"
-                className="group relative inline-flex items-center justify-center gap-3 overflow-hidden rounded-full px-8 sm:px-9 py-4 sm:py-[1.15rem] text-[11px] sm:text-[11.5px] tracking-[0.2em] uppercase font-ui font-semibold w-full sm:w-auto transition active:scale-[0.97]"
-                style={{ background: "var(--gold)", color: "#1c140d", boxShadow: "0 18px 44px -14px rgba(224,181,99,.5)" }}
+                className="group relative inline-flex items-center justify-center gap-3 overflow-hidden rounded-full px-8 py-3.5 text-[13px] font-bold tracking-wide font-ui w-full sm:w-auto transition active:scale-[0.97]"
+                style={{ background: "var(--gold)", color: "#1c1512", boxShadow: "0 18px 44px -14px rgba(224,181,99,.5)" }}
               >
                 <span
                   className="absolute inset-0 translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]"
-                  style={{ background: "#f2d9a4" }}
+                  style={{ background: "#efd0a0" }}
                   aria-hidden
                 />
                 <span className="relative">{t("cta1")}</span>
                 <svg
-                  className="relative transition-transform duration-500 group-hover:translate-x-1.5"
-                  width="15"
-                  height="15"
+                  className="relative w-4 h-4 transition-transform duration-500 group-hover:translate-x-1.5"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
-                  strokeWidth="1.8"
+                  strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 >
@@ -296,53 +302,29 @@ export default function Hero() {
                 </svg>
               </a>
 
-              {/* Secondary CTA — mobile: ghost glass button */}
+              {/* Secondary — outline with WhatsApp icon */}
               <a
                 href={getWhatsAppLink(t("whatsappMsg"))}
                 target="_blank"
                 rel="noopener"
                 onClick={() => trackWhatsAppClick("hero")}
-                className="sm:hidden group inline-flex items-center justify-center gap-2.5 w-full rounded-full px-8 py-4 text-[11px] tracking-[0.2em] uppercase transition active:scale-[0.97]"
+                className="group inline-flex items-center justify-center gap-3 rounded-full px-8 py-3.5 text-[13px] font-semibold tracking-wide font-ui w-full sm:w-auto transition active:scale-[0.97]"
                 style={{
-                  color: "var(--cream)",
-                  background: "rgba(10,7,5,.42)",
-                  backdropFilter: "blur(12px)",
-                  border: "1px solid rgba(248,245,241,.22)",
+                  color: "white",
+                  boxShadow: "inset 0 0 0 1px rgba(255,255,255,.35)",
                 }}
               >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-6.4A8 8 0 1 1 21 12Z" />
                 </svg>
                 {t("cta2")}
-              </a>
-
-              {/* Secondary CTA — desktop: underline text link */}
-              <a
-                href={getWhatsAppLink(t("whatsappMsg"))}
-                target="_blank"
-                rel="noopener"
-                onClick={() => trackWhatsAppClick("hero")}
-                className="hidden sm:inline-flex group items-center gap-3 py-1 text-[11.5px] tracking-[0.2em] uppercase transition"
-                style={{ color: "var(--cream)" }}
-              >
-                {t("cta2")}
-                <span className="relative block h-px w-8 overflow-hidden">
-                  <span
-                    className="absolute inset-0 origin-left scale-x-100 group-hover:scale-x-0 transition-transform duration-[400ms]"
-                    style={{ background: "rgba(248,245,241,.5)" }}
-                  />
-                  <span
-                    className="absolute inset-0 origin-right scale-x-0 group-hover:scale-x-100 transition-transform duration-[400ms] delay-100"
-                    style={{ background: "var(--gold)" }}
-                  />
-                </span>
               </a>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── Sound control cluster — mobile: top-right (clear of WA float), desktop: bottom-right ── */}
+      {/* ── Sound control cluster ── */}
       <div className="absolute right-4 top-[108px] md:top-auto md:right-8 md:bottom-[max(1.4rem,env(safe-area-inset-bottom))] z-20 flex flex-col items-end gap-2.5">
         {showUnmuteHint && (
           <button
@@ -385,21 +367,21 @@ export default function Hero() {
         </button>
       </div>
 
-      {/* ── Scroll indicator (desktop) ── */}
-      <a
-        href="#cara-pesan"
-        className="hidden lg:flex absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex-col items-center gap-2.5 group"
-      >
-        <span className="text-[9.5px] tracking-[0.38em] uppercase" style={{ color: "rgba(248,245,241,.6)" }}>
+      {/* ── Scroll indicator ── */}
+      <div className="relative z-10 flex items-center gap-4 mx-auto w-full max-w-[1240px] px-5 sm:px-10 lg:px-16 xl:pl-24 pb-7 lg:pb-10">
+        {/* Vertical track with animated dot */}
+        <div className="relative h-[44px] w-px" style={{ background: "rgba(201,160,99,.28)" }}>
+          <span className="scroll-dot absolute left-1/2 -translate-x-1/2 top-0 w-[6px] h-[6px] rounded-full" style={{ background: "var(--gold)", boxShadow: "0 0 10px rgba(224,189,132,.8)" }} />
+        </div>
+        {/* Label */}
+        <span className="text-[10px] sm:text-[11px] tracking-[.26em] leading-tight font-ui" style={{ color: "var(--sand)" }}>
           {t("scroll")}
         </span>
-        <span
-          className="w-[26px] h-[42px] rounded-full border flex items-start justify-center p-[7px]"
-          style={{ borderColor: "rgba(248,245,241,.3)" }}
-        >
-          <span className="scroll-dot w-[3px] h-2 rounded-full" style={{ background: "var(--gold)" }} />
-        </span>
-      </a>
+        {/* Arrow */}
+        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 5v14M6 13l6 6 6-6" />
+        </svg>
+      </div>
     </section>
   );
 }
