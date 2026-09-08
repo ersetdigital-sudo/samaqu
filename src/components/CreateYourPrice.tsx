@@ -88,7 +88,7 @@ export default function CreateYourPrice() {
                 </svg>
               </span>
               <p className="text-[15px] leading-relaxed pt-2" style={{ color: "#d8cec3" }}>
-                {t("benefit1")}
+                {t("bullet1")}
               </p>
             </li>
             <li className="flex gap-4 items-start">
@@ -99,7 +99,7 @@ export default function CreateYourPrice() {
                 </svg>
               </span>
               <p className="text-[15px] leading-relaxed pt-2" style={{ color: "#d8cec3" }}>
-                {t("desc")}
+                {t("bullet2")}
               </p>
             </li>
             <li className="flex gap-4 items-start">
@@ -112,7 +112,7 @@ export default function CreateYourPrice() {
                 </svg>
               </span>
               <p className="text-[15px] leading-relaxed pt-2" style={{ color: "#d8cec3" }}>
-                Karena kualitas yang baik seharusnya bisa dijangkau lebih banyak orang.
+                {t("bullet3")}
               </p>
             </li>
           </ul>
