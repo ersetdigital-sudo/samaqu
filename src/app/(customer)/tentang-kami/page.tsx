@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { ShieldCheck, Scissors, Ruler, MessageCircle } from "lucide-react";
 import Breadcrumb from "@/components/Breadcrumb";
 import { getWhatsAppLink } from "@/lib/store-settings";
+import { useSafeTranslations } from "@/lib/safe-i18n";
 
 const headerVariants = {
   hidden: { opacity: 0, y: 18 },
@@ -46,6 +47,8 @@ function StatNumber({ target, suffix = "" }: { target: number; suffix?: string }
 }
 
 export default function TentangKamiPage() {
+  const t = useSafeTranslations("tentangKami");
+
   return (
     <section className="min-h-screen" style={{ background: "var(--cream)" }}>
       {/* ═══ HERO ═══ */}
@@ -59,14 +62,14 @@ export default function TentangKamiPage() {
           <div className="max-w-4xl mx-auto px-5 sm:px-8 text-center">
             <motion.div initial="hidden" animate="visible" variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.1 } } }}>
               <motion.p variants={headerVariants} className="text-[11px] sm:text-[12px] tracking-[0.32em] uppercase mb-4 sm:mb-6 font-ui font-medium" style={{ color: "#d4a86a" }}>
-                Tentang SAMAQU
+                {t("heroEyebrow")}
               </motion.p>
               <motion.h1 variants={headerVariants} className="text-[2rem] sm:text-5xl lg:text-6xl font-semibold leading-[1.05] tracking-tight" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--cream)" }}>
-                Lebih dari <em style={{ color: "#d4a86a" }}>Sekadar</em> Busana
+                {t("heroTitle1")} <em style={{ color: "#d4a86a" }}>{t("heroTitle2")}</em> {t("heroTitle3")}
               </motion.h1>
               <motion.div variants={headerVariants} className="mx-auto my-6 sm:my-8 h-px w-16" style={{ background: "var(--gold)" }} />
               <motion.p variants={headerVariants} className="text-sm sm:text-base lg:text-lg leading-relaxed max-w-2xl mx-auto font-ui" style={{ color: "rgba(212,197,181,.8)" }}>
-                Kami percaya busana yang baik menemani setiap langkah ibadah dan keseharian dengan tenang — dirancang dengan hati, ketelitian, dan penghormatan pada mereka yang mengenakannya.
+                {t("heroDesc")}
               </motion.p>
             </motion.div>
           </div>
@@ -88,31 +91,27 @@ export default function TentangKamiPage() {
                 <img src="/images/about/897ae4e0-8b7a-43e9-843b-3b5b27141774.png" alt="Kandora premium SAMAQU" className="w-full h-[320px] sm:h-[420px] md:h-[560px] object-cover rounded-2xl" style={{ boxShadow: "0 25px 50px -12px rgba(45,33,27,.25)" }} />
                 <div className="absolute -bottom-4 -right-3 sm:-right-6 px-5 py-4 rounded-xl shadow-2xl max-w-[200px] hidden sm:block" style={{ background: "var(--espresso)", color: "var(--cream)" }}>
                   <p className="text-3xl" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "#d4a86a" }}>Est.</p>
-                  <p className="text-sm font-ui" style={{ color: "rgba(212,197,181,.8)" }}>Ketelitian di setiap jahitan</p>
+                  <p className="text-sm font-ui" style={{ color: "rgba(212,197,181,.8)" }}>{t("badge")}</p>
                 </div>
               </div>
             </motion.div>
 
             {/* Text */}
             <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true, margin: "-10%" }} transition={{ duration: 0.7, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}>
-              <p className="text-[11px] sm:text-[12px] tracking-[0.32em] uppercase font-ui font-semibold mb-4" style={{ color: "var(--gold)" }}>Cerita Kami</p>
+              <p className="text-[11px] sm:text-[12px] tracking-[0.32em] uppercase font-ui font-semibold mb-4" style={{ color: "var(--gold)" }}>{t("storyEyebrow")}</p>
               <h2 className="text-[1.6rem] sm:text-4xl lg:text-5xl font-semibold leading-tight mb-5 sm:mb-6" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
-                Kesederhanaan yang Bermakna
+                {t("storyTitle")}
               </h2>
               <div className="h-px w-16 mb-6 sm:mb-8" style={{ background: "var(--gold)" }} />
               <div className="space-y-4 sm:space-y-5 font-ui text-sm sm:text-base lg:text-lg leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-                <p>
-                  SAMAQU lahir dari keyakinan sederhana: setiap muslim berhak mengenakan busana yang <span className="font-medium" style={{ color: "var(--espresso)" }}>layak menemani momen-momen penting</span> — dari waktu shalat, keseharian, hingga acara istimewa.
-                </p>
-                <p>
-                  Kami memilih bahan yang adem, potongan yang rapi, dan detail yang halus. Dari Thobe hingga Vest, setiap produk kami rawat dengan ketelitian dan hati. Karena bagi kami, kualitas adalah bentuk penghormatan pada pelanggan.
-                </p>
+                <p dangerouslySetInnerHTML={{ __html: t("storyP1") }} />
+                <p>{t("storyP2")}</p>
               </div>
               <div className="grid grid-cols-3 gap-3 sm:gap-4 mt-8 sm:mt-10">
                 {[
-                  { title: "Kualitas", sub: "Bahan pilihan" },
-                  { title: "Kenyamanan", sub: "Adem & ringan" },
-                  { title: "Kepercayaan", sub: "Pelayanan tulus" },
+                  { title: t("value1Title"), sub: t("value1Sub") },
+                  { title: t("value2Title"), sub: t("value2Sub") },
+                  { title: t("value3Title"), sub: t("value3Sub") },
                 ].map((v, i) => (
                   <div key={v.title} className={`text-center sm:text-left ${i === 1 ? "border-x px-2 sm:px-3" : ""}`} style={{ borderColor: "rgba(201,183,156,.2)" }}>
                     <p className="text-base sm:text-lg" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>{v.title}</p>
@@ -129,17 +128,17 @@ export default function TentangKamiPage() {
       <div className="py-16 sm:py-24" style={{ background: "var(--espresso)" }}>
         <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-14">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }} className="text-center max-w-2xl mx-auto mb-10 sm:mb-14">
-            <p className="text-[11px] sm:text-[12px] tracking-[0.32em] uppercase font-ui font-semibold mb-4" style={{ color: "#d4a86a" }}>Pencapaian</p>
+            <p className="text-[11px] sm:text-[12px] tracking-[0.32em] uppercase font-ui font-semibold mb-4" style={{ color: "#d4a86a" }}>{t("statEyebrow")}</p>
             <h2 className="text-[1.6rem] sm:text-4xl lg:text-5xl font-semibold" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--cream)" }}>
-              Dipercaya di Setiap Momen
+              {t("statTitle")}
             </h2>
           </motion.div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 md:gap-6">
             {[
-              { value: 6, label: "Koleksi Eksklusif", suffix: "" },
-              { value: 12, label: "Jenis Kain Pilihan", suffix: "+" },
-              { value: 2500, label: "Pelanggan Puas", suffix: "+" },
-              { value: 5, label: "Tahun Pengalaman", suffix: "" },
+              { value: 6, label: t("stat1Label"), suffix: "" },
+              { value: 12, label: t("stat2Label"), suffix: "+" },
+              { value: 2500, label: t("stat3Label"), suffix: "+" },
+              { value: 5, label: t("stat4Label"), suffix: "" },
             ].map((stat, i) => (
               <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: i * 0.1 }} className="text-center">
                 <p className="text-[2.2rem] sm:text-5xl lg:text-6xl font-semibold" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "#d4a86a" }}>
@@ -157,20 +156,20 @@ export default function TentangKamiPage() {
       <div className="py-16 sm:py-24 lg:py-28" style={{ background: "var(--bg-secondary, #efe8e0)" }}>
         <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-14">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }} className="text-center max-w-2xl mx-auto mb-12 sm:mb-16">
-            <p className="text-[11px] sm:text-[12px] tracking-[0.32em] uppercase font-ui font-semibold mb-4" style={{ color: "var(--gold)" }}>Komitmen Kami</p>
+            <p className="text-[11px] sm:text-[12px] tracking-[0.32em] uppercase font-ui font-semibold mb-4" style={{ color: "var(--gold)" }}>{t("commitEyebrow")}</p>
             <h2 className="text-[1.6rem] sm:text-4xl lg:text-5xl font-semibold mb-4 sm:mb-5" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
-              Kualitas di Setiap Detail
+              {t("commitTitle")}
             </h2>
             <p className="font-ui text-sm sm:text-base lg:text-lg leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-              Empat janji yang kami pegang dalam setiap produk yang sampai ke tanganmu.
+              {t("commitDesc")}
             </p>
           </motion.div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
             {[
-              { icon: ShieldCheck, title: "Material Pilihan", desc: "Kain yang adem, ringan, dan tidak panas — dipilih untuk kenyamanan sepanjang hari." },
-              { icon: Scissors, title: "Jahitan Presisi", desc: "Setiap jahitan dikerjakan teliti dan rapi, melewati pengecekan sebelum dikirim." },
-              { icon: Ruler, title: "Panduan Size Akurat", desc: "Panduan ukuran lengkap plus bantuan admin agar potongan pas dengan posturmu." },
-              { icon: MessageCircle, title: "Support Responsif", desc: "Admin ramah siap membantu dari pemilihan size hingga setelah pembelian." },
+              { icon: ShieldCheck, title: t("commit1Title"), desc: t("commit1Desc") },
+              { icon: Scissors, title: t("commit2Title"), desc: t("commit2Desc") },
+              { icon: Ruler, title: t("commit3Title"), desc: t("commit3Desc") },
+              { icon: MessageCircle, title: t("commit4Title"), desc: t("commit4Desc") },
             ].map((item, i) => (
               <motion.div key={item.title} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: i * 0.1 }}
                 className="qcard rounded-2xl p-6 sm:p-8" style={{ background: "var(--cream)", border: "1px solid rgba(201,183,156,.2)" }}>
@@ -189,16 +188,16 @@ export default function TentangKamiPage() {
       <div className="py-16 sm:py-24 lg:py-28">
         <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-14">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }} className="text-center max-w-2xl mx-auto mb-10 sm:mb-14">
-            <p className="text-[11px] sm:text-[12px] tracking-[0.32em] uppercase font-ui font-semibold mb-4" style={{ color: "var(--gold)" }}>Di Balik Layar</p>
+            <p className="text-[11px] sm:text-[12px] tracking-[0.32em] uppercase font-ui font-semibold mb-4" style={{ color: "var(--gold)" }}>{t("galleryEyebrow")}</p>
             <h2 className="text-[1.6rem] sm:text-4xl lg:text-5xl font-semibold" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
-              Ketelitian yang Terlihat
+              {t("galleryTitle")}
             </h2>
           </motion.div>
           <div className="grid grid-cols-2 md:grid-cols-4 md:grid-rows-2 gap-3 sm:gap-4 md:gap-5">
             <div className="gallery-item relative overflow-hidden rounded-xl sm:rounded-2xl md:row-span-2 col-span-2 h-52 sm:h-64 md:h-auto md:min-h-[400px]">
               <img src="/images/about/70cc4d03-6ed5-41e3-a349-9525e031af58.png" alt="Detail busana SAMAQU" className="w-full h-full object-cover transition-transform duration-700 hover:scale-105" />
               <div className="gallery-overlay absolute inset-0 flex items-end p-4 sm:p-5" style={{ background: "linear-gradient(to top, rgba(45,33,27,.7), transparent)" }}>
-                <span className="text-base sm:text-xl" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--cream)" }}>Detail Halus</span>
+                <span className="text-base sm:text-xl" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--cream)" }}>{t("galleryOverlay")}</span>
               </div>
             </div>
             {[
@@ -224,20 +223,20 @@ export default function TentangKamiPage() {
 
         <div className="relative max-w-3xl mx-auto px-5 sm:px-8 text-center">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
-            <p className="text-[11px] sm:text-[12px] tracking-[0.32em] uppercase font-ui font-semibold mb-5 sm:mb-6" style={{ color: "#d4a86a" }}>Mulai Perjalananmu</p>
+            <p className="text-[11px] sm:text-[12px] tracking-[0.32em] uppercase font-ui font-semibold mb-5 sm:mb-6" style={{ color: "#d4a86a" }}>{t("ctaEyebrow")}</p>
             <h2 className="text-[1.8rem] sm:text-4xl lg:text-5xl xl:text-6xl font-semibold leading-tight mb-5 sm:mb-6" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--cream)" }}>
-              Temukan Koleksi Kami
+              {t("ctaTitle")}
             </h2>
             <p className="text-sm sm:text-base lg:text-lg leading-relaxed max-w-xl mx-auto mb-8 sm:mb-10 font-ui" style={{ color: "rgba(212,197,181,.8)" }}>
-              Biarkan busana yang layak menemani setiap momenmu. Jelajahi koleksi SAMAQU dan temukan yang paling pas untukmu.
+              {t("ctaDesc")}
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
               <a href="/katalog" className="inline-flex items-center gap-2 rounded-full px-7 sm:px-8 py-3 sm:py-3.5 text-[12px] sm:text-sm tracking-[0.08em] uppercase font-ui font-semibold transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg w-full sm:w-auto justify-center" style={{ background: "var(--gold)", color: "white", boxShadow: "0 8px 28px -8px rgba(181,140,74,.6)" }}>
-                Lihat Katalog
+                {t("ctaBtn1")}
                 <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M4 9h10M10 4l5 5-5 5" /></svg>
               </a>
-              <a href={getWhatsAppLink("Halo Admin SAMAQU, saya tertarik dengan koleksi Anda dan ingin bertanya soal pemesanan.")} className="inline-flex items-center gap-2 rounded-full px-7 sm:px-8 py-3 sm:py-3.5 text-[12px] sm:text-sm tracking-[0.08em] uppercase font-ui font-semibold transition-all duration-300 w-full sm:w-auto justify-center" style={{ border: "1px solid rgba(255,255,255,.25)", color: "var(--cream)" }}>
-                Hubungi Admin
+              <a href={getWhatsAppLink(t("ctaBtn2"))} className="inline-flex items-center gap-2 rounded-full px-7 sm:px-8 py-3 sm:py-3.5 text-[12px] sm:text-sm tracking-[0.08em] uppercase font-ui font-semibold transition-all duration-300 w-full sm:w-auto justify-center" style={{ border: "1px solid rgba(255,255,255,.25)", color: "var(--cream)" }}>
+                {t("ctaBtn2")}
               </a>
             </div>
           </motion.div>
