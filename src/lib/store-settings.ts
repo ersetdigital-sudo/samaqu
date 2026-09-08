@@ -18,7 +18,7 @@ const DEFAULTS: StoreSettings = {
   store_name: "SAMAQU",
   tagline: "Busana yang Layak Menemani Setiap Momen",
   email: "halo@samaqu.id",
-  whatsapp: "+62 812 3456 7890",
+  whatsapp: "+62 895 6359 65400",
   origin_district_id: null,
   enabled_couriers: ["jne", "sicepat", "jnt", "ninja", "tiki", "wahana", "pos", "lion", "anteraja"],
   instagram_url: "https://instagram.com/samaqu.id",
@@ -55,7 +55,10 @@ export function useStoreSettings() {
 }
 
 export function getWhatsAppNumber(): string {
-  return (cached?.whatsapp || DEFAULTS.whatsapp).replace(/[^0-9+]/g, "").replace(/^0/, "62");
+  const digits = (cached?.whatsapp || DEFAULTS.whatsapp).replace(/[^0-9]/g, "");
+  if (digits.startsWith("0")) return `62${digits.slice(1)}`;
+  if (digits.startsWith("62")) return digits;
+  return `62${digits}`;
 }
 
 export function getWhatsAppLink(message: string): string {
