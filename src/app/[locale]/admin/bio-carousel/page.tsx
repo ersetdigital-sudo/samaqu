@@ -1,0 +1,1 @@
+export { default } from "../../../admin/bio-carousel/page";
