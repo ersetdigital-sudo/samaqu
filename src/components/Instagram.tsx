@@ -85,11 +85,9 @@ export default function Instagram() {
           href="https://instagram.com/samaqu.id"
           target="_blank"
           rel="noopener"
-          className="mt-8 sm:mt-10 grid place-items-center rounded-md text-[13px] sm:text-[14px] font-bold tracking-[.12em] py-4 transition-colors duration-200 no-underline"
+          className="mt-8 sm:mt-10 grid place-items-center rounded-md text-[13px] sm:text-[14px] font-bold tracking-[.12em] py-4 transition-colors duration-200 !no-underline !text-[#1b1b1b] visited:!text-[#1b1b1b] hover:!text-[#1b1b1b]"
           style={{
             background: "var(--gold-bright, #d3ab72)",
-            color: "#1b1b1b",
-            textDecoration: "none",
           }}
         >
           LIHAT INSTAGRAM
