@@ -1,11 +1,11 @@
+import { useSafeTranslations } from "@/lib/safe-i18n";
+
 export default function Garansi() {
+  const t = useSafeTranslations("garansi");
+
   const items = [
     {
-      label: (
-        <>
-          Garansi<br />Kualitas Produk
-        </>
-      ),
+      label: t("item1"),
       icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-[30px] h-[30px]" style={{ color: "var(--gold)" }}>
           <path d="M12 3l7 3v5.5c0 4.4-3 8.2-7 9.5-4-1.3-7-5.1-7-9.5V6l7-3Z" />
@@ -14,11 +14,7 @@ export default function Garansi() {
       ),
     },
     {
-      label: (
-        <>
-          Garansi<br />Uang Kembali
-        </>
-      ),
+      label: t("item2"),
       icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-[30px] h-[30px]" style={{ color: "var(--gold)" }}>
           <rect x="2.5" y="6" width="19" height="12" rx="2.5" />
@@ -28,11 +24,7 @@ export default function Garansi() {
       ),
     },
     {
-      label: (
-        <>
-          Garansi<br />Tukar Ukuran
-        </>
-      ),
+      label: t("item3"),
       icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-[30px] h-[30px]" style={{ color: "var(--gold)" }}>
           <path d="M8.5 3.5 5 5.2 3.2 9l2.6 1.3V20a1 1 0 0 0 1 1h10.4a1 1 0 0 0 1-1v-9.7L20.8 9 19 5.2l-3.5-1.7" />
@@ -41,11 +33,7 @@ export default function Garansi() {
       ),
     },
     {
-      label: (
-        <>
-          Pelayanan<br />yang Ramah
-        </>
-      ),
+      label: t("item4"),
       icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-[30px] h-[30px]" style={{ color: "var(--gold)" }}>
           <path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-6.4A8 8 0 1 1 21 12Z" />
@@ -83,7 +71,7 @@ export default function Garansi() {
             className="font-semibold font-ui"
             style={{ letterSpacing: "0.4em", fontSize: "11px", color: "var(--gold)" }}
           >
-            JAMINAN
+            {t("eyebrow")}
           </span>
           <span className="h-px w-8" style={{ background: "rgba(181,140,74,.6)" }} />
         </div>
@@ -96,7 +84,7 @@ export default function Garansi() {
             fontSize: "clamp(44px, 8vw, 60px)",
           }}
         >
-          SAMAQU
+          {t("heading")}
         </h2>
 
         {/* Description */}
@@ -104,9 +92,7 @@ export default function Garansi() {
           className="mt-5 mx-auto max-w-[60ch] text-[14px] sm:text-[15px] leading-relaxed font-ui"
           style={{ color: "var(--text-secondary)" }}
         >
-          Kami tahu setiap rupiah yang kamu keluarkan adalah hasil kerja kerasmu.
-          <br className="hidden sm:block" />
-          Karena itu kami ingin setiap pembelian terasa layak.
+          {t("desc")}
         </p>
 
         {/* 4 guarantee items */}
@@ -122,7 +108,7 @@ export default function Garansi() {
               >
                 {item.icon}
               </span>
-              <p className="mt-4 text-[13px] sm:text-[14px] leading-snug font-ui" style={{ color: "var(--espresso)" }}>
+              <p className="mt-4 text-[13px] sm:text-[14px] leading-snug font-ui whitespace-pre-line" style={{ color: "var(--espresso)" }}>
                 {item.label}
               </p>
             </div>

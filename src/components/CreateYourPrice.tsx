@@ -15,10 +15,10 @@ export default function CreateYourPrice() {
 
   const note =
     price === minPrice
-      ? "Harga Minimum. Pilih harga yang terasa ringan untukmu."
+      ? t("noteMin")
       : price >= maxPrice
-        ? "Terima kasih — dukunganmu membantu lebih banyak orang berbusana baik."
-        : "Hargamu. Terima kasih sudah memilih yang terasa pas untukmu.";
+        ? t("noteMax")
+        : t("noteMid");
 
   const handleSlider = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setPrice(Number(e.target.value));
@@ -179,7 +179,7 @@ export default function CreateYourPrice() {
             onChange={handleSlider}
             className="cyp-slider mt-7"
             style={{ "--pct": `${pct}%` } as React.CSSProperties}
-            aria-label="Pilih hargamu"
+            aria-label={t("ariaSlider")}
           />
           <div
             className="mt-3 flex items-center justify-between text-[11px] tracking-wide font-ui"

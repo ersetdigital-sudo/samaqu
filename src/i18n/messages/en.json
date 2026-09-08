@@ -73,10 +73,17 @@
     "benefit3": "The difference helps reach more people",
     "bullet1": "We understand everyone has different means.",
     "bullet2": "Every Samaqu product has a Minimum Price, and you're free to set your own best price above it.",
-    "bullet3": "Because quality should be accessible to more people."
+    "bullet3": "Because quality should be accessible to more people.",
+    "noteMin": "Minimum Price. Choose a price that feels comfortable for you.",
+    "noteMax": "Thank you — your support helps more people dress well.",
+    "noteMid": "Your price. Thank you for choosing what feels right for you.",
+    "ariaSlider": "Choose your price"
   },
   "garansi": {
     "badge": "Shopping Assurance",
+    "eyebrow": "GUARANTEE",
+    "heading": "SAMAQU",
+    "desc": "We know every rupiah you spend is the result of your hard work. That's why we want every purchase to feel worth it.",
     "titleLine1": "Our",
     "titleLine2": "Guarantee",
     "subtitle": "We know every rupiah you spend is the result of your hard work.",
@@ -93,7 +100,11 @@
     "card4Desc": "From consultation to after-purchase, our team is ready to help.",
     "badge1": "100% Original",
     "badge2": "Safe Packing",
-    "badge3": "Personal Support"
+    "badge3": "Personal Support",
+    "item1": "Product Quality\nGuarantee",
+    "item2": "Money Back\nGuarantee",
+    "item3": "Size Exchange\nGuarantee",
+    "item4": "Friendly\nService"
   },
   "testimoniHome": {
     "eyebrow": "What They Say",
@@ -540,5 +551,22 @@
     "ctaTitle": "Still haven't found an answer?",
     "ctaDesc": "The SAMAQU team is ready to help you — from size consultation, order status, to return processing.",
     "ctaBtn": "Contact Us"
+  },
+  "instagram": {
+    "eyebrow": "FOLLOW OUR JOURNEY ON INSTAGRAM",
+    "cta": "VIEW INSTAGRAM"
+  },
+  "aboutLinks": {
+    "eyebrow": "GET TO KNOW SAMAQU",
+    "title": "Get Closer to Samaqu",
+    "desc": "Learn about Samaqu, customer experiences, and important things before buying.",
+    "item1Title": "Customer Reviews",
+    "item1Sub": "See their experiences",
+    "item2Title": "About Samaqu",
+    "item2Sub": "Discover our story and values",
+    "item3Title": "Size Guide",
+    "item3Sub": "Find the right size",
+    "item4Title": "FAQ",
+    "item4Sub": "Frequently asked questions"
   }
 }

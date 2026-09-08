@@ -73,10 +73,17 @@
     "benefit3": "Selisihnya membantu menjangkau lebih banyak orang",
     "bullet1": "Kami tahu kemampuan setiap orang berbeda.",
     "bullet2": "Setiap produk Samaqu memiliki Harga Minimum, lalu kamu bebas menentukan sendiri harga terbaikmu.",
-    "bullet3": "Karena kualitas yang baik seharusnya bisa dijangkau lebih banyak orang."
+    "bullet3": "Karena kualitas yang baik seharusnya bisa dijangkau lebih banyak orang.",
+    "noteMin": "Harga Minimum. Pilih harga yang terasa ringan untukmu.",
+    "noteMax": "Terima kasih — dukunganmu membantu lebih banyak orang berbusana baik.",
+    "noteMid": "Hargamu. Terima kasih sudah memilih yang terasa pas untukmu.",
+    "ariaSlider": "Pilih hargamu"
   },
   "garansi": {
     "badge": "Ketenangan Berbelanja",
+    "eyebrow": "JAMINAN",
+    "heading": "SAMAQU",
+    "desc": "Kami tahu setiap rupiah yang kamu keluarkan adalah hasil kerja kerasmu. Karena itu kami ingin setiap pembelian terasa layak.",
     "titleLine1": "Jaminan",
     "titleLine2": "SAMAQU",
     "subtitle": "Kami tahu setiap rupiah yang kamu keluarkan adalah hasil kerja kerasmu.",
@@ -93,7 +100,11 @@
     "card4Desc": "Dari konsultasi hingga setelah pembelian, tim kami siap membantu.",
     "badge1": "100% Original",
     "badge2": "Packing Aman",
-    "badge3": "Support Personal"
+    "badge3": "Support Personal",
+    "item1": "Garansi\nKualitas Produk",
+    "item2": "Garansi\nUang Kembali",
+    "item3": "Garansi\nTukar Ukuran",
+    "item4": "Pelayanan\nyang Ramah"
   },
   "testimoniHome": {
     "eyebrow": "Kata Mereka",
@@ -540,5 +551,22 @@
     "ctaTitle": "Masih belum menemukan jawaban?",
     "ctaDesc": "Tim Samaqu siap membantu kamu — dari konsultasi ukuran, status pesanan, hingga proses retur.",
     "ctaBtn": "Hubungi Kami"
+  },
+  "instagram": {
+    "eyebrow": "IKUTI PERJALANAN KAMI DI INSTAGRAM",
+    "cta": "LIHAT INSTAGRAM"
+  },
+  "aboutLinks": {
+    "eyebrow": "KENALI SAMAQU",
+    "title": "Lebih Dekat dengan Samaqu",
+    "desc": "Cari tahu tentang Samaqu, pengalaman customer, hingga hal penting sebelum membeli.",
+    "item1Title": "Review Customer",
+    "item1Sub": "Lihat pengalaman mereka",
+    "item2Title": "Tentang Samaqu",
+    "item2Sub": "Kenali cerita dan nilai kami",
+    "item3Title": "Panduan Ukuran",
+    "item3Sub": "Temukan size yang tepat",
+    "item4Title": "FAQ",
+    "item4Sub": "Pertanyaan yang sering ditanyakan"
   }
 }
