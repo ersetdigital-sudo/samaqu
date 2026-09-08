@@ -1,7 +1,6 @@
 "use client";
 
 import Hero from "@/components/Hero";
-import TrustMarquee from "@/components/TrustMarquee";
 import CaraPemesanan from "@/components/CaraPemesanan";
 import Koleksi from "@/components/Koleksi";
 import CreateYourPrice from "@/components/CreateYourPrice";
@@ -20,7 +19,6 @@ export default function Home() {
     <>
       <main>
         <Hero />
-        <TrustMarquee />
         <CaraPemesanan />
         <Koleksi />
         <CreateYourPrice />
