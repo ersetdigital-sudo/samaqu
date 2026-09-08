@@ -110,7 +110,7 @@ export default function BioLinkPage() {
         <section className="relative">
           <div
             className="relative overflow-hidden"
-            style={{ aspectRatio: "1024/682" }}
+            style={{ aspectRatio: "1024/498" }}
             onMouseEnter={() => setPaused(true)}
             onMouseLeave={() => setPaused(false)}
           >
