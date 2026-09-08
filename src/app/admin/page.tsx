@@ -7,7 +7,7 @@ import { getThumbnailFromImages } from "@/lib/product-thumbnail";
 import {
   LayoutDashboard, ShoppingBag, Package, Users, FileText, Settings,
   Search, Bell, Menu, X, ChevronDown, Plus, TrendingUp, Eye, Edit,
-  DollarSign, ShoppingCart, UserPlus, Box, LogOut, Lock, Mail, Loader2, Trash2, Upload, Ticket, Star, Ruler,
+  DollarSign, ShoppingCart, UserPlus, Box, LogOut, Lock, Mail, Loader2, Trash2, Upload, Ticket, Star, Ruler, Image,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { User } from "@supabase/supabase-js";
@@ -517,6 +517,16 @@ function AdminPageInner() {
               )}
             </button>
           ))}
+
+          <p className="px-3 text-[11px] font-semibold uppercase tracking-wider mb-2 mt-6" style={{ color: "#8f8680" }}>Biolink</p>
+          <Link href="/admin/biolink" className="sidebar-link w-full text-left" onClick={() => setSidebarOpen(false)}>
+            <FileText size={20} strokeWidth={1.6} />
+            <span>Biolink</span>
+          </Link>
+          <Link href="/admin/bio-carousel" className="sidebar-link w-full text-left" onClick={() => setSidebarOpen(false)}>
+            <Image size={20} strokeWidth={1.6} />
+            <span>Foto Carousel</span>
+          </Link>
 
           <p className="px-3 text-[11px] font-semibold uppercase tracking-wider mb-2 mt-6" style={{ color: "#8f8680" }}>Lainnya</p>
           {navItems.slice(4).map((item) => (
