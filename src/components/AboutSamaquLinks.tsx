@@ -1,60 +1,21 @@
 import Link from "next/link";
 import Image from "next/image";
+import { useSafeTranslations } from "@/lib/safe-i18n";
 
-const LINKS = [
-  {
-    title: "Review Customer",
-    subtitle: "Lihat pengalaman mereka",
-    href: "/testimoni",
-    shot: "/images/a200b6ee-90f6-46cb-a882-c85bc6cdb479.png",
-    icon: (
-      <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-        <path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-6.4A8 8 0 1 1 21 12Z" />
-      </svg>
-    ),
-  },
-  {
-    title: "Tentang Samaqu",
-    subtitle: "Kenali cerita dan nilai kami",
-    href: "/tentang-kami",
-    shot: "/images/d245df95-d2d3-4ee7-8a3c-630bce4f42ed.png",
-    icon: (
-      <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-        <circle cx="9" cy="8" r="3" />
-        <path d="M3 20a6 6 0 0 1 12 0" />
-        <path d="M16 11a3 3 0 1 0-1-5.8" />
-        <path d="M18 20a5 5 0 0 0-3-4.6" />
-      </svg>
-    ),
-  },
-  {
-    title: "Panduan Ukuran",
-    subtitle: "Temukan size yang tepat",
-    href: "/panduan-ukuran",
-    shot: "/images/2fee48f0-e1f1-4e08-aa00-d5d70b78893b.png",
-    icon: (
-      <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-        <path d="M12 20h9" />
-        <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
-      </svg>
-    ),
-  },
-  {
-    title: "FAQ",
-    subtitle: "Pertanyaan yang sering ditanyakan",
-    href: "/faq",
-    shot: "/images/eda1a6ee-5630-4c24-9a57-d17fce8f798d.png",
-    icon: (
-      <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-        <circle cx="12" cy="12" r="9" />
-        <path d="M9.5 9.5a2.5 2.5 0 1 1 3 2.4V14" />
-        <circle cx="12" cy="17" r=".8" fill="currentColor" stroke="none" />
-      </svg>
-    ),
-  },
+const LINK_KEYS = [
+  { titleKey: "item1Title", subKey: "item1Sub", href: "/testimoni", shot: "/images/a200b6ee-90f6-46cb-a882-c85bc6cdb479.png",
+    icon: (<svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-6.4A8 8 0 1 1 21 12Z" /></svg>) },
+  { titleKey: "item2Title", subKey: "item2Sub", href: "/tentang-kami", shot: "/images/d245df95-d2d3-4ee7-8a3c-630bce4f42ed.png",
+    icon: (<svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="9" cy="8" r="3" /><path d="M3 20a6 6 0 0 1 12 0" /><path d="M16 11a3 3 0 1 0-1-5.8" /><path d="M18 20a5 5 0 0 0-3-4.6" /></svg>) },
+  { titleKey: "item3Title", subKey: "item3Sub", href: "/panduan-ukuran", shot: "/images/2fee48f0-e1f1-4e08-aa00-d5d70b78893b.png",
+    icon: (<svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>) },
+  { titleKey: "item4Title", subKey: "item4Sub", href: "/faq", shot: "/images/eda1a6ee-5630-4c24-9a57-d17fce8f798d.png",
+    icon: (<svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="12" cy="12" r="9" /><path d="M9.5 9.5a2.5 2.5 0 1 1 3 2.4V14" /><circle cx="12" cy="17" r=".8" fill="currentColor" stroke="none" /></svg>) },
 ];
 
 export default function AboutSamaquLinks() {
+  const t = useSafeTranslations("aboutLinks");
+
   return (
     <section className="relative overflow-hidden" style={{ background: "var(--bg-primary)" }}>
       {/* Fabric backdrop */}
@@ -89,7 +50,7 @@ export default function AboutSamaquLinks() {
             className="font-semibold font-ui"
             style={{ letterSpacing: "0.24em", fontSize: "11px", color: "var(--gold)" }}
           >
-            KENALI SAMAQU
+            {t("eyebrow")}
           </span>
         </div>
 
@@ -100,18 +61,18 @@ export default function AboutSamaquLinks() {
             fontSize: "clamp(34px, 5vw, 46px)",
           }}
         >
-          Lebih Dekat dengan Samaqu
+          {t("title")}
         </h2>
         <p
           className="mt-4 text-[15px] leading-relaxed max-w-[34ch]"
           style={{ color: "var(--text-secondary)" }}
         >
-          Cari tahu tentang Samaqu, pengalaman customer, hingga hal penting sebelum membeli.
+          {t("desc")}
         </p>
 
         {/* Cards */}
         <div className="mt-9 space-y-4 max-w-3xl">
-          {LINKS.map((link) => (
+          {LINK_KEYS.map((link) => (
             <Link
               key={link.href}
               href={link.href}
@@ -135,9 +96,9 @@ export default function AboutSamaquLinks() {
 
               {/* Text */}
               <span className="relative z-10 flex-1 min-w-0">
-                <span className="block text-white font-semibold text-[16px]">{link.title}</span>
+                <span className="block text-white font-semibold text-[16px]">{t(link.titleKey)}</span>
                 <span className="block text-[13px] mt-0.5" style={{ color: "rgba(255,255,255,.7)" }}>
-                  {link.subtitle}
+                  {t(link.subKey)}
                 </span>
               </span>
 

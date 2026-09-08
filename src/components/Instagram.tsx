@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { useSafeTranslations } from "@/lib/safe-i18n";
 
 const images = [
   { src: "/images/c8a0800b-b9bb-4b53-bd5e-00f26a500219.png", alt: "SAMAQU thobe" },
@@ -27,6 +28,8 @@ function InstagramIcon() {
 }
 
 export default function Instagram() {
+  const t = useSafeTranslations("instagram");
+
   return (
     <section className="py-14 sm:py-20" style={{ background: "var(--sand-2)" }}>
       <div className="mx-auto max-w-5xl px-5 sm:px-8">
@@ -44,7 +47,7 @@ export default function Instagram() {
               color: "var(--gold)",
             }}
           >
-            IKUTI PERJALANAN KAMI DI INSTAGRAM
+            {t("eyebrow")}
           </p>
           <h2
             className="mt-3 text-[30px] sm:text-[40px] font-bold tracking-tight"
@@ -90,7 +93,7 @@ export default function Instagram() {
             background: "var(--gold-bright, #d3ab72)",
           }}
         >
-          LIHAT INSTAGRAM
+          {t("cta")}
         </a>
       </div>
     </section>
