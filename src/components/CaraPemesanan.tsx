@@ -203,7 +203,7 @@ export default function CaraPemesanan() {
   return (
     <section
       id="cara-pesan"
-      className="relative px-5 sm:px-6 py-16 sm:py-24 lg:py-32 overflow-hidden"
+      className="relative px-5 sm:px-6 py-10 sm:py-16 lg:py-20 overflow-hidden"
       style={{
         background:
           "radial-gradient(circle at 12% 0%, rgba(216,196,168,.16), transparent 42%), radial-gradient(circle at 88% 100%, rgba(184,145,70,.09), transparent 42%), var(--bg-primary)",
@@ -220,7 +220,7 @@ export default function CaraPemesanan() {
       <div className="mx-auto max-w-6xl">
         {/* ── Header ── */}
         <motion.div
-          className="text-center mb-12 sm:mb-16 lg:mb-24"
+          className="text-center mb-8 sm:mb-10 lg:mb-14"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-80px" }}
@@ -238,7 +238,7 @@ export default function CaraPemesanan() {
           <motion.h2
             variants={headerVariants}
             id="cara-pesan-title"
-            className="mt-5 text-[2.6rem] sm:text-5xl lg:text-[3.6rem] font-semibold tracking-[-0.015em] leading-[1.05]"
+            className="mt-3 text-[2.6rem] sm:text-5xl lg:text-[3.6rem] font-semibold tracking-[-0.015em] leading-[1.05]"
             style={{
               fontFamily: "var(--font-cormorant), Georgia, serif",
               color: "var(--espresso)",
@@ -248,7 +248,7 @@ export default function CaraPemesanan() {
           </motion.h2>
           <motion.p
             variants={headerVariants}
-            className="mx-auto mt-5 max-w-xl text-[15px] leading-[1.75] font-ui"
+            className="mx-auto mt-3 max-w-xl text-[15px] leading-[1.75] font-ui"
             style={{ color: "var(--text-secondary)" }}
           >
             {t("subtitle")}
@@ -261,7 +261,7 @@ export default function CaraPemesanan() {
 
         {/* ── CTA ── */}
         <motion.div
-          className="text-center mt-14 sm:mt-20 lg:mt-24"
+          className="text-center mt-10 sm:mt-14 lg:mt-16"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-40px" }}
