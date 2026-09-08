@@ -27,11 +27,8 @@ export default function BioCarouselPage() {
   }, []);
 
   async function fetchImages() {
-    const res = await fetch("/api/admin/bio-carousel");
-    if (res.ok) {
-      const data = await res.json();
-      setImages(data);
-    }
+    const { data } = await supabase.from("bio_carousel_images").select("*").order("sort_order");
+    if (data) setImages(data);
     setLoading(false);
   }
 
@@ -50,13 +47,12 @@ export default function BioCarouselPage() {
       const maxSort = images.length > 0 ? Math.max(...images.map(i => i.sort_order)) : 0;
 
       // Create in DB
-      const apiRes = await fetch("/api/admin/bio-carousel", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image_url: imageUrl, alt: file.name.replace(/\.[^.]+$/, ""), sort_order: maxSort + 1 }),
-      });
-      if (!apiRes.ok) throw new Error("Failed to save");
-      const newImage = await apiRes.json();
+      const { data: newImage, error } = await supabase
+        .from("bio_carousel_images")
+        .insert({ image_url: imageUrl, alt: file.name.replace(/\.[^.]+$/, ""), sort_order: maxSort + 1 })
+        .select()
+        .single();
+      if (error) throw new Error("Failed to save");
       setImages(prev => [...prev, newImage]);
       toast.showToast("success", "Gambar berhasil ditambahkan");
     } catch {
@@ -68,8 +64,8 @@ export default function BioCarouselPage() {
   async function deleteImage(id: string) {
     if (!confirm("Hapus gambar ini?")) return;
     setSaving(id);
-    const res = await fetch(`/api/admin/bio-carousel?id=${id}`, { method: "DELETE" });
-    if (res.ok) {
+    const { error } = await supabase.from("bio_carousel_images").delete().eq("id", id);
+    if (!error) {
       setImages(prev => prev.filter(i => i.id !== id));
       toast.showToast("success", "Gambar dihapus");
     } else {
@@ -80,12 +76,8 @@ export default function BioCarouselPage() {
 
   async function updateImage(id: string, updates: Partial<CarouselImage>) {
     setSaving(id);
-    const res = await fetch("/api/admin/bio-carousel", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, ...updates }),
-    });
-    if (res.ok) {
+    const { error } = await supabase.from("bio_carousel_images").update(updates).eq("id", id);
+    if (!error) {
       setImages(prev => prev.map(i => i.id === id ? { ...i, ...updates } : i));
       toast.showToast("success", "Berhasil diupdate");
     } else {
@@ -105,8 +97,8 @@ export default function BioCarouselPage() {
 
     // Swap sort_order
     await Promise.all([
-      fetch("/api/admin/bio-carousel", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: a.id, sort_order: b.sort_order }) }),
-      fetch("/api/admin/bio-carousel", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: b.id, sort_order: a.sort_order }) }),
+      supabase.from("bio_carousel_images").update({ sort_order: b.sort_order }).eq("id", a.id),
+      supabase.from("bio_carousel_images").update({ sort_order: a.sort_order }).eq("id", b.id),
     ]);
 
     const newImages = [...images];
