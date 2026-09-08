@@ -63,7 +63,7 @@ export default function CreateYourPrice() {
                 color: "var(--gold)",
               }}
             >
-              CREATE YOUR PRICE
+              {t("eyebrow").toUpperCase()}
             </span>
           </div>
 
@@ -74,7 +74,7 @@ export default function CreateYourPrice() {
               fontSize: "clamp(36px, 5vw, 58px)",
             }}
           >
-            Di Samaqu, Kamu Bisa Memilih Hargamu Sendiri.
+            {t("title")}
           </h1>
 
           <ul className="mt-9 space-y-6 max-w-lg">
