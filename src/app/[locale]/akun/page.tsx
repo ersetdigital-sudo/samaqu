@@ -142,7 +142,7 @@ export default function DashboardAkunPage() {
           {[
             { href: "/akun/wishlist", title: "Wishlist", sub: "Koleksi favorit", icon: <path d="M12 20s-7-4.35-7-9a4 4 0 0 1 7-2.65A4 4 0 0 1 19 11c0 4.65-7 9-7 9Z" /> },
             { href: "/akun/pesanan", title: "Pesanan Saya", sub: "Lacak status", icon: <><path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z" /><path d="M3 8.5v7L12 20l9-4.5v-7" /></> },
-            { href: "/panduan-ukuran", title: "Panduan Ukuran", sub: "Cari size pas", icon: <><path d="M3 14 14 3l7 7L10 21z" /><path d="M7.5 12.5 9 14M10.5 9.5 12 11M13.5 6.5 15 8" /></> },
+            { href: "/akun/panduan-ukuran", title: "Panduan Ukuran", sub: "Cari size pas", icon: <><path d="M3 14 14 3l7 7L10 21z" /><path d="M7.5 12.5 9 14M10.5 9.5 12 11M13.5 6.5 15 8" /></> },
             { href: "/akun/bantuan", title: "Hubungi Admin", sub: "Chat tim admin", icon: <><path d="M21 12a8 8 0 1 1-3.2-6.4" /><path d="M4 20l1.4-3.6" /><path d="M8 11h8M8 15h5" /></> },
           ].map((it) => (
             <Link key={it.href} href={to(it.href)} className="akun-card relative p-4 md:p-5 flex items-start gap-3 transition hover:shadow-lg active:scale-[.99]">
