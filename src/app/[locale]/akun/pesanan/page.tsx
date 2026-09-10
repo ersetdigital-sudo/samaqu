@@ -5,7 +5,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { getCurrentCustomer, getCustomerOrders } from "@/lib/customer-auth";
 import { useSafeLocale } from "@/lib/safe-i18n";
-import AkunShell, { AkunHeader } from "@/components/akun/AkunShell";
+import { AkunHeader } from "@/components/akun/AkunShell";
 import { statusInfo, tglID, rupiah } from "@/lib/akun-format";
 
 interface OrderItem {
@@ -58,7 +58,7 @@ export default function PesananPage() {
   }, [orders, tab]);
 
   return (
-    <AkunShell>
+    <>
       <AkunHeader title="Pesanan Saya" back="/akun" />
 
       <div className="flex gap-6 border-b border-[#e6dfd2] mb-5 md:mb-7 text-sm md:text-base overflow-x-auto">
@@ -120,6 +120,6 @@ export default function PesananPage() {
           <p className="text-sm text-[#6c7a75] mt-1">Coba pilih filter lain ya.</p>
         </div>
       )}
-    </AkunShell>
+    </>
   );
 }

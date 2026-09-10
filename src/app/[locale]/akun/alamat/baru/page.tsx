@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { getCurrentCustomer } from "@/lib/customer-auth";
 import { useSafeLocale } from "@/lib/safe-i18n";
-import AkunShell, { AkunHeader } from "@/components/akun/AkunShell";
+import { AkunHeader } from "@/components/akun/AkunShell";
 
 const PROVINCES = [
   "ACEH","SUMATERA UTARA","SUMATERA BARAT","RIAU","JAMBI","SUMATERA SELATAN","BENGKULU","LAMPUNG",
@@ -86,7 +86,7 @@ export default function AlamatBaruPage() {
   const set = (k: keyof typeof form, v: string | boolean) => setForm((f) => ({ ...f, [k]: v }));
 
   return (
-    <AkunShell>
+    <>
       <AkunHeader title={isEdit ? "Ubah Alamat" : "Tambah Alamat"} back="/akun/alamat" />
 
       <div className="md:max-w-[600px] md:akun-card md:p-8">
@@ -193,6 +193,6 @@ export default function AlamatBaruPage() {
           </>
         )}
       </div>
-    </AkunShell>
+    </>
   );
 }

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { getCurrentCustomer } from "@/lib/customer-auth";
 import { useSafeLocale } from "@/lib/safe-i18n";
-import AkunShell, { AkunHeader } from "@/components/akun/AkunShell";
+import { AkunHeader } from "@/components/akun/AkunShell";
 
 interface Address {
   id: string;
@@ -69,7 +69,7 @@ export default function AlamatPage() {
   }
 
   return (
-    <AkunShell>
+    <>
       <AkunHeader title="Alamat Pengiriman" back="/akun" />
 
       {loading ? (
@@ -119,6 +119,6 @@ export default function AlamatPage() {
       <Link href={to("/akun/alamat/baru")} className="akun-btn-green block text-center w-full mt-5 py-4 rounded-full font-extrabold text-sm md:text-base transition active:scale-[.99]">
         + Tambah Alamat Baru
       </Link>
-    </AkunShell>
+    </>
   );
 }
