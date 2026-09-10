@@ -5,7 +5,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { getCurrentCustomer } from "@/lib/customer-auth";
 import { useSafeLocale } from "@/lib/safe-i18n";
-import AkunShell, { AkunHeader } from "@/components/akun/AkunShell";
+import { AkunHeader } from "@/components/akun/AkunShell";
 import { rupiah } from "@/lib/akun-format";
 
 interface WProduct {
@@ -62,7 +62,7 @@ export default function WishlistPage() {
   }
 
   return (
-    <AkunShell>
+    <>
       <AkunHeader title="Wishlist" back="/akun" />
 
       {loading ? (
@@ -109,6 +109,6 @@ export default function WishlistPage() {
           <Link href={to("/katalog")} className="akun-btn-gold mt-6 inline-block w-full md:w-auto md:px-10 py-3.5 rounded-full font-extrabold text-sm tracking-wide text-center">LIHAT KOLEKSI</Link>
         </div>
       )}
-    </AkunShell>
+    </>
   );
 }

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { getCurrentCustomer, getCustomerOrders } from "@/lib/customer-auth";
 import { useSafeLocale } from "@/lib/safe-i18n";
-import AkunShell, { AkunHeader } from "@/components/akun/AkunShell";
+import { AkunHeader } from "@/components/akun/AkunShell";
 import { tglJamID, tglPanjangID } from "@/lib/akun-format";
 
 interface Order {
@@ -67,7 +67,7 @@ export default function LacakPage() {
   const awb = order?.awb_no;
 
   return (
-    <AkunShell>
+    <>
       <AkunHeader title="Lacak Pesanan" back={`/akun/pesanan/${orderNo}`} />
 
       <div className="md:flex md:gap-6 md:items-start">
@@ -140,6 +140,6 @@ export default function LacakPage() {
           )}
         </div>
       </div>
-    </AkunShell>
+    </>
   );
 }

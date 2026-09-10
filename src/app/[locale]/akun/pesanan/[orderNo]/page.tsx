@@ -6,7 +6,7 @@ import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { getCurrentCustomer, getCustomerOrders } from "@/lib/customer-auth";
 import { useSafeLocale } from "@/lib/safe-i18n";
-import AkunShell, { AkunHeader } from "@/components/akun/AkunShell";
+import { AkunHeader } from "@/components/akun/AkunShell";
 import { statusInfo, tglJamID, rupiah } from "@/lib/akun-format";
 
 interface OrderItem {
@@ -89,22 +89,22 @@ export default function DetailPesananPage() {
 
   if (loading) {
     return (
-      <AkunShell>
+      <>
         <AkunHeader title="Detail Pesanan" back="/akun/pesanan" />
         <div className="akun-card h-52 animate-pulse" />
-      </AkunShell>
+      </>
     );
   }
 
   if (notFound || !order) {
     return (
-      <AkunShell>
+      <>
         <AkunHeader title="Detail Pesanan" back="/akun/pesanan" />
         <div className="akun-card p-10 text-center">
           <p className="font-extrabold" style={{ color: "#0f3d33" }}>Pesanan tidak ditemukan</p>
           <Link href={to("/akun/pesanan")} className="inline-block mt-4 akun-btn-green px-6 py-3 rounded-full text-sm font-extrabold">Kembali</Link>
         </div>
-      </AkunShell>
+      </>
     );
   }
 
@@ -119,7 +119,7 @@ export default function DetailPesananPage() {
   ];
 
   return (
-    <AkunShell>
+    <>
       <AkunHeader title="Detail Pesanan" back="/akun/pesanan" />
 
       <div className="flex items-start justify-between mb-4">
@@ -189,6 +189,6 @@ export default function DetailPesananPage() {
           )}
         </aside>
       </div>
-    </AkunShell>
+    </>
   );
 }

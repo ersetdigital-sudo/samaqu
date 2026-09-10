@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { getCurrentCustomer } from "@/lib/customer-auth";
-import AkunShell, { AkunHeader } from "@/components/akun/AkunShell";
+import { AkunHeader } from "@/components/akun/AkunShell";
 
 const BULAN = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
 
@@ -70,7 +70,7 @@ export default function ProfilPage() {
   const years = Array.from({ length: 80 }, (_, i) => new Date().getFullYear() - i);
 
   return (
-    <AkunShell>
+    <>
       <AkunHeader title="Informasi Profil" back="/akun" />
 
       {loading ? (
@@ -144,6 +144,6 @@ export default function ProfilPage() {
           {toast}
         </div>
       )}
-    </AkunShell>
+    </>
   );
 }

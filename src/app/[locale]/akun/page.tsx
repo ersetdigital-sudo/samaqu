@@ -5,7 +5,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { getCurrentCustomer, getCustomerOrders } from "@/lib/customer-auth";
 import { useSafeLocale } from "@/lib/safe-i18n";
-import AkunShell from "@/components/akun/AkunShell";
+
 import { statusInfo, rupiah, tglID } from "@/lib/akun-format";
 
 interface OrderItem {
@@ -61,7 +61,7 @@ export default function DashboardAkunPage() {
   const recentOrders = orders.slice(0, 5);
 
   return (
-    <AkunShell>
+    <>
       {/* ═══ MOBILE: hero ═══ */}
       <div
         className="md:hidden text-white rounded-b-[32px] pb-16 shadow-[0_10px_30px_rgba(15,61,51,.18)] -mx-4 -mt-4"
@@ -206,6 +206,6 @@ export default function DashboardAkunPage() {
           </>
         )}
       </div>
-    </AkunShell>
+    </>
   );
 }

@@ -6,7 +6,6 @@ import { Ruler, Loader2, MessageCircle, Eye, X, ChevronLeft, ChevronRight } from
 import { useSafeTranslations } from "@/lib/safe-i18n";
 import { supabase } from "@/lib/supabase";
 import { getWhatsAppLink } from "@/lib/store-settings";
-import AkunShell from "@/components/akun/AkunShell";
 import { AkunHeader } from "@/components/akun/AkunShell";
 
 interface SizeGuideImage {
@@ -78,7 +77,7 @@ export default function AkunPanduanUkuranPage() {
   }
 
   return (
-    <AkunShell>
+    <>
       <AkunHeader title="Panduan Ukuran" back="/akun" />
 
       {/* Tabs */}
@@ -244,6 +243,6 @@ export default function AkunPanduanUkuranPage() {
           </motion.div>
         )}
       </AnimatePresence>
-    </AkunShell>
+    </>
   );
 }

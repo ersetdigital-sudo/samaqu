@@ -1,6 +1,6 @@
 "use client";
 
-import AkunShell, { AkunHeader } from "@/components/akun/AkunShell";
+import { AkunHeader } from "@/components/akun/AkunShell";
 import { useStoreSettings, getWhatsAppLink } from "@/lib/store-settings";
 
 export default function BantuanPage() {
@@ -8,7 +8,7 @@ export default function BantuanPage() {
   const link = getWhatsAppLink("Halo Admin SAMAQU, saya butuh bantuan.");
 
   return (
-    <AkunShell>
+    <>
       <AkunHeader title="Hubungi Admin" back="/akun" />
 
       <div className="md:flex md:justify-center">
@@ -32,6 +32,6 @@ export default function BantuanPage() {
           <p className="text-[11px] text-[#9aa5a1] mt-4">Jam operasional 09.00 – 21.00 WIB</p>
         </div>
       </div>
-    </AkunShell>
+    </>
   );
 }
