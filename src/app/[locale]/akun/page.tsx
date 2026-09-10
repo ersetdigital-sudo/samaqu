@@ -101,7 +101,7 @@ export default function DashboardAkunPage() {
           <div className="text-center text-sm text-[#6c7a75] py-8">Memuat…</div>
         ) : (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+            <div className="hidden sm:grid grid-cols-3 gap-4 mb-6">
               <div className="bg-white rounded-[20px] border border-[rgba(0,0,0,0.06)] shadow-[rgba(0,0,0,0.02)_0px_0px_0px_1px,rgba(0,0,0,0.04)_0px_2px_6px,rgba(0,0,0,0.06)_0px_4px_8px] p-5">
                 <div className="w-10 h-10 rounded-[12px] flex items-center justify-center mb-3" style={{ background: "#e3ede9" }}>
                   <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="#0f3d33" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z" /><path d="M3 8.5v7L12 20l9-4.5v-7" /></svg>
