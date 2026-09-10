@@ -6,6 +6,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { getCurrentCustomer } from "@/lib/customer-auth";
 import { useSafeLocale } from "@/lib/safe-i18n";
+import AkunPageTransition from "./AkunPageTransition";
 
 export interface AkunCustomer {
   id: string;
@@ -101,9 +102,9 @@ export default function AkunShell({ children }: { children: ReactNode }) {
 
   return (
     <div style={{ background: "#f5f1ea" }} className="akun-root min-h-screen pb-40 md:pb-24">
-      <div className="md:max-w-[1180px] md:mx-auto md:px-8 md:pt-8 md:pb-12 md:flex md:gap-8">
+      <div className="md:max-w-[1100px] md:mx-auto md:px-10 md:pt-8 md:pb-12 md:flex md:gap-6">
         {/* ── Sidebar (desktop) ── */}
-        <aside className="hidden md:block md:w-[268px] md:shrink-0">
+        <aside className="hidden md:block md:w-[250px] md:shrink-0">
           <div className="sticky top-[92px]">
             <div className="rounded-[1.25rem] bg-white p-3 shadow-[0_1px_2px_rgba(15,61,51,.04),0_8px_24px_rgba(15,61,51,.06)]">
               <div className="flex items-center gap-3 px-2 py-2 mb-1">
@@ -140,7 +141,9 @@ export default function AkunShell({ children }: { children: ReactNode }) {
         </aside>
 
         {/* ── Content ── */}
-        <div className="flex-1 min-w-0 px-4 pt-4 pb-10 md:px-0 md:pt-0">{children}</div>
+        <div className="flex-1 min-w-0 px-4 pt-4 pb-10 md:px-0 md:pt-0 md:max-w-[720px]">
+          <AkunPageTransition>{children}</AkunPageTransition>
+        </div>
       </div>
 
       {/* ── Bottom nav (mobile) ── */}
