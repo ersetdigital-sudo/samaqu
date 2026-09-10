@@ -206,30 +206,6 @@ export default function AkunShell({ children }: { children: ReactNode }) {
                 <span className="hidden sm:inline">Profil</span>
               </Link>
             </div>
-
-            {/* ── Horizontal section tabs ── */}
-            <div className="px-4 sm:px-6 flex gap-1 overflow-x-auto no-scrollbar">
-              {NAV.map((item) => {
-                const on = isActive(pathname, item);
-                return (
-                  <Link
-                    key={item.href}
-                    href={to(item.href)}
-                    className={`whitespace-nowrap px-4 py-2.5 text-sm flex items-center gap-2 border-b-2 transition-all ${
-                      on
-                        ? "font-bold border-[#0f3d33]"
-                        : "font-medium border-transparent text-[#8b9793] hover:text-[#0f3d33]"
-                    }`}
-                    style={on ? { color: "#0f3d33" } : undefined}
-                  >
-                    <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                      <path d={item.icon} />
-                    </svg>
-                    {item.label}
-                  </Link>
-                );
-              })}
-            </div>
           </header>
 
           {/* ── Content ── */}
