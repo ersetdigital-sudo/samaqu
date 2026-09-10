@@ -103,8 +103,8 @@ export default function AkunShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="akun-root min-h-screen" style={{ background: "#f5f1ea" }}>
-      {/* ═══ MOBILE: original layout ═══ */}
-      <div className="md:hidden min-h-screen pb-24">
+      {/* ═══ MOBILE LAYOUT (original) ═══ */}
+      <div className="md:hidden min-h-screen pb-40">
         <div className="px-4 pt-4 pb-10">
           <AkunPageTransition>{children}</AkunPageTransition>
         </div>
@@ -132,7 +132,7 @@ export default function AkunShell({ children }: { children: ReactNode }) {
         </nav>
       </div>
 
-      {/* ═══ DESKTOP: wireframe structure ═══ */}
+      {/* ═══ DESKTOP LAYOUT (wireframe structure) ═══ */}
       <div className="hidden md:block">
         {/* ── Mobile sidebar overlay ── */}
         {sidebarOpen && (
