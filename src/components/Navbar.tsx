@@ -287,6 +287,16 @@ export default function Navbar() {
                   ))}
                 </div>
 
+                {/* Profile — mobile: icon di samping bendera */}
+                <Link
+                  href={`/${locale}/akun`}
+                  className="lg:hidden grid place-items-center w-10 h-10 transition-colors duration-500"
+                  style={{ color: ctaColor }}
+                  aria-label="Akun saya"
+                >
+                  <User size={20} strokeWidth={1.5} />
+                </Link>
+
                 {/* Profile — desktop only */}
                 <div className="hidden lg:block">
                   <ProfileDropdown />
