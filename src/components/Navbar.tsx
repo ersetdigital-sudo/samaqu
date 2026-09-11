@@ -152,6 +152,15 @@ export default function Navbar() {
   const linkColor = scrolled ? "var(--espresso)" : "rgba(248,245,241,.78)";
   const ctaColor = scrolled ? "var(--espresso)" : "var(--cream)";
 
+  /* ── Icon chip: frosted pill di belakang ikon saat navbar transparan (di atas hero) ── */
+  const iconChipStyle = scrolled
+    ? undefined
+    : {
+        background: "rgba(45,33,27,.38)",
+        backdropFilter: "blur(8px)",
+        WebkitBackdropFilter: "blur(8px)",
+      };
+
   return (
     <MobileDrawerCtx.Provider value={{ open: menuOpen, setOpen: setMenuOpen }}>
       {/* ── Navbar: fixed, z-50 ── */}
@@ -290,8 +299,8 @@ export default function Navbar() {
                 {/* Profile — mobile: icon di samping bendera */}
                 <Link
                   href={`/${locale}/akun`}
-                  className="lg:hidden grid place-items-center w-10 h-10 transition-colors duration-500"
-                  style={{ color: ctaColor }}
+                  className="lg:hidden grid place-items-center w-10 h-10 rounded-full transition-colors duration-500"
+                  style={{ color: ctaColor, ...iconChipStyle }}
                   aria-label="Akun saya"
                 >
                   <User size={20} strokeWidth={1.5} />
@@ -304,16 +313,16 @@ export default function Navbar() {
 
                 <button
                   onClick={() => setCartOpen(true)}
-                  className="relative grid place-items-center w-10 h-10 transition-colors duration-500 cursor-pointer"
-                  style={{ color: ctaColor }}
+                  className="relative grid place-items-center w-10 h-10 rounded-full transition-colors duration-500 cursor-pointer"
+                  style={{ color: ctaColor, ...iconChipStyle }}
                   aria-label="Keranjang belanja"
                 >
                   <ShoppingBag size={20} strokeWidth={1.5} />
                   <CartBadge />
                 </button>
                 <button
-                  className="lg:hidden grid place-items-center w-10 h-10 -mr-2 transition-colors duration-500"
-                  style={{ color: ctaColor }}
+                  className="lg:hidden grid place-items-center w-10 h-10 -mr-2 rounded-full transition-colors duration-500"
+                  style={{ color: ctaColor, ...iconChipStyle }}
                   aria-label="Buka menu"
                   aria-expanded={menuOpen}
                   onClick={() => setMenuOpen(true)}
