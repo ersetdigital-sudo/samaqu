@@ -8,9 +8,8 @@ import AkunMobileShell from "@/components/akun/AkunMobileShell";
 export default function AkunLayout({ children }: { children: ReactNode }) {
   return (
     <AkunProvider>
-      <AkunDesktopShell>
-        <AkunMobileShell>{children}</AkunMobileShell>
-      </AkunDesktopShell>
+      <AkunDesktopShell>{children}</AkunDesktopShell>
+      <AkunMobileShell>{children}</AkunMobileShell>
     </AkunProvider>
   );
 }
