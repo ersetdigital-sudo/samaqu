@@ -70,6 +70,11 @@ export default function AkunShell({ children }: { children: ReactNode }) {
 
   const initials = getInitials(customer?.name || "U");
 
+  const bare = pathname.replace(/^\/(id|en)/, "") || "/";
+  if (bare === "/akun/login" || bare === "/akun/register") {
+    return <>{children}</>;
+  }
+
   const groups: { group: string | null; items: NavItem[] }[] = [];
   for (const item of NAV) {
     const last = groups[groups.length - 1];

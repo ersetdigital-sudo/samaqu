@@ -1,13 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { Mail, Lock, Loader2 } from "lucide-react";
 import { loginCustomer } from "@/lib/customer-auth";
 
 export default function LoginPage() {
   const router = useRouter();
+  const params = useParams();
+  const locale = (params?.locale as string) || "id";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -20,7 +22,7 @@ export default function LoginPage() {
     setLoading(true);
     const result = await loginCustomer(email, password);
     if (result.error) { setError(result.error); setLoading(false); return; }
-    router.push("/akun");
+    router.push(`/${locale}/akun`);
   }
 
   return (
