@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { User, Mail, Phone, Lock, Loader2 } from "lucide-react";
 import { registerCustomer } from "@/lib/customer-auth";
@@ -9,6 +9,8 @@ import { trackCompleteRegistration, sendCAPIEvent } from "@/lib/meta-pixel";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const params = useParams();
+  const locale = (params?.locale as string) || "id";
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
@@ -27,7 +29,7 @@ export default function RegisterPage() {
     // Meta Pixel: CompleteRegistration
     const { eventId } = trackCompleteRegistration("email");
     sendCAPIEvent("CompleteRegistration", eventId, { status: "registered" }, { email, phone: whatsapp });
-    router.push("/akun");
+    router.push(`/${locale}/akun`);
   }
 
   return (
