@@ -54,3 +54,15 @@ dev-server.log
 template jnt terbaru.xlsx
 database-lokasi-samaqu.csv
 
+# reference / design mockups (not production code)
+$TEMP/
+.git-rewrite/
+cyp/
+modern cyp/
+reference-product-detail/
+samaqu-bio-link/
+
+# mapping source data (converted to area-data.json)
+mapping-data.csv
+mapping-template.csv
+
