@@ -5,18 +5,9 @@
 - **Production**: Menunggu credentials dari J&T
 - **Mapping**: Menunggu J&T kasih kode (origin_code, destination_code, receiver_area)
 
-## Credentials (Testing/Sandbox)
-```
-JNT_ENV=testing
-JNT_ORDER_USERNAME=WITHSAMAQU-DPK01C
-JNT_ORDER_API_KEY=6OPU1W
-JNT_ORDER_KEY=AKe62df84bJ3d8e4b1hea2R45j11klsb
-JNT_TARIFF_KEY=jZ3N1eqgSVmn
-JNT_TARIFF_CUS_NAME=WITHSAMAQU-DPK01C
-JNT_TRACK_USERNAME=WITHSAMAQU-DPK01C
-JNT_TRACK_PASSWORD=jZ3N1eqgSVmn
-JNT_COMPANY_ID=WITHSAMAQU-DPK01C
-```
+## Credentials
+
+Credentials are stored in `.env.local` (not committed). See `.env.local` for actual values.
 
 ## Database Migration (Run di Supabase SQL Editor)
 ```sql
