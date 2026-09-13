@@ -14,6 +14,7 @@ import {
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/AdminToast";
 import AdminShell from "@/components/AdminShell";
+import { uploadToCloudinary } from "@/lib/cloudinary";
 
 interface SizeGuideImage {
   id: string;
@@ -30,11 +31,6 @@ const CATEGORIES = [
   "Kabak",
   "Rekomendasi Size",
 ];
-
-const CLOUDINARY_CLOUD =
-  process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD || "dgtixuop0";
-const CLOUDINARY_PRESET =
-  process.env.NEXT_PUBLIC_CLOUDINARY_PRESET || "samaqu_unsigned";
 
 export default function UkuranProdukPage() {
   const [guides, setGuides] = useState<SizeGuideImage[]>([]);
@@ -76,22 +72,15 @@ export default function UkuranProdukPage() {
     }
 
     setUploadingId(category);
-    const fd = new FormData();
-    fd.append("file", file);
-    fd.append("upload_preset", CLOUDINARY_PRESET);
 
     try {
-      const res = await fetch(
-        `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`,
-        { method: "POST", body: fd }
-      );
-      const data = await res.json();
-      if (data.secure_url) {
+      const url = await uploadToCloudinary(file);
+      if (url) {
         // Update state
         setGuides((prev) =>
           prev.map((g) =>
             g.category === category
-              ? { ...g, image_url: data.secure_url }
+              ? { ...g, image_url: url }
               : g
           )
         );
