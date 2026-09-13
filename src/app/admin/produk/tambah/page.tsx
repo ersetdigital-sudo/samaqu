@@ -619,155 +619,154 @@ export default function TambahProdukPage() {
     <AdminShell>
     <section className="min-h-screen" style={{ background: "var(--cream)" }}>
       {/* Header */}
-      <div className="sticky top-0 z-20 backdrop-blur" style={{ background: "rgba(248,245,241,.8)", borderBottom: "1px solid rgba(64,50,37,.06)" }}>
+      <div className="sticky top-0 z-20 backdrop-blur" style={{ background: "rgba(248,245,241,.82)", borderBottom: "1px solid rgba(64,50,37,.07)" }}>
         <div className="max-w-6xl mx-auto px-5 lg:px-8 py-4 flex items-center gap-4">
-          <button onClick={() => router.push("/admin")} className="p-2 -ml-2 rounded-lg hover:bg-[var(--bg-tertiary)]" style={{ color: "var(--espresso)" }}>
-            <ArrowLeft size={20} />
+          <button onClick={() => router.push("/admin")} title="Kembali" className="p-2.5 -ml-2 rounded-xl bg-white transition-colors hover:bg-[var(--bg-secondary)]" style={{ border: "1px solid rgba(64,50,37,.08)", color: "var(--espresso)" }}>
+            <ArrowLeft size={18} />
           </button>
-          <div>
-            <h1 className="text-2xl italic leading-none" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>Tambah Produk</h1>
-            <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>Tambah koleksi baru ke katalog SAMAQU</p>
+          <div className="min-w-0">
+            <p className="hidden sm:block text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: "var(--text-muted)" }}>Produk</p>
+            <h1 className="text-2xl italic leading-none truncate" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>Tambah Produk</h1>
           </div>
-          <div className="ml-auto flex gap-3">
-            <button onClick={() => router.push("/admin")} className="px-4 py-2 rounded-xl text-sm font-medium" style={{ border: "1px solid rgba(64,50,37,.15)" }}>Batal</button>
-            <button onClick={handleSubmit} disabled={saving} className="px-5 py-2 rounded-xl text-sm font-semibold text-white" style={{ background: "var(--gold)" }}>
-              {saving ? <><Loader2 size={14} className="animate-spin inline mr-1" /> Menyimpan...</> : "Simpan Produk"}
+          <div className="ml-auto flex items-center gap-2.5">
+            <button onClick={() => router.push("/admin")} className="pf-btn pf-btn-ghost">Batal</button>
+            <button onClick={handleSubmit} disabled={saving} className="pf-btn pf-btn-primary">
+              {saving ? <><Loader2 size={14} className="animate-spin" /> Menyimpan...</> : <><Check size={14} /> Simpan Produk</>}
             </button>
           </div>
         </div>
       </div>
 
-      <main className="max-w-6xl mx-auto px-5 lg:px-8 py-6 pb-24 lg:pb-8">
+      <main className="max-w-6xl mx-auto px-5 lg:px-8 py-6 lg:py-8 pb-28 lg:pb-10">
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6 lg:gap-8 items-start">
 
           {/* Left: Form */}
           <div className="space-y-6">
             {/* Info Dasar */}
-            <div className="card p-5">
-              <h2 className="font-serif italic text-xl mb-4" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Info Dasar</h2>
+            <div className="pf-card p-5 lg:p-6">
+              <div className="pf-head">
+                <div className="pf-num">1</div>
+                <div>
+                  <h2 className="pf-title">Info Dasar</h2>
+                  <p className="pf-sub">Nama, kategori, harga, dan atribut utama produk.</p>
+                </div>
+              </div>
               <div className="space-y-4">
                 {/* Baris 1: Nama + Kategori (2 kolom) */}
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Nama Produk <span style={{ color: "var(--gold)" }}>*</span></label>
-                    <input value={name} onChange={(e) => handleNameChange(e.target.value)} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: `1px solid ${errors.name ? "#e74c3c" : "rgba(64,50,37,.15)"}`, background: "white", color: "var(--espresso)" }} placeholder="Contoh: Thobe Jiharkah Premium" />
-                    {errors.name && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.name}</p>}
+                    <label className="pf-label">Nama Produk <span className="pf-req">*</span></label>
+                    <input value={name} onChange={(e) => handleNameChange(e.target.value)} className={`pf-input${errors.name ? " invalid" : ""}`} placeholder="Contoh: Thobe Jiharkah Premium" />
+                    {errors.name && <p className="pf-error">{errors.name}</p>}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Kategori <span style={{ color: "var(--gold)" }}>*</span></label>
-                    <div className="relative">
+                    <label className="pf-label">Kategori <span className="pf-req">*</span></label>
+                    <div className="pf-selectwrap">
                       <select value={category} onChange={(e) => {
                         const val = e.target.value;
                         setCategory(val);
                         if (val !== "Thobe") setSeries("");
                         if (val !== "Thobe" && val !== "Kandora") setSelectedJenisKainId("");
-                      }} className="w-full rounded-xl px-4 py-3 text-sm outline-none appearance-none" style={{ border: `1px solid ${errors.category ? "#e74c3c" : "rgba(64,50,37,.15)"}`, background: "white", color: "var(--espresso)" }}>
+                      }} className={`pf-select${errors.category ? " invalid" : ""}`}>
                         <option value="">Pilih kategori</option>
                         {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
                       </select>
-                      <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--text-muted)" }} />
+                      <ChevronDown size={14} className="pf-selectico" />
                     </div>
-                    {errors.category && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.category}</p>}
+                    {errors.category && <p className="pf-error">{errors.category}</p>}
                   </div>
                 </div>
                 {/* Baris 2: Slug */}
                 <div>
-                  <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Slug</label>
-                  <input value={slug} onChange={(e) => setSlug(e.target.value)} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="thobe-jiharkah-premium" />
-                  <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>URL: /katalog/{slug || "..."}</p>
+                  <label className="pf-label">Slug</label>
+                  <input value={slug} onChange={(e) => setSlug(e.target.value)} className="pf-input" placeholder="thobe-jiharkah-premium" />
+                  <p className="pf-hint">URL: /katalog/{slug || "..."}</p>
                 </div>
                 {/* Baris 3: Deskripsi */}
                 <div>
-                  <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Deskripsi</label>
-                  <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className="w-full rounded-xl px-4 py-3 text-sm outline-none resize-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="Deskripsi produk..." />
+                  <label className="pf-label">Deskripsi</label>
+                  <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className="pf-textarea" placeholder="Deskripsi produk..." />
                 </div>
                 {/* Baris 4: Harga Dasar + Berat — hidden untuk Thobe (harga per-series) */}
                 {category !== "Thobe" && (
                 <div className={cypEnabled ? "" : "grid sm:grid-cols-2 gap-4"}>
                   {!cypEnabled && (
                     <div>
-                      <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Harga Dasar (Rp) <span style={{ color: "var(--gold)" }}>*</span></label>
-                      <input type="text" inputMode="numeric" value={formatRupiah(basePrice)} onChange={(e) => setBasePrice(parseRupiah(e.target.value))} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: `1px solid ${errors.basePrice ? "#e74c3c" : "rgba(64,50,37,.15)"}`, background: "white", color: "var(--espresso)" }} placeholder="389.000" />
-                      <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>Harga terendah / yang tampil di katalog. Angka saja, contoh 249000.</p>
-                      {errors.basePrice && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.basePrice}</p>}
+                      <label className="pf-label">Harga Dasar (Rp) <span className="pf-req">*</span></label>
+                      <input type="text" inputMode="numeric" value={formatRupiah(basePrice)} onChange={(e) => setBasePrice(parseRupiah(e.target.value))} className={`pf-input${errors.basePrice ? " invalid" : ""}`} placeholder="389.000" />
+                      <p className="pf-hint">Harga terendah / yang tampil di katalog. Angka saja, contoh 249000.</p>
+                      {errors.basePrice && <p className="pf-error">{errors.basePrice}</p>}
                     </div>
                   )}
                   <div>
-                    <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Berat (gram)</label>
-                    <input type="number" value={weight} onChange={(e) => setWeight(e.target.value)} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="800" />
-                    <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>Untuk hitung ongkir. Kosongkan = default per kategori.</p>
+                    <label className="pf-label">Berat (gram)</label>
+                    <input type="number" value={weight} onChange={(e) => setWeight(e.target.value)} className="pf-input" placeholder="800" />
+                    <p className="pf-hint">Untuk hitung ongkir. Kosongkan = default per kategori.</p>
                   </div>
                 </div>
                 )}
                 {/* Thobe: Berat only */}
                 {category === "Thobe" && (
                 <div>
-                  <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Berat (gram)</label>
-                  <input type="number" value={weight} onChange={(e) => setWeight(e.target.value)} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="800" />
-                  <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>Untuk hitung ongkir. Kosongkan = default per kategori.</p>
+                  <label className="pf-label">Berat (gram)</label>
+                  <input type="number" value={weight} onChange={(e) => setWeight(e.target.value)} className="pf-input" placeholder="800" />
+                  <p className="pf-hint">Untuk hitung ongkir. Kosongkan = default per kategori.</p>
                 </div>
                 )}
                 {/* Badge Katalog */}
                 <div>
-                  <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Badge Katalog (opsional)</label>
-                  <div className="relative">
-                    <select value={badgeType} onChange={(e) => setBadgeType(e.target.value)} className="w-full rounded-xl px-4 py-3 text-sm outline-none appearance-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }}>
+                  <label className="pf-label">Badge Katalog (opsional)</label>
+                  <div className="pf-selectwrap">
+                    <select value={badgeType} onChange={(e) => setBadgeType(e.target.value)} className="pf-select">
                       <option value="">Tanpa Badge</option>
                       <option value="terlaris">Terlaris</option>
                       <option value="rekomendasi">Rekomendasi</option>
                       <option value="new">New</option>
                     </select>
-                    <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--text-muted)" }} />
+                    <ChevronDown size={14} className="pf-selectico" />
                   </div>
-                  <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>Badge yang tampil di pojok kanan atas foto card katalog.</p>
+                  <p className="pf-hint">Badge yang tampil di pojok kanan atas foto card katalog.</p>
                 </div>
                 {/* Create Your Price Toggle — hidden untuk Thobe (CYP per-series) */}
                 {category !== "Thobe" && (
-                <div className="p-4 rounded-xl" style={{ background: cypEnabled ? "rgba(181,140,74,.06)" : "rgba(64,50,37,.02)", border: `1px solid ${cypEnabled ? "rgba(181,140,74,.3)" : "rgba(64,50,37,.1)"}` }}>
+                <div className={`pf-panel${cypEnabled ? " accent" : " flat"}`}>
                   <div className="flex items-center justify-between mb-3">
                     <div>
                       <p className="text-sm font-medium" style={{ color: "var(--espresso)" }}>Create Your Price</p>
                       <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>Customer bisa tentukan harga sendiri (minimal = Harga Minimum)</p>
                     </div>
-                    <button type="button" onClick={toggleCyp}
-                      className="relative w-11 h-6 rounded-full transition-colors duration-200"
-                      style={{ background: cypEnabled ? "var(--gold)" : "rgba(64,50,37,.2)" }}>
-                      <span className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200"
-                        style={{ transform: cypEnabled ? "translateX(20px)" : "translateX(0)" }} />
+                    <button type="button" onClick={toggleCyp} className="pf-toggle" style={{ background: cypEnabled ? "var(--gold)" : "rgba(64,50,37,.2)" }}>
+                      <span className="pf-toggle-knob" style={{ transform: cypEnabled ? "translateX(20px)" : "translateX(0)" }} />
                     </button>
                   </div>
                   {cypEnabled && (
                     <div className="space-y-3">
                       <div>
-                        <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Harga Minimum (Rp) <span style={{ color: "var(--gold)" }}>*</span></label>
-                        <input type="text" inputMode="numeric" value={formatRupiah(minimumPrice)} onChange={(e) => setMinimumPrice(parseRupiah(e.target.value))} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: `1px solid ${errors.minimumPrice ? "#e74c3c" : "rgba(64,50,37,.15)"}`, background: "white", color: "var(--espresso)" }} placeholder="350.000" />
-                        {errors.minimumPrice && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.minimumPrice}</p>}
-                        <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>Harga terendah yang bisa dipilih customer.</p>
+                        <label className="pf-label">Harga Minimum (Rp) <span className="pf-req">*</span></label>
+                        <input type="text" inputMode="numeric" value={formatRupiah(minimumPrice)} onChange={(e) => setMinimumPrice(parseRupiah(e.target.value))} className={`pf-input${errors.minimumPrice ? " invalid" : ""}`} placeholder="350.000" />
+                        {errors.minimumPrice && <p className="pf-error">{errors.minimumPrice}</p>}
+                        <p className="pf-hint">Harga terendah yang bisa dipilih customer.</p>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Harga Rekomendasi (Rp)</label>
-                        <input type="text" inputMode="numeric" value={formatRupiah(recommendedPrice)} onChange={(e) => setRecommendedPrice(parseRupiah(e.target.value))} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: `1px solid ${errors.recommendedPrice ? "#e74c3c" : "rgba(64,50,37,.15)"}`, background: "white", color: "var(--espresso)" }} placeholder={basePrice ? formatRupiah(String((parseInt(basePrice) || 0) + 30000)) : "379.000"} />
-                        {errors.recommendedPrice && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.recommendedPrice}</p>}
-                        <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>Kosongkan = otomatis Harga Dasar + Rp 30.000 ({basePrice ? `Rp ${formatRupiah(String((parseInt(basePrice) || 0) + 30000))}` : "—"}).</p>
+                        <label className="pf-label">Harga Rekomendasi (Rp)</label>
+                        <input type="text" inputMode="numeric" value={formatRupiah(recommendedPrice)} onChange={(e) => setRecommendedPrice(parseRupiah(e.target.value))} className={`pf-input${errors.recommendedPrice ? " invalid" : ""}`} placeholder={basePrice ? formatRupiah(String((parseInt(basePrice) || 0) + 30000)) : "379.000"} />
+                        {errors.recommendedPrice && <p className="pf-error">{errors.recommendedPrice}</p>}
+                        <p className="pf-hint">Kosongkan = otomatis Harga Dasar + Rp 30.000 ({basePrice ? `Rp ${formatRupiah(String((parseInt(basePrice) || 0) + 30000))}` : "—"}).</p>
                       </div>
-                      <div className="p-3 rounded-xl" style={{ background: "rgba(255,255,255,.5)", border: "1px solid rgba(64,50,37,.08)" }}>
+                      <div className="pf-panel">
                         <div className="flex items-center justify-between gap-3 mb-2">
                           <div>
                             <p className="text-sm font-medium" style={{ color: "var(--espresso)" }}>Microcopy CYP (khusus produk ini)</p>
                             <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>Teks kecil di bawah opsi harga pada halaman produk.</p>
                           </div>
-                          <button type="button" onClick={() => setUseCustomCypMicrocopy((v) => !v)}
-                            className="relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0"
-                            style={{ background: useCustomCypMicrocopy ? "var(--gold)" : "rgba(64,50,37,.2)" }}>
-                            <span className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200"
-                              style={{ transform: useCustomCypMicrocopy ? "translateX(20px)" : "translateX(0)" }} />
+                          <button type="button" onClick={() => setUseCustomCypMicrocopy((v) => !v)} className="pf-toggle" style={{ background: useCustomCypMicrocopy ? "var(--gold)" : "rgba(64,50,37,.2)" }}>
+                            <span className="pf-toggle-knob" style={{ transform: useCustomCypMicrocopy ? "translateX(20px)" : "translateX(0)" }} />
                           </button>
                         </div>
                         {useCustomCypMicrocopy ? (
                           <>
-                            <textarea value={cypMicrocopyOverride} onChange={(e) => setCypMicrocopyOverride(e.target.value.slice(0, 120))} rows={2} maxLength={120} placeholder="Tulis teks khusus produk ini..."
-                              className="w-full rounded-xl px-4 py-2.5 text-sm outline-none resize-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
-                            <p className="text-[11px] mt-1 text-right" style={{ color: cypMicrocopyOverride.length >= 120 ? "#e74c3c" : "var(--text-muted)" }}>{cypMicrocopyOverride.length}/120</p>
+                            <textarea value={cypMicrocopyOverride} onChange={(e) => setCypMicrocopyOverride(e.target.value.slice(0, 120))} rows={2} maxLength={120} placeholder="Tulis teks khusus produk ini..." className="pf-textarea" />
+                            <p className="pf-hint text-right" style={{ color: cypMicrocopyOverride.length >= 120 ? "#e74c3c" : "var(--text-muted)" }}>{cypMicrocopyOverride.length}/120</p>
                           </>
                         ) : (
                           <p className="text-[12px] leading-relaxed px-3 py-2.5 rounded-xl" style={{ background: "rgba(64,50,37,.04)", color: "var(--text-muted)", fontStyle: "italic" }}>
@@ -781,16 +780,17 @@ export default function TambahProdukPage() {
                 )}
                 {(category === "Thobe" || category === "Kandora") && (
                 <div>
-                  <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Jenis Kain</label>
+                  <label className="pf-label">Jenis Kain</label>
                   <div className="flex gap-2">
-                    <div className="relative flex-1">
-                      <select value={selectedJenisKainId} onChange={(e) => setSelectedJenisKainId(e.target.value)} className="w-full rounded-xl px-4 py-3 text-sm outline-none appearance-none" style={{ border: `1px solid ${errors.jenisKain ? "#e74c3c" : "rgba(64,50,37,.15)"}`, background: "white", color: "var(--espresso)" }}>
+                    <div className="pf-selectwrap flex-1">
+                      <select value={selectedJenisKainId} onChange={(e) => setSelectedJenisKainId(e.target.value)} className={`pf-select${errors.jenisKain ? " invalid" : ""}`}>
                         <option value="">Pilih Jenis Kain</option>
                         {jenisKainList.map((jk) => <option key={jk.id} value={jk.id}>{jk.name}</option>)}
                       </select>
+                      <ChevronDown size={14} className="pf-selectico" />
                     </div>
-                    <button type="button" onClick={() => setShowNewKainForm(!showNewKainForm)} className="px-3 py-2 rounded-xl text-xs font-medium shrink-0" style={{ border: "1px dashed rgba(181,140,74,.4)", color: "var(--gold)" }}>
-                      + Baru
+                    <button type="button" onClick={() => setShowNewKainForm(!showNewKainForm)} className="pf-btn pf-btn-outline shrink-0">
+                      <Plus size={13} /> Baru
                     </button>
                     {selectedJenisKainId && (
                       <button type="button" onClick={async () => {
@@ -799,12 +799,12 @@ export default function TambahProdukPage() {
                         await supabase.from("jenis_kain").delete().eq("id", selectedJenisKainId);
                         setJenisKainList((prev) => prev.filter((j) => j.id !== selectedJenisKainId));
                         setSelectedJenisKainId("");
-                      }} className="px-3 py-2 rounded-xl text-xs font-medium shrink-0" style={{ border: "1px solid rgba(231,76,60,.3)", color: "#e74c3c" }}>
+                      }} className="pf-btn pf-btn-danger shrink-0">
                         Hapus
                       </button>
                     )}
                   </div>
-                  {errors.jenisKain && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.jenisKain}</p>}
+                  {errors.jenisKain && <p className="pf-error">{errors.jenisKain}</p>}
                   {showNewKainForm && (
                     <div className="mt-3">
                       <JenisKainForm
@@ -821,23 +821,17 @@ export default function TambahProdukPage() {
                 )}
                 {category === "Thobe" && (
                 <div>
-                  <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Series <span style={{ color: "var(--gold)" }}>*</span></label>
-                  {errors.series && <p className="text-[11px] mb-2" style={{ color: "#e74c3c" }}>{errors.series}</p>}
+                  <label className="pf-label">Series <span className="pf-req">*</span></label>
+                  {errors.series && <p className="pf-error mb-2">{errors.series}</p>}
                   <div className="flex flex-wrap gap-2 mb-3">
                     {seriesList.map((s) => (
-                      <button key={s} type="button" onClick={() => toggleSeries(s)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all"
-                        style={{
-                          background: selectedSeries.includes(s) ? "var(--espresso)" : "transparent",
-                          color: selectedSeries.includes(s) ? "var(--cream)" : "var(--coffee)",
-                          border: `1px solid ${selectedSeries.includes(s) ? "var(--espresso)" : "rgba(201,183,156,.3)"}`,
-                        }}>
+                      <button key={s} type="button" onClick={() => toggleSeries(s)} className={`pf-chip${selectedSeries.includes(s) ? " active" : ""}`}>
                         {selectedSeries.includes(s) && <Check size={12} />}
                         {s}
                       </button>
                     ))}
-                    <button type="button" onClick={() => setShowNewSeries(!showNewSeries)} className="px-3 py-1.5 rounded-full text-xs font-medium shrink-0" style={{ border: "1px dashed rgba(181,140,74,.4)", color: "var(--gold)" }}>
-                      + Baru
+                    <button type="button" onClick={() => setShowNewSeries(!showNewSeries)} className="pf-chip shrink-0" style={{ borderStyle: "dashed", borderColor: "rgba(181,140,74,.5)", color: "var(--gold-deep)" }}>
+                      <Plus size={13} /> Baru
                     </button>
                   </div>
                   {showNewSeries && (
@@ -848,13 +842,12 @@ export default function TambahProdukPage() {
                         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addNewSeries(); } }}
                         placeholder="Nama series baru…"
                         autoFocus
-                        className="flex-1 rounded-xl px-4 py-2.5 text-sm outline-none"
-                        style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }}
+                        className="pf-input flex-1"
                       />
-                      <button type="button" onClick={addNewSeries} className="px-4 py-2 rounded-xl text-xs font-semibold text-white shrink-0" style={{ background: "var(--gold)" }}>Tambah</button>
+                      <button type="button" onClick={addNewSeries} className="pf-btn pf-btn-primary shrink-0">Tambah</button>
                     </div>
                   )}
-                  <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>Centang series yang tersedia untuk produk ini. Setiap series akan jadi baris produk terpisah di database.</p>
+                  <p className="pf-hint">Centang series yang tersedia untuk produk ini. Setiap series akan jadi baris produk terpisah di database.</p>
                 </div>
                 )}
               </div>
@@ -862,24 +855,24 @@ export default function TambahProdukPage() {
 
             {/* Varian & Stok + Media (Thobe multi-series) / Varian & Stok (non-Thobe) */}
             {category === "Thobe" && selectedSeries.length > 0 ? (
-              <div className="card p-5">
-                <h2 className="font-serif italic text-xl mb-4" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Series & Harga</h2>
+              <div className="pf-card p-5 lg:p-6">
+                <div className="pf-head">
+                  <div className="pf-num">2</div>
+                  <div>
+                    <h2 className="pf-title">Series &amp; Harga</h2>
+                    <p className="pf-sub">Atur harga, media, dan stok untuk setiap series.</p>
+                  </div>
+                </div>
 
                 {/* Series tabs */}
                 <div className="flex flex-wrap gap-2 mb-5">
                   {selectedSeries.map((sn) => (
-                    <button key={sn} type="button" onClick={() => setActiveSeriesTab(sn)}
-                      className="px-4 py-2 rounded-xl text-xs font-semibold transition-all"
-                      style={{
-                        background: activeSeriesTab === sn ? "var(--espresso)" : "transparent",
-                        color: activeSeriesTab === sn ? "var(--cream)" : "var(--coffee)",
-                        border: `1px solid ${activeSeriesTab === sn ? "var(--espresso)" : "rgba(201,183,156,.3)"}`,
-                      }}>
+                    <button key={sn} type="button" onClick={() => setActiveSeriesTab(sn)} className={`pf-tab${activeSeriesTab === sn ? " active" : ""}`}>
                       {sn}
                       {seriesBlocks[sn] && (() => {
                         const b = seriesBlocks[sn];
                         const hasError = errors[`series_${sn}_price`] || errors[`series_${sn}_media`] || errors[`series_${sn}_stock`];
-                        return hasError ? <span className="ml-1.5 w-1.5 h-1.5 rounded-full inline-block" style={{ background: "#e74c3c" }} /> : null;
+                        return hasError ? <span className="pf-dot" /> : null;
                       })()}
                     </button>
                   ))}
@@ -891,56 +884,50 @@ export default function TambahProdukPage() {
                   const block = seriesBlocks[sn];
                   const v0 = block.variants[0];
                   return (
-                    <div className="space-y-5">
+                    <div className="space-y-6">
                       {/* ── Harga & CYP ── */}
                       <div>
                         <p className="text-sm font-semibold mb-3" style={{ color: "var(--espresso)" }}>
                           <span style={{ color: "var(--gold)" }}>{sn}</span> — Harga
                         </p>
-                        <div className="p-4 rounded-xl" style={{ background: "rgba(255,255,255,.6)", border: "1px solid rgba(64,50,37,.06)" }}>
+                        <div className="pf-panel">
                           <div className="grid sm:grid-cols-2 gap-4">
                             <div>
-                              <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Harga Dasar (Rp) <span style={{ color: "var(--gold)" }}>*</span></label>
+                              <label className="pf-label">Harga Dasar (Rp) <span className="pf-req">*</span></label>
                               <input type="text" inputMode="numeric" value={formatRupiah(block.price)}
                                 onChange={(e) => updateSeriesBlock(sn, { price: parseRupiah(e.target.value) })}
-                                className="w-full rounded-xl px-4 py-3 text-sm outline-none"
-                                style={{ border: `1px solid ${errors[`series_${sn}_price`] ? "#e74c3c" : "rgba(64,50,37,.15)"}`, background: "white", color: "var(--espresso)" }}
+                                className={`pf-input${errors[`series_${sn}_price`] ? " invalid" : ""}`}
                                 placeholder="389.000" />
-                              {errors[`series_${sn}_price`] && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors[`series_${sn}_price`]}</p>}
+                              {errors[`series_${sn}_price`] && <p className="pf-error">{errors[`series_${sn}_price`]}</p>}
                             </div>
                           </div>
 
                           {/* CYP toggle */}
-                          <div className="mt-4 p-4 rounded-xl" style={{ background: block.cypEnabled ? "rgba(181,140,74,.06)" : "rgba(64,50,37,.02)", border: `1px solid ${block.cypEnabled ? "rgba(181,140,74,.3)" : "rgba(64,50,37,.1)"}` }}>
+                          <div className={`mt-4 pf-panel${block.cypEnabled ? " accent" : " flat"}`}>
                             <div className="flex items-center justify-between mb-3">
                               <div>
                                 <p className="text-sm font-medium" style={{ color: "var(--espresso)" }}>Create Your Price</p>
                                 <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>Customer bisa tentukan harga sendiri</p>
                               </div>
-                              <button type="button" onClick={() => updateSeriesBlock(sn, { cypEnabled: !block.cypEnabled })}
-                                className="relative w-11 h-6 rounded-full transition-colors duration-200"
-                                style={{ background: block.cypEnabled ? "var(--gold)" : "rgba(64,50,37,.2)" }}>
-                                <span className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200"
-                                  style={{ transform: block.cypEnabled ? "translateX(20px)" : "translateX(0)" }} />
+                              <button type="button" onClick={() => updateSeriesBlock(sn, { cypEnabled: !block.cypEnabled })} className="pf-toggle" style={{ background: block.cypEnabled ? "var(--gold)" : "rgba(64,50,37,.2)" }}>
+                                <span className="pf-toggle-knob" style={{ transform: block.cypEnabled ? "translateX(20px)" : "translateX(0)" }} />
                               </button>
                             </div>
                             {block.cypEnabled && (
                               <div className="grid sm:grid-cols-2 gap-3">
                                 <div>
-                                  <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Harga Minimum (Rp) <span style={{ color: "var(--gold)" }}>*</span></label>
+                                  <label className="pf-label">Harga Minimum (Rp) <span className="pf-req">*</span></label>
                                   <input type="text" inputMode="numeric" value={formatRupiah(block.minimumPrice)}
                                     onChange={(e) => updateSeriesBlock(sn, { minimumPrice: parseRupiah(e.target.value) })}
-                                    className="w-full rounded-xl px-4 py-3 text-sm outline-none"
-                                    style={{ border: `1px solid ${errors[`series_${sn}_min`] ? "#e74c3c" : "rgba(64,50,37,.15)"}`, background: "white", color: "var(--espresso)" }}
+                                    className={`pf-input${errors[`series_${sn}_min`] ? " invalid" : ""}`}
                                     placeholder="350.000" />
-                                  {errors[`series_${sn}_min`] && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors[`series_${sn}_min`]}</p>}
+                                  {errors[`series_${sn}_min`] && <p className="pf-error">{errors[`series_${sn}_min`]}</p>}
                                 </div>
                                 <div>
-                                  <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Harga Rekomendasi (Rp)</label>
+                                  <label className="pf-label">Harga Rekomendasi (Rp)</label>
                                   <input type="text" inputMode="numeric" value={formatRupiah(block.recommendedPrice)}
                                     onChange={(e) => updateSeriesBlock(sn, { recommendedPrice: parseRupiah(e.target.value) })}
-                                    className="w-full rounded-xl px-4 py-3 text-sm outline-none"
-                                    style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }}
+                                    className="pf-input"
                                     placeholder={block.price ? formatRupiah(String((parseInt(block.price) || 0) + 30000)) : "—"} />
                                 </div>
                               </div>
@@ -952,21 +939,21 @@ export default function TambahProdukPage() {
                       {/* ── Media ── */}
                       <div>
                         <p className="text-sm font-semibold mb-3" style={{ color: "var(--espresso)" }}>
-                          <span style={{ color: "var(--gold)" }}>{sn}</span> — Foto & Video
+                          <span style={{ color: "var(--gold)" }}>{sn}</span> — Foto &amp; Video
                         </p>
-                        {errors[`series_${sn}_media`] && <p className="text-[11px] mb-2" style={{ color: "#e74c3c" }}>{errors[`series_${sn}_media`]}</p>}
-                        <div className="p-4 rounded-xl" style={{ background: "rgba(255,255,255,.6)", border: "1px solid rgba(64,50,37,.06)" }}>
-                          <label className="block rounded-xl p-5 text-center cursor-pointer transition-all hover:border-[var(--gold)]" style={{ border: "2px dashed rgba(201,183,156,.3)", background: "rgba(255,255,255,.5)" }}>
-                            <Upload size={20} className="mx-auto mb-2" style={{ color: "var(--text-muted)" }} />
+                        {errors[`series_${sn}_media`] && <p className="pf-error mb-2">{errors[`series_${sn}_media`]}</p>}
+                        <div className="pf-panel">
+                          <label className="pf-drop">
+                            <span className="pf-drop-ico"><Upload size={18} /></span>
                             <p className="text-sm font-medium" style={{ color: "var(--espresso)" }}>Upload foto/video untuk {sn}</p>
-                            <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>JPG, PNG, WebP (max 10MB) · MP4, WebM (max 50MB)</p>
+                            <p className="pf-hint">JPG, PNG, WebP (max 10MB) · MP4, WebM (max 50MB)</p>
                             <input type="file" multiple accept="image/jpeg,image/png,image/webp,video/mp4,video/webm"
                               onChange={(e) => handleSeriesFileSelect(e, sn)} className="hidden" />
                           </label>
                           {block.media.length > 0 && (
-                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mt-3">
+                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5 mt-3">
                               {block.media.map((m, idx) => (
-                                <div key={m.id} className="relative aspect-square rounded-lg overflow-hidden group" style={{ background: "#e8dfd1" }}>
+                                <div key={m.id} className="pf-thumb group">
                                   {m.uploading ? (
                                     <div className="absolute inset-0 flex items-center justify-center"><Loader2 size={16} className="animate-spin" style={{ color: "var(--gold)" }} /></div>
                                   ) : m.error ? (
@@ -977,11 +964,9 @@ export default function TambahProdukPage() {
                                     <img src={m.url || m.preview} alt="" className="w-full h-full object-cover" />
                                   )}
                                   {idx === 0 && !m.uploading && !m.error && (
-                                    <span className="absolute bottom-1 left-1 rounded px-1 py-0.5 text-[8px] font-medium text-white" style={{ background: "rgba(0,0,0,.65)" }}>Utama</span>
+                                    <span className="pf-thumb-tag">Utama</span>
                                   )}
-                                  <button onClick={() => removeSeriesMedia(sn, m.id)}
-                                    className="absolute top-1 right-1 w-5 h-5 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                                    style={{ background: "rgba(0,0,0,.6)", color: "white" }}>
+                                  <button onClick={() => removeSeriesMedia(sn, m.id)} className="pf-thumb-x">
                                     <X size={10} />
                                   </button>
                                 </div>
@@ -996,37 +981,33 @@ export default function TambahProdukPage() {
                         <p className="text-sm font-semibold mb-3" style={{ color: "var(--espresso)" }}>
                           <span style={{ color: "var(--gold)" }}>{sn}</span> — Stok Ukuran
                         </p>
-                        {errors[`series_${sn}_stock`] && <p className="text-[11px] mb-2" style={{ color: "#e74c3c" }}>{errors[`series_${sn}_stock`]}</p>}
-                        <div className="p-4 rounded-xl" style={{ background: "rgba(255,255,255,.6)", border: "1px solid rgba(64,50,37,.06)" }}>
-                          <div className="grid grid-cols-[72px_80px_112px_112px_36px] gap-2 text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>
+                        {errors[`series_${sn}_stock`] && <p className="pf-error mb-2">{errors[`series_${sn}_stock`]}</p>}
+                        <div className="pf-panel">
+                          <div className="pf-grid-head">
                             <span>Ukuran</span><span>Stok</span><span>Harga Khusus</span><span>SKU</span><span></span>
                           </div>
                           {v0.sizes.map((s, i) => (
-                            <div key={i} className="grid grid-cols-[72px_80px_112px_112px_36px] gap-2 items-center mb-1.5">
+                            <div key={i} className="pf-grid-row">
                               <input value={s.size}
                                 onChange={(e) => updateSeriesBlockSizeField(sn, i, "size", e.target.value.toUpperCase())}
                                 onFocus={(e) => e.target.select()} list="size-suggestions"
-                                className="rounded-lg px-2.5 py-2 text-sm outline-none text-center"
-                                style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="—" />
+                                className="pf-cell text-center" placeholder="—" />
                               <input type="number" value={s.stock || ""}
                                 onChange={(e) => updateSeriesBlockSizeField(sn, i, "stock", parseInt(e.target.value) || 0)}
-                                placeholder="0" className="rounded-lg px-2.5 py-2 text-sm outline-none text-center"
-                                style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
+                                placeholder="0" className="pf-cell text-center" />
                               <input type="text" inputMode="numeric" value={formatRupiah(s.priceOverride)}
                                 onChange={(e) => updateSeriesBlockSizeField(sn, i, "priceOverride", parseRupiah(e.target.value))}
-                                placeholder="—" className="rounded-lg px-2.5 py-2 text-sm outline-none"
-                                style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
+                                placeholder="—" className="pf-cell" />
                               <input value={s.sku}
                                 onChange={(e) => updateSeriesBlockSizeField(sn, i, "sku", e.target.value)}
-                                placeholder="—" className="rounded-lg px-2.5 py-2 text-sm outline-none"
-                                style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
+                                placeholder="—" className="pf-cell" />
                               {v0.sizes.length > 1 && (
-                                <button onClick={() => removeSizeFromSeriesBlock(sn, i)} className="p-1.5 rounded-lg hover:bg-red-50 transition-colors" style={{ color: "#e74c3c" }}><Trash2 size={14} /></button>
+                                <button onClick={() => removeSizeFromSeriesBlock(sn, i)} className="pf-rowdel"><Trash2 size={14} /></button>
                               )}
                             </div>
                           ))}
                           <datalist id="size-suggestions">{SIZES.map((sz) => <option key={sz} value={sz} />)}</datalist>
-                          <button onClick={() => addSizeToSeriesBlock(sn)} className="flex items-center gap-1.5 text-sm font-medium mt-2" style={{ color: "var(--gold)" }}>
+                          <button onClick={() => addSizeToSeriesBlock(sn)} className="pf-add">
                             <Plus size={14} /> Tambah Ukuran
                           </button>
                         </div>
@@ -1042,9 +1023,15 @@ export default function TambahProdukPage() {
             ) : (
               <>
               {/* Non-Thobe: Varian & Stok */}
-              <div className="card p-5">
-                <h2 className="font-serif italic text-xl mb-4" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Varian & Stok</h2>
-                {errors.variants && <p className="text-[12px] mb-3" style={{ color: "#e74c3c" }}>{errors.variants}</p>}
+              <div className="pf-card p-5 lg:p-6">
+                <div className="pf-head">
+                  <div className="pf-num">2</div>
+                  <div>
+                    <h2 className="pf-title">Varian &amp; Stok</h2>
+                    <p className="pf-sub">Kelola warna, ukuran, harga khusus, dan stok.</p>
+                  </div>
+                </div>
+                {errors.variants && <p className="pf-error mb-3">{errors.variants}</p>}
                 {category === "Thobe" && selectedSeries.length === 0 ? (
                   <p className="text-sm text-center py-6" style={{ color: "var(--text-muted)" }}>Pilih minimal 1 series terlebih dahulu</p>
                 ) : (
@@ -1052,9 +1039,7 @@ export default function TambahProdukPage() {
                   {/* Color chips */}
                   <div className="flex flex-wrap gap-2 mb-4">
                     {variants.map((v) => (
-                      <button key={v.color} onClick={() => { setActiveColor(v.color); setPreviewIndex(0); }}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all"
-                        style={{ background: activeColor === v.color ? "var(--espresso)" : "transparent", color: activeColor === v.color ? "var(--cream)" : "var(--coffee)", border: `1px solid ${activeColor === v.color ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
+                      <button key={v.color} onClick={() => { setActiveColor(v.color); setPreviewIndex(0); }} className={`pf-chip${activeColor === v.color ? " active" : ""}`}>
                         <span className="w-3 h-3 rounded-full" style={{ background: v.hex || colorMap[v.color] || "#ccc", border: "1px solid rgba(42,33,27,.1)" }} />
                         {v.color}
                         <button onClick={(e) => { e.stopPropagation(); removeColor(v.color); }} className="ml-1 hover:opacity-60"><X size={12} /></button>
@@ -1065,22 +1050,22 @@ export default function TambahProdukPage() {
                   {activeVariant && (
                     <div className="space-y-3">
                       <p className="text-sm font-medium" style={{ color: "var(--espresso)" }}>Ukuran untuk <span style={{ color: "var(--gold)" }}>{activeColor}</span></p>
-                      <div className="grid grid-cols-[72px_80px_112px_112px_36px] gap-2 text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>
+                      <div className="pf-grid-head">
                         <span>Ukuran</span><span>Stok</span><span>Harga Khusus</span><span>SKU</span><span></span>
                       </div>
                       {activeVariant.sizes.map((s, i) => (
-                        <div key={i} className="grid grid-cols-[72px_80px_112px_112px_36px] gap-2 items-center">
-                          <input value={s.size} onChange={(e) => updateSizeField(activeColor!, i, "size", e.target.value.toUpperCase())} onFocus={(e) => e.target.select()} list="size-suggestions" className="rounded-lg px-2.5 py-2 text-sm outline-none text-center" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="—" />
-                          <input type="number" value={s.stock || ""} onChange={(e) => updateSizeField(activeColor!, i, "stock", parseInt(e.target.value) || 0)} placeholder="0" className="rounded-lg px-2.5 py-2 text-sm outline-none text-center" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
-                          <input type="text" inputMode="numeric" value={formatRupiah(s.priceOverride)} onChange={(e) => updateSizeField(activeColor!, i, "priceOverride", parseRupiah(e.target.value))} placeholder="—" className="rounded-lg px-2.5 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
-                          <input value={s.sku} onChange={(e) => updateSizeField(activeColor!, i, "sku", e.target.value)} placeholder="—" className="rounded-lg px-2.5 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
+                        <div key={i} className="pf-grid-row">
+                          <input value={s.size} onChange={(e) => updateSizeField(activeColor!, i, "size", e.target.value.toUpperCase())} onFocus={(e) => e.target.select()} list="size-suggestions" className="pf-cell text-center" placeholder="—" />
+                          <input type="number" value={s.stock || ""} onChange={(e) => updateSizeField(activeColor!, i, "stock", parseInt(e.target.value) || 0)} placeholder="0" className="pf-cell text-center" />
+                          <input type="text" inputMode="numeric" value={formatRupiah(s.priceOverride)} onChange={(e) => updateSizeField(activeColor!, i, "priceOverride", parseRupiah(e.target.value))} placeholder="—" className="pf-cell" />
+                          <input value={s.sku} onChange={(e) => updateSizeField(activeColor!, i, "sku", e.target.value)} placeholder="—" className="pf-cell" />
                           {activeVariant.sizes.length > 1 && (
-                            <button onClick={() => removeSize(activeColor!, i)} className="p-1.5 rounded-lg hover:bg-red-50 transition-colors" style={{ color: "#e74c3c" }}><Trash2 size={14} /></button>
+                            <button onClick={() => removeSize(activeColor!, i)} className="pf-rowdel"><Trash2 size={14} /></button>
                           )}
                         </div>
                       ))}
                       <datalist id="size-suggestions">{SIZES.map((sz) => <option key={sz} value={sz} />)}</datalist>
-                      <button onClick={() => addSize(activeColor!)} className="flex items-center gap-1.5 text-sm font-medium" style={{ color: "var(--gold)" }}><Plus size={14} /> Tambah Ukuran</button>
+                      <button onClick={() => addSize(activeColor!)} className="pf-add"><Plus size={14} /> Tambah Ukuran</button>
                     </div>
                   )}
                   {variants.length === 0 && (
@@ -1091,29 +1076,35 @@ export default function TambahProdukPage() {
               </div>
 
               {/* Non-Thobe: Media */}
-              <div className="card p-5">
-                <h2 className="font-serif italic text-xl mb-4" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Media</h2>
-                {errors.media && <p className="text-[12px] mb-3" style={{ color: "#e74c3c" }}>{errors.media}</p>}
+              <div className="pf-card p-5 lg:p-6">
+                <div className="pf-head">
+                  <div className="pf-num">3</div>
+                  <div>
+                    <h2 className="pf-title">Media</h2>
+                    <p className="pf-sub">Foto &amp; video produk per warna.</p>
+                  </div>
+                </div>
+                {errors.media && <p className="pf-error mb-3">{errors.media}</p>}
                 {!activeColor ? (
                   <p className="text-sm text-center py-6" style={{ color: "var(--text-muted)" }}>Pilih warna terlebih dahulu untuk upload media</p>
                 ) : (
                   <div>
                     <p className="text-sm mb-3" style={{ color: "var(--text-secondary)" }}>Upload untuk warna: <span className="font-medium" style={{ color: "var(--gold)" }}>{activeColor}</span></p>
-                    <label className="block rounded-xl p-6 text-center cursor-pointer transition-all hover:border-[var(--gold)]" style={{ border: "2px dashed rgba(201,183,156,.3)", background: "rgba(255,255,255,.5)" }}>
-                      <Upload size={24} className="mx-auto mb-2" style={{ color: "var(--text-muted)" }} />
+                    <label className="pf-drop">
+                      <span className="pf-drop-ico"><Upload size={20} /></span>
                       <p className="text-sm font-medium" style={{ color: "var(--espresso)" }}>Klik atau seret file ke sini</p>
-                      <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>JPG, PNG, WebP (max 10MB) · MP4, WebM (max 50MB)</p>
+                      <p className="pf-hint">JPG, PNG, WebP (max 10MB) · MP4, WebM (max 50MB)</p>
                       <input type="file" multiple accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" onChange={(e) => handleFileSelect(e, activeColor || "default")} className="hidden" />
                     </label>
                     <div className="flex gap-2 mt-2.5">
-                      <input value={mediaUrl} onChange={(e) => setMediaUrl(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addMediaByUrl(); } }} placeholder="atau tempel URL gambar / video…" className="flex-1 rounded-xl px-4 py-2.5 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
-                      <button type="button" onClick={addMediaByUrl} className="px-4 py-2 rounded-xl text-xs font-semibold text-white shrink-0" style={{ background: "var(--gold)" }}>Tambah</button>
+                      <input value={mediaUrl} onChange={(e) => setMediaUrl(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addMediaByUrl(); } }} placeholder="atau tempel URL gambar / video…" className="pf-input flex-1" />
+                      <button type="button" onClick={addMediaByUrl} className="pf-btn pf-btn-primary shrink-0">Tambah</button>
                     </div>
-                    <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>Foto pertama = foto utama di katalog.</p>
+                    <p className="pf-hint">Foto pertama = foto utama di katalog.</p>
                     {activeMedia.length > 0 && (
                       <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 mt-4">
                         {activeMedia.map((m, idx) => (
-                          <div key={m.id} className="relative aspect-square rounded-lg overflow-hidden group cursor-pointer" style={{ background: "#e8dfd1" }}
+                          <div key={m.id} className="pf-thumb group cursor-pointer"
                             onClick={() => { if (!m.uploading && !m.error) { setPreviewIndex(idx); } }}>
                             {m.uploading ? (
                               <div className="absolute inset-0 flex items-center justify-center"><Loader2 size={20} className="animate-spin" style={{ color: "var(--gold)" }} /></div>
@@ -1125,12 +1116,12 @@ export default function TambahProdukPage() {
                               <img src={m.url || m.preview} alt="" className="w-full h-full object-cover" />
                             )}
                             {idx === 0 && !m.uploading && !m.error && (
-                              <span className="absolute bottom-1.5 left-1.5 rounded px-1.5 py-0.5 text-[9px] font-medium text-white" style={{ background: "rgba(0,0,0,.65)" }}>Utama</span>
+                              <span className="pf-thumb-tag">Utama</span>
                             )}
-                            <button onClick={(e) => { e.stopPropagation(); removeMedia(m.id); }} className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: "rgba(0,0,0,.6)", color: "white" }}>
+                            {m.isVideo && <div className="absolute top-1.5 left-1.5"><Video size={12} style={{ color: "white" }} /></div>}
+                            <button onClick={(e) => { e.stopPropagation(); removeMedia(m.id); }} className="pf-thumb-x">
                               <X size={12} />
                             </button>
-                            {m.isVideo && <div className="absolute bottom-1.5 left-1.5"><Video size={12} style={{ color: "white" }} /></div>}
                           </div>
                         ))}
                       </div>
@@ -1144,11 +1135,16 @@ export default function TambahProdukPage() {
 
           {/* Right: Preview sidebar */}
           <div className="hidden lg:block sticky top-24">
-            <div className="card p-5">
-              <h3 className="font-serif italic text-lg mb-4" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>Preview Produk</h3>
+            <div className="pf-card p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-serif italic text-lg" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>Preview Produk</h3>
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full" style={{ background: "rgba(181,140,74,.1)", color: "var(--gold-deep)", border: "1px solid rgba(181,140,74,.25)" }}>
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: "var(--gold)" }} /> Live
+                </span>
+              </div>
 
               {/* Main image / video */}
-              <div className="aspect-[4/5] rounded-xl overflow-hidden mb-3" style={{ background: "#e8dfd1" }}>
+              <div className="aspect-[4/5] rounded-2xl overflow-hidden mb-3" style={{ background: "#e8dfd1", border: "1px solid rgba(64,50,37,.08)" }}>
                 {activeMedia.length > 0 ? (
                   (() => {
                     const item = activeMedia[Math.min(previewIndex, activeMedia.length - 1)];
@@ -1188,7 +1184,7 @@ export default function TambahProdukPage() {
               {/* Product info */}
               <p className="text-sm font-medium" style={{ color: "var(--espresso)" }}>{name || "Nama Produk"}</p>
               <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{category || "Kategori"}{activeSeriesTab && category === "Thobe" ? ` · ${activeSeriesTab}` : ""}</p>
-              <p className="text-lg font-serif italic mt-1.5" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--gold)" }}>
+              <p className="text-xl font-serif italic mt-1.5" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--gold)" }}>
                 {category === "Thobe" && activeSeriesTab && seriesBlocks[activeSeriesTab] ? (
                   (() => {
                     const b = seriesBlocks[activeSeriesTab];
@@ -1222,13 +1218,168 @@ export default function TambahProdukPage() {
 
       {/* Mobile sticky save button */}
       <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 px-4 pb-4 pt-3" style={{ background: "linear-gradient(to top, var(--cream) 70%, transparent)" }}>
-        <button onClick={handleSubmit} disabled={saving} className="w-full py-3.5 rounded-xl text-sm font-semibold text-white" style={{ background: "var(--gold)", boxShadow: "0 6px 20px -6px rgba(184,145,74,.4)" }}>
-          {saving ? <><Loader2 size={14} className="animate-spin inline mr-1" /> Menyimpan...</> : "Simpan Produk"}
+        <button onClick={handleSubmit} disabled={saving} className="pf-btn pf-btn-primary w-full" style={{ paddingTop: ".85rem", paddingBottom: ".85rem", fontSize: ".9rem" }}>
+          {saving ? <><Loader2 size={14} className="animate-spin" /> Menyimpan...</> : <><Check size={14} /> Simpan Produk</>}
         </button>
       </div>
 
       <style jsx global>{`
         .card { background: #fffdfb; border: 1px solid rgba(64,50,37,.06); border-radius: 1rem; box-shadow: 0 1px 2px rgba(64,50,37,.03); }
+
+        .pf-card {
+          background: #fffdfb;
+          border: 1px solid rgba(64,50,37,.07);
+          border-radius: 1.25rem;
+          box-shadow: 0 1px 2px rgba(64,50,37,.03), 0 18px 40px -32px rgba(45,33,27,.35);
+        }
+        .pf-head {
+          display: flex; align-items: flex-start; gap: .85rem;
+          padding-bottom: 1rem; margin-bottom: 1.25rem;
+          border-bottom: 1px solid rgba(64,50,37,.07);
+        }
+        .pf-num {
+          flex: none; width: 2.3rem; height: 2.3rem; border-radius: .8rem;
+          display: flex; align-items: center; justify-content: center;
+          font-size: .8rem; font-weight: 700; color: var(--gold-deep);
+          background: linear-gradient(135deg, rgba(181,140,74,.16), rgba(181,140,74,.05));
+          border: 1px solid rgba(181,140,74,.25);
+        }
+        .pf-title {
+          font-family: var(--font-cormorant), Georgia, serif; font-style: italic;
+          font-size: 1.35rem; line-height: 1.1; color: var(--espresso);
+        }
+        .pf-sub { font-size: .74rem; color: var(--text-muted); margin-top: .18rem; line-height: 1.4; }
+        .pf-label {
+          display: block; font-size: .78rem; font-weight: 600;
+          color: var(--text-secondary); margin-bottom: .4rem;
+        }
+        .pf-req { color: var(--gold); }
+        .pf-input, .pf-select, .pf-textarea {
+          width: 100%; border-radius: .8rem; border: 1px solid rgba(64,50,37,.14);
+          background: #fff; color: var(--espresso); font-size: .875rem;
+          padding: .7rem .9rem; outline: none;
+          transition: border-color .18s ease, box-shadow .18s ease;
+        }
+        .pf-textarea { resize: none; line-height: 1.55; }
+        .pf-select { appearance: none; padding-right: 2.2rem; }
+        .pf-input::placeholder, .pf-textarea::placeholder { color: var(--text-muted); }
+        .pf-input:focus, .pf-select:focus, .pf-textarea:focus {
+          border-color: var(--gold); box-shadow: 0 0 0 3px rgba(181,140,74,.14);
+        }
+        .pf-input.invalid, .pf-select.invalid, .pf-textarea.invalid { border-color: #e74c3c; }
+        .pf-hint { font-size: .7rem; color: var(--text-muted); margin-top: .35rem; }
+        .pf-error { font-size: .72rem; color: #e74c3c; margin-top: .35rem; }
+        .pf-selectwrap { position: relative; }
+        .pf-selectico {
+          position: absolute; right: .85rem; top: 50%; transform: translateY(-50%);
+          pointer-events: none; color: var(--text-muted);
+        }
+        .pf-panel {
+          border-radius: 1rem; border: 1px solid rgba(64,50,37,.08);
+          background: rgba(255,255,255,.65); padding: 1rem;
+        }
+        .pf-panel.accent { background: rgba(181,140,74,.06); border-color: rgba(181,140,74,.28); }
+        .pf-panel.flat { background: rgba(64,50,37,.03); border-color: rgba(64,50,37,.09); }
+        .pf-btn {
+          display: inline-flex; align-items: center; justify-content: center; gap: .45rem;
+          border-radius: .8rem; font-size: .8rem; font-weight: 600;
+          padding: .6rem .95rem; border: 1px solid transparent;
+          transition: filter .18s ease, background .18s ease, border-color .18s ease;
+        }
+        .pf-btn-primary {
+          background: linear-gradient(135deg, var(--gold), var(--gold-deep));
+          color: #fff; box-shadow: 0 10px 22px -12px rgba(150,116,47,.75);
+        }
+        .pf-btn-primary:hover { filter: brightness(1.05); }
+        .pf-btn-primary:disabled { opacity: .6; }
+        .pf-btn-ghost { background: #fff; border-color: rgba(64,50,37,.14); color: var(--espresso); }
+        .pf-btn-ghost:hover { background: var(--bg-secondary); }
+        .pf-btn-outline {
+          background: transparent; border-color: rgba(181,140,74,.5);
+          border-style: dashed; color: var(--gold-deep);
+        }
+        .pf-btn-outline:hover { background: rgba(181,140,74,.08); }
+        .pf-btn-danger { background: transparent; border-color: rgba(231,76,60,.3); color: #e74c3c; }
+        .pf-btn-danger:hover { background: rgba(231,76,60,.07); }
+        .pf-toggle {
+          position: relative; width: 2.6rem; height: 1.45rem; border-radius: 999px;
+          flex: none; transition: background .2s ease;
+        }
+        .pf-toggle-knob {
+          position: absolute; top: .15rem; left: .15rem; width: 1.15rem; height: 1.15rem;
+          border-radius: 999px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25);
+          transition: transform .2s ease;
+        }
+        .pf-chip {
+          display: inline-flex; align-items: center; gap: .4rem;
+          padding: .4rem .85rem; border-radius: 999px; font-size: .75rem; font-weight: 600;
+          color: var(--coffee); background: transparent;
+          border: 1px solid rgba(201,183,156,.45);
+          transition: all .18s ease;
+        }
+        .pf-chip:hover { border-color: var(--gold); color: var(--espresso); background: rgba(181,140,74,.06); }
+        .pf-chip.active { background: var(--espresso); color: var(--cream); border-color: var(--espresso); }
+        .pf-tab {
+          display: inline-flex; align-items: center; gap: .4rem;
+          padding: .55rem 1.05rem; border-radius: .8rem; font-size: .78rem; font-weight: 600;
+          color: var(--coffee); background: transparent; border: 1px solid rgba(201,183,156,.45);
+          transition: all .18s ease;
+        }
+        .pf-tab:hover { border-color: var(--gold); background: rgba(181,140,74,.06); }
+        .pf-tab.active { background: var(--espresso); color: var(--cream); border-color: var(--espresso); }
+        .pf-dot { width: .4rem; height: .4rem; border-radius: 999px; background: #e74c3c; display: inline-block; margin-left: .4rem; }
+        .pf-drop {
+          display: block; border-radius: 1rem; text-align: center; cursor: pointer;
+          padding: 1.5rem 1.25rem; border: 2px dashed rgba(201,183,156,.5);
+          background: rgba(255,255,255,.55); transition: border-color .2s ease, background .2s ease;
+        }
+        .pf-drop:hover { border-color: var(--gold); background: rgba(181,140,74,.05); }
+        .pf-drop-ico {
+          width: 2.75rem; height: 2.75rem; border-radius: 999px; margin: 0 auto .6rem;
+          display: flex; align-items: center; justify-content: center;
+          background: rgba(181,140,74,.1); color: var(--gold-deep);
+        }
+        .pf-thumb {
+          position: relative; aspect-ratio: 1 / 1; border-radius: .85rem; overflow: hidden;
+          background: #e8dfd1;
+        }
+        .pf-thumb-x {
+          position: absolute; top: .35rem; right: .35rem; width: 1.5rem; height: 1.5rem;
+          border-radius: 999px; display: flex; align-items: center; justify-content: center;
+          background: rgba(0,0,0,.62); color: #fff; opacity: 0; transition: opacity .18s ease;
+        }
+        .pf-thumb:hover .pf-thumb-x { opacity: 1; }
+        .pf-thumb-tag {
+          position: absolute; bottom: .35rem; left: .35rem; border-radius: .35rem;
+          padding: .1rem .35rem; font-size: .55rem; font-weight: 600; letter-spacing: .02em;
+          color: #fff; background: rgba(0,0,0,.65);
+        }
+        .pf-grid-head {
+          display: grid; grid-template-columns: 72px 80px 112px 112px 36px;
+          gap: .5rem; font-size: .68rem; font-weight: 600; letter-spacing: .02em;
+          color: var(--text-muted); margin-bottom: .35rem;
+        }
+        .pf-grid-row {
+          display: grid; grid-template-columns: 72px 80px 112px 112px 36px;
+          gap: .5rem; align-items: center; margin-bottom: .4rem;
+        }
+        .pf-cell {
+          border-radius: .6rem; border: 1px solid rgba(64,50,37,.14);
+          background: #fff; color: var(--espresso); font-size: .85rem;
+          padding: .5rem .65rem; outline: none; width: 100%;
+          transition: border-color .18s ease, box-shadow .18s ease;
+        }
+        .pf-cell:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(181,140,74,.14); }
+        .pf-rowdel {
+          padding: .4rem; border-radius: .6rem; color: #e74c3c;
+          display: flex; align-items: center; justify-content: center;
+        }
+        .pf-rowdel:hover { background: rgba(231,76,60,.08); }
+        .pf-add {
+          display: inline-flex; align-items: center; gap: .4rem;
+          font-size: .8rem; font-weight: 600; color: var(--gold-deep); margin-top: .35rem;
+        }
+        .pf-add:hover { color: var(--gold); }
       `}</style>
     </section>
     </AdminShell>
