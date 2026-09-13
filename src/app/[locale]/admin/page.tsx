@@ -13,6 +13,7 @@ import { supabase } from "@/lib/supabase";
 import type { User } from "@supabase/supabase-js";
 import ConfirmModal from "@/components/ConfirmModal";
 import { useToast } from "@/components/AdminToast";
+import { uploadToCloudinary } from "@/lib/cloudinary";
 
 type Panel = "dashboard" | "orders" | "products" | "customers" | "content" | "featured" | "settings";
 
@@ -1837,15 +1838,11 @@ function QrisEwalletSection() {
     const allowed = ["image/jpeg", "image/png", "image/webp"];
     if (!allowed.includes(file.type)) { toast.showToast("error", "Format file tidak didukung (JPG/PNG/WebP)"); return; }
     if (file.size > 5 * 1024 * 1024) { toast.showToast("error", "Ukuran file maksimal 5MB"); return; }
-    const fd = new FormData();
-    fd.append("file", file);
-    fd.append("upload_preset", "samaqu_unsigned");
     try {
-      const res = await fetch(`https://api.cloudinary.com/v1_1/dgtixuop0/image/upload`, { method: "POST", body: fd });
-      const data = await res.json();
-      if (data.secure_url) {
-        setMethods(methods.map((m) => m.id === id ? { ...m, qr_image_url: data.secure_url } : m));
-        await supabase.from("qris_ewallet_methods").update({ qr_image_url: data.secure_url }).eq("id", id);
+      const url = await uploadToCloudinary(file);
+      if (url) {
+        setMethods(methods.map((m) => m.id === id ? { ...m, qr_image_url: url } : m));
+        await supabase.from("qris_ewallet_methods").update({ qr_image_url: url }).eq("id", id);
         toast.showToast("success", "QR Code berhasil diupload");
       }
     } catch { toast.showToast("error", "Gagal upload gambar"); }

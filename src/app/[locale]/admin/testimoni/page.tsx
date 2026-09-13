@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/AdminToast";
 import ConfirmModal from "@/components/ConfirmModal";
 import AdminShell from "@/components/AdminShell";
+import { uploadToCloudinary } from "@/lib/cloudinary";
 
 const CATEGORIES = ["Thobe", "Kandora", "Koko", "Vest", "Kabak", "Cover & Hanger"] as const;
 
@@ -74,9 +75,6 @@ export default function AdminTestimoniPage() {
   const [confirmModal, setConfirmModal] = useState<{ open: boolean; onConfirm: () => void }>({ open: false, onConfirm: () => {} });
   const toast = useToast();
 
-  const CLOUDINARY_CLOUD = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD || "dgtixuop0";
-  const CLOUDINARY_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_PRESET || "samaqu_unsigned";
-
   // Filter products based on search
   const filteredProducts = useMemo(() => {
     if (!productSearch.trim()) return products.slice(0, 20);
@@ -99,15 +97,9 @@ export default function AdminTestimoniPage() {
     if (file.size > maxSize) { toast.showToast("error", `File terlalu besar. Maks: ${isVideo ? "50MB" : "10MB"}`); return; }
     setUploading(true);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("upload_preset", CLOUDINARY_PRESET);
-      const endpoint = isVideo ? "video" : "image";
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/${endpoint}/upload`, { method: "POST", body: formData });
-      if (!res.ok) throw new Error("Upload gagal");
-      const data = await res.json();
-      if (isVideo) setForm({ ...form, video_url: data.secure_url, image_url: "", type: "video" });
-      else setForm({ ...form, image_url: data.secure_url, video_url: "", type: "photo" });
+      const url = await uploadToCloudinary(file);
+      if (isVideo) setForm({ ...form, video_url: url, image_url: "", type: "video" });
+      else setForm({ ...form, image_url: url, video_url: "", type: "photo" });
       toast.showToast("success", "Media berhasil diupload");
     } catch {
       toast.showToast("error", "Gagal upload media");

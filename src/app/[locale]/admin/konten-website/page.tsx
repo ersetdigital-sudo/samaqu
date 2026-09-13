@@ -6,6 +6,7 @@ import { X, Loader2, Plus, Trash2, Upload, Image as ImageIcon } from "lucide-rea
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/AdminToast";
 import AdminShell from "@/components/AdminShell";
+import { uploadToCloudinary } from "@/lib/cloudinary";
 
 const HERO_DEFAULTS = {
   eyebrow_text: "Premium Muslim Menswear", title_line1: "Busana yang Layak", title_line2: "Menemani Setiap Momen.",
@@ -118,15 +119,11 @@ export default function KontenWebsitePage() {
     revalidateHomepage();
   }
   async function uploadCategoryImage(idx: number, file: File) {
-    const fd = new FormData();
-    fd.append("file", file);
-    fd.append("upload_preset", "samaqu_unsigned");
     setUploadingId(editCategories[idx].id);
     try {
-      const res = await fetch(`https://api.cloudinary.com/v1_1/dgtixuop0/image/upload`, { method: "POST", body: fd });
-      const data = await res.json();
-      if (data.secure_url) {
-        const u = [...editCategories]; u[idx] = { ...u[idx], image_url: data.secure_url }; editCategoriesRef.current = u; setEditCategories(u);
+      const url = await uploadToCloudinary(file);
+      if (url) {
+        const u = [...editCategories]; u[idx] = { ...u[idx], image_url: url }; editCategoriesRef.current = u; setEditCategories(u);
         toast.showToast("success", "Gambar berhasil diupload");
       }
     } catch { toast.showToast("error", "Gagal upload gambar"); }

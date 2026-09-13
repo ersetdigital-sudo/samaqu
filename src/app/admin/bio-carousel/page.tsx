@@ -5,6 +5,7 @@ import { Plus, Trash2, Upload, GripVertical, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/AdminToast";
 import AdminShell from "@/components/AdminShell";
+import { uploadToCloudinary } from "@/lib/cloudinary";
 
 interface CarouselImage {
   id: string;
@@ -35,13 +36,7 @@ export default function BioCarouselPage() {
   async function uploadImage(file: File) {
     setUploading(true);
     try {
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("upload_preset", "samaqu_unsigned");
-      const res = await fetch(`https://api.cloudinary.com/v1_1/dgtixuop0/image/upload`, { method: "POST", body: fd });
-      if (!res.ok) throw new Error("Upload failed");
-      const data = await res.json();
-      const imageUrl = data.secure_url;
+      const imageUrl = await uploadToCloudinary(file);
 
       // Find max sort_order
       const maxSort = images.length > 0 ? Math.max(...images.map(i => i.sort_order)) : 0;

@@ -6,6 +6,7 @@ import { X, Loader2, Upload, Image as ImageIcon, ChevronDown, ChevronUp } from "
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/AdminToast";
 import AdminShell from "@/components/AdminShell";
+import { uploadToCloudinary } from "@/lib/cloudinary";
 
 interface GaransiReturContent {
   id: number;
@@ -124,14 +125,10 @@ export default function GaransiReturAdminPage() {
   }
 
   async function uploadImage(field: keyof GaransiReturContent, file: File) {
-    const fd = new FormData();
-    fd.append("file", file);
-    fd.append("upload_preset", "samaqu_unsigned");
     try {
-      const res = await fetch("https://api.cloudinary.com/v1_1/dgtixuop0/image/upload", { method: "POST", body: fd });
-      const data = await res.json();
-      if (data.secure_url) {
-        setContent({ ...content, [field]: data.secure_url });
+      const url = await uploadToCloudinary(file);
+      if (url) {
+        setContent({ ...content, [field]: url });
         toast.showToast("success", "Gambar berhasil diupload");
       }
     } catch { toast.showToast("error", "Gagal upload gambar"); }
