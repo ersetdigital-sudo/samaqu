@@ -957,6 +957,9 @@ function CheckoutContent() {
                       <p className="text-[11px] sm:text-xs font-ui mt-0.5" style={{ color: "var(--text-muted)" }}>
                         {[item.kain ? `Kain ${item.kain}` : null, item.series, (item.color !== "-" && item.color !== "default") ? `Warna: ${item.color}` : null, `Ukuran: ${item.size}`, `×${item.qty}`].filter(Boolean).join(' · ')}
                       </p>
+                      <p className="text-[10px] sm:text-[11px] font-ui mt-0.5" style={{ color: "var(--text-muted)" }}>
+                        Berat: {(() => { const p = getProductById(item.id); const w = p?.weight || weightMap[p?.category || "Thobe"] || 800; return w >= 1000 ? `${(w/1000).toFixed(1)} kg` : `${w} g`; })()} / item
+                      </p>
                       {item.create_your_price_enabled && item.customer_price && (
                         <p className="text-[10px] sm:text-[11px] font-ui mt-0.5" style={{ color: "var(--gold)" }}>Harga pilihanmu</p>
                       )}
@@ -973,6 +976,9 @@ function CheckoutContent() {
                 <div className="flex-1 min-w-0">
                   <p className="text-[13px] sm:text-sm font-ui font-medium leading-snug" style={{ color: "var(--espresso)" }}>{product!.name}</p>
                   <p className="text-[11px] sm:text-xs font-ui mt-0.5" style={{ color: "var(--text-muted)" }}>Warna: {selectedColor} · Ukuran: {selectedSize}</p>
+                  <p className="text-[10px] sm:text-[11px] font-ui mt-0.5" style={{ color: "var(--text-muted)" }}>
+                    Berat: {(() => { const w = product!.weight || weightMap[product!.category] || 800; return w >= 1000 ? `${(w/1000).toFixed(1)} kg` : `${w} g`; })()} / item
+                  </p>
                   <div className="flex items-center justify-between mt-2 sm:mt-2.5">
                     <div className="inline-flex items-center rounded-lg" style={{ border: "1px solid rgba(64,50,37,.25)" }}>
                       <button type="button" onClick={() => setQty((q) => Math.max(1, q - 1))} className="w-7 h-7 flex items-center justify-center text-base font-ui" style={{ color: "var(--espresso)" }} aria-label="Kurangi">−</button>
