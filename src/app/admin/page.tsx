@@ -151,6 +151,8 @@ function AdminPageInner() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [deleteConfirmOrder, setDeleteConfirmOrder] = useState<Order | null>(null);
   const [orderFilter, setOrderFilter] = useState("Semua");
+  const [productSearch, setProductSearch] = useState("");
+  const [productVariants, setProductVariants] = useState<{ product_id: string; stock: number; base_product_id: string | null }[]>([]);
 
   // All useMemo/useCallback hooks
   const stats = useMemo(() => ({
@@ -178,6 +180,33 @@ function AdminPageInner() {
   }, [orders, products]);
 
   const catalogItems = useMemo(() => groupByMainProduct(products), [products]);
+
+  const catalogItemsWithStock = useMemo(() => {
+    const stockByProduct: Record<string, number> = {};
+    for (const v of productVariants) {
+      if (!v.base_product_id) {
+        stockByProduct[v.product_id] = (stockByProduct[v.product_id] || 0) + v.stock;
+      }
+    }
+    return catalogItems.map((p) => {
+      let totalStock = 0;
+      for (const mid of p.memberIds || []) {
+        totalStock += stockByProduct[mid] || 0;
+      }
+      return { ...p, totalStock };
+    });
+  }, [catalogItems, productVariants]);
+
+  const filteredCatalogItems = useMemo(() => {
+    if (!productSearch.trim()) return catalogItemsWithStock;
+    const q = productSearch.toLowerCase();
+    return catalogItemsWithStock.filter(
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        p.category.toLowerCase().includes(q) ||
+        p.availableSeries?.some((s) => s.toLowerCase().includes(q))
+    );
+  }, [catalogItemsWithStock, productSearch]);
 
   // All useEffect hooks
   useEffect(() => {
@@ -207,9 +236,10 @@ function AdminPageInner() {
     let mounted = true;
     async function fetchData() {
       try {
-        const [ordersRes, productsRes] = await Promise.all([
+        const [ordersRes, productsRes, variantsRes] = await Promise.all([
           supabase.from("orders").select("*, order_items(product_name, color, size, series, kain, quantity, price, customer_price, minimum_price)").order("created_at", { ascending: false }).limit(50),
           supabase.from("products").select("*").order("created_at", { ascending: true }),
+          supabase.from("product_variants").select("product_id, stock, base_product_id"),
         ]);
         if (mounted) {
           if (ordersRes.data) setOrders(ordersRes.data as Order[]);
@@ -232,6 +262,7 @@ function AdminPageInner() {
             }
             setProductThumbnails(thumbs);
           }
+          if (variantsRes.data) setProductVariants(variantsRes.data as { product_id: string; stock: number; base_product_id: string | null }[]);
         }
       } catch (err) {
         console.error("Error fetching data:", err);
@@ -601,7 +632,12 @@ function AdminPageInner() {
             <div className="ml-auto flex items-center gap-3">
               <div className="relative hidden md:block">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2" size={18} strokeWidth={1.8} style={{ color: "var(--text-muted)" }} />
-                <input type="text" placeholder="Cari pesanan, produk..." className="pl-10 pr-4 py-2.5 w-64 rounded-xl bg-white text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.06)" }} />
+                <input type="text" value={productSearch} onChange={(e) => setProductSearch(e.target.value)} placeholder="Cari produk..." className="pl-10 pr-4 py-2.5 w-64 rounded-xl bg-white text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.06)" }} />
+                {productSearch && (
+                  <button onClick={() => setProductSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: "var(--text-muted)" }}>
+                    <X size={16} />
+                  </button>
+                )}
               </div>
               <button className="relative p-2.5 rounded-xl bg-white" style={{ border: "1px solid rgba(64,50,37,.06)" }}>
                 <Bell size={20} strokeWidth={1.7} style={{ color: "var(--espresso)" }} />
@@ -764,58 +800,79 @@ function AdminPageInner() {
                       <Plus size={18} strokeWidth={2} /> Tambah Produk
                     </Link>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                    {catalogItems.map((p) => (
-                      <div key={p.id} className="card overflow-hidden group">
-                        {/* Image */}
-                        <div className="relative aspect-[4/5] overflow-hidden" style={{ background: "#e8dfd1" }}>
-                          <img src={productThumbnails[p.id] || p.image || ""} alt={p.name} className="w-full h-full object-cover" loading="lazy" />
-                          <span className="absolute top-3 left-3 badge" style={{ background: "rgba(255,255,255,.8)", color: "var(--espresso)" }}>{p.category}</span>
-                        </div>
-                        {/* Info */}
-                        <div className="p-4 flex flex-col">
-                          {/* Name */}
-                          <h3 className="font-semibold text-sm leading-snug" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
-                            {p.name}
-                          </h3>
-                          {/* Kain */}
-                          {(p.jenis_kain?.name || p.kain) && (
-                            <p className="mt-1 text-[11px] font-ui" style={{ color: "var(--gold)" }}>
-                              Kain {p.jenis_kain?.name || p.kain}
-                            </p>
-                          )}
-                          {/* Series info */}
-                          {p.availableSeries && p.availableSeries.length > 1 && (
-                            <p className="mt-1.5 inline-flex items-center gap-1.5 text-[10.5px] font-ui" style={{ color: "var(--text-muted)" }}>
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full" style={{ background: "rgba(181,140,74,.08)", border: "1px solid rgba(181,140,74,.2)" }}>
-                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" style={{ color: "var(--gold)" }}>
-                                  <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
-                                  <path d="m3.3 7 8.7 5 8.7-5" />
-                                  <path d="M12 22V12" />
-                                </svg>
-                                {p.availableSeries.length} series tersedia
+                  {filteredCatalogItems.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-20 text-center">
+                      <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4" style={{ background: "rgba(181,140,74,.08)" }}>
+                        <Package size={28} style={{ color: "var(--gold)" }} strokeWidth={1.5} />
+                      </div>
+                      <p className="text-sm font-semibold" style={{ color: "var(--espresso)" }}>
+                        {productSearch ? "Produk tidak ditemukan" : "Belum ada produk"}
+                      </p>
+                      <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
+                        {productSearch ? `Tidak ada hasil untuk "${productSearch}"` : "Mulai tambahkan produk pertama Anda."}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                      {filteredCatalogItems.map((p) => (
+                        <div key={p.id} className="card overflow-hidden group flex flex-col">
+                          {/* Compact Image */}
+                          <div className="relative aspect-square overflow-hidden" style={{ background: "#e8dfd1" }}>
+                            <img src={productThumbnails[p.id] || p.image || ""} alt={p.name} className="w-full h-full object-cover" loading="lazy" />
+                            <span className="absolute top-2 left-2 px-2 py-0.5 rounded-md text-[10px] font-semibold" style={{ background: "rgba(255,255,255,.85)", color: "var(--espresso)" }}>{p.category}</span>
+                            {/* Stock indicator */}
+                            <div className="absolute top-2 right-2">
+                              {p.totalStock > 10 ? (
+                                <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold" style={{ background: "rgba(232,245,233,.92)", color: "#2e7d32" }}>
+                                  Stok {p.totalStock}
+                                </span>
+                              ) : p.totalStock > 0 ? (
+                                <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold" style={{ background: "rgba(255,243,224,.92)", color: "#e65100" }}>
+                                  Stok {p.totalStock}
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold" style={{ background: "rgba(252,228,236,.92)", color: "#c62828" }}>
+                                  Habis
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          {/* Info — compact */}
+                          <div className="p-3 flex flex-col flex-1">
+                            <h3 className="font-semibold text-xs leading-snug line-clamp-2" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
+                              {p.name}
+                            </h3>
+                            {(p.jenis_kain?.name || p.kain) && (
+                              <p className="mt-0.5 text-[10px] font-ui" style={{ color: "var(--gold)" }}>
+                                {p.jenis_kain?.name || p.kain}
+                              </p>
+                            )}
+                            <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                              {p.availableSeries && p.availableSeries.length > 1 && (
+                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9.5px] font-ui" style={{ background: "rgba(181,140,74,.08)", border: "1px solid rgba(181,140,74,.2)", color: "var(--text-muted)" }}>
+                                  {p.availableSeries.length} series
+                                </span>
+                              )}
+                            </div>
+                            <p className="mt-1.5 text-[11px] font-ui" style={{ color: "var(--text-muted)" }}>
+                              Mulai{" "}
+                              <span className="font-medium" style={{ color: "var(--espresso)" }}>
+                                {p.create_your_price_enabled && p.minimum_price
+                                  ? `Rp ${p.minimum_price.toLocaleString("id-ID")}`
+                                  : `Rp ${p.price.toLocaleString("id-ID")}`}
                               </span>
                             </p>
-                          )}
-                          {/* Price */}
-                          <p className="mt-2 text-[12.5px] font-ui" style={{ color: "var(--text-muted)" }}>
-                            Mulai{" "}
-                            <span className="font-medium" style={{ color: "var(--espresso)" }}>
-                              {p.create_your_price_enabled && p.minimum_price
-                                ? `Rp ${p.minimum_price.toLocaleString("id-ID")}`
-                                : `Rp ${p.price.toLocaleString("id-ID")}`}
-                            </span>
-                          </p>
-                          {/* Actions */}
-                          <div className="flex gap-2 mt-3">
-                            <Link href={`/admin/produk/edit/${p.id}`} className="flex-1 text-xs font-semibold py-2 rounded-lg text-center" style={{ border: "1px solid rgba(64,50,37,.15)" }}>Edit</Link>
-                            <Link href={`/admin/produk/detail/${p.id}`} className="flex-1 text-xs font-semibold py-2 rounded-lg text-center text-white" style={{ background: "var(--gold)" }}>Detail</Link>
-                            <button onClick={() => handleDeleteProduct(p.id, p.name, p.memberIds)} className="flex-1 text-xs font-semibold py-2 rounded-lg text-center" style={{ border: "1px solid rgba(231,76,60,.3)", color: "#e74c3c" }}>Hapus</button>
+                            {/* Actions */}
+                            <div className="flex gap-1.5 mt-auto pt-2.5">
+                              <Link href={`/admin/produk/edit/${p.id}`} className="flex-1 text-[10.5px] font-semibold py-1.5 rounded-lg text-center" style={{ border: "1px solid rgba(64,50,37,.15)" }}>Edit</Link>
+                              <Link href={`/admin/produk/detail/${p.id}`} className="flex-1 text-[10.5px] font-semibold py-1.5 rounded-lg text-center text-white" style={{ background: "var(--gold)" }}>Detail</Link>
+                              <button onClick={() => handleDeleteProduct(p.id, p.name, p.memberIds)} className="flex-1 text-[10.5px] font-semibold py-1.5 rounded-lg text-center" style={{ border: "1px solid rgba(231,76,60,.3)", color: "#e74c3c" }}>Hapus</button>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
