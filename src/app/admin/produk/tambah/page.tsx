@@ -54,6 +54,9 @@ interface SeriesBlock {
   media: MediaFile[];
   variants: Variant[];
   activeColor: string | null;
+  // Shared stock pool: link this series to a base product
+  baseProductId: string;   // product_id of the base series (e.g., "thobe-b01-jiharkah")
+  baseSize: string;        // size mapping (e.g., "M" → pulls from base product's M stock)
 }
 
 export default function TambahProdukPage() {
@@ -280,6 +283,8 @@ export default function TambahProdukPage() {
             media: [],
             variants: [{ color: "default", hex: "#141414", sizes: [{ size: "M", stock: 0, priceOverride: "", sku: "" }] }],
             activeColor: "default",
+            baseProductId: "",
+            baseSize: "",
           },
         }));
         setActiveSeriesTab(seriesName);
@@ -464,7 +469,8 @@ export default function TambahProdukPage() {
         const uploadedMedia = block.media.filter((m) => m.url && !m.uploading);
         if (uploadedMedia.length === 0) e[`series_${sn}_media`] = `Media ${sn} wajib diisi (min 1)`;
         const hasStock = block.variants.some((v) => v.sizes.some((s) => s.stock > 0));
-        if (!hasStock) e[`series_${sn}_stock`] = `Stok ${sn} wajib ada minimal 1 ukuran`;
+        const isLinked = !!block.baseProductId && !!block.baseSize;
+        if (!hasStock && !isLinked) e[`series_${sn}_stock`] = `Stok ${sn} wajib ada minimal 1 ukuran`;
       }
     } else {
       // Non-Thobe: existing validation
@@ -520,16 +526,19 @@ export default function TambahProdukPage() {
           if (productError) throw productError;
 
           // Insert variants
+          const isDerived = !!block.baseProductId && !!block.baseSize;
           const variantRows = block.variants.flatMap((v, vi) =>
             v.sizes.map((s, si) => ({
               product_id: seriesSlug,
               color: v.color,
               hex: v.hex || null,
               size: s.size,
-              stock: s.stock,
+              stock: isDerived ? 0 : s.stock,  // Derived series: stock lives in base product
               price_override: s.priceOverride ? parseInt(s.priceOverride) : null,
               sku: s.sku || null,
               display_order: vi * 100 + si,
+              base_product_id: isDerived ? block.baseProductId : null,
+              base_size: isDerived ? block.baseSize : null,
             }))
           );
           if (variantRows.length > 0) {
@@ -976,12 +985,67 @@ export default function TambahProdukPage() {
                         </div>
                       </div>
 
+                      {/* ── Shared Stock Pool ── */}
+                      <div>
+                        <p className="text-sm font-semibold mb-3" style={{ color: "var(--espresso)" }}>
+                          <span style={{ color: "var(--gold)" }}>{sn}</span> — Stok dari Produk Dasar
+                        </p>
+                        <div className="pf-panel">
+                          <p className="text-[11px] mb-3" style={{ color: "var(--text-muted)" }}>
+                            Jika series ini berbagi stok dengan series lain, pilih produk dasar dan ukuran yang sesuai. Kosongkan jika series ini memiliki stok sendiri.
+                          </p>
+                          <div className="grid sm:grid-cols-2 gap-3">
+                            <div>
+                              <label className="pf-label">Produk Dasar</label>
+                              <select
+                                value={block.baseProductId}
+                                onChange={(e) => updateSeriesBlock(sn, { baseProductId: e.target.value, baseSize: "" })}
+                                className="pf-input"
+                              >
+                                <option value="">— Stok Sendiri —</option>
+                                {selectedSeries.filter((s) => s !== sn).map((s) => {
+                                  const sSlug = `${generateSlug(name)}-${s.toLowerCase().replace(/\s+/g, "-")}`;
+                                  return <option key={s} value={sSlug}>{s}</option>;
+                                })}
+                              </select>
+                            </div>
+                            {block.baseProductId && (
+                              <div>
+                                <label className="pf-label">Ukuran Dasar</label>
+                                <select
+                                  value={block.baseSize}
+                                  onChange={(e) => updateSeriesBlock(sn, { baseSize: e.target.value })}
+                                  className="pf-input"
+                                >
+                                  <option value="">— Pilih Ukuran —</option>
+                                  {SIZES.map((sz) => (
+                                    <option key={sz} value={sz}>{sz}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            )}
+                          </div>
+                          {block.baseProductId && block.baseSize && (
+                            <p className="text-[11px] mt-2" style={{ color: "var(--gold)" }}>
+                              Stok akan diambil dari produk dasar ukuran {block.baseSize}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
                       {/* ── Stok per Ukuran ── */}
                       <div>
                         <p className="text-sm font-semibold mb-3" style={{ color: "var(--espresso)" }}>
                           <span style={{ color: "var(--gold)" }}>{sn}</span> — Stok Ukuran
                         </p>
                         {errors[`series_${sn}_stock`] && <p className="pf-error mb-2">{errors[`series_${sn}_stock`]}</p>}
+                        {block.baseProductId && block.baseSize ? (
+                          <div className="pf-panel">
+                            <p className="text-sm text-center py-4" style={{ color: "var(--text-muted)" }}>
+                              Stok dikelola di produk dasar. Ubah stok di tab produk dasar.
+                            </p>
+                          </div>
+                        ) : (
                         <div className="pf-panel">
                           <div className="pf-grid-head">
                             <span>Ukuran</span><span>Stok</span><span>Harga Khusus</span><span>SKU</span><span></span>
@@ -1011,6 +1075,7 @@ export default function TambahProdukPage() {
                             <Plus size={14} /> Tambah Ukuran
                           </button>
                         </div>
+                        )}
                       </div>
                     </div>
                   );

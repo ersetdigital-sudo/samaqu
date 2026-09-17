@@ -51,9 +51,12 @@ interface SeriesBlock {
   media: MediaFile[];
   variants: Variant[];
   activeColor: string | null;
+  // Shared stock pool
+  baseProductId: string;
+  baseSize: string;
 }
 
-function EditSeriesBlock({ sn, block, errors, updateSeriesBlock, addSizeToSeriesBlock, removeSizeFromSeriesBlock, updateSeriesBlockSizeField, handleSeriesFileSelect, removeSeriesMedia }: {
+function EditSeriesBlock({ sn, block, errors, updateSeriesBlock, addSizeToSeriesBlock, removeSizeFromSeriesBlock, updateSeriesBlockSizeField, handleSeriesFileSelect, removeSeriesMedia, selectedSeries, productName }: {
   sn: string;
   block: SeriesBlock;
   errors: Record<string, string>;
@@ -63,8 +66,14 @@ function EditSeriesBlock({ sn, block, errors, updateSeriesBlock, addSizeToSeries
   updateSeriesBlockSizeField: (s: string, i: number, f: string, v: string | number) => void;
   handleSeriesFileSelect: (e: React.ChangeEvent<HTMLInputElement>, s: string) => void;
   removeSeriesMedia: (s: string, id: string) => void;
+  selectedSeries: string[];
+  productName: string;
 }) {
   const v0 = block.variants[0];
+  const SIZES_LIST = ["S", "M", "L", "XL", "XXL"];
+  function genSlug(text: string, s: string) {
+    return text.toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "") + "-" + s.toLowerCase().replace(/\s+/g, "-");
+  }
   return (
     <div className="space-y-5">
       <div>
@@ -126,8 +135,60 @@ function EditSeriesBlock({ sn, block, errors, updateSeriesBlock, addSizeToSeries
         </div>
       </div>
       <div>
+        <p className="text-sm font-semibold mb-3" style={{ color: "var(--espresso)" }}><span style={{ color: "var(--gold)" }}>{sn}</span> — Stok dari Produk Dasar</p>
+        <div className="p-4 rounded-xl" style={{ background: "rgba(255,255,255,.6)", border: "1px solid rgba(64,50,37,.06)" }}>
+          <p className="text-[11px] mb-3" style={{ color: "var(--text-muted)" }}>
+            Jika series ini berbagi stok dengan series lain, pilih produk dasar dan ukuran yang sesuai. Kosongkan jika series ini memiliki stok sendiri.
+          </p>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Produk Dasar</label>
+              <select
+                value={block.baseProductId}
+                onChange={(e) => updateSeriesBlock(sn, { baseProductId: e.target.value, baseSize: "" })}
+                className="w-full rounded-xl px-4 py-3 text-sm outline-none"
+                style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }}
+              >
+                <option value="">— Stok Sendiri —</option>
+                {selectedSeries.filter((s) => s !== sn).map((s) => (
+                  <option key={s} value={genSlug(productName, s)}>{s}</option>
+                ))}
+              </select>
+            </div>
+            {block.baseProductId && (
+              <div>
+                <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Ukuran Dasar</label>
+                <select
+                  value={block.baseSize}
+                  onChange={(e) => updateSeriesBlock(sn, { baseSize: e.target.value })}
+                  className="w-full rounded-xl px-4 py-3 text-sm outline-none"
+                  style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }}
+                >
+                  <option value="">— Pilih Ukuran —</option>
+                  {SIZES_LIST.map((sz) => (
+                    <option key={sz} value={sz}>{sz}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+          {block.baseProductId && block.baseSize && (
+            <p className="text-[11px] mt-2" style={{ color: "var(--gold)" }}>
+              Stok akan diambil dari produk dasar ukuran {block.baseSize}
+            </p>
+          )}
+        </div>
+      </div>
+      <div>
         <p className="text-sm font-semibold mb-3" style={{ color: "var(--espresso)" }}><span style={{ color: "var(--gold)" }}>{sn}</span> — Stok Ukuran</p>
         {errors[`series_${sn}_stock`] && <p className="text-[11px] mb-2" style={{ color: "#e74c3c" }}>{errors[`series_${sn}_stock`]}</p>}
+        {block.baseProductId && block.baseSize ? (
+          <div className="p-4 rounded-xl" style={{ background: "rgba(255,255,255,.6)", border: "1px solid rgba(64,50,37,.06)" }}>
+            <p className="text-sm text-center py-4" style={{ color: "var(--text-muted)" }}>
+              Stok dikelola di produk dasar. Ubah stok di tab produk dasar.
+            </p>
+          </div>
+        ) : (
         <div className="p-4 rounded-xl" style={{ background: "rgba(255,255,255,.6)", border: "1px solid rgba(64,50,37,.06)" }}>
           <div className="grid grid-cols-[72px_80px_112px_112px_36px] gap-2 text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>
             <span>Ukuran</span><span>Stok</span><span>Harga Khusus</span><span>SKU</span><span></span>
@@ -141,9 +202,10 @@ function EditSeriesBlock({ sn, block, errors, updateSeriesBlock, addSizeToSeries
               {v0.sizes.length > 1 && <button onClick={() => removeSizeFromSeriesBlock(sn, i)} className="p-1.5 rounded-lg hover:bg-red-50 transition-colors" style={{ color: "#e74c3c" }}><Trash2 size={14} /></button>}
             </div>
           ))}
-          <datalist id="size-suggestions">{SIZES.map((sz) => <option key={sz} value={sz} />)}</datalist>
+          <datalist id="size-suggestions">{SIZES_LIST.map((sz) => <option key={sz} value={sz} />)}</datalist>
           <button onClick={() => addSizeToSeriesBlock(sn)} className="flex items-center gap-1.5 text-sm font-medium mt-2" style={{ color: "var(--gold)" }}><Plus size={14} /> Tambah Ukuran</button>
         </div>
+        )}
       </div>
     </div>
   );
@@ -283,10 +345,17 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
               // Fetch variants for the chosen sibling
               const { data: sibVariants } = await supabase.from("product_variants").select("*").eq("product_id", sib.id);
               const colorGroups: Record<string, Variant> = {};
+              let baseProductId = "";
+              let baseSize = "";
               if (sibVariants) {
-                sibVariants.forEach((v: { color: string; hex: string | null; size: string; stock: number; price_override: number | null; sku: string | null }) => {
+                sibVariants.forEach((v: { color: string; hex: string | null; size: string; stock: number; price_override: number | null; sku: string | null; base_product_id: string | null; base_size: string | null }) => {
                   if (!colorGroups[v.color]) colorGroups[v.color] = { color: v.color, hex: v.hex || "#141414", sizes: [] };
                   colorGroups[v.color].sizes.push({ size: v.size, stock: v.stock, priceOverride: v.price_override ? String(v.price_override) : "", sku: v.sku || "" });
+                  // Capture base product link from first variant (all variants share the same link)
+                  if (v.base_product_id && !baseProductId) {
+                    baseProductId = v.base_product_id;
+                    baseSize = v.base_size || "";
+                  }
                 });
               }
 
@@ -309,6 +378,8 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
                 media: sibMedia,
                 variants: varList.length > 0 ? varList : [{ color: "default", hex: "#141414", sizes: [{ size: "M", stock: 0, priceOverride: "", sku: "" }] }],
                 activeColor: varList[0]?.color || "default",
+                baseProductId,
+                baseSize,
               };
             }
 
@@ -613,7 +684,8 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
         const uploadedMedia = block.media.filter((m) => m.url && !m.uploading);
         if (uploadedMedia.length === 0) e[`series_${sn}_media`] = `Media ${sn} wajib diisi (min 1)`;
         const hasStock = block.variants.some((v) => v.sizes.some((s) => s.stock > 0));
-        if (!hasStock) e[`series_${sn}_stock`] = `Stok ${sn} wajib ada minimal 1 ukuran`;
+        const isLinked = !!block.baseProductId && !!block.baseSize;
+        if (!hasStock && !isLinked) e[`series_${sn}_stock`] = `Stok ${sn} wajib ada minimal 1 ukuran`;
       }
     } else {
       if (!cypEnabled && (!basePrice || parseInt(basePrice) <= 0)) e.basePrice = "Harga wajib diisi";
@@ -671,10 +743,14 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
 
           // Delete old + re-insert variants
           await supabase.from("product_variants").delete().eq("product_id", seriesSlug);
+          const isDerived = !!block.baseProductId && !!block.baseSize;
           const variantRows = block.variants.flatMap((v, vi) => v.sizes.map((s, si) => ({
-            product_id: seriesSlug, color: v.color, hex: v.hex || null, size: s.size, stock: s.stock,
+            product_id: seriesSlug, color: v.color, hex: v.hex || null, size: s.size,
+            stock: isDerived ? 0 : s.stock,  // Derived series: stock lives in base product
             price_override: s.priceOverride ? parseInt(s.priceOverride) : null, sku: s.sku || null,
             display_order: vi * 100 + si,
+            base_product_id: isDerived ? block.baseProductId : null,
+            base_size: isDerived ? block.baseSize : null,
           })));
           if (variantRows.length > 0) await supabase.from("product_variants").upsert(variantRows, { onConflict: "product_id,color,size" });
 
@@ -874,7 +950,7 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
                   })}
                 </div>
                 {activeSeriesTab && seriesBlocks[activeSeriesTab] && (
-                  <EditSeriesBlock sn={activeSeriesTab} block={seriesBlocks[activeSeriesTab]} errors={errors} updateSeriesBlock={updateSeriesBlock} addSizeToSeriesBlock={addSizeToSeriesBlock} removeSizeFromSeriesBlock={removeSizeFromSeriesBlock} updateSeriesBlockSizeField={updateSeriesBlockSizeField} handleSeriesFileSelect={handleSeriesFileSelect} removeSeriesMedia={removeSeriesMedia} />
+                  <EditSeriesBlock sn={activeSeriesTab} block={seriesBlocks[activeSeriesTab]} errors={errors} updateSeriesBlock={updateSeriesBlock} addSizeToSeriesBlock={addSizeToSeriesBlock} removeSizeFromSeriesBlock={removeSizeFromSeriesBlock} updateSeriesBlockSizeField={updateSeriesBlockSizeField} handleSeriesFileSelect={handleSeriesFileSelect} removeSeriesMedia={removeSeriesMedia} selectedSeries={selectedSeries} productName={name} />
                 )}
               </div>
             ) : (

@@ -370,10 +370,16 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
   useEffect(() => {
     if (!displayId || !selectedColor || !selectedSize) { setVariantPrice(null); setStock(null); return; }
-    supabase.from("product_variants").select("price_override, stock").eq("product_id", displayId).eq("color", selectedColor).eq("size", selectedSize).maybeSingle().then(({ data, error }) => {
+    supabase.from("product_variants").select("price_override, stock, base_product_id, base_size").eq("product_id", displayId).eq("color", selectedColor).eq("size", selectedSize).maybeSingle().then(async ({ data, error }) => {
       if (error) { setVariantPrice(null); setStock(null); return; }
       setVariantPrice(data?.price_override ?? null);
-      setStock(data?.stock ?? null);
+      // If variant has a base product link, fetch stock from the base product instead
+      if (data?.base_product_id && data?.base_size) {
+        const { data: baseVariant } = await supabase.from("product_variants").select("stock").eq("product_id", data.base_product_id).eq("color", selectedColor).eq("size", data.base_size).maybeSingle();
+        setStock(baseVariant?.stock ?? null);
+      } else {
+        setStock(data?.stock ?? null);
+      }
     });
   }, [displayId, selectedColor, selectedSize]);
 
