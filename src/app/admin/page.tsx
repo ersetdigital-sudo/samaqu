@@ -56,6 +56,8 @@ interface Product {
 interface AdminCatalogProduct extends Product {
   availableSeries?: string[];
   memberIds?: string[];
+  totalStock?: number;
+  matchedSeries?: string;
 }
 
 const navItems = [
@@ -152,6 +154,7 @@ function AdminPageInner() {
   const [deleteConfirmOrder, setDeleteConfirmOrder] = useState<Order | null>(null);
   const [orderFilter, setOrderFilter] = useState("Semua");
   const [productSearch, setProductSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [productVariants, setProductVariants] = useState<{ product_id: string; stock: number; base_product_id: string | null }[]>([]);
 
   // All useMemo/useCallback hooks
@@ -198,15 +201,17 @@ function AdminPageInner() {
   }, [catalogItems, productVariants]);
 
   const filteredCatalogItems = useMemo(() => {
-    if (!productSearch.trim()) return catalogItemsWithStock;
-    const q = productSearch.toLowerCase();
-    return catalogItemsWithStock.filter(
-      (p) =>
-        p.name.toLowerCase().includes(q) ||
-        p.category.toLowerCase().includes(q) ||
-        p.availableSeries?.some((s) => s.toLowerCase().includes(q))
-    );
-  }, [catalogItemsWithStock, productSearch]);
+    if (!debouncedSearch.trim()) return catalogItemsWithStock;
+    const q = debouncedSearch.toLowerCase();
+    return catalogItemsWithStock.map((p) => {
+      const nameMatch = p.name.toLowerCase().includes(q);
+      const catMatch = p.category.toLowerCase().includes(q);
+      if (nameMatch || catMatch) return { ...p, matchedSeries: undefined };
+      const seriesHit = p.availableSeries?.find((s) => s.toLowerCase().includes(q));
+      if (seriesHit) return { ...p, matchedSeries: seriesHit };
+      return null;
+    }).filter(Boolean) as AdminCatalogProduct[];
+  }, [catalogItemsWithStock, debouncedSearch]);
 
   // All useEffect hooks
   useEffect(() => {
@@ -273,6 +278,12 @@ function AdminPageInner() {
     fetchData();
     return () => { mounted = false; };
   }, [user, role]);
+
+  // Debounce product search (200ms)
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(productSearch), 200);
+    return () => clearTimeout(timer);
+  }, [productSearch]);
 
   // Handler functions (not hooks)
   async function handleAuth(e: React.FormEvent) {
@@ -822,11 +833,11 @@ function AdminPageInner() {
                             <span className="absolute top-2 left-2 px-2 py-0.5 rounded-md text-[10px] font-semibold" style={{ background: "rgba(255,255,255,.85)", color: "var(--espresso)" }}>{p.category}</span>
                             {/* Stock indicator */}
                             <div className="absolute top-2 right-2">
-                              {p.totalStock > 10 ? (
+                              {(p.totalStock ?? 0) > 10 ? (
                                 <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold" style={{ background: "rgba(232,245,233,.92)", color: "#2e7d32" }}>
                                   Stok {p.totalStock}
                                 </span>
-                              ) : p.totalStock > 0 ? (
+                              ) : (p.totalStock ?? 0) > 0 ? (
                                 <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold" style={{ background: "rgba(255,243,224,.92)", color: "#e65100" }}>
                                   Stok {p.totalStock}
                                 </span>
@@ -842,6 +853,11 @@ function AdminPageInner() {
                             <h3 className="font-semibold text-xs leading-snug line-clamp-2" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
                               {p.name}
                             </h3>
+                            {p.matchedSeries && (
+                              <span className="mt-1 inline-flex items-center self-start px-1.5 py-0.5 rounded text-[9px] font-semibold" style={{ background: "rgba(181,140,74,.12)", color: "var(--gold)" }}>
+                                Cocok: {p.matchedSeries}
+                              </span>
+                            )}
                             {(p.jenis_kain?.name || p.kain) && (
                               <p className="mt-0.5 text-[10px] font-ui" style={{ color: "var(--gold)" }}>
                                 {p.jenis_kain?.name || p.kain}
