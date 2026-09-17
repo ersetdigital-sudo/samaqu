@@ -73,7 +73,15 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         if (prodRes.data) setProduct(prodRes.data);
         if (varRes.data) {
           setVariants(varRes.data);
-          setActiveColor(varRes.data[0]?.color || null);
+          // For Thobe (color='default' + multiple series), default to first series tab
+          const colors = [...new Set(varRes.data.map((v: Variant) => v.color))];
+          const isDef = colors.length === 1 && colors[0] === "default";
+          const series = [...new Set(varRes.data.map((v: Variant) => v.series).filter(Boolean))] as string[];
+          if (isDef && series.length > 0) {
+            setActiveColor(series[0]);
+          } else {
+            setActiveColor(varRes.data[0]?.color || null);
+          }
         }
         if (imgRes.data) setImages(imgRes.data);
         if (ordersRes.data) setOrderItems(ordersRes.data as unknown as OrderItem[]);
@@ -156,8 +164,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             <p className="text-xl font-bold mt-1" style={{ color: "var(--gold)" }}>{totalSold}</p>
           </div>
           <div className="card p-4">
-            <p className="text-xs" style={{ color: "var(--text-muted)" }}>Varian Warna</p>
-            <p className="text-xl font-bold mt-1" style={{ color: "var(--espresso)" }}>{uniqueColors.length}</p>
+            <p className="text-xs" style={{ color: "var(--text-muted)" }}>{showSeriesTabs ? "Series" : "Varian Warna"}</p>
+            <p className="text-xl font-bold mt-1" style={{ color: "var(--espresso)" }}>{showSeriesTabs ? uniqueSeries.length : uniqueColors.length}</p>
           </div>
         </div>
 
