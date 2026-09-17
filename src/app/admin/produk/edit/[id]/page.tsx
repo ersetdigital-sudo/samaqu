@@ -157,24 +157,16 @@ function EditSeriesBlock({ sn, block, errors, updateSeriesBlock, addSizeToSeries
             </div>
             {block.baseProductId && (
               <div>
-                <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Ukuran Dasar</label>
-                <select
-                  value={block.baseSize}
-                  onChange={(e) => updateSeriesBlock(sn, { baseSize: e.target.value })}
-                  className="w-full rounded-xl px-4 py-3 text-sm outline-none"
-                  style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }}
-                >
-                  <option value="">— Pilih Ukuran —</option>
-                  {SIZES_LIST.map((sz) => (
-                    <option key={sz} value={sz}>{sz}</option>
-                  ))}
-                </select>
+                <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Pemetaan Stok</label>
+                <div className="w-full rounded-xl px-4 py-3 text-sm" style={{ border: "1px solid rgba(64,50,37,.15)", background: "var(--bg-secondary)", color: "var(--text-muted)" }}>
+                  1:1 otomatis (XS→XS, S→S, M→M, L→L, XL→XL)
+                </div>
               </div>
             )}
           </div>
-          {block.baseProductId && block.baseSize && (
+          {block.baseProductId && (
             <p className="text-[11px] mt-2" style={{ color: "var(--gold)" }}>
-              Stok akan diambil dari produk dasar ukuran {block.baseSize}
+              Stok diambil dari produk dasar secara otomatis (1:1 per ukuran)
             </p>
           )}
         </div>
@@ -182,7 +174,7 @@ function EditSeriesBlock({ sn, block, errors, updateSeriesBlock, addSizeToSeries
       <div>
         <p className="text-sm font-semibold mb-3" style={{ color: "var(--espresso)" }}><span style={{ color: "var(--gold)" }}>{sn}</span> — Stok Ukuran</p>
         {errors[`series_${sn}_stock`] && <p className="text-[11px] mb-2" style={{ color: "#e74c3c" }}>{errors[`series_${sn}_stock`]}</p>}
-        {block.baseProductId && block.baseSize ? (
+        {block.baseProductId ? (
           <div className="p-4 rounded-xl" style={{ background: "rgba(255,255,255,.6)", border: "1px solid rgba(64,50,37,.06)" }}>
             <p className="text-sm text-center py-4" style={{ color: "var(--text-muted)" }}>
               Stok dikelola di produk dasar. Ubah stok di tab produk dasar.
@@ -684,7 +676,7 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
         const uploadedMedia = block.media.filter((m) => m.url && !m.uploading);
         if (uploadedMedia.length === 0) e[`series_${sn}_media`] = `Media ${sn} wajib diisi (min 1)`;
         const hasStock = block.variants.some((v) => v.sizes.some((s) => s.stock > 0));
-        const isLinked = !!block.baseProductId && !!block.baseSize;
+        const isLinked = !!block.baseProductId;
         if (!hasStock && !isLinked) e[`series_${sn}_stock`] = `Stok ${sn} wajib ada minimal 1 ukuran`;
       }
     } else {
@@ -743,14 +735,14 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
 
           // Delete old + re-insert variants
           await supabase.from("product_variants").delete().eq("product_id", seriesSlug);
-          const isDerived = !!block.baseProductId && !!block.baseSize;
+          const isDerived = !!block.baseProductId;
           const variantRows = block.variants.flatMap((v, vi) => v.sizes.map((s, si) => ({
             product_id: seriesSlug, color: v.color, hex: v.hex || null, size: s.size,
             stock: isDerived ? 0 : s.stock,  // Derived series: stock lives in base product
             price_override: s.priceOverride ? parseInt(s.priceOverride) : null, sku: s.sku || null,
             display_order: vi * 100 + si,
             base_product_id: isDerived ? block.baseProductId : null,
-            base_size: isDerived ? block.baseSize : null,
+            base_size: isDerived ? s.size : null,  // 1:1 mapping: each size maps to same size in base
           })));
           if (variantRows.length > 0) await supabase.from("product_variants").upsert(variantRows, { onConflict: "product_id,color,size" });
 
