@@ -52,6 +52,26 @@ export async function PATCH(request: NextRequest) {
         return NextResponse.json({ error: "J&T dibatalkan tapi gagal update status" }, { status: 500 });
       }
 
+      // Restore stock for all order items (resolves base product via RPC)
+      const { data: orderItems } = await supabaseAdmin
+        .from("order_items")
+        .select("product_id, color, size, quantity")
+        .eq("order_id", (await supabaseAdmin.from("orders").select("id").eq("order_number", identifier).single()).data?.id);
+
+      if (orderItems && orderItems.length > 0) {
+        for (const item of orderItems) {
+          if (item.product_id && item.color && item.size && item.quantity) {
+            await supabaseAdmin.rpc("samaqu_restore_stock", {
+              p_product_id: item.product_id,
+              p_color: item.color,
+              p_size: item.size,
+              p_qty: item.quantity,
+            });
+          }
+        }
+        console.log("[ADMIN] Stock restored for cancelled order:", identifier, "items:", orderItems.length);
+      }
+
       return NextResponse.json({ success: true, message: "Berhasil membatalkan pesanan di J&T" });
     }
 
@@ -101,6 +121,33 @@ export async function DELETE(request: NextRequest) {
     }
 
     const uuidId = order.id;
+
+    // Fetch order status + items before deletion for stock restoration
+    const { data: fullOrder } = await supabaseAdmin
+      .from("orders")
+      .select("status")
+      .eq("id", uuidId)
+      .single();
+
+    const { data: orderItems } = await supabaseAdmin
+      .from("order_items")
+      .select("product_id, color, size, quantity")
+      .eq("order_id", uuidId);
+
+    // Restore stock for pending/dibatalkan orders (stock was decremented)
+    if (orderItems && orderItems.length > 0 && fullOrder?.status === "pending") {
+      for (const item of orderItems) {
+        if (item.product_id && item.color && item.size && item.quantity) {
+          await supabaseAdmin.rpc("samaqu_restore_stock", {
+            p_product_id: item.product_id,
+            p_color: item.color,
+            p_size: item.size,
+            p_qty: item.quantity,
+          });
+        }
+      }
+      console.log("[ADMIN] Stock restored for deleted order:", identifier, "items:", orderItems.length);
+    }
 
     // Delete voucher usages first (foreign key reference)
     const { data: deletedVouchers, error: voucherError } = await supabaseAdmin

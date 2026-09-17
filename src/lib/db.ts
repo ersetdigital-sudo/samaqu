@@ -24,6 +24,8 @@ export interface DbProduct {
   recommended_price: number | null;
   create_your_price_enabled: boolean;
   cyp_microcopy_override: string | null;
+  // Weight
+  weight: number | null;
   // Joined relation (optional, only when fetched with join)
   jenis_kain?: JenisKain | null;
 }
@@ -71,6 +73,7 @@ function dbProductToProduct(db: DbProduct): Product {
     jenis_kain_id: db.jenis_kain_id || null,
     jenis_kain: db.jenis_kain || null,
     catatan_harga: db.catatan_harga || null,
+    weight: db.weight || undefined,
   };
 }
 

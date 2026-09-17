@@ -317,10 +317,15 @@ function CheckoutContent() {
   // Auto-calculate weight
   useEffect(() => {
     if (isCartMode) {
-      const totalQty = items.reduce((sum, item) => sum + item.qty, 0);
-      const w = Math.max(300, totalQty * 800);
+      let totalWeight = 0;
+      for (const item of items) {
+        const p = getProductById(item.id);
+        const unitWeight = p?.weight || weightMap[p?.category || "Thobe"] || 800;
+        totalWeight += unitWeight * item.qty;
+      }
+      const w = Math.max(300, totalWeight);
       setBerat(w);
-      console.log("[CHECKOUT] ⚖️ Weight (cart mode):", w, "g (", totalQty, "items × 800g)");
+      console.log("[CHECKOUT] ⚖️ Weight (cart mode):", w, "g");
     } else if (product) {
       const unitWeight = product.weight || weightMap[product.category] || 800;
       const w = unitWeight * qty;

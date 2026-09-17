@@ -686,7 +686,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             {product.category !== "Koko" && !product.jenis_kain?.name && product.kain && <span>Jenis kain <span style={{ color: "var(--gold)" }}>{product.kain}</span></span>}
             {product.category !== "Koko" && (product.jenis_kain?.name || product.kain) && " · "}
             <span style={{ color: "var(--gold)" }}>{product.category}</span>
-            {" · ready stock"}
+            {product.weight ? <span>{` · ${product.weight >= 1000 ? (product.weight / 1000).toFixed(1) + " kg" : product.weight + " g"}`}</span> : " · ready stock"}
           </p>
 
           {/* Series Selector — selalu tampilkan untuk Thobe */}
@@ -992,7 +992,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               {product.category !== "Koko" && !product.jenis_kain?.name && product.kain && <span>Jenis kain <span style={{ color: "var(--gold)" }}>{product.kain}</span></span>}
               {product.category !== "Koko" && (product.jenis_kain?.name || product.kain) && " · "}
               <span style={{ color: "var(--gold)" }}>{product.category}</span>
-              {" · ready stock"}
+              {product.weight ? <span>{` · ${product.weight >= 1000 ? (product.weight / 1000).toFixed(1) + " kg" : product.weight + " g"}`}</span> : " · ready stock"}
             </p>
             {/* Series Selector — desktop */}
             {(availableSeries.length > 1 || isThobe) && (
