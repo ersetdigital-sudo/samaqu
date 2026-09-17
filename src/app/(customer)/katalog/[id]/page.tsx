@@ -696,14 +696,14 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                     <button
                       key={s.id}
                       onClick={() => handleSeriesSelect(s.id)}
-                      className="inline-flex items-center justify-between gap-1.5 px-3 py-2.5 md:px-3.5 md:py-2 rounded-lg text-[11px] md:text-[12px] font-ui transition-all duration-200 cursor-pointer min-w-0"
+                      className="flex flex-col items-start gap-1 px-3 py-2.5 md:inline-flex md:flex-row md:items-center md:justify-between md:gap-1.5 md:px-3.5 md:py-2 rounded-lg text-[11px] md:text-[12px] font-ui transition-all duration-200 cursor-pointer"
                       style={{
                         background: isActive ? "var(--espresso)" : "var(--cream-bright)",
                         color: isActive ? "var(--cream)" : "var(--coffee)",
                         border: `1px solid ${isActive ? "var(--espresso)" : "rgba(201,183,156,.3)"}`,
                       }}
                     >
-                      <span className="font-medium truncate">{s.series}</span>
+                      <span className="font-medium whitespace-normal break-words leading-snug">{s.series}</span>
                       <span className="text-[10px] md:text-[11px] shrink-0" style={{ color: isActive ? "rgba(248,245,241,.75)" : "var(--gold)" }}>
                         {s.create_your_price_enabled && s.minimum_price
                           ? `mulai dari Rp ${s.minimum_price.toLocaleString("id-ID")}`
