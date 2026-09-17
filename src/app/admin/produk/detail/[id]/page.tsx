@@ -17,11 +17,15 @@ interface ProductData {
 }
 
 interface Variant {
+  product_id: string;
   color: string;
   size: string;
   stock: number;
   price_override: number | null;
   sku: string | null;
+  series: string | null;
+  base_product_id: string | null;
+  base_size: string | null;
 }
 
 interface ProductImage {
@@ -61,7 +65,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       try {
         const [prodRes, varRes, imgRes, ordersRes] = await Promise.all([
           supabase.from("products").select("*").eq("id", id).single(),
-          supabase.from("product_variants").select("*").eq("product_id", id),
+          supabase.from("product_variants").select("*").eq("product_id", id).order("series"),
           supabase.from("product_images").select("*").eq("product_id", id).order("display_order"),
           supabase.from("order_items").select("*, orders(order_number, customer_name, status, created_at, total)").eq("product_id", id).order("created_at", { referencedTable: "orders", ascending: false }).limit(20),
         ]);
@@ -91,11 +95,33 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   }
 
   const uniqueColors = [...new Set(variants.map((v) => v.color))];
-  const colorVariants = variants.filter((v) => v.color === activeColor);
-  const colorImages = images.filter((img) => img.color === activeColor);
+  const isDefaultColor = uniqueColors.length === 1 && uniqueColors[0] === "default";
+  const uniqueSeries = [...new Set(variants.map((v) => v.series).filter(Boolean))] as string[];
+  const showSeriesTabs = isDefaultColor && uniqueSeries.length > 1;
+
+  // For series tabs: group by series; for color tabs: filter by color
+  const displayVariants = showSeriesTabs
+    ? variants.filter((v) => v.series === activeColor) // reuse activeColor state for series
+    : variants.filter((v) => v.color === activeColor);
+  const colorImages = showSeriesTabs
+    ? images.filter((img) => img.color === "default" || !img.color) // series mode: show all images
+    : images.filter((img) => img.color === activeColor);
   const totalSold = orderItems.reduce((sum, item) => sum + item.quantity, 0);
   const totalStock = variants.reduce((sum, v) => sum + v.stock, 0);
-  const lowStockVariants = variants.filter((v) => v.stock > 0 && v.stock < 5);
+
+  // Series stock breakdown for stats
+  const seriesStockMap: Record<string, number> = {};
+  for (const v of variants) {
+    const key = v.series || v.color;
+    seriesStockMap[key] = (seriesStockMap[key] || 0) + (v.base_product_id ? 0 : v.stock);
+  }
+  // Derived series inherit base stock
+  for (const v of variants) {
+    if (v.base_product_id) {
+      const baseStock = seriesStockMap[v.series || ""] || 0;
+      // Don't double count — derived shows same as base
+    }
+  }
 
   return (
     <AdminShell>
@@ -135,21 +161,46 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           </div>
         </div>
 
-        {/* Color tabs + Variants table */}
+        {/* Tabs + Variants table */}
         <div className="card p-5">
           <h2 className="font-serif italic text-xl mb-4" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Varian & Stok</h2>
+          {/* Tabs: series or color */}
           <div className="flex flex-wrap gap-2 mb-4">
-            {uniqueColors.map((color) => (
-              <button key={color} onClick={() => setActiveColor(color)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all" style={{ background: activeColor === color ? "var(--espresso)" : "transparent", color: activeColor === color ? "var(--cream)" : "var(--coffee)", border: `1px solid ${activeColor === color ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
-                <span className="w-3 h-3 rounded-full" style={{ background: colorMap[color] || "#ccc", border: "1px solid rgba(42,33,27,.1)" }} />
-                {color}
+            {(showSeriesTabs ? uniqueSeries : uniqueColors).map((tab) => (
+              <button key={tab} onClick={() => setActiveColor(tab)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all" style={{ background: activeColor === tab ? "var(--espresso)" : "transparent", color: activeColor === tab ? "var(--cream)" : "var(--coffee)", border: `1px solid ${activeColor === tab ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
+                {!showSeriesTabs && <span className="w-3 h-3 rounded-full" style={{ background: colorMap[tab] || "#ccc", border: "1px solid rgba(42,33,27,.1)" }} />}
+                {tab}
               </button>
             ))}
           </div>
+          {/* Stock summary for current tab */}
+          {showSeriesTabs && (
+            <div className="flex items-center gap-3 mb-3 px-1">
+              {(() => {
+                const baseVariants = variants.filter((v) => v.series === activeColor && !v.base_product_id);
+                const derivedVariants = variants.filter((v) => v.series === activeColor && v.base_product_id);
+                const baseStock = baseVariants.reduce((s, v) => s + v.stock, 0);
+                const isDerived = derivedVariants.length > 0 && baseVariants.length === 0;
+                return (
+                  <>
+                    <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+                      Total: <strong style={{ color: "var(--espresso)" }}>{isDerived ? baseStock : baseStock}</strong> stok
+                    </span>
+                    {isDerived && derivedVariants[0]?.base_product_id && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: "rgba(181,140,74,.1)", color: "var(--gold)" }}>
+                        Mengikuti stok {variants.find((v) => v.product_id === derivedVariants[0].base_product_id && !v.base_product_id)?.series || "base"}
+                      </span>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
+          )}
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr style={{ color: "var(--text-muted)", background: "var(--bg-secondary)" }}>
+                  {showSeriesTabs && <th className="font-medium px-4 py-3 text-left">Series</th>}
                   <th className="font-medium px-4 py-3 text-left">Ukuran</th>
                   <th className="font-medium px-4 py-3 text-left">Stok</th>
                   <th className="font-medium px-4 py-3 text-left">Harga Override</th>
@@ -158,8 +209,14 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 </tr>
               </thead>
               <tbody>
-                {colorVariants.map((v, i) => (
+                {displayVariants.map((v, i) => (
                   <tr key={i} style={{ borderTop: "1px solid rgba(64,50,37,.06)" }}>
+                    {showSeriesTabs && (
+                      <td className="px-4 py-3">
+                        <span className="font-medium text-xs" style={{ color: "var(--gold)" }}>{v.series || "-"}</span>
+                        {v.base_product_id && <span className="block text-[10px]" style={{ color: "var(--text-muted)" }}>shared</span>}
+                      </td>
+                    )}
                     <td className="px-4 py-3 font-semibold">{v.size}</td>
                     <td className="px-4 py-3" style={{ color: v.stock === 0 ? "#e74c3c" : v.stock < 5 ? "#8a6f42" : "var(--espresso)", fontWeight: v.stock < 5 ? 600 : 400 }}>{v.stock}</td>
                     <td className="px-4 py-3" style={{ color: "var(--text-muted)" }}>{v.price_override ? `Rp ${v.price_override.toLocaleString("id-ID")}` : "-"}</td>
@@ -171,6 +228,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                     </td>
                   </tr>
                 ))}
+                {displayVariants.length === 0 && (
+                  <tr><td colSpan={showSeriesTabs ? 6 : 5} className="px-4 py-8 text-center text-sm" style={{ color: "var(--text-muted)" }}>Tidak ada varian</td></tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -178,7 +238,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
         {/* Media gallery */}
         <div className="card p-5">
-          <h2 className="font-serif italic text-xl mb-4" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Media ({activeColor})</h2>
+          <h2 className="font-serif italic text-xl mb-4" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Media ({showSeriesTabs ? activeColor : activeColor})</h2>
           {colorImages.length === 0 ? (
             <p className="text-sm text-center py-6" style={{ color: "var(--text-muted)" }}>Tidak ada media untuk warna ini</p>
           ) : (

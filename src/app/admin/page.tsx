@@ -883,21 +883,25 @@ function AdminPageInner() {
                                 Cocok: {p.matchedSeries}
                               </span>
                             )}
-                            {(p.jenis_kain?.name || p.kain) && (
-                              <p className="mt-0.5 text-[10px] font-ui" style={{ color: "var(--gold)" }}>
-                                {p.jenis_kain?.name || p.kain}
+                            {/* Price + Series badge */}
+                            <div className="flex items-center justify-between mt-1.5">
+                              <p className="text-[11px] font-ui" style={{ color: "var(--text-muted)" }}>
+                                Mulai{" "}
+                                <span className="font-medium" style={{ color: "var(--espresso)" }}>
+                                  {p.create_your_price_enabled && p.minimum_price
+                                    ? `Rp ${p.minimum_price.toLocaleString("id-ID")}`
+                                    : `Rp ${p.price.toLocaleString("id-ID")}`}
+                                </span>
                               </p>
-                            )}
-                            <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                               {p.availableSeries && p.availableSeries.length > 1 && (
                                 <div className="relative"
                                   onMouseEnter={() => setHoveredSeriesCard(p.id)}
                                   onMouseLeave={() => setHoveredSeriesCard(null)}>
-                                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9.5px] font-ui cursor-default" style={{ background: "rgba(181,140,74,.08)", border: "1px solid rgba(181,140,74,.2)", color: "var(--text-muted)" }}>
+                                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-ui cursor-default" style={{ background: "rgba(181,140,74,.08)", border: "1px solid rgba(181,140,74,.2)", color: "var(--text-muted)" }}>
                                     {p.availableSeries.length} series
                                   </span>
                                   {hoveredSeriesCard === p.id && p.seriesStock && p.seriesStock.length > 0 && (
-                                    <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 rounded-xl py-2 px-1 text-left" style={{ background: "white", border: "1px solid rgba(64,50,37,.1)", boxShadow: "0 8px 24px -4px rgba(45,33,27,.18)" }}>
+                                    <div className="absolute z-50 bottom-full right-0 mb-2 w-52 rounded-xl py-2 px-1 text-left" style={{ background: "white", border: "1px solid rgba(64,50,37,.1)", boxShadow: "0 8px 24px -4px rgba(45,33,27,.18)" }}>
                                       <p className="px-2.5 pb-1.5 text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)", borderBottom: "1px solid rgba(64,50,37,.06)" }}>Stok per Series</p>
                                       {p.seriesStock.map((s) => (
                                         <div key={s.name} className="flex items-center justify-between px-2.5 py-1.5" style={{ borderBottom: "1px solid rgba(64,50,37,.04)" }}>
@@ -920,14 +924,6 @@ function AdminPageInner() {
                                 </div>
                               )}
                             </div>
-                            <p className="mt-1.5 text-[11px] font-ui" style={{ color: "var(--text-muted)" }}>
-                              Mulai{" "}
-                              <span className="font-medium" style={{ color: "var(--espresso)" }}>
-                                {p.create_your_price_enabled && p.minimum_price
-                                  ? `Rp ${p.minimum_price.toLocaleString("id-ID")}`
-                                  : `Rp ${p.price.toLocaleString("id-ID")}`}
-                              </span>
-                            </p>
                             {/* Actions */}
                             <div className="flex gap-1.5 mt-auto pt-2.5">
                               <Link href={`/admin/produk/edit/${p.id}`} className="flex-1 text-[10.5px] font-semibold py-1.5 rounded-lg text-center" style={{ border: "1px solid rgba(64,50,37,.15)" }}>Edit</Link>
