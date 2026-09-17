@@ -58,6 +58,7 @@ interface AdminCatalogProduct extends Product {
   memberIds?: string[];
   totalStock?: number;
   matchedSeries?: string;
+  seriesStock?: { name: string; stock: number; isDerived: boolean; follows?: string }[];
 }
 
 const navItems = [
@@ -156,6 +157,7 @@ function AdminPageInner() {
   const [productSearch, setProductSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [productVariants, setProductVariants] = useState<{ product_id: string; stock: number; base_product_id: string | null }[]>([]);
+  const [hoveredSeriesCard, setHoveredSeriesCard] = useState<string | null>(null);
 
   // All useMemo/useCallback hooks
   const stats = useMemo(() => ({
@@ -185,20 +187,43 @@ function AdminPageInner() {
   const catalogItems = useMemo(() => groupByMainProduct(products), [products]);
 
   const catalogItemsWithStock = useMemo(() => {
+    // Build lookup maps
+    const seriesByName: Record<string, string> = {}; // product_id → series name
+    for (const p of products) {
+      if (p.series) seriesByName[p.id] = p.series;
+    }
     const stockByProduct: Record<string, number> = {};
+    const baseLinkByProduct: Record<string, string> = {}; // product_id → base_product_id
     for (const v of productVariants) {
-      if (!v.base_product_id) {
+      if (v.base_product_id) {
+        baseLinkByProduct[v.product_id] = v.base_product_id;
+      } else {
         stockByProduct[v.product_id] = (stockByProduct[v.product_id] || 0) + v.stock;
       }
     }
     return catalogItems.map((p) => {
       let totalStock = 0;
+      const seriesStock: { name: string; stock: number; isDerived: boolean; follows?: string }[] = [];
       for (const mid of p.memberIds || []) {
-        totalStock += stockByProduct[mid] || 0;
+        const sName = seriesByName[mid] || mid;
+        const baseId = baseLinkByProduct[mid];
+        if (baseId) {
+          // Derived product — stock comes from base
+          const baseStock = stockByProduct[baseId] || 0;
+          const baseSeries = seriesByName[baseId] || baseId;
+          seriesStock.push({ name: sName, stock: baseStock, isDerived: true, follows: baseSeries });
+          totalStock += baseStock;
+        } else {
+          // Base product — has its own stock
+          const st = stockByProduct[mid] || 0;
+          seriesStock.push({ name: sName, stock: st, isDerived: false });
+          totalStock += st;
+        }
       }
-      return { ...p, totalStock };
+      seriesStock.sort((a, b) => a.name.localeCompare(b.name));
+      return { ...p, totalStock, seriesStock };
     });
-  }, [catalogItems, productVariants]);
+  }, [catalogItems, productVariants, products]);
 
   const filteredCatalogItems = useMemo(() => {
     if (!debouncedSearch.trim()) return catalogItemsWithStock;
@@ -865,9 +890,34 @@ function AdminPageInner() {
                             )}
                             <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                               {p.availableSeries && p.availableSeries.length > 1 && (
-                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9.5px] font-ui" style={{ background: "rgba(181,140,74,.08)", border: "1px solid rgba(181,140,74,.2)", color: "var(--text-muted)" }}>
-                                  {p.availableSeries.length} series
-                                </span>
+                                <div className="relative"
+                                  onMouseEnter={() => setHoveredSeriesCard(p.id)}
+                                  onMouseLeave={() => setHoveredSeriesCard(null)}>
+                                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9.5px] font-ui cursor-default" style={{ background: "rgba(181,140,74,.08)", border: "1px solid rgba(181,140,74,.2)", color: "var(--text-muted)" }}>
+                                    {p.availableSeries.length} series
+                                  </span>
+                                  {hoveredSeriesCard === p.id && p.seriesStock && p.seriesStock.length > 0 && (
+                                    <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 rounded-xl py-2 px-1 text-left" style={{ background: "white", border: "1px solid rgba(64,50,37,.1)", boxShadow: "0 8px 24px -4px rgba(45,33,27,.18)" }}>
+                                      <p className="px-2.5 pb-1.5 text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)", borderBottom: "1px solid rgba(64,50,37,.06)" }}>Stok per Series</p>
+                                      {p.seriesStock.map((s) => (
+                                        <div key={s.name} className="flex items-center justify-between px-2.5 py-1.5" style={{ borderBottom: "1px solid rgba(64,50,37,.04)" }}>
+                                          <div className="min-w-0">
+                                            <span className="text-[11px] font-medium block" style={{ color: "var(--espresso)" }}>{s.name}</span>
+                                            {s.isDerived && s.follows && (
+                                              <span className="text-[9px] block" style={{ color: "var(--text-muted)" }}>mengikuti {s.follows}</span>
+                                            )}
+                                          </div>
+                                          <span className={`text-[11px] font-semibold ml-2 shrink-0 ${s.stock === 0 ? "text-red-500" : s.stock < 5 ? "text-orange-500" : ""}`} style={s.stock >= 5 ? { color: "var(--espresso)" } : undefined}>
+                                            {s.stock}
+                                          </span>
+                                        </div>
+                                      ))}
+                                      <div className="px-2.5 pt-1.5 mt-0.5" style={{ borderTop: "1px solid rgba(64,50,37,.06)" }}>
+                                        <span className="text-[9px]" style={{ color: "var(--text-muted)" }}>Total: {p.totalStock} stok</span>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
                               )}
                             </div>
                             <p className="mt-1.5 text-[11px] font-ui" style={{ color: "var(--text-muted)" }}>
