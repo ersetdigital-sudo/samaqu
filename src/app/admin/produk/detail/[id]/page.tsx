@@ -65,7 +65,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       try {
         const [prodRes, varRes, imgRes, ordersRes] = await Promise.all([
           supabase.from("products").select("*").eq("id", id).single(),
-          supabase.from("product_variants").select("*").eq("product_id", id).order("series"),
+          supabase.from("product_variants").select("*").eq("product_id", id).order("display_order"),
           supabase.from("product_images").select("*").eq("product_id", id).order("display_order"),
           supabase.from("order_items").select("*, orders(order_number, customer_name, status, created_at, total)").eq("product_id", id).order("created_at", { referencedTable: "orders", ascending: false }).limit(20),
         ]);
