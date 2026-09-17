@@ -469,7 +469,7 @@ export default function TambahProdukPage() {
         const uploadedMedia = block.media.filter((m) => m.url && !m.uploading);
         if (uploadedMedia.length === 0) e[`series_${sn}_media`] = `Media ${sn} wajib diisi (min 1)`;
         const hasStock = block.variants.some((v) => v.sizes.some((s) => s.stock > 0));
-        const isLinked = !!block.baseProductId && !!block.baseSize;
+        const isLinked = !!block.baseProductId;
         if (!hasStock && !isLinked) e[`series_${sn}_stock`] = `Stok ${sn} wajib ada minimal 1 ukuran`;
       }
     } else {
@@ -526,7 +526,7 @@ export default function TambahProdukPage() {
           if (productError) throw productError;
 
           // Insert variants
-          const isDerived = !!block.baseProductId && !!block.baseSize;
+          const isDerived = !!block.baseProductId;
           const variantRows = block.variants.flatMap((v, vi) =>
             v.sizes.map((s, si) => ({
               product_id: seriesSlug,
@@ -538,7 +538,7 @@ export default function TambahProdukPage() {
               sku: s.sku || null,
               display_order: vi * 100 + si,
               base_product_id: isDerived ? block.baseProductId : null,
-              base_size: isDerived ? block.baseSize : null,
+              base_size: isDerived ? s.size : null,  // 1:1 mapping: each size maps to same size in base
             }))
           );
           if (variantRows.length > 0) {
@@ -1011,23 +1011,16 @@ export default function TambahProdukPage() {
                             </div>
                             {block.baseProductId && (
                               <div>
-                                <label className="pf-label">Ukuran Dasar</label>
-                                <select
-                                  value={block.baseSize}
-                                  onChange={(e) => updateSeriesBlock(sn, { baseSize: e.target.value })}
-                                  className="pf-input"
-                                >
-                                  <option value="">— Pilih Ukuran —</option>
-                                  {SIZES.map((sz) => (
-                                    <option key={sz} value={sz}>{sz}</option>
-                                  ))}
-                                </select>
+                                <label className="pf-label">Pemetaan Stok</label>
+                                <div className="pf-input" style={{ background: "var(--bg-secondary)", color: "var(--text-muted)" }}>
+                                  1:1 otomatis (XS→XS, S→S, M→M, L→L, XL→XL)
+                                </div>
                               </div>
                             )}
                           </div>
-                          {block.baseProductId && block.baseSize && (
+                          {block.baseProductId && (
                             <p className="text-[11px] mt-2" style={{ color: "var(--gold)" }}>
-                              Stok akan diambil dari produk dasar ukuran {block.baseSize}
+                              Stok diambil dari produk dasar secara otomatis (1:1 per ukuran)
                             </p>
                           )}
                         </div>
@@ -1039,7 +1032,7 @@ export default function TambahProdukPage() {
                           <span style={{ color: "var(--gold)" }}>{sn}</span> — Stok Ukuran
                         </p>
                         {errors[`series_${sn}_stock`] && <p className="pf-error mb-2">{errors[`series_${sn}_stock`]}</p>}
-                        {block.baseProductId && block.baseSize ? (
+                        {block.baseProductId ? (
                           <div className="pf-panel">
                             <p className="text-sm text-center py-4" style={{ color: "var(--text-muted)" }}>
                               Stok dikelola di produk dasar. Ubah stok di tab produk dasar.
