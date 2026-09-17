@@ -188,6 +188,7 @@ export async function POST(request: NextRequest) {
         discount,
         total,
         status: "pending",
+        weight: shipping.weight || null,
       })
       .select()
       .single();
