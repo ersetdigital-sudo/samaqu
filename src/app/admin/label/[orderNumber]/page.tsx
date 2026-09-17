@@ -35,10 +35,29 @@ export default function LabelPage() {
     async function fetchOrder() {
       const { data, error: fetchErr } = await supabase
         .from("orders")
-        .select("*, order_items(product_name, color, size, quantity, price, series, kain)")
+        .select("*, order_items(product_id, product_name, color, size, quantity, price, series, kain)")
         .eq("order_number", orderNumber)
         .single();
       if (fetchErr || !data) { setError("Pesanan tidak ditemukan"); setLoading(false); return; }
+
+      // If weight is null (old order), calculate from order items + products
+      if (!data.weight && data.order_items && data.order_items.length > 0) {
+        const productIds = [...new Set(data.order_items.map((item: any) => item.product_id).filter(Boolean))];
+        if (productIds.length > 0) {
+          const { data: products } = await supabase.from("products").select("id, weight, category").in("id", productIds);
+          const weightMap: Record<string, number> = {};
+          const defaultWeights: Record<string, number> = { Thobe: 800, Kandora: 600, Koko: 500, Vest: 400, "Cover Thobe": 300, Kabak: 700 };
+          for (const p of products || []) {
+            weightMap[p.id] = p.weight || defaultWeights[p.category] || 800;
+          }
+          let totalGrams = 0;
+          for (const item of data.order_items) {
+            totalGrams += (weightMap[item.product_id] || 800) * item.quantity;
+          }
+          data.weight = Math.max(300, totalGrams);
+        }
+      }
+
       setOrder(data);
       setLoading(false);
     }
