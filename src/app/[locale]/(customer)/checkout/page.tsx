@@ -194,6 +194,8 @@ function CheckoutContent() {
   const [selectedAddressId, setSelectedAddressId] = useState<string>("");
   const [showNewAddress, setShowNewAddress] = useState(false);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+  // QRIS / E-Wallet hanya tampil kalau admin masih punya metode aktif
+  const [hasQris, setHasQris] = useState(false);
 
   // ── Shipping state ──
   const [berat, setBerat] = useState(800);
@@ -268,6 +270,25 @@ function CheckoutContent() {
     }
     fetchPayment();
   }, []);
+
+  // QRIS / E-Wallet availability — sembunyikan kalau semua metode dinonaktifkan admin
+  useEffect(() => {
+    async function fetchQrisAvailability() {
+      try {
+        const { data } = await supabase.from("qris_ewallet_methods").select("id").eq("is_active", true).limit(1);
+        setHasQris(!!data && data.length > 0);
+      } catch { /* silent */ }
+    }
+    fetchQrisAvailability();
+  }, []);
+
+  // Kalau QRIS dinonaktifkan saat sedang terpilih, reset biar tidak ikut terkirim
+  useEffect(() => {
+    if (!hasQris && payment === "qris") {
+      console.log("[CHECKOUT] 💳 QRIS nonaktif → reset metode pembayaran");
+      setPayment("");
+    }
+  }, [hasQris, payment]);
 
   // Fetch saved addresses + prefill
   useEffect(() => {
@@ -911,14 +932,16 @@ function CheckoutContent() {
                   <PaymentIcon type="bank" />
                 </label>
               )}
-              <label className="pay-option relative rounded-xl p-4 flex items-center gap-3 cursor-pointer transition-all" style={{ border: `1.5px solid ${payment === "qris" ? "var(--gold)" : "rgba(64,50,37,.25)"}`, background: payment === "qris" ? "white" : "transparent" }}>
-                <input type="radio" name="pay" value="qris" checked={payment === "qris"} onChange={() => setPayment("qris")} className="sr-only" />
-                <span className="relative w-4 h-4 rounded-full border-2 flex-shrink-0" style={{ borderColor: payment === "qris" ? "var(--gold)" : "var(--text-muted)" }}>
-                  {payment === "qris" && <span className="absolute inset-[3px] rounded-full" style={{ background: "var(--gold)" }} />}
-                </span>
-                <span className="text-[13px] sm:text-sm font-ui font-medium flex-1" style={{ color: "var(--espresso)" }}>QRIS / E-Wallet</span>
-                <PaymentIcon type="qris" />
-              </label>
+              {hasQris && (
+                <label className="pay-option relative rounded-xl p-4 flex items-center gap-3 cursor-pointer transition-all" style={{ border: `1.5px solid ${payment === "qris" ? "var(--gold)" : "rgba(64,50,37,.25)"}`, background: payment === "qris" ? "white" : "transparent" }}>
+                  <input type="radio" name="pay" value="qris" checked={payment === "qris"} onChange={() => setPayment("qris")} className="sr-only" />
+                  <span className="relative w-4 h-4 rounded-full border-2 flex-shrink-0" style={{ borderColor: payment === "qris" ? "var(--gold)" : "var(--text-muted)" }}>
+                    {payment === "qris" && <span className="absolute inset-[3px] rounded-full" style={{ background: "var(--gold)" }} />}
+                  </span>
+                  <span className="text-[13px] sm:text-sm font-ui font-medium flex-1" style={{ color: "var(--espresso)" }}>QRIS / E-Wallet</span>
+                  <PaymentIcon type="qris" />
+                </label>
+              )}
               <label className="pay-option relative rounded-xl p-4 flex items-center gap-3 cursor-pointer transition-all" style={{ border: `1.5px solid ${payment === "cod" ? "var(--gold)" : "rgba(64,50,37,.25)"}`, background: payment === "cod" ? "white" : "transparent" }}>
                 <input type="radio" name="pay" value="cod" checked={payment === "cod"} onChange={() => setPayment("cod")} className="sr-only" />
                 <span className="relative w-4 h-4 rounded-full border-2 flex-shrink-0" style={{ borderColor: payment === "cod" ? "var(--gold)" : "var(--text-muted)" }}>
