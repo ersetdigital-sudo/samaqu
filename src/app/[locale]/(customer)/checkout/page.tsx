@@ -8,13 +8,8 @@ import { useCart } from "@/lib/cart-context";
 import { supabase } from "@/lib/supabase";
 import { getWhatsAppLink } from "@/lib/store-settings";
 import { trackInitiateCheckout, sendCAPIEvent } from "@/lib/meta-pixel";
-
-interface PaymentMethod {
-  id: string;
-  bank_name: string;
-  account_name: string;
-  account_number: string;
-}
+import { PaymentIcon } from "@/lib/payment-icons";
+import { fetchActivePaymentMethods, normalizeMethodType, paymentMethodLabel, type PaymentMethodRow } from "@/lib/payment-methods";
 
 interface ShipOpt { courier: string; service: string; description: string; cost: number; etd: string; }
 
@@ -30,12 +25,6 @@ interface SavedAddress {
   province?: string;
   kecamatan?: string;
   district_id?: number | null;
-}
-
-function PaymentIcon({ type }: { type: string }) {
-  if (type === "bank") return <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2" /><line x1="2" y1="10" x2="22" y2="10" /></svg>;
-  if (type === "qris") return <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><line x1="14" y1="14" x2="21" y2="21" /></svg>;
-  return <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13" /><path d="M16 8h4l3 3v5h-7V8z" /><circle cx="5.5" cy="18.5" r="2.5" /><circle cx="18.5" cy="18.5" r="2.5" /></svg>;
 }
 
 function generateOrderNumber(): string {
@@ -193,9 +182,7 @@ function CheckoutContent() {
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string>("");
   const [showNewAddress, setShowNewAddress] = useState(false);
-  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
-  // QRIS / E-Wallet hanya tampil kalau admin masih punya metode aktif
-  const [hasQris, setHasQris] = useState(false);
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethodRow[]>([]);
 
   // ── Shipping state ──
   const [berat, setBerat] = useState(800);
@@ -260,35 +247,15 @@ function CheckoutContent() {
     })();
   }, []);
 
-  // Fetch payment methods
+  // Fetch payment methods — bank / QRIS / e-wallet / COD semua diatur dari admin
   useEffect(() => {
     async function fetchPayment() {
-      try {
-        const { data } = await supabase.from("payment_methods").select("*").eq("is_active", true).order("display_order");
-        if (data && data.length > 0) setPaymentMethods(data);
-      } catch { /* silent */ }
+      const rows = await fetchActivePaymentMethods();
+      console.log("[CHECKOUT] 💳 Payment methods:", rows.length);
+      setPaymentMethods(rows);
     }
     fetchPayment();
   }, []);
-
-  // QRIS / E-Wallet availability — sembunyikan kalau semua metode dinonaktifkan admin
-  useEffect(() => {
-    async function fetchQrisAvailability() {
-      try {
-        const { data } = await supabase.from("qris_ewallet_methods").select("id").eq("is_active", true).limit(1);
-        setHasQris(!!data && data.length > 0);
-      } catch { /* silent */ }
-    }
-    fetchQrisAvailability();
-  }, []);
-
-  // Kalau QRIS dinonaktifkan saat sedang terpilih, reset biar tidak ikut terkirim
-  useEffect(() => {
-    if (!hasQris && payment === "qris") {
-      console.log("[CHECKOUT] 💳 QRIS nonaktif → reset metode pembayaran");
-      setPayment("");
-    }
-  }, [hasQris, payment]);
 
   // Fetch saved addresses + prefill
   useEffect(() => {
@@ -544,7 +511,7 @@ function CheckoutContent() {
     if (!kota.trim()) e.kota = "Kota/Kabupaten wajib diisi";
     if (kodepos && !/^\d{5}$/.test(kodepos)) e.kodepos = "Kode pos harus 5 digit";
     if (!selectedShipping) e.shipping = "Pilih metode pengiriman";
-    if (!payment || !["bank", "qris", "cod"].includes(payment)) e.payment = "Pilih metode pembayaran";
+    if (!payment || !paymentMethods.some((m) => m.id === payment)) e.payment = "Pilih metode pembayaran";
 
     if (Object.keys(e).length > 0) {
       console.log("[CHECKOUT] ❌ Validation errors:", e);
@@ -913,43 +880,32 @@ function CheckoutContent() {
               <h2 className="text-xl sm:text-2xl italic" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Metode Pembayaran</h2>
             </div>
             <div className="space-y-3">
-              {paymentMethods.length > 0 ? paymentMethods.map((pm) => (
-                <label key={pm.id} className="pay-option relative rounded-xl p-4 flex items-center gap-3 cursor-pointer transition-all" style={{ border: `1.5px solid ${payment === "bank" ? "var(--gold)" : "rgba(64,50,37,.25)"}`, background: payment === "bank" ? "white" : "transparent" }}>
-                  <input type="radio" name="pay" value="bank" checked={payment === "bank"} onChange={() => setPayment("bank")} className="sr-only" />
-                  <span className="relative w-4 h-4 rounded-full border-2 flex-shrink-0" style={{ borderColor: payment === "bank" ? "var(--gold)" : "var(--text-muted)" }}>
-                    {payment === "bank" && <span className="absolute inset-[3px] rounded-full" style={{ background: "var(--gold)" }} />}
-                  </span>
-                  <span className="text-[13px] sm:text-sm font-ui font-medium flex-1" style={{ color: "var(--espresso)" }}>Transfer Bank ({pm.bank_name})</span>
-                  <PaymentIcon type="bank" />
-                </label>
-              )) : (
-                <label className="pay-option relative rounded-xl p-4 flex items-center gap-3 cursor-pointer transition-all" style={{ border: `1.5px solid ${payment === "bank" ? "var(--gold)" : "rgba(64,50,37,.25)"}`, background: payment === "bank" ? "white" : "transparent" }}>
-                  <input type="radio" name="pay" value="bank" checked={payment === "bank"} onChange={() => setPayment("bank")} className="sr-only" />
-                  <span className="relative w-4 h-4 rounded-full border-2 flex-shrink-0" style={{ borderColor: payment === "bank" ? "var(--gold)" : "var(--text-muted)" }}>
-                    {payment === "bank" && <span className="absolute inset-[3px] rounded-full" style={{ background: "var(--gold)" }} />}
-                  </span>
-                  <span className="text-[13px] sm:text-sm font-ui font-medium flex-1" style={{ color: "var(--espresso)" }}>Transfer Bank</span>
-                  <PaymentIcon type="bank" />
-                </label>
-              )}
-              {hasQris && (
-                <label className="pay-option relative rounded-xl p-4 flex items-center gap-3 cursor-pointer transition-all" style={{ border: `1.5px solid ${payment === "qris" ? "var(--gold)" : "rgba(64,50,37,.25)"}`, background: payment === "qris" ? "white" : "transparent" }}>
-                  <input type="radio" name="pay" value="qris" checked={payment === "qris"} onChange={() => setPayment("qris")} className="sr-only" />
-                  <span className="relative w-4 h-4 rounded-full border-2 flex-shrink-0" style={{ borderColor: payment === "qris" ? "var(--gold)" : "var(--text-muted)" }}>
-                    {payment === "qris" && <span className="absolute inset-[3px] rounded-full" style={{ background: "var(--gold)" }} />}
-                  </span>
-                  <span className="text-[13px] sm:text-sm font-ui font-medium flex-1" style={{ color: "var(--espresso)" }}>QRIS / E-Wallet</span>
-                  <PaymentIcon type="qris" />
-                </label>
-              )}
-              <label className="pay-option relative rounded-xl p-4 flex items-center gap-3 cursor-pointer transition-all" style={{ border: `1.5px solid ${payment === "cod" ? "var(--gold)" : "rgba(64,50,37,.25)"}`, background: payment === "cod" ? "white" : "transparent" }}>
-                <input type="radio" name="pay" value="cod" checked={payment === "cod"} onChange={() => setPayment("cod")} className="sr-only" />
-                <span className="relative w-4 h-4 rounded-full border-2 flex-shrink-0" style={{ borderColor: payment === "cod" ? "var(--gold)" : "var(--text-muted)" }}>
-                  {payment === "cod" && <span className="absolute inset-[3px] rounded-full" style={{ background: "var(--gold)" }} />}
-                </span>
-                <span className="text-[13px] sm:text-sm font-ui font-medium flex-1" style={{ color: "var(--espresso)" }}>Bayar di Tempat (COD)</span>
-                <PaymentIcon type="cod" />
-              </label>
+              {paymentMethods.length === 0 ? (
+                <p className="text-xs font-ui" style={{ color: "var(--text-muted)" }}>
+                  Metode pembayaran belum tersedia. Hubungi admin.
+                </p>
+              ) : paymentMethods.map((pm) => {
+                const type = normalizeMethodType(pm.method_type);
+                const active = payment === pm.id;
+                const note = (type === "bank" || type === "ewallet") && pm.account_name ? `a.n. ${pm.account_name}` : null;
+                return (
+                  <label
+                    key={pm.id}
+                    className="pay-option relative rounded-xl p-4 flex items-center gap-3 cursor-pointer transition-all"
+                    style={{ border: `1.5px solid ${active ? "var(--gold)" : "rgba(64,50,37,.25)"}`, background: active ? "white" : "transparent" }}
+                  >
+                    <input type="radio" name="pay" value={pm.id} checked={active} onChange={() => setPayment(pm.id)} className="sr-only" />
+                    <span className="relative w-4 h-4 rounded-full border-2 flex-shrink-0" style={{ borderColor: active ? "var(--gold)" : "var(--text-muted)" }}>
+                      {active && <span className="absolute inset-[3px] rounded-full" style={{ background: "var(--gold)" }} />}
+                    </span>
+                    <span className="flex-1 min-w-0">
+                      <span className="block text-[13px] sm:text-sm font-ui font-medium truncate" style={{ color: "var(--espresso)" }}>{paymentMethodLabel(pm)}</span>
+                      {note && <span className="block text-[11px] font-ui mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>{note}</span>}
+                    </span>
+                    <PaymentIcon type={pm.icon || pm.method_type || undefined} size={22} style={{ color: "var(--text-secondary)" }} />
+                  </label>
+                );
+              })}
             </div>
           </section>
           {errors.payment && <p className="text-[11px] font-ui" style={{ color: "#e74c3c" }}>{errors.payment}</p>}

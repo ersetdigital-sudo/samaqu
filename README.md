@@ -15,7 +15,7 @@ SAMAQU is a production e-commerce platform built to support product catalog mana
 - **Hierarchical product catalog** — Category → Jenis Kain → Series → Product/Variant structure with color, size, and fabric attributes
 - **Create Your Price (CYP)** — Customer-defined pricing with server-side minimum price validation
 - **Custom checkout flow** — Multi-step checkout with saved addresses, real-time shipping calculation, and voucher application
-- **Manual payment + proof upload** — Bank transfer, QRIS/E-Wallet, and COD payment methods
+- **Manual payment + proof upload** — One admin-managed payment list (bank transfer, QRIS, e-wallet, COD, or custom) with built-in icons; only active methods show at checkout
 - **Order management** — Full order lifecycle from creation to fulfillment with admin status control
 - **Voucher system** — Percentage/fixed discounts with usage limits, min purchase, and per-WhatsApp restrictions
 - **J&T Express API integration** — Tariff Check, Order Creation, Cancellation, and Tracking with 7,128-area code mapping
@@ -429,6 +429,7 @@ flowchart TB
 ├── supabase/                    # SQL migrations & schema
 │   ├── schema.sql               # Base schema
 │   ├── create-your-price.sql    # CYP migration
+│   ├── payment-methods-unified.sql  # Unified payment methods (bank/QRIS/ewallet/COD) — run before deploy
 │   └── ...                      # Feature-specific migrations
 ├── public/                      # Static assets
 │   ├── fonts/                   # Custom fonts

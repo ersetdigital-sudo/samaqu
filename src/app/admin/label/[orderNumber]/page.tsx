@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { fetchPaymentMethodById, isPaymentMethodId, legacyPaymentType, normalizeMethodType } from "@/lib/payment-methods";
 
 interface OrderData {
   order_number: string;
@@ -29,6 +30,7 @@ export default function LabelPage() {
   const [order, setOrder] = useState<OrderData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [paymentType, setPaymentType] = useState<string | null>(null);
   const barcodeRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -56,6 +58,14 @@ export default function LabelPage() {
           }
           data.weight = Math.max(300, totalGrams);
         }
+      }
+
+      // Metode pembayaran: pesanan baru simpan id metode, pesanan lama simpan 'bank'/'qris'/'cod'
+      if (isPaymentMethodId(data.payment_method)) {
+        const pm = await fetchPaymentMethodById(data.payment_method);
+        setPaymentType(pm ? normalizeMethodType(pm.method_type) : null);
+      } else {
+        setPaymentType(legacyPaymentType(data.payment_method));
       }
 
       setOrder(data);
@@ -91,7 +101,7 @@ export default function LabelPage() {
   if (loading) return <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", fontFamily: "sans-serif" }}>Memuat label...</div>;
   if (error || !order) return <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", fontFamily: "sans-serif", color: "red" }}>{error || "Pesanan tidak ditemukan"}</div>;
 
-  const isCod = order.payment_method === "cod";
+  const isCod = paymentType === "cod";
   const weightKg = order.weight ? (order.weight / 1000).toFixed(2) : "1.00";
   const itemsSummary = order.order_items
     ? order.order_items.map((i) => `${i.product_name}${i.series ? ` ${i.series}` : ""}${i.kain ? ` (${i.kain})` : ""} ${i.color !== "-" && i.color !== "default" ? i.color : ""} ${i.size} ×${i.quantity}`).join(", ")

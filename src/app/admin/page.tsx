@@ -7,13 +7,13 @@ import { getThumbnailFromImages } from "@/lib/product-thumbnail";
 import {
   LayoutDashboard, ShoppingBag, Package, Users, FileText, Settings,
   Search, Bell, Menu, X, ChevronDown, Plus, TrendingUp, Eye, Edit,
-  DollarSign, ShoppingCart, UserPlus, Box, LogOut, Lock, Mail, Loader2, Trash2, Upload, Ticket, Star, Ruler, Image,
+  DollarSign, ShoppingCart, UserPlus, Box, LogOut, Lock, Mail, Loader2, Trash2, Ticket, Star, Ruler, Image,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { User } from "@supabase/supabase-js";
 import ConfirmModal from "@/components/ConfirmModal";
 import { useToast } from "@/components/AdminToast";
-import { uploadToCloudinary } from "@/lib/cloudinary";
+import PaymentMethodsManager, { PaymentMethodValue } from "@/components/admin/PaymentMethodsManager";
 
 type Panel = "dashboard" | "orders" | "products" | "customers" | "content" | "featured" | "settings";
 
@@ -1021,9 +1021,8 @@ function AdminPageInner() {
                   {/* Meta Pixel */}
                   <MetaPixelSection />
 
-                  {/* Payment Methods */}
-                  <PaymentMethodsSection />
-                  <QrisEwalletSection />
+                  {/* Payment Methods — bank / QRIS / e-wallet / COD */}
+                  <PaymentMethodsManager />
                 </div>
               )}
 
@@ -1085,7 +1084,7 @@ function AdminPageInner() {
                 <div className="rounded-xl p-4" style={{ background: "rgba(255,255,255,.6)", border: "1px solid rgba(64,50,37,.06)" }}>
                   <p className="text-[11px] tracking-[0.15em] uppercase mb-3 font-medium" style={{ color: "var(--text-muted)" }}>Pembayaran & Pengiriman</p>
                   <div className="space-y-2">
-                    <div className="flex justify-between text-sm"><span style={{ color: "var(--text-secondary)" }}>Metode Pembayaran</span><span className="font-medium" style={{ color: "var(--espresso)" }}>{selectedOrder.payment_method === "bank" || selectedOrder.payment_method?.startsWith?.("pm_") || /^[0-9a-f]{8}-/.test(selectedOrder.payment_method || "") ? "Transfer Bank" : selectedOrder.payment_method === "qris" ? "QRIS / E-Wallet" : selectedOrder.payment_method === "cod" ? "COD" : selectedOrder.payment_method || "-"}</span></div>
+                    <div className="flex justify-between text-sm"><span style={{ color: "var(--text-secondary)" }}>Metode Pembayaran</span><PaymentMethodValue value={selectedOrder.payment_method} className="font-medium" style={{ color: "var(--espresso)" }} /></div>
                     <div className="flex justify-between text-sm"><span style={{ color: "var(--text-secondary)" }}>Metode Pengiriman</span><span className="font-medium" style={{ color: "var(--espresso)" }}>{selectedOrder.shipping_method || "-"}</span></div>
                   </div>
                 </div>
@@ -1762,153 +1761,6 @@ function StoreInfoSection() {
   );
 }
 
-function PaymentMethodsSection() {
-  const [banks, setBanks] = useState<{ id: string; bank_name: string; account_name: string; account_number: string; is_active: boolean }[]>([]);
-  const [originalBanks, setOriginalBanks] = useState<typeof banks>([]);
-  const [loading, setLoading] = useState(true);
-  const [savingId, setSavingId] = useState<string | null>(null);
-  const [errors, setErrors] = useState<Record<string, Record<string, boolean>>>({});
-  const toast = useToast();
-
-  useEffect(() => {
-    supabase.from("payment_methods").select("*").order("display_order").then(({ data }) => {
-      if (data) { setBanks(data); setOriginalBanks(JSON.parse(JSON.stringify(data))); }
-      setLoading(false);
-    });
-  }, []);
-
-  function isDirty(bank: typeof banks[0]) {
-    const orig = originalBanks.find((b) => b.id === bank.id);
-    if (!orig) return true; // new bank
-    return orig.bank_name !== bank.bank_name || orig.account_name !== bank.account_name || orig.account_number !== bank.account_number;
-  }
-
-  function updateField(id: string, field: string, value: string) {
-    setBanks(banks.map((b) => b.id === id ? { ...b, [field]: value } : b));
-    setErrors((prev) => ({ ...prev, [id]: { ...prev[id], [field]: false } }));
-  }
-
-  async function saveBank(bank: typeof banks[0]) {
-    const e: Record<string, boolean> = {};
-    if (!bank.bank_name.trim()) e.bank_name = true;
-    if (!bank.account_name.trim()) e.account_name = true;
-    if (!bank.account_number.trim()) e.account_number = true;
-    if (Object.keys(e).length > 0) { setErrors((prev) => ({ ...prev, [bank.id]: e })); return; }
-
-    setSavingId(bank.id);
-    const isNew = !originalBanks.find((b) => b.id === bank.id);
-
-    if (isNew) {
-      const { data, error } = await supabase.from("payment_methods").insert({
-        bank_name: bank.bank_name, account_name: bank.account_name, account_number: bank.account_number,
-        is_active: true, display_order: banks.indexOf(bank),
-      }).select().single();
-      if (!error && data) {
-        setBanks(banks.map((b) => b.id === bank.id ? data : b));
-        setOriginalBanks([...originalBanks, data]);
-        toast.showToast("success", "Rekening berhasil disimpan");
-      }
-    } else {
-      await supabase.from("payment_methods").update({
-        bank_name: bank.bank_name, account_name: bank.account_name, account_number: bank.account_number,
-      }).eq("id", bank.id);
-      setOriginalBanks(originalBanks.map((b) => b.id === bank.id ? { ...b, ...bank } : b));
-      toast.showToast("success", "Rekening berhasil disimpan");
-    }
-    setSavingId(null);
-  }
-
-  function addBank() {
-    const tempId = "new-" + Date.now();
-    setBanks([...banks, { id: tempId, bank_name: "", account_name: "", account_number: "", is_active: true }]);
-  }
-
-  function cancelNew(id: string) {
-    setBanks(banks.filter((b) => b.id !== id));
-  }
-
-  async function toggleBank(id: string, active: boolean) {
-    setBanks(banks.map((b) => b.id === id ? { ...b, is_active: active } : b));
-    await supabase.from("payment_methods").update({ is_active: active }).eq("id", id);
-    toast.showToast("success", active ? "Rekening diaktifkan" : "Rekening dinonaktifkan");
-  }
-
-  async function deleteBank(id: string) {
-    if (!confirm("Hapus rekening ini?")) return;
-    await supabase.from("payment_methods").delete().eq("id", id);
-    setBanks(banks.filter((b) => b.id !== id));
-    setOriginalBanks(originalBanks.filter((b) => b.id !== id));
-    toast.showToast("success", "Rekening berhasil dihapus");
-  }
-
-  if (loading) return <div className="card p-6"><Loader2 size={20} className="animate-spin" style={{ color: "var(--gold)" }} /></div>;
-
-  return (
-    <div className="card p-6 max-w-2xl">
-      <div className="flex items-center justify-between mb-5">
-        <div>
-          <h3 className="text-lg font-semibold" style={{ color: "var(--espresso)" }}>Metode Pembayaran</h3>
-          <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Rekening bank untuk transfer pembayaran</p>
-        </div>
-        <button onClick={addBank} className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-xl" style={{ border: "1px solid rgba(64,50,37,.15)", color: "var(--gold)" }}>
-          <Plus size={14} /> Tambah Rekening
-        </button>
-      </div>
-
-      <div className="space-y-4">
-        {banks.map((bank) => {
-          const isNew = !originalBanks.find((b) => b.id === bank.id);
-          const dirty = isDirty(bank);
-          const bankErrors = errors[bank.id] || {};
-
-          return (
-            <div key={bank.id} className="p-4 rounded-xl" style={{ border: "1px solid rgba(64,50,37,.1)", background: bank.is_active ? "rgba(255,255,255,.5)" : "rgba(200,200,200,.1)" }}>
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-medium" style={{ color: bank.is_active ? "var(--gold)" : "var(--text-muted)" }}>{isNew ? "Baru" : bank.is_active ? "Aktif" : "Nonaktif"}</span>
-                <div className="flex items-center gap-2">
-                  {!isNew && (
-                    <button onClick={() => toggleBank(bank.id, !bank.is_active)} className="text-xs px-2 py-1 rounded" style={{ border: "1px solid rgba(64,50,37,.15)", color: bank.is_active ? "var(--text-muted)" : "var(--gold)" }}>
-                      {bank.is_active ? "Nonaktifkan" : "Aktifkan"}
-                    </button>
-                  )}
-                  {dirty && (
-                    <button onClick={() => saveBank(bank)} disabled={savingId === bank.id} className="text-xs px-3 py-1 rounded font-semibold" style={{ background: "var(--gold)", color: "white" }}>
-                      {savingId === bank.id ? "..." : "Simpan"}
-                    </button>
-                  )}
-                  {isNew ? (
-                    <button onClick={() => cancelNew(bank.id)} className="p-1 rounded hover:bg-red-50" style={{ color: "#e74c3c" }}>
-                      <X size={14} />
-                    </button>
-                  ) : (
-                    <button onClick={() => deleteBank(bank.id)} className="p-1 rounded hover:bg-red-50" style={{ color: "#e74c3c" }}>
-                      <Trash2 size={14} />
-                    </button>
-                  )}
-                </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-[11px] font-medium mb-1" style={{ color: bankErrors.bank_name ? "#e74c3c" : "var(--text-muted)" }}>Nama Bank *</label>
-                  <input value={bank.bank_name} onChange={(e) => updateField(bank.id, "bank_name", e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: `1px solid ${bankErrors.bank_name ? "#e74c3c" : "rgba(64,50,37,.15)"}`, background: "white", color: "var(--espresso)" }} placeholder="Bank Mandiri" />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-medium mb-1" style={{ color: bankErrors.account_name ? "#e74c3c" : "var(--text-muted)" }}>Nama Pemilik *</label>
-                  <input value={bank.account_name} onChange={(e) => updateField(bank.id, "account_name", e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: `1px solid ${bankErrors.account_name ? "#e74c3c" : "rgba(64,50,37,.15)"}`, background: "white", color: "var(--espresso)" }} placeholder="PT Samaqu Digital" />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-medium mb-1" style={{ color: bankErrors.account_number ? "#e74c3c" : "var(--text-muted)" }}>Nomor Rekening *</label>
-                  <input value={bank.account_number} onChange={(e) => updateField(bank.id, "account_number", e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: `1px solid ${bankErrors.account_number ? "#e74c3c" : "rgba(64,50,37,.15)"}`, background: "white", color: "var(--espresso)" }} placeholder="1234567890123" />
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 function CustomerProductsSection() {
   const [featuredIds, setFeaturedIds] = useState<string[]>([]);
   const [allProducts, setAllProducts] = useState<{ id: string; name: string; image: string; category: string }[]>([]);
@@ -1989,186 +1841,6 @@ function CustomerProductsSection() {
               </div>
               {selected && <div className="text-center text-[10px] py-1 font-medium" style={{ background: "rgba(181,140,74,.1)", color: "var(--gold)" }}>Dipilih</div>}
             </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function QrisEwalletSection() {
-  const [methods, setMethods] = useState<{ id: string; provider_name: string; method_type: string; account_info: string; qr_image_url: string; is_active: boolean }[]>([]);
-  const [originalMethods, setOriginalMethods] = useState<typeof methods>([]);
-  const [loading, setLoading] = useState(true);
-  const [savingId, setSavingId] = useState<string | null>(null);
-  const toast = useToast();
-
-  useEffect(() => {
-    supabase.from("qris_ewallet_methods").select("*").order("display_order").then(({ data }) => {
-      if (data) { setMethods(data); setOriginalMethods(JSON.parse(JSON.stringify(data))); }
-      setLoading(false);
-    });
-  }, []);
-
-  function isDirty(m: typeof methods[0]) {
-    const orig = originalMethods.find((o) => o.id === m.id);
-    if (!orig) return true;
-    return orig.provider_name !== m.provider_name || orig.method_type !== m.method_type || orig.account_info !== m.account_info || orig.qr_image_url !== m.qr_image_url;
-  }
-
-  function updateField(id: string, field: string, value: string) {
-    setMethods(methods.map((m) => m.id === id ? { ...m, [field]: value } : m));
-  }
-
-  async function uploadQrisImage(id: string, file: File) {
-    const allowed = ["image/jpeg", "image/png", "image/webp"];
-    if (!allowed.includes(file.type)) { toast.showToast("error", "Format file tidak didukung (JPG/PNG/WebP)"); return; }
-    if (file.size > 5 * 1024 * 1024) { toast.showToast("error", "Ukuran file maksimal 5MB"); return; }
-    try {
-      const url = await uploadToCloudinary(file);
-      if (url) {
-        setMethods(methods.map((m) => m.id === id ? { ...m, qr_image_url: url } : m));
-        await supabase.from("qris_ewallet_methods").update({ qr_image_url: url }).eq("id", id);
-        toast.showToast("success", "QR Code berhasil diupload");
-      }
-    } catch { toast.showToast("error", "Gagal upload gambar"); }
-  }
-
-  async function addMethod() {
-    const tempId = "new-" + Date.now();
-    setMethods([...methods, { id: tempId, provider_name: "", method_type: "qris", account_info: "", qr_image_url: "", is_active: true }]);
-  }
-
-  function cancelNew(id: string) {
-    setMethods(methods.filter((m) => m.id !== id));
-  }
-
-  async function saveMethod(method: typeof methods[0]) {
-    if (!method.provider_name.trim()) { toast.showToast("error", "Nama provider wajib diisi"); return; }
-    setSavingId(method.id);
-    const isNew = !originalMethods.find((o) => o.id === method.id);
-
-    if (isNew) {
-      const { data, error } = await supabase.from("qris_ewallet_methods").insert({
-        provider_name: method.provider_name, method_type: method.method_type, account_info: method.account_info, qr_image_url: method.qr_image_url,
-        is_active: true, display_order: methods.indexOf(method),
-      }).select().single();
-      if (!error && data) {
-        setMethods(methods.map((m) => m.id === method.id ? data : m));
-        setOriginalMethods([...originalMethods, data]);
-        toast.showToast("success", "Berhasil disimpan");
-      }
-    } else {
-      await supabase.from("qris_ewallet_methods").update({
-        provider_name: method.provider_name, method_type: method.method_type, account_info: method.account_info, qr_image_url: method.qr_image_url,
-      }).eq("id", method.id);
-      setOriginalMethods(originalMethods.map((m) => m.id === method.id ? { ...m, ...method } : m));
-      toast.showToast("success", "Berhasil disimpan");
-    }
-    setSavingId(null);
-  }
-
-  async function toggleMethod(id: string, active: boolean) {
-    setMethods(methods.map((m) => m.id === id ? { ...m, is_active: active } : m));
-    await supabase.from("qris_ewallet_methods").update({ is_active: active }).eq("id", id);
-    toast.showToast("success", active ? "Diaktifkan" : "Dinonaktifkan");
-  }
-
-  async function deleteMethod(id: string) {
-    if (!confirm("Hapus metode ini?")) return;
-    await supabase.from("qris_ewallet_methods").delete().eq("id", id);
-    setMethods(methods.filter((m) => m.id !== id));
-    setOriginalMethods(originalMethods.filter((m) => m.id !== id));
-    toast.showToast("success", "Berhasil dihapus");
-  }
-
-  if (loading) return <div className="card p-6"><Loader2 size={20} className="animate-spin" style={{ color: "var(--gold)" }} /></div>;
-
-  return (
-    <div className="card p-6 max-w-2xl">
-      <div className="flex items-center justify-between mb-5">
-        <div>
-          <h3 className="text-lg font-semibold" style={{ color: "var(--espresso)" }}>QRIS / E-Wallet</h3>
-          <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Metode pembayaran digital</p>
-        </div>
-        <button onClick={addMethod} className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-xl" style={{ border: "1px solid rgba(64,50,37,.15)", color: "var(--gold)" }}>
-          <Plus size={14} /> Tambah
-        </button>
-      </div>
-      <div className="space-y-4">
-        {methods.map((m) => {
-          const isNew = !originalMethods.find((o) => o.id === m.id);
-          const dirty = isDirty(m);
-
-          return (
-            <div key={m.id} className="p-4 rounded-xl" style={{ border: "1px solid rgba(64,50,37,.1)", background: m.is_active ? "rgba(255,255,255,.5)" : "rgba(200,200,200,.1)" }}>
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-medium" style={{ color: m.is_active ? "var(--gold)" : "var(--text-muted)" }}>{isNew ? "Baru" : m.is_active ? "Aktif" : "Nonaktif"}</span>
-                <div className="flex items-center gap-2">
-                  {!isNew && (
-                    <button onClick={() => toggleMethod(m.id, !m.is_active)} className="text-xs px-2 py-1 rounded" style={{ border: "1px solid rgba(64,50,37,.15)", color: m.is_active ? "var(--text-muted)" : "var(--gold)" }}>
-                      {m.is_active ? "Nonaktifkan" : "Aktifkan"}
-                    </button>
-                  )}
-                  {dirty && (
-                    <button onClick={() => saveMethod(m)} disabled={savingId === m.id} className="text-xs px-3 py-1 rounded font-semibold" style={{ background: "var(--gold)", color: "white" }}>
-                      {savingId === m.id ? "..." : "Simpan"}
-                    </button>
-                  )}
-                  {isNew ? (
-                    <button onClick={() => cancelNew(m.id)} className="p-1 rounded hover:bg-red-50" style={{ color: "#e74c3c" }}><X size={14} /></button>
-                  ) : (
-                    <button onClick={() => deleteMethod(m.id)} className="p-1 rounded hover:bg-red-50" style={{ color: "#e74c3c" }}><Trash2 size={14} /></button>
-                  )}
-                </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>Nama Provider *</label>
-                  <input value={m.provider_name} onChange={(e) => updateField(m.id, "provider_name", e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="QRIS SAMAQU / GoPay / OVO" />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>Tipe</label>
-                  <select value={m.method_type} onChange={(e) => updateField(m.id, "method_type", e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }}>
-                    <option value="qris">QRIS</option>
-                    <option value="gopay">GoPay</option>
-                    <option value="ovo">OVO</option>
-                    <option value="dana">Dana</option>
-                  </select>
-                </div>
-                <div className="sm:col-span-2">
-                  {m.method_type === "qris" ? (
-                    <div>
-                      <label className="block text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>Gambar QR Code</label>
-                      {m.qr_image_url ? (
-                        <div className="flex items-start gap-3">
-                          <img src={m.qr_image_url} alt="QR Code" className="w-24 h-24 object-contain rounded-lg border" style={{ borderColor: "rgba(64,50,37,.1)" }} />
-                          <div className="flex flex-col gap-2">
-                            <label className="cursor-pointer text-xs px-3 py-1.5 rounded font-medium text-center inline-block" style={{ border: "1px solid rgba(64,50,37,.15)", color: "var(--gold)" }}>
-                              Ganti
-                              <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadQrisImage(m.id, f); }} />
-                            </label>
-                            <button onClick={() => updateField(m.id, "qr_image_url", "")} className="text-xs px-3 py-1.5 rounded font-medium" style={{ border: "1px solid rgba(64,50,37,.15)", color: "#e74c3c" }}>Hapus</button>
-                          </div>
-                        </div>
-                      ) : (
-                        <label className="flex flex-col items-center justify-center w-full h-28 rounded-xl cursor-pointer transition-colors" style={{ border: "2px dashed rgba(64,50,37,.2)", background: "rgba(255,255,255,.3)" }}>
-                          <Upload size={18} style={{ color: "var(--text-muted)" }} />
-                          <span className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Klik untuk upload QR Code</span>
-                          <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>JPG / PNG / WebP, max 5MB</span>
-                          <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadQrisImage(m.id, f); }} />
-                        </label>
-                      )}
-                    </div>
-                  ) : (
-                    <div>
-                      <label className="block text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>Nomor Tujuan / Nama Akun *</label>
-                      <input value={m.account_info} onChange={(e) => updateField(m.id, "account_info", e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="0812xxxx / a.n. SAMAQU" />
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
           );
         })}
       </div>
