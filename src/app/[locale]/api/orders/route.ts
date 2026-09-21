@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { createOrder, getOriginCode, getDestinationCode, getReceiverArea } from "@/lib/jnt";
+import { isPaymentMethodId, legacyPaymentType } from "@/lib/payment-methods";
 
 function generateOrderNumber(): string {
   const d = new Date();
@@ -33,7 +34,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Data wajib tidak lengkap" }, { status: 400 });
     }
 
-    if (!body.paymentMethod || !["bank", "qris", "cod"].includes(body.paymentMethod)) {
+    // ── Payment method: id metode dari admin (bank / QRIS / e-wallet / COD) ──
+    const rawPayment = typeof body.paymentMethod === "string" ? body.paymentMethod : "";
+    let paymentValue = "";
+    let paymentType = "";
+
+    if (isPaymentMethodId(rawPayment)) {
+      const { data: pm } = await supabase
+        .from("payment_methods")
+        .select("id, method_type, is_active")
+        .eq("id", rawPayment)
+        .maybeSingle();
+
+      if (!pm || pm.is_active === false) {
+        console.log("[ORDERS] ERROR: Metode pembayaran tidak tersedia:", rawPayment);
+        return NextResponse.json({ error: "Metode pembayaran tidak tersedia" }, { status: 400 });
+      }
+      paymentValue = pm.id as string;
+      paymentType = (pm.method_type as string) || "bank";
+      console.log("[ORDERS] Payment method from DB:", paymentType, paymentValue);
+    } else if (legacyPaymentType(rawPayment)) {
+      // pesanan lama (client versi lama) masih kirim 'bank' / 'qris' / 'cod'
+      paymentValue = rawPayment;
+      paymentType = rawPayment;
+    } else {
       console.log("[ORDERS] ERROR: Metode pembayaran tidak valid:", body.paymentMethod);
       return NextResponse.json({ error: "Pilih metode pembayaran terlebih dahulu" }, { status: 400 });
     }
@@ -183,7 +207,7 @@ export async function POST(request: NextRequest) {
         shipping_notes: shipping.notes || null,
         shipping_method: verifiedShippingMethod,
         shipping_cost: verifiedShippingCost,
-        payment_method: body.paymentMethod,
+        payment_method: paymentValue,
         subtotal,
         discount,
         total,
@@ -274,7 +298,7 @@ export async function POST(request: NextRequest) {
         goodsDesc,
         itemName,
         goodsValue,
-        cod: body.paymentMethod === "cod" ? total : 0,
+        cod: paymentType === "cod" ? total : 0,
       });
 
       if (jntResult.success && jntResult.awbNo) {

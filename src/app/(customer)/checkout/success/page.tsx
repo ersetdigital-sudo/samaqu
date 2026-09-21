@@ -6,13 +6,8 @@ import { motion } from "framer-motion";
 import { ShieldCheck, Copy, Check, Clock, MessageCircle, ArrowLeft } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { trackPurchase, trackLead, sendCAPIEvent } from "@/lib/meta-pixel";
-
-interface PaymentMethod {
-  id: string;
-  bank_name: string;
-  account_name: string;
-  account_number: string;
-}
+import { normalizeMethodType, paymentMethodLabel, type PaymentMethodRow } from "@/lib/payment-methods";
+import { useResolvedPaymentMethod } from "@/lib/use-payment-methods";
 
 interface OrderData {
   order_number: string;
@@ -33,13 +28,14 @@ function CheckoutSuccessContent() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get("order");
   const [order, setOrder] = useState<OrderData | null>(null);
-  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethodRow[]>([]);
   const [storeSettings, setStoreSettings] = useState<{ whatsapp: string; store_name: string; tagline: string }>({
     whatsapp: "+62 812 3456 7890",
     store_name: "SAMAQU",
     tagline: "Busana yang Layak Menemani Setiap Momen",
   });
-  const [qrisMethods, setQrisMethods] = useState<{ id: string; provider_name: string; method_type: string; account_info: string; qr_image_url: string }[]>([]);
+  // Metode pembayaran pesanan ini: uuid baru dari admin, atau slug lama ('bank'/'qris'/'cod')
+  const { type: paymentTypeResolved, method: paidMethod } = useResolvedPaymentMethod(order?.payment_method);
   const [copied, setCopied] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [timeLeft, setTimeLeft] = useState(24 * 60 * 60);
@@ -48,11 +44,10 @@ function CheckoutSuccessContent() {
   useEffect(() => {
     async function fetchData() {
       if (!orderId) { setLoading(false); return; }
-      const [orderRes, paymentRes, settingsRes, qrisRes] = await Promise.all([
+      const [orderRes, paymentRes, settingsRes] = await Promise.all([
         supabase.from("orders").select("*, order_items(product_name, color, size, quantity, price, series, kain)").eq("order_number", orderId).single(),
         supabase.from("payment_methods").select("*").eq("is_active", true).order("display_order"),
         supabase.from("store_settings").select("whatsapp, store_name, tagline").eq("id", 1).single(),
-        supabase.from("qris_ewallet_methods").select("*").eq("is_active", true).order("display_order"),
       ]);
       if (orderRes.data) setOrder(orderRes.data as unknown as OrderData);
       // Meta Pixel: Purchase
@@ -75,7 +70,6 @@ function CheckoutSuccessContent() {
       }
       if (paymentRes.data) setPaymentMethods(paymentRes.data);
       if (settingsRes.data) setStoreSettings((prev) => ({ ...prev, ...settingsRes.data }));
-      if (qrisRes.data) setQrisMethods(qrisRes.data);
       setLoading(false);
     }
     fetchData();
@@ -129,6 +123,14 @@ function CheckoutSuccessContent() {
 
   const cd = getCountdown();
   const wa = storeSettings.whatsapp.replace(/[^0-9+]/g, "").replace(/^0/, "62");
+
+  // QRIS/e-wallet: pakai metode yang dipilih customer, atau semua metode non-bank untuk pesanan lama
+  const qrisList = paidMethod && (paymentTypeResolved === "qris" || paymentTypeResolved === "ewallet")
+    ? [paidMethod]
+    : paymentMethods.filter((m) => normalizeMethodType(m.method_type) !== "bank");
+  const bankList = paidMethod && paymentTypeResolved === "bank"
+    ? [paidMethod]
+    : paymentMethods.filter((m) => normalizeMethodType(m.method_type) === "bank");
 
   return (
     <section className="min-h-screen relative overflow-x-hidden" style={{ background: "var(--cream)" }}>
@@ -225,31 +227,32 @@ function CheckoutSuccessContent() {
         </motion.section>
 
         {/* Payment Instructions - conditional by method */}
-        {order.payment_method === "cod" ? (
+        {paymentTypeResolved === "cod" ? (
           <motion.section initial={{ opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.4 }} className="rounded-2xl p-5 sm:p-7 mb-5" style={{ background: "rgba(255,255,255,0.65)", backdropFilter: "blur(6px)", border: "1px solid rgba(64,50,37,.06)", boxShadow: "0 18px 44px -28px rgba(64,50,37,0.4)" }}>
             <h2 className="flex items-center gap-2 text-xl mb-3" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="#8b6f42" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
               Bayar di Tempat (COD)
             </h2>
             <p className="text-sm font-ui leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-              Pembayaran dilakukan saat barang diterima. Admin akan menghubungi Anda untuk konfirmasi pengiriman.
+              {paidMethod?.instructions || "Pembayaran dilakukan saat barang diterima. Admin akan menghubungi Anda untuk konfirmasi pengiriman."}
             </p>
           </motion.section>
-        ) : order.payment_method === "qris" ? (
+        ) : paymentTypeResolved === "qris" || paymentTypeResolved === "ewallet" ? (
           <motion.section initial={{ opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.4 }} className="rounded-2xl p-5 sm:p-7 mb-5" style={{ background: "rgba(255,255,255,0.65)", backdropFilter: "blur(6px)", border: "1px solid rgba(64,50,37,.06)", boxShadow: "0 18px 44px -28px rgba(64,50,37,0.4)" }}>
             <h2 className="flex items-center gap-2 text-xl mb-4" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="#8b6f42" strokeWidth={1.5}><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><line x1="14" y1="14" x2="21" y2="21" /></svg>
               QRIS / E-Wallet
             </h2>
-            {qrisMethods.length > 0 ? qrisMethods.map((qm) => (
+            {qrisList.length > 0 ? qrisList.map((qm) => (
               <div key={qm.id} className="rounded-xl p-4 mb-3 last:mb-0" style={{ background: "var(--bg-secondary, #f0ebe5)", border: "1px solid rgba(64,50,37,.06)" }}>
-                <p className="text-sm font-medium font-ui mb-2" style={{ color: "var(--espresso)" }}>{qm.provider_name}</p>
+                <p className="text-sm font-medium font-ui mb-2" style={{ color: "var(--espresso)" }}>{paymentMethodLabel(qm)}</p>
+                {qm.account_name && !qm.qr_image_url && <p className="text-xs font-ui mb-2" style={{ color: "var(--text-muted)" }}>a.n. {qm.account_name}</p>}
                 {qm.qr_image_url ? (
-                  <img src={qm.qr_image_url} alt={qm.provider_name} className="w-40 h-40 mx-auto object-contain rounded-lg mb-2" />
+                  <img src={qm.qr_image_url} alt={paymentMethodLabel(qm)} className="w-40 h-40 mx-auto object-contain rounded-lg mb-2" />
                 ) : qm.account_info ? (
                   <div className="flex items-center gap-3 rounded-xl px-4 py-3" style={{ background: "rgba(255,255,255,.6)" }}>
                     <span className="flex-1 font-medium text-base font-ui" style={{ color: "var(--espresso)", fontVariantNumeric: "tabular-nums" }}>{qm.account_info}</span>
-                    <button onClick={() => copyToClipboard(qm.account_info, `qris-${qm.id}`)} className="inline-flex items-center gap-1.5 text-xs font-medium font-ui px-3 py-2 rounded-lg transition-colors" style={{ border: "1px solid rgba(64,50,37,.25)", color: copied === `qris-${qm.id}` ? "#4b7a4e" : "#8b6f42", borderColor: copied === `qris-${qm.id}` ? "#4b7a4e" : undefined }}>
+                    <button onClick={() => copyToClipboard(qm.account_info || "", `qris-${qm.id}`)} className="inline-flex items-center gap-1.5 text-xs font-medium font-ui px-3 py-2 rounded-lg transition-colors" style={{ border: "1px solid rgba(64,50,37,.25)", color: copied === `qris-${qm.id}` ? "#4b7a4e" : "#8b6f42", borderColor: copied === `qris-${qm.id}` ? "#4b7a4e" : undefined }}>
                       {copied === `qris-${qm.id}` ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                       <span>{copied === `qris-${qm.id}` ? "Tersalin" : "Salin"}</span>
                     </button>
@@ -263,20 +266,24 @@ function CheckoutSuccessContent() {
           </motion.section>
         ) : (
           /* Bank Transfer (default) */
-          paymentMethods.length > 0 && (
+          (bankList.length > 0 || !!paidMethod?.instructions) && (
             <motion.section initial={{ opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.4 }} className="rounded-2xl p-5 sm:p-7 mb-5" style={{ background: "rgba(255,255,255,0.65)", backdropFilter: "blur(6px)", border: "1px solid rgba(64,50,37,.06)", boxShadow: "0 18px 44px -28px rgba(64,50,37,0.4)" }}>
               <h2 className="flex items-center gap-2 text-xl mb-5" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="#8b6f42" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0 0 12 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75Z" /></svg>
-                Instruksi Transfer Bank
+                {paymentTypeResolved === "bank" ? "Instruksi Transfer Bank" : paidMethod ? paymentMethodLabel(paidMethod) : "Instruksi Pembayaran"}
               </h2>
 
-              {paymentMethods.map((pm, i) => (
-                <div key={pm.id} className={i < paymentMethods.length - 1 ? "mb-5 pb-5" : "mb-5"} style={{ borderBottom: i < paymentMethods.length - 1 ? "1px solid rgba(64,50,37,.06)" : undefined }}>
-                  <p className="text-sm font-medium font-ui" style={{ color: "var(--espresso)" }}>{pm.bank_name}</p>
+              {bankList.length === 0 && paidMethod?.instructions && (
+                <p className="text-sm font-ui mb-4" style={{ color: "var(--text-secondary)" }}>{paidMethod.instructions}</p>
+              )}
+
+              {bankList.map((pm, i) => (
+                <div key={pm.id} className={i < bankList.length - 1 ? "mb-5 pb-5" : "mb-5"} style={{ borderBottom: i < bankList.length - 1 ? "1px solid rgba(64,50,37,.06)" : undefined }}>
+                  <p className="text-sm font-medium font-ui" style={{ color: "var(--espresso)" }}>{pm.bank_name || paymentMethodLabel(pm)}</p>
                   <p className="text-xs font-ui mb-3" style={{ color: "var(--text-muted)" }}>a.n. {pm.account_name}</p>
                   <div className="flex items-center gap-3 rounded-xl px-4 py-3 mb-3" style={{ background: "var(--bg-secondary, #f0ebe5)" }}>
                     <span className="flex-1 font-medium text-base font-ui" style={{ color: "var(--espresso)", fontVariantNumeric: "tabular-nums" }}>{pm.account_number}</span>
-                    <button onClick={() => copyToClipboard(pm.account_number, `acc-${i}`)} className="inline-flex items-center gap-1.5 text-xs font-medium font-ui px-3 py-2 rounded-lg transition-colors" style={{ border: "1px solid rgba(64,50,37,.25)", color: copied === `acc-${i}` ? "#4b7a4e" : "#8b6f42", borderColor: copied === `acc-${i}` ? "#4b7a4e" : undefined }}>
+                    <button onClick={() => copyToClipboard(pm.account_number || "", `acc-${i}`)} className="inline-flex items-center gap-1.5 text-xs font-medium font-ui px-3 py-2 rounded-lg transition-colors" style={{ border: "1px solid rgba(64,50,37,.25)", color: copied === `acc-${i}` ? "#4b7a4e" : "#8b6f42", borderColor: copied === `acc-${i}` ? "#4b7a4e" : undefined }}>
                       {copied === `acc-${i}` ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                       <span>{copied === `acc-${i}` ? "Tersalin" : "Salin"}</span>
                     </button>
@@ -331,10 +338,10 @@ function CheckoutSuccessContent() {
         <motion.a initial={{ opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.6 }} href={getWhatsAppLink()} onClick={() => trackLead(`transfer_${order?.order_number || "unknown"}`)} className="flex flex-col items-center justify-center gap-0.5 w-full px-7 py-4 rounded-2xl text-center transition-transform duration-200 hover:-translate-y-0.5 mb-3" style={{ background: "var(--espresso)", color: "var(--cream)", boxShadow: "0 18px 38px -16px rgba(45,33,27,0.6)" }}>
           <span className="inline-flex items-center gap-2 text-base font-medium font-ui">
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.71.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.002-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.548 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0 0 20.885 3.488" /></svg>
-            {order.payment_method === "cod" ? "Konfirmasi Pesanan" : "Saya Sudah Transfer"}
+            {paymentTypeResolved === "cod" ? "Konfirmasi Pesanan" : "Saya Sudah Transfer"}
           </span>
           <span className="text-xs font-ui" style={{ color: "var(--text-muted)" }}>
-            {order.payment_method === "cod" ? "Konfirmasi via WhatsApp" : "Konfirmasi & kirim bukti via WhatsApp"}
+            {paymentTypeResolved === "cod" ? "Konfirmasi via WhatsApp" : "Konfirmasi & kirim bukti via WhatsApp"}
           </span>
         </motion.a>
 
