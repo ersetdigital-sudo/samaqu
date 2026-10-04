@@ -15,6 +15,7 @@ import {
   type Product,
 } from "@/lib/katalog-data";
 import { getProducts } from "@/lib/db";
+import { cloudinaryUrl } from "@/lib/cloudinary";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/Toast";
 import FilterDrawer, { applyFilters, type FilterState } from "@/components/FilterDrawer";
@@ -216,7 +217,7 @@ function ProductCard({ product, index, wishlist, colorHex, totalStock }: { produ
         />
         {/* Actual product image */}
         <img
-          src={product.media.find((m) => m.type === "image")?.src || product.image}
+          src={cloudinaryUrl(product.media.find((m) => m.type === "image")?.src || product.image, { width: 600 })}
           alt={product.name}
           className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
           loading="lazy"

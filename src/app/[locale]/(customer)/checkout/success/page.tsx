@@ -10,6 +10,7 @@ import { supabase } from "@/lib/supabase";
 import { trackPurchase, trackLead, sendCAPIEvent } from "@/lib/meta-pixel";
 import { normalizeMethodType, paymentMethodLabel, type PaymentMethodRow } from "@/lib/payment-methods";
 import { useResolvedPaymentMethod } from "@/lib/use-payment-methods";
+import { cloudinaryUrl } from "@/lib/cloudinary";
 
 interface OrderData {
   order_number: string;
@@ -250,7 +251,7 @@ function CheckoutSuccessContent() {
                 <p className="text-sm font-medium font-ui mb-2" style={{ color: "var(--espresso)" }}>{paymentMethodLabel(qm)}</p>
                 {qm.account_name && !qm.qr_image_url && <p className="text-xs font-ui mb-2" style={{ color: "var(--text-muted)" }}>a.n. {qm.account_name}</p>}
                 {qm.qr_image_url ? (
-                  <img src={qm.qr_image_url} alt={paymentMethodLabel(qm)} className="w-40 h-40 mx-auto object-contain rounded-lg mb-2" />
+                  <img src={cloudinaryUrl(qm.qr_image_url, { width: 320 })} alt={paymentMethodLabel(qm)} className="w-40 h-40 mx-auto object-contain rounded-lg mb-2" />
                 ) : qm.account_info ? (
                   <div className="flex items-center gap-3 rounded-xl px-4 py-3" style={{ background: "rgba(255,255,255,.6)" }}>
                     <span className="flex-1 font-medium text-base font-ui" style={{ color: "var(--espresso)", fontVariantNumeric: "tabular-nums" }}>{qm.account_info}</span>
