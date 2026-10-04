@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ZoomIn, ZoomOut, RotateCcw, ChevronLeft, ChevronRight } from "lucide-react";
+import { cloudinaryUrl } from "@/lib/cloudinary";
 
 export interface ZoomMedia {
   src: string;
@@ -207,7 +208,7 @@ export default function ImageZoom({ media, initialIndex, alt, isOpen, onClose }:
                     />
                   ) : (
                     <img
-                      src={currentItem.src}
+                      src={cloudinaryUrl(currentItem.src, { width: 1600 })}
                       alt={alt}
                       className="max-w-full max-h-full object-contain select-none"
                       style={{
@@ -245,7 +246,7 @@ export default function ImageZoom({ media, initialIndex, alt, isOpen, onClose }:
                       <span className="text-[9px] font-medium" style={{ color: "var(--gold)" }}>VID</span>
                     </div>
                   ) : (
-                    <img src={item.src} alt="" className="w-full h-full object-cover" loading="lazy" />
+                    <img src={cloudinaryUrl(item.src, { width: 160 })} alt="" className="w-full h-full object-cover" loading="lazy" />
                   )}
                 </button>
               ))}

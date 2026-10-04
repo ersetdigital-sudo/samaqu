@@ -9,6 +9,7 @@ import KainSeriesModal, { getKainSwatchColor } from "@/components/KainSeriesModa
 import Breadcrumb from "@/components/Breadcrumb";
 import { colorMap, type Product, type MediaItem } from "@/lib/katalog-data";
 import { getProductById, getAvailableSeries, getProducts, type SeriesOption } from "@/lib/db";
+import { cloudinaryUrl } from "@/lib/cloudinary";
 import { useCart } from "@/lib/cart-context";
 import { useToast } from "@/components/Toast";
 import { getWhatsAppLink, useStoreSettings } from "@/lib/store-settings";
@@ -83,7 +84,7 @@ function MediaDisplay({ item, poster, className, style, allMedia }: { item: Gall
         ) : (
           <>
             {videoPoster ? (
-              <img src={videoPoster} alt="" className="w-full h-full object-cover" />
+              <img src={cloudinaryUrl(videoPoster, { width: 1200 })} alt="" className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full flex items-center justify-center" style={{ background: "#e8dfd1" }}>
                 <Play size={32} style={{ color: "var(--gold)" }} />
@@ -106,7 +107,7 @@ function MediaDisplay({ item, poster, className, style, allMedia }: { item: Gall
 
   return (
     <div className={`relative ${className || ""}`} style={{ background: "#e8dfd1", ...style }}>
-      <img src={item.src} alt="" className="w-full h-full object-contain" loading="lazy" />
+      <img src={cloudinaryUrl(item.src, { width: 1200 })} alt="" className="w-full h-full object-contain" loading="lazy" />
     </div>
   );
 }
@@ -164,7 +165,7 @@ function RelatedProductCard({ p }: { p: Product }) {
     >
       <div className="relative aspect-[3/4] overflow-hidden" style={{ background: "#e8dfd1" }}>
         <img
-          src={p.media.find((m) => m.type === "image")?.src || p.image}
+          src={cloudinaryUrl(p.media.find((m) => m.type === "image")?.src || p.image, { width: 500 })}
           alt={p.name}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
           loading="lazy"
@@ -970,7 +971,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                         </div>
                       </>
                     ) : (
-                      <img src={item.src} alt="" className="w-full h-full object-cover" loading="lazy" />
+                      <img src={cloudinaryUrl(item.src, { width: 300 })} alt="" className="w-full h-full object-cover" loading="lazy" />
                     )}
                   </button>
                 ))}

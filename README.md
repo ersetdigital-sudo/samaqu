@@ -463,9 +463,10 @@ JNT_COMPANY_ID=
 # RajaOngkir (stored in database, env as fallback)
 RAJAONGKIR_API_KEY=
 
-# Cloudinary
+# Cloudinary (signed upload — butuh API key & secret dari Console > Settings > API Keys)
 NEXT_PUBLIC_CLOUDINARY_CLOUD=
-NEXT_PUBLIC_CLOUDINARY_PRESET=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
 
 # Meta Pixel
 NEXT_PUBLIC_META_PIXEL_ID=

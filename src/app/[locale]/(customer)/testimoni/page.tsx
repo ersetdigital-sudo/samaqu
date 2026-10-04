@@ -8,6 +8,7 @@ import { getTestimonials, type DbTestimonial } from "@/lib/db";
 import { getWhatsAppLink } from "@/lib/store-settings";
 import { supabase } from "@/lib/supabase";
 import { useSafeTranslations } from "@/lib/safe-i18n";
+import { cloudinaryUrl } from "@/lib/cloudinary";
 
 interface Product {
   id: string;
@@ -117,7 +118,7 @@ function TestimonialCard({ t, onImageClick }: { t: Testimoni; onImageClick: (url
               className="relative w-full aspect-video rounded-xl overflow-hidden group cursor-pointer"
               style={{ background: "#e8dfd1" }}
             >
-              <img src={t.img || t.video_url} alt="" className="w-full h-full object-cover" />
+              <img src={cloudinaryUrl(t.img || t.video_url, { width: 600 })} alt="" className="w-full h-full object-cover" />
               <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(0,0,0,.2)" }}>
                 <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "var(--gold)", boxShadow: "0 4px 12px rgba(181,140,74,.4)" }}>
                   <Play size={20} fill="white" stroke="none" className="ml-0.5" />
@@ -129,7 +130,7 @@ function TestimonialCard({ t, onImageClick }: { t: Testimoni; onImageClick: (url
               onClick={() => onImageClick(t.img!)}
               className="w-full rounded-xl overflow-hidden cursor-pointer"
             >
-              <img src={t.img} alt="" className="w-full h-auto object-cover max-h-48" loading="lazy" />
+              <img src={cloudinaryUrl(t.img || "", { width: 800 })} alt="" className="w-full h-auto object-cover max-h-48" loading="lazy" />
             </button>
           )}
         </div>
@@ -163,7 +164,7 @@ function ImageLightbox({ url, onClose }: { url: string; onClose: () => void }) {
         {isVideo ? (
           <video src={url} controls className="w-full h-auto max-h-[80vh] sm:max-h-[85vh] object-contain rounded-xl" />
         ) : (
-          <img src={url} alt="" className="w-full h-auto max-h-[80vh] sm:max-h-[85vh] object-contain rounded-xl" />
+          <img src={cloudinaryUrl(url, { width: 1600 })} alt="" className="w-full h-auto max-h-[80vh] sm:max-h-[85vh] object-contain rounded-xl" />
         )}
       </motion.div>
     </motion.div>

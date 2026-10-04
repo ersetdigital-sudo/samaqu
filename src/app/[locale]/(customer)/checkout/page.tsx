@@ -10,6 +10,7 @@ import { getWhatsAppLink } from "@/lib/store-settings";
 import { trackInitiateCheckout, sendCAPIEvent } from "@/lib/meta-pixel";
 import { PaymentIcon } from "@/lib/payment-icons";
 import { fetchActivePaymentMethods, normalizeMethodType, paymentMethodLabel, type PaymentMethodRow } from "@/lib/payment-methods";
+import { cloudinaryUrl } from "@/lib/cloudinary";
 
 interface ShipOpt { courier: string; service: string; description: string; cost: number; etd: string; }
 
@@ -929,7 +930,7 @@ function CheckoutContent() {
                 {items.map((item) => (
                   <div key={`${item.id}-${item.color}-${item.size}-${item.series ?? ""}`} className="flex gap-3 sm:gap-4">
                     <div className="w-16 h-20 sm:w-20 sm:h-24 rounded-lg flex-shrink-0 overflow-hidden" style={{ background: "#e8dfd1" }}>
-                      <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                      <img src={cloudinaryUrl(item.image, { width: 160 })} alt={item.name} className="w-full h-full object-cover" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-[13px] sm:text-sm font-ui font-medium leading-snug" style={{ color: "var(--espresso)" }}>{item.name}</p>
@@ -950,7 +951,7 @@ function CheckoutContent() {
             ) : (
               <div className="flex gap-3 sm:gap-4">
                 <div className="w-16 h-20 sm:w-20 sm:h-24 rounded-lg flex-shrink-0 overflow-hidden" style={{ background: "#e8dfd1" }}>
-                  <img src={product!.image} alt={product!.name} className="w-full h-full object-cover" />
+                  <img src={cloudinaryUrl(product!.image, { width: 160 })} alt={product!.name} className="w-full h-full object-cover" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[13px] sm:text-sm font-ui font-medium leading-snug" style={{ color: "var(--espresso)" }}>{product!.name}</p>

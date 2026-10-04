@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Minus, Plus, Trash2, Tag, ShoppingBag, ShoppingCart } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { colorMap } from "@/lib/katalog-data";
+import { cloudinaryUrl } from "@/lib/cloudinary";
 import { useRouter } from "next/navigation";
 
 export default function CartDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -121,7 +122,7 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
                           style={{ background: "rgba(255,255,255,.6)", border: "1px solid rgba(201,183,156,.12)" }}>
                           {/* Image */}
                           <div className="w-16 h-16 rounded-lg overflow-hidden shrink-0" style={{ background: "#e8dfd1" }}>
-                            <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                            <img src={cloudinaryUrl(item.image, { width: 160 })} alt={item.name} className="w-full h-full object-cover" />
                           </div>
                           {/* Details */}
                           <div className="flex-1 min-w-0">
