@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import { getCurrentCustomer, getCustomerOrders } from "@/lib/customer-auth";
+import { getCustomerOrders } from "@/lib/customer-auth";
+import { useAkunCustomer } from "@/components/akun/AkunContext";
 import { useSafeLocale } from "@/lib/safe-i18n";
 
 import { statusInfo, rupiah, tglID } from "@/lib/akun-format";
@@ -33,26 +34,29 @@ interface Cust {
 export default function DashboardAkunPage() {
   const locale = useSafeLocale();
   const to = (href: string) => `/${locale}${href}`;
-  const [cust, setCust] = useState<Cust | null>(null);
+  // Customer sudah dimuat oleh AkunProvider (layout) — pakai itu daripada query ulang.
+  const cust = useAkunCustomer().customer as Cust | null;
   const [orders, setOrders] = useState<Order[]>([]);
   const [wishCount, setWishCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!cust) return;
+    const id = cust.id;
+    let alive = true;
     async function init() {
-      const c = await getCurrentCustomer();
-      if (!c) return;
-      setCust(c as Cust);
       const [o, w] = await Promise.all([
-        getCustomerOrders(c.id),
-        supabase.from("wishlists").select("product_id", { count: "exact", head: true }).eq("customer_id", c.id),
+        getCustomerOrders(id),
+        supabase.from("wishlists").select("product_id", { count: "exact", head: true }).eq("customer_id", id),
       ]);
+      if (!alive) return;
       setOrders((o as Order[]) || []);
       setWishCount(w.count || 0);
       setLoading(false);
     }
     init();
-  }, []);
+    return () => { alive = false; };
+  }, [cust]);
 
   const firstName = (cust?.name || "Pelanggan").split(" ")[0];
   const initials = (cust?.name || "U").split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
