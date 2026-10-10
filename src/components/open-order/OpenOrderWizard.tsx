@@ -4,17 +4,18 @@
  * Alur pesanan Open Order (/open-order) — 6 langkah dalam satu halaman:
  * daftar produk → detail produk → keranjang → data pemesan → review → pesanan berhasil.
  *
- * Harga/series/berat tetap dari `src/lib/open-order-config.ts`; foto dari katalog.
- * Submit ke /api/open-order (route yang sama dengan form sebelumnya) supaya pesanan tetap
- * masuk ke dashboard admin sebagai pesanan `CYO-`.
+ * Produk, warna, series, dan harga diturunkan dari katalog (lihat `open-order-offering.ts`) —
+ * bukan daftar hardcode. Submit ke /api/open-order (route yang sama dengan form sebelumnya)
+ * supaya pesanan tetap masuk ke dashboard admin sebagai pesanan `CYO-`.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, X } from "lucide-react";
 import { getProducts } from "@/lib/db";
 import type { Product } from "@/lib/katalog-data";
-import { findOpenOrderProduct, OPEN_ORDER_ADDON, OPEN_ORDER_PRODUCTS } from "@/lib/open-order-config";
+import { OPEN_ORDER_ADDON } from "@/lib/open-order-config";
+import { buildOpenOrderProducts, findOpenOrderProduct, type OpenOrderProduct } from "@/lib/open-order-offering";
 import StepCart from "./StepCart";
 import StepCatalog from "./StepCatalog";
 import StepCustomer from "./StepCustomer";
@@ -38,12 +39,13 @@ const STEP_TITLES: Record<Step, string> = {
 /** Tombol kembali di header per langkah. */
 const BACK_TO: Partial<Record<Step, Step>> = { 2: 1, 3: 1, 4: 3, 5: 4 };
 
-function defaultDraft(productId: string, color: string): ProductDraft {
-  const product = findOpenOrderProduct(productId) ?? OPEN_ORDER_PRODUCTS[0];
-  const series = product.series[0];
+function defaultDraft(products: OpenOrderProduct[], productId: string, color: string): ProductDraft | null {
+  const product = findOpenOrderProduct(products, productId) ?? products[0];
+  const series = product?.series[0];
+  if (!product || !series) return null;
   return {
     productId: product.id,
-    color: product.colors.includes(color) ? color : product.colors[0],
+    color: product.colors.includes(color) ? color : product.colors[0] ?? "",
     size: "M",
     series: series.name,
     quantity: 1,
@@ -83,13 +85,16 @@ export default function OpenOrderWizard() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [step]);
 
+  // Penawaran (kain/warna/series/harga) diturunkan dari baris katalog — bukan hardcode.
+  const products = useMemo(() => buildOpenOrderProducts(catalog), [catalog]);
+
   const subtotal = lines.reduce((sum, line) => sum + line.price * line.quantity, 0);
   const total = subtotal + (extraCover ? OPEN_ORDER_ADDON.price : 0) + (shipping?.cost ?? 0);
 
   // Berat kirim = berat produk (gram) × jumlah + Cover & Hanger kalau dipilih, minimum 300 g.
   const totalWeight = Math.max(
     300,
-    lines.reduce((sum, line) => sum + (findOpenOrderProduct(line.productId)?.weight ?? 1200) * line.quantity, 0) +
+    lines.reduce((sum, line) => sum + (findOpenOrderProduct(products, line.productId)?.weight ?? 1200) * line.quantity, 0) +
       (extraCover ? OPEN_ORDER_ADDON.weight : 0)
   );
 
@@ -145,7 +150,9 @@ export default function OpenOrderWizard() {
   }, [customer.district, customer.city, totalWeight]);
 
   function openDetail(productId: string, color: string) {
-    setDraft(defaultDraft(productId, color));
+    const next = defaultDraft(products, productId, color);
+    if (!next) return;
+    setDraft(next);
     setStep(2);
   }
 
@@ -263,6 +270,7 @@ export default function OpenOrderWizard() {
       <main className="mx-auto max-w-5xl px-5 py-8 sm:px-8 sm:py-10">
         {step === 1 && (
           <StepCatalog
+            products={products}
             catalog={catalog}
             cartCount={lines.reduce((sum, line) => sum + line.quantity, 0)}
             onOpen={(product, color) => openDetail(product.id, color)}
@@ -275,6 +283,7 @@ export default function OpenOrderWizard() {
             {step === 2 && draft && (
               <StepProduct
                 draft={draft}
+                products={products}
                 catalog={catalog}
                 onChange={(patch) => setDraft((prev) => (prev ? { ...prev, ...patch } : prev))}
                 onAdd={addDraftToCart}
@@ -284,6 +293,7 @@ export default function OpenOrderWizard() {
             {step === 3 && (
               <StepCart
                 lines={lines}
+                products={products}
                 catalog={catalog}
                 subtotal={subtotal}
                 extraCover={extraCover}
@@ -300,6 +310,7 @@ export default function OpenOrderWizard() {
             {step === 5 && (
               <StepReview
                 lines={lines}
+                products={products}
                 catalog={catalog}
                 subtotal={subtotal}
                 extraCover={extraCover}

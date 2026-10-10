@@ -2,8 +2,8 @@
 
 /**
  * Langkah 1 — daftar produk Open Order: filter kain + grid kartu produk (per warna ready stock).
- * Kartu dibuat sama seperti kartu katalog (serif espresso + aksen gold); foto dari katalog,
- * harga dari `open-order-config.ts`.
+ * Kartu dibuat sama seperti kartu katalog (serif espresso + aksen gold). Produk, warna, series,
+ * dan harga semuanya diturunkan dari katalog (lihat `open-order-offering.ts`).
  */
 
 import { useMemo, useState } from "react";
@@ -11,17 +11,20 @@ import { ChevronRight } from "lucide-react";
 import { cloudinaryUrl } from "@/lib/cloudinary";
 import type { Product } from "@/lib/katalog-data";
 import { money, openOrderVariants, priceRange } from "@/lib/open-order-catalog";
-import { OPEN_ORDER_PERIOD, OPEN_ORDER_PRODUCTS, type OpenOrderProduct } from "@/lib/open-order-config";
+import { OPEN_ORDER_PERIOD } from "@/lib/open-order-config";
+import { lowestOpenOrderPrice, type OpenOrderProduct } from "@/lib/open-order-offering";
 import { Chip, INK, MUTED, PrimaryButton } from "./ui";
 
 const ALL = "semua";
 
 export default function StepCatalog({
+  products,
   catalog,
   cartCount,
   onOpen,
   onViewCart,
 }: {
+  products: OpenOrderProduct[];
   catalog: Product[];
   cartCount: number;
   onOpen: (product: OpenOrderProduct, color: string) => void;
@@ -29,7 +32,8 @@ export default function StepCatalog({
 }) {
   const [fabric, setFabric] = useState<string>(ALL);
 
-  const variants = useMemo(() => openOrderVariants(catalog), [catalog]);
+  const variants = useMemo(() => openOrderVariants(products, catalog), [products, catalog]);
+  const lowestPrice = useMemo(() => lowestOpenOrderPrice(products), [products]);
   const shown = fabric === ALL ? variants : variants.filter((v) => v.product.kain === fabric);
 
   return (
@@ -58,7 +62,7 @@ export default function StepCatalog({
         <Chip active={fabric === ALL} onClick={() => setFabric(ALL)}>
           Semua
         </Chip>
-        {OPEN_ORDER_PRODUCTS.map((product) => (
+        {products.map((product) => (
           <Chip key={product.kain} active={fabric === product.kain} onClick={() => setFabric(product.kain)}>
             {product.kain}
           </Chip>
@@ -131,10 +135,12 @@ export default function StepCatalog({
       )}
 
       {/* Catatan harga */}
-      <p className="mt-8 text-[11.5px] leading-relaxed" style={{ color: MUTED }}>
-        Harga di atas adalah harga Open Order periode ini. Kamu bisa menentukan harga sendiri (Create Your Price) di
-        langkah berikutnya — mulai dari {money(Math.min(...OPEN_ORDER_PRODUCTS.flatMap((p) => p.series.map((s) => s.price))))}.
-      </p>
+      {lowestPrice !== null && (
+        <p className="mt-8 text-[11.5px] leading-relaxed" style={{ color: MUTED }}>
+          Harga di atas adalah harga Open Order periode ini. Kamu bisa menentukan harga sendiri (Create Your Price) di
+          langkah berikutnya — mulai dari {money(lowestPrice)}.
+        </p>
+      )}
 
       {cartCount > 0 && (
         <div className="mt-5">

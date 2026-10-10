@@ -1,13 +1,14 @@
 /**
  * Helper tampilan alur Open Order (/open-order): harga, foto dari katalog, dan kartu produk.
  *
- * Produk/harga Open Order tetap datang dari `open-order-config.ts` (bukan tabel `products`);
- * katalog hanya dipakai untuk foto produk yang cocok (kode kain + warna ready stock).
+ * Penawaran (kain/warna/series/harga) diturunkan dari baris katalog lewat
+ * `open-order-offering.ts`; modul ini yang mencocokkan baris katalog ke tiap kombinasi
+ * produk + warna (+ series) untuk foto dan kartu.
  */
 
 import type { Product } from "@/lib/katalog-data";
 import { getProductThumbnail } from "@/lib/product-thumbnail";
-import { OPEN_ORDER_PRODUCTS, type OpenOrderProduct } from "@/lib/open-order-config";
+import type { OpenOrderProduct } from "@/lib/open-order-offering";
 
 /** Format harga seragam untuk seluruh alur: "Rp329.000". */
 export const money = (value: number) => `Rp${value.toLocaleString("id-ID")}`;
@@ -93,8 +94,8 @@ export interface OpenOrderVariant {
 }
 
 /** Satu kartu per produk × warna ready stock — dipakai grid di langkah pertama. */
-export function openOrderVariants(catalog: Product[]): OpenOrderVariant[] {
-  return OPEN_ORDER_PRODUCTS.flatMap((product) =>
+export function openOrderVariants(products: OpenOrderProduct[], catalog: Product[]): OpenOrderVariant[] {
+  return products.flatMap((product) =>
     product.colors.map((color) => ({
       key: `${product.id}-${color.toLowerCase().replace(/\s+/g, "-")}`,
       product,

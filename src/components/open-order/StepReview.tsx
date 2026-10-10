@@ -8,12 +8,14 @@ import { cloudinaryUrl } from "@/lib/cloudinary";
 import type { Product } from "@/lib/katalog-data";
 import { money } from "@/lib/open-order-catalog";
 import { OPEN_ORDER_ADDON } from "@/lib/open-order-config";
+import type { OpenOrderProduct } from "@/lib/open-order-offering";
 import type { CartLine, DraftShipping } from "./types";
 import { lineImage, lineName } from "./StepCart";
 import { DANGER, Field, FIELD_BG, LINE, MUTED, PrimaryButton, SummaryRow, TextArea } from "./ui";
 
 export default function StepReview({
   lines,
+  products,
   catalog,
   subtotal,
   extraCover,
@@ -27,6 +29,7 @@ export default function StepReview({
   error,
 }: {
   lines: CartLine[];
+  products: OpenOrderProduct[];
   catalog: Product[];
   subtotal: number;
   extraCover: boolean;
@@ -48,16 +51,16 @@ export default function StepReview({
       {/* Item */}
       <div className="space-y-3">
         {lines.map((line) => {
-          const image = lineImage(line, catalog);
+          const image = lineImage(line, products, catalog);
           return (
             <div key={line.key} className="flex items-center gap-3.5 rounded-2xl px-4 py-3.5" style={{ border: `1px solid ${LINE}`, background: FIELD_BG }}>
               <div className="h-14 w-11 shrink-0 overflow-hidden rounded-lg" style={{ background: "#e8dfd1" }}>
                 {image && (
-                  <img src={cloudinaryUrl(image, { width: 200 })} alt={lineName(line)} className="h-full w-full object-cover" />
+                  <img src={cloudinaryUrl(image, { width: 200 })} alt={lineName(line, products)} className="h-full w-full object-cover" />
                 )}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[13px] font-semibold">{lineName(line)}</p>
+                <p className="truncate text-[13px] font-semibold">{lineName(line, products)}</p>
                 <p className="mt-0.5 text-[11.5px]" style={{ color: MUTED }}>
                   {line.color} · {line.size} · Series {line.series}
                 </p>

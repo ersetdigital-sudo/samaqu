@@ -8,21 +8,23 @@ import { Trash2 } from "lucide-react";
 import { cloudinaryUrl } from "@/lib/cloudinary";
 import type { Product } from "@/lib/katalog-data";
 import { money, openOrderImage } from "@/lib/open-order-catalog";
-import { findOpenOrderProduct, OPEN_ORDER_ADDON } from "@/lib/open-order-config";
+import { OPEN_ORDER_ADDON } from "@/lib/open-order-config";
+import { findOpenOrderProduct, type OpenOrderProduct } from "@/lib/open-order-offering";
 import type { CartLine } from "./types";
 import { Counter, FIELD_BG, GhostButton, LINE, MUTED, PrimaryButton, SummaryRow } from "./ui";
 
-export function lineName(line: CartLine): string {
-  return findOpenOrderProduct(line.productId)?.name ?? line.productId;
+export function lineName(line: CartLine, products: OpenOrderProduct[]): string {
+  return findOpenOrderProduct(products, line.productId)?.name ?? line.productId;
 }
 
-export function lineImage(line: CartLine, catalog: Product[]): string {
-  const product = findOpenOrderProduct(line.productId);
+export function lineImage(line: CartLine, products: OpenOrderProduct[], catalog: Product[]): string {
+  const product = findOpenOrderProduct(products, line.productId);
   return product ? openOrderImage(product, line.color, catalog) : "";
 }
 
 export default function StepCart({
   lines,
+  products,
   catalog,
   subtotal,
   extraCover,
@@ -33,6 +35,7 @@ export default function StepCart({
   onShopMore,
 }: {
   lines: CartLine[];
+  products: OpenOrderProduct[];
   catalog: Product[];
   subtotal: number;
   extraCover: boolean;
@@ -62,19 +65,19 @@ export default function StepCart({
     <div>
       <div className="space-y-3">
         {lines.map((line) => {
-          const image = lineImage(line, catalog);
+          const image = lineImage(line, products, catalog);
           return (
             <div key={line.key} className="flex gap-4 rounded-2xl p-4" style={{ border: `1px solid ${LINE}`, background: FIELD_BG }}>
               <div className="h-20 w-16 shrink-0 overflow-hidden rounded-xl" style={{ background: "#e8dfd1" }}>
                 {image && (
-                  <img src={cloudinaryUrl(image, { width: 300 })} alt={lineName(line)} className="h-full w-full object-cover" />
+                  <img src={cloudinaryUrl(image, { width: 300 })} alt={lineName(line, products)} className="h-full w-full object-cover" />
                 )}
               </div>
 
               <div className="min-w-0 flex-1">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="truncate text-[13.5px] font-semibold">{lineName(line)}</p>
+                    <p className="truncate text-[13.5px] font-semibold">{lineName(line, products)}</p>
                     <p className="mt-0.5 text-[11.5px]" style={{ color: MUTED }}>
                       {line.color} · {line.size} · Series {line.series}
                     </p>
@@ -85,7 +88,7 @@ export default function StepCart({
                   <button
                     type="button"
                     onClick={() => onRemove(line.key)}
-                    aria-label={`Hapus ${lineName(line)}`}
+                    aria-label={`Hapus ${lineName(line, products)}`}
                     className="grid h-8 w-8 shrink-0 place-items-center rounded-lg transition-colors duration-200 hover:bg-white"
                     style={{ color: MUTED }}
                   >
