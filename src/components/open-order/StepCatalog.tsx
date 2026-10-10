@@ -9,8 +9,8 @@ import { useMemo, useState } from "react";
 import { cloudinaryUrl } from "@/lib/cloudinary";
 import type { Product } from "@/lib/katalog-data";
 import { money, openOrderVariants, priceRange } from "@/lib/open-order-catalog";
-import { OPEN_ORDER_PRODUCTS, type OpenOrderProduct } from "@/lib/open-order-config";
-import { Chip, MUTED, PrimaryButton } from "./ui";
+import { OPEN_ORDER_PERIOD, OPEN_ORDER_PRODUCTS, type OpenOrderProduct } from "@/lib/open-order-config";
+import { Chip, INK, MUTED, PrimaryButton } from "./ui";
 
 const ALL = "semua";
 
@@ -37,6 +37,9 @@ export default function StepCatalog({
         <h1 className="text-[26px] font-bold uppercase tracking-[0.12em] sm:text-[32px]">OPEN ORDER</h1>
         <p className="mt-2 text-[13px] font-semibold uppercase tracking-[0.2em]" style={{ color: MUTED }}>
           SAMAQU
+        </p>
+        <p className="mt-3 text-[13.5px]" style={{ color: INK }}>
+          Periode {OPEN_ORDER_PERIOD}
         </p>
         <p className="mx-auto mt-3 max-w-xl text-[13px] leading-relaxed" style={{ color: MUTED }}>
           Pilih produk, atur ukuran dan harga, lalu kirim pesanan kamu. Admin akan mengonfirmasi lewat WhatsApp.

@@ -58,6 +58,9 @@ export const OPEN_ORDER_PRODUCTS: OpenOrderProduct[] = [
   },
 ];
 
+/** Periode Open Order yang sedang dibuka — ditampilkan di bawah judul /open-order. */
+export const OPEN_ORDER_PERIOD = "8-15 Agustus 2026";
+
 /** Tambahan Extra Cover & Hanger Samaqu (opsional, per pesanan). */
 export const OPEN_ORDER_ADDON = {
   id: "addon-cover-hanger",
