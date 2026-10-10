@@ -1,0 +1,49 @@
+{
+  "previewPort": 3000,
+  "healthPath": "/",
+  "startCommand": "docker compose -f docker-compose.base44.yml up -d",
+  "secrets": [
+    {
+      "name": "NEXT_PUBLIC_SUPABASE_URL",
+      "description": "Hosted Supabase project URL — Supabase dashboard > Project Settings > API. Required: the whole catalog, accounts, orders and admin panel read from this project.",
+      "requiredAtBoot": true,
+      "generatedForDevelopment": false
+    },
+    {
+      "name": "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+      "description": "Supabase anon/public API key — Supabase dashboard > Project Settings > API (Keys).",
+      "requiredAtBoot": true,
+      "generatedForDevelopment": false
+    },
+    {
+      "name": "SUPABASE_SERVICE_ROLE_KEY",
+      "description": "Supabase service_role key — Supabase dashboard > Project Settings > API (Keys). Used server-side by src/lib/supabase-admin.ts for admin/order routes. Keep secret.",
+      "requiredAtBoot": true,
+      "generatedForDevelopment": false
+    },
+    {
+      "name": "NEXT_PUBLIC_CLOUDINARY_CLOUD",
+      "description": "Cloudinary cloud name — Cloudinary Console > Settings. Optional: admin product/bio image uploads.",
+      "requiredAtBoot": false,
+      "generatedForDevelopment": false
+    },
+    {
+      "name": "CLOUDINARY_API_KEY",
+      "description": "Cloudinary API key — Console > Settings > API Keys. Optional: signed uploads.",
+      "requiredAtBoot": false,
+      "generatedForDevelopment": false
+    },
+    {
+      "name": "CLOUDINARY_API_SECRET",
+      "description": "Cloudinary API secret — Console > Settings > API Keys. Optional: signed uploads.",
+      "requiredAtBoot": false,
+      "generatedForDevelopment": false
+    },
+    {
+      "name": "RAJAONGKIR_API_KEY",
+      "description": "RajaOngkir API key (rajaongkir.com / Komerce dashboard). Optional: shipping cost + destination search. Can also be stored in the DB store_settings row.",
+      "requiredAtBoot": false,
+      "generatedForDevelopment": false
+    }
+  ]
+}
