@@ -13,11 +13,21 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, X } from "lucide-react";
+import { Calendar, ChevronLeft, X } from "lucide-react";
 import { getProducts } from "@/lib/db";
 import type { Product } from "@/lib/katalog-data";
 import { OPEN_ORDER_ADDON, OPEN_ORDER_PERIOD } from "@/lib/open-order-config";
-import { buildOpenOrderProducts, findOpenOrderProduct, type OpenOrderProduct } from "@/lib/open-order-offering";
+import {
+  buildOpenOrderProducts,
+  findOpenOrderProduct,
+  restrictOpenOrderProducts,
+  type OpenOrderProduct,
+} from "@/lib/open-order-offering";
+import {
+  formatDateLabel,
+  formatOpenOrderPeriod,
+  resolveOpenOrderState,
+} from "@/lib/open-order-window";
 import { useSafeLocale } from "@/lib/safe-i18n";
 import { useStoreSettings } from "@/lib/store-settings";
 import StepCart from "./StepCart";
@@ -75,8 +85,10 @@ export default function OpenOrderWizard() {
   const locale = useSafeLocale();
   // Periode & status Open Order diatur dari dashboard admin (store_settings).
   const settings = useStoreSettings();
-  const period = settings.open_order_period || OPEN_ORDER_PERIOD;
-  const isOpen = settings.open_order_active !== false;
+  // Periode & status datang dari tanggal yang diatur admin; teks periode lama jadi fallback
+  // selama tanggalnya belum diisi.
+  const period = formatOpenOrderPeriod(settings, settings.open_order_period || OPEN_ORDER_PERIOD);
+  const openState = resolveOpenOrderState(settings);
 
   // Foto produk diambil dari katalog (harga tetap dari config).
   useEffect(() => {
@@ -95,8 +107,12 @@ export default function OpenOrderWizard() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [step]);
 
-  // Penawaran (kain/warna/series/harga) diturunkan dari baris katalog — bukan hardcode.
-  const products = useMemo(() => buildOpenOrderProducts(catalog), [catalog]);
+  // Penawaran (kain/warna/series/harga) diturunkan dari baris katalog — bukan hardcode — lalu
+  // dibatasi ke series yang dibuka admin (menu "Open Order").
+  const products = useMemo(
+    () => restrictOpenOrderProducts(buildOpenOrderProducts(catalog), settings.open_order_series),
+    [catalog, settings.open_order_series]
+  );
 
   const subtotal = lines.reduce((sum, line) => sum + line.price * line.quantity, 0);
   const total = subtotal + (extraCover ? OPEN_ORDER_ADDON.price : 0) + (shipping?.cost ?? 0);
@@ -232,14 +248,19 @@ export default function OpenOrderWizard() {
 
   const backTo = BACK_TO[step];
 
-  // Periode ditutup dari menu admin "Open Order" → halaman publik hanya menampilkan pesannya.
-  if (!isOpen) {
+  /**
+   * Di luar jendela Open Order (tanggal diatur di menu admin "Open Order"): sebelum tanggal
+   * mulai → belum dibuka, setelah tanggal tutup → tunggu periode berikutnya. Halaman publik
+   * hanya menampilkan pesannya, bukan wizardnya.
+   */
+  if (openState !== "open") {
+    const startLabel = formatDateLabel(settings.open_order_start_date);
     return (
       <section
         className="grid min-h-screen place-items-center px-5"
         style={{ background: "var(--cream)", color: INK, fontFamily: "var(--font-inter), system-ui, sans-serif" }}
       >
-        <div className="max-w-md text-center">
+        <div className="w-full max-w-md text-center">
           <p className="text-[11px] font-medium uppercase tracking-[0.28em]" style={{ color: "var(--gold)" }}>
             Create Your Price
           </p>
@@ -249,9 +270,30 @@ export default function OpenOrderWizard() {
           >
             Open Order <span style={{ color: "var(--gold)" }}>Samaqu</span>
           </h1>
-          <p className="mt-4 text-[13.5px] leading-relaxed" style={{ color: MUTED }}>
-            Open Order sedang ditutup untuk periode {period}. Pantau Instagram SAMAQU untuk jadwal berikutnya.
-          </p>
+
+          <div
+            className="mt-7 rounded-3xl px-6 py-8"
+            style={{ background: "var(--cream-bright)", border: "1px solid rgba(201,183,156,.3)" }}
+          >
+            <span
+              className="mx-auto grid h-12 w-12 place-items-center rounded-full"
+              style={{ background: "rgba(181,140,74,.12)", color: "var(--gold)" }}
+            >
+              <Calendar size={20} />
+            </span>
+            <p className="mt-4 text-[15px] font-semibold" style={{ color: "var(--espresso)" }}>
+              {openState === "before" ? "Open Order belum dibuka" : "Periode Open Order sudah ditutup"}
+            </p>
+            <p className="mt-2 text-[13px] leading-relaxed" style={{ color: MUTED }}>
+              {openState === "before"
+                ? `Jendela Open Order periode ini dibuka ${startLabel || "segera"}.`
+                : `Jendela periode ${period} sudah lewat.`}
+            </p>
+            <p className="mt-4 text-[13.5px] font-medium leading-relaxed" style={{ color: "var(--espresso)" }}>
+              Nanti Open Order berikutnya — pantau Instagram SAMAQU untuk jadwalnya.
+            </p>
+          </div>
+
           <div className="mt-7 flex justify-center gap-2.5">
             <Link
               href={`/${locale}/katalog`}

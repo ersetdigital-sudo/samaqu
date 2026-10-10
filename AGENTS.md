@@ -281,23 +281,40 @@ Page presentation (not obvious from the code):
   detail produk) menggeser bar-nya dengan `bottom-[var(--mobile-nav-h)]` supaya tidak bertumpuk.
   Route group `src/app/(customer)/` (tanpa locale) sengaja tidak disentuh — middleware me-redirect
   semua path toko ke `/<locale>/…`, jadi pohon itu tidak terpakai.
-- **Periode & status Open Order diatur dari dashboard admin** (dulu hardcode `OPEN_ORDER_PERIOD`).
-  Menu sidebar baru **Open Order** → `/admin/open-order` (+ salinan `/id/admin/open-order`), halaman
-  mandiri seperti Voucher yang dirender di dalam `AdminShell`; entrinya harus ditambahkan di
-  `AdminShell`'s `navGroups` **dan** di sidebar dua dashboard admin (keduanya punya sidebar sendiri).
-  Halaman itu menulis `store_settings.open_order_period` + `open_order_active`. `/open-order` membaca
-  keduanya lewat `useStoreSettings()`: `StepCatalog` menampilkan periodenya (fallback ke
-  `OPEN_ORDER_PERIOD` kalau kolomnya kosong), dan kalau `open_order_active` = false `OpenOrderWizard`
-  merender layar "sedang ditutup" alih-alih langkah 1 — murni di klien, route `/api/open-order` tidak
-  berubah.
+- **Jendela Open Order diatur dari dashboard admin** (dulu hardcode `OPEN_ORDER_PERIOD`).
+  Menu sidebar **Open Order** → `/admin/open-order` (+ salinan `/id/admin/open-order`); kedua route
+  hanya merender `src/components/admin/OpenOrderSettingsForm.tsx` di dalam `AdminShell` — formulirnya
+  **satu file** supaya dua halaman itu tidak dobel. (Entri sidebar-nya sendiri masih perlu ada di
+  `AdminShell`'s `navGroups` **dan** di sidebar dua dashboard admin, karena masing-masing punya sidebar.)
+  Admin memilih **tanggal mulai + tanggal tutup** (`<input type="date">`) dan **series yang dibuka**
+  (chip multi-pilih dari katalog); tidak ada lagi toggle buka/tutup manual.
+- Aturan jendela ada di **satu** modul, `src/lib/open-order-window.ts` — dipakai halaman admin
+  *dan* publik: `resolveOpenOrderState()` (`before` / `open` / `closed`, dibandingkan sebagai teks
+  `YYYY-MM-DD` lokal, bukan objek `Date`, supaya tidak bergeser zona waktu),
+  `formatOpenOrderPeriod()` ("8 Agustus 2026 – 15 Agustus 2026"), dan `openOrderSeriesList()`.
+  Tanggalnya belum diisi → `open_order_active` lama dipakai sebagai fallback, jadi perilaku lama
+  tidak berubah sampai admin mengisi tanggal. `OpenOrderWizard` merender layar pesan (bukan langkah 1)
+  untuk `before` ("Open Order belum dibuka" + tanggal mulainya) dan `closed`
+  ("Nanti Open Order berikutnya") — murni di klien.
+- **Batasi series**: `open_order_series` (JSONB array nama series; `[]` = semua series) disaring oleh
+  `restrictOpenOrderProducts()` di `src/lib/open-order-offering.ts` — produk yang tidak punya series
+  terpilih ikut hilang, jadi series yang ditutup tidak muncul di langkah 1 maupun chip series di
+  langkah 2. Route `/api/open-order` menerapkan saringan yang sama (baca `store_settings` dengan
+  admin client) supaya series yang ditutup tidak bisa dipesan lewat request langsung; kalau kolomnya
+  belum ada, select-nya gagal dan dianggap "semua series".
+- `useStoreSettings()` (`src/lib/store-settings.ts`) membawa `open_order_start_date`,
+  `open_order_end_date`, dan `open_order_series` (dinormalkan lewat `openOrderSeriesList`).
 - Kolomnya datang dari **`supabase/open-order-settings.sql` yang harus dijalankan manual** di SQL
   editor Supabase (sandbox tidak punya jalur DDL, sama seperti kolom pengaturan lain). Selama belum
   dijalankan, halaman admin menampilkan peringatan dan simpan akan gagal; halaman publik tetap jalan
   dengan `OPEN_ORDER_PERIOD`.
-  **Sudah dijalankan** (2026-10-10) — `store_settings` punya `open_order_period` +
-  `open_order_active` (baris `id = 1`, periode "8-15 Agustus 2026", aktif `true`), peringatan di
-  halaman admin hilang, dan simpan→muat-ulang halaman terbukti mem-persist nilainya.
-  Cek cepat: `curl -s "$NEXT_PUBLIC_SUPABASE_URL/rest/v1/store_settings?select=id,open_order_period,open_order_active" -H "apikey: $SUPABASE_SERVICE_ROLE_KEY"`.
+  **Sudah dijalankan untuk `open_order_period` + `open_order_active`** (2026-10-10, peringatan di
+  halaman admin hilang dan simpan→muat-ulang terbukti mem-persist).
+  **Kolom baru — `open_order_start_date`, `open_order_end_date`, `open_order_series` (JSONB) — ada di
+  file yang sama dan harus dijalankan ulang** (`ALTER TABLE ... ADD COLUMN IF NOT EXISTS`, jadi aman
+  diulang). Selama belum dijalankan: halaman admin menampilkan peringatan dan simpan gagal, sedangkan
+  halaman publik tetap jalan dengan perilaku lama (tanggal kosong → fallback `open_order_active`).
+  Cek cepat: `curl -s "$NEXT_PUBLIC_SUPABASE_URL/rest/v1/store_settings?select=id,open_order_period,open_order_active,open_order_start_date,open_order_end_date,open_order_series" -H "apikey: $SUPABASE_SERVICE_ROLE_KEY"`.
 - `src/types/lucide-react.d.ts` adalah shim tipe tulis-tangan berisi daftar ikon yang boleh diimpor
   proyek ini — ikon lucide baru (di sini `AlertTriangle`, `LayoutGrid`, `Save`) harus ditambahkan ke
   situ, kalau tidak `tsc` gagal dengan TS2305 walaupun ikonnya ada saat runtime.
