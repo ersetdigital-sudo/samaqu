@@ -74,5 +74,9 @@ key names. Rules that now hold:
 
 ```bash
 curl -s -o /dev/null -w '%{http_code}\n' -L http://localhost:3000/     # expect 200 (redirects to /id)
+curl -s -o /dev/null -w '%{http_code}\n' http://localhost:3000/id/katalog # expect 200, and product cards in the browser
+# If a route that just worked starts returning 404 right after the container is
+# recreated, the bind-mounted .next Turbopack cache has gone stale — `docker compose
+# -f docker-compose.base44.yml restart web` restores it (no code change needed).
 docker compose -f docker-compose.base44.yml ps                          # web must be (healthy)
 ```
