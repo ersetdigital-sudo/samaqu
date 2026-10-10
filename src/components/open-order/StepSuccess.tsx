@@ -6,7 +6,7 @@
 
 import Link from "next/link";
 import { Check } from "lucide-react";
-import { BADGE_BG, BADGE_INK, INK, MUTED, PrimaryButton } from "./ui";
+import { BADGE_BG, BADGE_INK, FIELD_BG, INK, MUTED, PrimaryButton } from "./ui";
 
 export default function StepSuccess({ orderNumber }: { orderNumber: string }) {
   return (
@@ -20,7 +20,7 @@ export default function StepSuccess({ orderNumber }: { orderNumber: string }) {
         Terima kasih, pesanan kamu sudah kami terima.
       </p>
 
-      <div className="mt-7 rounded-2xl p-5 text-left" style={{ background: "#f0f0f0" }}>
+      <div className="mt-7 rounded-2xl p-5 text-left" style={{ background: FIELD_BG, border: "1px solid rgba(201,183,156,.25)" }}>
         <div className="flex items-center justify-between gap-4">
           <span className="text-[12.5px]" style={{ color: MUTED }}>
             Order ID

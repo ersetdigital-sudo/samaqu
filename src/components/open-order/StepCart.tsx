@@ -10,7 +10,7 @@ import type { Product } from "@/lib/katalog-data";
 import { money, openOrderImage } from "@/lib/open-order-catalog";
 import { findOpenOrderProduct, OPEN_ORDER_ADDON } from "@/lib/open-order-config";
 import type { CartLine } from "./types";
-import { Counter, GhostButton, MUTED, PrimaryButton, SummaryRow } from "./ui";
+import { Counter, FIELD_BG, GhostButton, LINE, MUTED, PrimaryButton, SummaryRow } from "./ui";
 
 export function lineName(line: CartLine): string {
   return findOpenOrderProduct(line.productId)?.name ?? line.productId;
@@ -64,8 +64,8 @@ export default function StepCart({
         {lines.map((line) => {
           const image = lineImage(line, catalog);
           return (
-            <div key={line.key} className="flex gap-4 rounded-2xl p-4" style={{ border: "1px solid #e5e5e5" }}>
-              <div className="h-20 w-16 shrink-0 overflow-hidden rounded-xl" style={{ background: "#f0f0f0" }}>
+            <div key={line.key} className="flex gap-4 rounded-2xl p-4" style={{ border: `1px solid ${LINE}`, background: FIELD_BG }}>
+              <div className="h-20 w-16 shrink-0 overflow-hidden rounded-xl" style={{ background: "#e8dfd1" }}>
                 {image && (
                   <img src={cloudinaryUrl(image, { width: 300 })} alt={lineName(line)} className="h-full w-full object-cover" />
                 )}
@@ -86,7 +86,7 @@ export default function StepCart({
                     type="button"
                     onClick={() => onRemove(line.key)}
                     aria-label={`Hapus ${lineName(line)}`}
-                    className="grid h-8 w-8 shrink-0 place-items-center rounded-lg transition-colors duration-200 hover:bg-black/[.05]"
+                    className="grid h-8 w-8 shrink-0 place-items-center rounded-lg transition-colors duration-200 hover:bg-white"
                     style={{ color: MUTED }}
                   >
                     <Trash2 size={15} />
@@ -108,7 +108,7 @@ export default function StepCart({
         type="button"
         onClick={() => onToggleExtra(!extraCover)}
         className="mt-4 flex w-full items-center justify-between gap-4 rounded-2xl px-4 py-3.5 text-left transition-colors duration-200"
-        style={{ border: `1px solid ${extraCover ? "#000" : "#e5e5e5"}` }}
+        style={{ border: `1px solid ${extraCover ? "var(--espresso)" : LINE}` }}
       >
         <span>
           <span className="block text-[13px] font-semibold">{OPEN_ORDER_ADDON.name}</span>
@@ -120,7 +120,7 @@ export default function StepCart({
       </button>
 
       {/* Ringkasan */}
-      <div className="mt-6 rounded-2xl p-5" style={{ background: "#f0f0f0" }}>
+      <div className="mt-6 rounded-2xl p-5" style={{ background: FIELD_BG, border: "1px solid rgba(201,183,156,.25)" }}>
         <SummaryRow label={`Subtotal (${totalQty} produk)`} value={money(subtotal)} strong />
         <p className="mt-2 text-[11.5px] leading-relaxed" style={{ color: MUTED }}>
           Ongkir dihitung otomatis dari kecamatan tujuan di langkah berikutnya.

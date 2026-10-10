@@ -216,11 +216,11 @@ export default function OpenOrderWizard() {
   const backTo = BACK_TO[step];
 
   return (
-    <section className="min-h-screen bg-white" style={{ color: INK, fontFamily: "var(--font-inter), system-ui, sans-serif" }}>
+    <section className="min-h-screen" style={{ background: "var(--cream)", color: INK, fontFamily: "var(--font-inter), system-ui, sans-serif" }}>
       {/* Header + progres langkah */}
       <header
         className="sticky top-0 z-30"
-        style={{ borderBottom: `1px solid ${LINE}`, background: "rgba(255,255,255,.95)", backdropFilter: "blur(8px)" }}
+        style={{ borderBottom: "1px solid rgba(216,196,168,.28)", background: "rgba(248,245,241,.95)", backdropFilter: "blur(8px)" }}
       >
         <div className="mx-auto flex max-w-5xl items-center gap-3 px-5 pt-3.5 pb-3 sm:px-8">
           {backTo ? (
@@ -228,7 +228,7 @@ export default function OpenOrderWizard() {
               type="button"
               onClick={() => setStep(backTo)}
               aria-label="Kembali"
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-full transition-colors duration-200 hover:bg-black/[.05]"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-full transition-colors duration-200 hover:bg-[rgba(181,140,74,.09)]"
               style={{ border: `1px solid ${LINE}` }}
             >
               <ChevronLeft size={16} />
@@ -237,21 +237,21 @@ export default function OpenOrderWizard() {
             <Link
               href="/"
               aria-label="Tutup"
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-full transition-colors duration-200 hover:bg-black/[.05]"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-full transition-colors duration-200 hover:bg-[rgba(181,140,74,.09)]"
               style={{ border: `1px solid ${LINE}` }}
             >
               <X size={16} />
             </Link>
           )}
 
-          <p className="flex-1 text-center text-[12px] font-semibold uppercase tracking-[0.2em]">{STEP_TITLES[step]}</p>
+          <p className="flex-1 text-center text-[12px] font-medium uppercase tracking-[0.2em]">{STEP_TITLES[step]}</p>
 
           <span className="w-9 shrink-0 text-right text-[11.5px] font-medium" style={{ color: MUTED }}>
             {step}/6
           </span>
         </div>
         <div className="mx-auto max-w-5xl px-5 pb-3 sm:px-8">
-          <div className="h-[3px] w-full overflow-hidden rounded-full" style={{ background: "#ececec" }}>
+          <div className="h-[3px] w-full overflow-hidden rounded-full" style={{ background: "rgba(201,183,156,.28)" }}>
             <div
               className="h-full rounded-full transition-all duration-300"
               style={{ background: INK, width: `${(step / 6) * 100}%` }}

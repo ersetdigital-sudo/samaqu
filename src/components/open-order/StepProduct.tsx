@@ -2,6 +2,7 @@
 
 /**
  * Langkah 2 — detail produk: warna, ukuran, series, jumlah, dan Create Your Price.
+ * Tata letak & gaya mengikuti halaman detail produk di katalog (serif espresso + aksen gold).
  * Harga yang diisi customer tidak boleh di bawah harga series terpilih (validasi diulang di server).
  */
 
@@ -11,7 +12,7 @@ import type { Product } from "@/lib/katalog-data";
 import { money, openOrderImage } from "@/lib/open-order-catalog";
 import { findOpenOrderProduct, OPEN_ORDER_SIZES } from "@/lib/open-order-config";
 import type { ProductDraft } from "./types";
-import { Chip, Counter, DANGER, MUTED, PrimaryButton, SectionLabel } from "./ui";
+import { Chip, Counter, DANGER, INK, MUTED, PrimaryButton, SectionLabel } from "./ui";
 
 export default function StepProduct({
   draft,
@@ -55,8 +56,9 @@ export default function StepProduct({
   return (
     <div>
       {/* Foto produk */}
-      <div className="relative aspect-[4/5] overflow-hidden rounded-2xl sm:aspect-[16/11]" style={{ background: "#f0f0f0" }}>
-        {image ? (
+      <div className="relative aspect-[4/5] overflow-hidden rounded-3xl sm:aspect-[16/11]" style={{ background: "#e8dfd1" }}>
+        <div className="absolute inset-0" style={{ background: "linear-gradient(135deg,rgba(232,223,209,.6),rgba(201,183,156,.4))" }} />
+        {image && (
           <img
             src={cloudinaryUrl(image, { width: 1100 })}
             alt={`${product.name} ${draft.color}`}
@@ -65,28 +67,34 @@ export default function StepProduct({
               (e.target as HTMLImageElement).style.display = "none";
             }}
           />
-        ) : (
-          <div className="absolute inset-0" style={{ background: "linear-gradient(150deg,#e5e5e5,#cfcfcf)" }} />
         )}
       </div>
 
       {/* Nama & bahan */}
       <div className="mt-5">
-        <h2 className="text-[19px] font-bold leading-snug">{product.name}</h2>
-        <p className="mt-1.5 text-[12.5px]" style={{ color: MUTED }}>
-          Bahan: Kain {product.kain}
+        <p className="text-[11px] uppercase tracking-[0.28em]" style={{ color: "var(--gold)" }}>
+          Detail Produk
         </p>
-        <p className="text-[12.5px]" style={{ color: MUTED }}>
-          Warna: {draft.color}
+        <h2
+          className="mt-2 text-[1.6rem] font-semibold leading-tight sm:text-[1.9rem]"
+          style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}
+        >
+          {product.name} <span style={{ color: "var(--gold)" }}>— {draft.color}</span>
+        </h2>
+        <p className="mt-1.5 text-[13px]" style={{ color: MUTED }}>
+          Jenis kain <span style={{ color: "var(--gold)" }}>{product.kain}</span>
+          {product.weight
+            ? ` · ${product.weight >= 1000 ? (product.weight / 1000).toFixed(1) + " kg" : product.weight + " g"}`
+            : ""}
         </p>
       </div>
 
       {/* Warna */}
-      <div className="mt-6">
-        <SectionLabel>Warna</SectionLabel>
+      <div className="mt-7">
+        <SectionLabel>Pilih Warna</SectionLabel>
         <div className="mt-2.5 flex flex-wrap gap-2">
           {product.colors.map((color) => (
-            <Chip key={color} active={color === draft.color} onClick={() => onChange({ color })}>
+            <Chip key={color} shape="square" active={color === draft.color} onClick={() => onChange({ color })}>
               {color}
             </Chip>
           ))}
@@ -95,10 +103,10 @@ export default function StepProduct({
 
       {/* Ukuran */}
       <div className="mt-6">
-        <SectionLabel>Ukuran</SectionLabel>
+        <SectionLabel>Pilih Ukuran</SectionLabel>
         <div className="mt-2.5 flex flex-wrap gap-2">
           {OPEN_ORDER_SIZES.map((size) => (
-            <Chip key={size} active={size === draft.size} onClick={() => onChange({ size })}>
+            <Chip key={size} shape="square" active={size === draft.size} onClick={() => onChange({ size })}>
               {size}
             </Chip>
           ))}
@@ -107,17 +115,24 @@ export default function StepProduct({
 
       {/* Series */}
       <div className="mt-6">
-        <SectionLabel>Series</SectionLabel>
+        <SectionLabel>Pilih Series</SectionLabel>
         <div className="mt-2.5 flex flex-wrap gap-2">
-          {product.series.map((option) => (
-            <Chip
-              key={option.name}
-              active={option.name === series.name}
-              onClick={() => onChange({ series: option.name, price: option.price })}
-            >
-              {option.name}
-            </Chip>
-          ))}
+          {product.series.map((option) => {
+            const active = option.name === series.name;
+            return (
+              <Chip
+                key={option.name}
+                shape="square"
+                active={active}
+                onClick={() => onChange({ series: option.name, price: option.price })}
+              >
+                <span className="font-medium">{option.name}</span>
+                <span className="ml-1.5" style={{ color: active ? "rgba(248,245,241,.75)" : "var(--gold)" }}>
+                  mulai dari {money(option.price)}
+                </span>
+              </Chip>
+            );
+          })}
         </div>
       </div>
 
@@ -130,12 +145,17 @@ export default function StepProduct({
       </div>
 
       {/* Create Your Price */}
-      <div className="mt-6 rounded-2xl p-5" style={{ background: "#f0f0f0" }}>
-        <p className="text-[13.5px] font-semibold">Create Your Price</p>
-        <p className="mt-1 text-[11.5px]" style={{ color: MUTED }}>
-          Minimum: {money(minimum)}
+      <div className="mt-6 rounded-2xl p-5" style={{ background: "var(--cream-bright)", border: "1px solid rgba(201,183,156,.25)" }}>
+        <p className="text-[11px] uppercase tracking-[0.12em]" style={{ color: MUTED }}>
+          Harga Minimum
         </p>
-        <div className="mt-3 flex items-center gap-2 rounded-xl bg-white px-4 py-3" style={{ border: "1px solid #e5e5e5" }}>
+        <p className="mt-1 text-[20px] font-semibold tabular-nums" style={{ color: "var(--gold)" }}>
+          {money(minimum)}
+        </p>
+        <p className="mt-1 text-[12px]" style={{ color: MUTED }}>
+          Create Your Price — pilih harga terbaikmu untuk series {series.name}.
+        </p>
+        <div className="mt-3 flex items-center gap-2 rounded-lg bg-white px-4 py-3" style={{ border: "1px solid rgba(201,183,156,.35)" }}>
           <span className="text-[13.5px] font-semibold" style={{ color: MUTED }}>
             Rp
           </span>
@@ -146,6 +166,7 @@ export default function StepProduct({
             aria-label="Harga pilihanmu"
             placeholder={minimum.toLocaleString("id-ID")}
             className="w-full bg-transparent text-[15px] font-semibold tabular-nums outline-none"
+            style={{ color: INK }}
           />
         </div>
         {priceTooLow && (
@@ -160,7 +181,7 @@ export default function StepProduct({
         <span className="text-[12.5px]" style={{ color: MUTED }}>
           Total ({draft.quantity} pcs)
         </span>
-        <span className="text-[17px] font-bold tabular-nums">{money(lineTotal)}</span>
+        <span className="text-[17px] font-semibold tabular-nums">{money(lineTotal)}</span>
       </div>
 
       <div className="mt-4">

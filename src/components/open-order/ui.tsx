@@ -1,18 +1,20 @@
 /**
- * Komponen kecil alur Open Order — gaya monokrom (hitam/putih) sesuai desain referensi.
- * Semua langkah wizard memakai primitif di sini supaya tampilannya konsisten.
+ * Komponen kecil & token warna alur Open Order.
+ * Palet mengikuti halaman katalog SAMAQU (cream / espresso / gold) supaya tampilannya sama.
+ * Semua langkah wizard memakai primitif di sini supaya tetap konsisten.
  */
 
 import type { CSSProperties, ReactNode } from "react";
 import { Minus, Plus } from "lucide-react";
 
-export const INK = "#000000";
-export const MUTED = "#808080";
-export const LINE = "#e5e5e5";
-export const FIELD_BG = "#f0f0f0";
+export const INK = "var(--espresso)";
+export const MUTED = "var(--stone)";
+export const GOLD = "var(--gold)";
+export const LINE = "rgba(201,183,156,.35)";
+export const FIELD_BG = "var(--cream-bright)";
 export const DANGER = "#c0392b";
-export const BADGE_BG = "#fff3cc";
-export const BADGE_INK = "#8a6d1b";
+export const BADGE_BG = "rgba(181,140,74,.12)";
+export const BADGE_INK = "var(--gold-deep)";
 
 export function PrimaryButton({
   children,
@@ -30,8 +32,8 @@ export function PrimaryButton({
       type={type}
       disabled={disabled}
       onClick={onClick}
-      className="w-full rounded-xl px-6 py-4 text-[12.5px] font-semibold uppercase tracking-[0.16em] text-white transition-opacity duration-200 disabled:opacity-40 enabled:hover:opacity-85"
-      style={{ background: INK }}
+      className="w-full rounded-lg px-6 py-3.5 text-[12px] font-medium uppercase tracking-[0.14em] transition-all duration-200 disabled:opacity-40 enabled:hover:opacity-90"
+      style={{ background: INK, color: "var(--cream)" }}
     >
       {children}
     </button>
@@ -52,7 +54,7 @@ export function GhostButton({
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className="w-full rounded-xl px-6 py-3.5 text-[12.5px] font-semibold uppercase tracking-[0.14em] transition-colors duration-200 disabled:opacity-40 hover:bg-black/[.04]"
+      className="w-full rounded-lg px-6 py-3.5 text-[12px] font-medium uppercase tracking-[0.14em] transition-colors duration-200 disabled:opacity-40 hover:bg-[rgba(181,140,74,.09)]"
       style={{ border: `1px solid ${LINE}`, color: INK }}
     >
       {children}
@@ -87,12 +89,12 @@ export function Field({
 }
 
 export const inputClass =
-  "w-full rounded-xl px-4 py-3 text-[13.5px] outline-none transition-shadow duration-200 focus:ring-2 focus:ring-black/10";
+  "w-full rounded-lg px-4 py-3 text-[13.5px] outline-none transition-shadow duration-200 focus:ring-2 focus:ring-[rgba(181,140,74,.25)]";
 
 export const inputStyle: CSSProperties = {
   background: FIELD_BG,
   color: INK,
-  border: "1px solid transparent",
+  border: `1px solid ${LINE}`,
 };
 
 export function TextInput(props: React.ComponentPropsWithoutRef<"input">) {
@@ -103,16 +105,26 @@ export function TextArea(props: React.ComponentPropsWithoutRef<"textarea">) {
   return <textarea {...props} className={`${inputClass} ${props.className ?? ""}`} style={{ ...inputStyle, ...props.style }} />;
 }
 
-export function Chip({ active, onClick, children }: { active: boolean; onClick: () => void; children: ReactNode }) {
+export function Chip({
+  active,
+  onClick,
+  children,
+  shape = "pill",
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: ReactNode;
+  shape?: "pill" | "square";
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="rounded-full px-4 py-2 text-[12.5px] font-medium transition-colors duration-200"
+      className={`${shape === "pill" ? "rounded-full" : "rounded-lg"} px-4 py-2 text-[12.5px] transition-all duration-200`}
       style={
         active
-          ? { background: INK, color: "white", border: `1px solid ${INK}` }
-          : { background: "white", color: INK, border: `1px solid ${LINE}` }
+          ? { background: INK, color: "var(--cream)", border: `1px solid ${INK}` }
+          : { background: FIELD_BG, color: "var(--coffee)", border: `1px solid ${LINE}` }
       }
     >
       {children}
@@ -122,7 +134,7 @@ export function Chip({ active, onClick, children }: { active: boolean; onClick: 
 
 export function SectionLabel({ children }: { children: ReactNode }) {
   return (
-    <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: MUTED }}>
+    <p className="text-[11px] font-medium uppercase tracking-[0.14em]" style={{ color: INK }}>
       {children}
     </p>
   );
@@ -142,7 +154,7 @@ export function Counter({
   const step = (delta: number) => onChange(Math.min(max, Math.max(min, value + delta)));
 
   return (
-    <div className="inline-flex items-center gap-1 rounded-xl p-1" style={{ background: FIELD_BG }}>
+    <div className="inline-flex items-center gap-1 rounded-lg p-1" style={{ background: FIELD_BG, border: `1px solid ${LINE}` }}>
       <button
         type="button"
         onClick={() => step(-1)}

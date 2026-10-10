@@ -10,7 +10,7 @@ import { money } from "@/lib/open-order-catalog";
 import { OPEN_ORDER_ADDON } from "@/lib/open-order-config";
 import type { CartLine, DraftShipping } from "./types";
 import { lineImage, lineName } from "./StepCart";
-import { DANGER, Field, MUTED, PrimaryButton, SummaryRow, TextArea } from "./ui";
+import { DANGER, Field, FIELD_BG, LINE, MUTED, PrimaryButton, SummaryRow, TextArea } from "./ui";
 
 export default function StepReview({
   lines,
@@ -50,8 +50,8 @@ export default function StepReview({
         {lines.map((line) => {
           const image = lineImage(line, catalog);
           return (
-            <div key={line.key} className="flex items-center gap-3.5 rounded-2xl px-4 py-3.5" style={{ border: "1px solid #e5e5e5" }}>
-              <div className="h-14 w-11 shrink-0 overflow-hidden rounded-lg" style={{ background: "#f0f0f0" }}>
+            <div key={line.key} className="flex items-center gap-3.5 rounded-2xl px-4 py-3.5" style={{ border: `1px solid ${LINE}`, background: FIELD_BG }}>
+              <div className="h-14 w-11 shrink-0 overflow-hidden rounded-lg" style={{ background: "#e8dfd1" }}>
                 {image && (
                   <img src={cloudinaryUrl(image, { width: 200 })} alt={lineName(line)} className="h-full w-full object-cover" />
                 )}
@@ -74,7 +74,7 @@ export default function StepReview({
       </div>
 
       {/* Ringkasan */}
-      <div className="mt-6 space-y-2.5 rounded-2xl p-5" style={{ background: "#f0f0f0" }}>
+      <div className="mt-6 space-y-2.5 rounded-2xl p-5" style={{ background: FIELD_BG, border: "1px solid rgba(201,183,156,.25)" }}>
         <SummaryRow label="Subtotal" value={money(subtotal)} />
         {extraCover && <SummaryRow label={OPEN_ORDER_ADDON.name} value={money(addonTotal)} />}
         <SummaryRow
@@ -86,7 +86,7 @@ export default function StepReview({
             Ongkir otomatis belum tersedia — admin akan menghitung dan mengabari kamu.
           </p>
         )}
-        <div className="pt-2.5" style={{ borderTop: "1px solid #dedede" }}>
+        <div className="pt-2.5" style={{ borderTop: `1px solid ${LINE}` }}>
           <SummaryRow label="Total" value={money(total)} strong />
         </div>
       </div>
