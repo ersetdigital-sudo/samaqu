@@ -44,6 +44,54 @@
       "description": "RajaOngkir API key (rajaongkir.com / Komerce dashboard). Optional: shipping cost + destination search. Can also be stored in the DB store_settings row.",
       "requiredAtBoot": false,
       "generatedForDevelopment": false
+    },
+    {
+      "name": "JNT_ORDER_USERNAME",
+      "description": "J&T Express account username (e.g. WITHSAMAQU-DPK01C) — from the J&T integration contact. Needed by /api/shipping/jnt-cost (the route gates on it) and by J&T order creation.",
+      "requiredAtBoot": false,
+      "generatedForDevelopment": false
+    },
+    {
+      "name": "JNT_ORDER_API_KEY",
+      "description": "J&T Express order API key — J&T integration contact. Used when creating a J&T order (AWB).",
+      "requiredAtBoot": false,
+      "generatedForDevelopment": false
+    },
+    {
+      "name": "JNT_ORDER_KEY",
+      "description": "J&T Express order signature key — J&T integration contact (signature = base64(hex(md5(data+key)))).",
+      "requiredAtBoot": false,
+      "generatedForDevelopment": false
+    },
+    {
+      "name": "JNT_TARIFF_KEY",
+      "description": "J&T Express tariff signature key — J&T integration contact. Required for automatic ongkir (open-order form and J&T checkout).",
+      "requiredAtBoot": false,
+      "generatedForDevelopment": false
+    },
+    {
+      "name": "JNT_TARIFF_CUS_NAME",
+      "description": "J&T Express tariff customer name/id (e.g. WITHSAMAQU-DPK01C) — sent as cusName on the tariff request.",
+      "requiredAtBoot": false,
+      "generatedForDevelopment": false
+    },
+    {
+      "name": "JNT_TRACK_USERNAME",
+      "description": "J&T Express tracking username — J&T integration contact.",
+      "requiredAtBoot": false,
+      "generatedForDevelopment": false
+    },
+    {
+      "name": "JNT_TRACK_PASSWORD",
+      "description": "J&T Express tracking password — J&T integration contact.",
+      "requiredAtBoot": false,
+      "generatedForDevelopment": false
+    },
+    {
+      "name": "JNT_COMPANY_ID",
+      "description": "J&T Express company id used by the order/track calls — J&T integration contact.",
+      "requiredAtBoot": false,
+      "generatedForDevelopment": false
     }
   ]
 }

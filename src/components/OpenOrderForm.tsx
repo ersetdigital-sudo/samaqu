@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSafeTranslations } from "@/lib/safe-i18n";
 import {
@@ -23,6 +23,7 @@ interface CustomerForm {
   instagram: string;
   whatsapp: string;
   city: string;
+  district: string;
   address: string;
   notes: string;
 }
@@ -32,9 +33,15 @@ const EMPTY_CUSTOMER: CustomerForm = {
   instagram: "",
   whatsapp: "",
   city: "",
+  district: "",
   address: "",
   notes: "",
 };
+
+interface ShippingOption {
+  service: string;
+  cost: number;
+}
 
 const money = (value: number) => `Rp${value.toLocaleString("id-ID")}`;
 
@@ -75,6 +82,9 @@ export default function OpenOrderForm() {
   const [customer, setCustomer] = useState<CustomerForm>(EMPTY_CUSTOMER);
   const [lines, setLines] = useState<OrderLine[]>([createLine(1)]);
   const [extraCover, setExtraCover] = useState(false);
+  const [shipping, setShipping] = useState<ShippingOption | null>(null);
+  const [loadingOngkir, setLoadingOngkir] = useState(false);
+  const [ongkirError, setOngkirError] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<{ orderNumber: string; total: number } | null>(null);
@@ -84,7 +94,61 @@ export default function OpenOrderForm() {
     0
   );
   const addonTotal = extraCover ? OPEN_ORDER_ADDON.price : 0;
-  const total = subtotal + addonTotal;
+  const ongkir = shipping?.cost ?? 0;
+  const total = subtotal + addonTotal + ongkir;
+
+  // Berat kirim = berat produk (gram) × jumlah + Cover & Hanger kalau dipilih.
+  const totalWeight = Math.max(
+    300,
+    lines.reduce(
+      (sum, line) => sum + (findOpenOrderProduct(line.productId)?.weight ?? 1200) * line.quantity,
+      0
+    ) + (extraCover ? OPEN_ORDER_ADDON.weight : 0)
+  );
+
+  // Ongkir otomatis dari API J&T begitu kecamatan tujuan diketik.
+  useEffect(() => {
+    const district = customer.district.trim();
+    if (district.length < 3) {
+      setShipping(null);
+      setOngkirError(false);
+      setLoadingOngkir(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      setLoadingOngkir(true);
+      setOngkirError(false);
+      try {
+        const res = await fetch("/api/shipping/jnt-cost", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ city: customer.city.trim(), district, weight: totalWeight }),
+          signal: controller.signal,
+        });
+        const json = await res.json();
+        if (!res.ok || !Array.isArray(json.data) || json.data.length === 0) {
+          throw new Error(json.error || "ongkir gagal dihitung");
+        }
+        // Route J&T sudah mengurutkan opsi dari yang termurah.
+        const cheapest = json.data[0];
+        setShipping({ service: cheapest.service || "J&T", cost: cheapest.cost || 0 });
+      } catch (err) {
+        if ((err as Error).name === "AbortError") return;
+        console.error("[OPEN-ORDER] hitung ongkir gagal:", err);
+        setShipping(null);
+        setOngkirError(true);
+      } finally {
+        setLoadingOngkir(false);
+      }
+    }, 1000);
+
+    return () => {
+      controller.abort();
+      clearTimeout(timer);
+    };
+  }, [customer.district, customer.city, totalWeight]);
 
   function setField(field: keyof CustomerForm, value: string) {
     setCustomer((prev) => ({ ...prev, [field]: value }));
@@ -119,6 +183,8 @@ export default function OpenOrderForm() {
     setCustomer(EMPTY_CUSTOMER);
     setLines([createLine(1)]);
     setExtraCover(false);
+    setShipping(null);
+    setOngkirError(false);
     setError("");
     setResult(null);
   }
@@ -131,6 +197,7 @@ export default function OpenOrderForm() {
       !customer.instagram.trim() ||
       !customer.whatsapp.trim() ||
       !customer.city.trim() ||
+      !customer.district.trim() ||
       !customer.address.trim()
     ) {
       setError(t("errorRequired"));
@@ -147,6 +214,7 @@ export default function OpenOrderForm() {
         body: JSON.stringify({
           customer,
           extraCover,
+          shipping: shipping ? { method: `J&T - ${shipping.service}`, cost: shipping.cost } : null,
           items: lines.map((line) => ({
             productId: line.productId,
             series: line.series,
@@ -222,6 +290,9 @@ export default function OpenOrderForm() {
         </Field>
         <Field label={t("city")} required>
           <input value={customer.city} onChange={(e) => setField("city", e.target.value)} className={fieldClass} style={fieldStyle} />
+        </Field>
+        <Field label={t("district")} required hint={t("ongkirHint")}>
+          <input value={customer.district} onChange={(e) => setField("district", e.target.value)} className={fieldClass} style={fieldStyle} placeholder={t("districtPlaceholder")} />
         </Field>
         <div className="sm:col-span-2">
           <Field label={t("address")} required hint={t("addressHint")}>
@@ -329,6 +400,13 @@ export default function OpenOrderForm() {
             <span>{t("addon")}</span>
             <span>{money(addonTotal)}</span>
           </div>
+        )}
+        <div className="flex justify-between text-sm font-ui mt-2" style={{ color: "var(--text-secondary)" }}>
+          <span>{shipping ? `${t("ongkir")} (J&T — ${shipping.service})` : t("ongkir")}</span>
+          <span>{loadingOngkir ? t("ongkirCalculating") : shipping ? money(shipping.cost) : "—"}</span>
+        </div>
+        {ongkirError && (
+          <p className="mt-1.5 text-[11px] font-ui leading-relaxed" style={{ color: "#e74c3c" }}>{t("ongkirError")}</p>
         )}
         <div className="mt-3 pt-3 flex justify-between text-base font-semibold" style={{ borderTop: "1px solid rgba(64,50,37,.12)", color: "var(--espresso)" }}>
           <span>{t("total")}</span>
