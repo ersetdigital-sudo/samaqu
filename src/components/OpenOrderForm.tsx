@@ -44,7 +44,8 @@ const fieldStyle: React.CSSProperties = {
   color: "var(--espresso)",
 };
 
-const fieldClass = "w-full rounded-lg px-3 py-2.5 text-sm outline-none font-ui";
+const fieldClass =
+  "w-full rounded-xl px-3.5 py-3 text-sm outline-none font-ui transition-shadow duration-200 focus:ring-2 focus:ring-[rgba(181,140,74,.35)]";
 
 function createLine(key: number): OrderLine {
   const product = OPEN_ORDER_PRODUCTS[0];
