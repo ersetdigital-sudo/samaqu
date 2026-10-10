@@ -128,6 +128,13 @@ export default function OpenOrderForm() {
           signal: controller.signal,
         });
         const json = await res.json();
+        // J&T belum dikonfigurasi (kredensial belum diisi): ini bukan error, cukup
+        // tampilkan pesan fallback tanpa console.error.
+        if (json.configured === false) {
+          setShipping(null);
+          setOngkirError(true);
+          return;
+        }
         if (!res.ok || !Array.isArray(json.data) || json.data.length === 0) {
           throw new Error(json.error || "ongkir gagal dihitung");
         }
