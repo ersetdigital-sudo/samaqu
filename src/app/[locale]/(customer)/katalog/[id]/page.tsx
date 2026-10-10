@@ -865,7 +865,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       {/* ═══════════════════════════════════════
           MOBILE STICKY BOTTOM BAR
       ═══════════════════════════════════════ */}
-      <div className="md:hidden fixed bottom-0 inset-x-0 z-40"
+      <div className="md:hidden fixed bottom-[var(--mobile-nav-h)] inset-x-0 z-40"
         style={{ background: "var(--cream)", borderTop: "1px solid rgba(201,183,156,.18)", boxShadow: "0 -6px 24px -6px rgba(42,33,27,.1)" }}>
         <div className="px-4 pt-3 pb-4">
           {/* Price row */}

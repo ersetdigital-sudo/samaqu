@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "./supabase";
+import { OPEN_ORDER_PERIOD } from "./open-order-config";
 
 interface StoreSettings {
   store_name: string;
@@ -12,6 +13,10 @@ interface StoreSettings {
   enabled_couriers: string[];
   instagram_url: string;
   cyp_microcopy: string;
+  /** Periode Open Order yang ditampilkan di /open-order — diatur dari menu admin "Open Order". */
+  open_order_period: string;
+  /** Buka/tutup Open Order. false → wizard /open-order menampilkan pesan periode ditutup. */
+  open_order_active: boolean;
 }
 
 const DEFAULTS: StoreSettings = {
@@ -23,6 +28,8 @@ const DEFAULTS: StoreSettings = {
   enabled_couriers: ["jne", "sicepat", "jnt", "ninja", "tiki", "wahana", "pos", "lion", "anteraja"],
   instagram_url: "https://instagram.com/samaqu.id",
   cyp_microcopy: "Harga Minimum boleh dipilih. Itulah alasan kami membuat Create Your Price.",
+  open_order_period: OPEN_ORDER_PERIOD,
+  open_order_active: true,
 };
 
 let cached: StoreSettings = DEFAULTS;

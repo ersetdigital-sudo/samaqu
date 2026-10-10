@@ -1027,7 +1027,7 @@ function CheckoutContent() {
       </main>
 
       {/* Sticky mobile submit bar */}
-      <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 px-4 pb-4 pt-3" style={{ background: "linear-gradient(to top, var(--cream) 70%, transparent)" }}>
+      <div className="lg:hidden fixed bottom-[var(--mobile-nav-h)] inset-x-0 z-40 px-4 pb-4 pt-3" style={{ background: "linear-gradient(to top, var(--cream) 70%, transparent)" }}>
         <button type="submit" form="checkout-form" disabled={submitting} className="w-full rounded-xl py-4 text-sm font-ui font-medium tracking-wide transition-all" style={{ background: "var(--espresso)", color: "var(--cream)" }}>
           {submitting ? "Memproses…" : "Buat Pesanan"}
         </button>

@@ -91,5 +91,9 @@ declare module "lucide-react" {
   export const Target: FC<IconProps>;
   export const Moon: FC<IconProps>;
   export const Sun: FC<IconProps>;
+  // Nav bawah mobile + menu admin "Open Order"
+  export const AlertTriangle: FC<IconProps>;
+  export const LayoutGrid: FC<IconProps>;
+  export const Save: FC<IconProps>;
   export type LucideIcon = FC<IconProps>;
 }
