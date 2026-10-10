@@ -2,7 +2,6 @@
 
 import { createContext, useContext, ReactNode, useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { supabase } from "@/lib/supabase";
 import { getCurrentCustomer } from "@/lib/customer-auth";
 import { useSafeLocale } from "@/lib/safe-i18n";
 
@@ -43,22 +42,26 @@ export function AkunProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let alive = true;
+    // Sudah punya customer (mis. pindah halaman di dalam /akun) — jangan fetch ulang.
+    if (isAuthRoute || customer) { setReady(true); return; }
     async function init() {
-      if (isAuthRoute) { setReady(true); return; }
+      // getCurrentCustomer() sudah mengembalikan email dari session, jadi cukup satu
+      // alur: session (lokal) + satu query `customers`.
       const c = await getCurrentCustomer();
       if (!alive) return;
       if (!c) {
         router.replace(to("/akun/login"));
         return;
       }
-      const { data: { user } } = await supabase.auth.getUser();
-      setCustomer({ ...(c as AkunCustomer), email: user?.email || "" });
+      setCustomer(c as AkunCustomer);
       setReady(true);
     }
     init();
     return () => { alive = false; };
+    // deps cuma pathname: saat keluar dari /akun/login customer belum terisi,
+    // jadi effect harus jalan lagi setelah pindah ke halaman akun.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [pathname]);
 
   return (
     <AkunCtx.Provider value={{ customer, ready }}>

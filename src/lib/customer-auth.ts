@@ -51,10 +51,16 @@ export async function logoutCustomer() {
 }
 
 export async function getCurrentCustomer() {
-  const { data: { user } } = await supabase.auth.getUser();
+  // getSession reads the stored session locally (supabase-js refreshes an expired
+  // token itself) — unlike auth.getUser(), which costs an extra round trip to the
+  // Supabase Auth server on every call. The `customers` read below is RLS-protected,
+  // so an invalid/missing session still resolves to null.
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user;
   if (!user) return null;
   const { data } = await supabase.from("customers").select("*").eq("id", user.id).single();
-  return data;
+  if (!data) return null;
+  return { ...data, email: user.email || "" };
 }
 
 export async function getCustomerOrders(customerId: string) {
