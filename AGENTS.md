@@ -125,10 +125,16 @@ component per step: `StepCatalog`, `StepProduct`, `StepCart`, `StepCustomer`, `S
 `StepSuccess`, plus the `ui.tsx` primitives and `types.ts`. `OpenOrderForm.tsx` and
 `OpenOrderProducts.tsx` were deleted — do not resurrect them.
 
-Presentation is deliberately **monochrome** (black / white / `#f0f0f0` fields / `#fff3cc` status
-badge) with Indonesian copy hardcoded inside the step components: the reference design has no
-gold or espresso and is not part of the i18n flow (the now-unused `openOrder` keys are still in
-`src/i18n/messages/{id,en}.json`).
+Presentation follows the **katalog** look (cream `--cream`, espresso `--espresso`, gold `--gold`,
+Cormorant serif headings) — on request the wizard was switched off the earlier monochrome style.
+The palette lives once in `src/components/open-order/ui.tsx` (`INK`/`MUTED`/`LINE`/`FIELD_BG`/`GOLD`,
+plus `Chip`, `Counter`, `PrimaryButton`, …), so a colour change belongs there, not in each step;
+step components pass those tokens via inline styles. `StepCatalog` cards mirror the katalog
+`ProductCard` (cream-bright card, 3/4 image, serif name, gold "Kain …", outlined "Lihat Detail"
+button) and `StepProduct` mirrors the katalog detail page (gold "Detail Produk" eyebrow, serif
+title, "Pilih Series / Warna / Ukuran" chip rows, cream "Harga Minimum" card). Indonesian copy is
+hardcoded inside the step components and is not part of the i18n flow (the now-unused `openOrder`
+keys are still in `src/i18n/messages/{id,en}.json`).
 
 The offering (products, series, colors, prices, sizes and the Cover & Hanger add-on) is a
 **static** list in `src/lib/open-order-config.ts` — it comes from the form, not from the

@@ -2,10 +2,12 @@
 
 /**
  * Langkah 1 — daftar produk Open Order: filter kain + grid kartu produk (per warna ready stock).
- * Foto dari katalog, harga dari `open-order-config.ts`.
+ * Kartu dibuat sama seperti kartu katalog (serif espresso + aksen gold); foto dari katalog,
+ * harga dari `open-order-config.ts`.
  */
 
 import { useMemo, useState } from "react";
+import { ChevronRight } from "lucide-react";
 import { cloudinaryUrl } from "@/lib/cloudinary";
 import type { Product } from "@/lib/katalog-data";
 import { money, openOrderVariants, priceRange } from "@/lib/open-order-catalog";
@@ -32,13 +34,18 @@ export default function StepCatalog({
 
   return (
     <div>
-      {/* Judul periode */}
+      {/* Judul & periode */}
       <div className="text-center">
-        <h1 className="text-[26px] font-bold uppercase tracking-[0.12em] sm:text-[32px]">OPEN ORDER</h1>
-        <p className="mt-2 text-[13px] font-semibold uppercase tracking-[0.2em]" style={{ color: MUTED }}>
-          SAMAQU
+        <p className="text-[11px] font-medium uppercase tracking-[0.28em]" style={{ color: "var(--gold)" }}>
+          Create Your Price
         </p>
-        <p className="mt-3 text-[13.5px]" style={{ color: INK }}>
+        <h1
+          className="mt-2 text-[1.7rem] font-semibold leading-tight sm:text-[2.2rem]"
+          style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}
+        >
+          Open Order <span style={{ color: "var(--gold)" }}>Samaqu</span>
+        </h1>
+        <p className="mt-1.5 text-[13px]" style={{ color: INK }}>
           Periode {OPEN_ORDER_PERIOD}
         </p>
         <p className="mx-auto mt-3 max-w-xl text-[13px] leading-relaxed" style={{ color: MUTED }}>
@@ -65,34 +72,54 @@ export default function StepCatalog({
             key={variant.key}
             type="button"
             onClick={() => onOpen(variant.product, variant.color)}
-            className="group text-left"
+            className="group flex h-full flex-col overflow-hidden rounded-2xl text-left transition-shadow duration-300 hover:shadow-[0_10px_30px_-18px_rgba(42,33,27,.45)]"
+            style={{ background: "var(--cream-bright)", border: "1px solid rgba(201,183,156,.2)" }}
           >
-            <div className="relative aspect-[4/5] overflow-hidden rounded-2xl" style={{ background: "#f0f0f0" }}>
-              {variant.image ? (
+            <div className="relative aspect-[3/4] overflow-hidden" style={{ background: "#e8dfd1" }}>
+              {/* Gradient kain (terlihat kalau foto gagal dimuat) */}
+              <div
+                className="absolute inset-0 transition-transform duration-700 group-hover:scale-[1.04]"
+                style={{ background: "linear-gradient(135deg,rgba(232,223,209,.6),rgba(201,183,156,.4))" }}
+              />
+              {variant.image && (
                 <img
                   src={cloudinaryUrl(variant.image, { width: 700 })}
                   alt={`${variant.product.name} ${variant.color}`}
                   loading="lazy"
-                  className="absolute inset-0 h-full w-full object-cover transition-transform duration-[900ms] ease-out group-hover:scale-[1.05]"
+                  className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
                   onError={(e) => {
                     (e.target as HTMLImageElement).style.display = "none";
                   }}
                 />
-              ) : (
-                <div className="absolute inset-0" style={{ background: "linear-gradient(150deg,#e5e5e5,#cfcfcf)" }} />
               )}
               <span
-                className="absolute left-3 top-3 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em]"
-                style={{ background: "rgba(255,255,255,.92)", color: "#000" }}
+                className="absolute left-3 top-3 rounded-full px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.12em]"
+                style={{ background: "rgba(248,246,242,.92)", color: "var(--gold)", border: "1px solid rgba(181,140,74,.35)" }}
               >
                 {variant.product.kain}
               </span>
             </div>
-            <h3 className="mt-3 text-[13.5px] font-semibold leading-snug">{variant.product.name}</h3>
-            <p className="mt-0.5 text-[11.5px]" style={{ color: MUTED }}>
-              Warna: {variant.color}
-            </p>
-            <p className="mt-1 text-[12.5px] font-semibold tabular-nums">{priceRange(variant.product)}</p>
+
+            <div className="flex flex-1 flex-col p-3.5 sm:p-4">
+              <h3
+                className="line-clamp-1 text-[15px] font-semibold leading-snug"
+                style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}
+              >
+                {variant.product.name}
+              </h3>
+              <p className="mt-1 text-[11.5px]" style={{ color: "var(--gold)" }}>
+                Kain {variant.product.kain}
+              </p>
+              <p className="mt-0.5 text-[11.5px] line-clamp-1" style={{ color: MUTED }}>
+                Warna: {variant.color}
+              </p>
+              <p className="mt-1.5 text-[12.5px] font-medium tabular-nums" style={{ color: "var(--espresso)" }}>
+                {priceRange(variant.product)}
+              </p>
+              <span className="mt-auto flex w-full items-center justify-center gap-1.5 rounded-lg border border-[var(--espresso)] px-3 py-2.5 pt-3 text-[12.5px] font-medium text-[var(--espresso)] transition-all duration-200 group-hover:bg-[var(--espresso)] group-hover:text-white">
+                Lihat Detail <ChevronRight size={14} strokeWidth={2} />
+              </span>
+            </div>
           </button>
         ))}
       </div>
