@@ -11,10 +11,14 @@ const CACHE_TTL_MS = 10 * 60 * 1000;
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { city, district, weight } = body;
+    // `city` opsional: peta area J&T bisa mencocokkan dari nama kecamatan saja, jadi form
+    // yang hanya meminta kecamatan tetap bisa menghitung ongkir.
+    const city = String(body.city ?? "").trim();
+    const district = String(body.district ?? "").trim();
+    const weight = Number(body.weight);
 
-    if (!city || !district || !weight) {
-      return NextResponse.json({ error: "city, district, weight wajib" }, { status: 400 });
+    if (!district || !weight) {
+      return NextResponse.json({ error: "district dan weight wajib" }, { status: 400 });
     }
 
     const config = getJntConfig();

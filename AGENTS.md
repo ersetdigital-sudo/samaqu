@@ -120,8 +120,9 @@ The old Google Form ("OPEN ORDER SAMAQU — Create Your Price") is now a page on
 **/open-order** (`src/app/[locale]/(customer)/open-order/page.tsx` +
 `src/components/OpenOrderForm.tsx`). The offering (products, series, colors, prices and the
 Cover & Hanger add-on) is a **static** list in `src/lib/open-order-config.ts` — it comes from
-the form, not from the `products` table, so edit that file to change prices. The page's price
-list, the form summary and the server-side validation all read from it.
+the form, not from the `products` table, so edit that file to change prices. Each product also
+carries a shipping `weight` in grams there (used to price J&T shipping). The page's price list,
+the form summary and the server-side validation all read from it.
 
 Submissions POST to **`/api/open-order`** (`src/app/api/open-order/route.ts`; the `[locale]/api`
 copy is the dead duplicate — the live API is the one under `src/app/api/`). The route
@@ -131,11 +132,27 @@ existing admin dashboard (`/[locale]/admin`, "Pesanan" tab) with the normal stat
 
 - `order_number` uses the prefix **`CYO-`** (`SMQ-` = website checkout) — that is how the two
   kinds of order are told apart in the admin list,
-- `shipping_method` `manual` and `shipping_cost` 0: shipping is arranged later by the admin,
+- `shipping_method` = `J&T - <service>` and `shipping_cost` = the J&T tariff for the customer's
+  kecamatan (see the ongkir note below); it falls back to `manual` / 0 when kecamatan is empty
+  or the J&T call fails, and then the admin arranges shipping later,
 - `payment_method` `bank` (legacy value, renders as "Transfer Bank"),
 - `status` `pending`, and `shipping_notes` = `IG @username · <customer note>` — the admin order
   detail renders that as "Catatan", which is where the Instagram handle is read,
 - the Cover & Hanger add-on is one extra `order_items` row (`product_id` `addon-cover-hanger`).
+
+Ongkir (J&T shipping): the form asks for **Kecamatan**; once ~3+ chars are typed the client
+debounces 1s and POSTs `{ city, district, weight }` to **`/api/shipping/jnt-cost`** (the same
+J&T Tariff API the checkout uses, via `src/lib/jnt/*`), keeps the cheapest service and shows it
+as the `Ongkir` line that feeds the bottom `Total`. Weight counts the current lines at the config
+`weight` × qty, plus 300 g for the Cover & Hanger add-on, min 300 g. The picked method/cost ride
+along in the POST body as `shipping: { method, cost }`; `/api/open-order` does **not** re-verify
+the tariff (same trust model as `/api/orders`) — it only clamps the cost to ≥ 0 and folds it into
+`total`. J&T credentials are **required for a price**: `JNT_TARIFF_KEY` + `JNT_TARIFF_CUS_NAME`,
+and the route also gates on `JNT_ORDER_USERNAME`; without them `/api/shipping/jnt-cost` answers
+500 and the form shows the fallback message with the ongkir line at `—` (the order still submits,
+admin prices shipping later). The J&T **testing** credential values this app used before live in
+commit `e48a6fe`; supply them through the platform secrets (`/run/base44/app.env`), never in the
+repo. `JNT_ENV` defaults to `testing`.
 
 No new table: the hosted Supabase project has **no DDL path** from the sandbox (no `exec_sql`
 RPC, `/pg/query` invalid), so a new table would have needed the user to run SQL by hand.

@@ -20,6 +20,8 @@ export interface OpenOrderProduct {
   /** Kode kain untuk kolom `kain` di order_items (juga dipakai mencocokkan produk katalog). */
   kain: string;
   colors: string[];
+  /** Berat kirim per pcs (gram) — dipakai menghitung ongkir J&T di form. */
+  weight: number;
   series: OpenOrderSeries[];
 }
 
@@ -29,6 +31,7 @@ export const OPEN_ORDER_PRODUCTS: OpenOrderProduct[] = [
     name: "Thobe Kain B-01",
     kain: "B-01",
     colors: ["Superblack", "Navy"],
+    weight: 1200,
     series: [
       { name: "Jiharkah", price: 329000 },
       { name: "Nahawand", price: 329000 },
@@ -43,6 +46,7 @@ export const OPEN_ORDER_PRODUCTS: OpenOrderProduct[] = [
     name: "Thobe Kain A-02",
     kain: "A-02",
     colors: ["Charcoal Grey", "Soft Grey"],
+    weight: 1200,
     series: [
       { name: "Jiharkah", price: 324000 },
       { name: "Nahawand", price: 324000 },
@@ -59,6 +63,8 @@ export const OPEN_ORDER_ADDON = {
   id: "addon-cover-hanger",
   name: "Extra Cover & Hanger Samaqu",
   price: 35000,
+  /** Berat kirim tambahan (gram) untuk hitungan ongkir J&T. */
+  weight: 300,
 };
 
 export function findOpenOrderProduct(id: string): OpenOrderProduct | undefined {

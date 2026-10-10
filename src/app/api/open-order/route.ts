@@ -5,11 +5,12 @@ import { findOpenOrderProduct, OPEN_ORDER_ADDON } from "@/lib/open-order-config"
 /**
  * Pesanan dari form Open Order Samaqu (halaman /open-order).
  *
- * Pesanan tanpa ongkir & tanpa metode bayar: admin menghubungi customer (DM Instagram /
- * WhatsApp), mengirim invoice, lalu mengirim barang 1-3 hari setelah transfer.
- * Karena itu order disimpan ke `orders` + `order_items` dengan:
+ * Ongkir dihitung di client lewat API J&T (`/api/shipping/jnt-cost`) dari kecamatan tujuan,
+ * lalu ikut dikirim bersama pesanan. Pesanan disimpan ke `orders` + `order_items` dengan:
  * - nomor pesanan berawalan `CYO-` (membedakan dari pesanan checkout website),
- * - `shipping_method` = "manual" dan `shipping_cost` = 0 (ongkir menyusul dari admin),
+ * - `shipping_method` = "J&T - <service>" dan `shipping_cost` = tarif J&T; kalau customer
+ *   belum mengisi kecamatan atau hitungannya gagal, jatuh ke "manual" / 0 dan admin
+ *   menghitung ongkir menyusul,
  * - `status` = "pending" supaya muncul di dashboard admin sebagai pesanan baru.
  *
  * Harga TIDAK dipercaya dari client: selalu diambil ulang dari OPEN_ORDER_PRODUCTS.
@@ -60,10 +61,11 @@ export async function POST(request: NextRequest) {
     const instagram = String(rawCustomer.instagram ?? "").trim().replace(/^@/, "");
     const whatsapp = String(rawCustomer.whatsapp ?? "").trim();
     const city = String(rawCustomer.city ?? "").trim();
+    const district = String(rawCustomer.district ?? "").trim();
     const address = String(rawCustomer.address ?? "").trim();
     const note = String(rawCustomer.notes ?? "").trim();
 
-    if (!name || !instagram || !whatsapp || !city || !address) {
+    if (!name || !instagram || !whatsapp || !city || !district || !address) {
       return NextResponse.json({ error: "Data pemesan belum lengkap" }, { status: 400 });
     }
 
@@ -104,7 +106,16 @@ export async function POST(request: NextRequest) {
     const extraCover = body.extraCover === true;
     const subtotal = validatedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
     const addonTotal = extraCover ? OPEN_ORDER_ADDON.price : 0;
-    const total = subtotal + addonTotal;
+
+    // Ongkir J&T sudah dihitung di client dari kecamatan tujuan (API key tidak pernah sampai
+    // ke browser) — sama seperti /api/orders, nilainya tidak diverifikasi ulang di sini.
+    // Kalau kosong (kecamatan belum diisi / hitungan gagal), pesanan tetap masuk sebagai
+    // "manual" dan admin menghitung ongkir menyusul.
+    const rawShipping = body.shipping ?? {};
+    const shippingCost = Math.max(0, Math.round(Number(rawShipping.cost) || 0));
+    const shippingMethod = String(rawShipping.method ?? "").trim() || "manual";
+
+    const total = subtotal + addonTotal + shippingCost;
     const orderNumber = generateOrderNumber();
 
     const supabaseAdmin = getSupabaseAdmin();
@@ -117,9 +128,9 @@ export async function POST(request: NextRequest) {
         customer_email: null,
         customer_whatsapp: whatsapp,
         shipping_address: address,
-        shipping_city: city,
-        shipping_method: "manual",
-        shipping_cost: 0,
+        shipping_city: [district, city].filter(Boolean).join(", "),
+        shipping_method: shippingMethod,
+        shipping_cost: shippingCost,
         payment_method: "bank",
         subtotal,
         discount: 0,
