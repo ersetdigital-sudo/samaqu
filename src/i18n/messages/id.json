@@ -41,7 +41,8 @@
   "caraPesan": {
     "eyebrow": "MUDAH & TERARAH",
     "title": "Cara Pemesanan",
-    "subtitle": "<strong>Ada dua cara untuk memesan:</strong> belanja langsung melalui website atau konsultasikan kebutuhanmu dengan admin melalui WhatsApp.",
+    "subtitleLead": "Ada dua cara untuk memesan:",
+    "subtitle": "belanja langsung melalui website atau konsultasikan kebutuhanmu dengan admin melalui WhatsApp.",
     "step1Title": "Pilih Produk",
     "step1Desc": "Temukan produk yang kamu suka dan lihat detailnya di katalog.",
     "step2Title": "Cek Ukuran",

@@ -41,7 +41,8 @@
   "caraPesan": {
     "eyebrow": "SIMPLE & GUIDED",
     "title": "How to Order",
-    "subtitle": "<strong>There are two ways to order:</strong> shop directly through the website or consult your needs with our admin via WhatsApp.",
+    "subtitleLead": "There are two ways to order:",
+    "subtitle": "shop directly through the website or consult your needs with our admin via WhatsApp.",
     "step1Title": "Choose Product",
     "step1Desc": "Find a product you like and view its details in the catalog.",
     "step2Title": "Check Size",
