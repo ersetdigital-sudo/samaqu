@@ -149,15 +149,23 @@ title, "Pilih Series / Warna / Ukuran" chip rows, cream "Harga Minimum" card). I
 hardcoded inside the step components and is not part of the i18n flow (the now-unused `openOrder`
 keys are still in `src/i18n/messages/{id,en}.json`).
 
-The offering (products, series, colors, prices, sizes and the Cover & Hanger add-on) is a
-**static** list in `src/lib/open-order-config.ts` — it comes from the form, not from the
-`products` table, so edit that file to change prices. Each product also carries a shipping
-`weight` in grams there, and `OPEN_ORDER_SIZES` (S–XXL) is the size list the wizard offers and
-the API validates against. Client prices are never trusted (see the API notes below).
-`src/lib/open-order-catalog.ts` holds the shared display helpers: `money`, series price tiers,
-catalog photo matching, and `openOrderVariants` — one card per config product × ready-stock
-color, which is what the step-1 grid renders (the catalog only supplies the photo; prices still
-come from the config).
+The offering — which kain are sold, their ready-stock colors, the series names and the minimum
+price per series — is **derived from the catalog `products` table**, not written by hand.
+`src/lib/open-order-offering.ts` → `buildOpenOrderProducts(rows)` groups Thobe rows by their
+`jenis_kain` code and takes each row's color from the product name (`"Thobe Navy"` → `Navy`), its
+`series`, and its `minimum_price` as the Create-Your-Price floor (fallback `price`); one catalog
+row is one kain × warna × series combination, so changing a price or adding a color in the
+catalog is enough — no code edit. Scope is `category === "Thobe"`. The input type
+`OpenOrderCatalogRow` is structural, so the same function serves the client (from `getProducts()`,
+which embeds `jenis_kain(*)`) and the API route (admin client, same embed).
+
+Only what is not catalog data stays static in `src/lib/open-order-config.ts`: `OPEN_ORDER_PERIOD`,
+the `OPEN_ORDER_ADDON` (Cover & Hanger) price/weight, and `OPEN_ORDER_SIZES` (S–XXL, the size list
+the wizard offers and the API validates against — these `products` rows carry no sizes). A derived
+product's shipping `weight` comes from the catalog rows too. Client prices are never trusted (see
+the API notes below). `src/lib/open-order-catalog.ts` holds the shared display helpers: `money`,
+series price tiers, catalog photo matching, and `openOrderVariants(products, catalog)` — one card
+per derived product × ready-stock color, which is what the step-1 grid renders.
 
 Step 2 (detail produk) shows the **real catalog photos**, not the single thumbnail: `catalogProductFor`
 + `openOrderGallery` look up the `products` row for the selected **kain + warna + series** (in the live
@@ -168,9 +176,11 @@ the small card/cart thumbnails). Switching a warna or series chip swaps the gall
 the first photo.
 
 Submissions POST to **`/api/open-order`** (`src/app/api/open-order/route.ts`; the `[locale]/api`
-copy is the dead duplicate — the live API is the one under `src/app/api/`). The route
-re-validates product/series/color/quantity and prices from the config (client prices are never
-trusted) and writes ordinary rows into **`orders` + `order_items`**, so they appear in the
+copy is the dead duplicate — the live API is the one under `src/app/api/`). The route re-reads
+`products` (+ `jenis_kain`) with the admin client, rebuilds the offering via
+`buildOpenOrderProducts()` and re-validates product/series/color/quantity and the price floor
+against it (client prices are never trusted), then writes ordinary rows into
+**`orders` + `order_items`**, so they appear in the
 existing admin dashboard (`/[locale]/admin`, "Pesanan" tab) with the normal status flow:
 
 - `order_number` uses the prefix **`CYO-`** (`SMQ-` = website checkout) — that is how the two
@@ -189,7 +199,7 @@ existing admin dashboard (`/[locale]/admin`, "Pesanan" tab) with the normal stat
 - `order_items.size` comes from the wizard's size chips and is validated against
   `OPEN_ORDER_SIZES` — it used to be hardcoded `null`,
 - **Create Your Price**: the wizard's detail step sends the customer's chosen `price` per item.
-  The route clamps it to the selected series price (`price = max(series.price, client price)`,
+  The route clamps it to the selected series' catalog minimum price (`price = max(series.price, client price)`,
   so a client can never go below the minimum) and stores `price` + `customer_price` = that
   value with `minimum_price` = the series price — exactly the pair the admin order detail
   already renders as `Min: … · Dipilih: …`. The add-on row keeps both columns `null`. Anything
@@ -200,8 +210,8 @@ existing admin dashboard (`/[locale]/admin`, "Pesanan" tab) with the normal stat
 Ongkir (J&T shipping): the form asks for **Kecamatan**; once ~3+ chars are typed the client
 debounces 1s and POSTs `{ city, district, weight }` to **`/api/shipping/jnt-cost`** (the same
 J&T Tariff API the checkout uses, via `src/lib/jnt/*`), keeps the cheapest service and shows it
-as the `Ongkir` line that feeds the bottom `Total`. Weight counts the current lines at the config
-`weight` × qty, plus 300 g for the Cover & Hanger add-on, min 300 g. The picked method/cost ride
+as the `Ongkir` line that feeds the bottom `Total`. Weight counts the current lines at each
+product's catalog `weight` × qty, plus 300 g for the Cover & Hanger add-on, min 300 g. The picked method/cost ride
 along in the POST body as `shipping: { method, cost }`; `/api/open-order` does **not** re-verify
 the tariff (same trust model as `/api/orders`) — it only clamps the cost to ≥ 0 and folds it into
 `total`. J&T credentials are **required for a price**: `JNT_TARIFF_KEY` + `JNT_TARIFF_CUS_NAME`,

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
-import { findOpenOrderProduct, OPEN_ORDER_ADDON, OPEN_ORDER_SIZES } from "@/lib/open-order-config";
+import { OPEN_ORDER_ADDON, OPEN_ORDER_SIZES } from "@/lib/open-order-config";
+import { buildOpenOrderProducts, findOpenOrderProduct, type OpenOrderCatalogRow } from "@/lib/open-order-offering";
 
 /**
  * Pesanan dari alur Open Order Samaqu (halaman /open-order, 6 langkah).
@@ -13,7 +14,9 @@ import { findOpenOrderProduct, OPEN_ORDER_ADDON, OPEN_ORDER_SIZES } from "@/lib/
  *   menghitung ongkir menyusul,
  * - `status` = "pending" supaya muncul di dashboard admin sebagai pesanan baru.
  *
- * Harga produk/series tidak dipercaya dari client: diambil ulang dari OPEN_ORDER_PRODUCTS.
+ * Harga produk/series tidak dipercaya dari client: baris katalog (`products`) dibaca ulang di
+ * sini lewat `buildOpenOrderProducts()` — sumber yang sama dengan wizard — lalu dipakai
+ * memvalidasi.
  * Yang datang dari client hanyalah harga pilihan customer (Create Your Price) — itu di-clamp
  * supaya tidak pernah di bawah harga series terpilih, lalu disimpan di `price` +
  * `customer_price`, dengan `minimum_price` = harga series-nya (dibaca admin sebagai
@@ -84,10 +87,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Pesanan masih kosong" }, { status: 400 });
     }
 
+    const supabaseAdmin = getSupabaseAdmin();
+
+    // Penawaran Open Order diturunkan dari katalog (sama seperti wizard), jadi harga/warna/
+    // series yang berlaku selalu yang ada di tabel `products` — bukan yang dikirim client.
+    const { data: catalogRows, error: catalogError } = await supabaseAdmin
+      .from("products")
+      .select("*, jenis_kain(*)")
+      .eq("category", "Thobe");
+
+    if (catalogError) {
+      console.error("[OPEN-ORDER] Catalog fetch error:", catalogError);
+      return NextResponse.json({ error: "Gagal membaca katalog" }, { status: 500 });
+    }
+
+    const products = buildOpenOrderProducts((catalogRows ?? []) as OpenOrderCatalogRow[]);
+    if (products.length === 0) {
+      return NextResponse.json({ error: "Katalog Open Order belum tersedia" }, { status: 400 });
+    }
+
     const validatedItems: ValidatedItem[] = [];
 
     for (const item of rawItems) {
-      const product = findOpenOrderProduct(String(item.productId ?? ""));
+      const product = findOpenOrderProduct(products, String(item.productId ?? ""));
       const series = product?.series.find((s) => s.name === item.series);
       const color = String(item.color ?? "");
       const size = String(item.size ?? "");
@@ -137,8 +159,6 @@ export async function POST(request: NextRequest) {
 
     const total = subtotal + addonTotal + shippingCost;
     const orderNumber = generateOrderNumber();
-
-    const supabaseAdmin = getSupabaseAdmin();
 
     const { data: order, error: orderError } = await supabaseAdmin
       .from("orders")

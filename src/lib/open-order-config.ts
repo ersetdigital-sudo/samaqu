@@ -1,62 +1,14 @@
 /**
- * Konfigurasi Open Order Samaqu — Create Your Price.
+ * Pengaturan Open Order Samaqu yang TIDAK berasal dari katalog.
  *
- * Sumber harga: form Open Order Samaqu yang sebelumnya dipakai lewat Google Form,
- * sekarang dipindahkan ke halaman /open-order.
+ * Daftar produk — kain, warna, series, dan harga — tidak lagi ditulis di sini: semuanya
+ * diturunkan dari tabel `products` lewat `buildOpenOrderProducts()` di
+ * `src/lib/open-order-offering.ts`, supaya perubahan harga/warna di katalog langsung
+ * terpakai di wizard.
  *
- * Alur pesanan di halaman /open-order (komponen di src/components/open-order/) dan
- * validasi server-side (/api/open-order) semuanya membaca dari file ini — ubah daftar
- * produk/series/harga di sini saja.
+ * Yang tetap statis di file ini hanya hal yang memang bukan data katalog: periode Open
+ * Order, add-on Cover & Hanger, dan daftar ukuran.
  */
-
-export interface OpenOrderSeries {
-  name: string;
-  price: number;
-}
-
-export interface OpenOrderProduct {
-  id: string;
-  name: string;
-  /** Kode kain untuk kolom `kain` di order_items (juga dipakai mencocokkan produk katalog). */
-  kain: string;
-  colors: string[];
-  /** Berat kirim per pcs (gram) — dipakai menghitung ongkir J&T di form. */
-  weight: number;
-  series: OpenOrderSeries[];
-}
-
-export const OPEN_ORDER_PRODUCTS: OpenOrderProduct[] = [
-  {
-    id: "thobe-b01",
-    name: "Thobe Kain B-01",
-    kain: "B-01",
-    colors: ["Superblack", "Navy"],
-    weight: 1200,
-    series: [
-      { name: "Jiharkah", price: 329000 },
-      { name: "Nahawand", price: 329000 },
-      { name: "Imron", price: 344000 },
-      { name: "Bayati", price: 344000 },
-      { name: "Karim", price: 344000 },
-      { name: "Imalah", price: 344000 },
-    ],
-  },
-  {
-    id: "thobe-a02",
-    name: "Thobe Kain A-02",
-    kain: "A-02",
-    colors: ["Charcoal Grey", "Soft Grey"],
-    weight: 1200,
-    series: [
-      { name: "Jiharkah", price: 324000 },
-      { name: "Nahawand", price: 324000 },
-      { name: "Imron", price: 339000 },
-      { name: "Bayati", price: 339000 },
-      { name: "Karim", price: 339000 },
-      { name: "Imalah", price: 339000 },
-    ],
-  },
-];
 
 /** Periode Open Order yang sedang dibuka — ditampilkan di bawah judul /open-order. */
 export const OPEN_ORDER_PERIOD = "8-15 Agustus 2026";
@@ -70,21 +22,5 @@ export const OPEN_ORDER_ADDON = {
   weight: 300,
 };
 
-export function findOpenOrderProduct(id: string): OpenOrderProduct | undefined {
-  return OPEN_ORDER_PRODUCTS.find((product) => product.id === id);
-}
-
-/** Harga per pcs untuk kombinasi produk + series. `null` kalau kombinasinya tidak valid. */
-export function openOrderItemPrice(productId: string, seriesName: string): number | null {
-  const series = findOpenOrderProduct(productId)?.series.find((s) => s.name === seriesName);
-  return series ? series.price : null;
-}
-
 /** Ukuran yang bisa dipilih customer — tersimpan di kolom `size` (order_items). */
 export const OPEN_ORDER_SIZES = ["S", "M", "L", "XL", "XXL"];
-
-/** Harga series terendah = batas "Minimum" di Create Your Price (juga harga awal produk). */
-export function openOrderMinPrice(productId: string): number {
-  const prices = findOpenOrderProduct(productId)?.series.map((s) => s.price) ?? [];
-  return prices.length ? Math.min(...prices) : 0;
-}

@@ -11,22 +11,25 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cloudinaryUrl } from "@/lib/cloudinary";
 import type { Product } from "@/lib/katalog-data";
 import { money, openOrderGallery } from "@/lib/open-order-catalog";
-import { findOpenOrderProduct, OPEN_ORDER_SIZES } from "@/lib/open-order-config";
+import { OPEN_ORDER_SIZES } from "@/lib/open-order-config";
+import { findOpenOrderProduct, type OpenOrderProduct } from "@/lib/open-order-offering";
 import type { ProductDraft } from "./types";
 import { Chip, Counter, DANGER, INK, MUTED, PrimaryButton, SectionLabel } from "./ui";
 
 export default function StepProduct({
   draft,
+  products,
   catalog,
   onChange,
   onAdd,
 }: {
   draft: ProductDraft;
+  products: OpenOrderProduct[];
   catalog: Product[];
   onChange: (patch: Partial<ProductDraft>) => void;
   onAdd: (line: ProductDraft) => void;
 }) {
-  const product = findOpenOrderProduct(draft.productId);
+  const product = findOpenOrderProduct(products, draft.productId);
   const series = product?.series.find((s) => s.name === draft.series) ?? product?.series[0];
   const [price, setPrice] = useState(draft.price);
   const [photo, setPhoto] = useState(0);
