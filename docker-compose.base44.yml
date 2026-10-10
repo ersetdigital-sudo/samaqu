@@ -1,0 +1,57 @@
+# Base44 sandbox runbook for SAMAQU.
+# Runs the Next.js app from the cloned source (bind mount) with `next dev`, so edits
+# appear in the preview without rebuilding images.
+#
+# Bring up:  docker compose -f docker-compose.base44.yml up -d --build
+#
+# The app is Supabase-backed (hosted Supabase — there is no local database service here).
+# Supabase credentials are user-supplied secrets delivered by the platform to
+# /run/base44/app.env. Placeholders to keep the app booting live in .base44/env.defaults,
+# which is loaded FIRST so real secrets always win.
+#
+# Preview URL: http://localhost:3000  (public: https://3000-$BASE44_PUBLIC_HOST_SUFFIX)
+
+services:
+  web:
+    image: node:22
+    working_dir: /app
+    # Install/sync deps from the lockfile after the bind mount is available, then run
+    # the live-reload dev server. The lockfile stamp makes restarts fast while still
+    # re-syncing whenever package-lock.json changes.
+    command:
+      - sh
+      - -ec
+      - |
+        if [ ! -f node_modules/.base44-lock ] || ! cmp -s package-lock.json node_modules/.base44-lock; then
+          echo "[base44] syncing node_modules from package-lock.json"
+          npm ci --no-audit --no-fund
+          cp package-lock.json node_modules/.base44-lock
+        fi
+        exec npx next dev --hostname 0.0.0.0 --port 3000
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+    environment:
+      # Passed through from the sandbox environment (never hardcoded).
+      - BASE44_PREVIEW_MODE
+      - BASE44_PUBLIC_HOST_SUFFIX
+      - NEXT_TELEMETRY_DISABLED=1
+      # Bind mounts can swallow inotify events; keep hot reload firing.
+      - WATCHPACK_POLLING=true
+      - CHOKIDAR_USEPOLLING=true
+    env_file:
+      - ./.base44/env.defaults
+      - /run/base44/app.env
+    healthcheck:
+      # Probes the actual HTTP surface (Next dev answers / with a redirect that fetch follows).
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.status<500?0:1)).catch(()=>process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 240s
+    restart: on-failure
