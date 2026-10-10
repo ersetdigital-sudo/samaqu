@@ -18,6 +18,10 @@ export interface CustomerData {
   name: string;
   whatsapp: string;
   address: string;
+  /** Kode/nama wilayah RajaOngkir — dipilih lewat dropdown di langkah 4 (lihat LocationPicker). */
+  provinceId: string;
+  cityId: string;
+  districtId: string;
   district: string;
   city: string;
   postalCode: string;
@@ -28,6 +32,9 @@ export const EMPTY_CUSTOMER: CustomerData = {
   name: "",
   whatsapp: "",
   address: "",
+  provinceId: "",
+  cityId: "",
+  districtId: "",
   district: "",
   city: "",
   postalCode: "",
