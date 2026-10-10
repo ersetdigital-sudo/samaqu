@@ -2,7 +2,6 @@ import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { locales } from "@/i18n/config";
-import RootLayout from "@/app/layout";
 
 export default async function LocaleLayout({
   children,
@@ -18,9 +17,9 @@ export default async function LocaleLayout({
 
   const messages = await getMessages();
 
-  return (
-    <NextIntlClientProvider messages={messages}>
-      <RootLayout>{children}</RootLayout>
-    </NextIntlClientProvider>
-  );
+  // Root layout (src/app/layout.tsx) sudah merender <html>/<body> + <Providers> untuk
+  // seluruh route; me-render RootLayout lagi di sini membuat <html> bersarang di dalam
+  // <body> (hydration error) sekaligus menggandakan tiap provider. Layout locale cukup
+  // menambahkan provider pesan next-intl.
+  return <NextIntlClientProvider messages={messages}>{children}</NextIntlClientProvider>;
 }

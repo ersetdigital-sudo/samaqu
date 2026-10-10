@@ -21,8 +21,20 @@ export const JNT_AREAS: JntAreaRow[] = (rawRows as string[]).map((line) => {
 
 const norm = (s: string) => s.trim().toUpperCase();
 
+/**
+ * Nama kota RajaOngkir tidak memakai prefix administratif ("DEPOK"), sedangkan dataset J&T
+ * memakainya ("KOTA DEPOK", "KAB. BOGOR", "KOTA ADM. JAKARTA TIMUR"). Prefix itu dibuang
+ * supaya kota yang sama bisa dicocokkan — penting untuk nama kecamatan yang muncul di lebih
+ * dari satu kota (mis. "CIPAYUNG" ada di Depok dan Jakarta Timur).
+ */
+const stripCityPrefix = (city: string) =>
+  norm(city)
+    .replace(/^(KOTA|KAB\.|KABUPATEN)?\s*(ADM\.)?\s*/, "")
+    .trim();
+
 // ─── Indexes (built once at module load) ───
 const byLocalDistrict = new Map<string, JntAreaRow>(); // "KEC|KOTA"
+const byDistrictAndCity = new Map<string, JntAreaRow>(); // "KEC|KOTA-TANPA-PREFIX"
 const byLocalDistrictOnly = new Map<string, JntAreaRow[]>(); // "KEC"
 const byJntDistrict = new Map<string, JntAreaRow>(); // "JNTKEC|JNTKOTA"
 const cityToCode3 = new Map<string, string>(); // "LOCAL_KOTA" | "JNT_KOTA" → code3
@@ -34,6 +46,10 @@ const cityToFirstRow = new Map<string, JntAreaRow>(); // "LOCAL_KOTA" | "JNT_KOT
 for (const r of JNT_AREAS) {
   const k1 = `${norm(r.localDistrict)}|${norm(r.localCity)}`;
   if (!byLocalDistrict.has(k1)) byLocalDistrict.set(k1, r);
+  const kn = `${norm(r.localDistrict)}|${stripCityPrefix(r.localCity)}`;
+  if (!byDistrictAndCity.has(kn)) byDistrictAndCity.set(kn, r);
+  const knJnt = `${norm(r.jntDistrict)}|${stripCityPrefix(r.jntCity)}`;
+  if (!byDistrictAndCity.has(knJnt)) byDistrictAndCity.set(knJnt, r);
   const k2 = norm(r.localDistrict);
   if (!byLocalDistrictOnly.has(k2)) byLocalDistrictOnly.set(k2, []);
   byLocalDistrictOnly.get(k2)!.push(r);
@@ -65,13 +81,19 @@ function findRow(city: string, district: string): JntAreaRow | null {
     byJntDistrict.get(`${d}|${c}`);
   if (exact) return exact;
 
-  // 2. District-only match (multiple cities may share a district name)
+  // 2. District + city, mengabaikan prefix administratif kota (nama dari RajaOngkir)
+  if (d && c) {
+    const cityAware = byDistrictAndCity.get(`${d}|${stripCityPrefix(c)}`);
+    if (cityAware) return cityAware;
+  }
+
+  // 3. District-only match (multiple cities may share a district name)
   if (d) {
     const districtMatch = byLocalDistrictOnly.get(d)?.[0];
     if (districtMatch) return districtMatch;
   }
 
-  // 3. City-only fallback
+  // 4. City-only fallback
   return cityToFirstRow.get(c) || null;
 }
 

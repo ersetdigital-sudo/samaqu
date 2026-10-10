@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
-import { findOpenOrderProduct, OPEN_ORDER_ADDON } from "@/lib/open-order-config";
+import { OPEN_ORDER_ADDON, OPEN_ORDER_SIZES } from "@/lib/open-order-config";
+import {
+  buildOpenOrderProducts,
+  findOpenOrderProduct,
+  restrictOpenOrderProducts,
+  type OpenOrderCatalogRow,
+} from "@/lib/open-order-offering";
+import { openOrderSeriesList } from "@/lib/open-order-window";
 
 /**
- * Pesanan dari form Open Order Samaqu (halaman /open-order).
+ * Pesanan dari alur Open Order Samaqu (halaman /open-order, 6 langkah).
  *
  * Ongkir dihitung di client lewat API J&T (`/api/shipping/jnt-cost`) dari kecamatan tujuan,
  * lalu ikut dikirim bersama pesanan. Pesanan disimpan ke `orders` + `order_items` dengan:
@@ -13,14 +20,23 @@ import { findOpenOrderProduct, OPEN_ORDER_ADDON } from "@/lib/open-order-config"
  *   menghitung ongkir menyusul,
  * - `status` = "pending" supaya muncul di dashboard admin sebagai pesanan baru.
  *
- * Harga TIDAK dipercaya dari client: selalu diambil ulang dari OPEN_ORDER_PRODUCTS.
+ * Harga produk/series tidak dipercaya dari client: baris katalog (`products`) dibaca ulang di
+ * sini lewat `buildOpenOrderProducts()` — sumber yang sama dengan wizard — lalu dipakai
+ * memvalidasi.
+ * Yang datang dari client hanyalah harga pilihan customer (Create Your Price) — itu di-clamp
+ * supaya tidak pernah di bawah harga series terpilih, lalu disimpan di `price` +
+ * `customer_price`, dengan `minimum_price` = harga series-nya (dibaca admin sebagai
+ * "Min: … · Dipilih: …"). Ukuran divalidasi terhadap OPEN_ORDER_SIZES.
  */
 
 interface OpenOrderItemInput {
   productId?: string;
   series?: string;
   color?: string;
+  size?: string;
   quantity?: number;
+  /** Harga pilihan customer (Create Your Price). */
+  price?: number;
 }
 
 interface ValidatedItem {
@@ -32,6 +48,7 @@ interface ValidatedItem {
   kain: string | null;
   quantity: number;
   price: number;
+  minimumPrice: number;
 }
 
 interface OrderItemRow {
@@ -44,6 +61,8 @@ interface OrderItemRow {
   price: number;
   series: string | null;
   kain: string | null;
+  customer_price: number | null;
+  minimum_price: number | null;
 }
 
 function generateOrderNumber(): string {
@@ -63,9 +82,10 @@ export async function POST(request: NextRequest) {
     const city = String(rawCustomer.city ?? "").trim();
     const district = String(rawCustomer.district ?? "").trim();
     const address = String(rawCustomer.address ?? "").trim();
+    const postalCode = String(rawCustomer.postalCode ?? "").trim();
     const note = String(rawCustomer.notes ?? "").trim();
 
-    if (!name || !instagram || !whatsapp || !city || !district || !address) {
+    if (!name || !whatsapp || !city || !district || !address) {
       return NextResponse.json({ error: "Data pemesan belum lengkap" }, { status: 400 });
     }
 
@@ -73,12 +93,45 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Pesanan masih kosong" }, { status: 400 });
     }
 
+    const supabaseAdmin = getSupabaseAdmin();
+
+    // Penawaran Open Order diturunkan dari katalog (sama seperti wizard), jadi harga/warna/
+    // series yang berlaku selalu yang ada di tabel `products` — bukan yang dikirim client.
+    const { data: catalogRows, error: catalogError } = await supabaseAdmin
+      .from("products")
+      .select("*, jenis_kain(*)")
+      .eq("category", "Thobe");
+
+    if (catalogError) {
+      console.error("[OPEN-ORDER] Catalog fetch error:", catalogError);
+      return NextResponse.json({ error: "Gagal membaca katalog" }, { status: 500 });
+    }
+
+    // Series yang dibuka diatur admin (menu "Open Order" → store_settings.open_order_series);
+    // daftar kosong = semua series. Dibatasi di sini juga supaya series yang ditutup tidak bisa
+    // dipesan lewat request langsung. Kalau kolomnya belum ada, select ini gagal dan dianggap
+    // "semua series" (perilaku lama).
+    const { data: settingsRow } = await supabaseAdmin
+      .from("store_settings")
+      .select("open_order_series")
+      .eq("id", 1)
+      .maybeSingle();
+
+    const products = restrictOpenOrderProducts(
+      buildOpenOrderProducts((catalogRows ?? []) as OpenOrderCatalogRow[]),
+      openOrderSeriesList(settingsRow?.open_order_series)
+    );
+    if (products.length === 0) {
+      return NextResponse.json({ error: "Katalog Open Order belum tersedia" }, { status: 400 });
+    }
+
     const validatedItems: ValidatedItem[] = [];
 
     for (const item of rawItems) {
-      const product = findOpenOrderProduct(String(item.productId ?? ""));
+      const product = findOpenOrderProduct(products, String(item.productId ?? ""));
       const series = product?.series.find((s) => s.name === item.series);
       const color = String(item.color ?? "");
+      const size = String(item.size ?? "");
       const quantity = Number(item.quantity);
 
       if (!product || !series) {
@@ -87,19 +140,27 @@ export async function POST(request: NextRequest) {
       if (!product.colors.includes(color)) {
         return NextResponse.json({ error: `Warna untuk ${product.name} tidak valid` }, { status: 400 });
       }
+      if (!OPEN_ORDER_SIZES.includes(size)) {
+        return NextResponse.json({ error: `Ukuran untuk ${product.name} tidak valid` }, { status: 400 });
+      }
       if (!Number.isInteger(quantity) || quantity < 1 || quantity > 99) {
         return NextResponse.json({ error: `Jumlah untuk ${product.name} tidak valid` }, { status: 400 });
       }
+
+      // Create Your Price: harga pilihan customer, minimal harga series terpilih.
+      const requested = Math.round(Number(item.price));
+      const price = Number.isFinite(requested) && requested > series.price ? requested : series.price;
 
       validatedItems.push({
         productId: product.id,
         productName: `${product.name} — ${series.name}`,
         color,
-        size: null,
+        size,
         series: series.name,
         kain: product.kain,
         quantity,
-        price: series.price,
+        price,
+        minimumPrice: series.price,
       });
     }
 
@@ -118,8 +179,6 @@ export async function POST(request: NextRequest) {
     const total = subtotal + addonTotal + shippingCost;
     const orderNumber = generateOrderNumber();
 
-    const supabaseAdmin = getSupabaseAdmin();
-
     const { data: order, error: orderError } = await supabaseAdmin
       .from("orders")
       .insert({
@@ -129,6 +188,7 @@ export async function POST(request: NextRequest) {
         customer_whatsapp: whatsapp,
         shipping_address: address,
         shipping_city: [district, city].filter(Boolean).join(", "),
+        shipping_postal_code: postalCode || null,
         shipping_method: shippingMethod,
         shipping_cost: shippingCost,
         payment_method: "bank",
@@ -136,7 +196,7 @@ export async function POST(request: NextRequest) {
         discount: 0,
         total,
         status: "pending",
-        shipping_notes: [`IG @${instagram}`, note].filter(Boolean).join(" · "),
+        shipping_notes: [instagram ? `IG @${instagram}` : "", note].filter(Boolean).join(" · "),
       })
       .select("id, order_number")
       .single();
@@ -156,6 +216,8 @@ export async function POST(request: NextRequest) {
       price: item.price,
       series: item.series,
       kain: item.kain,
+      customer_price: item.price,
+      minimum_price: item.minimumPrice,
     }));
 
     if (extraCover) {
@@ -169,6 +231,8 @@ export async function POST(request: NextRequest) {
         price: OPEN_ORDER_ADDON.price,
         series: null,
         kain: null,
+        customer_price: null,
+        minimum_price: null,
       });
     }
 
