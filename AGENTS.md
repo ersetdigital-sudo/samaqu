@@ -58,6 +58,26 @@ original, then POST `/storage/v1/object/media-backup/<path>`); one-off scripts b
 401 at source (testimonials, category/`katalog_info`/`size_guide` images, old order
 items) — unfixable without those accounts; product main images are all intact.
 
+Those dead references were cleaned up on request: 22 gallery rows deleted
+(`category_images` 6, `katalog_info_images` 6, `bio_carousel_images` 5,
+`size_guide_images` 5), `testimonials.image_url`/`video_url` and
+`order_items.product_image` emptied (14 + 36 rows), and `garansi_retur_page` hero/CTA
+pointed back at the local `/garansi/*.png` assets. The deleted rows are recoverable from
+`_deleted-refs-snapshot.json` in the same bucket.
+- The home "Koleksi" grid has static `FALLBACK_CATEGORIES` in
+  `src/components/Koleksi.tsx` and uses DB rows only when they exist, so deleting
+  `category_images` falls back to `public/images/*.png` rather than an empty section.
+
+## Static assets under public/
+
+`src/middleware.ts` runs the next-intl locale redirect for every path except the
+prefixes listed in its `matcher`, so **each folder in `public/` must be listed there**.
+`/garansi/*` was missing: `/garansi/hero-web.png` was redirected to
+`/id/garansi/hero-web.png` → 404, which is why the garansi page's own default images
+never loaded. Exclude with a trailing slash (`garansi/`) so bare `/<folder>` routes that
+start with the same word — `/garansi-retur` must still redirect to `/id/garansi-retur` —
+keep working.
+
 ## Sandbox-only overrides
 
 - `next.config.ts` appends `allowedDevOrigins: ['3000-' + BASE44_PUBLIC_HOST_SUFFIX]`
