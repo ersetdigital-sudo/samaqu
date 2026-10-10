@@ -257,6 +257,12 @@ Page presentation (not obvious from the code):
   and only its appearance changed. The summary box below it lists the item lines, an `Extra Cover &
   Hanger` line while the add-on is selected, and a `Total` (subtotal + add-on) so toggling the card
   visibly changes the amount; ongkir is only added in step 5 (review).
+- The admin **Pesanan** panel splits the list into sub-tabs **Pesanan Website** / **Open Order**
+  (`orderSource` state): Open Order rows are the `CYO-` numbers, everything else is the website
+  checkout, and the status chips (Semua/pending/diproses/selesai) filter inside the selected tab.
+  There are **two near-duplicate admin dashboards** — `src/app/[locale]/admin/page.tsx` (served at
+  `/id/admin`) and `src/app/admin/page.tsx` (`/admin`, kept outside the locale prefix by
+  `src/middleware.ts`) — so an orders-panel change belongs in both files.
 - Deliberately not reproduced from the reference: the bottom tab bar (the site has its own
   chrome/floaters).
 - The success screen shows the order number and the "Menunggu Konfirmasi Admin" badge; "Lihat

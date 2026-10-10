@@ -154,6 +154,13 @@ function AdminPageInner() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [deleteConfirmOrder, setDeleteConfirmOrder] = useState<Order | null>(null);
   const [orderFilter, setOrderFilter] = useState("Semua");
+  const [orderSource, setOrderSource] = useState<"website" | "open">("website");
+
+  // Pesanan Open Order (Create Your Price) bernomor `CYO-`; sisanya pesanan checkout website.
+  const sourceOrders = orders.filter((o) =>
+    orderSource === "open" ? o.order_number.startsWith("CYO-") : !o.order_number.startsWith("CYO-")
+  );
+  const visibleOrders = sourceOrders.filter((o) => orderFilter === "Semua" || o.status === orderFilter);
   const [productSearch, setProductSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [productVariants, setProductVariants] = useState<{ product_id: string; stock: number; base_product_id: string | null }[]>([]);
@@ -780,8 +787,17 @@ function AdminPageInner() {
               {/* ORDERS */}
               {activePanel === "orders" && (
                 <div className="card overflow-hidden">
+                  <div className="px-5 pt-4">
+                    <div className="flex gap-6" style={{ borderBottom: "1px solid rgba(64,50,37,.06)" }}>
+                      {([{ id: "website", label: "Pesanan Website" }, { id: "open", label: "Open Order" }] as const).map((t) => (
+                        <button key={t.id} onClick={() => setOrderSource(t.id)} className="pb-3 -mb-px text-sm font-medium transition-colors" style={{ color: orderSource === t.id ? "var(--espresso)" : "var(--text-muted)", borderBottom: orderSource === t.id ? "2px solid var(--gold)" : "2px solid transparent" }}>
+                          {t.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                   <div className="flex flex-wrap items-center gap-3 justify-between p-5" style={{ borderBottom: "1px solid rgba(64,50,37,.06)" }}>
-                    <h2 className="font-serif italic text-xl" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Semua Pesanan</h2>
+                    <h2 className="font-serif italic text-xl" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>{orderSource === "open" ? "Pesanan Open Order" : "Semua Pesanan"}</h2>
                     <div className="flex gap-2">
                       {["Semua", "pending", "diproses", "selesai"].map((s) => (
                         <button key={s} onClick={() => setOrderFilter(s)} className="text-sm px-3 py-1.5 rounded-lg font-medium transition-colors" style={{ background: orderFilter === s ? "var(--gold)" : "transparent", color: orderFilter === s ? "#fff" : "var(--text-secondary)", border: orderFilter === s ? "none" : "1px solid rgba(64,50,37,.15)" }}>
@@ -803,7 +819,7 @@ function AdminPageInner() {
                         </tr>
                       </thead>
                       <tbody>
-                        {orders.filter((o) => orderFilter === "Semua" || o.status === orderFilter).map((o) => (
+                        {visibleOrders.map((o) => (
                           <tr key={o.id} className="cursor-pointer transition-colors hover:bg-[rgba(248,246,242,.5)]" style={{ borderTop: "1px solid rgba(64,50,37,.06)" }} onClick={() => setSelectedOrder(o)}>
                             <td className="px-5 py-3.5 font-semibold">{o.order_number}</td>
                             <td className="px-5 py-3.5">{o.customer_name}</td>
@@ -815,8 +831,8 @@ function AdminPageInner() {
                             </td>
                           </tr>
                         ))}
-                        {orders.filter((o) => orderFilter === "Semua" || o.status === orderFilter).length === 0 && (
-                          <tr><td colSpan={6} className="px-5 py-8 text-center" style={{ color: "var(--text-muted)" }}>Tidak ada pesanan</td></tr>
+                        {visibleOrders.length === 0 && (
+                          <tr><td colSpan={6} className="px-5 py-8 text-center" style={{ color: "var(--text-muted)" }}>{orderSource === "open" ? "Belum ada pesanan Open Order" : "Tidak ada pesanan"}</td></tr>
                         )}
                       </tbody>
                     </table>
