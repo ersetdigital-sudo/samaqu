@@ -50,6 +50,41 @@ export function openOrderImage(product: OpenOrderProduct, color: string, catalog
   return primary ? getProductThumbnail(primary) : "";
 }
 
+/**
+ * Baris katalog (tabel `products`) untuk produk + warna + series yang sedang dipilih.
+ * Satu baris katalog = satu kombinasi warna + series, jadi foto tiap series memang beda.
+ */
+export function catalogProductFor(
+  product: OpenOrderProduct,
+  color: string,
+  seriesName: string,
+  catalog: Product[]
+): Product | undefined {
+  const colorLower = color.toLowerCase();
+  const matches = catalog.filter(
+    (item) =>
+      (item.jenis_kain?.name ?? item.kain) === product.kain && item.name.toLowerCase().endsWith(colorLower)
+  );
+  return matches.find((item) => item.series === seriesName) ?? matches[0];
+}
+
+/**
+ * Foto galeri (tanpa video) untuk kombinasi produk + warna + series — sumbernya baris katalog
+ * yang sama dengan yang dipakai halaman detail katalog, supaya fotonya sama persis.
+ */
+export function openOrderGallery(
+  product: OpenOrderProduct,
+  color: string,
+  seriesName: string,
+  catalog: Product[]
+): string[] {
+  const match = catalogProductFor(product, color, seriesName, catalog);
+  const photos = (match?.media ?? []).filter((item) => item.type === "image" && item.src).map((item) => item.src);
+  if (photos.length > 0) return photos;
+  const fallback = openOrderImage(product, color, catalog);
+  return fallback ? [fallback] : [];
+}
+
 export interface OpenOrderVariant {
   key: string;
   product: OpenOrderProduct;

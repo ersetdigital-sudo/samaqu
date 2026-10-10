@@ -146,6 +146,14 @@ catalog photo matching, and `openOrderVariants` — one card per config product 
 color, which is what the step-1 grid renders (the catalog only supplies the photo; prices still
 come from the config).
 
+Step 2 (detail produk) shows the **real catalog photos**, not the single thumbnail: `catalogProductFor`
++ `openOrderGallery` look up the `products` row for the selected **kain + warna + series** (in the live
+DB each row *is* one warna × series combination, e.g. `thobe-navy-bayati`, with its own `images`
+array) and render that row's photos in the catalog's order — same photos as the catalog detail
+gallery, minus the videos (videos are filtered out; `getProductThumbnail`/`openOrderImage` still feed
+the small card/cart thumbnails). Switching a warna or series chip swaps the gallery and resets it to
+the first photo.
+
 Submissions POST to **`/api/open-order`** (`src/app/api/open-order/route.ts`; the `[locale]/api`
 copy is the dead duplicate — the live API is the one under `src/app/api/`). The route
 re-validates product/series/color/quantity and prices from the config (client prices are never
