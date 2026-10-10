@@ -148,8 +148,12 @@ as the `Ongkir` line that feeds the bottom `Total`. Weight counts the current li
 along in the POST body as `shipping: { method, cost }`; `/api/open-order` does **not** re-verify
 the tariff (same trust model as `/api/orders`) — it only clamps the cost to ≥ 0 and folds it into
 `total`. J&T credentials are **required for a price**: `JNT_TARIFF_KEY` + `JNT_TARIFF_CUS_NAME`,
-and the route also gates on `JNT_ORDER_USERNAME`; without them `/api/shipping/jnt-cost` answers
-500 and the form shows the fallback message with the ongkir line at `—` (the order still submits,
+and the route also gates on `JNT_ORDER_USERNAME`. Without them the route answers **200** with
+`{ data: [], configured: false, error: "J&T API belum dikonfigurasi" }` — a missing credential is a
+normal state, not a server failure, so the log stays free of a 500 (and of one `console.error` per
+keystroke) while the `error` field is kept so the checkout callers behave exactly as before; the route
+logs a single `console.warn` per process. `OpenOrderForm` detects `configured: false` and shows the
+fallback message with the ongkir line at `—` without a `console.error` (the order still submits,
 admin prices shipping later). The J&T **testing** credential values this app used before live in
 commit `e48a6fe`; supply them through the platform secrets (`/run/base44/app.env`), never in the
 repo. `JNT_ENV` defaults to `testing`.
