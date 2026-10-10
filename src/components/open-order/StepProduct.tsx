@@ -7,9 +7,10 @@
  */
 
 import { useEffect, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cloudinaryUrl } from "@/lib/cloudinary";
 import type { Product } from "@/lib/katalog-data";
-import { money, openOrderImage } from "@/lib/open-order-catalog";
+import { money, openOrderGallery } from "@/lib/open-order-catalog";
 import { findOpenOrderProduct, OPEN_ORDER_SIZES } from "@/lib/open-order-config";
 import type { ProductDraft } from "./types";
 import { Chip, Counter, DANGER, INK, MUTED, PrimaryButton, SectionLabel } from "./ui";
@@ -26,18 +27,29 @@ export default function StepProduct({
   onAdd: (line: ProductDraft) => void;
 }) {
   const product = findOpenOrderProduct(draft.productId);
+  const series = product?.series.find((s) => s.name === draft.series) ?? product?.series[0];
   const [price, setPrice] = useState(draft.price);
+  const [photo, setPhoto] = useState(0);
 
   // Harga default mengikuti series yang dipilih.
   useEffect(() => {
     setPrice(draft.price);
   }, [draft.price]);
 
-  if (!product) return null;
+  // Foto galeri datang dari baris katalog untuk warna + series terpilih — foto yang sama
+  // persis dengan halaman detail katalog (bukan cuma satu thumbnail).
+  const gallery = product && series ? openOrderGallery(product, draft.color, series.name, catalog) : [];
+  const activePhoto = Math.min(photo, Math.max(gallery.length - 1, 0));
+  const currentPhoto = gallery[activePhoto] ?? "";
 
-  const series = product.series.find((s) => s.name === draft.series) ?? product.series[0];
+  // Balik ke foto pertama setiap warna/series/produk berganti (fotonya juga berganti).
+  useEffect(() => {
+    setPhoto(0);
+  }, [draft.productId, draft.color, series?.name]);
+
+  if (!product || !series) return null;
+
   const minimum = series.price;
-  const image = openOrderImage(product, draft.color, catalog);
   const priceTooLow = price < minimum;
   const lineTotal = (priceTooLow ? minimum : price) * draft.quantity;
 
@@ -55,20 +67,69 @@ export default function StepProduct({
 
   return (
     <div>
-      {/* Foto produk */}
-      <div className="relative aspect-[4/5] overflow-hidden rounded-3xl sm:aspect-[16/11]" style={{ background: "#e8dfd1" }}>
+      {/* Foto produk — galeri dari katalog (sama seperti halaman detail katalog) */}
+      <div className="relative aspect-[3/4] overflow-hidden rounded-3xl" style={{ background: "#e8dfd1" }}>
         <div className="absolute inset-0" style={{ background: "linear-gradient(135deg,rgba(232,223,209,.6),rgba(201,183,156,.4))" }} />
-        {image && (
+        {currentPhoto && (
           <img
-            src={cloudinaryUrl(image, { width: 1100 })}
-            alt={`${product.name} ${draft.color}`}
-            className="absolute inset-0 h-full w-full object-cover"
+            key={currentPhoto}
+            src={cloudinaryUrl(currentPhoto, { width: 1200 })}
+            alt={`${product.name} ${draft.color} — ${series.name}`}
+            className="absolute inset-0 h-full w-full object-contain"
             onError={(e) => {
               (e.target as HTMLImageElement).style.display = "none";
             }}
           />
         )}
+        {gallery.length > 1 && (
+          <>
+            <button
+              type="button"
+              onClick={() => setPhoto((i) => (i - 1 + gallery.length) % gallery.length)}
+              aria-label="Foto sebelumnya"
+              className="absolute left-3 top-1/2 z-10 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full transition-transform duration-200 hover:scale-105"
+              style={{ background: "rgba(248,246,242,.85)", backdropFilter: "blur(6px)" }}
+            >
+              <ChevronLeft size={18} style={{ color: "var(--espresso)" }} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setPhoto((i) => (i + 1) % gallery.length)}
+              aria-label="Foto berikutnya"
+              className="absolute right-3 top-1/2 z-10 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full transition-transform duration-200 hover:scale-105"
+              style={{ background: "rgba(248,246,242,.85)", backdropFilter: "blur(6px)" }}
+            >
+              <ChevronRight size={18} style={{ color: "var(--espresso)" }} />
+            </button>
+            <span
+              className="absolute bottom-3 right-3 z-10 rounded-full px-2.5 py-1 text-[10px] tabular-nums"
+              style={{ background: "rgba(42,33,27,.55)", color: "white" }}
+            >
+              {activePhoto + 1}/{gallery.length}
+            </span>
+          </>
+        )}
       </div>
+
+      {/* Titik navigasi foto */}
+      {gallery.length > 1 && (
+        <div className="mt-3 flex justify-center gap-1.5">
+          {gallery.map((src, i) => (
+            <button
+              key={src}
+              type="button"
+              onClick={() => setPhoto(i)}
+              aria-label={`Foto ${i + 1}`}
+              className="rounded-full transition-all duration-300"
+              style={{
+                background: i === activePhoto ? "var(--gold)" : "rgba(201,183,156,.4)",
+                width: i === activePhoto ? 16 : 6,
+                height: 6,
+              }}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Nama & bahan */}
       <div className="mt-5">
