@@ -87,6 +87,19 @@ keep working.
   Verify: a `GET` on a `/_next/static/chunks/...` URL with
   `Origin: https://3000-$BASE44_PUBLIC_HOST_SUFFIX` must return 200.
 
+## i18n layout (root vs locale)
+
+`src/app/layout.tsx` is the App Router root layout: it renders `<html>`/`<body>` (fonts,
+metadata, JSON-LD) and wraps children in `<Providers>`. `src/app/[locale]/layout.tsx` must
+therefore **not** render it again — it only mounts `NextIntlClientProvider` around `children`.
+
+Rendering `<RootLayout>` from the locale layout nests `<html>` inside `<body>` (browser
+hydration error) and mounts every provider twice (cart, toast, locale, and — the visible one —
+`MetaPixelProvider`, i.e. a duplicate pageview). The root layout has to keep the html shell
+because top-level `/admin` (excluded from the locale middleware) also renders under it. Verify
+a change here by counting tags in the SSR output: `curl -s .../id/open-order | grep -c '<html'`
+must be `1`.
+
 ## Rich text messages (i18n)
 
 next-intl 4 treats `<tag>` inside a message as ICU rich text. Reading such a message with
