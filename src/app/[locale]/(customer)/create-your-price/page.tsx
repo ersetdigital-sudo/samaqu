@@ -35,6 +35,7 @@ export default function CreateYourPricePage() {
           <p className="mt-6 text-lg sm:text-xl font-ui" style={{ color: "#d4c4b4" }}>{t("heroSubtitle")}</p>
           <div className="mt-9 flex flex-col sm:flex-row gap-3 justify-center">
             <a href="#simulasi" className="rounded-full px-7 py-3.5 text-sm font-medium font-ui text-white" style={{ background: "var(--gold)" }}>{t("heroBtn1")}</a>
+            <Link href="/open-order" className="rounded-full px-7 py-3.5 text-sm font-medium font-ui border" style={{ borderColor: "var(--gold)", color: "var(--gold)" }}>{t("orderCta")}</Link>
             <a href="#cerita" className="rounded-full px-7 py-3.5 text-sm font-medium font-ui border" style={{ borderColor: "rgba(241,233,221,.35)", color: "var(--cream)" }}>{t("heroBtn2")}</a>
           </div>
         </div>
@@ -214,6 +215,9 @@ export default function CreateYourPricePage() {
           <p className="mt-8 text-sm tracking-[0.25em] uppercase font-ui" style={{ color: "var(--gold)" }}>{t("closingCta")}</p>
           <Link href="/katalog" className="mt-9 inline-block rounded-full px-8 py-4 text-sm font-medium font-ui text-white" style={{ background: "var(--gold)" }}>
             {t("closingBtn")}
+          </Link>
+          <Link href="/open-order" className="mt-4 block sm:ml-3 sm:inline-block rounded-full px-8 py-4 text-sm font-medium font-ui border" style={{ borderColor: "rgba(241,233,221,.4)", color: "var(--cream)" }}>
+            {t("orderCta")}
           </Link>
         </div>
       </section>

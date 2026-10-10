@@ -113,3 +113,35 @@ curl -s -o /dev/null -w '%{http_code}\n' http://localhost:3000/id/katalog # expe
 # -f docker-compose.base44.yml restart web` restores it (no code change needed).
 docker compose -f docker-compose.base44.yml ps                          # web must be (healthy)
 ```
+
+## Open Order (form pesanan Create Your Price)
+
+The old Google Form ("OPEN ORDER SAMAQU — Create Your Price") is now a page on the site:
+**/open-order** (`src/app/[locale]/(customer)/open-order/page.tsx` +
+`src/components/OpenOrderForm.tsx`). The offering (products, series, colors, prices and the
+Cover & Hanger add-on) is a **static** list in `src/lib/open-order-config.ts` — it comes from
+the form, not from the `products` table, so edit that file to change prices. The page's price
+list, the form summary and the server-side validation all read from it.
+
+Submissions POST to **`/api/open-order`** (`src/app/api/open-order/route.ts`; the `[locale]/api`
+copy is the dead duplicate — the live API is the one under `src/app/api/`). The route
+re-validates product/series/color/quantity and prices from the config (client prices are never
+trusted) and writes ordinary rows into **`orders` + `order_items`**, so they appear in the
+existing admin dashboard (`/[locale]/admin`, "Pesanan" tab) with the normal status flow:
+
+- `order_number` uses the prefix **`CYO-`** (`SMQ-` = website checkout) — that is how the two
+  kinds of order are told apart in the admin list,
+- `shipping_method` `manual` and `shipping_cost` 0: shipping is arranged later by the admin,
+- `payment_method` `bank` (legacy value, renders as "Transfer Bank"),
+- `status` `pending`, and `shipping_notes` = `IG @username · <customer note>` — the admin order
+  detail renders that as "Catatan", which is where the Instagram handle is read,
+- the Cover & Hanger add-on is one extra `order_items` row (`product_id` `addon-cover-hanger`).
+
+No new table: the hosted Supabase project has **no DDL path** from the sandbox (no `exec_sql`
+RPC, `/pg/query` invalid), so a new table would have needed the user to run SQL by hand.
+
+Verify: open `/id/open-order`, submit a test order, then check
+`docker compose -f docker-compose.base44.yml logs web | grep OPEN-ORDER` and that the row shows
+under `/id/admin` → Pesanan. **Delete that test order afterwards** (admin detail → Hapus) so it
+does not pollute the real order list.
+```
