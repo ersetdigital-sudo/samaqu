@@ -1,10 +1,12 @@
 "use client";
 
 /**
- * Langkah 4 — data pemesan. Kecamatan dipakai untuk menghitung ongkir J&T (dihitung di wizard).
+ * Langkah 4 — data pemesan. Provinsi/kota/kecamatan dipilih dari data RajaOngkir
+ * (lihat `LocationPicker`); kecamatan itulah yang dipakai menghitung ongkir J&T di wizard.
  */
 
 import { useState } from "react";
+import LocationPicker from "./LocationPicker";
 import type { CustomerData } from "./types";
 import { DANGER, Field, PrimaryButton, TextArea, TextInput } from "./ui";
 
@@ -61,22 +63,7 @@ export default function StepCustomer({
           />
         </Field>
 
-        <Field label="Kecamatan" required hint="Ongkir J&T dihitung otomatis dari kecamatan ini.">
-          <TextInput
-            value={customer.district}
-            onChange={(e) => onChange("district", e.target.value)}
-            placeholder="contoh: Sukmajaya"
-          />
-        </Field>
-
-        <Field label="Kota / Kabupaten" required>
-          <TextInput
-            value={customer.city}
-            onChange={(e) => onChange("city", e.target.value)}
-            placeholder="contoh: Kota Depok"
-            autoComplete="address-level2"
-          />
-        </Field>
+        <LocationPicker customer={customer} onChange={onChange} />
 
         <Field label="Kode Pos" required>
           <TextInput
