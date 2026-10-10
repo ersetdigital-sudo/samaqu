@@ -564,3 +564,11 @@ a { text-decoration: none; }
 .akun-pill-selesai { background: #dcfce7; color: #166534; }
 .akun-thumb { background: linear-gradient(150deg,#e7e1d6,#cfc7b8); border-radius: 1rem; display: flex; align-items: center; justify-content: center; color: #0f3d33; opacity: .95; }
 .akun-sect { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; font-weight: 700; color: #7c8b85; }
+
+/* ── Nav bawah ala aplikasi (mobile, halaman toko) ── */
+/* Tinggi bar dipakai untuk (a) memberi padding bawah pada layout toko dan (b) menggeser bar
+   aksi bawah milik halaman (keranjang, checkout, detail produk). 0 px di desktop. */
+:root { --mobile-nav-h: 0px; }
+@media (max-width: 1023px) {
+  :root { --mobile-nav-h: 62px; }
+}
