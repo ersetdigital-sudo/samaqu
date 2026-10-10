@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "./supabase";
 import { OPEN_ORDER_PERIOD } from "./open-order-config";
+import { openOrderSeriesList } from "./open-order-window";
 
 interface StoreSettings {
   store_name: string;
@@ -17,6 +18,12 @@ interface StoreSettings {
   open_order_period: string;
   /** Buka/tutup Open Order. false → wizard /open-order menampilkan pesan periode ditutup. */
   open_order_active: boolean;
+  /** Tanggal mulai jendela Open Order (YYYY-MM-DD) — diatur dari menu admin "Open Order". */
+  open_order_start_date: string | null;
+  /** Tanggal tutup jendela Open Order (YYYY-MM-DD). */
+  open_order_end_date: string | null;
+  /** Series yang dibuka; array kosong = semua series. */
+  open_order_series: string[];
 }
 
 const DEFAULTS: StoreSettings = {
@@ -30,6 +37,9 @@ const DEFAULTS: StoreSettings = {
   cyp_microcopy: "Harga Minimum boleh dipilih. Itulah alasan kami membuat Create Your Price.",
   open_order_period: OPEN_ORDER_PERIOD,
   open_order_active: true,
+  open_order_start_date: null,
+  open_order_end_date: null,
+  open_order_series: [],
 };
 
 let cached: StoreSettings = DEFAULTS;
@@ -50,7 +60,12 @@ export function useStoreSettings() {
                 : data.enabled_couriers;
             } catch { /* use defaults */ }
           }
-          cached = { ...DEFAULTS, ...data, enabled_couriers: couriers };
+          cached = {
+            ...DEFAULTS,
+            ...data,
+            enabled_couriers: couriers,
+            open_order_series: openOrderSeriesList(data.open_order_series),
+          };
           setSettings(cached);
         }
       } catch { /* use defaults */ }

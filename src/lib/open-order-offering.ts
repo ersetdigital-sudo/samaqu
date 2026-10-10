@@ -102,6 +102,26 @@ export function buildOpenOrderProducts(catalog: OpenOrderCatalogRow[]): OpenOrde
   }));
 }
 
+/**
+ * Batasi penawaran ke series yang dibuka admin (menu "Open Order" → `open_order_series`).
+ * Daftar kosong = semua series dibuka (perilaku lama). Produk yang tidak punya series terpilih
+ * ikut disembunyikan supaya customer tidak bisa memesan series yang sedang ditutup.
+ */
+export function restrictOpenOrderProducts(
+  products: OpenOrderProduct[],
+  allowedSeries: string[]
+): OpenOrderProduct[] {
+  if (allowedSeries.length === 0) return products;
+
+  const allowed = new Set(allowedSeries.map((name) => name.trim().toLowerCase()));
+  return products
+    .map((product) => ({
+      ...product,
+      series: product.series.filter((series) => allowed.has(series.name.trim().toLowerCase())),
+    }))
+    .filter((product) => product.series.length > 0);
+}
+
 /** Cari produk penawaran berdasarkan id (kode kain). */
 export function findOpenOrderProduct(products: OpenOrderProduct[], id: string): OpenOrderProduct | undefined {
   return products.find((product) => product.id === id);

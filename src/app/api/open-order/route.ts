@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { OPEN_ORDER_ADDON, OPEN_ORDER_SIZES } from "@/lib/open-order-config";
-import { buildOpenOrderProducts, findOpenOrderProduct, type OpenOrderCatalogRow } from "@/lib/open-order-offering";
+import {
+  buildOpenOrderProducts,
+  findOpenOrderProduct,
+  restrictOpenOrderProducts,
+  type OpenOrderCatalogRow,
+} from "@/lib/open-order-offering";
+import { openOrderSeriesList } from "@/lib/open-order-window";
 
 /**
  * Pesanan dari alur Open Order Samaqu (halaman /open-order, 6 langkah).
@@ -101,7 +107,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Gagal membaca katalog" }, { status: 500 });
     }
 
-    const products = buildOpenOrderProducts((catalogRows ?? []) as OpenOrderCatalogRow[]);
+    // Series yang dibuka diatur admin (menu "Open Order" → store_settings.open_order_series);
+    // daftar kosong = semua series. Dibatasi di sini juga supaya series yang ditutup tidak bisa
+    // dipesan lewat request langsung. Kalau kolomnya belum ada, select ini gagal dan dianggap
+    // "semua series" (perilaku lama).
+    const { data: settingsRow } = await supabaseAdmin
+      .from("store_settings")
+      .select("open_order_series")
+      .eq("id", 1)
+      .maybeSingle();
+
+    const products = restrictOpenOrderProducts(
+      buildOpenOrderProducts((catalogRows ?? []) as OpenOrderCatalogRow[]),
+      openOrderSeriesList(settingsRow?.open_order_series)
+    );
     if (products.length === 0) {
       return NextResponse.json({ error: "Katalog Open Order belum tersedia" }, { status: 400 });
     }
