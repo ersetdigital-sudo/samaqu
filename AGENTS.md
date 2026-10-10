@@ -219,9 +219,10 @@ and the route also gates on `JNT_ORDER_USERNAME`. Without them the route answers
 `{ data: [], configured: false, error: "J&T API belum dikonfigurasi" }` — a missing credential is a
 normal state, not a server failure, so the log stays free of a 500 (and of one `console.error` per
 keystroke) while the `error` field is kept so the checkout callers behave exactly as before; the route
-logs a single `console.warn` per process. `OpenOrderForm` detects `configured: false` and shows the
+logs a single `console.warn` per process. `OpenOrderWizard` detects `configured: false` and shows the
 fallback message with the ongkir line at `—` without a `console.error` (the order still submits,
-admin prices shipping later). The J&T **testing** credential values this app used before live in
+admin prices shipping later) — that is the state of this sandbox: no J&T credential is stored, so
+live tariffs stay off until the J&T secrets are supplied. The J&T **testing** credential values this app used before live in
 commit `e48a6fe`; supply them through the platform secrets (`/run/base44/app.env`), never in the
 repo. `JNT_ENV` defaults to `testing`.
 
@@ -236,11 +237,15 @@ Page presentation (not obvious from the code):
   and a back chevron after that) — the old espresso/gold hero is gone.
 - Steps 2–5 render in a centred `max-w-2xl` column; step 1 (the product grid + fabric filter
   tabs) uses the full `max-w-5xl` width.
-- Kecamatan is a **plain text input**, not the dropdown of the reference design: ongkir only
-  needs the district string, while the RajaOngkir-backed district list
-  (`/api/shipping/districts`, `/api/shipping/search-destination`) is optional and unset in this
-  sandbox. Typing ≥ 3 chars still triggers the same debounced `/api/shipping/jnt-cost` call and
-  the same graceful `configured: false` fallback (`Ongkir —`).
+- Step 4 (data pemesan) picks the destination from RajaOngkir via
+  `src/components/open-order/LocationPicker.tsx` — Provinsi → Kota/Kabupaten → Kecamatan, fed by
+  `/api/shipping/provinces` + `/api/shipping/districts` (the province/city/district lists are
+  cached in Supabase `shipping_cache` and do load in this sandbox, key from `store_settings`
+  falling back to `RAJAONGKIR_API_KEY`). The picker stores the RajaOngkir **names** in
+  `customer.city` / `customer.district`, so ongkir no longer depends on the customer's spelling.
+  If the lists can't be loaded it falls back to the old plain Kota + Kecamatan text inputs, so the
+  order still submits; the same debounced `/api/shipping/jnt-cost` call and the same graceful
+  `configured: false` fallback (`Ongkir —`) apply either way.
 - The period line under the title comes from `OPEN_ORDER_PERIOD` in `src/lib/open-order-config.ts`
   ("8-15 Agustus 2026"), rendered by `StepCatalog` as `Periode …` — edit that constant to change it.
 - Deliberately not reproduced from the reference: the bottom tab bar (the site has its own
