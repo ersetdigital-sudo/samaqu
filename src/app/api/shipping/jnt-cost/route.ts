@@ -6,6 +6,9 @@ import { getSendSiteCode, resolveTariffCodes } from "@/lib/jnt/area-mapping";
 const costCache = new Map<string, { data: unknown; ts: number }>();
 const CACHE_TTL_MS = 10 * 60 * 1000;
 
+// Dicatat sekali per proses supaya log tidak dibanjiri pesan yang sama saat user mengetik.
+let warnedUnconfigured = false;
+
 // POST /api/shipping/jnt-cost
 // Body: { city: string, district: string, weight: number }
 export async function POST(req: Request) {
@@ -23,7 +26,17 @@ export async function POST(req: Request) {
 
     const config = getJntConfig();
     if (!config.orderUsername) {
-      return NextResponse.json({ error: "J&T API belum dikonfigurasi" }, { status: 500 });
+      // J&T belum dikonfigurasi: kondisi wajar, bukan kegagalan server. Balas 200 dengan
+      // daftar kosong + `configured:false` supaya pemanggil bisa menampilkan fallback
+      // (ongkir dihitung admin menyusul) tanpa status error. Field `error` dipertahankan
+      // agar pemanggil yang lebih lama (checkout) tetap menampilkan pesan yang sama.
+      if (!warnedUnconfigured) {
+        warnedUnconfigured = true;
+        console.warn(
+          "[JNT-COST] J&T belum dikonfigurasi (JNT_ORDER_USERNAME/JNT_TARIFF_KEY kosong) — ongkir dihitung manual oleh admin."
+        );
+      }
+      return NextResponse.json({ data: [], configured: false, error: "J&T API belum dikonfigurasi" });
     }
 
     const resolved = resolveTariffCodes(city, district);
