@@ -4,9 +4,9 @@
  * Sumber harga: form Open Order Samaqu yang sebelumnya dipakai lewat Google Form,
  * sekarang dipindahkan ke halaman /open-order.
  *
- * Halaman form (/open-order), komponen OpenOrderForm, dan validasi server-side
- * (/api/open-order) semuanya membaca dari file ini — ubah daftar produk/series/harga
- * di sini saja.
+ * Alur pesanan di halaman /open-order (komponen di src/components/open-order/) dan
+ * validasi server-side (/api/open-order) semuanya membaca dari file ini — ubah daftar
+ * produk/series/harga di sini saja.
  */
 
 export interface OpenOrderSeries {
@@ -75,4 +75,13 @@ export function findOpenOrderProduct(id: string): OpenOrderProduct | undefined {
 export function openOrderItemPrice(productId: string, seriesName: string): number | null {
   const series = findOpenOrderProduct(productId)?.series.find((s) => s.name === seriesName);
   return series ? series.price : null;
+}
+
+/** Ukuran yang bisa dipilih customer — tersimpan di kolom `size` (order_items). */
+export const OPEN_ORDER_SIZES = ["S", "M", "L", "XL", "XXL"];
+
+/** Harga series terendah = batas "Minimum" di Create Your Price (juga harga awal produk). */
+export function openOrderMinPrice(productId: string): number {
+  const prices = findOpenOrderProduct(productId)?.series.map((s) => s.price) ?? [];
+  return prices.length ? Math.min(...prices) : 0;
 }

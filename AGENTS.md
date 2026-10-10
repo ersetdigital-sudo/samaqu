@@ -114,15 +114,31 @@ curl -s -o /dev/null -w '%{http_code}\n' http://localhost:3000/id/katalog # expe
 docker compose -f docker-compose.base44.yml ps                          # web must be (healthy)
 ```
 
-## Open Order (form pesanan Create Your Price)
+## Open Order (alur pesanan Create Your Price)
 
-The old Google Form ("OPEN ORDER SAMAQU — Create Your Price") is now a page on the site:
-**/open-order** (`src/app/[locale]/(customer)/open-order/page.tsx` +
-`src/components/OpenOrderForm.tsx`). The offering (products, series, colors, prices and the
-Cover & Hanger add-on) is a **static** list in `src/lib/open-order-config.ts` — it comes from
-the form, not from the `products` table, so edit that file to change prices. Each product also
-carries a shipping `weight` in grams there (used to price J&T shipping). The page's price list,
-the form summary and the server-side validation all read from it.
+The old Google Form ("OPEN ORDER SAMAQU — Create Your Price") is now a **6-step wizard** on
+**/open-order**: daftar produk → detail produk → keranjang → data pemesan → review → pesanan
+berhasil, all inside one client component (`src/app/[locale]/(customer)/open-order/page.tsx` is
+a thin wrapper around `src/components/open-order/OpenOrderWizard.tsx`). The wizard owns all the
+state (cart lines, product draft, customer data, J&T ongkir, submit) and renders one focused
+component per step: `StepCatalog`, `StepProduct`, `StepCart`, `StepCustomer`, `StepReview`,
+`StepSuccess`, plus the `ui.tsx` primitives and `types.ts`. `OpenOrderForm.tsx` and
+`OpenOrderProducts.tsx` were deleted — do not resurrect them.
+
+Presentation is deliberately **monochrome** (black / white / `#f0f0f0` fields / `#fff3cc` status
+badge) with Indonesian copy hardcoded inside the step components: the reference design has no
+gold or espresso and is not part of the i18n flow (the now-unused `openOrder` keys are still in
+`src/i18n/messages/{id,en}.json`).
+
+The offering (products, series, colors, prices, sizes and the Cover & Hanger add-on) is a
+**static** list in `src/lib/open-order-config.ts` — it comes from the form, not from the
+`products` table, so edit that file to change prices. Each product also carries a shipping
+`weight` in grams there, and `OPEN_ORDER_SIZES` (S–XXL) is the size list the wizard offers and
+the API validates against. Client prices are never trusted (see the API notes below).
+`src/lib/open-order-catalog.ts` holds the shared display helpers: `money`, series price tiers,
+catalog photo matching, and `openOrderVariants` — one card per config product × ready-stock
+color, which is what the step-1 grid renders (the catalog only supplies the photo; prices still
+come from the config).
 
 Submissions POST to **`/api/open-order`** (`src/app/api/open-order/route.ts`; the `[locale]/api`
 copy is the dead duplicate — the live API is the one under `src/app/api/`). The route
@@ -136,9 +152,23 @@ existing admin dashboard (`/[locale]/admin`, "Pesanan" tab) with the normal stat
   kecamatan (see the ongkir note below); it falls back to `manual` / 0 when kecamatan is empty
   or the J&T call fails, and then the admin arranges shipping later,
 - `payment_method` `bank` (legacy value, renders as "Transfer Bank"),
-- `status` `pending`, and `shipping_notes` = `IG @username · <customer note>` — the admin order
-  detail renders that as "Catatan", which is where the Instagram handle is read,
-- the Cover & Hanger add-on is one extra `order_items` row (`product_id` `addon-cover-hanger`).
+- `status` `pending`, and `shipping_notes` = `IG @username · <customer note>` (each part only
+  when filled) — the admin order detail renders that as "Catatan", which is where the Instagram
+  handle is read. The wizard no longer asks for Instagram (the reference flow has no such
+  field), so `instagram` is **optional** in the route and `shipping_notes` holds just the
+  customer note,
+- `shipping_postal_code` is filled from the wizard's "Kode Pos" field (the orders table already
+  had the column),
+- `order_items.size` comes from the wizard's size chips and is validated against
+  `OPEN_ORDER_SIZES` — it used to be hardcoded `null`,
+- **Create Your Price**: the wizard's detail step sends the customer's chosen `price` per item.
+  The route clamps it to the selected series price (`price = max(series.price, client price)`,
+  so a client can never go below the minimum) and stores `price` + `customer_price` = that
+  value with `minimum_price` = the series price — exactly the pair the admin order detail
+  already renders as `Min: … · Dipilih: …`. The add-on row keeps both columns `null`. Anything
+  else about product/series/color/quantity is still re-derived from the config,
+- the Cover & Hanger add-on is one extra `order_items` row (`product_id` `addon-cover-hanger`),
+  toggled in step 3 (keranjang) — the wizard has no add-on page section.
 
 Ongkir (J&T shipping): the form asks for **Kecamatan**; once ~3+ chars are typed the client
 debounces 1s and POSTs `{ city, district, weight }` to **`/api/shipping/jnt-cost`** (the same
@@ -163,19 +193,30 @@ RPC, `/pg/query` invalid), so a new table would have needed the user to run SQL 
 
 Page presentation (not obvious from the code):
 
-- The page renders **without the navbar**: `src/app/[locale]/(customer)/layout.tsx` skips
-  `<Navbar />` for path suffixes listed in `NAVBAR_HIDDEN_SUFFIXES` (`/open-order`), and the
-  page hero carries its own logo + close link back to `/`.
-- Price/product cards come from `src/components/OpenOrderProducts.tsx`, which fetches the
-  catalog client-side (`getProducts()`) and matches each config product to catalog rows:
-  thobe by **`jenis_kain.name` === config `kain`** (B-01 / A-02), narrowed with the config's
-  ready-stock colors found in the catalog product name (`Thobe <warna>`); Vest by product
-  name (no catalog row exists yet, so it renders as a dark placeholder without a detail link).
-  Photo/weight are catalog data; **prices still come only from `src/lib/open-order-config.ts`**
-  (the API keeps validating them server-side).
+- The page still renders **without the navbar**: `src/app/[locale]/(customer)/layout.tsx` skips
+  `<Navbar />` for path suffixes in `NAVBAR_HIDDEN_SUFFIXES` (`/open-order`). The wizard brings
+  its own sticky header instead (step title, `n/6` counter, progress bar, close → `/` on step 1
+  and a back chevron after that) — the old espresso/gold hero is gone.
+- Steps 2–5 render in a centred `max-w-2xl` column; step 1 (the product grid + fabric filter
+  tabs) uses the full `max-w-5xl` width.
+- Kecamatan is a **plain text input**, not the dropdown of the reference design: ongkir only
+  needs the district string, while the RajaOngkir-backed district list
+  (`/api/shipping/districts`, `/api/shipping/search-destination`) is optional and unset in this
+  sandbox. Typing ≥ 3 chars still triggers the same debounced `/api/shipping/jnt-cost` call and
+  the same graceful `configured: false` fallback (`Ongkir —`).
+- Deliberately not reproduced from the reference: the bottom tab bar (the site has its own
+  chrome/floaters) and the "Periode …" line (the period is business data that exists nowhere in
+  the repo — add it to `open-order-config.ts` first if it is wanted).
+- The success screen shows the order number and the "Menunggu Konfirmasi Admin" badge; "Lihat
+  Pesanan Saya" points at `/akun/pesanan`, which needs a logged-in customer.
 
-Verify: open `/id/open-order`, submit a test order, then check
-`docker compose -f docker-compose.base44.yml logs web | grep OPEN-ORDER` and that the row shows
-under `/id/admin` → Pesanan. **Delete that test order afterwards** (admin detail → Hapus) so it
-does not pollute the real order list.
+Verify: open `/id/open-order` and click through — product card → warna/ukuran/series + harga
+(Create Your Price, minimum = harga series) → TAMBAH KE PESANAN → keranjang → data pemesan (an
+empty form is blocked with a message) → SUBMIT PESANAN. Then check
+`docker compose -f docker-compose.base44.yml logs web | grep OPEN-ORDER` and confirm the row
+under `/id/admin` → Pesanan carries `size`, the postal code and "Min: … · Dipilih: …".
+**Delete that test order afterwards** (admin detail → Hapus, or the Supabase REST API) so it
+does not pollute the real order list. The price clamp can be checked without the UI: a POST to
+`/api/open-order` with a below-minimum `price` must come back with `total` equal to the series
+minimum.
 ```
