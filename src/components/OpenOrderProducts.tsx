@@ -24,17 +24,13 @@ function priceTiers(product: OpenOrderProduct) {
 
 /**
  * Cari produk katalog (tabel `products`) yang jadi acuan tampilan detail:
- * - thobe: kode kain (jenis_kain) + warna ready stock di config,
- * - vest: tidak punya kode kain, jadi dicocokkan lewat nama produk.
+ * kode kain (jenis_kain) + warna ready stock di config.
  */
 function catalogMatches(product: OpenOrderProduct, catalog: Product[]): Product[] {
   return catalog.filter((item) => {
-    if (product.kain) {
-      if ((item.jenis_kain?.name ?? item.kain) !== product.kain) return false;
-      const name = item.name.toLowerCase();
-      return product.colors.some((color) => name.endsWith(color.toLowerCase()));
-    }
-    return item.name.toLowerCase() === product.name.toLowerCase();
+    if ((item.jenis_kain?.name ?? item.kain) !== product.kain) return false;
+    const name = item.name.toLowerCase();
+    return product.colors.some((color) => name.endsWith(color.toLowerCase()));
   });
 }
 
@@ -80,7 +76,7 @@ function ProductCard({
           className="absolute top-4 left-4 rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] font-ui"
           style={{ background: "rgba(255,255,255,.88)", color: "var(--espresso)" }}
         >
-          {product.kain ? `${t("priceFabric")} ${product.kain}` : product.name}
+          {`${t("priceFabric")} ${product.kain}`}
         </span>
         <h3
           className="absolute bottom-4 left-5 right-5 text-[26px] font-light leading-tight text-white"

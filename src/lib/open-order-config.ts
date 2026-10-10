@@ -17,8 +17,8 @@ export interface OpenOrderSeries {
 export interface OpenOrderProduct {
   id: string;
   name: string;
-  /** Kode kain untuk kolom `kain` di order_items. Vest tidak memakai kode kain. */
-  kain: string | null;
+  /** Kode kain untuk kolom `kain` di order_items (juga dipakai mencocokkan produk katalog). */
+  kain: string;
   colors: string[];
   series: OpenOrderSeries[];
 }
@@ -51,13 +51,6 @@ export const OPEN_ORDER_PRODUCTS: OpenOrderProduct[] = [
       { name: "Karim", price: 339000 },
       { name: "Imalah", price: 339000 },
     ],
-  },
-  {
-    id: "vest",
-    name: "Vest",
-    kain: null,
-    colors: ["Jetblack", "Deep Forest Green", "Light Warm Grey"],
-    series: [{ name: "Duha", price: 309000 }],
   },
 ];
 
