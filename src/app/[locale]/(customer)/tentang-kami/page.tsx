@@ -104,7 +104,7 @@ export default function TentangKamiPage() {
               </h2>
               <div className="h-px w-16 mb-6 sm:mb-8" style={{ background: "var(--gold)" }} />
               <div className="space-y-4 sm:space-y-5 font-ui text-sm sm:text-base lg:text-lg leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-                <p dangerouslySetInnerHTML={{ __html: t("storyP1") }} />
+                <p dangerouslySetInnerHTML={{ __html: t.markup("storyP1", { span: (chunks: string) => `<span>${chunks}</span>` }) }} />
                 <p>{t("storyP2")}</p>
               </div>
               <div className="grid grid-cols-3 gap-3 sm:gap-4 mt-8 sm:mt-10">

@@ -269,7 +269,7 @@ export default function SamaQuran() {
           <div>
             <h2
               className="font-display text-3xl sm:text-4xl leading-snug"
-              dangerouslySetInnerHTML={{ __html: t("perjalananTitle") }}
+              dangerouslySetInnerHTML={{ __html: t.markup("perjalananTitle", { br: () => "<br>", span: (chunks: string) => `<span class="text-gold">${chunks}</span>` }) }}
             />
             <div className="mt-7 space-y-4 text-stone leading-relaxed">
               <p>{t("perjalananDesc1")}</p>
@@ -333,7 +333,7 @@ export default function SamaQuran() {
               <item.Icon />
               <p
                 className="mt-3 text-xs text-stone leading-relaxed"
-                dangerouslySetInnerHTML={{ __html: t(`values.${item.idKey}`) }}
+                dangerouslySetInnerHTML={{ __html: t.markup(`values.${item.idKey}`, { br: () => "<br>" }) }}
               />
             </div>
           ))}

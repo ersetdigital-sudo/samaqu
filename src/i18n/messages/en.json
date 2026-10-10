@@ -409,7 +409,7 @@
       "love": "Loving it"
     },
     "maknaClosing": "You don't have to wait until you're perfect to start being with the Quran.",
-    "perjalananTitle": "Whatever Your Journey,<br><span class=\"text-gold\">Stay With the Quran.</span>",
+    "perjalananTitle": "Whatever Your Journey,<br></br><span>Stay With the Quran.</span>",
     "perjalananDesc1": "We are all walking a different journey.",
     "perjalananDesc2": "Some are studying, working, building dreams, bettering themselves, or trying to mend a life that feels heavy.",
     "perjalananDesc3": "But whatever it is, one thing must never be left behind: never let the journey take us away from the Quran.",
@@ -419,10 +419,10 @@
     "hidupDesc2": "May Sama Quran be more than a brand name — may it be a value that lives within us, and within anyone who wishes to carry it.",
     "hidupDesc3": "We want this value to be preserved not only through what we say, but through what we do.",
     "values": {
-      "design": "Design that<br>Inspires",
-      "quality": "Products of<br>Quality",
-      "detail": "Details that<br>Respect",
-      "benefit": "Benefit for<br>Others"
+      "design": "Design that<br></br>Inspires",
+      "quality": "Products of<br></br>Quality",
+      "detail": "Details that<br></br>Respect",
+      "benefit": "Benefit for<br></br>Others"
     },
     "ctaTitle": "Sama Quran",
     "ctaDesc": "Living with it. And hoping to return with it.",
