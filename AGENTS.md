@@ -45,6 +45,19 @@ docker compose -f docker-compose.base44.yml logs -f web
 - Optional integrations that degrade silently when unset: Cloudinary (admin image
   upload), RajaOngkir (shipping cost), J&T Express (tariff/order/track), Meta Pixel.
 
+## Media backup (Cloudinary originals)
+
+The Cloudinary account that hosted most media is no longer accessible (its API key/secret
+are unknown), so admin image upload is dead while delivery URLs keep working. Copies of
+every reachable original live in the Supabase project's **public** Storage bucket
+`media-backup` (`image/…`, `video/…`, plus `_manifest.json` mapping original URL →
+bucket path → table). Re-run a backup with the Supabase REST + Storage APIs
+(`/rest/v1/<table>` to find URLs, strip the Cloudinary transform segment to get the
+original, then POST `/storage/v1/object/media-backup/<path>`); one-off scripts belong in
+`/tmp`, never in the repo. ~64 older URLs on the clouds `dgtixuop0` / `dfxc4ceya` return
+401 at source (testimonials, category/`katalog_info`/`size_guide` images, old order
+items) — unfixable without those accounts; product main images are all intact.
+
 ## Sandbox-only overrides
 
 - `next.config.ts` appends `allowedDevOrigins: ['3000-' + BASE44_PUBLIC_HOST_SUFFIX]`
