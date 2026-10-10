@@ -13,6 +13,27 @@ import { findOpenOrderProduct, type OpenOrderProduct } from "@/lib/open-order-of
 import type { CartLine } from "./types";
 import { Counter, FIELD_BG, GhostButton, LINE, MUTED, PrimaryButton, SummaryRow } from "./ui";
 
+/**
+ * Gaya kartu Extra Cover & Hanger (arah desain "Slab Espresso"): slab espresso penuh,
+ * garis emas yang ter-gambar saat kartu tampil, ditutup cap centang kecil di kanan bawah.
+ * Ditulis sebagai CSS scoped, bukan token bersama di `ui.tsx`, supaya warna gelap ini
+ * hanya dipakai bagian tersebut.
+ */
+const ADDON_CSS = `
+.oo-addon{box-sizing:border-box;height:48px;position:relative;display:flex;align-items:center;justify-content:space-between;gap:12px;overflow:hidden;padding:0 15px;background:#26211D;color:#F6EFE3;border:1px solid #3A322B;border-radius:9px;box-shadow:0 5px 14px rgba(38,33,29,.16);font-family:var(--font-inter),system-ui,-apple-system,"Segoe UI",sans-serif;cursor:pointer;text-align:left;transition:background-color .2s ease,border-color .2s ease,box-shadow .2s ease}
+.oo-addon::before{content:"";position:absolute;left:0;bottom:0;width:calc(100% - 48px);height:1px;background:#C9A15A;transform-origin:left;animation:oo-addon-trace .9s cubic-bezier(.22,.8,.3,1) both}
+.oo-addon::after{content:"";position:absolute;right:15px;bottom:3px;width:7px;height:4px;border-left:1px solid #C9A15A;border-bottom:1px solid #C9A15A;transform:rotate(-45deg);animation:oo-addon-seal .35s ease .85s both}
+.oo-addon-copy{min-width:0;display:flex;flex-direction:column;gap:1px}
+.oo-addon-name{font-family:var(--font-cormorant),Georgia,"Times New Roman",serif;font-size:15px;line-height:1.05;font-weight:400;white-space:nowrap;letter-spacing:.005em}
+.oo-addon-caption{font-size:8px;line-height:1.2;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#C9A15A;white-space:nowrap}
+.oo-addon-price{flex:none;padding-right:12px;color:#D7B46D;font-family:var(--font-cormorant),Georgia,"Times New Roman",serif;font-size:13px;line-height:1;font-variant-numeric:tabular-nums;white-space:nowrap}
+.oo-addon:hover{background:#302923;border-color:#C9A15A;box-shadow:0 6px 18px rgba(38,33,29,.22)}
+.oo-addon:active{background:#201C19;box-shadow:inset 0 2px 5px rgba(0,0,0,.22)}
+.oo-addon:focus-visible{outline:2px solid #C9A15A;outline-offset:2px}
+@keyframes oo-addon-trace{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes oo-addon-seal{from{opacity:0;transform:translateX(-3px) rotate(-45deg)}to{opacity:1;transform:translateX(0) rotate(-45deg)}}
+`;
+
 export function lineName(line: CartLine, products: OpenOrderProduct[]): string {
   return findOpenOrderProduct(products, line.productId)?.name ?? line.productId;
 }
@@ -106,20 +127,19 @@ export default function StepCart({
         })}
       </div>
 
-      {/* Extra Cover & Hanger */}
+      {/* Extra Cover & Hanger — slab espresso premium. */}
+      <style>{ADDON_CSS}</style>
       <button
         type="button"
         onClick={() => onToggleExtra(!extraCover)}
-        className="mt-4 flex w-full items-center justify-between gap-4 rounded-2xl px-4 py-3.5 text-left transition-colors duration-200"
-        style={{ border: `1px solid ${extraCover ? "var(--espresso)" : LINE}` }}
+        aria-pressed={extraCover}
+        className="oo-addon mt-4 w-full"
       >
-        <span>
-          <span className="block text-[13px] font-semibold">{OPEN_ORDER_ADDON.name}</span>
-          <span className="mt-0.5 block text-[11.5px]" style={{ color: MUTED }}>
-            Opsional, per pesanan
-          </span>
+        <span className="oo-addon-copy">
+          <span className="oo-addon-name">{OPEN_ORDER_ADDON.name}</span>
+          <span className="oo-addon-caption">Opsional, per pesanan</span>
         </span>
-        <span className="shrink-0 text-[13px] font-semibold tabular-nums">+{money(OPEN_ORDER_ADDON.price)}</span>
+        <span className="oo-addon-price">+{money(OPEN_ORDER_ADDON.price)}</span>
       </button>
 
       {/* Ringkasan */}
