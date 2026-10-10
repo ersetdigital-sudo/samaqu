@@ -226,8 +226,15 @@ live tariffs stay off until the J&T secrets are supplied. The J&T **testing** cr
 commit `e48a6fe`; supply them through the platform secrets (`/run/base44/app.env`), never in the
 repo. `JNT_ENV` defaults to `testing`.
 
-No new table: the hosted Supabase project has **no DDL path** from the sandbox (no `exec_sql`
-RPC, `/pg/query` invalid), so a new table would have needed the user to run SQL by hand.
+No new table: the hosted Supabase project has **no DDL path** from the sandbox, so a new table
+would have needed the user to run SQL by hand. Verified dead ends with the stored credentials:
+`SUPABASE_SERVICE_ROLE_KEY` **cannot** run DDL — `/pg/query` and `/pg/meta/query` are 404
+("requested path is invalid") and there is no `exec_sql` RPC (`PGRST202`), and PostgREST offers
+no DDL verb at all. Running SQL from the sandbox needs a Supabase **Management API** personal
+access token (`sbp_…`, sent as `Authorization: Bearer` to
+`https://api.supabase.com/v1/projects/<ref>/database/query`, ref = the subdomain of
+`NEXT_PUBLIC_SUPABASE_URL`) or the project's **database password** for a direct Postgres
+connection; neither ships with this app. Don't re-probe the service-role key for DDL.
 
 Page presentation (not obvious from the code):
 
@@ -287,6 +294,10 @@ Page presentation (not obvious from the code):
   editor Supabase (sandbox tidak punya jalur DDL, sama seperti kolom pengaturan lain). Selama belum
   dijalankan, halaman admin menampilkan peringatan dan simpan akan gagal; halaman publik tetap jalan
   dengan `OPEN_ORDER_PERIOD`.
+  **Sudah dijalankan** (2026-10-10) — `store_settings` punya `open_order_period` +
+  `open_order_active` (baris `id = 1`, periode "8-15 Agustus 2026", aktif `true`), peringatan di
+  halaman admin hilang, dan simpan→muat-ulang halaman terbukti mem-persist nilainya.
+  Cek cepat: `curl -s "$NEXT_PUBLIC_SUPABASE_URL/rest/v1/store_settings?select=id,open_order_period,open_order_active" -H "apikey: $SUPABASE_SERVICE_ROLE_KEY"`.
 - `src/types/lucide-react.d.ts` adalah shim tipe tulis-tangan berisi daftar ikon yang boleh diimpor
   proyek ini — ikon lucide baru (di sini `AlertTriangle`, `LayoutGrid`, `Save`) harus ditambahkan ke
   situ, kalau tidak `tsc` gagal dengan TS2305 walaupun ikonnya ada saat runtime.
