@@ -409,7 +409,7 @@
       "love": "Mencintainya"
     },
     "maknaClosing": "Tidak harus menunggu menjadi sempurna untuk mulai Sama Quran.",
-    "perjalananTitle": "Apa pun Perjalananmu,<br><span class=\"text-gold\">Tetaplah Sama Quran.</span>",
+    "perjalananTitle": "Apa pun Perjalananmu,<br></br><span>Tetaplah Sama Quran.</span>",
     "perjalananDesc1": "Kita semua sedang menjalani perjalanan yang berbeda.",
     "perjalananDesc2": "Ada yang sedang belajar, bekerja, membangun mimpi, memperbaiki diri, atau berusaha membenahi hidup yang terasa berat.",
     "perjalananDesc3": "Namun apa pun itu, ada satu hal yang tak boleh tertinggal: dan menangkan, jangan sampai perjalanan itu menjauhkan kita dari Al-Qur'an.",
@@ -419,10 +419,10 @@
     "hidupDesc2": "Semoga Sama Quran bukan hanya menjadi nama sebuah brand, tetapi menjadi nilai yang hidup dalam diri kami dan siapa pun yang ingin membawanya.",
     "hidupDesc3": "Kami ingin nilai ini terjaga bukan hanya dari apa yang kami katakan, tetapi dari apa yang kami lakukan.",
     "values": {
-      "design": "Desain yang<br>Menginspirasi",
-      "quality": "Produk yang<br>Berkualitas",
-      "detail": "Detail yang<br>Menghargai",
-      "benefit": "Manfaat untuk<br>Sesama"
+      "design": "Desain yang<br></br>Menginspirasi",
+      "quality": "Produk yang<br></br>Berkualitas",
+      "detail": "Detail yang<br></br>Menghargai",
+      "benefit": "Manfaat untuk<br></br>Sesama"
     },
     "ctaTitle": "Sama Quran",
     "ctaDesc": "Hidup bersamanya. Semoga pulang pun bersamanya.",

@@ -54,12 +54,21 @@ docker compose -f docker-compose.base44.yml logs -f web
   Verify: a `GET` on a `/_next/static/chunks/...` URL with
   `Origin: https://3000-$BASE44_PUBLIC_HOST_SUFFIX` must return 200.
 
-## Known pre-existing app noise (not a setup problem)
+## Rich text messages (i18n)
 
-- `CaraPemesanan.tsx` logs `FORMATTING_ERROR: … context variable "strong" was not
-  provided` because the `caraPemesanan.subtitle` message contains `<strong>` tags and
-  is rendered through `t()` with `dangerouslySetInnerHTML`. next-intl logs the error and
-  the page still returns 200. Left as-is; it is app-level, unrelated to the sandbox.
+next-intl 4 treats `<tag>` inside a message as ICU rich text. Reading such a message with
+plain `t()` throws and falls back to the raw key (logged as `FORMATTING_ERROR` /
+`INVALID_MESSAGE`), which is how the home, about and Sama Quran pages ended up rendering
+key names. Rules that now hold:
+
+- HTML in a message must use **closed** ICU tags — `<br></br>`, `<span>…</span>`. A
+  self-closing `<br/>` is passed through as literal text, and tag **attributes** are
+  rejected outright (`INVALID_TAG`), so styling is re-applied by the handler.
+- Read such a message with `t.markup(key, { tag: (chunks) => "<tag>…</tag>" })`; it returns a
+  string for `dangerouslySetInnerHTML`. Sites: `CaraPemesanan` (`subtitleLead` + `subtitle`),
+  `SamaQuran` (`perjalananTitle`, `values.*`), both `tentang-kami` pages (`storyP1`).
+- `useSafeTranslations`' no-provider fallback mirrors `markup`/`rich`/`raw`, so callers keep
+  working (and type-checking) when `NextIntlClientProvider` isn't mounted.
 
 ## Verify
 
