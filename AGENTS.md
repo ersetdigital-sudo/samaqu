@@ -248,12 +248,13 @@ Page presentation (not obvious from the code):
   `configured: false` fallback (`Ongkir —`) apply either way.
 - The period line under the title comes from `OPEN_ORDER_PERIOD` in `src/lib/open-order-config.ts`
   ("8-15 Agustus 2026"), rendered by `StepCatalog` as `Periode …` — edit that constant to change it.
-- The **Extra Cover & Hanger** row in step 3 uses a "Slab Espresso" treatment: a full espresso
-  slab (`#26211D`), a gold hairline that traces in left→right when the card appears and a small
-  gold check seal that fades in at the bottom-right. Its CSS is scoped in `StepCart.tsx` (the
-  `ADDON_CSS` string rendered in a `<style>` tag) instead of being added to the shared `ui.tsx`
-  tokens, because those dark colours are used nowhere else; the row is still the same toggle
-  button (click selects/deselects) and deliberately has no separate "selected" style.
+- The **Extra Cover & Hanger** row in step 3 follows the catalog look: a cream card with a thin
+  gold spine on the left edge (grows to full height on hover), the serif espresso name, a gold
+  uppercase caption, the serif price and a round gold ring that fills with a check while the
+  add-on is selected (`is-on` class). Its CSS is scoped in `StepCart.tsx` (the `ADDON_CSS` string
+  rendered in a `<style>` tag) instead of being added to the shared `ui.tsx` tokens, because the
+  ornament is used nowhere else; the row is still the same toggle button (click selects/deselects)
+  and only its appearance changed.
 - Deliberately not reproduced from the reference: the bottom tab bar (the site has its own
   chrome/floaters).
 - The success screen shows the order number and the "Menunggu Konfirmasi Admin" badge; "Lihat

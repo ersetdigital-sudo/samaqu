@@ -14,24 +14,26 @@ import type { CartLine } from "./types";
 import { Counter, FIELD_BG, GhostButton, LINE, MUTED, PrimaryButton, SummaryRow } from "./ui";
 
 /**
- * Gaya kartu Extra Cover & Hanger (arah desain "Slab Espresso"): slab espresso penuh,
- * garis emas yang ter-gambar saat kartu tampil, ditutup cap centang kecil di kanan bawah.
- * Ditulis sebagai CSS scoped, bukan token bersama di `ui.tsx`, supaya warna gelap ini
- * hanya dipakai bagian tersebut.
+ * Kartu Extra Cover & Hanger — mengikuti gaya katalog utama: kartu cream dengan spine emas
+ * tipis di tepi kiri, nama serif espresso, dan cap centang emas yang terisi saat dipilih.
+ * Ditulis sebagai CSS scoped, bukan token bersama di `ui.tsx`, supaya ornamen ini hanya
+ * dipakai di bagian tersebut. Perilaku tombolnya tidak berubah (toggle pilih/batal).
  */
 const ADDON_CSS = `
-.oo-addon{box-sizing:border-box;height:48px;position:relative;display:flex;align-items:center;justify-content:space-between;gap:12px;overflow:hidden;padding:0 15px;background:#26211D;color:#F6EFE3;border:1px solid #3A322B;border-radius:9px;box-shadow:0 5px 14px rgba(38,33,29,.16);font-family:var(--font-inter),system-ui,-apple-system,"Segoe UI",sans-serif;cursor:pointer;text-align:left;transition:background-color .2s ease,border-color .2s ease,box-shadow .2s ease}
-.oo-addon::before{content:"";position:absolute;left:0;bottom:0;width:calc(100% - 48px);height:1px;background:#C9A15A;transform-origin:left;animation:oo-addon-trace .9s cubic-bezier(.22,.8,.3,1) both}
-.oo-addon::after{content:"";position:absolute;right:15px;bottom:3px;width:7px;height:4px;border-left:1px solid #C9A15A;border-bottom:1px solid #C9A15A;transform:rotate(-45deg);animation:oo-addon-seal .35s ease .85s both}
-.oo-addon-copy{min-width:0;display:flex;flex-direction:column;gap:1px}
-.oo-addon-name{font-family:var(--font-cormorant),Georgia,"Times New Roman",serif;font-size:15px;line-height:1.05;font-weight:400;white-space:nowrap;letter-spacing:.005em}
-.oo-addon-caption{font-size:8px;line-height:1.2;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#C9A15A;white-space:nowrap}
-.oo-addon-price{flex:none;padding-right:12px;color:#D7B46D;font-family:var(--font-cormorant),Georgia,"Times New Roman",serif;font-size:13px;line-height:1;font-variant-numeric:tabular-nums;white-space:nowrap}
-.oo-addon:hover{background:#302923;border-color:#C9A15A;box-shadow:0 6px 18px rgba(38,33,29,.22)}
-.oo-addon:active{background:#201C19;box-shadow:inset 0 2px 5px rgba(0,0,0,.22)}
-.oo-addon:focus-visible{outline:2px solid #C9A15A;outline-offset:2px}
-@keyframes oo-addon-trace{from{transform:scaleX(0)}to{transform:scaleX(1)}}
-@keyframes oo-addon-seal{from{opacity:0;transform:translateX(-3px) rotate(-45deg)}to{opacity:1;transform:translateX(0) rotate(-45deg)}}
+.oo-addon{box-sizing:border-box;position:relative;display:flex;align-items:center;justify-content:space-between;gap:14px;width:100%;overflow:hidden;padding:15px 16px 15px 19px;background:linear-gradient(180deg,#FBF9F5,var(--cream-bright));color:var(--espresso);border:1px solid rgba(201,183,156,.45);border-radius:14px;box-shadow:0 1px 2px rgba(45,33,27,.04),0 12px 28px -24px rgba(45,33,27,.55);font-family:var(--font-inter),system-ui,-apple-system,"Segoe UI",sans-serif;cursor:pointer;text-align:left;transition:border-color .25s ease,box-shadow .25s ease,background-color .25s ease}
+.oo-addon::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,var(--gold-light),var(--gold-deep));transform:scaleY(.4);transform-origin:center;transition:transform .4s cubic-bezier(.22,.8,.3,1)}
+.oo-addon:hover{border-color:rgba(181,140,74,.6);box-shadow:0 2px 5px rgba(45,33,27,.05),0 18px 36px -26px rgba(45,33,27,.6)}
+.oo-addon:hover::before,.oo-addon.is-on::before{transform:scaleY(1)}
+.oo-addon:active{background:#F3EDE3}
+.oo-addon:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.oo-addon-copy{min-width:0;display:flex;flex-direction:column;gap:4px}
+.oo-addon-name{font-family:var(--font-cormorant),Georgia,"Times New Roman",serif;font-size:17px;line-height:1.1;font-weight:500;letter-spacing:.005em;color:var(--espresso)}
+.oo-addon-caption{font-size:9px;line-height:1;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--gold-deep)}
+.oo-addon-right{flex:none;display:flex;align-items:center;gap:12px}
+.oo-addon-price{font-family:var(--font-cormorant),Georgia,"Times New Roman",serif;font-size:15px;line-height:1;color:var(--espresso);font-variant-numeric:tabular-nums;white-space:nowrap}
+.oo-addon-seal{display:grid;place-items:center;width:24px;height:24px;border-radius:999px;border:1px solid rgba(181,140,74,.55);color:transparent;transition:background-color .25s ease,border-color .25s ease,color .25s ease,transform .25s ease}
+.oo-addon.is-on{border-color:rgba(150,116,47,.7);background:linear-gradient(180deg,#FCF8F0,#F6EEE0);box-shadow:0 2px 6px rgba(45,33,27,.06),0 18px 36px -26px rgba(45,33,27,.6)}
+.oo-addon.is-on .oo-addon-seal{background:var(--gold-deep);border-color:var(--gold-deep);color:#FBF7EF;transform:scale(1.04)}
 `;
 
 export function lineName(line: CartLine, products: OpenOrderProduct[]): string {
@@ -127,19 +129,26 @@ export default function StepCart({
         })}
       </div>
 
-      {/* Extra Cover & Hanger — slab espresso premium. */}
+      {/* Extra Cover & Hanger — kartu cream premium bergaya katalog. */}
       <style>{ADDON_CSS}</style>
       <button
         type="button"
         onClick={() => onToggleExtra(!extraCover)}
         aria-pressed={extraCover}
-        className="oo-addon mt-4 w-full"
+        className={`oo-addon mt-4${extraCover ? " is-on" : ""}`}
       >
         <span className="oo-addon-copy">
           <span className="oo-addon-name">{OPEN_ORDER_ADDON.name}</span>
-          <span className="oo-addon-caption">Opsional, per pesanan</span>
+          <span className="oo-addon-caption">Opsional · per pesanan</span>
         </span>
-        <span className="oo-addon-price">+{money(OPEN_ORDER_ADDON.price)}</span>
+        <span className="oo-addon-right">
+          <span className="oo-addon-price">+{money(OPEN_ORDER_ADDON.price)}</span>
+          <span className="oo-addon-seal" aria-hidden="true">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 6 9 17l-5-5" />
+            </svg>
+          </span>
+        </span>
       </button>
 
       {/* Ringkasan */}
