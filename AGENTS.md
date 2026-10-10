@@ -140,6 +140,19 @@ existing admin dashboard (`/[locale]/admin`, "Pesanan" tab) with the normal stat
 No new table: the hosted Supabase project has **no DDL path** from the sandbox (no `exec_sql`
 RPC, `/pg/query` invalid), so a new table would have needed the user to run SQL by hand.
 
+Page presentation (not obvious from the code):
+
+- The page renders **without the navbar**: `src/app/[locale]/(customer)/layout.tsx` skips
+  `<Navbar />` for path suffixes listed in `NAVBAR_HIDDEN_SUFFIXES` (`/open-order`), and the
+  page hero carries its own logo + close link back to `/`.
+- Price/product cards come from `src/components/OpenOrderProducts.tsx`, which fetches the
+  catalog client-side (`getProducts()`) and matches each config product to catalog rows:
+  thobe by **`jenis_kain.name` === config `kain`** (B-01 / A-02), narrowed with the config's
+  ready-stock colors found in the catalog product name (`Thobe <warna>`); Vest by product
+  name (no catalog row exists yet, so it renders as a dark placeholder without a detail link).
+  Photo/weight are catalog data; **prices still come only from `src/lib/open-order-config.ts`**
+  (the API keeps validating them server-side).
+
 Verify: open `/id/open-order`, submit a test order, then check
 `docker compose -f docker-compose.base44.yml logs web | grep OPEN-ORDER` and that the row shows
 under `/id/admin` → Pesanan. **Delete that test order afterwards** (admin detail → Hapus) so it

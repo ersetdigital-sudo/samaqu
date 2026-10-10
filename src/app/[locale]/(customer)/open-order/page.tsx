@@ -1,29 +1,37 @@
 "use client";
 
+import Link from "next/link";
+import { X } from "lucide-react";
 import { useSafeTranslations } from "@/lib/safe-i18n";
 import OpenOrderForm from "@/components/OpenOrderForm";
-import { OPEN_ORDER_ADDON, OPEN_ORDER_PRODUCTS } from "@/lib/open-order-config";
-
-const money = (value: number) => `Rp${value.toLocaleString("id-ID")}`;
-
-/** Gabungkan series dengan harga sama supaya tampil seperti daftar harga form lama. */
-function priceTiers(product: (typeof OPEN_ORDER_PRODUCTS)[number]) {
-  return product.series.reduce<{ price: number; names: string[] }[]>((tiers, series) => {
-    const last = tiers[tiers.length - 1];
-    if (last && last.price === series.price) last.names.push(series.name);
-    else tiers.push({ price: series.price, names: [series.name] });
-    return tiers;
-  }, []);
-}
+import OpenOrderProducts from "@/components/OpenOrderProducts";
 
 export default function OpenOrderPage() {
   const t = useSafeTranslations("openOrder");
 
   return (
     <section className="min-h-screen" style={{ background: "var(--cream)" }}>
-      {/* Hero */}
-      <div style={{ background: "var(--espresso)", color: "var(--cream)" }}>
-        <div className="mx-auto max-w-4xl px-5 py-20 sm:py-24 text-center">
+      {/* Hero — halaman ini tampil tanpa navbar supaya fokus ke form open order */}
+      <div className="relative overflow-hidden" style={{ background: "var(--espresso)", color: "var(--cream)" }}>
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0"
+          style={{ background: "radial-gradient(120% 85% at 50% -15%, rgba(181,140,74,.3), transparent 62%)" }}
+        />
+        <div className="relative mx-auto flex max-w-6xl items-center justify-between px-5 pt-6 sm:px-8">
+          <Link href="/" aria-label="SAMAQU" className="inline-flex items-center">
+            <img src="/logo.svg" alt="SAMAQU" className="h-8 w-auto sm:h-9" style={{ filter: "invert(1) brightness(.95)" }} />
+          </Link>
+          <Link
+            href="/"
+            aria-label={t("backHome")}
+            className="grid h-10 w-10 place-items-center rounded-full transition-colors duration-200 hover:bg-white/10"
+            style={{ border: "1px solid rgba(248,245,241,.22)" }}
+          >
+            <X size={17} />
+          </Link>
+        </div>
+        <div className="relative mx-auto max-w-4xl px-5 pt-14 pb-20 sm:pt-16 sm:pb-24 text-center">
           <p className="text-[11px] sm:text-xs tracking-[0.35em] uppercase font-ui" style={{ color: "var(--gold)" }}>{t("heroEyebrow")}</p>
           <h1 className="mt-5 text-4xl sm:text-6xl leading-[1.08] font-light" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>
             {t("heroTitle")} <em className="italic" style={{ color: "var(--gold)" }}>{t("heroAccent")}</em>
@@ -42,28 +50,8 @@ export default function OpenOrderPage() {
           <h2 className="text-3xl sm:text-4xl" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>{t("priceTitle")}</h2>
           <p className="mt-3 font-ui" style={{ color: "var(--text-secondary)" }}>{t("priceSubtitle")}</p>
 
-          <div className="mt-8 grid gap-5 lg:grid-cols-3">
-            {OPEN_ORDER_PRODUCTS.map((product) => (
-              <div key={product.id} className="rounded-2xl p-6 bg-white" style={{ border: "1px solid rgba(42,33,27,.08)" }}>
-                <h3 className="text-xl font-medium font-ui" style={{ color: "var(--espresso)" }}>{product.name}</h3>
-                <p className="mt-1 text-xs font-ui" style={{ color: "var(--text-muted)" }}>{t("priceColors")}: {product.colors.join(", ")}</p>
-                <div className="mt-4 space-y-2">
-                  {priceTiers(product).map((tier) => (
-                    <div key={tier.price} className="flex items-baseline justify-between gap-3">
-                      <span className="text-sm font-ui" style={{ color: "var(--text-secondary)" }}>Series {tier.names.join(" & ")}</span>
-                      <span className="text-base font-semibold font-ui whitespace-nowrap" style={{ color: "var(--gold)" }}>{money(tier.price)}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-5 rounded-2xl p-5 bg-white flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-8" style={{ border: "1px solid rgba(42,33,27,.08)" }}>
-            <span className="text-sm font-ui" style={{ color: "var(--text-secondary)" }}>{t("priceNone")}</span>
-            <span className="text-sm font-ui" style={{ color: "var(--espresso)" }}>
-              {t("priceExtra")} <strong style={{ color: "var(--gold)" }}>+{money(OPEN_ORDER_ADDON.price)}</strong>
-            </span>
+          <div className="mt-9">
+            <OpenOrderProducts />
           </div>
         </div>
       </section>
@@ -85,9 +73,14 @@ export default function OpenOrderPage() {
           <h2 className="text-3xl sm:text-4xl" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>{t("stepsTitle")}</h2>
           <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {[t("step1"), t("step2"), t("step3"), t("step4")].map((step, index) => (
-              <div key={index} className="rounded-2xl p-6 bg-white" style={{ border: "1px solid rgba(42,33,27,.08)" }}>
-                <span className="text-2xl" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--gold)" }}>{String(index + 1).padStart(2, "0")}</span>
-                <p className="mt-3 text-sm font-ui leading-relaxed" style={{ color: "var(--text-secondary)" }}>{step}</p>
+              <div key={index} className="rounded-[24px] bg-white p-6 transition-transform duration-300 hover:-translate-y-1" style={{ border: "1px solid rgba(42,33,27,.07)" }}>
+                <span
+                  className="grid h-10 w-10 place-items-center rounded-full text-lg"
+                  style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--gold)", border: "1px solid rgba(181,140,74,.35)", background: "rgba(181,140,74,.06)" }}
+                >
+                  {index + 1}
+                </span>
+                <p className="mt-4 text-sm font-ui leading-relaxed" style={{ color: "var(--text-secondary)" }}>{step}</p>
               </div>
             ))}
           </div>
