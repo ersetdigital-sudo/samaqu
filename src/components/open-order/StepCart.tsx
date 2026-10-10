@@ -83,6 +83,8 @@ export default function StepCart({
   }
 
   const totalQty = lines.reduce((sum, line) => sum + line.quantity, 0);
+  const addonTotal = extraCover ? OPEN_ORDER_ADDON.price : 0;
+  const total = subtotal + addonTotal;
 
   return (
     <div>
@@ -153,7 +155,13 @@ export default function StepCart({
 
       {/* Ringkasan */}
       <div className="mt-6 rounded-2xl p-5" style={{ background: FIELD_BG, border: "1px solid rgba(201,183,156,.25)" }}>
-        <SummaryRow label={`Subtotal (${totalQty} produk)`} value={money(subtotal)} strong />
+        <div className="space-y-2.5">
+          <SummaryRow label={`Subtotal (${totalQty} produk)`} value={money(subtotal)} />
+          {extraCover && <SummaryRow label={OPEN_ORDER_ADDON.name} value={money(addonTotal)} />}
+        </div>
+        <div className="mt-3 pt-3" style={{ borderTop: `1px solid ${LINE}` }}>
+          <SummaryRow label="Total" value={money(total)} strong />
+        </div>
         <p className="mt-2 text-[11.5px] leading-relaxed" style={{ color: MUTED }}>
           Ongkir dihitung otomatis dari kecamatan tujuan di langkah berikutnya.
         </p>

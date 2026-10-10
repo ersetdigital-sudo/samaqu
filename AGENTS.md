@@ -254,7 +254,9 @@ Page presentation (not obvious from the code):
   add-on is selected (`is-on` class). Its CSS is scoped in `StepCart.tsx` (the `ADDON_CSS` string
   rendered in a `<style>` tag) instead of being added to the shared `ui.tsx` tokens, because the
   ornament is used nowhere else; the row is still the same toggle button (click selects/deselects)
-  and only its appearance changed.
+  and only its appearance changed. The summary box below it lists the item lines, an `Extra Cover &
+  Hanger` line while the add-on is selected, and a `Total` (subtotal + add-on) so toggling the card
+  visibly changes the amount; ongkir is only added in step 5 (review).
 - Deliberately not reproduced from the reference: the bottom tab bar (the site has its own
   chrome/floaters).
 - The success screen shows the order number and the "Menunggu Konfirmasi Admin" badge; "Lihat
