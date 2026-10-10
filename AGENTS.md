@@ -204,9 +204,10 @@ Page presentation (not obvious from the code):
   (`/api/shipping/districts`, `/api/shipping/search-destination`) is optional and unset in this
   sandbox. Typing ≥ 3 chars still triggers the same debounced `/api/shipping/jnt-cost` call and
   the same graceful `configured: false` fallback (`Ongkir —`).
+- The period line under the title comes from `OPEN_ORDER_PERIOD` in `src/lib/open-order-config.ts`
+  ("8-15 Agustus 2026"), rendered by `StepCatalog` as `Periode …` — edit that constant to change it.
 - Deliberately not reproduced from the reference: the bottom tab bar (the site has its own
-  chrome/floaters) and the "Periode …" line (the period is business data that exists nowhere in
-  the repo — add it to `open-order-config.ts` first if it is wanted).
+  chrome/floaters).
 - The success screen shows the order number and the "Menunggu Konfirmasi Admin" badge; "Lihat
   Pesanan Saya" points at `/akun/pesanan`, which needs a logged-in customer.
 
