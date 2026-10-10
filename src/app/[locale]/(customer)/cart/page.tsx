@@ -234,7 +234,7 @@ export default function CartPage() {
 
       {/* Fixed Bottom Checkout Button */}
       {items.length > 0 && (
-        <div className="fixed bottom-0 inset-x-0 z-40 px-4 pb-4 pt-3" style={{ background: "linear-gradient(to top, var(--cream) 70%, transparent)" }}>
+        <div className="fixed bottom-[var(--mobile-nav-h)] inset-x-0 z-40 px-4 pb-4 pt-3" style={{ background: "linear-gradient(to top, var(--cream) 70%, transparent)" }}>
           <button onClick={checkoutAll}
             className="w-full py-3.5 rounded-xl text-[12px] tracking-[0.08em] uppercase font-ui font-semibold transition-all duration-300 active:scale-[0.98]"
             style={{ background: "var(--gold)", color: "white", boxShadow: "0 6px 20px -6px rgba(184,145,74,.4)" }}>

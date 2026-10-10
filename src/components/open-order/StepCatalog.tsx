@@ -11,7 +11,6 @@ import { ChevronRight } from "lucide-react";
 import { cloudinaryUrl } from "@/lib/cloudinary";
 import type { Product } from "@/lib/katalog-data";
 import { money, openOrderVariants, priceRange } from "@/lib/open-order-catalog";
-import { OPEN_ORDER_PERIOD } from "@/lib/open-order-config";
 import { lowestOpenOrderPrice, type OpenOrderProduct } from "@/lib/open-order-offering";
 import { Chip, INK, MUTED, PrimaryButton } from "./ui";
 
@@ -20,12 +19,15 @@ const ALL = "semua";
 export default function StepCatalog({
   products,
   catalog,
+  period,
   cartCount,
   onOpen,
   onViewCart,
 }: {
   products: OpenOrderProduct[];
   catalog: Product[];
+  /** Periode Open Order — dibaca dari store_settings (diatur di menu admin "Open Order"). */
+  period: string;
   cartCount: number;
   onOpen: (product: OpenOrderProduct, color: string) => void;
   onViewCart: () => void;
@@ -50,7 +52,7 @@ export default function StepCatalog({
           Open Order <span style={{ color: "var(--gold)" }}>Samaqu</span>
         </h1>
         <p className="mt-1.5 text-[13px]" style={{ color: INK }}>
-          Periode {OPEN_ORDER_PERIOD}
+          Periode {period}
         </p>
         <p className="mx-auto mt-3 max-w-xl text-[13px] leading-relaxed" style={{ color: MUTED }}>
           Pilih produk, atur ukuran dan harga, lalu kirim pesanan kamu. Admin akan mengonfirmasi lewat WhatsApp.

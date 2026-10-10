@@ -246,8 +246,10 @@ Page presentation (not obvious from the code):
   If the lists can't be loaded it falls back to the old plain Kota + Kecamatan text inputs, so the
   order still submits; the same debounced `/api/shipping/jnt-cost` call and the same graceful
   `configured: false` fallback (`Ongkir —`) apply either way.
-- The period line under the title comes from `OPEN_ORDER_PERIOD` in `src/lib/open-order-config.ts`
-  ("8-15 Agustus 2026"), rendered by `StepCatalog` as `Periode …` — edit that constant to change it.
+- The period line under the title comes from `store_settings.open_order_period`, diatur di menu admin
+  **Open Order** dan dibaca lewat `useStoreSettings()` (`StepCatalog` merendernya sebagai `Periode …`).
+  `OPEN_ORDER_PERIOD` di `src/lib/open-order-config.ts` ("8-15 Agustus 2026") kini hanya **nilai
+  default/fallback** — dipakai selama kolomnya kosong.
 - The **Extra Cover & Hanger** row in step 3 follows the catalog look: a cream card with a thin
   gold spine on the left edge (grows to full height on hover), the serif espresso name, a gold
   uppercase caption, the serif price and a round gold ring that fills with a check while the
@@ -263,8 +265,31 @@ Page presentation (not obvious from the code):
   There are **two near-duplicate admin dashboards** — `src/app/[locale]/admin/page.tsx` (served at
   `/id/admin`) and `src/app/admin/page.tsx` (`/admin`, kept outside the locale prefix by
   `src/middleware.ts`) — so an orders-panel change belongs in both files.
-- Deliberately not reproduced from the reference: the bottom tab bar (the site has its own
-  chrome/floaters).
+- **Nav bawah ala aplikasi (mobile)** di semua halaman toko: `src/components/MobileBottomNav.tsx`
+  (Beranda · Kategori · Open Order · Pesanan · Akun) dipasang oleh
+  `src/app/[locale]/(customer)/layout.tsx` dan tampil di bawah breakpoint `lg` — sama dengan navbar
+  atas yang beralih ke drawer di sana. Tingginya satu variabel CSS, `--mobile-nav-h`
+  (`src/app/globals.css`: 0 px di desktop, 62 px di bawah 1024 px); layout memakai variabel itu untuk
+  padding bawah halaman, dan tiga halaman yang punya bar aksi bawah sendiri (keranjang, checkout,
+  detail produk) menggeser bar-nya dengan `bottom-[var(--mobile-nav-h)]` supaya tidak bertumpuk.
+  Route group `src/app/(customer)/` (tanpa locale) sengaja tidak disentuh — middleware me-redirect
+  semua path toko ke `/<locale>/…`, jadi pohon itu tidak terpakai.
+- **Periode & status Open Order diatur dari dashboard admin** (dulu hardcode `OPEN_ORDER_PERIOD`).
+  Menu sidebar baru **Open Order** → `/admin/open-order` (+ salinan `/id/admin/open-order`), halaman
+  mandiri seperti Voucher yang dirender di dalam `AdminShell`; entrinya harus ditambahkan di
+  `AdminShell`'s `navGroups` **dan** di sidebar dua dashboard admin (keduanya punya sidebar sendiri).
+  Halaman itu menulis `store_settings.open_order_period` + `open_order_active`. `/open-order` membaca
+  keduanya lewat `useStoreSettings()`: `StepCatalog` menampilkan periodenya (fallback ke
+  `OPEN_ORDER_PERIOD` kalau kolomnya kosong), dan kalau `open_order_active` = false `OpenOrderWizard`
+  merender layar "sedang ditutup" alih-alih langkah 1 — murni di klien, route `/api/open-order` tidak
+  berubah.
+- Kolomnya datang dari **`supabase/open-order-settings.sql` yang harus dijalankan manual** di SQL
+  editor Supabase (sandbox tidak punya jalur DDL, sama seperti kolom pengaturan lain). Selama belum
+  dijalankan, halaman admin menampilkan peringatan dan simpan akan gagal; halaman publik tetap jalan
+  dengan `OPEN_ORDER_PERIOD`.
+- `src/types/lucide-react.d.ts` adalah shim tipe tulis-tangan berisi daftar ikon yang boleh diimpor
+  proyek ini — ikon lucide baru (di sini `AlertTriangle`, `LayoutGrid`, `Save`) harus ditambahkan ke
+  situ, kalau tidak `tsc` gagal dengan TS2305 walaupun ikonnya ada saat runtime.
 - The success screen shows the order number and the "Menunggu Konfirmasi Admin" badge; "Lihat
   Pesanan Saya" points at `/akun/pesanan`, which needs a logged-in customer.
 

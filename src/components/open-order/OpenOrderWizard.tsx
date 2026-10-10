@@ -7,6 +7,8 @@
  * Produk, warna, series, dan harga diturunkan dari katalog (lihat `open-order-offering.ts`) —
  * bukan daftar hardcode. Submit ke /api/open-order (route yang sama dengan form sebelumnya)
  * supaya pesanan tetap masuk ke dashboard admin sebagai pesanan `CYO-`.
+ *
+ * Periode & status buka/tutup datang dari store_settings (menu admin "Open Order").
  */
 
 import { useEffect, useMemo, useState } from "react";
@@ -14,8 +16,10 @@ import Link from "next/link";
 import { ChevronLeft, X } from "lucide-react";
 import { getProducts } from "@/lib/db";
 import type { Product } from "@/lib/katalog-data";
-import { OPEN_ORDER_ADDON } from "@/lib/open-order-config";
+import { OPEN_ORDER_ADDON, OPEN_ORDER_PERIOD } from "@/lib/open-order-config";
 import { buildOpenOrderProducts, findOpenOrderProduct, type OpenOrderProduct } from "@/lib/open-order-offering";
+import { useSafeLocale } from "@/lib/safe-i18n";
+import { useStoreSettings } from "@/lib/store-settings";
 import StepCart from "./StepCart";
 import StepCatalog from "./StepCatalog";
 import StepCustomer from "./StepCustomer";
@@ -67,6 +71,12 @@ export default function OpenOrderWizard() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<{ orderNumber: string; total: number } | null>(null);
+
+  const locale = useSafeLocale();
+  // Periode & status Open Order diatur dari dashboard admin (store_settings).
+  const settings = useStoreSettings();
+  const period = settings.open_order_period || OPEN_ORDER_PERIOD;
+  const isOpen = settings.open_order_active !== false;
 
   // Foto produk diambil dari katalog (harga tetap dari config).
   useEffect(() => {
@@ -222,6 +232,47 @@ export default function OpenOrderWizard() {
 
   const backTo = BACK_TO[step];
 
+  // Periode ditutup dari menu admin "Open Order" → halaman publik hanya menampilkan pesannya.
+  if (!isOpen) {
+    return (
+      <section
+        className="grid min-h-screen place-items-center px-5"
+        style={{ background: "var(--cream)", color: INK, fontFamily: "var(--font-inter), system-ui, sans-serif" }}
+      >
+        <div className="max-w-md text-center">
+          <p className="text-[11px] font-medium uppercase tracking-[0.28em]" style={{ color: "var(--gold)" }}>
+            Create Your Price
+          </p>
+          <h1
+            className="mt-3 text-[1.9rem] font-semibold leading-tight"
+            style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}
+          >
+            Open Order <span style={{ color: "var(--gold)" }}>Samaqu</span>
+          </h1>
+          <p className="mt-4 text-[13.5px] leading-relaxed" style={{ color: MUTED }}>
+            Open Order sedang ditutup untuk periode {period}. Pantau Instagram SAMAQU untuk jadwal berikutnya.
+          </p>
+          <div className="mt-7 flex justify-center gap-2.5">
+            <Link
+              href={`/${locale}/katalog`}
+              className="rounded-xl px-5 py-3 text-[13px] font-medium"
+              style={{ background: "var(--espresso)", color: "var(--cream)" }}
+            >
+              Lihat Katalog
+            </Link>
+            <Link
+              href={`/${locale}`}
+              className="rounded-xl px-5 py-3 text-[13px] font-medium"
+              style={{ border: `1px solid ${LINE}`, color: INK }}
+            >
+              Beranda
+            </Link>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="min-h-screen" style={{ background: "var(--cream)", color: INK, fontFamily: "var(--font-inter), system-ui, sans-serif" }}>
       {/* Header + progres langkah */}
@@ -272,6 +323,7 @@ export default function OpenOrderWizard() {
           <StepCatalog
             products={products}
             catalog={catalog}
+            period={period}
             cartCount={lines.reduce((sum, line) => sum + line.quantity, 0)}
             onOpen={(product, color) => openDetail(product.id, color)}
             onViewCart={() => setStep(3)}
