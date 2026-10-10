@@ -37,9 +37,16 @@ export function useSafeTranslations(namespace?: string) {
   } catch {
     const ns = namespace || "nav";
     const fallback = DEFAULT_MESSAGES[ns] || {};
-    return (key: string) => {
+    const translate = (key: string) => {
       const fullKey = key.includes(".") ? key.split(".").pop()! : key;
       return fallback[fullKey] || key;
     };
+    // Mirror the parts of the translator API the app uses so message lookups
+    // keep working when NextIntlClientProvider isn't mounted.
+    return Object.assign(translate, {
+      rich: translate,
+      markup: translate,
+      raw: translate,
+    });
   }
 }

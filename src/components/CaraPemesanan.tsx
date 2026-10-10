@@ -250,8 +250,9 @@ export default function CaraPemesanan() {
             variants={headerVariants}
             className="mx-auto mt-3 max-w-xl text-[15px] leading-[1.75] font-ui"
             style={{ color: "var(--text-secondary)" }}
-            dangerouslySetInnerHTML={{ __html: t("subtitle") }}
-          />
+          >
+            <strong>{t("subtitleLead")}</strong> {t("subtitle")}
+          </motion.p>
         </motion.div>
 
         {/* ── Steps ── */}
