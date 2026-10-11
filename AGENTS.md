@@ -428,11 +428,16 @@ Page presentation (not obvious from the code):
   hanya merender `src/components/admin/OpenOrderSettingsForm.tsx` di dalam `AdminShell` — formulirnya
   **satu file** supaya dua halaman itu tidak dobel. (Entri sidebar-nya sendiri masih perlu ada di
   `AdminShell`'s `navGroups` **dan** di sidebar dua dashboard admin, karena masing-masing punya sidebar.)
-  **Urutan item di grup "Lainnya" wajib identik di kedua sidebar** (`AdminShell`'s `navGroups` dan
-  blok "Lainnya" di `src/app/admin/page.tsx`): kalau tidak, menu terlihat "berubah urutan" begitu
-  admin membuka salah satu subhalaman — dulu "Open Order" ada di posisi ketiga di `AdminShell` tapi
-  paling bawah di dashboard. Urutan yang benar: Konten Website · Pengaturan · Voucher · Testimoni ·
-  Panduan Ukuran · Halaman Garansi &amp; Retur · Open Order. Verifikasi tanpa browser:
+  **Grup & urutan menu wajib identik di kedua sidebar** (`AdminShell`'s `navGroups` dan `navGroups`
+  di `src/app/admin/page.tsx`): kalau tidak, menu terlihat "berubah urutan" begitu admin membuka
+  salah satu subhalaman. Sejak permintaan pemilik 2026-10-11 ("rapihin menu, yg bisa digabung
+  gabungin aja, terus Open Order pindahin ke atas di bawah Order Management") kedua sidebar punya
+  **tiga grup yang sama**: **Menu Utama** (Dashboard · Order Management · **Open Order** · Produk ·
+  Pelanggan), **Konten** (Konten Website · Biolink · Foto Carousel · Testimoni · Panduan Ukuran ·
+  Halaman Garansi &amp; Retur), dan **Lainnya** (Voucher · Pengaturan). Grup "Biolink" lama
+  dibubarkan — Biolink/Foto Carousel pindah ke "Konten", dan "Open Order" naik tepat di bawah
+  "Order Management". Di dashboard `navGroups` sekarang menyatukan item panel (`panel: Panel`) dan
+  item halaman (`href: string`) — pakai pola itu saat menambah menu. Verifikasi tanpa browser:
   `curl -s http://localhost:3000/admin/open-order | grep -o 'href="/admin[^"]*"'` harus sama
   urutannya dengan sidebar dashboard (yang di-SSR spinner, jadi bandingkan dengan sumber `page.tsx`).
   Admin memilih **tanggal mulai + tanggal tutup** (`<input type="date">`) dan **series yang dibuka**
