@@ -769,3 +769,29 @@ otomatis statusnya selesai sendiri", plus chip filter "dibatalkan" di panel Pesa
   dan tidak ada scroll samping di 375 px. **Belum** terbukti live: status berubah sendiri saat
   paket benar-benar diterima (perlu pesanan yang resinya sudah `status_code 200`) — logikanya
   diuji unit, bukan end-to-end.
+
+## Satu scrollbar untuk panel meluncur (drawer) admin
+
+Permintaan pemilik (2026-10-11): "kok scroll nya jadi ada 2 sih di detail pesanan satu aja broo
+jgn 2 gitu cek juga di yg lain, tolong bikin kaya website mahal". Dulu drawer punya scrollbar
+sendiri sementara halaman admin di belakangnya masih bisa di-scroll — dua bar terlihat sekaligus.
+
+- **Kunci scroll halaman**: hook bersama **`src/lib/use-scroll-lock.ts`** → `useBodyScrollLock(active)`.
+  Dipanggil `OrderDetailDrawer` (`!!order`), `ProductDetailDrawer` (`!!productId` — hanya jalur
+  drawer; `ProductDetailPanel` mode `page` tidak ikut terkunci) dan `CustomerDetailDrawer`
+  (`!!customer`). Hook menulis `overflow:hidden` ke `<html>` + `<body>` dan menambah
+  `padding-right` selebar scrollbar yang hilang supaya tata letak tidak bergeser saat panel dibuka;
+  penghitung di modulnya membuat beberapa panel yang terbuka bersamaan (mis. drawer + `ConfirmModal`)
+  hanya mengunci sekali dan membuka kunci saat panel terakhir ditutup. Panel baru: pakai hook ini,
+  jangan menulis kunci scroll sendiri.
+- **Bar ramping**: kelas **`drawer-scroll`** di `src/app/globals.css` (`overscroll-behavior:contain`,
+  `scrollbar-width:thin`, `::-webkit-scrollbar` dengan track transparan & thumb membulat) dipasang di
+  `.odr-body`, `.pd-body`, `.cd-body`; itu juga yang mencegah scroll panel "menular" ke halaman.
+- Verifikasi (sesi admin diputar ulang): `/id/admin` → Order Management → tombol **Detail** →
+  `overflow` `<body>` = `hidden`, `window.scrollTo(0,700)` tidak menggeser halaman, `.odr-body`
+  berkelas `drawer-scroll` dengan `overscroll-behavior:contain` dan tetap bisa di-scroll, di 768 px
+  panel 520 px tanpa scroll samping, lalu setelah drawer ditutup `overflow` body kembali normal dan
+  halaman bisa di-scroll lagi. **Catatan tool**: `navigate('/id/admin')` di `preview_execute_code`
+  membalas `navigation_failed` (route admin tidak bereaksi ke SPA nav) dan URL-nya tertinggal
+  menunjuk `/id/admin` padahal isinya halaman lain — panggil `preview_screenshot({path:'/id/admin'})`
+  (yang melakukan kunjungan halaman penuh) dulu sebelum menguji panel admin.

@@ -18,6 +18,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { useBodyScrollLock } from "@/lib/use-scroll-lock";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Box, DollarSign, Edit, Image as ImageIcon, Layers, Package, ShoppingCart, TrendingUp, X } from "lucide-react";
@@ -191,7 +192,7 @@ export function ProductDetailPanel({
       </header>
 
       {/* Body */}
-      <div className="pd-body">
+      <div className="pd-body drawer-scroll">
         {loading ? (
           <div className="pd-loading">
             <span className="pd-spinner" /> Memuat detail produk…
@@ -382,6 +383,9 @@ export default function ProductDetailDrawer({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [productId, onClose]);
+
+  // Halaman di belakang panel ikut dikunci selama drawer terbuka (satu scrollbar saja).
+  useBodyScrollLock(!!productId);
 
   return (
     <AnimatePresence>

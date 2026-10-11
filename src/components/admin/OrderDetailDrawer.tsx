@@ -23,6 +23,7 @@ import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import OrderDetailContent, { AdminDetailOrder } from "@/components/admin/OrderDetailContent";
+import { useBodyScrollLock } from "@/lib/use-scroll-lock";
 
 export default function OrderDetailDrawer({
   order,
@@ -45,6 +46,10 @@ export default function OrderDetailDrawer({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [order, onClose]);
+
+  // Halaman di belakang panel ikut dikunci selama drawer terbuka — kalau tidak, halaman dan
+  // drawer sama-sama punya scrollbar (dua scrollbar di layar).
+  useBodyScrollLock(!!order);
 
   return (
     <AnimatePresence>
@@ -83,7 +88,7 @@ export default function OrderDetailDrawer({
               </button>
             </header>
 
-            <div className="odr-body">
+            <div className="odr-body drawer-scroll">
               <OrderDetailContent
                 order={order}
                 onStatusChange={onStatusChange}
