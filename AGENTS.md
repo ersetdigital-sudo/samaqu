@@ -340,10 +340,10 @@ Page presentation (not obvious from the code):
   pembayaran sengaja jadi blok yang selalu terlihat** (permintaan pemilik: "kok resi-nya ilang",
   "harusnya tampil metode pembayaran") — dulu keduanya hanya ada di dalam ringkasan "Total Pesanan"
   yang terlipat dan resi cuma ditempel di belakang nama kurir (`J&T - EZ: JO…`), jadi terbaca
-  seperti hilang. Nomor pesanan `awb_no` tetap terisi otomatis saat pesanan masuk
-  (`/api/open-order` & `/api/orders` memanggil J&T Order Create) — resi kosong di drawer berarti
-  order itu memang belum punya `awb_no`, bukan field-nya yang dibuang; halaman detail customer
-  (`RincianPesanan.tsx`) tidak ikut diubah. Header drawer (nomor pesanan + tanggal + tombol X) hidup di
+  seperti hilang. **Resi J&T tidak lagi terisi otomatis saat pesanan masuk** — admin yang
+  menerbitkannya lewat tombol **"Atur Pesanan"** di blok aksi drawer (lihat "Atur Pesanan" di
+  bawah); resi kosong di drawer berarti pesanan itu memang belum diatur, bukan field-nya yang
+  dibuang; halaman detail customer (`RincianPesanan.tsx`) tidak ikut diubah. Header drawer (nomor pesanan + tanggal + tombol X) hidup di
   `OrderDetailDrawer.tsx` saja; nomor pesanan memakai font UI admin (dulu serif Cormorant di header
   modal — permintaan pemilik: "samain kaya yg lain biar seragam"). Drawer tertutup lewat X, klik
   latar, atau `Escape`, dan `z-index`-nya **50** supaya `ConfirmModal` (Hapus Pesanan / Batalkan
@@ -543,6 +543,25 @@ Yang tidak kelihatan dari kode:
   selesai, dibatalkan → linimasa berhenti di langkah pembatalan (banner tone `cancel`). **Dulu langkah 1 & 2
   selalu "done"**, jadi pesanan `pending` di akun tampak sudah diproses sementara admin
   menampilkannya `pending` — itu bug yang diperbaiki, jangan kembalikan hardcode itu.
+- **Jam pembatalan pesanan (`waktuBatal` di `src/lib/akun-format.ts`).** Tabel `orders` **tidak
+  punya trigger yang mengisi `updated_at`** — dicek 2026-10-11: di semua baris `updated_at` sama
+  persis dengan `created_at`, termasuk pesanan yang sudah `dibatalkan`/`diproses`/`selesai`. Dulu
+  langkah "Pesanan dibatalkan" menampilkan `updated_at` apa adanya, jadi jamnya selalu menyalin jam
+  pesanan dibuat (pemilik melihat "dibuat 13:38, dibatalkan 13:38" pada pesanan yang batalnya
+  belakangan). Sekarang:
+  - ketiga jalur pembatalan (dan update status lain) **menulis `updated_at` sendiri** —
+    `PATCH /api/admin/orders` (action `cancelJnt` **dan** update status biasa), `POST
+    /api/orders/cancel`, dan `GET /api/cron/auto-cancel`; `Order`/`AdminDetailOrder` di
+    `src/app/admin/page.tsx` + `src/components/admin/OrderDetailContent.tsx` ikut membawa field itu,
+    dan `RincianPesanan.tsx` menyuntik jam lokal saat customer membatalkan dari halaman pesanan;
+  - `waktuBatal()` mengembalikan **"Dibatalkan" tanpa jam** kalau `updated_at` masih sama dengan
+    `created_at` (baris lama, jamnya tidak bisa dipercaya) dan jam aslinya kalau berbeda.
+  Jam pembatalan **tidak bisa dipulihkan** untuk pesanan yang dibatalkan sebelum perubahan ini;
+  kalau nanti ada jalur DDL (SQL Editor Supabase), kolom `cancelled_at timestamptz` jelas lebih
+  benar daripada menumpang `updated_at`. Verifikasi: pesanan uji buatan sendiri (insert REST) →
+  `PATCH` status `dibatalkan` → `updated_at` > `created_at` (terbukti, +29 detik), di drawer timeline
+  bertambah langkah "Pesanan dibatalkan" berjam valid, sedangkan `SMQ-20261010-364` (lama) hanya
+  menampilkan "Dibatalkan"; hapus pesanan uji lewat `DELETE /api/admin/orders` setelahnya.
 - Label pill ikut disamakan dengan admin: `pending` = **"Menunggu Pembayaran"** (dipakai daftar
   pesanan, dashboard akun, banner struk, dan modal admin), `dibatalkan` pakai `akun-pill-batal` (merah). Dipakai bersama oleh `/akun` (dashboard),
   list pesanan, dan detail — ubah di `src/lib/akun-format.ts` saja.
@@ -552,16 +571,13 @@ Yang tidak kelihatan dari kode:
   `series` ke baris `products` lalu memakai `getProductThumbnail`. Karena itu
   `getCustomerOrders()` di `src/lib/customer-auth.ts` **wajib memilih `kain, series`** — kalau
   kolomnya tidak ikut di-select, fotonya hilang tanpa error (placeholder ikon lagi).
-- **Nomor resi terbit saat pesanan dibuat**: `/api/open-order` sekarang memanggil J&T Order Create
-  (`createOrder` di `src/lib/jnt/*`) tepat setelah baris `order_items` masuk, lalu menyimpan
-  `awb_no` + `jnt_order_id` (dan mengembalikan `awbNo`), sama seperti `/api/orders` pada checkout
-  website. Kode area dari nama wilayah RajaOngkir: `getOriginCode("DEPOK")` (= "DPK"),
+- **Nomor resi TIDAK dibuat saat pesanan dibuat** (sejak 2026-10-11): `/api/open-order` dan
+  `/api/orders` hanya menyimpan pesanan (`awb_no: null` di responsnya) dan tidak lagi memanggil
+  J&T. Resi diterbitkan admin lewat **"Atur Pesanan"** — lihat bagian "Atur Pesanan" di bawah.
+  Kode area dari nama wilayah RajaOngkir: `getOriginCode("DEPOK")` (= "DPK"),
   `getDestinationCode(city)`, `getReceiverArea(city, district)` — wizard menyimpan nama resmi
   ("Kota Depok", "Beji") dan `area-mapping.ts` membuang prefix administratif, jadi biarkan
-  namanya apa adanya. Kegagalan J&T hanya di-`console.error` (`[OPEN-ORDER] J&T`) dan pesanan
-  tetap tersimpan, jadi **resi kosong ≠ pesanan gagal**; periksa log sebelum menuduh route-nya.
-  Pesanan yang sudah ada sebelum perubahan ini tetap tanpa resi (tidak ada backfill, dan belum
-  ada tombol "buat resi" di admin).
+  namanya apa adanya. Order lama tetap tanpa resi (tidak ada backfill) sampai admin mengaturnya.
 - **Customer bisa membatalkan pesanannya sendiri**: `POST /api/orders/cancel` (body
   `{ orderNumber }`, header `Authorization: Bearer <access_token>`) — verifikasi sesi, pesanan
   harus milik customer itu (kalau bukan → 404, bukan 403), hanya status `pending`/`diproses` yang
@@ -735,6 +751,44 @@ saja (`produk/edit/[id]` masih salinan terpisah dan **tidak** ikut berubah).
   bernilai sama + Simpan/Batal, Batal kembali ke read-only, kartu J&T tidak ada lagi, dan panel
   Pelanggan memuat (59 pelanggan, 4 kartu ringkasan) tanpa error.
 
+## "Atur Pesanan" — resi J&T diterbitkan admin (ala Shopee Seller Centre)
+
+Permintaan pemilik (2026-10-11): alur pengiriman disamakan dengan Shopee Seller — resi/AWB J&T
+**tidak lagi terbit saat customer checkout**, tapi saat admin menekan **"Atur Pesanan"** setelah
+pembayaran diverifikasi.
+
+- **Checkout berhenti memanggil J&T**: `/api/orders` (checkout website) dan `/api/open-order` tidak
+  lagi memanggil `createOrder` dan membalas `awbNo: null`. Logika payload J&T-nya sekarang **satu**
+  modul: `src/lib/jnt/order-from-order.ts` → `createJntOrderForOrder(order)` (dulu disalin di dua
+  route checkout). Modul itu juga menentukan COD (`payment_methods.method_type`, atau nilai lama
+  `'cod'`) dan berat kirim (`orders.weight`; kalau kosong dijumlah dari `products.weight` per
+  `order_items`, fallback 1200 g/item — pesanan Open Order menyimpan `weight: null`).
+  Salinan mati `src/app/[locale]/api/**` sengaja tidak diubah.
+- **Aksi admin**: `PATCH /api/admin/orders` dengan `action: "createJnt"` → guard (404 pesanan tidak
+  ada, 400 sudah punya `awb_no`, 400 kalau `dibatalkan`), panggil J&T, lalu simpan `awb_no` +
+  `jnt_order_id` **dan ubah status ke `diproses`**. Tombol **"Atur Pesanan"** (kelas `od-a-primary`,
+  ikon kotak) ada di blok aksi `OrderDetailContent.tsx`, muncul hanya bila pesanan belum punya resi
+  dan statusnya `pending`/`diproses`; kliknya membuka `ConfirmModal` (label konfirmasinya "Atur
+  Pesanan", bukan "Hapus" — `showConfirm` di `src/app/admin/page.tsx` menerima
+  `options: { confirmText, danger }`), lalu `arrangeOrder()` meng-update baris tabel + drawer tanpa
+  reload. Status `dikirim` tetap datang dari pelacakan, bukan dari sini.
+- **Kalau J&T menolak** (kredensial/kode area gagal) route membalas 400 dengan pesan `reason`/`desc`
+  dari J&T, status pesanan tidak berubah, dan tombolnya tetap ada untuk dicoba lagi.
+- **`shipping_city` kini menyimpan "Kecamatan, Kota" di kedua jalur** (checkout website dulu hanya
+  menyimpan kota, jadi kecamatan hilang dan `receiver_area` J&T cuma bisa ditebak dari kota).
+  `splitCityDistrict()` di `order-from-order.ts` memecahnya lagi saat membuat resi; order lama yang
+  isinya hanya nama kota tetap jalan (district kosong → lookup per kota).
+- **Verifikasi**: `tsc --noEmit` bersih; `curl /admin` & `/id/admin` = `200`. Lewat preview (sesi
+  admin diputar ulang): Order Management → baris pesanan tanpa resi (mis. `SMQ-20261007-761`) →
+  tombol **Atur Pesanan** ada; pesanan ber-resi (mis. `SMQ-20261008-432`) tidak punya tombol itu;
+  klik tombol → `ConfirmModal` muncul, klik **Batal** → tidak ada request `PATCH /api/admin/orders`
+  (cek `getNetworkRequests`). Guard route tanpa menyentuh J&T:
+  `curl -X PATCH http://localhost:3000/api/admin/orders -H 'Content-Type: application/json'
+  -d '{"orderNumber":"SMQ-20261008-432","action":"createJnt"}'` → `400` "sudah punya nomor resi";
+  order asing → `404`. **Pembuatan resi yang benar-benar sukses belum diuji otomatis**: kredensial
+  J&T toko ini production, jadi mengonfirmasi dialognya akan membuat pengiriman J&T asli — uji
+  manual dengan satu pesanan nyata.
+
 ## Lacak paket di drawer pesanan & status selesai otomatis
 
 Permintaan pemilik (2026-10-11): "di detail tambahin tombol Lacak", "ketika paket sudah diterima
@@ -811,3 +865,91 @@ sendiri sementara halaman admin di belakangnya masih bisa di-scroll — dua bar 
   membalas `navigation_failed` (route admin tidak bereaksi ke SPA nav) dan URL-nya tertinggal
   menunjuk `/id/admin` padahal isinya halaman lain — panggil `preview_screenshot({path:'/id/admin'})`
   (yang melakukan kunjungan halaman penuh) dulu sebelum menguji panel admin.
+
+## Satu jalur pembatalan: resi J&T selalu di-void dulu
+
+Permintaan pemilik (2026-10-11): "bagus gimana buat alur yg skrng, kasih yg terbaik aja" —
+setelah dibahas, celahnya bukan di cron (order `pending` normalnya belum beresi) melainkan di
+chip **"Ubah Status"** drawer admin: chip itu dulu menulis status apa adanya, jadi pesanan beresi
+bisa dikembalikan ke `pending` atau ditandai `dibatalkan` sementara resinya tetap hidup di J&T.
+
+- **Satu modul**: `src/lib/cancel-order.ts` → `cancelOrderCompletely(order, remark)`. Urutannya
+  void resi J&T (kalau `awb_no`/`jnt_order_id` ada) → stok website dikembalikan → status
+  `dibatalkan` + `updated_at` ditulis manual. Kalau J&T menolak, status **tidak** diubah dan
+  fungsinya mengembalikan `{ success: false, stage: "jnt" }` supaya resi tidak menggantung.
+  Dipakai **empat** pemanggil: `PATCH /api/admin/orders` (action `cancelJnt` **dan** status
+  `dibatalkan`), `POST /api/orders/cancel` (customer), dan `GET /api/cron/auto-cancel`.
+  Jangan tulis ulang urutan void→stok→status di route baru; panggil modul ini.
+- **Stok hanya untuk `SMQ-`**: `hasStockReservation()` di modul itu memakai prefix nomor pesanan,
+  karena hanya checkout website yang memotong stok (`samaqu_decrement_stock`); `CYO-` (Open Order)
+  tidak pernah memotong, jadi dulu jalur admin & cron **menambah** stok yang tidak pernah diambil.
+  Customer hanya bisa membatalkan order miliknya (`customer_id`), dan order website lama/baru
+  `customer_id`-nya null → praktis tidak berubah, tapi aturannya sekarang eksplisit.
+- **Dua penjagaan di `PATCH /api/admin/orders`** (selain `cancelJnt`): status `pending` **ditolak
+  400** kalau pesanan sudah punya resi (`Pesanan ini sudah punya resi J&T (<resi>)…`), dan status
+  `dibatalkan` dirutekan ke `cancelOrderCompletely()` — jadi chip "Dibatalkan" kini ikut mem-void
+  resi, bukan cuma mengganti status.
+- **Klien**: `updateOrderStatus()` di `src/app/admin/page.tsx` mendelegasikan `dibatalkan` untuk
+  pesanan ber-`awb_no` ke `cancelJntOrder()` (konfirmasi + void), dan dialog itu memakai
+  `{ confirmText: "Ya, Batalkan", danger: true }` (sebelumnya tombolnya berbunyi "Hapus").
+  Penjagaan server tetap yang mengikat — klien cuma UX.
+- **Pesan error J&T**: `cancelOrder()` hanya melihat `raw.detail[0].status === "Sukses"`, sedangkan
+  `raw.desc` bisa berbunyi "Request berhasil" walau `detail[0].reason` menolak; karena itu pesan
+  error memakai `detail[0].reason` lebih dulu.
+- **Verifikasi (2026-10-11, semua lolos)**: `tsc --noEmit` bersih. Lewat API + baca REST:
+  (a) order uji tanpa resi + status `dibatalkan` → 200, `updated_at` > `created_at`;
+  (b) order uji pending **beresi** + chip `pending` → 400 (ditolak) dan chip `dibatalkan` → 400
+  dengan status tetap `pending` (J&T menolak void);
+  (c) order uji `created_at` 25 jam lalu → cron `auto-cancel` → `{cancelled:1}` dan statusnya
+  `dibatalkan`; (d) sesi admin diputar ulang: `/id/admin` → Order Management → baris pesanan uji
+  → chip "Dibatalkan" membuka dialog "Batalkan di J&T?" berisi nomor AWB, **tidak** ada
+  `PATCH /api/admin/orders` selama dialog terbuka, status tetap Pending, dialog/drawer ditutup
+  tanpa error console. Semua pesanan uji dihapus lagi setelah uji (tidak ada sisa `TEST*`).
+  Perubahan terakhir pada label tombol dialog tidak diuji ulang di browser (jatah panggilan
+  preview habis) — hanya `tsc` bersih.
+## Alamat pesanan: kecamatan & kode pos (2026-10-11)
+
+Pemilik menemukan pesanan `SMQ-20261011-643` (Damar) alamatnya cuma "Jl.Medokan Asri Barat IV
+Blok F No.44, Surabaya" — kecamatan dan kode pos tidak muncul, padahal checkout meminta keduanya.
+Dua bug berbeda, keduanya di `src/app/[locale]/(customer)/checkout/page.tsx` (pohon
+`src/app/(customer)/` sengaja **tidak** disentuh: tidak terpakai) dan di drawer admin:
+
+- **Kecamatan alamat manual terbuang.** Payload checkout dulu mengirim
+  `district: selectedAddr?.kecamatan || ""`, jadi untuk tamu/alamat manual (yang kecamatannya
+  diketik di field "Kecamatan") nilainya selalu kosong → `shipping_city` cuma berisi kota dan
+  `getReceiverArea()` J&T kehilangan kode area. Sekarang:
+  `district: selectedAddr ? selectedAddr.kecamatan || "" : kecamatanName.trim()`, dan karena
+  field Kecamatan berlabel wajib, submit manual tanpa kecamatan **ditolak** klien
+  (`e.kecamatan = "Kecamatan wajib diisi"`, pesan + border merah ditampilkan seperti field lain).
+  `const selectedAddr` diangkat ke atas blok validasi supaya dipakai validasi & payload sekaligus.
+- **"Gunakan Alamat Baru" masih memakai alamat tersimpan.** Dulu `selectedAddressId` tidak
+  dikosongkan, jadi setelah menekan "+ Gunakan Alamat Baru" kecamatan tetap diambil dari alamat
+  tersimpan sementara jalan/kota/kode pos dari field yang diketik — campur dua alamat. Sekarang
+  tombol itu `setSelectedAddressId("")`, dan "← Kembali ke alamat tersimpan" memilih ulang alamat
+  default lewat `handleSelectAddress` supaya payload tidak tertinggal di mode manual.
+- **Kode pos tidak tampil di drawer admin.** Drawer membaca `order.shipping_postal`, padahal
+  kolomnya `orders.shipping_postal_code` (API admin pun mengirim nama itu) → kode pos hilang dari
+  blok "Alamat Pengiriman". Sudah diperbaiki di `src/components/admin/OrderDetailContent.tsx`
+  (tipe + perakit `alamat`) dan tipe `Order` di `src/app/admin/page.tsx`. Halaman customer
+  (`RincianPesanan.tsx`) memang sudah benar sejak awal, jadi kode pos selalu terlihat di
+  `/akun/pesanan` — yang bolong hanya sisi admin.
+
+Konsekuensi data: kecamatan yang sudah telanjur hilang **tidak bisa dipulihkan** (tidak ada
+`saved_addresses` untuk pembeli itu dan kolomnya tidak menyimpan jejaknya) — `SMQ-20261011-643`
+masih perlu kecamatan diisi manual/konfirmasi ke pembeli saat resi diterbitkan (kode posnya aman:
+`60295`). Pesanan `SMQ-`/`CYO-` baru sudah ikut membaik otomatis.
+
+Verifikasi: `tsc --noEmit` bersih; `/id/checkout` = `200` dan HTML SSR-nya memuat
+`data-field="alamat|kecamatan|kota|kodepos"`; `/admin` = `200`; baris REST pesanan menunjukkan
+`shipping_postal_code: "60295"` (masukannya ada, cuma tidak dirender). **Belum terbukti di
+browser**: klik "Buat Pesanan" dengan kecamatan terisi benar-benar mengirim `district` yang
+diketik (jatah panggilan preview habis; `navigate('/id/checkout')` di preview balas
+`navigation_failed` — route tidak merender lewat SPA nav, jadi checkout harus dibuka dengan
+kunjungan halaman penuh lalu diuji manual).
+
+- **Temuan kredensial (belum bisa saya perbaiki, perlu pemilik)**: panggilan void ke J&T production
+  (`api.jet.co.id/.../order/cancel`) dijawab `detail[0].reason: "Username atau Api Key salah"`
+  sementara kredensial yang sama dipakai untuk tariff/track (`partner-track`) berhasil. Artinya
+  kredensial **order API** (`JNT_ORDER_USERNAME` / `JNT_ORDER_API_KEY` / `JNT_ORDER_KEY`) belum
+  diterima endpoint ecommerce production — sampai dibetulkan, pembatalan pesanan beresi akan
+  ditolak 400 dan "Atur Pesanan" (createJnt) juga akan gagal.
