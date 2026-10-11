@@ -325,13 +325,20 @@ Page presentation (not obvious from the code):
   There are **two near-duplicate admin dashboards** — `src/app/[locale]/admin/page.tsx` (served at
   `/id/admin`) and `src/app/admin/page.tsx` (`/admin`, kept outside the locale prefix by
   `src/middleware.ts`) — so an orders-panel change belongs in both files.
-  **Modal detail pesanan** kedua dashboard kini hanya berisi header (nomor pesanan + tanggal + tombol
-  tutup) + satu komponen bersama **`src/components/admin/OrderDetailContent.tsx`**, yang isinya memakai
-  susunan & gaya halaman detail pesanan customer: banner status berwarna → "Info Pengiriman" →
+  **Drawer detail pesanan** kedua dashboard memakai komponen bersama
+  **`src/components/admin/OrderDetailDrawer.tsx`** — panel meluncur dari kanan, pola yang sama dengan
+  `ProductDetailDrawer` (`ODR_CSS`, kelas `odr-`, lebar 640 px / penuh di mobile). Isinya satu
+  komponen bersama **`src/components/admin/OrderDetailContent.tsx`**, yang memakai susunan & gaya
+  halaman detail pesanan customer: banner status berwarna → "Info Pengiriman" →
   "Alamat Pengiriman" → kartu produk + baris "Total Pesanan" yang dilipat → "Status Pesanan"
-  (linimasa `strukSteps`) → aksi. Gaya/DOM-nya dipinjam dari `RincianPesanan`: kelas `rp-`,
+  (linimasa `strukSteps`) → aksi. Header drawer (nomor pesanan + tanggal + tombol X) hidup di
+  `OrderDetailDrawer.tsx` saja; nomor pesanan memakai font UI admin (dulu serif Cormorant di header
+  modal — permintaan pemilik: "samain kaya yg lain biar seragam"). Drawer tertutup lewat X, klik
+  latar, atau `Escape`, dan `z-index`-nya **50** supaya `ConfirmModal` (Hapus Pesanan / Batalkan
+  J&T, juga z-50 tapi dirender setelah drawer) tetap tampil di atasnya. Gaya/DOM-nya dipinjam dari
+  `RincianPesanan`: kelas `rp-`,
   `RINCIAN_CSS`, dan `FALLBACK_PHOTO` **diekspor dari sana** — ubah salah satunya, halaman customer
-  dan modal admin ikut berubah (itu yang diinginkan: satu sumber gaya). Kontrol khusus admin
+  dan drawer admin ikut berubah (itu yang diinginkan: satu sumber gaya). Kontrol khusus admin
   (chip "Ubah Status", WhatsApp, Cetak Label, Batalkan J&T, Hapus Pesanan) memakai kelas `od-` di
   `OD_CSS` file yang sama. Perbedaan yang disengaja dari halaman customer: baris item tetap memakai
   `Kain <kode> · <series> · <warna> · <size> × <qty>` (warna `default` disembunyikan) dengan
@@ -342,23 +349,22 @@ Page presentation (not obvious from the code):
   **Di bawah breakpoint `lg` daftar pesanan tidak memakai tabel**: kedua dashboard merender
   `src/components/admin/OrdersMobileList.tsx` — kartu berisi nomor pesanan · pill status · nama
   pelanggan · `tanggal · total`, dan bila prop `onSelect` diberi kartunya jadi tombol yang membuka
-  modal detail (dengan chevron); tanpa `onSelect` kartunya statis. Komponen itu menyembunyikan
+  drawer detail (dengan chevron); tanpa `onSelect` kartunya statis. Komponen itu menyembunyikan
   dirinya sendiri di `lg` (`lg:hidden`), sedangkan `<table>`-nya tetap di dalam pembungkus
   `overflow-x-auto` yang sama dan cukup diberi `hidden lg:table` — jangan menambah pembungkus kedua
   (dua root elemen di dalam ternary `{loading ? … : ( … )}` menghasilkan parse error JSX
   "Expected '</', got 'ident'"). Baris "Pesanan Terbaru" di dashboard memakai komponen yang sama
   (5 baris pertama, tanpa `onSelect`) dan baris chip filter pesanan memakai `flex-wrap` supaya
   "Selesai" tidak terpotong di layar ~370 px.
-  **Tata letak modal detail di mobile** (permintaan pemilik: "kurang rapih, bikin lebih responsif"):
-  pembungkus modal memakai varian `md:` (`md:pt-10 md:px-4 md:pb-10`, `md:rounded-2xl`, `md:min-h-0`,
-  header `px-4 py-4 md:px-6 md:py-5`) supaya di bawah 768 px modalnya jadi lembar penuh tanpa
-  gutter — breakpoint-nya sengaja `md` (768 px), sama dengan breakpoint "struk" di `RINCIAN_CSS`;
-  `OrderDetailContent`'s `OD_CSS` menambahkan override `max-width:767.98px` yang **hanya** berlaku
-  di dalam modal: `.od-root .rp-root` jadi transparan (latar abu `#F5F6F7` milik halaman customer
-  dibuang, kalau tidak ada blok abu di dalam kertas krem modal), banner status menempel di bawah
-  header (`margin-top:0` + radius 0), chip "Ubah Status" jadi grid 2×2 dan tombol aksi jadi baris
-  penuh (flex-wrap membuat 3 chip + 1 dan tombol berlebar pincang). Yang ≥768 px tidak berubah:
-  tetap lembar "struk hangat" krem di dalam kartu modal.
+  **Tata letak drawer detail di mobile** (permintaan pemilik: "kurang rapih, bikin lebih responsif",
+  lalu "pastikan responsif di mobile"): `ODR_CSS` membuat drawer selebar penuh di bawah 768 px
+  (header lebih rapat, `padding:14px 16px`) — breakpoint-nya sengaja sama (768 px) dengan breakpoint
+  "struk" di `RINCIAN_CSS`; `OrderDetailContent`'s `OD_CSS` menambahkan override `max-width:767.98px`
+  yang **hanya** berlaku di dalam drawer: `.od-root .rp-root` jadi transparan (latar abu `#F5F6F7`
+  milik halaman customer dibuang, kalau tidak ada blok abu di dalam lembar drawer), banner status
+  menempel di bawah header drawer (`margin-top:0` + radius 0), chip "Ubah Status" jadi grid 2×2 dan
+  tombol aksi jadi baris penuh (flex-wrap membuat 3 chip + 1 dan tombol berlebar pincang). Yang
+  ≥768 px tidak berubah: drawer 640 px dengan lembar "struk hangat" krem 600 px terpusat di dalamnya.
 - **Dashboard akun** (`/[locale]/akun`, `src/app/[locale]/akun/page.tsx`) ditata ulang untuk mobile:
   baris "Pesanan Terakhir" = satu baris atas (thumbnail, nama pesanan + `#nomor · tanggal` yang
   dipotong `truncate` satu baris, chevron rata tengah) lalu satu baris penuh di bawahnya berisi
@@ -532,7 +538,7 @@ pemilik "drawer modern", mengikuti referensi desain yang dikirim). Dipakai di **
 - **Drawer dari daftar produk**: `ProductsCatalog` menerima prop `onDetail(id)`; tombol mata di
   kartu memanggilnya (dulu `<Link>` ke halaman detail). Kedua dashboard (`/admin` dan `/id/admin`)
   menyimpan `selectedProductId` dan merender `<ProductDetailDrawer productId={…} onClose={…} />`
-  tepat sebelum modal detail pesanan. Drawer tertutup lewat tombol **Tutup**, klik latar, atau
+  tepat sebelum `<OrderDetailDrawer … />`. Drawer tertutup lewat tombol **Tutup**, klik latar, atau
   `Escape`.
 - **Halaman route tetap ada** (`/admin/produk/detail/<id>` + salinan locale) dan sekarang hanya
   merender `ProductDetailPanel` dengan `mode="page"` (lembar terpusat, gaya sama) — jadi tidak ada
@@ -546,6 +552,14 @@ Total Transaksi, Varian Menipis) — jangan mengarang kolom yang tidak ada. Gaya
 
 **Verifikasi manual** (route admin tidak bisa dicapai lewat navigasi SPA preview:
 `window.__base44_preview.navigate('/admin'|'/id/admin')` mengubah URL tapi konten tidak berganti,
-dan full page load di-reset ke route home pada panggilan preview berikutnya): buka
+dan full page load di-reset ke route home pada panggilan preview berikutnya — jadi perubahan
+dashboard admin **tidak bisa** dibuktikan lewat preview tool, cukup `tsc --noEmit` bersih + curl
+`/admin` & `/id/admin` = 200 tanpa error kompilasi di log): buka
 `/id/admin` → panel **Produk** → klik tombol mata di kartu produk; drawer harus meluncur dari kanan,
 tombol **Tutup** menutupnya, dan `/admin/produk/detail/<id>` menampilkan panel yang sama.
+Untuk **drawer detail pesanan**: panel **Order Management** → klik baris pesanan (atau tombol
+"Detail"); drawer meluncur dari kanan dengan nomor pesanan (font UI, bukan serif) + tanggal di
+header, lalu isi struk (banner status → info pengiriman → alamat → produk → Total Pesanan →
+Status Pesanan); chip "Ubah Status" & tombol aksi (WhatsApp / Cetak Label / Hapus) tetap bekerja,
+dan tutup lewat **X**, klik latar, atau `Escape`. Ulangi di lebar <768 px: drawer selebar penuh,
+chip status 2×2, tombol aksi satu kolom.
