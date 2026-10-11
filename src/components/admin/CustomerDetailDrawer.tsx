@@ -13,6 +13,7 @@
 import { useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Cake, MapPin, Phone, ShoppingBag, X } from "lucide-react";
+import { useBodyScrollLock } from "@/lib/use-scroll-lock";
 
 export type CustomerOrder = {
   order_number: string;
@@ -83,6 +84,9 @@ export default function CustomerDetailDrawer({
     return () => window.removeEventListener("keydown", onKey);
   }, [customer, onClose]);
 
+  // Halaman di belakang panel ikut dikunci selama drawer terbuka (satu scrollbar saja).
+  useBodyScrollLock(!!customer);
+
   // Satu alamat bisa dipakai berkali-kali — tampilkan unik, urut dari yang terbaru dipakai.
   const addresses = useMemo(() => {
     const seen = new Map<string, { address: string; count: number; lastAt: string }>();
@@ -138,7 +142,7 @@ export default function CustomerDetailDrawer({
               </button>
             </header>
 
-            <div className="cd-body">
+            <div className="cd-body drawer-scroll">
               {/* Ringkasan */}
               <div className="cd-grid2">
                 <div className="cd-card cd-stat">
