@@ -48,10 +48,6 @@ export interface AdminOrderRow {
   created_at: string;
 }
 
-function money(n: number) {
-  return "Rp " + n.toLocaleString("id-ID");
-}
-
 function tanggal(iso: string) {
   return new Date(iso).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
 }
@@ -187,7 +183,6 @@ export default function OrdersView({
               <th className="font-medium px-5 py-3">ID</th>
               <th className="font-medium px-5 py-3">Pelanggan</th>
               <th className="font-medium px-5 py-3">Tanggal</th>
-              <th className="font-medium px-5 py-3 text-right">Total</th>
               <th className="font-medium px-5 py-3">Pengiriman</th>
               <th className="font-medium px-5 py-3">Status</th>
               <th className="font-medium px-5 py-3 text-right">Aksi</th>
@@ -204,7 +199,6 @@ export default function OrdersView({
                   <td className="px-5 py-3.5 font-semibold whitespace-nowrap">{o.order_number}</td>
                   <td className="px-5 py-3.5 max-w-[200px] truncate" title={o.customer_name}>{o.customer_name}</td>
                   <td className="px-5 py-3.5 whitespace-nowrap" style={{ color: "var(--text-muted)" }}>{tanggal(o.created_at)}</td>
-                  <td className="px-5 py-3.5 font-semibold whitespace-nowrap text-right">{money(o.total)}</td>
                   <td className="px-5 py-3.5 min-w-[150px]">
                     <span className="block text-xs whitespace-nowrap" style={{ color: "var(--text-muted)" }}>{ship.courier}</span>
                     <span className="block text-xs font-semibold mt-0.5 whitespace-nowrap" style={{ color: ship.awaiting ? "#c2410c" : "var(--espresso)" }}>{ship.resi}</span>
@@ -227,7 +221,7 @@ export default function OrdersView({
               );
             })}
             {visibleOrders.length === 0 && (
-              <tr><td colSpan={7} className="px-5 py-8 text-center" style={{ color: "var(--text-muted)" }}>{ordersEmptyText}</td></tr>
+              <tr><td colSpan={6} className="px-5 py-8 text-center" style={{ color: "var(--text-muted)" }}>{ordersEmptyText}</td></tr>
             )}
           </tbody>
         </table>

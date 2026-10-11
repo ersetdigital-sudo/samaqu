@@ -808,9 +808,16 @@ tanpa menyentuh status ataupun logika database sama sekali.
   kolom aksi yang berisi dua tombol itulah yang membuat tabelnya berantakan. **Jangan** mengubah
   gerbang "Atur Pesanan" di `OrderDetailContent` (masih `status === "diproses"`): `orderStage` hanya
   memberi tahu keadaan pesanan, bukan menggantikan gerbangnya.
+- **Kolom "Total" sudah dihapus dari tabel** (permintaan pemilik 2026-10-11: "tabel total mending
+  hapus aja deh bro di menu manage pesanan") — kolomnya cuma mengulang angka yang sudah ada di kartu
+  dan di total produk/ringkasan drawer. Menghapusnya juga menghapus helper `money()` di
+  `OrdersView` (tidak dipakai lagi) dan menurunkan `colSpan` baris kosong `7` → `6`. Kartu
+  (`OrdersMobileList`) sengaja **tetap** menampilkan `tanggal · total`. Tabelnya kini tinggal enam
+  kolom: `ID · Pelanggan · Tanggal · Pengiriman · Status · Aksi` (`min-w-[860px]` tidak berubah,
+  jadi masih muat).
 - **Tabel dipepetkan satu baris per sel** supaya tidak berantakan (bagian "rapihin juga tabel yg di
-  open order"): `whitespace-nowrap` di kolom ID, Tanggal, Total, dan kolom Aksi; nama pelanggan
-  dipotong `max-w-[200px] truncate` (+ `title`); kolom `Total` rata kanan seperti header-nya; kolom
+  open order"): `whitespace-nowrap` di kolom ID, Tanggal, dan kolom Aksi; nama pelanggan
+  dipotong `max-w-[200px] truncate` (+ `title`); kolom
   Pengiriman `min-w-[150px]`. Nomor Open Order (`CYO-20261011-…`) dan nama panjang tidak lagi membuat
   baris tumbuh tinggi sendiri-sendiri. Tab **Open Order** memakai tabel yang sama persis — tidak ada
   tabel terpisah, jadi perbaikan ini ikut keduanya.
@@ -828,8 +835,9 @@ tanpa menyentuh status ataupun logika database sama sekali.
   `curl /admin` & `/id/admin` = `200`; tab berbunyi `Semua (35) · Belum Bayar (1) · Perlu Dikirim (2)
   · Dikirim (0) · Selesai (22) · Dibatalkan (10)`; 35 kartu dengan pill tahap + baris pengiriman;
   klik tab **Perlu Dikirim** → 2 baris, semuanya "Perlu Dikirim" + "Resi belum dibuat"; di desktop
-  tabel menampilkan kolom `ID · Pelanggan · Tanggal · Total · Pengiriman · Status · Aksi`; tidak ada
-  scroll samping di kedua lebar; tanpa error console. (Klik **Atur Pesanan** di baris masih ada saat
+  tabel menampilkan tujuh kolom (termasuk `Total` — kolom itu dihapus belakangan, lihat "Kolom
+  "Total" sudah dihapus dari tabel" di atas); tidak ada scroll samping di kedua lebar; tanpa error
+  console. (Klik **Atur Pesanan** di baris masih ada saat
   pengujian itu, kini sudah dipindah ke drawer detail — lihat "Aksi hanya di drawer detail"; setelah
   pemindahan itu yang bisa dibuktikan hanya `tsc --noEmit` bersih + `curl /admin` & `/id/admin` =
   `200`, karena route admin memang tidak dapat dibuka lewat preview tool.) **Belum** terbukti end-to-end: menekan **konfirmasi** "Atur
