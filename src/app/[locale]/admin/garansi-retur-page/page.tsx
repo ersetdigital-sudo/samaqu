@@ -141,7 +141,7 @@ export default function GaransiReturAdminPage() {
   function SectionHeader({ title, sectionKey }: { title: string; sectionKey: string }) {
     const isOpen = expandedSections[sectionKey];
     return (
-      <button onClick={() => toggleSection(sectionKey)} className="w-full flex items-center justify-between py-3 px-4 rounded-xl mb-2" style={{ background: "rgba(64,50,37,.04)", border: "1px solid rgba(64,50,37,.08)" }}>
+      <button onClick={() => toggleSection(sectionKey)} className="w-full flex items-center justify-between py-3 px-4 rounded-xl mb-2" style={{ background: "#fafafa", border: "1px solid #e4e4e7" }}>
         <h3 className="font-semibold text-sm" style={{ color: "var(--espresso)" }}>{title}</h3>
         {isOpen ? <ChevronUp size={16} style={{ color: "var(--text-muted)" }} /> : <ChevronDown size={16} style={{ color: "var(--text-muted)" }} />}
       </button>
@@ -153,11 +153,11 @@ export default function GaransiReturAdminPage() {
       <div className="mb-3">
         <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-muted)" }}>{label}</label>
         {textarea ? (
-          <textarea value={value} onChange={(e) => onChange(e.target.value.slice(0, maxLen || 999))} rows={rows || 3} className="w-full rounded-lg px-3 py-2 text-sm outline-none resize-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white" }} />
+          <textarea value={value} onChange={(e) => onChange(e.target.value.slice(0, maxLen || 999))} rows={rows || 3} className="w-full rounded-lg px-3 py-2 text-sm outline-none resize-none" style={{ border: "1px solid #d4d4d8", background: "white" }} />
         ) : (
-          <input value={value} onChange={(e) => onChange(e.target.value.slice(0, maxLen || 999))} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white" }} />
+          <input value={value} onChange={(e) => onChange(e.target.value.slice(0, maxLen || 999))} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid #d4d4d8", background: "white" }} />
         )}
-        {maxLen && <p className="text-[10px] mt-0.5" style={{ color: value.length > maxLen * 0.9 ? "#8a6f42" : "var(--text-muted)" }}>{value.length}/{maxLen}</p>}
+        {maxLen && <p className="text-[10px] mt-0.5" style={{ color: value.length > maxLen * 0.9 ? "#52525b" : "var(--text-muted)" }}>{value.length}/{maxLen}</p>}
       </div>
     );
   }
@@ -168,10 +168,10 @@ export default function GaransiReturAdminPage() {
       <div className="mb-3">
         <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-muted)" }}>{label}</label>
         <div className="flex items-center gap-3">
-          <div className="w-20 h-20 rounded-lg overflow-hidden shrink-0" style={{ background: "#e8dfd1" }}>
+          <div className="w-20 h-20 rounded-lg overflow-hidden shrink-0" style={{ background: "#f4f4f5" }}>
             {url ? <img src={url} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><ImageIcon size={20} style={{ color: "var(--text-muted)" }} /></div>}
           </div>
-          <label className="flex items-center gap-2 text-xs cursor-pointer px-3 py-2 rounded-lg transition-colors hover:bg-[rgba(64,50,37,.05)]" style={{ border: "1px dashed rgba(64,50,37,.2)", color: "var(--gold)" }}>
+          <label className="flex items-center gap-2 text-xs cursor-pointer px-3 py-2 rounded-lg transition-colors hover:bg-[#f4f4f5]" style={{ border: "1px dashed #d4d4d8", color: "var(--gold)" }}>
             <Upload size={14} /> Ganti Gambar
             <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadImage(field, f); }} />
           </label>
@@ -213,18 +213,18 @@ export default function GaransiReturAdminPage() {
             <div className="card p-5 mb-4">
               <InputField label="Judul Section" value={content.garansi_title} onChange={(v) => setContent({ ...content, garansi_title: v })} maxLen={50} />
               <InputField label="Deskripsi Section" value={content.garansi_desc} onChange={(v) => setContent({ ...content, garansi_desc: v })} maxLen={200} textarea rows={2} />
-              <div className="mt-4 p-4 rounded-xl" style={{ border: "1px solid rgba(64,50,37,.1)", background: "rgba(255,255,255,.5)" }}>
+              <div className="mt-4 p-4 rounded-xl" style={{ border: "1px solid #e4e4e7", background: "rgba(255,255,255,.5)" }}>
                 <p className="text-xs font-semibold mb-3" style={{ color: "var(--gold)" }}>Card 1</p>
                 <InputField label="Judul" value={content.garansi1_title} onChange={(v) => setContent({ ...content, garansi1_title: v })} maxLen={50} />
                 <InputField label="Deskripsi" value={content.garansi1_desc} onChange={(v) => setContent({ ...content, garansi1_desc: v })} maxLen={200} textarea rows={3} />
               </div>
-              <div className="mt-3 p-4 rounded-xl" style={{ border: "1px solid rgba(64,50,37,.1)", background: "rgba(255,255,255,.5)" }}>
+              <div className="mt-3 p-4 rounded-xl" style={{ border: "1px solid #e4e4e7", background: "rgba(255,255,255,.5)" }}>
                 <p className="text-xs font-semibold mb-3" style={{ color: "var(--gold)" }}>Card 2</p>
                 <InputField label="Judul" value={content.garansi2_title} onChange={(v) => setContent({ ...content, garansi2_title: v })} maxLen={50} />
                 <InputField label="Deskripsi" value={content.garansi2_desc} onChange={(v) => setContent({ ...content, garansi2_desc: v })} maxLen={200} textarea rows={3} />
                 <InputField label="Catatan (opsional)" value={content.garansi2_note} onChange={(v) => setContent({ ...content, garansi2_note: v })} maxLen={100} />
               </div>
-              <div className="mt-3 p-4 rounded-xl" style={{ border: "1px solid rgba(64,50,37,.1)", background: "rgba(255,255,255,.5)" }}>
+              <div className="mt-3 p-4 rounded-xl" style={{ border: "1px solid #e4e4e7", background: "rgba(255,255,255,.5)" }}>
                 <p className="text-xs font-semibold mb-3" style={{ color: "var(--gold)" }}>Card 3</p>
                 <InputField label="Judul" value={content.garansi3_title} onChange={(v) => setContent({ ...content, garansi3_title: v })} maxLen={50} />
                 <InputField label="Deskripsi" value={content.garansi3_desc} onChange={(v) => setContent({ ...content, garansi3_desc: v })} maxLen={200} textarea rows={3} />
@@ -296,7 +296,7 @@ export default function GaransiReturAdminPage() {
       </section>
 
       <style jsx global>{`
-        .card { background: #fffdfb; border: 1px solid rgba(64,50,37,.06); border-radius: 1rem; box-shadow: 0 1px 2px rgba(64,50,37,.03); }
+        .card { background: #ffffff; border: 1px solid #f1f1f3; border-radius: 1rem; box-shadow: 0 1px 2px rgba(0,0,0,.03); }
       `}</style>
     </AdminShell>
   );

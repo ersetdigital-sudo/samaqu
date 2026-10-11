@@ -15,7 +15,7 @@ import {
 } from "@/lib/payment-methods";
 import { usePaymentMethodName } from "@/lib/use-payment-methods";
 
-const inputStyle = { border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" };
+const inputStyle = { border: "1px solid #d4d4d8", background: "white", color: "var(--espresso)" };
 const labelStyle = { color: "var(--text-muted)" };
 
 /** Nama metode dari `orders.payment_method` (uuid baru / slug lama). */
@@ -193,14 +193,14 @@ export default function PaymentMethodsManager() {
             Tambah, urutkan, dan aktifkan metode pembayaran. Yang nonaktif otomatis tidak muncul di checkout.
           </p>
         </div>
-        <button onClick={addMethod} className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-xl flex-shrink-0" style={{ border: "1px solid rgba(64,50,37,.15)", color: "var(--gold)" }}>
+        <button onClick={addMethod} className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-xl flex-shrink-0" style={{ border: "1px solid #d4d4d8", color: "var(--gold)" }}>
           <Plus size={14} /> Tambah Metode
         </button>
       </div>
 
       <div className="space-y-4">
         {methods.length === 0 && (
-          <p className="text-sm py-6 text-center rounded-xl" style={{ color: "var(--text-muted)", border: "1px dashed rgba(64,50,37,.15)" }}>
+          <p className="text-sm py-6 text-center rounded-xl" style={{ color: "var(--text-muted)", border: "1px dashed #d4d4d8" }}>
             Belum ada metode pembayaran. Klik &ldquo;Tambah Metode&rdquo;.
           </p>
         )}
@@ -212,10 +212,10 @@ export default function PaymentMethodsManager() {
           const rowErrors = errors[m.id] || {};
 
           return (
-            <div key={m.id} className="p-4 rounded-xl" style={{ border: "1px solid rgba(64,50,37,.1)", background: m.is_active === false ? "rgba(200,200,200,.1)" : "rgba(255,255,255,.5)" }}>
+            <div key={m.id} className="p-4 rounded-xl" style={{ border: "1px solid #e4e4e7", background: m.is_active === false ? "rgba(200,200,200,.1)" : "rgba(255,255,255,.5)" }}>
               <div className="flex items-center justify-between gap-3 mb-3">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <span className="inline-flex items-center justify-center gap-2 px-3 py-1.5 rounded-full text-[12px] font-medium truncate" style={{ background: "var(--bg-secondary, #f0ebe5)", color: "var(--espresso)" }}>
+                  <span className="inline-flex items-center justify-center gap-2 px-3 py-1.5 rounded-full text-[12px] font-medium truncate" style={{ background: "var(--bg-secondary, #f4f4f5)", color: "var(--espresso)" }}>
                     <span className="truncate">{m.label || defaultMethodLabel(type)}</span>
                     <PaymentIcon type={m.icon || type} size={16} style={{ color: "var(--text-secondary)" }} />
                   </span>
@@ -225,7 +225,7 @@ export default function PaymentMethodsManager() {
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
                   {!rowNew && (
-                    <button onClick={() => toggleMethod(m.id, m.is_active === false)} className="text-xs px-2 py-1 rounded" style={{ border: "1px solid rgba(64,50,37,.15)", color: m.is_active === false ? "var(--gold)" : "var(--text-muted)" }}>
+                    <button onClick={() => toggleMethod(m.id, m.is_active === false)} className="text-xs px-2 py-1 rounded" style={{ border: "1px solid #d4d4d8", color: m.is_active === false ? "var(--gold)" : "var(--text-muted)" }}>
                       {m.is_active === false ? "Aktifkan" : "Nonaktifkan"}
                     </button>
                   )}
@@ -235,11 +235,11 @@ export default function PaymentMethodsManager() {
                     </button>
                   )}
                   {rowNew ? (
-                    <button onClick={() => cancelNew(m.id)} className="p-1 rounded hover:bg-red-50" style={{ color: "#e74c3c" }}>
+                    <button onClick={() => cancelNew(m.id)} className="p-1 rounded hover:bg-red-50" style={{ color: "#dc2626" }}>
                       <X size={14} />
                     </button>
                   ) : (
-                    <button onClick={() => deleteMethod(m.id)} className="p-1 rounded hover:bg-red-50" style={{ color: "#e74c3c" }}>
+                    <button onClick={() => deleteMethod(m.id)} className="p-1 rounded hover:bg-red-50" style={{ color: "#dc2626" }}>
                       <Trash2 size={14} />
                     </button>
                   )}
@@ -248,12 +248,12 @@ export default function PaymentMethodsManager() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                 <div>
-                  <label className="block text-[11px] font-medium mb-1" style={{ color: rowErrors.label ? "#e74c3c" : labelStyle.color }}>Nama Metode *</label>
+                  <label className="block text-[11px] font-medium mb-1" style={{ color: rowErrors.label ? "#dc2626" : labelStyle.color }}>Nama Metode *</label>
                   <input
                     value={m.label || ""}
                     onChange={(e) => updateField(m.id, "label", e.target.value)}
                     className="w-full rounded-lg px-3 py-2 text-sm outline-none"
-                    style={{ ...inputStyle, borderColor: rowErrors.label ? "#e74c3c" : "rgba(64,50,37,.15)" }}
+                    style={{ ...inputStyle, borderColor: rowErrors.label ? "#dc2626" : "#d4d4d8" }}
                     placeholder="Transfer Bank BCA / GoPay / Bayar di Tempat (COD)"
                   />
                 </div>
@@ -280,7 +280,7 @@ export default function PaymentMethodsManager() {
                         title={opt.label}
                         className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all"
                         style={{
-                          border: active ? "1.5px solid var(--gold)" : "1px solid rgba(64,50,37,.15)",
+                          border: active ? "1.5px solid var(--gold)" : "1px solid #d4d4d8",
                           background: active ? "rgba(181,140,74,.06)" : "white",
                           color: active ? "var(--gold)" : "var(--text-secondary)",
                         }}
@@ -300,12 +300,12 @@ export default function PaymentMethodsManager() {
                     <input value={m.bank_name || ""} onChange={(e) => updateField(m.id, "bank_name", e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={inputStyle} placeholder="Bank Mandiri" />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-medium mb-1" style={{ color: rowErrors.account_name ? "#e74c3c" : labelStyle.color }}>Nama Pemilik *</label>
-                    <input value={m.account_name || ""} onChange={(e) => updateField(m.id, "account_name", e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ ...inputStyle, borderColor: rowErrors.account_name ? "#e74c3c" : "rgba(64,50,37,.15)" }} placeholder="PT Samaqu Digital" />
+                    <label className="block text-[11px] font-medium mb-1" style={{ color: rowErrors.account_name ? "#dc2626" : labelStyle.color }}>Nama Pemilik *</label>
+                    <input value={m.account_name || ""} onChange={(e) => updateField(m.id, "account_name", e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ ...inputStyle, borderColor: rowErrors.account_name ? "#dc2626" : "#d4d4d8" }} placeholder="PT Samaqu Digital" />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-medium mb-1" style={{ color: rowErrors.account_number ? "#e74c3c" : labelStyle.color }}>Nomor Rekening *</label>
-                    <input value={m.account_number || ""} onChange={(e) => updateField(m.id, "account_number", e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ ...inputStyle, borderColor: rowErrors.account_number ? "#e74c3c" : "rgba(64,50,37,.15)" }} placeholder="1234567890123" />
+                    <label className="block text-[11px] font-medium mb-1" style={{ color: rowErrors.account_number ? "#dc2626" : labelStyle.color }}>Nomor Rekening *</label>
+                    <input value={m.account_number || ""} onChange={(e) => updateField(m.id, "account_number", e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ ...inputStyle, borderColor: rowErrors.account_number ? "#dc2626" : "#d4d4d8" }} placeholder="1234567890123" />
                   </div>
                 </div>
               )}
@@ -317,8 +317,8 @@ export default function PaymentMethodsManager() {
                     <input value={m.account_name || ""} onChange={(e) => updateField(m.id, "account_name", e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={inputStyle} placeholder="SAMAQU" />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-medium mb-1" style={{ color: rowErrors.account_info ? "#e74c3c" : labelStyle.color }}>Nomor Tujuan *</label>
-                    <input value={m.account_info || ""} onChange={(e) => updateField(m.id, "account_info", e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ ...inputStyle, borderColor: rowErrors.account_info ? "#e74c3c" : "rgba(64,50,37,.15)" }} placeholder="0895635965400" />
+                    <label className="block text-[11px] font-medium mb-1" style={{ color: rowErrors.account_info ? "#dc2626" : labelStyle.color }}>Nomor Tujuan *</label>
+                    <input value={m.account_info || ""} onChange={(e) => updateField(m.id, "account_info", e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ ...inputStyle, borderColor: rowErrors.account_info ? "#dc2626" : "#d4d4d8" }} placeholder="0895635965400" />
                   </div>
                 </div>
               )}
@@ -329,14 +329,14 @@ export default function PaymentMethodsManager() {
                     <label className="block text-[11px] font-medium mb-1" style={labelStyle}>Gambar QR Code</label>
                     <div className="flex items-center gap-3">
                       {m.qr_image_url ? (
-                        <img src={m.qr_image_url} alt="QR Code" className="w-20 h-20 object-contain rounded-lg border" style={{ borderColor: "rgba(64,50,37,.1)" }} />
+                        <img src={m.qr_image_url} alt="QR Code" className="w-20 h-20 object-contain rounded-lg border" style={{ borderColor: "#e4e4e7" }} />
                       ) : (
-                        <span className="w-20 h-20 rounded-lg flex items-center justify-center" style={{ border: "1px dashed rgba(64,50,37,.2)", color: "var(--text-muted)" }}>
+                        <span className="w-20 h-20 rounded-lg flex items-center justify-center" style={{ border: "1px dashed #d4d4d8", color: "var(--text-muted)" }}>
                           <ImageIcon size={20} />
                         </span>
                       )}
                       <label className="cursor-pointer">
-                        <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg" style={{ border: "1px solid rgba(64,50,37,.15)", color: "var(--gold)" }}>
+                        <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg" style={{ border: "1px solid #d4d4d8", color: "var(--gold)" }}>
                           Upload QR
                         </span>
                         <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadQrImage(m.id, f); }} />

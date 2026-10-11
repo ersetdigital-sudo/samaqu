@@ -116,7 +116,7 @@ export default function JntCredentialsForm() {
             { value: "testing" as const, label: "Testing", desc: "Sandbox / demo J&T" },
             { value: "production" as const, label: "Production", desc: "Server J&T asli" },
           ]).map((opt) => (
-            <label key={opt.value} className="flex-1 flex items-center gap-3 rounded-xl px-4 py-3 cursor-pointer transition-all" style={{ border: `1.5px solid ${env === opt.value ? "var(--gold)" : "rgba(64,50,37,.15)"}`, background: env === opt.value ? "rgba(181,140,74,.04)" : "white" }}>
+            <label key={opt.value} className="flex-1 flex items-center gap-3 rounded-xl px-4 py-3 cursor-pointer transition-all" style={{ border: `1.5px solid ${env === opt.value ? "var(--gold)" : "#d4d4d8"}`, background: env === opt.value ? "#fafafa" : "white" }}>
               <input type="radio" name="jnt_env" checked={env === opt.value} onChange={() => setEnv(opt.value)} className="sr-only" />
               <span className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0" style={{ border: `2px solid ${env === opt.value ? "var(--gold)" : "var(--text-muted)"}`, background: env === opt.value ? "var(--gold)" : "transparent" }}>
                 {env === opt.value && <span className="w-2 h-2 rounded-full bg-white" />}
@@ -147,7 +147,7 @@ export default function JntCredentialsForm() {
                 value={values[field.key] || ""}
                 onChange={(e) => setValues((prev) => ({ ...prev, [field.key]: e.target.value }))}
                 className="w-full rounded-xl px-4 py-2.5 pr-10 bg-white text-sm outline-none font-mono"
-                style={{ border: "1px solid rgba(64,50,37,.1)" }}
+                style={{ border: "1px solid #e4e4e7" }}
                 placeholder={configured[field.key] ? "•••••• isi untuk mengganti" : field.placeholder}
               />
               {field.secret && (

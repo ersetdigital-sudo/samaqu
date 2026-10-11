@@ -182,7 +182,7 @@ export default function UkuranProdukPage() {
           {/* Info */}
           <div
             className="text-xs mb-6 px-4 py-3 rounded-lg space-y-1"
-            style={{ background: "#f0e7d8", color: "#8a6f42" }}
+            style={{ background: "#f4f4f5", color: "#52525b" }}
           >
             <p className="font-semibold mb-1">
               Panduan upload foto ukuran:
@@ -211,14 +211,14 @@ export default function UkuranProdukPage() {
                   className="rounded-2xl p-5 flex flex-col sm:flex-row gap-4"
                   style={{
                     background: "white",
-                    border: "1px solid rgba(64,50,37,.06)",
-                    boxShadow: "0 1px 2px rgba(64,50,37,.03)",
+                    border: "1px solid #f1f1f3",
+                    boxShadow: "0 1px 2px rgba(0,0,0,.03)",
                   }}
                 >
                   {/* Preview */}
                   <div
                     className="w-full sm:w-40 h-32 rounded-xl overflow-hidden shrink-0 flex items-center justify-center"
-                    style={{ background: "#e8dfd1" }}
+                    style={{ background: "#f4f4f5" }}
                   >
                     {isUploading ? (
                       <Loader2
@@ -268,8 +268,8 @@ export default function UkuranProdukPage() {
                           <span
                             className="text-[10px] px-2 py-0.5 rounded-full font-medium"
                             style={{
-                              background: "#e7ecdf",
-                              color: "#5b6b45",
+                              background: "#f4f4f5",
+                              color: "#3f3f46",
                             }}
                           >
                             Aktif
@@ -288,9 +288,9 @@ export default function UkuranProdukPage() {
 
                     <div className="flex items-center gap-2 mt-3">
                       <label
-                        className="flex items-center gap-2 text-xs cursor-pointer px-4 py-2 rounded-lg transition-colors hover:bg-[rgba(64,50,37,.05)]"
+                        className="flex items-center gap-2 text-xs cursor-pointer px-4 py-2 rounded-lg transition-colors hover:bg-[#f4f4f5]"
                         style={{
-                          border: "1px dashed rgba(64,50,37,.2)",
+                          border: "1px dashed #d4d4d8",
                           color: "var(--gold)",
                         }}
                       >
@@ -312,7 +312,7 @@ export default function UkuranProdukPage() {
                           className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg transition-colors hover:bg-red-50"
                           style={{
                             border: "1px solid rgba(231,76,60,.2)",
-                            color: "#e74c3c",
+                            color: "#dc2626",
                           }}
                         >
                           <Trash2 size={12} />

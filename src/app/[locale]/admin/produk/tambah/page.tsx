@@ -12,7 +12,7 @@ import AdminShell from "@/components/AdminShell";
 import JenisKainForm from "@/components/JenisKainForm";
 import PresetColorPicker from "@/components/PresetColorPicker";
 import { colorMap } from "@/lib/katalog-data";
-import { uploadToCloudinary } from "@/lib/cloudinary";
+import { uploadToCloudinary, validateMediaFile } from "@/lib/cloudinary";
 import { useStoreSettings } from "@/lib/store-settings";
 
 const CATEGORIES = ["Thobe", "Kandora", "Koko", "Vest", "Kabak", "Cover & Hanger"] as const;
@@ -211,14 +211,13 @@ export default function TambahProdukPage() {
     const newMedia: MediaFile[] = [];
     for (const file of Array.from(files)) {
       const isVideo = file.type.startsWith("video/");
-      const maxSize = isVideo ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
-      if (file.size > maxSize) {
-        alert(`${file.name} terlalu besar. Maks: ${isVideo ? "50MB" : "10MB"}`);
-        continue;
-      }
-      const validTypes = ["image/jpeg", "image/png", "image/webp", "video/mp4", "video/webm"];
-      if (!validTypes.includes(file.type)) {
-        alert(`${file.name} format tidak didukung`);
+      // Satu aturan validasi untuk semua halaman admin: MIME, ekstensi, ukuran,
+      // durasi (maks 2 menit) dan resolusi (maks 1080p). Video ditolak di sini
+      // sebelum sempat memakan video processing unit Cloudinary.
+      try {
+        await validateMediaFile(file);
+      } catch (err) {
+        alert(err instanceof Error ? err.message : `${file.name}: format tidak didukung`);
         continue;
       }
 
@@ -619,9 +618,9 @@ export default function TambahProdukPage() {
     <AdminShell>
     <section className="min-h-screen" style={{ background: "var(--cream)" }}>
       {/* Header */}
-      <div className="sticky top-0 z-20 backdrop-blur" style={{ background: "rgba(248,245,241,.82)", borderBottom: "1px solid rgba(64,50,37,.07)" }}>
+      <div className="sticky top-0 z-20 backdrop-blur" style={{ background: "rgba(255,255,255,.85)", borderBottom: "1px solid rgba(0,0,0,.06)" }}>
         <div className="max-w-6xl mx-auto px-5 lg:px-8 py-4 flex items-center gap-4">
-          <button onClick={() => router.push("/admin")} title="Kembali" className="p-2.5 -ml-2 rounded-xl bg-white transition-colors hover:bg-[var(--bg-secondary)]" style={{ border: "1px solid rgba(64,50,37,.08)", color: "var(--espresso)" }}>
+          <button onClick={() => router.push("/admin")} title="Kembali" className="p-2.5 -ml-2 rounded-xl bg-white transition-colors hover:bg-[var(--bg-secondary)]" style={{ border: "1px solid #e4e4e7", color: "var(--espresso)" }}>
             <ArrowLeft size={18} />
           </button>
           <div className="min-w-0">
@@ -735,7 +734,7 @@ export default function TambahProdukPage() {
                       <p className="text-sm font-medium" style={{ color: "var(--espresso)" }}>Create Your Price</p>
                       <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>Customer bisa tentukan harga sendiri (minimal = Harga Minimum)</p>
                     </div>
-                    <button type="button" onClick={toggleCyp} className="pf-toggle" style={{ background: cypEnabled ? "var(--gold)" : "rgba(64,50,37,.2)" }}>
+                    <button type="button" onClick={toggleCyp} className="pf-toggle" style={{ background: cypEnabled ? "var(--gold)" : "#d4d4d8" }}>
                       <span className="pf-toggle-knob" style={{ transform: cypEnabled ? "translateX(20px)" : "translateX(0)" }} />
                     </button>
                   </div>
@@ -759,17 +758,17 @@ export default function TambahProdukPage() {
                             <p className="text-sm font-medium" style={{ color: "var(--espresso)" }}>Microcopy CYP (khusus produk ini)</p>
                             <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>Teks kecil di bawah opsi harga pada halaman produk.</p>
                           </div>
-                          <button type="button" onClick={() => setUseCustomCypMicrocopy((v) => !v)} className="pf-toggle" style={{ background: useCustomCypMicrocopy ? "var(--gold)" : "rgba(64,50,37,.2)" }}>
+                          <button type="button" onClick={() => setUseCustomCypMicrocopy((v) => !v)} className="pf-toggle" style={{ background: useCustomCypMicrocopy ? "var(--gold)" : "#d4d4d8" }}>
                             <span className="pf-toggle-knob" style={{ transform: useCustomCypMicrocopy ? "translateX(20px)" : "translateX(0)" }} />
                           </button>
                         </div>
                         {useCustomCypMicrocopy ? (
                           <>
                             <textarea value={cypMicrocopyOverride} onChange={(e) => setCypMicrocopyOverride(e.target.value.slice(0, 120))} rows={2} maxLength={120} placeholder="Tulis teks khusus produk ini..." className="pf-textarea" />
-                            <p className="pf-hint text-right" style={{ color: cypMicrocopyOverride.length >= 120 ? "#e74c3c" : "var(--text-muted)" }}>{cypMicrocopyOverride.length}/120</p>
+                            <p className="pf-hint text-right" style={{ color: cypMicrocopyOverride.length >= 120 ? "#dc2626" : "var(--text-muted)" }}>{cypMicrocopyOverride.length}/120</p>
                           </>
                         ) : (
-                          <p className="text-[12px] leading-relaxed px-3 py-2.5 rounded-xl" style={{ background: "rgba(64,50,37,.04)", color: "var(--text-muted)", fontStyle: "italic" }}>
+                          <p className="text-[12px] leading-relaxed px-3 py-2.5 rounded-xl" style={{ background: "#fafafa", color: "var(--text-muted)", fontStyle: "italic" }}>
                             {storeSettings.cyp_microcopy || "Harga Minimum boleh dipilih. Itulah alasan kami membuat Create Your Price."}
                           </p>
                         )}
@@ -830,7 +829,7 @@ export default function TambahProdukPage() {
                         {s}
                       </button>
                     ))}
-                    <button type="button" onClick={() => setShowNewSeries(!showNewSeries)} className="pf-chip shrink-0" style={{ borderStyle: "dashed", borderColor: "rgba(181,140,74,.5)", color: "var(--gold-deep)" }}>
+                    <button type="button" onClick={() => setShowNewSeries(!showNewSeries)} className="pf-chip shrink-0" style={{ borderStyle: "dashed", borderColor: "#d4d4d8", color: "var(--gold-deep)" }}>
                       <Plus size={13} /> Baru
                     </button>
                   </div>
@@ -909,7 +908,7 @@ export default function TambahProdukPage() {
                                 <p className="text-sm font-medium" style={{ color: "var(--espresso)" }}>Create Your Price</p>
                                 <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>Customer bisa tentukan harga sendiri</p>
                               </div>
-                              <button type="button" onClick={() => updateSeriesBlock(sn, { cypEnabled: !block.cypEnabled })} className="pf-toggle" style={{ background: block.cypEnabled ? "var(--gold)" : "rgba(64,50,37,.2)" }}>
+                              <button type="button" onClick={() => updateSeriesBlock(sn, { cypEnabled: !block.cypEnabled })} className="pf-toggle" style={{ background: block.cypEnabled ? "var(--gold)" : "#d4d4d8" }}>
                                 <span className="pf-toggle-knob" style={{ transform: block.cypEnabled ? "translateX(20px)" : "translateX(0)" }} />
                               </button>
                             </div>
@@ -957,7 +956,7 @@ export default function TambahProdukPage() {
                                   {m.uploading ? (
                                     <div className="absolute inset-0 flex items-center justify-center"><Loader2 size={16} className="animate-spin" style={{ color: "var(--gold)" }} /></div>
                                   ) : m.error ? (
-                                    <div className="absolute inset-0 flex items-center justify-center p-1"><p className="text-[9px] text-center" style={{ color: "#e74c3c" }}>{m.error}</p></div>
+                                    <div className="absolute inset-0 flex items-center justify-center p-1"><p className="text-[9px] text-center" style={{ color: "#dc2626" }}>{m.error}</p></div>
                                   ) : m.isVideo ? (
                                     <video src={m.url || m.preview} className="w-full h-full object-cover" muted />
                                   ) : (
@@ -1109,7 +1108,7 @@ export default function TambahProdukPage() {
                             {m.uploading ? (
                               <div className="absolute inset-0 flex items-center justify-center"><Loader2 size={20} className="animate-spin" style={{ color: "var(--gold)" }} /></div>
                             ) : m.error ? (
-                              <div className="absolute inset-0 flex items-center justify-center p-2"><p className="text-[10px] text-center" style={{ color: "#e74c3c" }}>{m.error}</p></div>
+                              <div className="absolute inset-0 flex items-center justify-center p-2"><p className="text-[10px] text-center" style={{ color: "#dc2626" }}>{m.error}</p></div>
                             ) : m.isVideo ? (
                               <video src={m.url || m.preview} className="w-full h-full object-cover" muted loop playsInline onMouseEnter={(e) => (e.target as HTMLVideoElement).play()} onMouseLeave={(e) => { (e.target as HTMLVideoElement).pause(); (e.target as HTMLVideoElement).currentTime = 0; }} />
                             ) : (
@@ -1138,13 +1137,13 @@ export default function TambahProdukPage() {
             <div className="pf-card p-5">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-serif italic text-lg" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>Preview Produk</h3>
-                <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full" style={{ background: "rgba(181,140,74,.1)", color: "var(--gold-deep)", border: "1px solid rgba(181,140,74,.25)" }}>
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full" style={{ background: "#f4f4f5", color: "var(--gold-deep)", border: "1px solid #e4e4e7" }}>
                   <span className="w-1.5 h-1.5 rounded-full" style={{ background: "var(--gold)" }} /> Live
                 </span>
               </div>
 
               {/* Main image / video */}
-              <div className="aspect-[4/5] rounded-2xl overflow-hidden mb-3" style={{ background: "#e8dfd1", border: "1px solid rgba(64,50,37,.08)" }}>
+              <div className="aspect-[4/5] rounded-2xl overflow-hidden mb-3" style={{ background: "#f4f4f5", border: "1px solid #e4e4e7" }}>
                 {activeMedia.length > 0 ? (
                   (() => {
                     const item = activeMedia[Math.min(previewIndex, activeMedia.length - 1)];
@@ -1165,7 +1164,7 @@ export default function TambahProdukPage() {
               {activeMedia.length > 1 && (
                 <div className="flex gap-1.5 overflow-x-auto mb-3 pb-1">
                   {activeMedia.map((m, i) => (
-                    <button key={m.id} onClick={() => setPreviewIndex(i)} className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 transition-all" style={{ border: i === (Math.min(previewIndex, activeMedia.length - 1)) ? "2px solid var(--gold)" : "1px solid rgba(64,50,37,.1)", opacity: i === (Math.min(previewIndex, activeMedia.length - 1)) ? 1 : 0.6 }}>
+                    <button key={m.id} onClick={() => setPreviewIndex(i)} className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 transition-all" style={{ border: i === (Math.min(previewIndex, activeMedia.length - 1)) ? "2px solid var(--gold)" : "1px solid #e4e4e7", opacity: i === (Math.min(previewIndex, activeMedia.length - 1)) ? 1 : 0.6 }}>
                       {m.isVideo ? (
                         <div className="w-full h-full relative">
                           <video src={m.url || m.preview} className="w-full h-full object-cover" muted />
@@ -1224,25 +1223,25 @@ export default function TambahProdukPage() {
       </div>
 
       <style jsx global>{`
-        .card { background: #fffdfb; border: 1px solid rgba(64,50,37,.06); border-radius: 1rem; box-shadow: 0 1px 2px rgba(64,50,37,.03); }
+        .card { background: #ffffff; border: 1px solid #f1f1f3; border-radius: 1rem; box-shadow: 0 1px 2px rgba(0,0,0,.03); }
 
         .pf-card {
-          background: #fffdfb;
-          border: 1px solid rgba(64,50,37,.07);
+          background: #ffffff;
+          border: 1px solid rgba(0,0,0,.06);
           border-radius: 1.25rem;
-          box-shadow: 0 1px 2px rgba(64,50,37,.03), 0 18px 40px -32px rgba(45,33,27,.35);
+          box-shadow: 0 1px 2px rgba(0,0,0,.03), 0 18px 40px -32px rgba(45,33,27,.35);
         }
         .pf-head {
           display: flex; align-items: flex-start; gap: .85rem;
           padding-bottom: 1rem; margin-bottom: 1.25rem;
-          border-bottom: 1px solid rgba(64,50,37,.07);
+          border-bottom: 1px solid rgba(0,0,0,.06);
         }
         .pf-num {
           flex: none; width: 2.3rem; height: 2.3rem; border-radius: .8rem;
           display: flex; align-items: center; justify-content: center;
           font-size: .8rem; font-weight: 700; color: var(--gold-deep);
-          background: linear-gradient(135deg, rgba(181,140,74,.16), rgba(181,140,74,.05));
-          border: 1px solid rgba(181,140,74,.25);
+          background: linear-gradient(135deg, rgba(0,0,0,.04), rgba(0,0,0,.015));
+          border: 1px solid #e4e4e7;
         }
         .pf-title {
           font-family: var(--font-cormorant), Georgia, serif; font-style: italic;
@@ -1255,7 +1254,7 @@ export default function TambahProdukPage() {
         }
         .pf-req { color: var(--gold); }
         .pf-input, .pf-select, .pf-textarea {
-          width: 100%; border-radius: .8rem; border: 1px solid rgba(64,50,37,.14);
+          width: 100%; border-radius: .8rem; border: 1px solid rgba(0,0,0,.12);
           background: #fff; color: var(--espresso); font-size: .875rem;
           padding: .7rem .9rem; outline: none;
           transition: border-color .18s ease, box-shadow .18s ease;
@@ -1264,22 +1263,22 @@ export default function TambahProdukPage() {
         .pf-select { appearance: none; padding-right: 2.2rem; }
         .pf-input::placeholder, .pf-textarea::placeholder { color: var(--text-muted); }
         .pf-input:focus, .pf-select:focus, .pf-textarea:focus {
-          border-color: var(--gold); box-shadow: 0 0 0 3px rgba(181,140,74,.14);
+          border-color: var(--gold); box-shadow: 0 0 0 3px rgba(0,0,0,.07);
         }
-        .pf-input.invalid, .pf-select.invalid, .pf-textarea.invalid { border-color: #e74c3c; }
+        .pf-input.invalid, .pf-select.invalid, .pf-textarea.invalid { border-color: #dc2626; }
         .pf-hint { font-size: .7rem; color: var(--text-muted); margin-top: .35rem; }
-        .pf-error { font-size: .72rem; color: #e74c3c; margin-top: .35rem; }
+        .pf-error { font-size: .72rem; color: #dc2626; margin-top: .35rem; }
         .pf-selectwrap { position: relative; }
         .pf-selectico {
           position: absolute; right: .85rem; top: 50%; transform: translateY(-50%);
           pointer-events: none; color: var(--text-muted);
         }
         .pf-panel {
-          border-radius: 1rem; border: 1px solid rgba(64,50,37,.08);
+          border-radius: 1rem; border: 1px solid #e4e4e7;
           background: rgba(255,255,255,.65); padding: 1rem;
         }
-        .pf-panel.accent { background: rgba(181,140,74,.06); border-color: rgba(181,140,74,.28); }
-        .pf-panel.flat { background: rgba(64,50,37,.03); border-color: rgba(64,50,37,.09); }
+        .pf-panel.accent { background: rgba(0,0,0,.03); border-color: #e4e4e7; }
+        .pf-panel.flat { background: rgba(0,0,0,.03); border-color: #e4e4e7; }
         .pf-btn {
           display: inline-flex; align-items: center; justify-content: center; gap: .45rem;
           border-radius: .8rem; font-size: .8rem; font-weight: 600;
@@ -1292,14 +1291,14 @@ export default function TambahProdukPage() {
         }
         .pf-btn-primary:hover { filter: brightness(1.05); }
         .pf-btn-primary:disabled { opacity: .6; }
-        .pf-btn-ghost { background: #fff; border-color: rgba(64,50,37,.14); color: var(--espresso); }
+        .pf-btn-ghost { background: #fff; border-color: rgba(0,0,0,.12); color: var(--espresso); }
         .pf-btn-ghost:hover { background: var(--bg-secondary); }
         .pf-btn-outline {
-          background: transparent; border-color: rgba(181,140,74,.5);
+          background: transparent; border-color: #d4d4d8;
           border-style: dashed; color: var(--gold-deep);
         }
-        .pf-btn-outline:hover { background: rgba(181,140,74,.08); }
-        .pf-btn-danger { background: transparent; border-color: rgba(231,76,60,.3); color: #e74c3c; }
+        .pf-btn-outline:hover { background: #f4f4f5; }
+        .pf-btn-danger { background: transparent; border-color: rgba(231,76,60,.3); color: #dc2626; }
         .pf-btn-danger:hover { background: rgba(231,76,60,.07); }
         .pf-toggle {
           position: relative; width: 2.6rem; height: 1.45rem; border-radius: 999px;
@@ -1314,34 +1313,34 @@ export default function TambahProdukPage() {
           display: inline-flex; align-items: center; gap: .4rem;
           padding: .4rem .85rem; border-radius: 999px; font-size: .75rem; font-weight: 600;
           color: var(--coffee); background: transparent;
-          border: 1px solid rgba(201,183,156,.45);
+          border: 1px solid #d4d4d8;
           transition: all .18s ease;
         }
-        .pf-chip:hover { border-color: var(--gold); color: var(--espresso); background: rgba(181,140,74,.06); }
+        .pf-chip:hover { border-color: var(--gold); color: var(--espresso); background: rgba(0,0,0,.03); }
         .pf-chip.active { background: var(--espresso); color: var(--cream); border-color: var(--espresso); }
         .pf-tab {
           display: inline-flex; align-items: center; gap: .4rem;
           padding: .55rem 1.05rem; border-radius: .8rem; font-size: .78rem; font-weight: 600;
-          color: var(--coffee); background: transparent; border: 1px solid rgba(201,183,156,.45);
+          color: var(--coffee); background: transparent; border: 1px solid #d4d4d8;
           transition: all .18s ease;
         }
-        .pf-tab:hover { border-color: var(--gold); background: rgba(181,140,74,.06); }
+        .pf-tab:hover { border-color: var(--gold); background: rgba(0,0,0,.03); }
         .pf-tab.active { background: var(--espresso); color: var(--cream); border-color: var(--espresso); }
-        .pf-dot { width: .4rem; height: .4rem; border-radius: 999px; background: #e74c3c; display: inline-block; margin-left: .4rem; }
+        .pf-dot { width: .4rem; height: .4rem; border-radius: 999px; background: #dc2626; display: inline-block; margin-left: .4rem; }
         .pf-drop {
           display: block; border-radius: 1rem; text-align: center; cursor: pointer;
-          padding: 1.5rem 1.25rem; border: 2px dashed rgba(201,183,156,.5);
+          padding: 1.5rem 1.25rem; border: 2px dashed #d4d4d8;
           background: rgba(255,255,255,.55); transition: border-color .2s ease, background .2s ease;
         }
-        .pf-drop:hover { border-color: var(--gold); background: rgba(181,140,74,.05); }
+        .pf-drop:hover { border-color: var(--gold); background: rgba(0,0,0,.025); }
         .pf-drop-ico {
           width: 2.75rem; height: 2.75rem; border-radius: 999px; margin: 0 auto .6rem;
           display: flex; align-items: center; justify-content: center;
-          background: rgba(181,140,74,.1); color: var(--gold-deep);
+          background: #f4f4f5; color: var(--gold-deep);
         }
         .pf-thumb {
           position: relative; aspect-ratio: 1 / 1; border-radius: .85rem; overflow: hidden;
-          background: #e8dfd1;
+          background: #f4f4f5;
         }
         .pf-thumb-x {
           position: absolute; top: .35rem; right: .35rem; width: 1.5rem; height: 1.5rem;
@@ -1364,14 +1363,14 @@ export default function TambahProdukPage() {
           gap: .5rem; align-items: center; margin-bottom: .4rem;
         }
         .pf-cell {
-          border-radius: .6rem; border: 1px solid rgba(64,50,37,.14);
+          border-radius: .6rem; border: 1px solid rgba(0,0,0,.12);
           background: #fff; color: var(--espresso); font-size: .85rem;
           padding: .5rem .65rem; outline: none; width: 100%;
           transition: border-color .18s ease, box-shadow .18s ease;
         }
-        .pf-cell:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(181,140,74,.14); }
+        .pf-cell:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(0,0,0,.07); }
         .pf-rowdel {
-          padding: .4rem; border-radius: .6rem; color: #e74c3c;
+          padding: .4rem; border-radius: .6rem; color: #dc2626;
           display: flex; align-items: center; justify-content: center;
         }
         .pf-rowdel:hover { background: rgba(231,76,60,.08); }

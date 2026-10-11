@@ -278,7 +278,7 @@ export default function AdminTestimoniPage() {
                 {/* Product info */}
                 {t.product_name && (
                   <div className="flex items-center gap-1.5 mb-1">
-                    <span className="text-[11px] px-2 py-0.5 rounded-full font-medium" style={{ background: "rgba(181,140,74,.08)", color: "var(--gold)" }}>
+                    <span className="text-[11px] px-2 py-0.5 rounded-full font-medium" style={{ background: "#f4f4f5", color: "var(--gold)" }}>
                       {t.product_name}
                     </span>
                     {t.series_name && (
@@ -300,7 +300,7 @@ export default function AdminTestimoniPage() {
               </div>
               <div className="flex gap-2 shrink-0">
                 <button onClick={() => openEdit(t)} className="p-2 rounded-lg hover:bg-[var(--bg-tertiary)]" style={{ color: "var(--text-muted)" }}><Edit size={16} /></button>
-                <button onClick={() => handleDelete(t.id, t.customer_name)} className="p-2 rounded-lg hover:bg-red-50" style={{ color: "#e74c3c" }}><Trash2 size={16} /></button>
+                <button onClick={() => handleDelete(t.id, t.customer_name)} className="p-2 rounded-lg hover:bg-red-50" style={{ color: "#dc2626" }}><Trash2 size={16} /></button>
               </div>
             </div>
           ))}
@@ -319,11 +319,11 @@ export default function AdminTestimoniPage() {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Nama Pelanggan</label>
-                  <input value={form.customer_name} onChange={(e) => setForm({ ...form, customer_name: e.target.value })} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
+                  <input value={form.customer_name} onChange={(e) => setForm({ ...form, customer_name: e.target.value })} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: "1px solid #d4d4d8", background: "white", color: "var(--espresso)" }} />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Isi Testimoni</label>
-                  <textarea value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} rows={3} className="w-full rounded-xl px-4 py-3 text-sm outline-none resize-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
+                  <textarea value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} rows={3} className="w-full rounded-xl px-4 py-3 text-sm outline-none resize-none" style={{ border: "1px solid #d4d4d8", background: "white", color: "var(--espresso)" }} />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -338,7 +338,7 @@ export default function AdminTestimoniPage() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Kategori</label>
-                    <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full rounded-xl px-4 py-3 text-sm outline-none appearance-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }}>
+                    <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full rounded-xl px-4 py-3 text-sm outline-none appearance-none" style={{ border: "1px solid #d4d4d8", background: "white", color: "var(--espresso)" }}>
                       {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
                     </select>
                   </div>
@@ -348,7 +348,7 @@ export default function AdminTestimoniPage() {
                 <div>
                   <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Produk yang direview (opsional)</label>
                   <div className="relative">
-                    <div className="flex items-center gap-2 rounded-xl px-4 py-3" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white" }}>
+                    <div className="flex items-center gap-2 rounded-xl px-4 py-3" style={{ border: "1px solid #d4d4d8", background: "white" }}>
                       <Search size={16} style={{ color: "var(--text-muted)" }} />
                       <input
                         value={productSearch}
@@ -369,7 +369,7 @@ export default function AdminTestimoniPage() {
                       )}
                     </div>
                     {showProductDropdown && filteredProducts.length > 0 && (
-                      <div className="absolute z-10 w-full mt-1 rounded-xl max-h-48 overflow-y-auto" style={{ background: "white", border: "1px solid rgba(64,50,37,.15)", boxShadow: "0 4px 12px rgba(0,0,0,.1)" }}>
+                      <div className="absolute z-10 w-full mt-1 rounded-xl max-h-48 overflow-y-auto" style={{ background: "white", border: "1px solid #d4d4d8", boxShadow: "0 4px 12px rgba(0,0,0,.1)" }}>
                         {filteredProducts.map((p) => (
                           <button
                             key={p.id}
@@ -379,7 +379,7 @@ export default function AdminTestimoniPage() {
                               setShowProductDropdown(false);
                             }}
                             className="w-full text-left px-4 py-2.5 text-sm hover:bg-[var(--bg-secondary)] transition-colors"
-                            style={{ borderBottom: "1px solid rgba(64,50,37,.06)" }}
+                            style={{ borderBottom: "1px solid #f1f1f3" }}
                           >
                             <span style={{ color: "var(--espresso)" }}>{p.name}</span>
                             <span className="ml-2 text-[11px]" style={{ color: "var(--text-muted)" }}>— {p.category}</span>
@@ -403,7 +403,7 @@ export default function AdminTestimoniPage() {
                       value={form.series_name}
                       onChange={(e) => setForm({ ...form, series_name: e.target.value })}
                       className="w-full rounded-xl px-4 py-3 text-sm outline-none appearance-none"
-                      style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }}
+                      style={{ border: "1px solid #d4d4d8", background: "white", color: "var(--espresso)" }}
                     >
                       <option value="">Tanpa Series</option>
                       {availableSeries.map((s) => (
@@ -417,7 +417,7 @@ export default function AdminTestimoniPage() {
                 <div>
                   <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Foto / Video (opsional)</label>
                   {(form.image_url || form.video_url) ? (
-                    <div className="relative rounded-xl overflow-hidden" style={{ border: "1px solid rgba(64,50,37,.15)" }}>
+                    <div className="relative rounded-xl overflow-hidden" style={{ border: "1px solid #d4d4d8" }}>
                       {form.video_url ? (
                         <video src={form.video_url} className="w-full max-h-48 object-cover" muted />
                       ) : (
@@ -428,7 +428,7 @@ export default function AdminTestimoniPage() {
                       </button>
                     </div>
                   ) : (
-                    <label className="block rounded-xl p-6 text-center cursor-pointer transition-all hover:border-[var(--gold)]" style={{ border: "2px dashed rgba(201,183,156,.3)", background: "rgba(255,255,255,.5)" }}>
+                    <label className="block rounded-xl p-6 text-center cursor-pointer transition-all hover:border-[var(--gold)]" style={{ border: "2px dashed #e4e4e7", background: "rgba(255,255,255,.5)" }}>
                       {uploading ? (
                         <Loader2 size={24} className="animate-spin mx-auto" style={{ color: "var(--gold)" }} />
                       ) : (
@@ -446,7 +446,7 @@ export default function AdminTestimoniPage() {
                 {/* Caption */}
                 <div>
                   <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Caption media (opsional)</label>
-                  <input value={form.caption} onChange={(e) => setForm({ ...form, caption: e.target.value })} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="Contoh: Koko harian favorit" />
+                  <input value={form.caption} onChange={(e) => setForm({ ...form, caption: e.target.value })} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: "1px solid #d4d4d8", background: "white", color: "var(--espresso)" }} placeholder="Contoh: Koko harian favorit" />
                 </div>
 
                 <div className="flex items-center justify-between">
@@ -457,7 +457,7 @@ export default function AdminTestimoniPage() {
                 </div>
               </div>
               <div className="flex gap-3 mt-6">
-                <button onClick={() => setEditModal(false)} className="flex-1 py-2.5 rounded-xl text-sm font-medium" style={{ border: "1px solid rgba(64,50,37,.15)" }}>Batal</button>
+                <button onClick={() => setEditModal(false)} className="flex-1 py-2.5 rounded-xl text-sm font-medium" style={{ border: "1px solid #d4d4d8" }}>Batal</button>
                 <button onClick={handleSave} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: "var(--gold)" }}>
                   {saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null} Simpan
                 </button>
@@ -469,7 +469,7 @@ export default function AdminTestimoniPage() {
 
       <ConfirmModal open={confirmModal.open} title="Hapus Testimoni?" message="Tindakan ini tidak bisa dibatalkan." onConfirm={() => { confirmModal.onConfirm(); setConfirmModal({ open: false, onConfirm: () => {} }); }} onCancel={() => setConfirmModal({ open: false, onConfirm: () => {} })} />
 
-      <style jsx global>{`.card { background: #fffdfb; border: 1px solid rgba(64,50,37,.06); border-radius: 1rem; box-shadow: 0 1px 2px rgba(64,50,37,.03); }`}</style>
+      <style jsx global>{`.card { background: #ffffff; border: 1px solid #f1f1f3; border-radius: 1rem; box-shadow: 0 1px 2px rgba(0,0,0,.03); }`}</style>
     </section>
     </AdminShell>
   );

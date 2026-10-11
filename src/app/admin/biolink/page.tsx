@@ -199,29 +199,29 @@ export default function BiolinkPage() {
             {SECTIONS.map((section) => {
               const sectionLinks = links.filter((l) => l.section === section).sort((a, b) => a.sort_order - b.sort_order);
               return (
-                <div key={section} className="rounded-2xl overflow-hidden" style={{ background: "#fffdfb", border: "1px solid rgba(64,50,37,.06)", boxShadow: "0 1px 3px rgba(64,50,37,.04)" }}>
-                  <div className="flex items-center justify-between px-5 py-3.5" style={{ borderBottom: "1px solid rgba(64,50,37,.08)", background: "rgba(200,169,126,.06)" }}>
+                <div key={section} className="rounded-2xl overflow-hidden" style={{ background: "#ffffff", border: "1px solid var(--bd)", boxShadow: "0 1px 2px rgba(0,0,0,.05)" }}>
+                  <div className="flex items-center justify-between px-5 py-3.5" style={{ borderBottom: "1px solid var(--bd)", background: "var(--sub)" }}>
                     <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "rgba(200,169,126,.15)" }}>
+                      <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "var(--sub)" }}>
                         <GripVertical size={14} style={{ color: "var(--gold)" }} />
                       </div>
                       <h2 className="text-sm font-semibold" style={{ color: "var(--espresso)" }}>{section}</h2>
-                      <span className="text-[11px] px-2 py-0.5 rounded-full font-medium" style={{ background: "rgba(64,50,37,.06)", color: "var(--text-muted)" }}>{sectionLinks.length}</span>
+                      <span className="text-[11px] px-2 py-0.5 rounded-full font-medium" style={{ background: "var(--bd)", color: "var(--text-muted)" }}>{sectionLinks.length}</span>
                     </div>
                     <button
                       onClick={() => openAdd(section)}
                       className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
-                      style={{ color: "var(--gold)", border: "1px solid rgba(200,169,126,.25)" }}
+                      style={{ color: "var(--gold)", border: "1px solid var(--bd)" }}
                     >
                       <Plus size={14} /> Tambah
                     </button>
                   </div>
 
-                  <div className="divide-y" style={{ borderColor: "rgba(64,50,37,.06)" }}>
+                  <div className="divide-y" style={{ borderColor: "var(--bd)" }}>
                     {sectionLinks.map((link) => (
                       <div key={link.id} className="flex items-center gap-3 px-5 py-3.5 group" style={{ opacity: link.enabled ? 1 : 0.5 }}>
                         {/* Icon preview */}
-                        <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: "linear-gradient(180deg, #ece6dd, #e3dcd1)" }}>
+                        <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: "var(--sub)" }}>
                           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a1613" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
                             <path d={getIconSVG(link.icon)} />
                           </svg>
@@ -256,7 +256,7 @@ export default function BiolinkPage() {
                         <button
                           onClick={() => toggleEnabled(link)}
                           className="w-9 h-5 rounded-full transition-colors relative shrink-0"
-                          style={{ background: link.enabled ? "var(--gold)" : "rgba(64,50,37,.15)" }}
+                          style={{ background: link.enabled ? "var(--gold)" : "var(--bd)" }}
                           title={link.enabled ? "Nonaktifkan" : "Aktifkan"}
                         >
                           <div
@@ -265,10 +265,10 @@ export default function BiolinkPage() {
                           />
                         </button>
 
-                        <button onClick={() => openEdit(link)} className="p-1.5 rounded-lg transition-colors" style={{ color: "var(--gold)", border: "1px solid rgba(64,50,37,.12)" }} title="Edit">
+                        <button onClick={() => openEdit(link)} className="p-1.5 rounded-lg transition-colors" style={{ color: "var(--gold)", border: "1px solid var(--bd)" }} title="Edit">
                           <Edit size={14} />
                         </button>
-                        <button onClick={() => handleDelete(link)} className="p-1.5 rounded-lg transition-colors" style={{ color: "#e74c3c", border: "1px solid rgba(231,76,60,.15)" }} title="Hapus">
+                        <button onClick={() => handleDelete(link)} className="p-1.5 rounded-lg transition-colors" style={{ color: "#dc2626", border: "1px solid rgba(231,76,60,.15)" }} title="Hapus">
                           <Trash2 size={14} />
                         </button>
                       </div>
@@ -299,7 +299,7 @@ export default function BiolinkPage() {
                 {/* Section */}
                 <div>
                   <label className="block text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>Section</label>
-                  <select value={form.section} onChange={(e) => setForm({ ...form, section: e.target.value })} className="w-full rounded-lg px-3 py-2.5 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }}>
+                  <select value={form.section} onChange={(e) => setForm({ ...form, section: e.target.value })} className="w-full rounded-lg px-3 py-2.5 text-sm outline-none" style={{ border: "1px solid var(--bd)", background: "white", color: "var(--espresso)" }}>
                     {SECTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
@@ -307,25 +307,25 @@ export default function BiolinkPage() {
                 {/* Label */}
                 <div>
                   <label className="block text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>Label *</label>
-                  <input value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value })} className="w-full rounded-lg px-3 py-2.5 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="Lihat Koleksi Samaqu" />
+                  <input value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value })} className="w-full rounded-lg px-3 py-2.5 text-sm outline-none" style={{ border: "1px solid var(--bd)", background: "white", color: "var(--espresso)" }} placeholder="Lihat Koleksi Samaqu" />
                 </div>
 
                 {/* Subtitle */}
                 <div>
                   <label className="block text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>Subtitle (opsional)</label>
-                  <input value={form.subtitle} onChange={(e) => setForm({ ...form, subtitle: e.target.value })} className="w-full rounded-lg px-3 py-2.5 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="Official Website" />
+                  <input value={form.subtitle} onChange={(e) => setForm({ ...form, subtitle: e.target.value })} className="w-full rounded-lg px-3 py-2.5 text-sm outline-none" style={{ border: "1px solid var(--bd)", background: "white", color: "var(--espresso)" }} placeholder="Official Website" />
                 </div>
 
                 {/* Href */}
                 <div>
                   <label className="block text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>URL</label>
-                  <input value={form.href} onChange={(e) => setForm({ ...form, href: e.target.value })} className="w-full rounded-lg px-3 py-2.5 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="https://..." />
+                  <input value={form.href} onChange={(e) => setForm({ ...form, href: e.target.value })} className="w-full rounded-lg px-3 py-2.5 text-sm outline-none" style={{ border: "1px solid var(--bd)", background: "white", color: "var(--espresso)" }} placeholder="https://..." />
                 </div>
 
                 {/* Target */}
                 <div>
                   <label className="block text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>Buka di</label>
-                  <select value={form.target} onChange={(e) => setForm({ ...form, target: e.target.value })} className="w-full rounded-lg px-3 py-2.5 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }}>
+                  <select value={form.target} onChange={(e) => setForm({ ...form, target: e.target.value })} className="w-full rounded-lg px-3 py-2.5 text-sm outline-none" style={{ border: "1px solid var(--bd)", background: "white", color: "var(--espresso)" }}>
                     <option value="">Tab yang sama</option>
                     <option value="_blank">Tab baru</option>
                   </select>
@@ -341,8 +341,8 @@ export default function BiolinkPage() {
                         onClick={() => setForm({ ...form, icon: opt.value })}
                         className="flex flex-col items-center gap-1 p-2 rounded-lg transition-all"
                         style={{
-                          border: form.icon === opt.value ? "2px solid var(--gold)" : "1px solid rgba(64,50,37,.12)",
-                          background: form.icon === opt.value ? "rgba(200,169,126,.1)" : "white",
+                          border: form.icon === opt.value ? "2px solid var(--gold)" : "1px solid var(--bd)",
+                          background: form.icon === opt.value ? "var(--sub)" : "white",
                         }}
                         title={opt.label}
                       >
@@ -357,7 +357,7 @@ export default function BiolinkPage() {
                 {/* Sort order */}
                 <div>
                   <label className="block text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>Urutan</label>
-                  <input type="number" value={form.sort_order} onChange={(e) => setForm({ ...form, sort_order: Number(e.target.value) })} className="w-full rounded-lg px-3 py-2.5 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
+                  <input type="number" value={form.sort_order} onChange={(e) => setForm({ ...form, sort_order: Number(e.target.value) })} className="w-full rounded-lg px-3 py-2.5 text-sm outline-none" style={{ border: "1px solid var(--bd)", background: "white", color: "var(--espresso)" }} />
                 </div>
 
                 {/* Enabled */}
@@ -368,7 +368,7 @@ export default function BiolinkPage() {
               </div>
 
               <div className="flex gap-3 mt-6">
-                <button onClick={() => setModalOpen(false)} className="flex-1 py-2.5 rounded-xl text-sm font-medium" style={{ border: "1px solid rgba(64,50,37,.15)", color: "var(--espresso)" }}>Batal</button>
+                <button onClick={() => setModalOpen(false)} className="flex-1 py-2.5 rounded-xl text-sm font-medium" style={{ border: "1px solid var(--bd)", color: "var(--espresso)" }}>Batal</button>
                 <button onClick={handleSave} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: "var(--gold)" }}>
                   {saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null}
                   {editing ? "Simpan" : "Tambah"}
