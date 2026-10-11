@@ -1,7 +1,7 @@
 "use client";
 
 import { ReactNode, useEffect, useMemo, useState } from "react";
-import { Cake, ChevronRight, Loader2, Phone, Search, ShoppingBag, User, Users, X } from "lucide-react";
+import { Cake, ChevronRight, Download, Loader2, Phone, Search, ShoppingBag, User, Users, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import CustomerDetailDrawer, { type AdminCustomer } from "@/components/admin/CustomerDetailDrawer";
 
@@ -27,6 +27,26 @@ function parseBirth(iso: string) {
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+}
+
+/**
+ * Export daftar pelanggan ke CSV (Nama, No WA, Tanggal Lahir) — isinya mengikuti
+ * filter/pencarian yang sedang aktif di panel. Tanggal lahir ditulis `YYYY-MM-DD`
+ * supaya bisa diurutkan di Excel/Sheets; kosong kalau belum diisi.
+ */
+function exportCustomers(rows: AdminCustomer[]) {
+  const cell = (v: string) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const lines = [["Nama", "No WA", "Tanggal Lahir"].map(cell).join(",")];
+  for (const c of rows) lines.push([c.name, c.whatsapp, c.birthDate || ""].map(cell).join(","));
+
+  // BOM di depan supaya Excel membaca UTF-8 dengan benar.
+  const blob = new Blob(["\uFEFF" + lines.join("\r\n")], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `pelanggan-samaqu-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 function StatCard({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
@@ -201,6 +221,16 @@ export default function CustomersView() {
               {t.label}
             </button>
           ))}
+          <button
+            onClick={() => exportCustomers(filtered)}
+            disabled={filtered.length === 0}
+            className="text-xs font-semibold px-3.5 py-2 rounded-lg whitespace-nowrap inline-flex items-center gap-1.5 disabled:opacity-50"
+            style={{ background: "transparent", color: "var(--fg2)", border: "1px solid var(--bd)" }}
+            title="Unduh daftar pelanggan (Nama, No WA, Tanggal Lahir)"
+          >
+            <Download size={14} strokeWidth={2} />
+            Export
+          </button>
         </div>
       </div>
 
