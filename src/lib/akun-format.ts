@@ -38,16 +38,22 @@ export interface StrukStep {
 
 /** Jam pembatalan pesanan.
  *
- * Tabel `orders` tidak punya trigger `updated_at`, jadi baris hasil `update` yang lama masih
- * menyimpan `updated_at` = `created_at` persis — jam itu cuma salinan jam pembuatan dan tidak
- * boleh ditampilkan seolah-olah waktu pembatalannya. Sejak ketiga jalur pembatalan
- * (`/api/orders/cancel`, `PATCH /api/admin/orders` action `cancelJnt`, `/api/cron/auto-cancel`)
- * menulis `updated_at` sendiri, nilai yang berbeda dari `created_at` barulah waktu sebenarnya.
+ * Tabel `orders` tidak punya trigger `updated_at`, jadi baris lama masih menyimpan
+ * `updated_at` = `created_at` persis — jam itu salinan jam pembuatan, bukan jam pembatalannya.
+ * Sejak ketiga jalur pembatalan (`/api/orders/cancel`, `PATCH /api/admin/orders`, dan
+ * `/api/cron/auto-cancel`) menulis `updated_at` sendiri, nilai yang **berbeda** dari `created_at`
+ * adalah jam pembatalan yang sebenarnya.
+ *
+ * Pesanan yang dibatalkan sebelum perubahan itu tidak menyimpan jam batalnya sama sekali, tapi
+ * langkah "Pesanan dibatalkan" tetap harus menampilkan tanggal & jam. Jam terakhir yang tersimpan
+ * ditampilkan dengan penanda "(perkiraan)" supaya tidak terbaca sebagai jam pasti — penandanya
+ * jangan dihapus: dulu jam salinan itu tampil polos dan terbaca seperti bug ("dibuat 13:38,
+ * dibatalkan 13:38"), lalu sempat disembunyikan sampai pemilik melaporkan jamnya hilang.
  */
 export function waktuBatal(order: { created_at: string; updated_at?: string }): string {
   const u = order.updated_at;
-  if (!u || u === order.created_at) return "Dibatalkan";
-  return tglJamID(u);
+  if (!u) return "Dibatalkan";
+  return u === order.created_at ? `${tglJamID(u)} (perkiraan)` : tglJamID(u);
 }
 
 /** Langkah pesanan untuk batang status struk; pembayaran jadi langkah kedua. */
