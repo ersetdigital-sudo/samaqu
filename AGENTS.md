@@ -266,16 +266,22 @@ Page presentation (not obvious from the code):
   and only its appearance changed. The summary box below it lists the item lines, an `Extra Cover &
   Hanger` line while the add-on is selected, and a `Total` (subtotal + add-on) so toggling the card
   visibly changes the amount; ongkir is only added in step 5 (review).
-- **Halaman detail pesanan akun** (`/[locale]/akun/pesanan/<order_number>`) memakai desain "Struk Hangat":
-  renderernya satu komponen klien `src/components/akun/DetailPesananStruk.tsx` (CSS scoped dengan awalan
-  `sk-` di dalam komponen itu, mengikuti pola `ADDON_CSS` di `StepCart.tsx`), sementara file route hanya
-  mengambil pesanan lewat `getCustomerOrders()` lalu merendernya. Grid waktu yang dulu vertikal kini
-  batang langkah mendatar (`sk-bar`), ringkasan pembayaran muncul sebelum Informasi Produk yang bisa
-  dilipat (`<details>`), dan "Lacak Pesanan" jadi bar lengket di atas nav bawah. Foto produk memakai
-  `order_items.product_image` dengan `object-fit: contain` **supaya tidak terpotong**, dan jatuh ke
-  konstanta `FALLBACK_PHOTO` (aset Base44) kalau kolomnya kosong — banyak `order_items` lama memang
-  menyimpan `product_image` NULL. Header halaman lama (`AkunHeader` dari `AkunShell.tsx`) masih dipakai
-  halaman akun lain, jadi jangan ubah gaya globalnya untuk halaman ini.
+- **Halaman detail pesanan akun** (`/[locale]/akun/pesanan/<order_number>`) memakai tata letak rincian
+  pesanan ala marketplace (latar abu terang `#F5F6F7`, kartu putih radius 12, aksen terracotta `#B4552F`):
+  renderernya satu komponen klien `src/components/akun/RincianPesanan.tsx` (CSS scoped dengan awalan `rp-`
+  di dalam komponen itu, mengikuti pola `ADDON_CSS` di `StepCart.tsx`), sementara file route hanya
+  mengambil pesanan lewat `getCustomerOrders()` lalu merendernya. Urutan bloknya: banner status → "Info
+  Pengiriman" → "Alamat Pengiriman" (alamat dipotong 2 baris + tombol "Lihat") → kartu produk (baris
+  `Total Pesanan` dibuka untuk Ringkasan Pembayaran) → "Status Pesanan" yang dilipat (`<details>`) →
+  "Butuh Bantuan?" → tombol "Lacak Pesanan" lengket di atas nav bawah (`bottom: var(--mobile-nav-h)`).
+  Halaman ini **tidak lagi memakai `STRUK_CSS`/`StrukHeader`** (keduanya masih dipakai halaman lacak —
+  jangan hapus, dan perbaikan gaya halaman lacak terpisah). Foto produk memakai `order_items.product_image`
+  dengan `object-fit: contain` di atas kotak abu muda **tanpa bingkai/lis** (permintaan pemilik: lis emas
+  lama jelek, dan foto tidak boleh terpotong), dengan `FALLBACK_PHOTO` (aset Base44) kalau kolomnya kosong —
+  banyak `order_items` lama memang menyimpan `product_image` NULL. Blok "Info Pengiriman" memanggil
+  `/api/jnt/track` sekali (hanya bila ada resi) untuk baris update terakhir. Header halaman lama
+  (`AkunHeader` dari `AkunShell.tsx`) masih dipakai halaman akun lain, jadi jangan ubah gaya globalnya
+  untuk halaman ini.
 - The admin **Pesanan** panel splits the list into sub-tabs **Pesanan Website** / **Open Order**
   (`orderSource` state): Open Order rows are the `CYO-` numbers, everything else is the website
   checkout, and the status chips (Semua/pending/diproses/selesai) filter inside the selected tab.
