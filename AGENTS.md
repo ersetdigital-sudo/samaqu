@@ -253,7 +253,10 @@ Page presentation (not obvious from the code):
   `customer.city` / `customer.district`, so ongkir no longer depends on the customer's spelling.
   If the lists can't be loaded it falls back to the old plain Kota + Kecamatan text inputs, so the
   order still submits; the same debounced `/api/shipping/jnt-cost` call and the same graceful
-  `configured: false` fallback (`Ongkir —`) apply either way.
+  `configured: false` fallback (`Ongkir —`) apply either way. Langkah 4 juga menampilkan **baris
+  Ongkir** sendiri (label service + harga, `Menghitung…` selagi menunggu, `—` + catatan saat gagal)
+  tepat di bawah Kode Pos — nilainya dari state wizard yang sama dengan langkah 5, jadi terhitung
+  sekali. Sebelum wilayah dipilih, barisnya `—` dengan petunjuk singkat memilih provinsi/kota/kecamatan.
 - The period line under the title comes from `store_settings.open_order_period`, diatur di menu admin
   **Open Order** dan dibaca lewat `useStoreSettings()` (`StepCatalog` merendernya sebagai `Periode …`).
   `OPEN_ORDER_PERIOD` di `src/lib/open-order-config.ts` ("8-15 Agustus 2026") kini hanya **nilai
@@ -266,7 +269,8 @@ Page presentation (not obvious from the code):
   ornament is used nowhere else; the row is still the same toggle button (click selects/deselects)
   and only its appearance changed. The summary box below it lists the item lines, an `Extra Cover &
   Hanger` line while the add-on is selected, and a `Total` (subtotal + add-on) so toggling the card
-  visibly changes the amount; ongkir is only added in step 5 (review).
+  visibly changes the amount; ongkir is added in step 5 (review) — dan sudah tampil juga sebagai
+  baris tersendiri di langkah 4, tepat di bawah Kode Pos.
 - **Checkout Open Order wajib punya akun**: langkah 4 adalah gerbangnya. Kalau belum ada sesi
   customer, langkah 4 merender `StepAuth` (masuk/daftar **inline** — bukan redirect — supaya
   keranjang & data yang sudah diisi di state wizard tidak hilang) dan judul header jadi
@@ -282,6 +286,10 @@ Page presentation (not obvious from the code):
   `customer_email` **dari token**, bukan dari body — order `CYO-` jadi muncul di `/akun/pesanan`.
   (Order checkout website lama maupun baru masih `customer_id: null`; itu di luar cakupan gerbang
   ini.)
+  Sebelum gerbang `customers` ini ada, akun auth tanpa baris `customers` membuat insert `orders`
+  gagal `23503` (FK `orders_customer_id_fkey`) → `500`. Sekarang kasus itu berhenti di `403`:
+  pernah ada **satu akun lama** (dibuat 2026-07-25) yang tidak punya baris `customers`, jadi
+  `403` di log bukan tanda gerbangnya rusak — cek dulu `GET /rest/v1/customers?id=eq.<uid>`.
 - The admin **Pesanan** panel splits the list into sub-tabs **Pesanan Website** / **Open Order**
   (`orderSource` state): Open Order rows are the `CYO-` numbers, everything else is the website
   checkout, and the status chips (Semua/pending/diproses/selesai) filter inside the selected tab.
