@@ -10,8 +10,13 @@
  * mengikuti format panjang `id-ID` yang dulu ada di header modal.
  *
  * Isinya tetap `OrderDetailContent` — susunan & gaya struk yang sama dengan halaman detail
- * pesanan customer. Di bawah 768px drawer memakai lebar penuh; di atasnya 640px, sehingga
- * lembar struk 600px-nya tetap terpusat di dalam drawer.
+ * pesanan customer. Di bawah 768px drawer memakai lebar penuh; di atasnya 520px (sama
+ * rampingnya dengan `ProductDetailDrawer`/`CustomerDetailDrawer`).
+ *
+ * Dulu panelnya 640px sementara lembar struk di dalamnya hanya 600px terpusat — sisa 20px di
+ * kiri-kanan bikin drawer terasa lebar & tampak seperti dua lapis krem yang bertumpuk. Sekarang
+ * drawer-nya sendiri yang jadi "kertas"-nya: panel lebih sempit, struknya mengisi lebar penuh
+ * (lihat blok ≥768px di `OD_CSS` pada `OrderDetailContent`).
  */
 
 import { useEffect } from "react";
@@ -101,20 +106,23 @@ export default function OrderDetailDrawer({
 }
 
 const ODR_CSS = `
-.odr-overlay{position:fixed;inset:0;z-index:50;display:flex;justify-content:flex-end;background:rgba(42,33,27,.4)}
-.odr-panel{width:640px;max-width:100%;height:100%;display:flex;flex-direction:column;background:var(--cream,#f8f5f1);box-shadow:-24px 0 60px -24px rgba(42,33,27,.35)}
-.odr-head{flex:none;display:flex;align-items:flex-start;gap:12px;padding:18px 20px;border-bottom:1px solid var(--bd,#f1f1f3)}
+.odr-overlay{position:fixed;inset:0;z-index:50;display:flex;justify-content:flex-end;background:rgba(42,33,27,.42);backdrop-filter:blur(3px)}
+/* Panel = kertasnya sendiri (krem terang yang sama dengan lembar struk), jadi isi struk duduk
+   langsung di atasnya tanpa kartu krem kedua di dalamnya. 520px: cukup untuk baris produk &
+   linimasa, tapi tidak lagi menutupi hampir seluruh layar tablet seperti versi 640px. */
+.odr-panel{width:520px;max-width:100%;height:100%;display:flex;flex-direction:column;background:#FFFDF8;box-shadow:-24px 0 60px -24px rgba(42,33,27,.35)}
+.odr-head{flex:none;display:flex;align-items:flex-start;gap:12px;padding:18px 20px;border-bottom:1px solid rgba(42,33,27,.09)}
 .odr-head-txt{min-width:0}
 /* Nomor pesanan memakai font UI admin yang sama dengan isi struk (dulu serif Cormorant) supaya seragam. */
 .odr-title{margin:0;font-size:1.05rem;font-weight:800;letter-spacing:-.01em;color:var(--espresso,#1c1c1c);font-family:var(--font-inter),system-ui,sans-serif;overflow-wrap:anywhere}
 .odr-date{margin:4px 0 0;font-size:.75rem;font-weight:500;color:var(--text-muted,#9a9a98)}
 .odr-x{margin-left:auto;flex:none;padding:6px;border-radius:8px;border:1px solid transparent;background:transparent;color:var(--text-muted,#9a9a98);cursor:pointer}
-.odr-x:hover{background:var(--sub,#f4f4f5);color:var(--espresso,#1c1c1c)}
+.odr-x:hover{background:rgba(42,33,27,.06);color:var(--espresso,#1c1c1c)}
 .odr-body{flex:1;min-height:0;overflow-y:auto}
 
 /* Mobile: drawer memakai lebar penuh dan header lebih rapat. */
 @media (max-width:767.98px){
- .odr-panel{width:100%}
+ .odr-panel{width:100%;background:var(--cream,#f8f5f1)}
  .odr-head{padding:14px 16px}
 }
 `;

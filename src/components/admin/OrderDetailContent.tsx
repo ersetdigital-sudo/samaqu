@@ -93,8 +93,14 @@ const OD_CSS = `
 }
 @media (min-width:768px){
  .od-root .rp-root{background:transparent}
+ /* Drawer = kertasnya sendiri. Dulu struk di sini masih jadi "lembar 600px terpusat" dengan
+    sisa ruang krem di kiri-kanannya — di dalam drawer itu bikin panel terasa lebar & tampak
+    bertumpuk. Sekarang isi struk mengisi lebar drawer; pemisah putus-putusnya tetap memberi
+    rasa struk. */
+ .od-root .rp-wrap{max-width:none}
+ .od-root .rp-sheet{background:transparent;border:0;border-radius:0;box-shadow:none}
  .od-root .rp-act{padding:16px 20px 20px}
- .od-acts{border-top-color:#F0E9DC}
+ .od-acts{border-top-color:rgba(42,33,27,.09)}
 }
 `;
 
