@@ -768,7 +768,14 @@ pembayaran diverifikasi.
   ada, 400 sudah punya `awb_no`, 400 kalau `dibatalkan`), panggil J&T, lalu simpan `awb_no` +
   `jnt_order_id` **dan ubah status ke `diproses`**. Tombol **"Atur Pesanan"** (kelas `od-a-primary`,
   ikon kotak) ada di blok aksi `OrderDetailContent.tsx`, muncul hanya bila pesanan belum punya resi
-  dan statusnya `pending`/`diproses`; kliknya membuka `ConfirmModal` (label konfirmasinya "Atur
+  dan statusnya sudah **`diproses`** (permintaan pemilik 2026-10-11: "ini kan orderan menunggu
+  pembayaran, tapi kok ada atur pesanan — harusnya munculnya ketika admin ubah ke proses, mirip
+  Shopee"; sebelumnya `pending` juga menampilkan tombolnya, jadi pesanan yang belum dibayar/
+  diverifikasi sudah menawarkan pembuatan resi). Konsekuensinya admin harus menekan chip
+  **Diproses** dulu; petunjuk "Nomor resi belum dibuat…" di blok Info Pengiriman ikut menyesuaikan
+  (`canArrange`) supaya tidak menyuruh klik tombol yang belum tampil. Guard route `createJnt`
+  **tidak** ikut berubah (masih menolak `dibatalkan`/pesanan ber-`awb_no`) — itu jalur langka yang
+  hanya bisa dipanggil langsung, bukan dari UI. Kliknya membuka `ConfirmModal` (label konfirmasinya "Atur
   Pesanan", bukan "Hapus" — `showConfirm` di `src/app/admin/page.tsx` menerima
   `options: { confirmText, danger }`), lalu `arrangeOrder()` meng-update baris tabel + drawer tanpa
   reload. Status `dikirim` tetap datang dari pelacakan, bukan dari sini.
@@ -787,7 +794,12 @@ pembayaran diverifikasi.
   -d '{"orderNumber":"SMQ-20261008-432","action":"createJnt"}'` → `400` "sudah punya nomor resi";
   order asing → `404`. **Pembuatan resi yang benar-benar sukses belum diuji otomatis**: kredensial
   J&T toko ini production, jadi mengonfirmasi dialognya akan membuat pengiriman J&T asli — uji
-  manual dengan satu pesanan nyata.
+  manual dengan satu pesanan nyata. Setelah gerbang status di atas (2026-10-11) tombolnya **hanya**
+untuk `diproses`; verified ulang lewat preview (sesi admin diputar ulang): `pending`
+(`SMQ-20261011-643`) → chip Pending, **tanpa** tombol Atur Pesanan; `diproses` tanpa resi
+(`SMQ-20261011-371`) → tombol muncul + petunjuk "Klik Atur Pesanan", tanpa error console. Kasus
+**`pending` tanpa resi** tidak bisa direproduksi saat itu (satu-satunya pesanan `pending` sudah
+ber-resi) — kondisi `order.status === "diproses"` yang menutupnya.
 
 ## Lacak paket di drawer pesanan & status selesai otomatis
 

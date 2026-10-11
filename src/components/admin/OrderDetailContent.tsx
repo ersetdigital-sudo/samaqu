@@ -156,10 +156,12 @@ export default function OrderDetailContent({
 
   const [showAlamat, setShowAlamat] = useState(false);
 
-  // "Atur Pesanan" — pembuatan resi J&T manual. Selama proses, tombolnya dikunci supaya
-  // admin tidak menekan dua kali (dua kali klik = dua pesanan J&T).
+  // "Atur Pesanan" — pembuatan resi J&T manual, dan hanya untuk pesanan yang sudah diproses
+  // admin (chip status → Diproses, ala Shopee): pesanan yang masih menunggu pembayaran belum
+  // boleh menerbitkan resi. Selama proses, tombolnya dikunci supaya admin tidak menekan dua
+  // kali (dua kali klik = dua pesanan J&T).
   const [arranging, setArranging] = useState(false);
-  const canArrange = !resi && !!onArrangeOrder && (order.status === "pending" || order.status === "diproses");
+  const canArrange = !resi && !!onArrangeOrder && order.status === "diproses";
 
   async function handleArrange() {
     if (!onArrangeOrder || arranging) return;
@@ -244,7 +246,13 @@ export default function OrderDetailContent({
                   </div>
                 ) : (
                   <div className="rp-line rp-sub" style={{ marginTop: 8 }}>
-                    <span>Nomor resi belum dibuat. Klik &ldquo;Atur Pesanan&rdquo; untuk menerbitkan resi J&amp;T.</span>
+                    {/* Tombol "Atur Pesanan" hanya ada saat status Diproses, jadi petunjuknya ikut
+                        menyesuaikan supaya tidak menyuruh klik tombol yang belum tampil. */}
+                    <span>
+                      {canArrange
+                        ? <>Nomor resi belum dibuat. Klik &ldquo;Atur Pesanan&rdquo; untuk menerbitkan resi J&amp;T.</>
+                        : <>Nomor resi diterbitkan setelah pesanan diproses (ubah status ke Diproses).</>}
+                    </span>
                   </div>
                 )}
               </div>
