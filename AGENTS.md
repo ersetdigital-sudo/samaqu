@@ -366,3 +366,15 @@ Kredensial J&T diisi admin lewat **Pengaturan → "Kredensial J&T Express"**
 Verify: `curl -s -o /dev/null -w '%{http_code}\n' http://localhost:3000/api/admin/jnt-settings` →
 `401` (tanpa session admin). POST `/api/shipping/jnt-cost` tanpa kredensial → `configured: false`.
 Simpan-dari-form baru bisa terbukti setelah `supabase/jnt-settings.sql` dijalankan.
+
+**Kredensial J&T sekarang datang dari platform secrets** (2026-10-11): `JNT_ORDER_USERNAME`,
+`JNT_ORDER_API_KEY`, `JNT_TARIFF_KEY`, `JNT_TARIFF_CUS_NAME`, `JNT_TRACK_PASSWORD` diisi pemilik
+toko lewat kartu secrets Base44 (`/run/base44/app.env`), dibaca `getJntConfig()` dari environment
+variable. **Tabel `jnt_settings` masih belum dibuat** (GET `/rest/v1/jnt_settings` masih 404) dan itu
+tidak lagi menghalangi ongkir — form admin tetap butuh SQL itu kalau nanti mau dipakai.
+
+Kredensial toko ini **production**, bukan demo: `data` + `sign` yang sama membalas
+`{ is_success: "false", message: "fail" }` di `demo-general.inuat-jntexpress.id`, tetapi
+`is_success: "true"` di `partner-track.jet.co.id`. Karena itu `JNT_ENV=production` diset di
+`.base44/env.defaults` (bukan rahasia, jadi aman di repo; nilai dari dashboard tetap menang).
+Kalau ongkir tiba-tiba `fail` lagi, cek `JNT_ENV` dulu sebelum menuduh sign/kredensialnya salah.
