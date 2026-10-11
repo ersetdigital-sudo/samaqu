@@ -613,6 +613,17 @@ chip status 2×2, tombol aksi satu kolom.
   **Total belanja tidak menghitung pesanan `dibatalkan`.**
   `birth_date` dibaca dengan fallback tanpa kolom itu kalau migration
   `supabase/migrations/20260910_customer_birth_date.sql` belum dijalankan.
+  **Migration itu BELUM dijalankan** (dicek 2026-10-11: `select=id,name,birth_date` → `400`
+  `42703 column customers.birth_date does not exist`), jadi tanggal lahir belum tersimpan di mana
+  pun. Simpan profil customer (`/[locale]/akun/profil`) menulis `birth_date` langsung dari browser,
+  dan tanpa kolomnya PostgREST menolak seluruh update dengan **400** — itulah error
+  `rest/v1/customers?id=eq.<uuid>` di console. Sandbox tidak punya jalur DDL, jadi kolomnya dibuat
+  lewat SQL Editor Supabase: `ALTER TABLE customers ADD COLUMN IF NOT EXISTS birth_date DATE;`
+  (sudah ada di `supabase/migrations/20260910_customer_birth_date.sql`). Selama belum dijalankan,
+  halaman profil tetap menyimpan nama/WhatsApp (update diulang tanpa `birth_date`) dan menampilkan
+  toast bahwa tanggal lahir gagal disimpan.
+  Cek cepat kolom: `curl -s -o /dev/null -w '%{http_code}\n' "$NEXT_PUBLIC_SUPABASE_URL/rest/v1/customers?select=id,birth_date&limit=1" -H "apikey: $SUPABASE_SERVICE_ROLE_KEY"`
+  → `200` berarti kolomnya sudah ada (`400` = belum).
   Cek cepat: `curl -s -o /dev/null -w '%{http_code}\n' http://localhost:3000/api/admin/customers`
   → `401` tanpa sesi admin.
 - Verifikasi panel-panel ini lewat preview: sesi admin user ikut diputar ulang, jadi
