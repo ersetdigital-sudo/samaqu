@@ -7,21 +7,23 @@ import { getThumbnailFromImages } from "@/lib/product-thumbnail";
 import {
   LayoutDashboard, ShoppingBag, Package, Users, FileText, Settings,
   Search, Bell, Menu, X, ChevronDown, Plus, TrendingUp, Eye, Edit,
-  DollarSign, ShoppingCart, UserPlus, Box, LogOut, Lock, Mail, Loader2, Trash2, Ticket, Star, Ruler, Image, Shirt, MessageCircle,
+  DollarSign, ShoppingCart, UserPlus, Box, LogOut, Lock, Mail, Trash2, Ticket, Star, Ruler, Image, Shirt, MessageCircle,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { User } from "@supabase/supabase-js";
 import ConfirmModal from "@/components/ConfirmModal";
 import { useToast } from "@/components/AdminToast";
-import PaymentMethodsManager, { PaymentMethodValue } from "@/components/admin/PaymentMethodsManager";
-import JntCredentialsForm from "@/components/admin/JntCredentialsForm";
-import OrderDetailContent from "@/components/admin/OrderDetailContent";
+import OrderDetailDrawer from "@/components/admin/OrderDetailDrawer";
+import CustomersView from "@/components/admin/CustomersView";
+import SettingsPanel from "@/components/admin/SettingsSections";
 import OrdersMobileList from "@/components/admin/OrdersMobileList";
 import DashboardView from "@/components/admin/DashboardView";
 import ProductsCatalog from "@/components/admin/ProductsCatalog";
+import ProductDetailDrawer from "@/components/admin/ProductDetailDrawer";
 import { ADMIN_WF_VARS } from "@/components/admin/admin-theme";
 
-type Panel = "dashboard" | "orders" | "products" | "customers" | "content" | "featured" | "settings";
+type Panel = "dashboard" | "orders" | "products" | "customers" | "content" | "settings";
 
 interface Order {
   id: string;
@@ -67,14 +69,43 @@ interface AdminCatalogProduct extends Product {
   seriesStock?: { name: string; stock: number; isDerived: boolean; follows?: string }[];
 }
 
-const navItems = [
-  { id: "dashboard" as Panel, label: "Dashboard", icon: LayoutDashboard },
-  { id: "orders" as Panel, label: "Pesanan", icon: ShoppingBag, badge: true },
-  { id: "products" as Panel, label: "Produk", icon: Package },
-  { id: "customers" as Panel, label: "Pelanggan", icon: Users },
-  { id: "content" as Panel, label: "Konten Website", icon: FileText },
-  { id: "featured" as Panel, label: "Produk Pilihan", icon: Package },
-  { id: "settings" as Panel, label: "Pengaturan", icon: Settings },
+// Sidebar dikelompokkan: alur jualan (pesanan/produk/pelanggan) dipisah dari konten
+// website dan pengaturan. Satu item bisa berupa panel dashboard (`panel`) atau
+// halaman admin tersendiri (`href`). "Open Order" diletakkan tepat di bawah
+// "Order Management" karena masih satu alur pesanan.
+type NavItem =
+  | { label: string; icon: LucideIcon; panel: Panel; badge?: boolean }
+  | { label: string; icon: LucideIcon; href: string };
+
+const navGroups: { title: string; items: NavItem[] }[] = [
+  {
+    title: "Menu Utama",
+    items: [
+      { label: "Dashboard", icon: LayoutDashboard, panel: "dashboard" },
+      { label: "Order Management", icon: ShoppingBag, panel: "orders", badge: true },
+      { label: "Open Order", icon: Shirt, href: "/admin/open-order" },
+      { label: "Produk", icon: Package, panel: "products" },
+      { label: "Pelanggan", icon: Users, panel: "customers" },
+    ],
+  },
+  {
+    title: "Konten",
+    items: [
+      { label: "Konten Website", icon: FileText, panel: "content" },
+      { label: "Biolink", icon: FileText, href: "/admin/biolink" },
+      { label: "Foto Carousel", icon: Image, href: "/admin/bio-carousel" },
+      { label: "Testimoni", icon: Star, href: "/admin/testimoni" },
+      { label: "Panduan Ukuran", icon: Ruler, href: "/admin/ukuran-produk" },
+      { label: "Halaman Garansi & Retur", icon: FileText, href: "/admin/garansi-retur-page" },
+    ],
+  },
+  {
+    title: "Lainnya",
+    items: [
+      { label: "Voucher", icon: Ticket, href: "/admin/voucher" },
+      { label: "Pengaturan", icon: Settings, panel: "settings" },
+    ],
+  },
 ];
 
 const panelTitles: Record<Panel, { title: string; sub: string }> = {
@@ -83,12 +114,16 @@ const panelTitles: Record<Panel, { title: string; sub: string }> = {
   products: { title: "Produk", sub: "Kelola katalog dan stok koleksi." },
   customers: { title: "Pelanggan", sub: "Data dan riwayat belanja pelanggan." },
   content: { title: "Konten Website", sub: "Atur tampilan halaman publik SAMAQU." },
-  featured: { title: "Produk Pilihan Customer", sub: "Pilih produk yang tampil di dashboard customer." },
   settings: { title: "Pengaturan", sub: "Konfigurasi informasi toko." },
 };
 
 function money(n: number) {
   return "Rp " + n.toLocaleString("id-ID");
+}
+
+/** "pending" → "Pending" — dipakai chip filter dan judul daftar pesanan. */
+function statusLabel(status: string) {
+  return status.charAt(0).toUpperCase() + status.slice(1);
 }
 
 function effectivePrice(p: Product): number {
@@ -161,6 +196,7 @@ function AdminPageInner() {
   const [loading, setLoading] = useState(true);
   const [profileOpen, setProfileOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [deleteConfirmOrder, setDeleteConfirmOrder] = useState<Order | null>(null);
   const [orderFilter, setOrderFilter] = useState("Semua");
   const [orderSource, setOrderSource] = useState<"website" | "open">("website");
@@ -170,6 +206,13 @@ function AdminPageInner() {
     orderSource === "open" ? o.order_number.startsWith("CYO-") : !o.order_number.startsWith("CYO-")
   );
   const visibleOrders = sourceOrders.filter((o) => orderFilter === "Semua" || o.status === orderFilter);
+  // Jumlah per status ikut tab yang aktif (Pesanan Website / Open Order), jadi angka
+  // di chip filter selalu cocok dengan daftar di bawahnya.
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const o of sourceOrders) counts[o.status] = (counts[o.status] || 0) + 1;
+    return counts;
+  }, [sourceOrders]);
   const [productSearch, setProductSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [productVariants, setProductVariants] = useState<{ product_id: string; stock: number; base_product_id: string | null }[]>([]);
@@ -598,51 +641,33 @@ function AdminPageInner() {
         {/* min-h-0 wajib: tanpa itu flex item nggak bisa mengecil dari isinya,
             jadi nav luber dan menutup footer (menu & "Keluar" jadi kepotong). */}
         <nav className="flex-1 min-h-0 overflow-y-auto px-3 py-3 no-scrollbar">
-          <div>
-            <p className="px-2 mb-1.5 text-[10px] font-extrabold uppercase tracking-[0.08em]" style={{ color: "var(--fg3)" }}>Menu Utama</p>
-            <ul className="space-y-0.5">
-              {navItems.slice(0, 4).map((item) => (
-                <li key={item.id}>
-                  <button onClick={() => go(item.id)} className={`sidebar-link ${activePanel === item.id ? "active" : ""}`}>
-                    <item.icon size={16} strokeWidth={1.9} />
-                    <span className="flex-1 text-left truncate">{item.label}</span>
-                    {item.badge && orders.filter((o) => o.status === "pending").length > 0 && (
-                      <span className="badge" style={{ background: "var(--sub)", color: "var(--fg)" }}>
-                        {orders.filter((o) => o.status === "pending").length}
-                      </span>
+          {navGroups.map((group, gi) => (
+            <div key={group.title} className={gi > 0 ? "mt-3 pt-3" : ""} style={gi > 0 ? { borderTop: "1px solid var(--bd)" } : undefined}>
+              <p className="px-2 mb-1.5 text-[10px] font-extrabold uppercase tracking-[0.08em]" style={{ color: "var(--fg3)" }}>{group.title}</p>
+              <ul className="space-y-0.5">
+                {group.items.map((item) => (
+                  <li key={item.label}>
+                    {"panel" in item ? (
+                      <button onClick={() => go(item.panel)} className={`sidebar-link ${activePanel === item.panel ? "active" : ""}`}>
+                        <item.icon size={16} strokeWidth={1.9} />
+                        <span className="flex-1 text-left truncate">{item.label}</span>
+                        {item.badge && orders.filter((o) => o.status === "pending").length > 0 && (
+                          <span className="badge" style={{ background: "var(--sub)", color: "var(--fg)" }}>
+                            {orders.filter((o) => o.status === "pending").length}
+                          </span>
+                        )}
+                      </button>
+                    ) : (
+                      <Link href={item.href} className="sidebar-link" onClick={() => setSidebarOpen(false)}>
+                        <item.icon size={16} strokeWidth={1.9} />
+                        <span className="flex-1">{item.label}</span>
+                      </Link>
                     )}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="mt-3 pt-3" style={{ borderTop: "1px solid var(--bd)" }}>
-            <p className="px-2 mb-1.5 text-[10px] font-extrabold uppercase tracking-[0.08em]" style={{ color: "var(--fg3)" }}>Biolink</p>
-            <ul className="space-y-0.5">
-              <li><Link href="/admin/biolink" className="sidebar-link" onClick={() => setSidebarOpen(false)}><FileText size={16} strokeWidth={1.9} /><span className="flex-1">Biolink</span></Link></li>
-              <li><Link href="/admin/bio-carousel" className="sidebar-link" onClick={() => setSidebarOpen(false)}><Image size={16} strokeWidth={1.9} /><span className="flex-1">Foto Carousel</span></Link></li>
-            </ul>
-          </div>
-
-          <div className="mt-3 pt-3" style={{ borderTop: "1px solid var(--bd)" }}>
-            <p className="px-2 mb-1.5 text-[10px] font-extrabold uppercase tracking-[0.08em]" style={{ color: "var(--fg3)" }}>Lainnya</p>
-            <ul className="space-y-0.5">
-              {navItems.slice(4).map((item) => (
-                <li key={item.id}>
-                  <button onClick={() => go(item.id)} className={`sidebar-link ${activePanel === item.id ? "active" : ""}`}>
-                    <item.icon size={16} strokeWidth={1.9} />
-                    <span className="flex-1 text-left truncate">{item.label}</span>
-                  </button>
-                </li>
-              ))}
-              <li><Link href="/admin/voucher" className="sidebar-link" onClick={() => setSidebarOpen(false)}><Ticket size={16} strokeWidth={1.9} /><span className="flex-1">Voucher</span></Link></li>
-              <li><Link href="/admin/testimoni" className="sidebar-link" onClick={() => setSidebarOpen(false)}><Star size={16} strokeWidth={1.9} /><span className="flex-1">Testimoni</span></Link></li>
-              <li><Link href="/admin/ukuran-produk" className="sidebar-link" onClick={() => setSidebarOpen(false)}><Ruler size={16} strokeWidth={1.9} /><span className="flex-1">Panduan Ukuran</span></Link></li>
-              <li><Link href="/admin/garansi-retur-page" className="sidebar-link" onClick={() => setSidebarOpen(false)}><FileText size={16} strokeWidth={1.9} /><span className="flex-1">Halaman Garansi &amp; Retur</span></Link></li>
-              <li><Link href="/admin/open-order" className="sidebar-link" onClick={() => setSidebarOpen(false)}><Shirt size={16} strokeWidth={1.9} /><span className="flex-1">Open Order</span></Link></li>
-            </ul>
-          </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </nav>
 
         {/* Footer sidebar — bantuan + keluar, ala wireframe */}
@@ -751,11 +776,16 @@ function AdminPageInner() {
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center gap-3 justify-between p-5" style={{ borderBottom: "1px solid #f1f1f3" }}>
-                    <h2 className="font-serif italic text-xl" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>{orderSource === "open" ? "Pesanan Open Order" : "Semua Pesanan"}</h2>
+                    {/* Judul ikut filter yang aktif, mis. "Pesanan Diproses". */}
+                    <h2 className="text-xl font-extrabold" style={{ color: "var(--fg)" }}>
+                      {orderSource === "open"
+                        ? orderFilter === "Semua" ? "Semua Open Order" : `Open Order ${statusLabel(orderFilter)}`
+                        : orderFilter === "Semua" ? "Semua Pesanan" : `Pesanan ${statusLabel(orderFilter)}`}
+                    </h2>
                     <div className="flex flex-wrap gap-2">
-                      {["Semua", "pending", "diproses", "selesai"].map((s) => (
+                      {["Semua", "pending", "diproses", "selesai", "dibatalkan"].map((s) => (
                         <button key={s} onClick={() => setOrderFilter(s)} className="text-sm px-3 py-1.5 rounded-lg font-medium transition-colors" style={{ background: orderFilter === s ? "var(--gold)" : "transparent", color: orderFilter === s ? "#fff" : "var(--text-secondary)", border: orderFilter === s ? "none" : "1px solid #d4d4d8" }}>
-                          {s === "Semua" ? "Semua" : s.charAt(0).toUpperCase() + s.slice(1)}
+                          {s === "Semua" ? "Semua" : statusLabel(s)} ({s === "Semua" ? sourceOrders.length : statusCounts[s] || 0})
                         </button>
                       ))}
                     </div>
@@ -809,51 +839,13 @@ function AdminPageInner() {
                   search={productSearch}
                   setSearch={setProductSearch}
                   onDelete={handleDeleteProduct}
+                  onDetail={setSelectedProductId}
                   loading={loading}
                 />
               )}
 
               {/* CUSTOMERS */}
-              {activePanel === "customers" && (
-                <div className="card overflow-hidden">
-                  <div className="p-5" style={{ borderBottom: "1px solid #f1f1f3" }}>
-                    <h2 className="font-serif italic text-xl" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Daftar Pelanggan</h2>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm min-w-[640px]">
-                      <thead>
-                        <tr className="text-left" style={{ color: "var(--text-muted)", background: "var(--bg-secondary)" }}>
-                          <th className="font-medium px-5 py-3">Nama</th>
-                          <th className="font-medium px-5 py-3">Kontak</th>
-                          <th className="font-medium px-5 py-3">Pesanan</th>
-                          <th className="font-medium px-5 py-3">Total Belanja</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(() => {
-                          const customers: Record<string, { name: string; whatsapp: string; orders: number; total: number }> = {};
-                          orders.forEach((o) => {
-                            if (!customers[o.customer_name]) customers[o.customer_name] = { name: o.customer_name, whatsapp: o.customer_whatsapp, orders: 0, total: 0 };
-                            customers[o.customer_name].orders++;
-                            customers[o.customer_name].total += o.total;
-                          });
-                          return Object.values(customers).sort((a, b) => b.total - a.total);
-                        })().map((c, i) => (
-                          <tr key={i} style={{ borderTop: "1px solid #f1f1f3" }}>
-                            <td className="px-5 py-3.5 font-semibold">{c.name}</td>
-                            <td className="px-5 py-3.5" style={{ color: "var(--text-secondary)" }}>{c.whatsapp}</td>
-                            <td className="px-5 py-3.5">{c.orders} pesanan</td>
-                            <td className="px-5 py-3.5 font-semibold">{money(c.total)}</td>
-                          </tr>
-                        ))}
-                        {orders.length === 0 && (
-                          <tr><td colSpan={4} className="px-5 py-8 text-center" style={{ color: "var(--text-muted)" }}>Belum ada pelanggan</td></tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
+              {activePanel === "customers" && <CustomersView />}
 
               {/* CONTENT */}
               {activePanel === "content" && (
@@ -871,76 +863,24 @@ function AdminPageInner() {
               )}
 
               {/* SETTINGS */}
-              {activePanel === "settings" && (
-                <div className="space-y-6">
-                  <h2 className="text-2xl italic" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Pengaturan Toko</h2>
-
-                  {/* Store Info */}
-                  <StoreInfoSection />
-
-                  {/* Shipping Origin */}
-                  <ShippingOriginSection />
-
-                  {/* Shipping Provider */}
-                  <ShippingProviderSection />
-
-                  {/* Courier Selection */}
-                  <CourierSettingsSection />
-
-                  {/* RajaOngkir API Key */}
-                  <ApiKeySection />
-
-                  {/* Kredensial J&T Express */}
-                  <JntCredentialsForm />
-
-                  {/* Social Media */}
-                  <SocialMediaSection />
-
-                  {/* Meta Pixel */}
-                  <MetaPixelSection />
-
-                  {/* Payment Methods — bank / QRIS / e-wallet / COD */}
-                  <PaymentMethodsManager />
-                </div>
-              )}
-
-              {/* PRODUCTS PRIORITY */}
-              {activePanel === "featured" && (
-                <div className="space-y-6">
-                  <CustomerProductsSection />
-                </div>
-              )}
+              {activePanel === "settings" && <SettingsPanel />}
 
             </motion.div>
           </AnimatePresence>
         </main>
       </div>
 
-      {/* Order Detail Modal */}
-      <AnimatePresence>
-        {selectedOrder && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-start justify-center md:pt-10 md:px-4 md:pb-10 overflow-y-auto" style={{ background: "rgba(42,33,27,.4)", backdropFilter: "blur(4px)" }} onClick={() => setSelectedOrder(null)}>
-            <motion.div initial={{ opacity: 0, y: 20, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.98 }} transition={{ duration: 0.25 }} className="w-full max-w-2xl rounded-none md:rounded-2xl overflow-hidden min-h-full md:min-h-0" style={{ background: "var(--cream)", boxShadow: "0 25px 60px -12px rgba(42,33,27,.5)" }} onClick={(e) => e.stopPropagation()}>
-              {/* Header */}
-              <div className="px-4 py-4 md:px-6 md:py-5 flex items-center justify-between" style={{ borderBottom: "1px solid #f1f1f3" }}>
-                <div>
-                  <h2 className="text-xl font-medium" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>{selectedOrder.order_number}</h2>
-                  <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{new Date(selectedOrder.created_at).toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</p>
-                </div>
-                <button onClick={() => setSelectedOrder(null)} className="p-2 rounded-lg hover:bg-[#f4f4f5]" style={{ color: "var(--text-muted)" }}><X size={18} /></button>
-              </div>
+      {/* Drawer detail produk — dibuka dari kartu katalog (tombol mata) */}
+      <ProductDetailDrawer productId={selectedProductId} onClose={() => setSelectedProductId(null)} />
 
-              {/* Isi detail memakai susunan & gaya yang sama dengan halaman detail pesanan customer. */}
-              <OrderDetailContent
-                order={selectedOrder}
-                onStatusChange={(status) => updateOrderStatus(selectedOrder.order_number, status)}
-                onCancelJnt={() => cancelJntOrder(selectedOrder)}
-                onDelete={() => deleteOrder(selectedOrder.order_number)}
-              />
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Drawer detail pesanan — meluncur dari kanan, sama seperti drawer detail produk */}
+      <OrderDetailDrawer
+        order={selectedOrder}
+        onClose={() => setSelectedOrder(null)}
+        onStatusChange={(status) => { if (selectedOrder) updateOrderStatus(selectedOrder.order_number, status); }}
+        onCancelJnt={() => { if (selectedOrder) cancelJntOrder(selectedOrder); }}
+        onDelete={() => { if (selectedOrder) deleteOrder(selectedOrder.order_number); }}
+      />
 
       <ConfirmModal
         open={confirmModal.open}
@@ -957,770 +897,6 @@ function AdminPageInner() {
   );
 }
 
-const AVAILABLE_COURIERS = [
-  { code: "jne", name: "JNE" },
-  { code: "sicepat", name: "SiCepat" },
-  { code: "jnt", name: "J&T Express" },
-  { code: "ninja", name: "Ninja" },
-  { code: "tiki", name: "TIKI" },
-  { code: "wahana", name: "Wahana" },
-  { code: "pos", name: "POS Indonesia" },
-  { code: "lion", name: "Lion Parcel" },
-  { code: "anteraja", name: "AnterAja" },
-];
-
-function ShippingOriginSection() {
-  const [form, setForm] = useState({ origin_district_id: "", origin_province_id: "", origin_city_id: "" });
-  const [provinces, setProvinces] = useState<{ id: number; name: string }[]>([]);
-  const [cities, setCities] = useState<{ id: number; name: string }[]>([]);
-  const [districts, setDistricts] = useState<{ id: number; name: string }[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [dropdownsLoading, setDropdownsLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [savedDistrictId, setSavedDistrictId] = useState<string | null>(null);
-  const toast = useToast();
-
-  // Effect 1: Load saved IDs + show form + fetch dropdown data
-  useEffect(() => {
-    async function init() {
-      console.log("[ADMIN] ShippingOriginSection init start");
-
-      // Load saved origin IDs from Supabase
-      const { data } = await supabase.from("store_settings").select("origin_district_id, origin_province_id, origin_city_id, origin_district_step_id").eq("id", 1).single();
-      console.log("[ADMIN] Saved origin:", data);
-
-      // Set province + city immediately (dropdowns exist or will exist soon)
-      if (data?.origin_province_id && data?.origin_city_id) {
-        setForm({
-          origin_province_id: String(data.origin_province_id),
-          origin_city_id: String(data.origin_city_id),
-          origin_district_id: "", // NOT set yet — wait for districts to load
-        });
-        // Use step-by-step ID for dropdown (falls back to direct search ID for legacy data)
-        const stepId = data.origin_district_step_id || data.origin_district_id;
-        if (stepId) {
-          setSavedDistrictId(String(stepId));
-        }
-      }
-
-      setLoading(false);
-
-      // Load dropdown data
-      try {
-        const provRes = await fetch("/api/shipping/provinces");
-        const provJson = await provRes.json();
-        setProvinces(provJson.data || []);
-        console.log("[ADMIN] Provinces loaded:", provJson.data?.length, "| cache:", provRes.headers.get("X-Cache"));
-
-        if (data?.origin_province_id && data?.origin_city_id) {
-          const [cityRes, distRes] = await Promise.all([
-            fetch(`/api/shipping/districts?provinceId=${data.origin_province_id}`),
-            fetch(`/api/shipping/districts?cityId=${data.origin_city_id}`),
-          ]);
-          const [cityJson, distJson] = await Promise.all([cityRes.json(), distRes.json()]);
-          setCities(cityJson.data || []);
-          setDistricts(distJson.data || []);
-          console.log("[ADMIN] Cities loaded:", cityJson.data?.length, "| cache:", cityRes.headers.get("X-Cache"));
-          console.log("[ADMIN] Districts loaded:", distJson.data?.length, "| cache:", distRes.headers.get("X-Cache"));
-        }
-      } catch (e) {
-        console.error("[ADMIN] Load error:", e);
-      } finally {
-        setDropdownsLoading(false);
-      }
-    }
-    init();
-  }, []);
-
-  // Effect 2: Set district value ONLY AFTER districts array is populated
-  useEffect(() => {
-    if (savedDistrictId && districts.length > 0) {
-      console.log("[ADMIN] Setting district value after districts loaded:", savedDistrictId);
-      setForm((f) => ({ ...f, origin_district_id: savedDistrictId }));
-      setSavedDistrictId(null);
-    }
-  }, [districts, savedDistrictId]);
-
-  async function handleProvChange(provId: string) {
-    const selectedProv = provinces.find((p) => String(p.id) === provId);
-    console.log("[ADMIN] Province selected:", { id: provId, name: selectedProv?.name });
-    setForm({ origin_province_id: provId, origin_city_id: "", origin_district_id: "" });
-    setCities([]);
-    setDistricts([]);
-    if (!provId) return;
-    console.log("[ADMIN] Loading cities for province:", provId, selectedProv?.name);
-    const res = await fetch(`/api/shipping/districts?provinceId=${provId}`);
-    const json = await res.json();
-    setCities(json.data || []);
-    console.log("[ADMIN] Cities loaded:", json.data?.length);
-  }
-
-  async function handleCityChange(cityId: string) {
-    const selectedCity = cities.find((c) => String(c.id) === cityId);
-    console.log("[ADMIN] City selected:", { id: cityId, name: selectedCity?.name });
-    setForm((f) => ({ ...f, origin_city_id: cityId, origin_district_id: "" }));
-    setDistricts([]);
-    if (!cityId) return;
-    console.log("[ADMIN] Loading districts for city:", cityId, selectedCity?.name);
-    const res = await fetch(`/api/shipping/districts?cityId=${cityId}`);
-    const json = await res.json();
-    setDistricts(json.data || []);
-    console.log("[ADMIN] Districts loaded:", json.data?.length);
-  }
-
-  async function handleSave() {
-    setSaving(true);
-    const selectedProv = provinces.find((p) => String(p.id) === form.origin_province_id);
-    const selectedCity = cities.find((c) => String(c.id) === form.origin_city_id);
-    const selectedDist = districts.find((d) => String(d.id) === form.origin_district_id);
-    console.log("[ADMIN] === SAVE ORIGIN START ===");
-    console.log("[ADMIN] Step-by-step IDs:", {
-      province: `${form.origin_province_id} (${selectedProv?.name})`,
-      city: `${form.origin_city_id} (${selectedCity?.name})`,
-      district: `${form.origin_district_id} (${selectedDist?.name})`,
-    });
-
-    // IMPORTANT: Resolve step-by-step district ID to direct search subdistrict ID
-    // RajaOngkir V2 has 2 different ID systems — cost calculation needs direct search IDs
-    let directSearchId = form.origin_district_id ? Number(form.origin_district_id) : null;
-
-    if (selectedDist?.name && selectedCity?.name && selectedProv?.name) {
-      console.log("[ADMIN] Resolving direct search ID for:", selectedDist.name, selectedCity.name, selectedProv.name);
-      try {
-        const searchQuery = encodeURIComponent(selectedDist.name);
-        const searchRes = await fetch(`/api/shipping/search-destination?search=${searchQuery}&city=${encodeURIComponent(selectedCity.name)}&province=${encodeURIComponent(selectedProv.name)}&limit=5`);
-        const searchJson = await searchRes.json();
-        console.log("[ADMIN] Search results:", searchJson);
-
-        if (searchJson.match?.id) {
-          directSearchId = searchJson.match.id;
-          console.log("[ADMIN] ✅ Direct search ID resolved:", directSearchId, "(", searchJson.match.subdistrict_name || searchJson.match.name, ")");
-        } else {
-          console.warn("[ADMIN] ⚠️ No direct search match found, using step-by-step ID:", directSearchId);
-        }
-      } catch (e) {
-        console.error("[ADMIN] ❌ Direct search failed, using step-by-step ID:", e);
-      }
-    }
-
-    console.log("[ADMIN] Final origin_district_id to save:", directSearchId);
-    await supabase.from("store_settings").upsert({
-      id: 1,
-      origin_province_id: form.origin_province_id ? Number(form.origin_province_id) : null,
-      origin_city_id: form.origin_city_id ? Number(form.origin_city_id) : null,
-      origin_district_id: directSearchId, // direct search ID (for shipping cost)
-      origin_district_step_id: form.origin_district_id ? Number(form.origin_district_id) : null, // step-by-step ID (for dropdown)
-      updated_at: new Date().toISOString(),
-    });
-    setSaving(false);
-    console.log("[ADMIN] === SAVE ORIGIN DONE ===");
-    toast.showToast("success", "Alamat pengiriman toko disimpan");
-  }
-
-  // Helper: find name from list by ID
-  const findName = (list: { id: number; name: string }[], id: string) => list.find((i) => String(i.id) === id)?.name;
-
-  if (loading) return <div className="card p-6 max-w-2xl"><Loader2 size={20} className="animate-spin" style={{ color: "var(--gold)" }} /></div>;
-
-  return (
-    <div className="card p-6 max-w-2xl space-y-4">
-      <h3 className="text-lg font-semibold" style={{ color: "var(--espresso)" }}>Alamat Pengiriman Toko (Origin)</h3>
-      <p className="text-xs" style={{ color: "var(--text-muted)" }}>Lokasi toko Anda, digunakan sebagai asal pengiriman saat hitung ongkir.</p>
-      <div className="grid sm:grid-cols-3 gap-3">
-        <div>
-          <label className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Provinsi</label>
-          {dropdownsLoading && form.origin_province_id ? (
-            <div className="mt-1 w-full rounded-xl px-3 py-2.5 bg-white text-sm" style={{ border: "1px solid #e4e4e7" }}>
-              {findName(provinces, form.origin_province_id) || "Memuat..."}
-            </div>
-          ) : (
-            <select value={form.origin_province_id} onChange={(e) => handleProvChange(e.target.value)} className="mt-1 w-full rounded-xl px-3 py-2.5 bg-white text-sm outline-none" style={{ border: "1px solid #e4e4e7" }}>
-              <option value="">Pilih</option>
-              {provinces.map((p) => <option key={p.id} value={String(p.id)}>{p.name}</option>)}
-            </select>
-          )}
-        </div>
-        <div>
-          <label className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Kota / Kabupaten</label>
-          {dropdownsLoading && form.origin_city_id ? (
-            <div className="mt-1 w-full rounded-xl px-3 py-2.5 bg-white text-sm" style={{ border: "1px solid #e4e4e7", opacity: !form.origin_province_id ? 0.5 : 1 }}>
-              {findName(cities, form.origin_city_id) || "Memuat..."}
-            </div>
-          ) : (
-            <select value={form.origin_city_id} onChange={(e) => handleCityChange(e.target.value)} disabled={!form.origin_province_id} className="mt-1 w-full rounded-xl px-3 py-2.5 bg-white text-sm outline-none" style={{ border: "1px solid #e4e4e7", opacity: !form.origin_province_id ? 0.5 : 1 }}>
-              <option value="">Pilih</option>
-              {cities.map((c) => <option key={c.id} value={String(c.id)}>{c.name}</option>)}
-            </select>
-          )}
-        </div>
-        <div>
-          <label className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Kecamatan</label>
-          {dropdownsLoading && form.origin_district_id ? (
-            <div className="mt-1 w-full rounded-xl px-3 py-2.5 bg-white text-sm" style={{ border: "1px solid #e4e4e7", opacity: !form.origin_city_id ? 0.5 : 1 }}>
-              {findName(districts, form.origin_district_id) || "Memuat..."}
-            </div>
-          ) : (
-            <select value={form.origin_district_id} onChange={(e) => setForm((f) => ({ ...f, origin_district_id: e.target.value }))} disabled={!form.origin_city_id} className="mt-1 w-full rounded-xl px-3 py-2.5 bg-white text-sm outline-none" style={{ border: "1px solid #e4e4e7", opacity: !form.origin_city_id ? 0.5 : 1 }}>
-              <option value="">Pilih</option>
-              {districts.map((d) => <option key={d.id} value={String(d.id)}>{d.name}</option>)}
-            </select>
-          )}
-        </div>
-      </div>
-      <div className="flex gap-3 pt-2">
-        {form.origin_district_id && (
-          <button onClick={handleSave} disabled={saving} className="text-sm font-semibold px-5 py-2.5 rounded-xl text-white" style={{ background: "#18181b" }}>
-            {saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null} Simpan
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function ShippingProviderSection() {
-  const [provider, setProvider] = useState<"rajaongkir" | "jnt">("rajaongkir");
-  const [original, setOriginal] = useState<"rajaongkir" | "jnt">("rajaongkir");
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const toast = useToast();
-
-  useEffect(() => {
-    supabase.from("store_settings").select("shipping_provider").eq("id", 1).single().then(({ data }) => {
-      if (data?.shipping_provider) {
-        setProvider(data.shipping_provider);
-        setOriginal(data.shipping_provider);
-      }
-      setLoading(false);
-    });
-  }, []);
-
-  const dirty = provider !== original;
-
-  async function handleSave() {
-    setSaving(true);
-    await supabase.from("store_settings").upsert({ id: 1, shipping_provider: provider, updated_at: new Date().toISOString() });
-    setOriginal(provider);
-    setSaving(false);
-    toast.showToast("success", "Provider pengiriman disimpan");
-  }
-
-  if (loading) return <div className="card p-6 max-w-2xl"><Loader2 size={20} className="animate-spin" style={{ color: "var(--gold)" }} /></div>;
-
-  return (
-    <div className="card p-6 max-w-2xl space-y-4">
-      <h3 className="text-lg font-semibold" style={{ color: "var(--espresso)" }}>Provider Pengiriman</h3>
-      <p className="text-xs" style={{ color: "var(--text-muted)" }}>Pilih provider ongkir yang dipakai di checkout. J&T API = langsung ke J&T tanpa perantara. RajaOngkir = semua ekspedisi via RajaOngkir.</p>
-      <div className="flex gap-3">
-        {([
-          { value: "rajaongkir" as const, label: "RajaOngkir", desc: "Semua ekspedisi (JNE, SiCepat, J&T, dll)" },
-          { value: "jnt" as const, label: "J&T API Langsung", desc: "Hanya J&T, tanpa perantara" },
-        ]).map((opt) => (
-          <label key={opt.value} className="flex-1 flex items-center gap-3 rounded-xl px-4 py-3 cursor-pointer transition-all" style={{ border: `1.5px solid ${provider === opt.value ? "var(--gold)" : "#d4d4d8"}`, background: provider === opt.value ? "#fafafa" : "white" }}>
-            <input type="radio" name="shipping_provider" checked={provider === opt.value} onChange={() => setProvider(opt.value)} className="sr-only" />
-            <span className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0" style={{ border: `2px solid ${provider === opt.value ? "var(--gold)" : "var(--text-muted)"}`, background: provider === opt.value ? "var(--gold)" : "transparent" }}>
-              {provider === opt.value && <span className="w-2 h-2 rounded-full bg-white" />}
-            </span>
-            <div>
-              <span className="text-sm font-medium" style={{ color: "var(--espresso)" }}>{opt.label}</span>
-              <p className="text-xs" style={{ color: "var(--text-muted)" }}>{opt.desc}</p>
-            </div>
-          </label>
-        ))}
-      </div>
-      {dirty && (
-        <button onClick={handleSave} disabled={saving} className="text-sm font-semibold px-5 py-2.5 rounded-xl text-white" style={{ background: "#18181b" }}>
-          {saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null} Simpan Perubahan
-        </button>
-      )}
-    </div>
-  );
-}
-
-function CourierSettingsSection() {
-  const [enabled, setEnabled] = useState<string[]>([]);
-  const [original, setOriginal] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const toast = useToast();
-
-  useEffect(() => {
-    console.log("[ADMIN] CourierSettingsSection init start");
-    supabase.from("store_settings").select("enabled_couriers").eq("id", 1).single().then(({ data, error }) => {
-      if (error) console.error("[ADMIN] CourierSettings fetch error:", error);
-      console.log("[ADMIN] Enabled couriers raw:", data?.enabled_couriers);
-      if (data?.enabled_couriers) {
-        try {
-          const list = typeof data.enabled_couriers === "string" ? JSON.parse(data.enabled_couriers) : data.enabled_couriers;
-          console.log("[ADMIN] Enabled couriers parsed:", list);
-          setEnabled(list);
-          setOriginal(list);
-        } catch (e) {
-          console.error("[ADMIN] Failed to parse couriers, using defaults:", e);
-          setEnabled(["jne", "sicepat", "jnt", "ninja", "tiki", "wahana", "pos", "lion", "anteraja"]);
-        }
-      }
-      setLoading(false);
-    });
-  }, []);
-
-  function toggle(code: string) {
-    console.log("[ADMIN] Toggle courier:", code);
-    setEnabled((prev) => prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]);
-  }
-
-  const dirty = JSON.stringify(enabled) !== JSON.stringify(original);
-
-  async function handleSave() {
-    setSaving(true);
-    console.log("[ADMIN] Saving couriers:", enabled);
-    await supabase.from("store_settings").upsert({ id: 1, enabled_couriers: JSON.stringify(enabled), updated_at: new Date().toISOString() });
-    setOriginal([...enabled]);
-    setSaving(false);
-    console.log("[ADMIN] Couriers saved successfully");
-    toast.showToast("success", "Pilihan ekspedisi disimpan");
-  }
-
-  if (loading) return <div className="card p-6 max-w-2xl"><Loader2 size={20} className="animate-spin" style={{ color: "var(--gold)" }} /></div>;
-
-  return (
-    <div className="card p-6 max-w-2xl space-y-4">
-      <h3 className="text-lg font-semibold" style={{ color: "var(--espresso)" }}>Ekspedisi Aktif</h3>
-      <p className="text-xs" style={{ color: "var(--text-muted)" }}>Pilih ekspedisi yang ingin ditampilkan di halaman checkout.</p>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-        {AVAILABLE_COURIERS.map((c) => (
-          <label key={c.code} className="flex items-center gap-2.5 rounded-xl px-4 py-3 cursor-pointer transition-all" style={{ border: `1.5px solid ${enabled.includes(c.code) ? "var(--gold)" : "#d4d4d8"}`, background: enabled.includes(c.code) ? "#fafafa" : "white" }}>
-            <input type="checkbox" checked={enabled.includes(c.code)} onChange={() => toggle(c.code)} className="sr-only" />
-            <span className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0" style={{ border: `2px solid ${enabled.includes(c.code) ? "var(--gold)" : "var(--text-muted)"}`, background: enabled.includes(c.code) ? "var(--gold)" : "transparent" }}>
-              {enabled.includes(c.code) && <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={3}><path d="M5 12l5 5L20 7" /></svg>}
-            </span>
-            <span className="text-sm font-medium" style={{ color: "var(--espresso)" }}>{c.name}</span>
-          </label>
-        ))}
-      </div>
-      <div className="flex gap-3 pt-2">
-        {dirty && (
-          <button onClick={handleSave} disabled={saving} className="text-sm font-semibold px-5 py-2.5 rounded-xl text-white" style={{ background: "#18181b" }}>
-            {saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null} Simpan Perubahan
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function ApiKeySection() {
-  const [apiKey, setApiKey] = useState("");
-  const [masked, setMasked] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [showKey, setShowKey] = useState(false);
-  const toast = useToast();
-
-  useEffect(() => {
-    console.log("[ADMIN] ApiKeySection init");
-    supabase.from("store_settings").select("rajaongkir_api_key").eq("id", 1).single().then(({ data }) => {
-      const key = data?.rajaongkir_api_key || "";
-      console.log("[ADMIN] API key loaded:", key ? `${key.slice(0, 6)}...${key.slice(-4)}` : "(not set)");
-      setMasked(key ? `${key.slice(0, 6)}${"*".repeat(Math.max(0, key.length - 10))}${key.slice(-4)}` : "");
-      setLoading(false);
-    });
-  }, []);
-
-  async function handleSave() {
-    if (!apiKey.trim()) { toast.showToast("error", "API key tidak boleh kosong"); return; }
-    setSaving(true);
-    console.log("[ADMIN] Saving API key:", `${apiKey.slice(0, 6)}...${apiKey.slice(-4)}`);
-    await supabase.from("store_settings").upsert({ id: 1, rajaongkir_api_key: apiKey.trim(), updated_at: new Date().toISOString() });
-    setMasked(`${apiKey.slice(0, 6)}${"*".repeat(Math.max(0, apiKey.length - 10))}${apiKey.slice(-4)}`);
-    setApiKey("");
-    setShowKey(false);
-    setSaving(false);
-    console.log("[ADMIN] API key saved successfully");
-    toast.showToast("success", "API key RajaOngkir disimpan");
-  }
-
-  if (loading) return <div className="card p-6 max-w-2xl"><Loader2 size={20} className="animate-spin" style={{ color: "var(--gold)" }} /></div>;
-
-  return (
-    <div className="card p-6 max-w-2xl space-y-4">
-      <h3 className="text-lg font-semibold" style={{ color: "var(--espresso)" }}>API Key RajaOngkir</h3>
-      <p className="text-xs" style={{ color: "var(--text-muted)" }}>API key untuk integrasi RajaOngkir (Shipping Cost). Disimpan aman di database, tidak pernah dikirim ke browser customer.</p>
-
-      {masked && (
-        <div className="flex items-center gap-2 text-sm font-mono" style={{ color: "var(--text-secondary)" }}>
-          <span>Key tersimpan:</span>
-          <span className="px-2 py-1 rounded" style={{ background: "#f1f1f3" }}>{masked}</span>
-        </div>
-      )}
-
-      <div className="flex gap-2">
-        <div className="flex-1 relative">
-          <input
-            type={showKey ? "text" : "password"}
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-            className="w-full rounded-xl px-4 py-2.5 pr-10 bg-white text-sm outline-none font-mono"
-            style={{ border: "1px solid #e4e4e7" }}
-            placeholder={masked ? "Masukkan key baru untuk mengganti" : "Masukkan API key RajaOngkir"}
-          />
-          <button type="button" onClick={() => setShowKey(!showKey)} className="absolute right-3 top-1/2 -translate-y-1/2 text-xs" style={{ color: "var(--text-muted)" }}>
-            {showKey ? "🙈" : "👁️"}
-          </button>
-        </div>
-        <button onClick={handleSave} disabled={saving || !apiKey.trim()} className="text-sm font-semibold px-5 py-2.5 rounded-xl text-white disabled:opacity-40" style={{ background: "#18181b" }}>
-          {saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null} Simpan
-        </button>
-      </div>
-
-      <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-        Jika tidak diisi, sistem akan menggunakan API key dari environment variable (RAJAONGKIR_API_KEY).
-      </p>
-    </div>
-  );
-}
-
-function SocialMediaSection() {
-  const [instagramUrl, setInstagramUrl] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const toast = useToast();
-
-  useEffect(() => {
-    console.log("[ADMIN] SocialMediaSection init");
-    supabase.from("store_settings").select("instagram_url").eq("id", 1).single().then(({ data }) => {
-      setInstagramUrl(data?.instagram_url || "");
-      console.log("[ADMIN] Instagram URL loaded:", data?.instagram_url || "(empty)");
-      setLoading(false);
-    });
-  }, []);
-
-  async function handleSave() {
-    setSaving(true);
-    console.log("[ADMIN] Saving instagram_url:", instagramUrl);
-    await supabase.from("store_settings").upsert({ id: 1, instagram_url: instagramUrl || null, updated_at: new Date().toISOString() });
-    setSaving(false);
-    toast.showToast("success", "Link Instagram disimpan");
-  }
-
-  if (loading) return <div className="card p-6 max-w-2xl"><Loader2 size={20} className="animate-spin" style={{ color: "var(--gold)" }} /></div>;
-
-  return (
-    <div className="card p-6 max-w-2xl space-y-4">
-      <h3 className="text-lg font-semibold" style={{ color: "var(--espresso)" }}>Sosial Media</h3>
-      <p className="text-xs" style={{ color: "var(--text-muted)" }}>Link yang muncul di footer website (kolom &quot;Terhubung&quot;).</p>
-      <div>
-        <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Link Instagram</label>
-        <input
-          value={instagramUrl}
-          onChange={(e) => setInstagramUrl(e.target.value)}
-          className="w-full rounded-xl px-4 py-2.5 bg-white text-sm outline-none"
-          style={{ border: "1px solid #e4e4e7" }}
-          placeholder="https://instagram.com/samaqu.id"
-        />
-        <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>Kosongkan untuk menyembunyikan icon Instagram di footer.</p>
-      </div>
-      <div className="flex gap-3 pt-2">
-        <button onClick={handleSave} disabled={saving} className="text-sm font-semibold px-5 py-2.5 rounded-xl text-white" style={{ background: "var(--gold)" }}>
-          {saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null} Simpan
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function StoreInfoSection() {
-  const [form, setForm] = useState({ store_name: "", tagline: "", email: "", whatsapp: "", cyp_microcopy: "" });
-  const [original, setOriginal] = useState({ store_name: "", tagline: "", email: "", whatsapp: "", cyp_microcopy: "" });
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const toast = useToast();
-
-  useEffect(() => {
-    supabase.from("store_settings").select("*").eq("id", 1).single().then(({ data }) => {
-      if (data) {
-        const s = { store_name: data.store_name || "", tagline: data.tagline || "", email: data.email || "", whatsapp: data.whatsapp || "", cyp_microcopy: data.cyp_microcopy || "" };
-        setForm(s); setOriginal(s);
-      }
-      setLoading(false);
-    });
-  }, []);
-
-  const dirty = form.store_name !== original.store_name || form.tagline !== original.tagline || form.email !== original.email || form.whatsapp !== original.whatsapp || form.cyp_microcopy !== original.cyp_microcopy;
-
-  async function handleSave() {
-    setSaving(true);
-    await supabase.from("store_settings").upsert({ id: 1, ...form, updated_at: new Date().toISOString() });
-    setOriginal({ ...form });
-    setSaving(false);
-    toast.showToast("success", "Perubahan berhasil disimpan");
-  }
-
-  function handleReset() {
-    setForm({ ...original });
-  }
-
-  if (loading) return <div className="card p-6 max-w-2xl"><Loader2 size={20} className="animate-spin" style={{ color: "var(--gold)" }} /></div>;
-
-  return (
-    <div className="card p-6 max-w-2xl space-y-5">
-      <h3 className="text-lg font-semibold" style={{ color: "var(--espresso)" }}>Informasi Toko</h3>
-      <div>
-        <label className="text-sm font-semibold" style={{ color: "var(--espresso)" }}>Nama Toko</label>
-        <input value={form.store_name} onChange={(e) => setForm({ ...form, store_name: e.target.value })} className="mt-1.5 w-full rounded-xl px-4 py-2.5 bg-white text-sm outline-none" style={{ border: "1px solid #e4e4e7" }} />
-      </div>
-      <div>
-        <label className="text-sm font-semibold" style={{ color: "var(--espresso)" }}>Tagline</label>
-        <input value={form.tagline} onChange={(e) => setForm({ ...form, tagline: e.target.value })} className="mt-1.5 w-full rounded-xl px-4 py-2.5 bg-white text-sm outline-none" style={{ border: "1px solid #e4e4e7" }} />
-      </div>
-      <div className="grid sm:grid-cols-2 gap-4">
-        <div>
-          <label className="text-sm font-semibold" style={{ color: "var(--espresso)" }}>Email</label>
-          <input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="mt-1.5 w-full rounded-xl px-4 py-2.5 bg-white text-sm outline-none" style={{ border: "1px solid #e4e4e7" }} />
-        </div>
-        <div>
-          <label className="text-sm font-semibold" style={{ color: "var(--espresso)" }}>WhatsApp</label>
-          <input value={form.whatsapp} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} className="mt-1.5 w-full rounded-xl px-4 py-2.5 bg-white text-sm outline-none" style={{ border: "1px solid #e4e4e7" }} />
-        </div>
-      </div>
-      <div>
-        <label className="text-sm font-semibold" style={{ color: "var(--espresso)" }}>Teks Microcopy Create Your Price</label>
-        <p className="text-[11px] font-ui mt-0.5 mb-1.5" style={{ color: "var(--text-muted)" }}>Teks kecil yang muncul di bawah pilihan harga pada halaman produk CYP. Kosongkan untuk gunakan default.</p>
-        <textarea value={form.cyp_microcopy} onChange={(e) => setForm({ ...form, cyp_microcopy: e.target.value })} rows={2} className="w-full rounded-xl px-4 py-2.5 bg-white text-sm outline-none resize-none" style={{ border: "1px solid #e4e4e7" }} placeholder="Harga Minimum boleh dipilih. Itulah alasan kami membuat Create Your Price." />
-      </div>
-      <div className="flex gap-3 pt-2">
-        {dirty && (
-          <button onClick={handleSave} disabled={saving} className="text-sm font-semibold px-5 py-2.5 rounded-xl text-white" style={{ background: "#18181b" }}>
-            {saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null} Simpan Perubahan
-          </button>
-        )}
-        <button onClick={handleReset} className="text-sm font-semibold px-5 py-2.5 rounded-xl" style={{ border: "1px solid #d4d4d8" }}>Batal</button>
-      </div>
-    </div>
-  );
-}
-
-function CustomerProductsSection() {
-  const [featuredIds, setFeaturedIds] = useState<string[]>([]);
-  const [allProducts, setAllProducts] = useState<{ id: string; name: string; image: string; category: string }[]>([]);
-  const [productThumbnails, setProductThumbnails] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const toast = useToast();
-
-  useEffect(() => {
-    Promise.all([
-      supabase.from("customer_featured_products").select("product_id, display_order").order("display_order"),
-      supabase.from("products").select("id, name, image, category").order("created_at", { ascending: false }),
-    ]).then(async ([fpRes, pRes]) => {
-      if (fpRes.data) setFeaturedIds(fpRes.data.map((r) => r.product_id));
-      if (pRes.data) {
-        setAllProducts(pRes.data);
-        // Fetch thumbnails (skip videos)
-        const ids = pRes.data.map((p) => p.id);
-        const { data: imgs } = await supabase.from("product_images").select("product_id, url, is_video").in("product_id", ids).order("display_order");
-        if (imgs) {
-          const thumbs: Record<string, string> = {};
-          for (const p of pRes.data) {
-            const firstImage = imgs.find((img: any) => img.product_id === p.id && !img.is_video);
-            thumbs[p.id] = firstImage?.url || (p.image && !p.image.match(/\.(mp4|webm|ogg)$/i) ? p.image : "");
-          }
-          setProductThumbnails(thumbs);
-        }
-      }
-      setLoading(false);
-    });
-  }, []);
-
-  function toggleProduct(id: string) {
-    setSaved(false);
-    setFeaturedIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
-  }
-
-  async function save() {
-    setSaving(true);
-    const { data: existingIds } = await supabase.from("customer_featured_products").select("id");
-    if (existingIds && existingIds.length > 0) {
-      for (const row of existingIds) await supabase.from("customer_featured_products").delete().eq("id", row.id);
-    }
-    if (featuredIds.length > 0) {
-      await supabase.from("customer_featured_products").insert(featuredIds.map((id, i) => ({ product_id: id, display_order: i })));
-    }
-    setSaving(false);
-    setSaved(true);
-    toast.showToast("success", "Produk pilihan berhasil disimpan");
-  }
-
-  if (loading) return <div className="card p-6"><Loader2 size={20} className="animate-spin" style={{ color: "var(--gold)" }} /></div>;
-
-  return (
-    <div className="card p-6 max-w-2xl">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h3 className="text-lg font-semibold" style={{ color: "var(--espresso)" }}>Produk Pilihan Customer</h3>
-          <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Tampil di dashboard customer section "Koleksi Pilihan" (maks 8)</p>
-        </div>
-        <button onClick={save} disabled={saving || featuredIds.length === 0} className="text-xs px-4 py-2 rounded-xl font-semibold text-white" style={{ background: saved ? "#3f3f46" : "var(--gold)", opacity: saving || featuredIds.length === 0 ? 0.5 : 1 }}>
-          {saving ? "..." : saved ? "Tersimpan" : "Simpan"}
-        </button>
-      </div>
-      <p className="text-xs mb-3" style={{ color: "var(--text-muted)" }}>Dipilih: {featuredIds.length} / 8 produk</p>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        {allProducts.map((p) => {
-          const selected = featuredIds.includes(p.id);
-          return (
-            <button key={p.id} onClick={() => { if (!selected && featuredIds.length >= 8) return; toggleProduct(p.id); }} className="rounded-xl overflow-hidden text-left transition-all" style={{ border: selected ? "2px solid var(--gold)" : "1px solid #e4e4e7", opacity: !selected && featuredIds.length >= 8 ? 0.4 : 1 }}>
-              <div className="aspect-square" style={{ background: "#f4f4f5" }}>
-                <img src={productThumbnails[p.id] || p.image || ""} alt={p.name} className="w-full h-full object-cover" />
-              </div>
-              <div className="p-2">
-                <p className="text-xs font-medium truncate" style={{ color: "var(--espresso)" }}>{p.name}</p>
-                <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>{p.category}</p>
-              </div>
-              {selected && <div className="text-center text-[10px] py-1 font-medium" style={{ background: "#f4f4f5", color: "var(--gold)" }}>Dipilih</div>}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function MetaPixelSection() {
-  const [pixelId, setPixelId] = useState("");
-  const [accessToken, setAccessToken] = useState("");
-  const [testEventCode, setTestEventCode] = useState("");
-  const [enabled, setEnabled] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [showToken, setShowToken] = useState(false);
-  const [maskedToken, setMaskedToken] = useState("");
-  const toast = useToast();
-
-  useEffect(() => {
-    supabase.from("store_settings").select("meta_pixel_id, meta_access_token, meta_pixel_enabled, meta_test_event_code").eq("id", 1).single().then(({ data }) => {
-      if (data) {
-        setPixelId(data.meta_pixel_id || "");
-        setEnabled(data.meta_pixel_enabled || false);
-        setTestEventCode(data.meta_test_event_code || "");
-        const token = data.meta_access_token || "";
-        if (token) {
-          setMaskedToken(`${token.slice(0, 10)}${"*".repeat(Math.max(0, token.length - 14))}${token.slice(-4)}`);
-        }
-      }
-      setLoading(false);
-    });
-  }, []);
-
-  async function handleSave() {
-    if (enabled && !pixelId.trim()) {
-      toast.showToast("error", "Pixel ID wajib diisi jika tracking diaktifkan");
-      return;
-    }
-    setSaving(true);
-    const updates: Record<string, any> = {
-      id: 1,
-      meta_pixel_id: pixelId.trim() || null,
-      meta_pixel_enabled: enabled,
-      meta_test_event_code: testEventCode.trim() || null,
-      updated_at: new Date().toISOString(),
-    };
-    if (accessToken.trim()) {
-      updates.meta_access_token = accessToken.trim();
-    }
-    const { error } = await supabase.from("store_settings").upsert(updates);
-    if (error) {
-      toast.showToast("error", "Gagal menyimpan pengaturan Meta Pixel");
-    } else {
-      if (accessToken.trim()) {
-        const token = accessToken.trim();
-        setMaskedToken(`${token.slice(0, 10)}${"*".repeat(Math.max(0, token.length - 14))}${token.slice(-4)}`);
-        setAccessToken("");
-        setShowToken(false);
-      }
-      toast.showToast("success", "Pengaturan Meta Pixel disimpan");
-    }
-    setSaving(false);
-  }
-
-  if (loading) return <div className="card p-6 max-w-2xl"><Loader2 size={20} className="animate-spin" style={{ color: "var(--gold)" }} /></div>;
-
-  return (
-    <div className="card p-6 max-w-2xl space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold" style={{ color: "var(--espresso)" }}>Meta Pixel</h3>
-          <p className="text-xs" style={{ color: "var(--text-muted)" }}>Konfigurasi Meta Pixel untuk tracking iklan Facebook/Instagram.</p>
-        </div>
-        <span className="text-[11px] font-medium px-2.5 py-1 rounded-full" style={{ background: enabled ? "#f4f4f5" : "#f1f1f3", color: enabled ? "#3f3f46" : "var(--text-muted)" }}>
-          {enabled ? "Aktif" : "Nonaktif"}
-        </span>
-      </div>
-
-      <div className="flex items-center gap-3">
-        <button onClick={() => setEnabled(!enabled)} className="relative w-11 h-6 rounded-full transition-colors duration-200" style={{ background: enabled ? "var(--gold)" : "#d4d4d8" }}>
-          <span className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200" style={{ transform: enabled ? "translateX(20px)" : "translateX(0)" }} />
-        </button>
-        <span className="text-sm" style={{ color: "var(--text-secondary)" }}>{enabled ? "Tracking aktif di seluruh website" : "Tracking nonaktif"}</span>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Pixel ID</label>
-        <input
-          value={pixelId}
-          onChange={(e) => setPixelId(e.target.value)}
-          className="w-full rounded-xl px-4 py-2.5 bg-white text-sm outline-none font-mono"
-          style={{ border: "1px solid #e4e4e7" }}
-          placeholder="contoh: 123456789012345"
-        />
-        <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>Temukan di Meta Events Manager → Settings → Pixel ID.</p>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Access Token (CAPI)</label>
-        {maskedToken && (
-          <div className="flex items-center gap-2 text-sm font-mono mb-2" style={{ color: "var(--text-secondary)" }}>
-            <span>Token tersimpan:</span>
-            <span className="px-2 py-1 rounded" style={{ background: "#f1f1f3" }}>{maskedToken}</span>
-          </div>
-        )}
-        <div className="relative">
-          <input
-            type={showToken ? "text" : "password"}
-            value={accessToken}
-            onChange={(e) => setAccessToken(e.target.value)}
-            className="w-full rounded-xl px-4 py-2.5 pr-10 bg-white text-sm outline-none font-mono"
-            style={{ border: "1px solid #e4e4e7" }}
-            placeholder={maskedToken ? "Masukkan token baru untuk mengganti" : "Masukkan System User Access Token"}
-          />
-          <button type="button" onClick={() => setShowToken(!showToken)} className="absolute right-3 top-1/2 -translate-y-1/2 text-xs" style={{ color: "var(--text-muted)" }}>
-            {showToken ? "🙈" : "👁️"}
-          </button>
-        </div>
-        <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>Digunakan untuk Conversions API (CAPI). Buat di Meta Business Suite → System Users.</p>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Test Event Code</label>
-        <input
-          value={testEventCode}
-          onChange={(e) => setTestEventCode(e.target.value)}
-          className="w-full rounded-xl px-4 py-2.5 bg-white text-sm outline-none font-mono"
-          style={{ border: "1px solid #e4e4e7" }}
-          placeholder="contoh: TEST12345"
-        />
-        <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>Untuk testing di Meta Events Manager → Test Events. Kosongkan di production.</p>
-      </div>
-
-      <div className="flex gap-3 pt-2">
-        <button onClick={handleSave} disabled={saving} className="text-sm font-semibold px-5 py-2.5 rounded-xl text-white" style={{ background: "#18181b" }}>
-          {saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null} Simpan
-        </button>
-      </div>
-    </div>
-  );
-}
 
 export default function AdminPage() {
   return <AdminPageInner />;

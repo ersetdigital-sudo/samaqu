@@ -37,7 +37,8 @@ export async function loginCustomer(email: string, password: string) {
   }
   // Verify user exists in customers table
   if (data.user) {
-    const { data: cust } = await supabase.from("customers").select("id").eq("id", data.user.id).single();
+    // maybeSingle: baris `customers` yang tidak ada = bukan akun pelanggan (null), bukan 406.
+    const { data: cust } = await supabase.from("customers").select("id").eq("id", data.user.id).maybeSingle();
     if (!cust) {
       await supabase.auth.signOut();
       return { error: "Akun ini bukan akun pelanggan. Silakan daftar atau gunakan akun pelanggan yang benar." };
@@ -58,7 +59,7 @@ export async function getCurrentCustomer() {
   const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
   if (!user) return null;
-  const { data } = await supabase.from("customers").select("*").eq("id", user.id).single();
+  const { data } = await supabase.from("customers").select("*").eq("id", user.id).maybeSingle();
   if (!data) return null;
   return { ...data, email: user.email || "" };
 }

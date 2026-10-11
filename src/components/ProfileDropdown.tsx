@@ -29,7 +29,9 @@ export default function ProfileDropdown() {
         return;
       }
       if (session?.user) {
-        supabase.from("customers").select("name, whatsapp").eq("id", session.user.id).single().then(({ data: c }) => {
+        // maybeSingle: akun auth yang tidak punya baris `customers` (mis. admin)
+        // harus mengembalikan null, bukan 406 dari `.single()`.
+        supabase.from("customers").select("name, whatsapp").eq("id", session.user.id).maybeSingle().then(({ data: c }) => {
           setCustomer(c ? { ...c, email: session.user.email || "" } : null);
           setReady(true);
         });
