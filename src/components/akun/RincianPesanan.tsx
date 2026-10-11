@@ -51,6 +51,9 @@ const FALLBACK_PHOTO =
 export const RINCIAN_CSS = `
 .rp-root{background:#F5F6F7;color:#22262A;font-weight:500;letter-spacing:-.005em;min-height:70vh;padding-bottom:8px}
 .rp-wrap{max-width:680px;margin:0 auto}
+/* Mobile: pembungkus ini transparan (display:contents) supaya tata letaknya tidak berubah.
+   Desktop: jadi satu lembar "struk hangat" — lihat @media di bawah. */
+.rp-sheet{display:contents}
 .rp-card{background:#fff;border:1px solid #ECEDEE;border-radius:12px;margin-top:10px;overflow:hidden}
 .rp-sec{padding:14px 16px}
 .rp-h{font-size:14px;font-weight:700;letter-spacing:-.01em;display:block}
@@ -137,28 +140,42 @@ export const RINCIAN_CSS = `
 .rp-note{padding:12px 14px;border-radius:10px;background:#fff;border:1px solid #ECEDEE;color:#757575;font-size:12.5px;text-align:center}
 .rp-ft{text-align:center;font-size:11px;color:#9AA0A5;padding:16px 0 0}
 
-/* ── Desktop: satu kolom struk yang sempit & terpusat, bukan melebar ── */
+/* ── Desktop: satu lembar "struk hangat" (kertas krem, garis putus-putus) yang
+   sempit & terpusat — bukan kolom mobile yang dilebarkan. ── */
 @media (min-width:768px){
- .rp-top{display:none}
- .rp-wrap{max-width:560px}
+ .rp-root{background:transparent;color:#2A2521}
+ .rp-wrap{max-width:600px}
  .rp-dhead{display:flex;align-items:center;gap:14px;margin-bottom:14px}
  .rp-dhead h1{font-size:22px;font-weight:800;letter-spacing:-.025em}
- .rp-dhead a{margin-left:auto;display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:#757575;text-decoration:none}
+ .rp-dhead a{margin-left:auto;display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:#8A8078;text-decoration:none}
  .rp-dhead a:hover{color:#B4552F}
- .rp-card{margin-top:12px;border-radius:14px}
- .rp-banner{margin-top:12px;border-radius:14px;padding:18px 20px}
+
+ /* satu lembar kertas, blok-blok di dalamnya dipisah garis struk */
+ .rp-sheet{display:block;background:#FFFDF8;border:1px solid #EFE6D9;border-radius:16px;box-shadow:0 20px 44px rgba(42,37,33,.08);overflow:hidden}
+ .rp-banner{margin-top:0;border-radius:0;padding:18px 20px}
  .rp-banner b{font-size:18px}
  .rp-banner small{font-size:13px}
+ .rp-card{margin-top:0;border:0;border-radius:0;background:none}
  .rp-sec{padding:16px 20px}
  .rp-line{font-size:14px}
+ .rp-sub,.rp-var,.rp-addr,.rp-step.is-todo .rp-txt b{color:#7E746B}
  .rp-it{padding:16px 20px;gap:16px}
- .rp-thumb{width:88px;height:88px;border-radius:10px}
+ .rp-it + .rp-it{border-top:1px dashed #F0E9DC}
+ .rp-thumb{width:88px;height:88px;border-radius:10px;background:#F7F2E9}
  .rp-nm,.rp-pr{font-size:14px}
  .rp-var{font-size:13px}
- .rp-sum{padding:15px 20px;font-size:14px}
+ .rp-sum{padding:15px 20px;font-size:14px;border-top:1px dashed #F0E9DC;background:none}
+ .rp-paysum{background:#FCF8F1;border-top:1px dashed #F0E9DC}
  .rp-paysum .rp-row{font-size:13.5px;padding:6px 0}
- .rp-act{position:static;padding:16px 0 0;background:none}
+ .rp-sep{border-top-color:#E7DCCB}
+ .rp-node{border-color:#DDD3C4;background:#FFFDF8}
+ .rp-rail-line{background:#EBE3D6}
+ .rp-hint{background:#FBF0E7}
+ .rp-note{background:#FCF8F1;border-color:#EFE6D9;color:#8A8078}
+ .rp-act{position:static;padding:16px 20px 20px;background:none}
  .rp-ft{display:none}
+ /* pemisah antar blok di dalam lembar struk (letakkan paling akhir agar menang) */
+ .rp-sheet > * + *{border-top:1px dashed #E7DCCB}
 }
 `;
 
@@ -245,6 +262,8 @@ export default function RincianPesanan({ order }: { order: RincianOrder }) {
           </Link>
         </div>
 
+        {/* Satu lembar "struk hangat" di desktop; di mobile pembungkus ini transparan. */}
+        <div className="rp-sheet">
         <section className={`rp-banner t-${sc.tone}`}>
           <span className="rp-bico">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7h11v9H3z" /><path d="M14 10h4l3 3v3h-7z" /><circle cx="7" cy="18" r="1.5" /><circle cx="17.5" cy="18" r="1.5" /></svg>
@@ -384,6 +403,7 @@ export default function RincianPesanan({ order }: { order: RincianOrder }) {
           ) : (
             <div className="rp-note">Nomor resi belum tersedia. Kami kabari begitu paket diserahkan ke J&amp;T.</div>
           )}
+        </div>
         </div>
       </div>
     </div>
