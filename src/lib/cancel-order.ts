@@ -73,12 +73,25 @@ export async function cancelOrderCompletely(
     }
   }
 
-  // Tabel `orders` tidak punya trigger yang mengisi `updated_at`, jadi jam pembatalan harus
-  // ditulis sendiri: linimasa "Pesanan dibatalkan" (strukSteps) membacanya.
-  const { error } = await supabase
+  // Tabel `orders` tidak punya trigger yang mengisi jam pembatalan, jadi jamnya ditulis sendiri:
+  // linimasa "Pesanan dibatalkan" (strukSteps) membacanya. Dua kolom ditulis — `cancelled_at`
+  // (jam batal yang sebenarnya, akurat) dan `updated_at` (dipakai baris lama, lihat `waktuBatal`
+  // di src/lib/akun-format.ts).
+  //
+  // Kolom `cancelled_at` datang dari `supabase/migrations/20261011_order_cancelled_at.sql` yang
+  // dijalankan manual di SQL Editor Supabase. Selama SQL itu belum dijalankan, update diulang
+  // tanpa kolom tersebut supaya pembatalan tetap jalan — jam batalnya jatuh ke `updated_at`.
+  const cancelledAt = new Date().toISOString();
+  const statusUpdate = { status: "dibatalkan", updated_at: cancelledAt };
+  let { error } = await supabase
     .from("orders")
-    .update({ status: "dibatalkan", updated_at: new Date().toISOString() })
+    .update({ ...statusUpdate, cancelled_at: cancelledAt })
     .eq("id", order.id);
+
+  if (error?.message?.includes("cancelled_at")) {
+    console.warn("[CANCEL] orders.cancelled_at belum ada (SQL-nya belum dijalankan), menulis tanpa kolom itu:", error.message);
+    ({ error } = await supabase.from("orders").update(statusUpdate).eq("id", order.id));
+  }
 
   if (error) {
     console.error("[CANCEL] Status update error:", order.order_number, error);

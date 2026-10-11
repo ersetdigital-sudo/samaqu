@@ -35,7 +35,9 @@ export interface AdminDetailOrder {
   order_number: string;
   status: string;
   created_at: string;
-  /** Jam pembatalan dibaca dari sini oleh `strukSteps` (lihat `waktuBatal`). */
+  /** Jam pembatalan yang akurat (kolom `orders.cancelled_at`), dibaca `strukSteps`. */
+  cancelled_at?: string | null;
+  /** Jam perubahan terakhir; cadangan jam pembatalan kalau `cancelled_at` masih kosong. */
   updated_at?: string;
   total: number;
   subtotal: number;
