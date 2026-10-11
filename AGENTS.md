@@ -276,6 +276,10 @@ Page presentation (not obvious from the code):
   tombol "Lacak Pesanan" lengket di atas nav bawah (`bottom: var(--mobile-nav-h)`).
   Blok "Butuh Bantuan?" (Garansi & Pengembalian / Hubungi Admin / Panduan Ukuran) sudah **dihapus**
   atas permintaan pemilik — jangan ditambahkan lagi di halaman ini.
+  Di **desktop** halaman ini tetap satu kolom struk yang sempit: `.rp-wrap` dibatasi `max-width:560px`
+  dan terpusat di blok `@media (min-width:768px)` (`RINCIAN_CSS`), dengan padding/radius/font sedikit
+  lebih besar (`rp-sec`/`rp-it`/`rp-sum` 16–20px, thumb produk 88px) supaya proporsinya tetap seperti struk
+  dan tidak melebar mengikuti lebar panel akun. Breakpoint `<768px` tidak berubah (mobile identik).
   Halaman ini **tidak lagi memakai `STRUK_CSS`/`StrukHeader`** (keduanya masih dipakai halaman lacak —
   jangan hapus, dan perbaikan gaya halaman lacak terpisah). Foto produk memakai `order_items.product_image`
   dengan `object-fit: contain` di atas kotak abu muda **tanpa bingkai/lis** (permintaan pemilik: lis emas
