@@ -1,31 +1,17 @@
 "use client";
 
 import { ReactNode, useEffect, useMemo, useState } from "react";
-import { Cake, ChevronDown, Loader2, Phone, Search, ShoppingBag, User, Users, X } from "lucide-react";
+import { Cake, ChevronRight, Loader2, Phone, Search, ShoppingBag, User, Users, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import CustomerDetailDrawer, { type AdminCustomer } from "@/components/admin/CustomerDetailDrawer";
 
 /**
- * Panel "Pelanggan" dashboard admin — kartu per pelanggan dengan tanggal lahir,
- * total belanja, jumlah pesanan, dan riwayat belanja yang bisa dibuka.
+ * Panel "Pelanggan" dashboard admin — kartu ringkas per pelanggan; detail lengkap
+ * (alamat + riwayat belanja) dibuka lewat `CustomerDetailDrawer`.
  *
  * Datanya dari `/api/admin/customers` (service role) karena tabel `customers`
  * dibatasi RLS "read own" — anon client admin tidak bisa membaca pelanggan lain.
  */
-
-type CustomerOrder = { order_number: string; created_at: string; total: number; status: string; items: string[] };
-
-type AdminCustomer = {
-  key: string;
-  id: string | null;
-  name: string;
-  whatsapp: string;
-  birthDate: string | null;
-  registered: boolean;
-  orders: CustomerOrder[];
-  ordersCount: number;
-  totalSpend: number;
-  lastOrderAt: string | null;
-};
 
 const BULAN_SHORT = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
 
@@ -43,20 +29,6 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
 }
 
-const STATUS_STYLES: Record<string, { bg: string; color: string; border: string }> = {
-  selesai: { bg: "#ecfdf5", color: "#047857", border: "#d1fae5" },
-  diproses: { bg: "#fffbeb", color: "#b45309", border: "#fef3c7" },
-  dikirim: { bg: "#eff6ff", color: "#1d4ed8", border: "#dbeafe" },
-  menunggu: { bg: "#fffbeb", color: "#b45309", border: "#fef3c7" },
-  pending: { bg: "#fffbeb", color: "#b45309", border: "#fef3c7" },
-  dibatalkan: { bg: "#f4f4f5", color: "#52525b", border: "#e4e4e7" },
-};
-
-function StatusPill({ status }: { status: string }) {
-  const s = STATUS_STYLES[(status || "").toLowerCase()] || STATUS_STYLES.pending;
-  return <span className="badge" style={{ background: s.bg, color: s.color, border: `1px solid ${s.border}` }}>{status}</span>;
-}
-
 function StatCard({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
   return (
     <div className="card p-4">
@@ -67,9 +39,7 @@ function StatCard({ icon, label, value }: { icon: ReactNode; label: string; valu
   );
 }
 
-function CustomerRow({ c, currentMonth }: { c: AdminCustomer; currentMonth: number }) {
-  const [open, setOpen] = useState(false);
-
+function CustomerRow({ c, currentMonth, onDetail }: { c: AdminCustomer; currentMonth: number; onDetail: () => void }) {
   const initials = c.name.trim().split(/\s+/).slice(0, 2).map((w) => w.charAt(0).toUpperCase()).join("") || "?";
   const b = c.birthDate ? parseBirth(c.birthDate) : null;
   const isBirthdayMonth = !!b && b.m === currentMonth;
@@ -112,35 +82,15 @@ function CustomerRow({ c, currentMonth }: { c: AdminCustomer; currentMonth: numb
             )}
           </div>
 
-          {c.orders.length > 0 && (
-            <>
-              <button onClick={() => setOpen((v) => !v)} className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold" style={{ color: "var(--fg)" }}>
-                <ShoppingBag size={13} strokeWidth={2} />
-                Riwayat Belanja ({c.orders.length})
-                <ChevronDown size={14} strokeWidth={2} style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform .15s" }} />
-              </button>
-
-              {open && (
-                <ul className="mt-1">
-                  {c.orders.map((o) => (
-                    <li key={o.order_number} className="flex items-start justify-between gap-3 py-2.5" style={{ borderTop: "1px solid var(--bd)" }}>
-                      <div className="min-w-0">
-                        <p className="text-xs font-bold" style={{ color: "var(--fg)" }}>{o.order_number}</p>
-                        <p className="text-[11px] truncate" style={{ color: "var(--text-muted)" }}>
-                          {formatDate(o.created_at)}
-                          {o.items.length > 0 && ` · ${o.items.slice(0, 2).join(", ")}${o.items.length > 2 ? ` +${o.items.length - 2} lainnya` : ""}`}
-                        </p>
-                      </div>
-                      <div className="text-right shrink-0 flex flex-col items-end gap-1">
-                        <span className="text-xs font-bold" style={{ color: "var(--fg)" }}>{money(o.total)}</span>
-                        <StatusPill status={o.status} />
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </>
-          )}
+          <button
+            onClick={onDetail}
+            className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold rounded-lg px-2.5 py-1.5 -ml-2.5"
+            style={{ color: "var(--fg)", border: "1px solid var(--bd)" }}
+          >
+            <ShoppingBag size={13} strokeWidth={2} />
+            Riwayat Belanja &amp; Alamat ({c.orders.length})
+            <ChevronRight size={14} strokeWidth={2} style={{ color: "var(--gold)" }} />
+          </button>
         </div>
       </div>
     </article>
@@ -153,6 +103,7 @@ export default function CustomersView() {
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "birthday">("all");
+  const [selected, setSelected] = useState<AdminCustomer | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -260,9 +211,11 @@ export default function CustomersView() {
         </div>
       ) : (
         <div className="space-y-3">
-          {filtered.map((c) => <CustomerRow key={c.key} c={c} currentMonth={currentMonth} />)}
+          {filtered.map((c) => <CustomerRow key={c.key} c={c} currentMonth={currentMonth} onDetail={() => setSelected(c)} />)}
         </div>
       )}
+
+      <CustomerDetailDrawer customer={selected} onClose={() => setSelected(null)} />
     </div>
   );
 }

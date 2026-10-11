@@ -35,6 +35,9 @@ type OrderRow = {
   customer_id: string | null;
   customer_name: string | null;
   customer_whatsapp: string | null;
+  shipping_address: string | null;
+  shipping_city: string | null;
+  shipping_postal_code: string | null;
   total: number | null;
   status: string | null;
   created_at: string;
@@ -76,7 +79,7 @@ export async function GET(req: NextRequest) {
 
   const { data: orders, error: ordersError } = await admin
     .from("orders")
-    .select("id, order_number, customer_id, customer_name, customer_whatsapp, total, status, created_at, order_items(product_name, series, kain, color, quantity)");
+    .select("id, order_number, customer_id, customer_name, customer_whatsapp, shipping_address, shipping_city, shipping_postal_code, total, status, created_at, order_items(product_name, series, kain, color, quantity)");
   if (ordersError) console.warn("[ADMIN] Gagal membaca orders:", ordersError.message);
 
   type Agg = {
@@ -86,7 +89,7 @@ export async function GET(req: NextRequest) {
     whatsapp: string;
     birthDate: string | null;
     registered: boolean;
-    orders: { order_number: string; created_at: string; total: number; status: string; items: string[] }[];
+    orders: { order_number: string; created_at: string; total: number; status: string; items: string[]; address: string | null }[];
     ordersCount: number;
     totalSpend: number;
     lastOrderAt: string | null;
@@ -143,6 +146,7 @@ export async function GET(req: NextRequest) {
       total: o.total || 0,
       status: o.status || "",
       items: describeItems(o.order_items),
+      address: [o.shipping_address, o.shipping_city, o.shipping_postal_code].filter(Boolean).join(", ") || null,
     });
     agg.ordersCount += 1;
     // "Total belanja" = nilai yang benar-benar dibelanjakan, jadi pesanan batal tidak dihitung.
