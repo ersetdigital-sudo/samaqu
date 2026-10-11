@@ -14,6 +14,7 @@ import type { User } from "@supabase/supabase-js";
 import ConfirmModal from "@/components/ConfirmModal";
 import { useToast } from "@/components/AdminToast";
 import PaymentMethodsManager, { PaymentMethodValue } from "@/components/admin/PaymentMethodsManager";
+import JntCredentialsForm from "@/components/admin/JntCredentialsForm";
 
 type Panel = "dashboard" | "orders" | "products" | "customers" | "content" | "featured" | "settings";
 
@@ -916,6 +917,9 @@ function AdminPageInner() {
 
                   {/* RajaOngkir API Key */}
                   <ApiKeySection />
+
+                  {/* Kredensial J&T Express */}
+                  <JntCredentialsForm />
 
                   {/* Social Media */}
                   <SocialMediaSection />

@@ -30,6 +30,9 @@ import {
 } from "@/lib/open-order-window";
 import { useSafeLocale } from "@/lib/safe-i18n";
 import { useStoreSettings } from "@/lib/store-settings";
+import { getCurrentCustomer } from "@/lib/customer-auth";
+import { supabase } from "@/lib/supabase";
+import StepAuth, { type AuthAccount } from "./StepAuth";
 import StepCart from "./StepCart";
 import StepCatalog from "./StepCatalog";
 import StepCustomer from "./StepCustomer";
@@ -81,6 +84,8 @@ export default function OpenOrderWizard() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<{ orderNumber: string; total: number } | null>(null);
+  /** Akun customer — langkah 4 hanya terbuka untuk yang sudah masuk/daftar (gerbang `StepAuth`). */
+  const [account, setAccount] = useState<AuthAccount | null>(null);
 
   const locale = useSafeLocale();
   // Periode & status Open Order diatur dari dashboard admin (store_settings).
@@ -96,6 +101,26 @@ export default function OpenOrderWizard() {
     getProducts()
       .then((products) => {
         if (active) setCatalog(products);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // Sesi customer dibaca sekali di awal: kalau sudah masuk, gerbang di langkah 4 dilewati dan
+  // form data pemesan langsung terisi dari akun.
+  useEffect(() => {
+    let active = true;
+    getCurrentCustomer()
+      .then((customer) => {
+        if (!active || !customer) return;
+        applyAccount({
+          id: customer.id,
+          name: customer.name || "",
+          whatsapp: customer.whatsapp || "",
+          email: customer.email || "",
+        });
       })
       .catch(() => {});
     return () => {
@@ -201,13 +226,36 @@ export default function OpenOrderWizard() {
     setCustomer((prev) => ({ ...prev, [field]: value }));
   }
 
+  /**
+   * Selesai masuk/daftar (gerbang langkah 4): simpan akunnya lalu isi data pemesan dari akun —
+   * hanya field yang masih kosong, supaya isian customer tidak tertimpa.
+   */
+  function applyAccount(next: AuthAccount) {
+    setAccount(next);
+    setCustomer((prev) => ({
+      ...prev,
+      name: prev.name || next.name,
+      whatsapp: prev.whatsapp || next.whatsapp,
+    }));
+  }
+
   async function submitOrder() {
     setError("");
     setSubmitting(true);
     try {
+      // Pesanan Open Order selalu milik akun customer: token sesi dikirim ke route, yang
+      // memverifikasinya lalu menyimpan `customer_id` (lihat /api/open-order).
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) {
+        setAccount(null);
+        setError("Sesi login berakhir. Masuk lagi ya supaya pesananmu tersimpan di akun.");
+        return;
+      }
       const res = await fetch("/api/open-order", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
         body: JSON.stringify({
           customer: {
             name: customer.name,
@@ -247,6 +295,8 @@ export default function OpenOrderWizard() {
   }
 
   const backTo = BACK_TO[step];
+  // Langkah 4 menampilkan gerbang masuk/daftar dulu selama belum ada akun yang masuk.
+  const stepTitle = step === 4 && !account ? "Masuk / Daftar" : STEP_TITLES[step];
 
   /**
    * Di luar jendela Open Order (tanggal diatur di menu admin "Open Order"): sebelum tanggal
@@ -344,7 +394,7 @@ export default function OpenOrderWizard() {
             </Link>
           )}
 
-          <p className="flex-1 text-center text-[12px] font-medium uppercase tracking-[0.2em]">{STEP_TITLES[step]}</p>
+          <p className="flex-1 text-center text-[12px] font-medium uppercase tracking-[0.2em]">{stepTitle}</p>
 
           <span className="w-9 shrink-0 text-right text-[11.5px] font-medium" style={{ color: MUTED }}>
             {step}/6
@@ -399,7 +449,19 @@ export default function OpenOrderWizard() {
               />
             )}
 
-            {step === 4 && <StepCustomer customer={customer} onChange={setCustomerField} onContinue={() => setStep(5)} />}
+            {step === 4 &&
+              (account ? (
+                <StepCustomer
+                  customer={customer}
+                  onChange={setCustomerField}
+                  onContinue={() => setStep(5)}
+                  shipping={shipping}
+                  loadingOngkir={loadingOngkir}
+                  ongkirError={ongkirError}
+                />
+              ) : (
+                <StepAuth onAuthenticated={applyAccount} />
+              ))}
 
             {step === 5 && (
               <StepReview
