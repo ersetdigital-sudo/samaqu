@@ -384,6 +384,20 @@ Page presentation (not obvious from the code):
   Kartu "Akses Cepat" menumpuk ikon (36 px) + chevron di baris atas dengan judul + subteks
   didorong ke bawah lewat `mt-auto`, dan `min-h-[112px]` menjaga keempat kartu sejajar walau
   judulnya membungkus dua baris di layar ~370 px.
+- **Sidebar akun (desktop) harus muat tanpa scroll** (permintaan pemilik: "harusnya ngga ada scroll
+  di menunya, bikin responsif di semua ukuran") — sama seperti sidebar admin yang lebih dulu
+  dirapatkan. `AkunShell`'s `<aside>`: `<nav>` memakai **`min-h-0`** (tanpa itu flex item tidak bisa
+  mengecil dari isinya, jadi menu luber dan scrollbar muncul) + kelas `akun-side-nav` / `-brand` /
+  `-group` / `-item` / `-foot`, dan blok CSS di `src/app/globals.css` yang (a) menyembunyikan
+  scrollbar nav (`scrollbar-width: none` + `::-webkit-scrollbar{display:none}`) dan (b)
+  merapatkan jarak vertikal lewat kueri `max-height` 820 / 700 / 600 / 520 px (di bawah 520 px
+  label grup disembunyikan). Lebar & warna sidebar tidak berubah, dan semua halaman `/akun/*`
+  ikut karena semuanya memakai shell yang sama. Kueri itu di luar `@layer` Tailwind, jadi
+  menang atas utility `py-*` (jangan dipindah ke dalam layer).
+  **Tidak bisa diverifikasi lewat preview**: `/akun/*` butuh sesi **customer**, sedangkan sesi
+  yang diputar ulang preview adalah sesi **admin** → selalu mendarat di `/akun/login`. Uji manual:
+  masuk sebagai customer di `/id/akun`, lalu kecilkan tinggi jendela (≤700 px, lalu ≤600 px) dan
+  pastikan tidak ada bar di menu.
 - **Nav bawah ala aplikasi (mobile)** di semua halaman toko: `src/components/MobileBottomNav.tsx`
   (Beranda · Kategori · Open Order · Pesanan · Akun) dipasang oleh
   `src/app/[locale]/(customer)/layout.tsx` dan tampil di bawah breakpoint `lg` — sama dengan navbar

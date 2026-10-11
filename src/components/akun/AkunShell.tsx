@@ -95,15 +95,17 @@ export default function AkunShell({ children }: { children: ReactNode }) {
     <div className="akun-root min-h-screen" style={{ background: "#f5f1ea" }}>
       {/* ── Desktop sidebar (fixed left) ── */}
       <aside className="hidden md:flex fixed inset-y-0 left-0 w-64 bg-white border-r border-[#e6dfd2] z-50 flex-col">
-        <div className="h-16 flex items-center px-5 border-b border-[#e6dfd2] shrink-0">
+        <div className="akun-side-brand h-16 flex items-center px-5 border-b border-[#e6dfd2] shrink-0">
           <span className="w-8 h-8 rounded-xl grid place-items-center text-[11px] font-extrabold mr-2.5" style={{ background: "#0f3d33", color: "#fff" }}>S</span>
           <span className="font-extrabold text-[15px] tracking-tight" style={{ color: "#0f3d33" }}>SAMAQU<span className="font-medium" style={{ color: "#d8c39a" }}> Akun</span></span>
         </div>
 
-        <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-0.5 text-[13.5px] font-semibold">
+        {/* min-h-0 wajib: tanpa itu flex item tidak bisa mengecil dari isinya, jadi nav luber
+            dan scrollbar muncul walaupun sudah overflow-y-auto. */}
+        <nav className="akun-side-nav flex-1 min-h-0 overflow-y-auto py-4 px-3 space-y-0.5 text-[13.5px] font-semibold">
           {groups.map((g, gi) => (
             <div key={g.group ?? `g${gi}`}>
-              {g.group ? <p className="text-[10px] uppercase tracking-widest text-[#8b9793] px-3 pt-4 pb-2 font-bold">{g.group}</p> : null}
+              {g.group ? <p className="akun-side-group text-[10px] uppercase tracking-widest text-[#8b9793] px-3 pt-4 pb-2 font-bold">{g.group}</p> : null}
               {g.items.map((item) => {
                 const on = isActive(pathname, item);
                 return (
@@ -111,7 +113,7 @@ export default function AkunShell({ children }: { children: ReactNode }) {
                     key={item.href}
                     href={to(item.href)}
                     prefetch={true}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-[10px] transition-all ${on ? "text-white" : "text-[#6c7a75] hover:text-[#0f3d33] hover:bg-[#f5f1ea]"}`}
+                    className={`akun-side-item flex items-center gap-3 px-3 py-2.5 rounded-[10px] transition-all ${on ? "text-white" : "text-[#6c7a75] hover:text-[#0f3d33] hover:bg-[#f5f1ea]"}`}
                     style={on ? { background: "#0f3d33" } : undefined}
                   >
                     <svg viewBox="0 0 24 24" className="w-[18px] h-[18px] shrink-0" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
@@ -125,7 +127,7 @@ export default function AkunShell({ children }: { children: ReactNode }) {
           ))}
         </nav>
 
-        <div className="p-3 border-t border-[#e6dfd2] shrink-0">
+        <div className="akun-side-foot p-3 border-t border-[#e6dfd2] shrink-0">
           <a
             href="https://wa.me/6281234567890?text=Halo%20SAMAQU,%20saya%20butuh%20bantuan"
             target="_blank"
