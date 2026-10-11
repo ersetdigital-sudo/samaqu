@@ -1137,7 +1137,9 @@ export default function TambahProdukPage() {
                       <button key={v.color} onClick={() => { setActiveColor(v.color); setPreviewIndex(0); }} className={`pf-chip${activeColor === v.color ? " active" : ""}`}>
                         <span className="w-3 h-3 rounded-full" style={{ background: v.hex || colorMap[v.color] || "#ccc", border: "1px solid rgba(42,33,27,.1)" }} />
                         {v.color}
-                        <button onClick={(e) => { e.stopPropagation(); removeColor(v.color); }} className="ml-1 hover:opacity-60"><X size={12} /></button>
+                        {/* Hapus warna memakai span role="button" — kontrol bersarang di dalam
+                            tombol chip membuat React melaporkan hydration error. */}
+                        <span role="button" tabIndex={0} aria-label={`Hapus warna ${v.color}`} onClick={(e) => { e.stopPropagation(); removeColor(v.color); }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); removeColor(v.color); } }} className="ml-1 hover:opacity-60"><X size={12} /></span>
                       </button>
                     ))}
                     <PresetColorPicker existing={variants.map((v) => v.color)} onAdd={addColor} />

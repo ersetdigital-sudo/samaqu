@@ -269,7 +269,11 @@ export function ProductDetailPanel({
                 {tabVariants.map((v, i) => (
                   <div key={i} className="pd-list-row">
                     <div className="min-w-0">
-                      <p className="pd-item-main">{showSeriesTabs ? `${v.size}` : `${v.color} · ${v.size}`}</p>
+                      <p className="pd-item-main">
+                        {/* Produk satu warna menyimpan `color` = "default" di database —
+                            jangan ditampilkan sebagai nama warna (baris jadi "default · XS"). */}
+                        {showSeriesTabs || v.color === "default" ? v.size : `${v.color} · ${v.size}`}
+                      </p>
                       <p className="pd-item-sub">{v.sku || "Tanpa SKU"}{v.price_override ? ` · ${money(v.price_override)}` : ""}</p>
                     </div>
                     <div className="pd-item-right">
@@ -287,7 +291,7 @@ export function ProductDetailPanel({
             {/* Media */}
             <div className="pd-card pd-block">
               <p className="pd-section-title">
-                <ImageIcon size={14} strokeWidth={2.2} /> Media ({activeTag || "—"})
+                <ImageIcon size={14} strokeWidth={2.2} /> Media ({activeTag === "default" ? "Semua" : activeTag || "—"})
               </p>
               {tabImages.length === 0 ? (
                 <p className="pd-empty">Tidak ada media untuk pilihan ini.</p>

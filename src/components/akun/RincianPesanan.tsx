@@ -28,6 +28,8 @@ export interface RincianOrder {
   discount: number;
   status: string;
   created_at: string;
+  /** Jam pembatalan yang akurat (kolom `orders.cancelled_at`); `updated_at` cuma cadangan. */
+  cancelled_at?: string | null;
   updated_at?: string;
   awb_no?: string | null;
   payment_method?: string | null;
@@ -242,8 +244,14 @@ export default function RincianPesanan({ order }: { order: RincianOrder }) {
   const status = cancelled ? "dibatalkan" : order.status;
   const sc = strukStatus(status);
   // Pesanan lama menyimpan `updated_at` = `created_at` (lihat `waktuBatal`), jadi pembatalan yang
-  // baru terjadi dari halaman ini diberi jam sendiri supaya linimasa tidak menampilkan jam lama.
-  const steps = strukSteps({ ...order, status, updated_at: cancelTime || order.updated_at });
+  // baru terjadi dari halaman ini diberi jam sendiri — `cancelled_at` (jam akurat) sekaligus
+  // `updated_at` untuk pesanan lama — supaya linimasa tidak menampilkan jam lama.
+  const steps = strukSteps({
+    ...order,
+    status,
+    cancelled_at: cancelTime || order.cancelled_at,
+    updated_at: cancelTime || order.updated_at,
+  });
   const items = order.order_items || [];
   // Hanya pesanan yang belum diserahkan ke kurir yang boleh dibatalkan sendiri (lihat /api/orders/cancel).
   const cancellable = !cancelled && (status === "pending" || status === "diproses");

@@ -17,7 +17,7 @@ import { useToast } from "@/components/AdminToast";
 import OrderDetailDrawer from "@/components/admin/OrderDetailDrawer";
 import CustomersView from "@/components/admin/CustomersView";
 import SettingsPanel from "@/components/admin/SettingsSections";
-import OrdersMobileList from "@/components/admin/OrdersMobileList";
+import OrdersView from "@/components/admin/OrdersView";
 import DashboardView from "@/components/admin/DashboardView";
 import ProductsCatalog from "@/components/admin/ProductsCatalog";
 import ProductDetailDrawer from "@/components/admin/ProductDetailDrawer";
@@ -44,7 +44,9 @@ interface Order {
   status: string;
   awb_no: string | null;
   created_at: string;
-  /** Jam perubahan terakhir; jam pembatalan dibaca dari sini (lihat `waktuBatal`). */
+  /** Jam pembatalan yang akurat (kolom `orders.cancelled_at`), dibaca `waktuBatal`. */
+  cancelled_at?: string | null;
+  /** Jam perubahan terakhir; cadangan jam pembatalan kalau `cancelled_at` masih kosong. */
   updated_at?: string;
   order_items?: { product_name: string; color: string; size: string; series?: string | null; kain?: string | null; quantity: number; price: number; customer_price: number | null; minimum_price: number | null; product_image?: string | null }[];
 }
@@ -119,15 +121,6 @@ const panelTitles: Record<Panel, { title: string; sub: string }> = {
   settings: { title: "Pengaturan", sub: "Konfigurasi informasi toko." },
 };
 
-function money(n: number) {
-  return "Rp " + n.toLocaleString("id-ID");
-}
-
-/** "pending" → "Pending" — dipakai chip filter dan judul daftar pesanan. */
-function statusLabel(status: string) {
-  return status.charAt(0).toUpperCase() + status.slice(1);
-}
-
 function effectivePrice(p: Product): number {
   return p.create_your_price_enabled && p.minimum_price ? p.minimum_price : p.price;
 }
@@ -167,21 +160,6 @@ function groupByMainProduct(raw: Product[]): AdminCatalogProduct[] {
   return items;
 }
 
-function StatusBadge({ status }: { status: string }) {
-  // Pill status ala wireframe: hijau = selesai/sukses, amber = proses/menunggu,
-  // abu = dibatalkan. Pairing teks-atas-fill dipilih agar kontras lolos.
-  const styles: Record<string, { bg: string; color: string; border: string }> = {
-    selesai: { bg: "#ecfdf5", color: "#047857", border: "#d1fae5" },
-    diproses: { bg: "#fffbeb", color: "#b45309", border: "#fef3c7" },
-    dikirim: { bg: "#eff6ff", color: "#1d4ed8", border: "#dbeafe" },
-    menunggu: { bg: "#fffbeb", color: "#b45309", border: "#fef3c7" },
-    pending: { bg: "#fffbeb", color: "#b45309", border: "#fef3c7" },
-    dibatalkan: { bg: "#f4f4f5", color: "#52525b", border: "#e4e4e7" },
-  };
-  const s = styles[status.toLowerCase()] || styles.pending;
-  return <span className="badge" style={{ background: s.bg, color: s.color, border: `1px solid ${s.border}` }}>{status}</span>;
-}
-
 function AdminPageInner() {
   // ALL hooks must be declared BEFORE any early returns
   const [user, setUser] = useState<User | null>(null);
@@ -200,21 +178,6 @@ function AdminPageInner() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [deleteConfirmOrder, setDeleteConfirmOrder] = useState<Order | null>(null);
-  const [orderFilter, setOrderFilter] = useState("Semua");
-  const [orderSource, setOrderSource] = useState<"website" | "open">("website");
-
-  // Pesanan Open Order (Create Your Price) bernomor `CYO-`; sisanya pesanan checkout website.
-  const sourceOrders = orders.filter((o) =>
-    orderSource === "open" ? o.order_number.startsWith("CYO-") : !o.order_number.startsWith("CYO-")
-  );
-  const visibleOrders = sourceOrders.filter((o) => orderFilter === "Semua" || o.status === orderFilter);
-  // Jumlah per status ikut tab yang aktif (Pesanan Website / Open Order), jadi angka
-  // di chip filter selalu cocok dengan daftar di bawahnya.
-  const statusCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const o of sourceOrders) counts[o.status] = (counts[o.status] || 0) + 1;
-    return counts;
-  }, [sourceOrders]);
   const [productSearch, setProductSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [productVariants, setProductVariants] = useState<{ product_id: string; stock: number; base_product_id: string | null }[]>([]);
@@ -380,6 +343,17 @@ function AdminPageInner() {
     return () => clearTimeout(timer);
   }, [productSearch]);
 
+  // Panel awal dari URL (`/admin?panel=orders`): sidebar subhalaman admin
+  // (`AdminShell`) mengarahkan item panel ke `/admin?panel=…` supaya klik
+  // "Order Management" dari halaman lain langsung mendarat di panelnya — dulu
+  // semuanya menuju `/admin` dan nyangkut di Dashboard lebih dulu.
+  useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get("panel");
+    if (requested && (Object.keys(panelTitles) as Panel[]).includes(requested as Panel)) {
+      setActivePanel(requested as Panel);
+    }
+  }, []);
+
   // Handler functions (not hooks)
   async function handleAuth(e: React.FormEvent) {
     e.preventDefault();
@@ -465,11 +439,14 @@ function AdminPageInner() {
         toast.showToast("error", data.error || "Gagal memperbarui status");
         return;
       }
-      // `updated_at` ditimpa lokal supaya linimasa "Pesanan dibatalkan" di drawer langsung
-      // memakai jam pembatalan yang baru (server menulis nilai yang sama — lihat PATCH /api/admin/orders).
+      // Jam pembatalan ditimpa lokal supaya linimasa "Pesanan dibatalkan" di drawer langsung
+      // memakai jam yang baru (server menulis nilai yang sama — lihat PATCH /api/admin/orders).
       const changedAt = new Date().toISOString();
-      setOrders((prev) => prev.map((o) => o.order_number === orderNumber ? { ...o, status: newStatus, updated_at: changedAt } : o));
-      setSelectedOrder((prev) => prev && prev.order_number === orderNumber ? { ...prev, status: newStatus, updated_at: changedAt } : prev);
+      const patch = newStatus === "dibatalkan"
+        ? { status: newStatus, cancelled_at: changedAt, updated_at: changedAt }
+        : { status: newStatus, updated_at: changedAt };
+      setOrders((prev) => prev.map((o) => o.order_number === orderNumber ? { ...o, ...patch } : o));
+      setSelectedOrder((prev) => prev && prev.order_number === orderNumber ? { ...prev, ...patch } : prev);
       toast.showToast("success", "Status pesanan berhasil diperbarui");
     } catch (err) {
       console.error("Update status error:", err);
@@ -481,7 +458,7 @@ function AdminPageInner() {
    * "Atur Pesanan" ala Shopee: resi J&T dibuat manual oleh admin setelah pembayaran
    * diverifikasi. Sukses → nomor resi tersimpan dan status pesanan jadi "diproses".
    */
-  async function arrangeOrder(order: Order) {
+  async function arrangeOrder(order: { order_number: string }) {
     showConfirm(
       "Atur Pesanan?",
       `Buat nomor resi J&T untuk pesanan ${order.order_number}? Pesanan akan berstatus "diproses".`,
@@ -548,8 +525,8 @@ function AdminPageInner() {
           return;
         }
         const cancelledAt = new Date().toISOString();
-        setOrders((prev) => prev.map((o) => o.order_number === order.order_number ? { ...o, status: "dibatalkan", updated_at: cancelledAt } : o));
-        setSelectedOrder((prev) => prev && prev.order_number === order.order_number ? { ...prev, status: "dibatalkan", updated_at: cancelledAt } : prev);
+        setOrders((prev) => prev.map((o) => o.order_number === order.order_number ? { ...o, status: "dibatalkan", cancelled_at: cancelledAt, updated_at: cancelledAt } : o));
+        setSelectedOrder((prev) => prev && prev.order_number === order.order_number ? { ...prev, status: "dibatalkan", cancelled_at: cancelledAt, updated_at: cancelledAt } : prev);
         toast.showToast("success", "Berhasil membatalkan pesanan di J&T");
       } catch (err) {
         console.error("Cancel J&T error:", err);
@@ -820,71 +797,16 @@ function AdminPageInner() {
                 />
               )}
 
-              {/* ORDERS */}
+              {/* ORDER MANAGEMENT — ala Shopee Seller Centre: tab tahap + daftar.
+                  Seluruh alurnya (tab sumber, pencarian, tab tahap, daftar, tabel) hidup di
+                  `OrdersView` supaya file ini tidak lagi menampung panel pesanan sepanjang itu.
+                  Aksi pesanan (Atur Pesanan / Cetak Label / Hubungi Pembeli) sengaja hanya ada di
+                  drawer detail, jadi halaman ini tidak mengoper `arrangeOrder` ke daftarnya. */}
               {activePanel === "orders" && (
-                <div className="card overflow-hidden">
-                  <div className="px-5 pt-4">
-                    <div className="flex gap-6" style={{ borderBottom: "1px solid #f1f1f3" }}>
-                      {([{ id: "website", label: "Pesanan Website" }, { id: "open", label: "Open Order" }] as const).map((t) => (
-                        <button key={t.id} onClick={() => setOrderSource(t.id)} className="pb-3 -mb-px text-sm font-medium transition-colors" style={{ color: orderSource === t.id ? "var(--espresso)" : "var(--text-muted)", borderBottom: orderSource === t.id ? "2px solid var(--gold)" : "2px solid transparent" }}>
-                          {t.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-3 justify-between p-5" style={{ borderBottom: "1px solid #f1f1f3" }}>
-                    {/* Judul ikut filter yang aktif, mis. "Pesanan Diproses". */}
-                    <h2 className="text-xl font-extrabold" style={{ color: "var(--fg)" }}>
-                      {orderSource === "open"
-                        ? orderFilter === "Semua" ? "Semua Open Order" : `Open Order ${statusLabel(orderFilter)}`
-                        : orderFilter === "Semua" ? "Semua Pesanan" : `Pesanan ${statusLabel(orderFilter)}`}
-                    </h2>
-                    <div className="flex flex-wrap gap-2">
-                      {["Semua", "pending", "diproses", "selesai", "dibatalkan"].map((s) => (
-                        <button key={s} onClick={() => setOrderFilter(s)} className="text-sm px-3 py-1.5 rounded-lg font-medium transition-colors" style={{ background: orderFilter === s ? "var(--gold)" : "transparent", color: orderFilter === s ? "#fff" : "var(--text-secondary)", border: orderFilter === s ? "none" : "1px solid #d4d4d8" }}>
-                          {s === "Semua" ? "Semua" : statusLabel(s)} ({s === "Semua" ? sourceOrders.length : statusCounts[s] || 0})
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <OrdersMobileList
-                      orders={visibleOrders}
-                      onSelect={setSelectedOrder}
-                      emptyText={orderSource === "open" ? "Belum ada pesanan Open Order" : "Tidak ada pesanan"}
-                      renderStatus={(s) => <StatusBadge status={s} />}
-                    />
-                    <table className="w-full text-sm min-w-[720px] hidden lg:table">
-                      <thead>
-                        <tr className="text-left" style={{ color: "var(--text-muted)", background: "var(--bg-secondary)" }}>
-                          <th className="font-medium px-5 py-3">ID</th>
-                          <th className="font-medium px-5 py-3">Pelanggan</th>
-                          <th className="font-medium px-5 py-3">Tanggal</th>
-                          <th className="font-medium px-5 py-3">Total</th>
-                          <th className="font-medium px-5 py-3">Status</th>
-                          <th className="font-medium px-5 py-3 text-right">Aksi</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {visibleOrders.map((o) => (
-                          <tr key={o.id} className="cursor-pointer transition-colors hover:bg-[#fafafa]" style={{ borderTop: "1px solid #f1f1f3" }} onClick={() => setSelectedOrder(o)}>
-                            <td className="px-5 py-3.5 font-semibold">{o.order_number}</td>
-                            <td className="px-5 py-3.5">{o.customer_name}</td>
-                            <td className="px-5 py-3.5" style={{ color: "var(--text-muted)" }}>{new Date(o.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}</td>
-                            <td className="px-5 py-3.5 font-semibold">{money(o.total)}</td>
-                            <td className="px-5 py-3.5"><StatusBadge status={o.status} /></td>
-                            <td className="px-5 py-3.5 text-right">
-                              <button onClick={(e) => { e.stopPropagation(); setSelectedOrder(o); }} className="text-xs px-3 py-1.5 rounded-lg font-medium" style={{ border: "1px solid #d4d4d8", color: "var(--gold)" }}>Detail</button>
-                            </td>
-                          </tr>
-                        ))}
-                        {visibleOrders.length === 0 && (
-                          <tr><td colSpan={6} className="px-5 py-8 text-center" style={{ color: "var(--text-muted)" }}>{orderSource === "open" ? "Belum ada pesanan Open Order" : "Tidak ada pesanan"}</td></tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
+                <OrdersView
+                  orders={orders}
+                  onSelect={(row) => setSelectedOrder(orders.find((o) => o.id === row.id) || null)}
+                />
               )}
 
               {/* PRODUCTS */}

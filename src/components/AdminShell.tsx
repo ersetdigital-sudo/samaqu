@@ -13,15 +13,18 @@ import { ADMIN_SHELL_CSS } from "@/components/admin/admin-theme";
 // Grup & urutan menu harus sama persis dengan sidebar dashboard admin
 // (navGroups di src/app/admin/page.tsx) — kalau beda, menu terlihat "berubah"
 // begitu admin membuka salah satu subhalaman (mis. Open Order).
+// Item panel (Order Management/Produk/Pelanggan/Pengaturan) mengarah ke
+// `/admin?panel=…` supaya dari subhalaman mana pun panelnya langsung terbuka;
+// `src/app/admin/page.tsx` membaca parameter itu saat mount.
 const navGroups = [
   {
     title: "Menu Utama",
     items: [
       { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
-      { href: "/admin", label: "Order Management", icon: ShoppingBag },
+      { href: "/admin?panel=orders", label: "Order Management", icon: ShoppingBag },
       { href: "/admin/open-order", label: "Open Order", icon: Shirt },
-      { href: "/admin", label: "Produk", icon: Package },
-      { href: "/admin", label: "Pelanggan", icon: Users },
+      { href: "/admin?panel=products", label: "Produk", icon: Package },
+      { href: "/admin?panel=customers", label: "Pelanggan", icon: Users },
     ],
   },
   {
@@ -39,7 +42,7 @@ const navGroups = [
     title: "Lainnya",
     items: [
       { href: "/admin/voucher", label: "Voucher", icon: Ticket },
-      { href: "/admin", label: "Pengaturan", icon: Settings },
+      { href: "/admin?panel=settings", label: "Pengaturan", icon: Settings },
     ],
   },
 ];
