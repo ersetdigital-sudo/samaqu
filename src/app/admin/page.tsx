@@ -33,7 +33,7 @@ interface Order {
   customer_whatsapp: string;
   shipping_address: string;
   shipping_city: string;
-  shipping_postal: string;
+  shipping_postal_code: string;
   shipping_notes: string;
   shipping_method: string;
   payment_method: string;

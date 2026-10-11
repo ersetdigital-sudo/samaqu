@@ -504,12 +504,16 @@ function CheckoutContent() {
 
   async function handleSubmit() {
     console.log("[CHECKOUT] 📦 === ORDER SUBMIT START ===");
+    const selectedAddr = savedAddresses.find((a) => a.id === selectedAddressId);
     const e: Record<string, string> = {};
     if (!nama.trim()) e.nama = "Nama lengkap wajib diisi";
     if (!whatsapp.trim()) e.whatsapp = "No. WhatsApp wajib diisi";
     else if (!validatePhone(whatsapp)) e.whatsapp = "Nomor WhatsApp tidak valid";
     if (!alamat.trim()) e.alamat = "Alamat lengkap wajib diisi";
     if (!kota.trim()) e.kota = "Kota/Kabupaten wajib diisi";
+    // Alamat manual (tanpa alamat tersimpan): kecamatan wajib. Tanpa kecamatan, alamat di
+    // pesanan jadi tidak lengkap dan resi J&T ("Atur Pesanan") kehilangan kode area.
+    if (!selectedAddr && !kecamatanName.trim()) e.kecamatan = "Kecamatan wajib diisi";
     if (kodepos && !/^\d{5}$/.test(kodepos)) e.kodepos = "Kode pos harus 5 digit";
     if (!selectedShipping) e.shipping = "Pilih metode pengiriman";
     if (!payment || !paymentMethods.some((m) => m.id === payment)) e.payment = "Pilih metode pembayaran";
@@ -533,13 +537,14 @@ function CheckoutContent() {
     setSubmitting(true);
 
     try {
-      const selectedAddr = savedAddresses.find((a) => a.id === selectedAddressId);
       const payload = {
         customer: { name: nama, email, whatsapp },
         shipping: {
           address: alamat,
           city: kota,
-          district: selectedAddr?.kecamatan || "",
+          // Alamat tersimpan → kecamatan dari address book; alamat manual → kecamatan yang
+          // diketik customer. Dulu kecamatan manual terbuang, jadi pesanan masuk tanpa kecamatan.
+          district: selectedAddr ? selectedAddr.kecamatan || "" : kecamatanName.trim(),
           postalCode: kodepos,
           notes: catatanKurir,
           method: `${selectedShipping!.courier} - ${selectedShipping!.service}`,
@@ -733,7 +738,7 @@ function CheckoutContent() {
                     </div>
                   </label>
                 ))}
-                <button type="button" onClick={() => { setShowNewAddress(true); lastResolvedRef.current = ""; }} className="text-xs font-medium mt-1" style={{ color: "#8b6f42" }}>+ Gunakan Alamat Baru</button>
+                <button type="button" onClick={() => { setShowNewAddress(true); setSelectedAddressId(""); lastResolvedRef.current = ""; }} className="text-xs font-medium mt-1" style={{ color: "#8b6f42" }}>+ Gunakan Alamat Baru</button>
               </div>
             )}
 
@@ -741,7 +746,7 @@ function CheckoutContent() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 {savedAddresses.length > 0 && (
                   <div className="sm:col-span-2">
-                    <button type="button" onClick={() => setShowNewAddress(false)} className="text-xs font-medium" style={{ color: "#8b6f42" }}>← Kembali ke alamat tersimpan</button>
+                    <button type="button" onClick={() => { setShowNewAddress(false); const a = savedAddresses.find((x) => x.is_default) || savedAddresses[0]; if (a) handleSelectAddress(a); }} className="text-xs font-medium" style={{ color: "#8b6f42" }}>← Kembali ke alamat tersimpan</button>
                   </div>
                 )}
                 <div className="sm:col-span-2" data-field="alamat">
@@ -750,13 +755,15 @@ function CheckoutContent() {
                   {errors.alamat && <p className="text-[11px] font-ui mt-1" style={{ color: "#e74c3c" }}>{errors.alamat}</p>}
                 </div>
                 <div data-field="kecamatan">
-                  <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: "var(--text-secondary)" }}>Kecamatan <span style={{ color: "var(--gold)" }}>*</span></label>
+                  <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: errors.kecamatan ? "#e74c3c" : "var(--text-secondary)" }}>Kecamatan <span style={{ color: "var(--gold)" }}>*</span></label>
                   <input type="text" value={kecamatanName} onChange={(e) => {
                     setKecamatanName(e.target.value);
+                    setErrors((p) => ({ ...p, kecamatan: "" }));
                     lastResolvedRef.current = "";
                     setShipOptions([]);
                     setSelectedShipping(null);
-                  }} className="w-full rounded-lg px-4 py-3 text-sm font-ui" style={selectStyle} placeholder="Contoh: Cengkareng" />
+                  }} className="w-full rounded-lg px-4 py-3 text-sm font-ui" style={{ ...selectStyle, border: `1px solid ${errors.kecamatan ? "#e74c3c" : "rgba(64,50,37,.25)"}` }} placeholder="Contoh: Cengkareng" />
+                  {errors.kecamatan && <p className="text-[11px] font-ui mt-1" style={{ color: "#e74c3c" }}>{errors.kecamatan}</p>}
                 </div>
                 <div data-field="kota">
                   <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: errors.kota ? "#e74c3c" : "var(--text-secondary)" }}>Kota / Kabupaten <span style={{ color: "var(--gold)" }}>*</span></label>

@@ -49,7 +49,7 @@ export interface AdminDetailOrder {
   customer_whatsapp?: string | null;
   shipping_address?: string | null;
   shipping_city?: string | null;
-  shipping_postal?: string | null;
+  shipping_postal_code?: string | null;
   shipping_notes?: string | null;
   order_items?: AdminDetailItem[];
 }
@@ -152,7 +152,7 @@ export default function OrderDetailContent({
   const items = order.order_items || [];
   const resi = order.awb_no || "";
   const wa = (order.customer_whatsapp || "").replace(/[^0-9]/g, "");
-  const alamat = [order.shipping_address, order.shipping_city, order.shipping_postal].filter(Boolean).join(", ");
+  const alamat = [order.shipping_address, order.shipping_city, order.shipping_postal_code].filter(Boolean).join(", ");
 
   const [showAlamat, setShowAlamat] = useState(false);
 
