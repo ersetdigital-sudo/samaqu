@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: false, error: "Nomor resi wajib diisi" }, { status: 400 });
   }
 
-  const config = getJntConfig();
+  const config = await getJntConfig();
   if (!config.trackUsername || !config.trackPassword || !config.companyId) {
     return NextResponse.json(
       { success: false, error: "Pelacakan J&T belum dikonfigurasi." },

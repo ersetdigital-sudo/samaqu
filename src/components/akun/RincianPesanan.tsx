@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import { useSafeLocale } from "@/lib/safe-i18n";
 import { strukStatus, strukSteps, tglJamID, rupiah } from "@/lib/akun-format";
 import { usePaymentMethodName } from "@/lib/use-payment-methods";
+import { supabase } from "@/lib/supabase";
+import ConfirmModal from "@/components/ConfirmModal";
 import type { TrackHistoryItem } from "@/lib/jnt/types";
 
 export interface RincianOrderItem {
@@ -139,6 +141,11 @@ export const RINCIAN_CSS = `
 .rp-btn:hover{background:#9E4A29}
 .rp-btn:active{transform:scale(.99)}
 .rp-btn:focus-visible{outline:2px solid #B4552F;outline-offset:2px}
+.rp-btn:disabled{opacity:.6;cursor:default}
+/* Tombol sekunder "Batalkan Pesanan": putih dengan garis & teks merah, di bawah tombol utama. */
+.rp-btn.is-danger{margin-top:10px;background:#fff;border:1px solid #E7C6C0;color:#B91C1C;box-shadow:none}
+.rp-btn.is-danger:hover{background:#FDF3F1}
+.rp-err{margin-top:8px;text-align:center;font-size:12px;font-weight:600;color:#B91C1C}
 .rp-note{padding:12px 14px;border-radius:10px;background:#fff;border:1px solid #ECEDEE;color:#757575;font-size:12.5px;text-align:center}
 .rp-ft{text-align:center;font-size:11px;color:#9AA0A5;padding:16px 0 0}
 
@@ -219,17 +226,60 @@ export default function RincianPesanan({ order }: { order: RincianOrder }) {
   const to = (href: string) => `/${locale}${href}`;
 
   const { name: paymentName } = usePaymentMethodName(order.payment_method);
-  const sc = strukStatus(order.status);
-  const steps = strukSteps(order);
+
+  const [showAlamat, setShowAlamat] = useState(false);
+  const [latest, setLatest] = useState<TrackHistoryItem | null>(null);
+
+  // Pesanan yang baru dibatalkan dari halaman ini ditimpa statusnya secara lokal supaya banner &
+  // linimasa ikut berubah tanpa memuat ulang pesanan.
+  const [cancelled, setCancelled] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState("");
+
+  const status = cancelled ? "dibatalkan" : order.status;
+  const sc = strukStatus(status);
+  const steps = strukSteps({ ...order, status });
   const items = order.order_items || [];
+  // Hanya pesanan yang belum diserahkan ke kurir yang boleh dibatalkan sendiri (lihat /api/orders/cancel).
+  const cancellable = !cancelled && (status === "pending" || status === "diproses");
 
   const resi = order.awb_no || "";
   const alamat = [order.shipping_address, order.shipping_city, order.shipping_postal_code]
     .filter(Boolean)
     .join(", ");
 
-  const [showAlamat, setShowAlamat] = useState(false);
-  const [latest, setLatest] = useState<TrackHistoryItem | null>(null);
+  /** Batalkan pesanan: pengiriman di J&T dibatalkan dulu di server, baru status jadi `dibatalkan`. */
+  async function cancelOrder() {
+    setConfirmOpen(false);
+    setCancelling(true);
+    setCancelError("");
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) {
+        setCancelError("Sesi login berakhir. Masuk lagi ya.");
+        return;
+      }
+      const res = await fetch("/api/orders/cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ orderNumber: order.order_number }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setCancelError(data.error || "Gagal membatalkan pesanan. Coba lagi ya.");
+        return;
+      }
+      setCancelled(true);
+    } catch (err) {
+      console.error("[AKUN] batal pesanan gagal:", err);
+      setCancelError("Gagal membatalkan pesanan. Coba lagi ya.");
+    } finally {
+      setCancelling(false);
+    }
+  }
 
   // Satu baris status kirim terakhir di blok "Info Pengiriman" — sama seperti halaman lacak.
   useEffect(() => {
@@ -405,9 +455,33 @@ export default function RincianPesanan({ order }: { order: RincianOrder }) {
           ) : (
             <div className="rp-note">Nomor resi belum tersedia. Kami kabari begitu paket diserahkan ke J&amp;T.</div>
           )}
+
+          {cancellable ? (
+            <>
+              <button
+                type="button"
+                className="rp-btn is-danger"
+                onClick={() => setConfirmOpen(true)}
+                disabled={cancelling}
+              >
+                {cancelling ? "Membatalkan…" : "Batalkan Pesanan"}
+              </button>
+              {cancelError ? <p className="rp-err">{cancelError}</p> : null}
+            </>
+          ) : null}
         </div>
         </div>
       </div>
+
+      <ConfirmModal
+        open={confirmOpen}
+        title="Batalkan Pesanan?"
+        message={`Pesanan #${order.order_number} akan dibatalkan beserta pengirimannya di J&T. Tindakan ini tidak bisa dibatalkan.`}
+        confirmText="Ya, Batalkan"
+        cancelText="Tidak"
+        onConfirm={cancelOrder}
+        onCancel={() => setConfirmOpen(false)}
+      />
     </div>
   );
 }

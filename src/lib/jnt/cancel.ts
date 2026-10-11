@@ -15,8 +15,8 @@ export async function cancelOrder(params: {
   orderId: string;
   remark?: string;
 }): Promise<{ success: boolean; raw: CancelResponse }> {
-  const config = getJntConfig();
-  const url = getJntBaseUrl("cancel");
+  const config = await getJntConfig();
+  const url = getJntBaseUrl("cancel", config.env);
 
   const detail = {
     username: config.orderUsername,
