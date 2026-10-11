@@ -611,6 +611,16 @@ chip status 2×2, tombol aksi satu kolom.
   `orders` — order lama yang `customer_id`-nya null dicocokkan lewat nama, dan pembeli tanpa akun
   tetap tampil sebagai entri "Belum daftar" supaya tidak ada yang hilang dari daftar.
   **Total belanja tidak menghitung pesanan `dibatalkan`.**
+- Halaman **profil pelanggan** (`/[locale]/akun/profil`) memakai pola yang sama dengan kartu
+  Pengaturan admin (diminta pemilik: "samain button nya kaya di menu setting admin"): Nama, Email,
+  Nomor HP/WhatsApp, dan Tanggal Lahir tampil sebagai **teks read-only** dengan satu tombol **Edit**;
+  setelah diklik barulah muncul input + **Simpan Perubahan + Batal** (Batal mengembalikan nilai yang
+  terakhir tersimpan, dan setelah Simpan berhasil halaman kembali read-only). Tanggal lahir
+  ditampilkan sebagai `15 Agustus 1995`, atau "Belum diisi". Polanya ditiru dari `SettingsCard` tapi
+  gayanya tetap gaya halaman akun (hijau `#0f3d33` / krem), bukan tema admin.
+  **Route ini tidak bisa dibuka preview tool** (`navigate('/id/akun/profil')` mengubah URL tapi
+  konten tetap halaman home), jadi perubahan halaman profil diverifikasi lewat `tsc --noEmit` +
+  `curl /id/akun/profil` = `200`, sisanya uji manual — jangan buang panggilan preview untuk itu.
   `birth_date` dibaca dengan fallback tanpa kolom itu kalau migration
   `supabase/migrations/20260910_customer_birth_date.sql` belum dijalankan.
   **Migration itu BELUM dijalankan** (dicek 2026-10-11: `select=id,name,birth_date` → `400`
