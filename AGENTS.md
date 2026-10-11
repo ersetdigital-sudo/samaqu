@@ -353,8 +353,10 @@ Page presentation (not obvious from the code):
   (chip "Ubah Status", WhatsApp, Cetak Label, Batalkan J&T, Hapus Pesanan) memakai kelas `od-` di
   `OD_CSS` file yang sama. Perbedaan yang disengaja dari halaman customer: baris item tetap memakai
   `Kain <kode> · <series> · <warna> · <size> × <qty>` (warna `default` disembunyikan) dengan
-  `Min: … · Dipilih: …` untuk Open Order, ditambah baris Email + Catatan di blok alamat, dan **tanpa**
-  panggilan `/api/jnt/track`. `order_items` di query kedua dashboard menyertakan `product_image`
+  `Min: … · Dipilih: …` untuk Open Order, ditambah baris Email + Catatan di blok alamat. Tombol
+  **Lacak Paket** (dulu drawer sengaja tidak memanggil `/api/jnt/track`) sekarang ada di blok aksi —
+  lihat "Lacak paket di drawer pesanan & status selesai otomatis" di bawah.
+  `order_items` di query kedua dashboard menyertakan `product_image`
   untuk thumbnail (object-fit contain, tanpa bingkai). Perubahan lain pada panel Pesanan tetap harus
   dikerjakan di kedua file.
   **Di bawah breakpoint `lg` daftar pesanan tidak memakai tabel**: kedua dashboard merender
@@ -679,3 +681,43 @@ chip status 2×2, tombol aksi satu kolom.
   0 **Simpan/Batal** saat read-only, `Nama Toko` = "SAMAQU" sebagai teks, setelah Edit muncul input
   bernilai sama + Simpan/Batal, Batal kembali ke read-only, kartu J&T tidak ada lagi, dan panel
   Pelanggan memuat (59 pelanggan, 4 kartu ringkasan) tanpa error.
+
+## Lacak paket di drawer pesanan & status selesai otomatis
+
+Permintaan pemilik (2026-10-11): "di detail tambahin tombol Lacak", "ketika paket sudah diterima
+otomatis statusnya selesai sendiri", plus chip filter "dibatalkan" di panel Pesanan.
+
+- **Chip filter**: baris chip di `src/app/admin/page.tsx` kini
+  `["Semua","pending","diproses","selesai","dibatalkan"]` (satu sumber untuk `/admin` dan
+  `/id/admin`). Chip tetap `flex-wrap`, jadi lima chip tidak memotong "Selesai" di ~370 px.
+- **Tombol Lacak**: `OrderDetailContent.tsx` (drawer detail pesanan, kedua dashboard) punya tombol
+  **Lacak Paket** di blok aksi, muncul hanya bila pesanan punya `awb_no`. Tombol membuka panel
+  **Riwayat Pengiriman** di dalam drawer yang memanggil `/api/jnt/track?awb=…` sekali (data
+  disimpan di state, tutup/buka lagi tidak fetch ulang); riwayat J&T datang terlama-dulu, jadi
+  dibalik supaya yang terbaru di atas. Gaya memakai kelas `od-` di `OD_CSS` (bukan komponen
+  halaman lacak customer yang butuh sesi customer).
+- **Auto "selesai"**: begitu pelacakan menunjukkan paket **diterima penerima**, status pesanan
+  otomatis jadi `selesai` tanpa admin mengubahnya:
+  - **saat dilihat** — panel Lacak memanggil `onStatusChange("selesai")` (prop drawer yang sudah
+    ada → `PATCH /api/admin/orders`) hanya bila `isDelivered()` benar dan status masih
+    `pending`/`diproses`/`dikirim` (jadi pesanan `dibatalkan`/`selesai` tidak tersentuh);
+  - **di latar belakang** — cron **`/api/cron/sync-tracking`** (`src/app/api/cron/sync-tracking/route.ts`)
+    memindai ≤100 pesanan ber-resi berstatus belum final, melacak tiap resi, dan menandai yang
+    sudah diterima sebagai `selesai`. Gerbang `CRON_SECRET` sama dengan `/api/cron/auto-cancel`
+    (`Authorization: Bearer $CRON_SECRET`; `401` kalau salah/kosong) — **belum ada penjadwal di
+    repo**: jadwalkan endpoint ini (mis. tiap jam) bersama `auto-cancel` di penjadwal cron/Vercel
+    yang sudah dipakai untuk endpoint itu. Tanpa penjadwal, auto-selesai tetap jalan begitu admin
+    membuka panel Lacak.
+- **Deteksi "diterima"** ada di satu modul murni **`src/lib/jnt/track-status.ts`** →
+  `isDelivered({history})` = ada riwayat dengan `status_code === 200` ("Paket telah diterima" /
+  Delivered, per dokumentasi J&T). **Jangan** mencocokkan teks: `status_code` 100 juga berbunyi
+  "Paket telah diterima oleh <gerai>" (paket baru diserahkan ke J&T di gerai asal), bukan bukti
+  sampai ke penerima. Modulnya cuma impor tipe, jadi dipakai klien & server.
+- Verifikasi: `tsc --noEmit` bersih; `curl /admin` & `/id/admin` = `200`; `/api/cron/sync-tracking`
+  tanpa/`salah` header = `401`; `isDelivered` diuji lewat Node (200 → true, 100/401/kosong →
+  false). Lewat preview (sesi admin diputar ulang): chip **Dibatalkan** tampil, filter menyisakan
+  10 pesanan dibatalkan, drawer terbuka, tombol **Lacak Paket** muncul untuk pesanan ber-resi
+  `SMQ-20261010-364`, panel Riwayat Pengiriman terisi (`Manifes DEPOK …`), tanpa error console,
+  dan tidak ada scroll samping di 375 px. **Belum** terbukti live: status berubah sendiri saat
+  paket benar-benar diterima (perlu pesanan yang resinya sudah `status_code 200`) — logikanya
+  diuji unit, bukan end-to-end.
