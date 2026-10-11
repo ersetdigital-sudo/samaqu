@@ -269,6 +269,35 @@ Page presentation (not obvious from the code):
   ornament is used nowhere else; the row is still the same toggle button (click selects/deselects)
   and only its appearance changed. The summary box below it lists the item lines, an `Extra Cover &
   Hanger` line while the add-on is selected, and a `Total` (subtotal + add-on) so toggling the card
+- **Halaman detail pesanan akun** (`/[locale]/akun/pesanan/<order_number>`) memakai tata letak rincian
+  pesanan ala marketplace (latar abu terang `#F5F6F7`, kartu putih radius 12, aksen terracotta `#B4552F`):
+  renderernya satu komponen klien `src/components/akun/RincianPesanan.tsx` (CSS scoped dengan awalan `rp-`
+  di dalam komponen itu, mengikuti pola `ADDON_CSS` di `StepCart.tsx`), sementara file route hanya
+  mengambil pesanan lewat `getCustomerOrders()` lalu merendernya. Urutan bloknya: banner status → "Info
+  Pengiriman" → "Alamat Pengiriman" (alamat dipotong 2 baris + tombol "Lihat") → kartu produk (baris
+  `Total Pesanan` dibuka untuk Ringkasan Pembayaran) → "Status Pesanan" yang dilipat (`<details>`) →
+  tombol "Lacak Pesanan" lengket di atas nav bawah (`bottom: var(--mobile-nav-h)`); untuk pesanan
+  `pending`/`diproses` ada tombol sekunder **"Batalkan Pesanan"** (putih, teks merah) di bawahnya →
+  `POST /api/orders/cancel` lewat `ConfirmModal`, dan setelah berhasil statusnya ditimpa lokal jadi `dibatalkan`.
+  Blok "Butuh Bantuan?" (Garansi & Pengembalian / Hubungi Admin / Panduan Ukuran) sudah **dihapus**
+  atas permintaan pemilik — jangan ditambahkan lagi di halaman ini.
+  Di **desktop** halaman ini jadi satu lembar **"Struk Hangat"**: `.rp-wrap` dibatasi `max-width:600px`
+  dan terpusat, latar halaman dibiarkan transparan (krem milik `AkunShell`) sehingga yang tampak hanya
+  kertas struknya. Pembungkus `<div className="rp-sheet">` membalut banner → kartu-kartu → aksi:
+  **mobile** `display:contents` (tata letak lama persis sama), **desktop** jadi satu lembar krem
+  (`#FFFDF8`, border `#EFE6D9`, radius 16, shadow lembut) dengan pemisah antar-blok berupa garis
+  putus-putus (`#E7DCCB`) ala struk; kartu di dalamnya dibuat transparan tanpa border
+  (`.rp-card{background:none;border:0}`), ringkasan pembayaran memakai krem `#FCF8F1`, dan teks
+  sekunder dihangatkan (`#7E746B`). Aturan pemisah harus ditulis **terakhir** di blok `@media` supaya
+  menang atas `.rp-card{border:0}`. Breakpoint `<768px` tidak berubah (mobile identik).
+  Halaman ini **tidak lagi memakai `STRUK_CSS`/`StrukHeader`** (keduanya masih dipakai halaman lacak —
+  jangan hapus, dan perbaikan gaya halaman lacak terpisah). Foto produk memakai `order_items.product_image`
+  dengan `object-fit: contain` di atas kotak abu muda **tanpa bingkai/lis** (permintaan pemilik: lis emas
+  lama jelek, dan foto tidak boleh terpotong), dengan `FALLBACK_PHOTO` (aset Base44) kalau kolomnya kosong —
+  banyak `order_items` lama memang menyimpan `product_image` NULL. Blok "Info Pengiriman" memanggil
+  `/api/jnt/track` sekali (hanya bila ada resi) untuk baris update terakhir. Header halaman lama
+  (`AkunHeader` dari `AkunShell.tsx`) masih dipakai halaman akun lain, jadi jangan ubah gaya globalnya
+  untuk halaman ini.
   visibly changes the amount; ongkir is added in step 5 (review) — dan sudah tampil juga sebagai
   baris tersendiri di langkah 4, tepat di bawah Kode Pos.
 - **Checkout Open Order wajib punya akun**: langkah 4 adalah gerbangnya. Kalau belum ada sesi
@@ -296,6 +325,48 @@ Page presentation (not obvious from the code):
   There are **two near-duplicate admin dashboards** — `src/app/[locale]/admin/page.tsx` (served at
   `/id/admin`) and `src/app/admin/page.tsx` (`/admin`, kept outside the locale prefix by
   `src/middleware.ts`) — so an orders-panel change belongs in both files.
+  **Modal detail pesanan** kedua dashboard kini hanya berisi header (nomor pesanan + tanggal + tombol
+  tutup) + satu komponen bersama **`src/components/admin/OrderDetailContent.tsx`**, yang isinya memakai
+  susunan & gaya halaman detail pesanan customer: banner status berwarna → "Info Pengiriman" →
+  "Alamat Pengiriman" → kartu produk + baris "Total Pesanan" yang dilipat → "Status Pesanan"
+  (linimasa `strukSteps`) → aksi. Gaya/DOM-nya dipinjam dari `RincianPesanan`: kelas `rp-`,
+  `RINCIAN_CSS`, dan `FALLBACK_PHOTO` **diekspor dari sana** — ubah salah satunya, halaman customer
+  dan modal admin ikut berubah (itu yang diinginkan: satu sumber gaya). Kontrol khusus admin
+  (chip "Ubah Status", WhatsApp, Cetak Label, Batalkan J&T, Hapus Pesanan) memakai kelas `od-` di
+  `OD_CSS` file yang sama. Perbedaan yang disengaja dari halaman customer: baris item tetap memakai
+  `Kain <kode> · <series> · <warna> · <size> × <qty>` (warna `default` disembunyikan) dengan
+  `Min: … · Dipilih: …` untuk Open Order, ditambah baris Email + Catatan di blok alamat, dan **tanpa**
+  panggilan `/api/jnt/track`. `order_items` di query kedua dashboard menyertakan `product_image`
+  untuk thumbnail (object-fit contain, tanpa bingkai). Perubahan lain pada panel Pesanan tetap harus
+  dikerjakan di kedua file.
+  **Di bawah breakpoint `lg` daftar pesanan tidak memakai tabel**: kedua dashboard merender
+  `src/components/admin/OrdersMobileList.tsx` — kartu berisi nomor pesanan · pill status · nama
+  pelanggan · `tanggal · total`, dan bila prop `onSelect` diberi kartunya jadi tombol yang membuka
+  modal detail (dengan chevron); tanpa `onSelect` kartunya statis. Komponen itu menyembunyikan
+  dirinya sendiri di `lg` (`lg:hidden`), sedangkan `<table>`-nya tetap di dalam pembungkus
+  `overflow-x-auto` yang sama dan cukup diberi `hidden lg:table` — jangan menambah pembungkus kedua
+  (dua root elemen di dalam ternary `{loading ? … : ( … )}` menghasilkan parse error JSX
+  "Expected '</', got 'ident'"). Baris "Pesanan Terbaru" di dashboard memakai komponen yang sama
+  (5 baris pertama, tanpa `onSelect`) dan baris chip filter pesanan memakai `flex-wrap` supaya
+  "Selesai" tidak terpotong di layar ~370 px.
+  **Tata letak modal detail di mobile** (permintaan pemilik: "kurang rapih, bikin lebih responsif"):
+  pembungkus modal memakai varian `md:` (`md:pt-10 md:px-4 md:pb-10`, `md:rounded-2xl`, `md:min-h-0`,
+  header `px-4 py-4 md:px-6 md:py-5`) supaya di bawah 768 px modalnya jadi lembar penuh tanpa
+  gutter — breakpoint-nya sengaja `md` (768 px), sama dengan breakpoint "struk" di `RINCIAN_CSS`;
+  `OrderDetailContent`'s `OD_CSS` menambahkan override `max-width:767.98px` yang **hanya** berlaku
+  di dalam modal: `.od-root .rp-root` jadi transparan (latar abu `#F5F6F7` milik halaman customer
+  dibuang, kalau tidak ada blok abu di dalam kertas krem modal), banner status menempel di bawah
+  header (`margin-top:0` + radius 0), chip "Ubah Status" jadi grid 2×2 dan tombol aksi jadi baris
+  penuh (flex-wrap membuat 3 chip + 1 dan tombol berlebar pincang). Yang ≥768 px tidak berubah:
+  tetap lembar "struk hangat" krem di dalam kartu modal.
+- **Dashboard akun** (`/[locale]/akun`, `src/app/[locale]/akun/page.tsx`) ditata ulang untuk mobile:
+  baris "Pesanan Terakhir" = satu baris atas (thumbnail, nama pesanan + `#nomor · tanggal` yang
+  dipotong `truncate` satu baris, chevron rata tengah) lalu satu baris penuh di bawahnya berisi
+  harga + pill status yang rata dengan tepi kartu (blok `sm:hidden`; pasangan `hidden sm:block`
+  dengan kolom kanan harga/pill mempertahankan tata letak desktop persis seperti sebelumnya).
+  Kartu "Akses Cepat" menumpuk ikon (36 px) + chevron di baris atas dengan judul + subteks
+  didorong ke bawah lewat `mt-auto`, dan `min-h-[112px]` menjaga keempat kartu sejajar walau
+  judulnya membungkus dua baris di layar ~370 px.
 - **Nav bawah ala aplikasi (mobile)** di semua halaman toko: `src/components/MobileBottomNav.tsx`
   (Beranda · Kategori · Open Order · Pesanan · Akun) dipasang oleh
   `src/app/[locale]/(customer)/layout.tsx` dan tampil di bawah breakpoint `lg` — sama dengan navbar
@@ -406,14 +477,14 @@ Kalau ongkir tiba-tiba `fail` lagi, cek `JNT_ENV` dulu sebelum menuduh sign/kred
 
 Yang tidak kelihatan dari kode:
 
-- **Status di detail pesanan mengikuti `orders.status`**, bukan hardcode: `buildSteps()` di
-  `src/app/[locale]/akun/pesanan/[orderNo]/page.tsx` memetakan pending → baru dikonfirmasi,
+- **Status di detail pesanan mengikuti `orders.status`**, bukan hardcode: `strukSteps()` di
+  `src/lib/akun-format.ts` (dirender `src/components/akun/RincianPesanan.tsx`) memetakan pending → baru dikonfirmasi,
   diproses → diproses, dikirim → diserahkan ke kurir/dalam perjalanan, selesai → semua langkah
-  selesai, dibatalkan → berhenti setelah dikonfirmasi (+ catatan merah). **Dulu langkah 1 & 2
+  selesai, dibatalkan → linimasa berhenti di langkah pembatalan (banner tone `cancel`). **Dulu langkah 1 & 2
   selalu "done"**, jadi pesanan `pending` di akun tampak sudah diproses sementara admin
   menampilkannya `pending` — itu bug yang diperbaiki, jangan kembalikan hardcode itu.
-- Label pill ikut disamakan dengan admin: `pending` = **"Menunggu"** (dulu "Diproses"),
-  `dibatalkan` pakai `akun-pill-batal` (merah). Dipakai bersama oleh `/akun` (dashboard),
+- Label pill ikut disamakan dengan admin: `pending` = **"Menunggu Pembayaran"** (dipakai daftar
+  pesanan, dashboard akun, banner struk, dan modal admin), `dibatalkan` pakai `akun-pill-batal` (merah). Dipakai bersama oleh `/akun` (dashboard),
   list pesanan, dan detail — ubah di `src/lib/akun-format.ts` saja.
 - **Foto "Informasi Produk" diambil dari katalog.** Baris `order_items` pesanan Open Order tidak
   menyimpan `product_image` (route `/api/open-order` tidak pernah mengisinya), jadi
@@ -436,7 +507,8 @@ Yang tidak kelihatan dari kode:
   harus milik customer itu (kalau bukan → 404, bukan 403), hanya status `pending`/`diproses` yang
   boleh, batalkan pengiriman di J&T dulu baru `status = dibatalkan`. Stok **tidak** dikembalikan
   karena `/api/open-order` tidak pernah memotong stok (memanggil `samaqu_restore_stock` justru
-  menambah stok yang tidak pernah diambil). Tombolnya di aside halaman detail + `ConfirmModal`.
+  menambah stok yang tidak pernah diambil). Tombolnya di blok aksi
+  `src/components/akun/RincianPesanan.tsx` (di bawah "Lacak Pesanan") + `ConfirmModal`.
 
 Verify (mobile 374px, akun customer):
 

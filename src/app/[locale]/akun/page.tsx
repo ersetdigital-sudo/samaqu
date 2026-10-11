@@ -131,7 +131,7 @@ export default function DashboardAkunPage() {
 
             {/* ═══ Recent orders ═══ */}
             <div className="bg-white rounded-[20px] border border-[rgba(0,0,0,0.06)] shadow-[rgba(0,0,0,0.02)_0px_0px_0px_1px,rgba(0,0,0,0.04)_0px_2px_6px,rgba(0,0,0,0.06)_0px_4px_8px] overflow-hidden">
-              <div className="px-5 py-3 border-b border-[#f0ebe2] flex items-center justify-between" style={{ background: "#faf8f4" }}>
+              <div className="px-4 sm:px-5 py-3.5 border-b border-[#f0ebe2] flex items-center justify-between gap-3" style={{ background: "#faf8f4" }}>
                 <h2 className="font-bold text-sm flex items-center gap-2" style={{ color: "#0f3d33" }}>
                   <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="#0f3d33" strokeWidth="1.7"><path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z" /><path d="M3 8.5v7L12 20l9-4.5v-7" /></svg>
                   PESANAN TERAKHIR
@@ -158,24 +158,32 @@ export default function DashboardAkunPage() {
                     <Link
                       key={order.id}
                       href={to(`/akun/pesanan/${order.order_number}`)}
-                      className="p-4 flex items-center gap-3 hover:bg-[#faf8f4] transition cursor-pointer"
+                      className="block p-4 hover:bg-[#faf8f4] transition cursor-pointer"
                     >
-                      <div className="w-10 h-10 rounded-[10px] overflow-hidden shrink-0 flex items-center justify-center" style={{ background: "#e3ede9" }}>
-                        {order.order_items?.[0]?.product_image ? (
-                          <img src={order.order_items[0].product_image} alt={order.order_items[0].product_name} className="w-full h-full object-cover" />
-                        ) : (
-                          <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="#0f3d33" strokeWidth="1.5"><path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z" /><path d="M3 8.5v7L12 20l9-4.5v-7" /></svg>
-                        )}
+                      <div className="flex items-center gap-3">
+                        <div className="w-11 h-11 sm:w-10 sm:h-10 rounded-[10px] overflow-hidden shrink-0 flex items-center justify-center" style={{ background: "#e3ede9" }}>
+                          {order.order_items?.[0]?.product_image ? (
+                            <img src={order.order_items[0].product_image} alt={order.order_items[0].product_name} className="w-full h-full object-cover" />
+                          ) : (
+                            <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="#0f3d33" strokeWidth="1.5"><path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z" /><path d="M3 8.5v7L12 20l9-4.5v-7" /></svg>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[13.5px] sm:text-sm font-bold truncate" style={{ color: "#0f3d33" }}>{order.order_items?.[0]?.product_name || "Produk"}</p>
+                          <p className="text-[11.5px] sm:text-xs text-[#8b9793] font-mono mt-0.5 truncate">#{order.order_number} &middot; {tglID(order.created_at)}</p>
+                        </div>
+                        {/* Desktop: harga + status di kolom kanan (tidak berubah). */}
+                        <div className="hidden sm:block text-right shrink-0">
+                          <p className="text-sm font-black" style={{ color: "#0f3d33" }}>Rp{order.total.toLocaleString("id-ID")}</p>
+                          <span className={statusInfo(order.status).pill}>{statusInfo(order.status).label}</span>
+                        </div>
+                        <svg viewBox="0 0 24 24" className="w-4 h-4 shrink-0" fill="none" stroke="#d1ccc4" strokeWidth="2"><path d="m9 6 6 6-6 6" /></svg>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold truncate" style={{ color: "#0f3d33" }}>{order.order_items?.[0]?.product_name || "Produk"}</p>
-                        <p className="text-xs text-[#8b9793] font-mono">#{order.order_number} &middot; {tglID(order.created_at)}</p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <p className="text-sm font-black" style={{ color: "#0f3d33" }}>Rp{order.total.toLocaleString("id-ID")}</p>
+                      {/* Mobile: harga + status satu baris penuh supaya rata dengan tepi kartu. */}
+                      <div className="sm:hidden mt-3 flex items-center justify-between gap-3">
+                        <span className="text-[13.5px] font-black" style={{ color: "#0f3d33" }}>Rp{order.total.toLocaleString("id-ID")}</span>
                         <span className={statusInfo(order.status).pill}>{statusInfo(order.status).label}</span>
                       </div>
-                      <svg viewBox="0 0 24 24" className="w-4 h-4 shrink-0" fill="none" stroke="#d1ccc4" strokeWidth="2"><path d="m9 6 6 6-6 6" /></svg>
                     </Link>
                   ))}
                 </div>
@@ -192,16 +200,16 @@ export default function DashboardAkunPage() {
                   { href: "/akun/panduan-ukuran", title: "Panduan Ukuran", sub: "Cari size pas", icon: <><path d="M3 14 14 3l7 7L10 21z" /><path d="M7.5 12.5 9 14M10.5 9.5 12 11M13.5 6.5 15 8" /></> },
                   { href: "/akun/bantuan", title: "Hubungi Admin", sub: "Chat tim admin", icon: <><path d="M21 12a8 8 0 1 1-3.2-6.4" /><path d="M8 11h8M8 15h5" /></> },
                 ].map((it) => (
-                  <Link key={it.href} href={to(it.href)} className="akun-card relative p-4 flex items-start gap-3 transition hover:shadow-lg active:scale-[.99]">
-                    <span className="shrink-0 w-9 h-9 rounded-xl grid place-items-center" style={{ background: "#e3ede9" }}>
-                      <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="#0f3d33" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">{it.icon}</svg>
+                  <Link key={it.href} href={to(it.href)} className="akun-card p-3.5 min-h-[112px] flex flex-col gap-3 transition hover:shadow-lg active:scale-[.99]">
+                    <span className="flex items-center justify-between gap-2">
+                      <span className="shrink-0 w-9 h-9 rounded-[12px] grid place-items-center" style={{ background: "#e3ede9" }}>
+                        <svg viewBox="0 0 24 24" className="w-[18px] h-[18px]" fill="none" stroke="#0f3d33" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">{it.icon}</svg>
+                      </span>
+                      <svg viewBox="0 0 24 24" className="w-4 h-4 shrink-0 text-[#9aa5a1]" fill="none" stroke="currentColor" strokeWidth="2"><path d="m9 6 6 6-6 6" /></svg>
                     </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block font-bold text-sm leading-tight" style={{ color: "#0f3d33" }}>{it.title}</span>
+                    <span className="min-w-0 mt-auto">
+                      <span className="block font-bold text-[13px] leading-snug" style={{ color: "#0f3d33" }}>{it.title}</span>
                       <span className="block text-[11px] text-[#6c7a75] mt-0.5">{it.sub}</span>
-                    </span>
-                    <span className="absolute right-3 top-4">
-                      <svg viewBox="0 0 24 24" className="w-4 h-4 text-[#9aa5a1]" fill="none" stroke="currentColor" strokeWidth="2"><path d="m9 6 6 6-6 6" /></svg>
                     </span>
                   </Link>
                 ))}
