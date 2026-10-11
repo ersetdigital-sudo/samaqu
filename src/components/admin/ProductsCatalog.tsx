@@ -79,9 +79,11 @@ function stockTone(stock: number) {
 function CardActions({
   p,
   onDelete,
+  onDetail,
 }: {
   p: CatalogCard;
   onDelete: (id: string, name: string, memberIds?: string[]) => void;
+  onDetail: (id: string) => void;
 }) {
   return (
     <div className="flex gap-2 mt-3">
@@ -92,14 +94,16 @@ function CardActions({
       >
         <Edit size={13} strokeWidth={2} /> Edit
       </Link>
-      <Link
-        href={`/admin/produk/detail/${p.id}`}
+      {/* Detail dibuka sebagai drawer (bukan pindah halaman); halaman
+          /admin/produk/detail/<id> tetap ada sebagai tautan langsung. */}
+      <button
+        onClick={() => onDetail(p.id)}
         className="w-9 h-9 flex items-center justify-center rounded-lg"
         style={{ border: "1px solid var(--bd)", color: "var(--fg2)" }}
         title="Detail produk"
       >
         <Eye size={15} strokeWidth={2} />
-      </Link>
+      </button>
       <button
         onClick={() => onDelete(p.id, p.name, p.memberIds)}
         className="w-9 h-9 flex items-center justify-center rounded-lg"
@@ -232,6 +236,7 @@ export default function ProductsCatalog({
   search,
   setSearch,
   onDelete,
+  onDetail,
   loading = false,
 }: {
   /** Hasil pencarian dari caller (topbar) — jadi dasar perhitungan facet di rail. */
@@ -242,6 +247,8 @@ export default function ProductsCatalog({
   search: string;
   setSearch: (v: string) => void;
   onDelete: (id: string, name: string, memberIds?: string[]) => void;
+  /** Buka detail produk sebagai drawer (disediakan kedua dashboard admin). */
+  onDetail: (id: string) => void;
   loading?: boolean;
 }) {
   const [view, setView] = useState<"grid" | "list">("grid");
@@ -569,7 +576,7 @@ export default function ProductsCatalog({
                     <CardBody p={p} maxStock={facets.maxStock} />
                   </div>
                   <div className="sm:w-44 shrink-0">
-                    <CardActions p={p} onDelete={onDelete} />
+                    <CardActions p={p} onDelete={onDelete} onDetail={onDetail} />
                   </div>
                 </div>
               ))}
@@ -593,7 +600,7 @@ export default function ProductsCatalog({
                     <div className="p-4 flex flex-col flex-1">
                       <CardBody p={p} maxStock={facets.maxStock} />
                       <div className="mt-auto">
-                        <CardActions p={p} onDelete={onDelete} />
+                        <CardActions p={p} onDelete={onDelete} onDetail={onDetail} />
                       </div>
                     </div>
                   </div>

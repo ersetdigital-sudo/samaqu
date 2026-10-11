@@ -522,3 +522,30 @@ Lalu di browser: buka `/id/akun/pesanan` → detail pesanan. Timeline harus sama
 baru dibuat, dan tombol **Batalkan Pesanan** muncul hanya untuk `pending`/`diproses`. Bikin
 pesanan uji sebisa mungkin **dibatalkan lalu dihapus** (admin detail → Hapus, atau REST
 `DELETE /rest/v1/orders?order_number=eq.…`) agar daftar pesanan asli tidak kotor.
+
+## Drawer detail produk admin
+
+Detail produk admin kini satu komponen bersama, **`src/components/admin/ProductDetailDrawer.tsx`**
+(panel gelap charcoal `#1b1e25`, kartu `#232730`, aksen hijau `#22c55e` / biru `#3b82f6` — permintaan
+pemilik "drawer modern", mengikuti referensi desain yang dikirim). Dipakai di **dua tempat**:
+
+- **Drawer dari daftar produk**: `ProductsCatalog` menerima prop `onDetail(id)`; tombol mata di
+  kartu memanggilnya (dulu `<Link>` ke halaman detail). Kedua dashboard (`/admin` dan `/id/admin`)
+  menyimpan `selectedProductId` dan merender `<ProductDetailDrawer productId={…} onClose={…} />`
+  tepat sebelum modal detail pesanan. Drawer tertutup lewat tombol **Tutup**, klik latar, atau
+  `Escape`.
+- **Halaman route tetap ada** (`/admin/produk/detail/<id>` + salinan locale) dan sekarang hanya
+  merender `ProductDetailPanel` dengan `mode="page"` (lembar terpusat, gaya sama) — jadi tidak ada
+  dua tampilan detail yang berbeda. Ubah tampilan detail → ubah komponen itu saja.
+
+Angka drawer semuanya dari data asli: stok & SKU dari `product_variants`, harga dari `products`
+(harga minimum bila Create Your Price aktif), penjualan dari `order_items`. Skema **tidak** punya
+"stok awal"/"total masuk"/"profit", jadi baris statistiknya memakai angka nyata (Total Pesanan,
+Total Transaksi, Varian Menipis) — jangan mengarang kolom yang tidak ada. Gaya ditulis di string
+`PD_CSS` (pola sama seperti `RINCIAN_CSS`), kelasnya berawalan `pd-`.
+
+**Verifikasi manual** (route admin tidak bisa dicapai lewat navigasi SPA preview:
+`window.__base44_preview.navigate('/admin'|'/id/admin')` mengubah URL tapi konten tidak berganti,
+dan full page load di-reset ke route home pada panggilan preview berikutnya): buka
+`/id/admin` → panel **Produk** → klik tombol mata di kartu produk; drawer harus meluncur dari kanan,
+tombol **Tutup** menutupnya, dan `/admin/produk/detail/<id>` menampilkan panel yang sama.

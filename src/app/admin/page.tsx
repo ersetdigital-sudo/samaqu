@@ -19,6 +19,7 @@ import OrderDetailContent from "@/components/admin/OrderDetailContent";
 import OrdersMobileList from "@/components/admin/OrdersMobileList";
 import DashboardView from "@/components/admin/DashboardView";
 import ProductsCatalog from "@/components/admin/ProductsCatalog";
+import ProductDetailDrawer from "@/components/admin/ProductDetailDrawer";
 import { ADMIN_WF_VARS } from "@/components/admin/admin-theme";
 
 type Panel = "dashboard" | "orders" | "products" | "customers" | "content" | "featured" | "settings";
@@ -161,6 +162,7 @@ function AdminPageInner() {
   const [loading, setLoading] = useState(true);
   const [profileOpen, setProfileOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [deleteConfirmOrder, setDeleteConfirmOrder] = useState<Order | null>(null);
   const [orderFilter, setOrderFilter] = useState("Semua");
   const [orderSource, setOrderSource] = useState<"website" | "open">("website");
@@ -809,6 +811,7 @@ function AdminPageInner() {
                   search={productSearch}
                   setSearch={setProductSearch}
                   onDelete={handleDeleteProduct}
+                  onDetail={setSelectedProductId}
                   loading={loading}
                 />
               )}
@@ -915,6 +918,9 @@ function AdminPageInner() {
           </AnimatePresence>
         </main>
       </div>
+
+      {/* Drawer detail produk — dibuka dari kartu katalog (tombol mata) */}
+      <ProductDetailDrawer productId={selectedProductId} onClose={() => setSelectedProductId(null)} />
 
       {/* Order Detail Modal */}
       <AnimatePresence>
