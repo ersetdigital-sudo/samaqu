@@ -1,9 +1,9 @@
 "use client";
 
 /**
- * Detail produk admin — "drawer modern" sesuai referensi desain pemilik:
- * panel gelap charcoal (#1b1e25) meluncur dari kanan, kartu stok/harga/statistik,
- * pill status, tag, dan tombol "Tutup" di bawah.
+ * Detail produk admin — drawer yang meluncur dari kanan berisi kartu stok/harga/
+ * statistik, pill status, tag, dan tombol "Tutup" di bawah. Warnanya mengikuti tema
+ * admin lain (putih + netral: #fff / #f5f5f5 / #e8e8e8 / #1c1c1c) supaya seragam.
  *
  * Satu komponen `ProductDetailPanel` dipakai dua tempat:
  *  - `ProductDetailDrawer` (default export) = panel meluncur dari kanan di atas
@@ -412,34 +412,34 @@ export default function ProductDetailDrawer({
 }
 
 const PD_CSS = `
-  /* Panel gelap ala referensi: charcoal #1b1e25, kartu #232730, teks #fff, muted #94a3b8 */
+  /* Palet sama dengan tema admin lain: latar/kartu putih, garis netral, teks #1c1c1c */
   .pd-overlay {
     position: fixed; inset: 0; z-index: 60;
     display: flex; justify-content: flex-end;
-    background: rgba(10,12,16,.55);
+    background: rgba(15,15,15,.4);
   }
   .pd-panel {
     width: 460px; max-width: 100%; height: 100%;
     display: flex;
-    box-shadow: -24px 0 60px -24px rgba(0,0,0,.65);
+    box-shadow: -24px 0 60px -24px rgba(0,0,0,.25);
   }
   .pd-root {
-    --pd-bg: #1b1e25; --pd-card: #232730; --pd-bd: #2f3540;
-    --pd-fg: #ffffff; --pd-muted: #94a3b8;
-    --pd-green: #22c55e; --pd-blue: #3b82f6; --pd-amber: #f59e0b;
+    --pd-bg: #ffffff; --pd-card: #ffffff; --pd-sub: #f5f5f5; --pd-bd: #e8e8e8;
+    --pd-fg: #1c1c1c; --pd-fg2: #5f5f5d; --pd-muted: #9a9a98;
+    --pd-green: #16a34a; --pd-blue: #2563eb; --pd-amber: #b45309;
     display: flex; flex-direction: column; flex: 1; min-width: 0;
     background: var(--pd-bg); color: var(--pd-fg);
   }
   .pd-root--drawer { height: 100%; }
   .pd-root--page {
-    border-radius: 18px; overflow: hidden;
+    border-radius: 16px; overflow: hidden;
     max-width: 560px; margin: 0 auto;
-    border: 1px solid #2f3540;
-    box-shadow: 0 24px 70px -30px rgba(0,0,0,.5);
+    border: 1px solid var(--pd-bd);
+    box-shadow: 0 1px 2px rgba(0,0,0,.04);
   }
   .pd-root--page .pd-body { overflow: visible; }
 
-  .pd-head { padding: 20px 22px 16px; border-bottom: 1px solid rgba(255,255,255,.07); }
+  .pd-head { padding: 20px 22px 16px; border-bottom: 1px solid var(--pd-bd); }
   .pd-head-top { display: flex; align-items: flex-start; gap: 12px; }
   .pd-title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
   .pd-title { font-size: 1.05rem; font-weight: 800; line-height: 1.25; margin: 0; color: var(--pd-fg); }
@@ -448,20 +448,21 @@ const PD_CSS = `
     margin-left: auto; flex-shrink: 0; padding: 6px; border-radius: 8px;
     background: transparent; border: 1px solid transparent; color: var(--pd-muted);
   }
-  .pd-x:hover { background: rgba(255,255,255,.07); color: var(--pd-fg); }
+  .pd-x:hover { background: var(--pd-sub); color: var(--pd-fg); }
 
   .pd-pill {
+    /* pill status — versi terang dari palet admin */
     font-size: .65rem; font-weight: 800; padding: .2rem .55rem;
     border-radius: 999px; white-space: nowrap;
   }
-  .pd-pill-amber { background: rgba(245,158,11,.16); color: var(--pd-amber); }
-  .pd-pill-green { background: rgba(34,197,94,.16); color: var(--pd-green); }
-  .pd-pill-red { background: rgba(239,68,68,.16); color: #f87171; }
+  .pd-pill-amber { background: rgba(245,158,11,.14); color: var(--pd-amber); }
+  .pd-pill-green { background: rgba(34,197,94,.14); color: var(--pd-green); }
+  .pd-pill-red { background: rgba(239,68,68,.12); color: #dc2626; }
 
   .pd-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
   .pd-tag {
     font-size: .65rem; font-weight: 700; padding: .22rem .55rem; border-radius: 6px;
-    background: rgba(59,130,246,.16); color: #93b4f8;
+    background: var(--pd-sub); border: 1px solid var(--pd-bd); color: var(--pd-fg2);
   }
 
   .pd-body {
@@ -475,7 +476,7 @@ const PD_CSS = `
   }
   .pd-spinner {
     width: 14px; height: 14px; border-radius: 999px;
-    border: 2px solid rgba(148,163,184,.3); border-top-color: var(--pd-green);
+    border: 2px solid rgba(0,0,0,.12); border-top-color: var(--pd-green);
     animation: pd-spin .7s linear infinite;
   }
   @keyframes pd-spin { to { transform: rotate(360deg); } }
@@ -495,7 +496,7 @@ const PD_CSS = `
   .pd-price-ico {
     width: 30px; height: 30px; border-radius: 999px;
     display: flex; align-items: center; justify-content: center;
-    background: rgba(34,197,94,.15); color: var(--pd-green);
+    background: rgba(34,197,94,.12); color: var(--pd-green);
   }
   .pd-label {
     margin: 10px 0 0; font-size: .62rem; font-weight: 800;
@@ -513,8 +514,8 @@ const PD_CSS = `
   .pd-section-title svg { color: var(--pd-muted); }
   .pd-row {
     display: flex; align-items: center; justify-content: space-between; gap: 12px;
-    padding: 7px 0; font-size: .78rem; font-weight: 600; color: var(--pd-muted);
-    border-top: 1px solid rgba(255,255,255,.06);
+    padding: 7px 0; font-size: .78rem; font-weight: 600; color: var(--pd-fg2);
+    border-top: 1px solid var(--pd-bd);
   }
   .pd-row:first-of-type { border-top: 0; }
   .pd-row strong { color: var(--pd-fg); font-weight: 800; }
@@ -528,43 +529,43 @@ const PD_CSS = `
     font-size: .68rem; font-weight: 700; padding: .3rem .6rem; border-radius: 999px;
     background: transparent; border: 1px solid var(--pd-bd); color: var(--pd-muted);
   }
-  .pd-tab.is-on { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.25); color: var(--pd-fg); }
+  .pd-tab.is-on { background: var(--pd-fg); border-color: var(--pd-fg); color: #ffffff; }
   .pd-dot { width: 8px; height: 8px; border-radius: 999px; flex-shrink: 0; }
 
   .pd-list { display: flex; flex-direction: column; }
   .pd-list-row {
     display: flex; align-items: center; justify-content: space-between; gap: 10px;
-    padding: 9px 0; border-top: 1px solid rgba(255,255,255,.06);
+    padding: 9px 0; border-top: 1px solid var(--pd-bd);
   }
   .pd-list-row:first-child { border-top: 0; }
   .pd-item-main { margin: 0; font-size: .8rem; font-weight: 700; color: var(--pd-fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .pd-item-sub { margin: 2px 0 0; font-size: .68rem; font-weight: 600; color: var(--pd-muted); }
+  .pd-item-sub { margin: 2px 0 0; font-size: .68rem; font-weight: 600; color: var(--pd-fg2); }
   .pd-item-right { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; flex-shrink: 0; }
   .pd-item-qty { font-size: .72rem; font-weight: 800; color: var(--pd-fg); white-space: nowrap; }
   .pd-mini { font-size: .6rem; font-weight: 800; padding: .12rem .4rem; border-radius: 999px; white-space: nowrap; }
   .pd-mini-green { background: rgba(34,197,94,.15); color: var(--pd-green); }
   .pd-mini-amber { background: rgba(245,158,11,.16); color: var(--pd-amber); }
-  .pd-mini-red { background: rgba(239,68,68,.16); color: #f87171; }
-  .pd-mini-muted { background: rgba(255,255,255,.07); color: var(--pd-muted); }
-  .pd-empty { margin: 0; font-size: .74rem; font-weight: 600; color: var(--pd-muted); }
+  .pd-mini-red { background: rgba(239,68,68,.12); color: #dc2626; }
+  .pd-mini-muted { background: var(--pd-sub); color: var(--pd-fg2); }
+  .pd-empty { margin: 0; font-size: .74rem; font-weight: 600; color: var(--pd-fg2); }
 
   .pd-media { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-  .pd-media-item { aspect-ratio: 1 / 1; border-radius: 9px; overflow: hidden; background: #2b303b; }
+  .pd-media-item { aspect-ratio: 1 / 1; border-radius: 9px; overflow: hidden; background: var(--pd-sub); border: 1px solid var(--pd-bd); }
   .pd-media-item img, .pd-media-item video { width: 100%; height: 100%; object-fit: cover; display: block; }
 
   .pd-foot {
     display: flex; align-items: center; gap: 10px;
-    padding: 14px 22px; border-top: 1px solid rgba(255,255,255,.07);
+    padding: 14px 22px; border-top: 1px solid var(--pd-bd);
   }
   .pd-edit {
     display: inline-flex; align-items: center; justify-content: center; gap: 6px;
     padding: 11px 16px; border-radius: 12px; font-size: .8rem; font-weight: 800;
     background: transparent; border: 1px solid var(--pd-bd); color: var(--pd-fg); text-decoration: none;
   }
-  .pd-edit:hover { background: rgba(255,255,255,.07); }
+  .pd-edit:hover { background: var(--pd-sub); }
   .pd-close {
     flex: 1; padding: 12px 16px; border-radius: 12px; border: 0;
-    background: #f8fafc; color: #1b1e25; font-size: .84rem; font-weight: 800;
+    background: var(--pd-fg); color: #ffffff; font-size: .84rem; font-weight: 800;
   }
-  .pd-close:hover { background: #ffffff; }
+  .pd-close:hover { background: #0f0f0f; }
 `;
