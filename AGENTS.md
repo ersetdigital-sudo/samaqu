@@ -361,15 +361,18 @@ Page presentation (not obvious from the code):
   untuk thumbnail (object-fit contain, tanpa bingkai). Perubahan lain pada panel Pesanan tetap harus
   dikerjakan di kedua file.
   **Di bawah breakpoint `lg` daftar pesanan tidak memakai tabel**: kedua dashboard merender
-  `src/components/admin/OrdersMobileList.tsx` — kartu berisi nomor pesanan · pill status · nama
-  pelanggan · `tanggal · total`, dan bila prop `onSelect` diberi kartunya jadi tombol yang membuka
-  drawer detail (dengan chevron); tanpa `onSelect` kartunya statis. Komponen itu menyembunyikan
-  dirinya sendiri di `lg` (`lg:hidden`), sedangkan `<table>`-nya tetap di dalam pembungkus
-  `overflow-x-auto` yang sama dan cukup diberi `hidden lg:table` — jangan menambah pembungkus kedua
-  (dua root elemen di dalam ternary `{loading ? … : ( … )}` menghasilkan parse error JSX
-  "Expected '</', got 'ident'"). Baris "Pesanan Terbaru" di dashboard memakai komponen yang sama
-  (5 baris pertama, tanpa `onSelect`) dan baris chip filter pesanan memakai `flex-wrap` supaya
-  "Selesai" tidak terpotong di layar ~370 px.
+  `src/components/admin/OrdersMobileList.tsx` — kartu ala Shopee: nomor pesanan + **pill tahap**
+  (dihitung sendiri oleh komponen dari `src/lib/order-flow.ts`, bukan prop `renderStatus` yang dulu),
+  nama pelanggan, `tanggal · total`, lalu **baris pengiriman** (ikon truk + kurir + nomor resi;
+  "Resi belum dibuat" disorot oranye untuk tahap Perlu Dikirim). Badan kartunya jadi tombol yang
+  membuka drawer detail (dengan chevron) bila prop `onSelect` diberi, dan **tombol aksi
+  kontekstual** dirender di baris bawah kartu lewat prop `renderActions` (pengganti `renderStatus`);
+  tanpa prop itu kartunya statis. Komponen itu menyembunyikan dirinya sendiri di `lg` (`lg:hidden`),
+  sedangkan `<table>`-nya tetap di dalam pembungkus `overflow-x-auto` yang sama dan cukup diberi
+  `hidden lg:table` — jangan menambah pembungkus kedua (dua root elemen di dalam ternary
+  `{loading ? … : ( … )}` menghasilkan parse error JSX "Expected '</', got 'ident'"). Tombol aksi
+  berada **di luar** tombol badan kartu (button bersarang = HTML tidak sah), dan baris tab tahap
+  memakai `flex-wrap` supaya "Dibatalkan" tidak terpotong di layar ~370 px.
   **Tata letak drawer detail di mobile** (permintaan pemilik: "kurang rapih, bikin lebih responsif",
   lalu "pastikan responsif di mobile"): `ODR_CSS` membuat drawer selebar penuh di bawah 768 px
   (header lebih rapat, `padding:14px 16px`) — breakpoint-nya sengaja sama (768 px) dengan breakpoint
@@ -751,6 +754,62 @@ saja (`produk/edit/[id]` masih salinan terpisah dan **tidak** ikut berubah).
   bernilai sama + Simpan/Batal, Batal kembali ke read-only, kartu J&T tidak ada lagi, dan panel
   Pelanggan memuat (59 pelanggan, 4 kartu ringkasan) tanpa error.
 
+## Daftar pesanan ala Shopee Seller Centre (panel Order Management)
+
+Permintaan pemilik (2026-10-11): "rapihkan flow orderan management broo . pengen setara ecommerce
+shopee seller jgn rusak logic nya broo" — daftar pesanan ditata menurut **langkah kerja penjual**,
+tanpa menyentuh status ataupun logika database sama sekali.
+
+- **Satu modul tahap**: `src/lib/order-flow.ts` (murni, tanpa React) → `orderStage(order)`
+  (`belum_bayar` / `perlu_dikirim` / `dikirim` / `selesai` / `dibatalkan`), `ORDER_STAGE_LABEL`,
+  `ORDER_STAGE_TABS`, `ORDER_STAGE_STYLE`, `matchesStage()`, `stageNeedsAdminAction()`, dan
+  `shippingLine()`. **Pemetaannya**: `pending` → Belum Bayar; `diproses` **tanpa resi** → Perlu
+  Dikirim; `diproses`/`dikirim` **ber-resi** → Dikirim; `selesai`/`dibatalkan` apa adanya. Tidak ada
+  status baru yang ditulis ke `orders` dan tidak ada query yang berubah — penamaan + pengelompokan
+  lapisan tampilan saja. **Jangan** jadikan tahap ini nilai `status` di database.
+- **Satu panel**: seluruh alur panel Pesanan (tab sumber, kotak cari, tab tahap, daftar, tabel)
+  pindah dari `src/app/admin/page.tsx` ke **`src/components/admin/OrdersView.tsx`** (file `page.tsx`
+  sudah ~1000 baris). Kedua dashboard tetap ikut otomatis karena `/id/admin` cuma
+  `export { default } from "@/app/admin/page"`. Props: `orders`, `onSelect(row)`,
+  `onArrangeOrder(row)`. Halaman admin menyerahkan `arrangeOrder` (konfirmasi `ConfirmModal` +
+  `PATCH action: "createJnt"`, **tetap digerbangi `diproses` di server**) dan mencari ulang pesanan
+  lengkapnya lewat `id` saat baris diklik, jadi `selectedOrder` tetap objek dari state `orders` dan
+  drawer + chip status bekerja persis seperti sebelumnya. `arrangeOrder` kini bertipe
+  `{ order_number: string }` — hanya field itu yang dipakainya.
+- **Aksi per baris (inti "setara Shopee")**: `OrdersView.rowAction()` menaruh tombol utama di tiap
+  baris — Perlu Dikirim → **Atur Pesanan** (tombol utama; dialognya sama, jadi admin tidak perlu
+  buka drawer), Dikirim ber-resi → **Cetak Label** (`/admin/label/<order_number>`, tab baru), Belum
+  Bayar → **Hubungi Pembeli** (`wa.me`), Selesai/Dibatalkan → tanpa aksi. Sel aksi tabel dibungkus
+  `onClick={(e) => e.stopPropagation()}` supaya klik tombol tidak ikut membuka drawer barisnya.
+  **Jangan** mengubah gerbang "Atur Pesanan" di `OrderDetailContent` (masih `status === "diproses"`):
+  `orderStage` hanya memberi tahu keadaan pesanan, bukan menggantikan gerbangnya.
+- **Kolom "Pengiriman" (tabel) + baris pengiriman (kartu)** memakai `shippingLine()`: kurir (mis.
+  "J&T - EZ") + nomor resi, atau **"Resi belum dibuat"** (oranye, `awaiting`) untuk tahap Perlu
+  Dikirim, dan "Tanpa resi" untuk pesanan yang memang tidak pernah ber-resi (banyak `selesai` lama).
+  Tabel minimumnya naik `720px` → `860px` (tujuh kolom) dan tetap di dalam pembungkus
+  `overflow-x-auto` yang sama.
+- **Warna pill tahap** ada di `ORDER_STAGE_STYLE` (Belum Bayar amber, Perlu Dikirim oranye
+  `#fff7ed`/`#c2410c`, Dikirim biru, Selesai hijau, Dibatalkan abu). Tab "Perlu Dikirim" disorot
+  oranye selama jumlahnya > 0 (`stageNeedsAdminAction`) — pengingat pesanan yang menunggu resi.
+  `StatusBadge` + helper `statusLabel`/`money` di `page.tsx` sudah dihapus (digantikan `StageBadge`
+  + helper di `OrdersView`), tetapi kelas `badge` (CSS admin) masih dipakai di sidebar & kartu.
+- **Verifikasi (2026-10-11, sesi admin diputar ulang, 768 px + desktop)**: `tsc --noEmit` bersih;
+  `curl /admin` & `/id/admin` = `200`; tab berbunyi `Semua (35) · Belum Bayar (1) · Perlu Dikirim (2)
+  · Dikirim (0) · Selesai (22) · Dibatalkan (10)`; 35 kartu dengan pill tahap + baris pengiriman;
+  klik tab **Perlu Dikirim** → 2 baris, semuanya "Perlu Dikirim" + "Resi belum dibuat"; klik **Atur
+  Pesanan** di baris → dialog "Atur Pesanan?" muncul, **0** request `/api/admin/orders` selama dialog
+  terbuka (tidak ada resi J&T asli yang terbit), lalu **Batal** menutup dialog; di desktop tabel
+  menampilkan kolom `ID · Pelanggan · Tanggal · Total · Pengiriman · Status · Aksi` dengan baris
+  `… J&T - EZ / Resi belum dibuat / Perlu Dikirim / Atur Pesanan / Detail`; tidak ada scroll samping
+  di kedua lebar; tanpa error console. **Belum** terbukti end-to-end: menekan **konfirmasi** "Atur
+  Pesanan" (kredensial J&T toko production — akan menerbitkan pengiriman asli), serta tautan **Cetak
+  Label**/**Hubungi Pembeli** (tautan keluar, tidak diklik).
+- **Catatan tool preview**: `preview_screenshot({path:'/admin'})` hanya melakukan kunjungan penuh
+  kalau halaman preview baru saja di-reset (perintah shell/edit sebelumnya) — kalau dipanggil di
+  tengah turn ia mencoba SPA nav dan gagal (`navigation_failed`, URL berubah tapi konten tetap).
+  Jadi: **jalankan perintah shell dulu**, baru `preview_screenshot({path:'/admin'})`, lalu
+  `preview_execute_code` tanpa shell/edit di antaranya.
+
 ## "Atur Pesanan" — resi J&T diterbitkan admin (ala Shopee Seller Centre)
 
 Permintaan pemilik (2026-10-11): alur pengiriman disamakan dengan Shopee Seller — resi/AWB J&T
@@ -818,13 +877,14 @@ ber-resi) — kondisi `order.status === "diproses"` yang menutupnya.
 Permintaan pemilik (2026-10-11): "di detail tambahin tombol Lacak", "ketika paket sudah diterima
 otomatis statusnya selesai sendiri", plus chip filter "dibatalkan" di panel Pesanan.
 
-- **Chip filter**: baris chip di `src/app/admin/page.tsx` kini
-  `["Semua","pending","diproses","selesai","dibatalkan"]` (satu sumber untuk `/admin` dan
-  `/id/admin`). Chip tetap `flex-wrap`, jadi lima chip tidak memotong "Selesai" di ~370 px.
-  Setiap chip menampilkan **jumlahnya** (`Pending (3)`) dan **judul daftar ikut filter aktif**
-  ("Semua Pesanan" → "Pesanan Diproses"; tab Open Order → "Open Order Diproses"). Angkanya dari
-  `statusCounts` yang dihitung atas `searchedOrders` (tab yang aktif **setelah** kotak cari), jadi
-  selalu cocok dengan baris di bawahnya — bukan query terpisah.
+- **Tab tahap** (dulu chips status mentah `["Semua","pending","diproses","selesai","dibatalkan"]`,
+  kini di `src/components/admin/OrdersView.tsx`): `ORDER_STAGE_TABS` di `src/lib/order-flow.ts` —
+  Semua · Belum Bayar · Perlu Dikirim · Dikirim · Selesai · Dibatalkan. Satu sumber untuk `/admin`
+  dan `/id/admin`. Barisnya tetap `flex-wrap`, jadi enam tab tidak memotong apa pun di ~370 px.
+  Setiap tab menampilkan **jumlahnya** (`Perlu Dikirim (2)`) dan **judul daftar ikut tab aktif**
+  ("Semua Pesanan" → "Pesanan Perlu Dikirim"; tab Open Order → "Open Order Selesai"). Angkanya dari
+  `stageCounts` yang dihitung atas `searchedOrders` (tab sumber yang aktif **setelah** kotak cari),
+  jadi selalu cocok dengan baris di bawahnya — bukan query terpisah.
 - **Kotak cari pesanan** (permintaan pemilik 2026-10-11: "di menu management order tambahin search
   biar enak, bikin yg modern"): state `orderSearch` + kotak di bawah baris judul/chip, mencocokkan
   `order_number`, `customer_name`, `customer_email`, dan `customer_whatsapp` (substring,
