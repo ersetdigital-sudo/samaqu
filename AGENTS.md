@@ -313,6 +313,16 @@ Page presentation (not obvious from the code):
   panggilan `/api/jnt/track`. `order_items` di query kedua dashboard menyertakan `product_image`
   untuk thumbnail (object-fit contain, tanpa bingkai). Perubahan lain pada panel Pesanan tetap harus
   dikerjakan di kedua file.
+  **Di bawah breakpoint `lg` daftar pesanan tidak memakai tabel**: kedua dashboard merender
+  `src/components/admin/OrdersMobileList.tsx` — kartu berisi nomor pesanan · pill status · nama
+  pelanggan · `tanggal · total`, dan bila prop `onSelect` diberi kartunya jadi tombol yang membuka
+  modal detail (dengan chevron); tanpa `onSelect` kartunya statis. Komponen itu menyembunyikan
+  dirinya sendiri di `lg` (`lg:hidden`), sedangkan `<table>`-nya tetap di dalam pembungkus
+  `overflow-x-auto` yang sama dan cukup diberi `hidden lg:table` — jangan menambah pembungkus kedua
+  (dua root elemen di dalam ternary `{loading ? … : ( … )}` menghasilkan parse error JSX
+  "Expected '</', got 'ident'"). Baris "Pesanan Terbaru" di dashboard memakai komponen yang sama
+  (5 baris pertama, tanpa `onSelect`) dan baris chip filter pesanan memakai `flex-wrap` supaya
+  "Selesai" tidak terpotong di layar ~370 px.
 - **Dashboard akun** (`/[locale]/akun`, `src/app/[locale]/akun/page.tsx`) ditata ulang untuk mobile:
   baris "Pesanan Terakhir" = satu baris atas (thumbnail, nama pesanan + `#nomor · tanggal` yang
   dipotong `truncate` satu baris, chevron rata tengah) lalu satu baris penuh di bawahnya berisi
