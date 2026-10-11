@@ -361,15 +361,18 @@ Page presentation (not obvious from the code):
   untuk thumbnail (object-fit contain, tanpa bingkai). Perubahan lain pada panel Pesanan tetap harus
   dikerjakan di kedua file.
   **Di bawah breakpoint `lg` daftar pesanan tidak memakai tabel**: kedua dashboard merender
-  `src/components/admin/OrdersMobileList.tsx` — kartu berisi nomor pesanan · pill status · nama
-  pelanggan · `tanggal · total`, dan bila prop `onSelect` diberi kartunya jadi tombol yang membuka
-  drawer detail (dengan chevron); tanpa `onSelect` kartunya statis. Komponen itu menyembunyikan
-  dirinya sendiri di `lg` (`lg:hidden`), sedangkan `<table>`-nya tetap di dalam pembungkus
-  `overflow-x-auto` yang sama dan cukup diberi `hidden lg:table` — jangan menambah pembungkus kedua
-  (dua root elemen di dalam ternary `{loading ? … : ( … )}` menghasilkan parse error JSX
-  "Expected '</', got 'ident'"). Baris "Pesanan Terbaru" di dashboard memakai komponen yang sama
-  (5 baris pertama, tanpa `onSelect`) dan baris chip filter pesanan memakai `flex-wrap` supaya
-  "Selesai" tidak terpotong di layar ~370 px.
+  `src/components/admin/OrdersMobileList.tsx` — kartu ala Shopee: nomor pesanan + **pill tahap**
+  (dihitung sendiri oleh komponen dari `src/lib/order-flow.ts`, bukan prop `renderStatus` yang dulu),
+  nama pelanggan, `tanggal · total`, lalu **baris pengiriman** (ikon truk + kurir + nomor resi;
+  "Resi belum dibuat" disorot oranye untuk tahap Perlu Dikirim). Badan kartunya jadi tombol yang
+  membuka drawer detail (dengan chevron) bila prop `onSelect` diberi; kartunya **tanpa tombol
+  aksi** — prop `renderActions` (dan `renderStatus` sebelumnya) sudah dihapus, karena semua aksi
+  pesanan hanya boleh ada di drawer detail (lihat "Aksi hanya di drawer detail" di bawah). Komponen itu menyembunyikan dirinya sendiri di `lg` (`lg:hidden`),
+  sedangkan `<table>`-nya tetap di dalam pembungkus `overflow-x-auto` yang sama dan cukup diberi
+  `hidden lg:table` — jangan menambah pembungkus kedua (dua root elemen di dalam ternary
+  `{loading ? … : ( … )}` menghasilkan parse error JSX "Expected '</', got 'ident'"). Tombol aksi
+  berada **di luar** tombol badan kartu (button bersarang = HTML tidak sah), dan baris tab tahap
+  memakai `flex-wrap` supaya "Dibatalkan" tidak terpotong di layar ~370 px.
   **Tata letak drawer detail di mobile** (permintaan pemilik: "kurang rapih, bikin lebih responsif",
   lalu "pastikan responsif di mobile"): `ODR_CSS` membuat drawer selebar penuh di bawah 768 px
   (header lebih rapat, `padding:14px 16px`) — breakpoint-nya sengaja sama (768 px) dengan breakpoint
@@ -437,11 +440,36 @@ Page presentation (not obvious from the code):
   Halaman Garansi &amp; Retur), dan **Lainnya** (Voucher · Pengaturan). Grup "Biolink" lama
   dibubarkan — Biolink/Foto Carousel pindah ke "Konten", dan "Open Order" naik tepat di bawah
   "Order Management". Di dashboard `navGroups` sekarang menyatukan item panel (`panel: Panel`) dan
-  item halaman (`href: string`) — pakai pola itu saat menambah menu. Verifikasi tanpa browser:
+  item halaman (`href: string`) — pakai pola itu saat menambah menu.
+  Sejak 2026-10-11 item panel di **`AdminShell`** mengarah ke **`/admin?panel=<panel>`** (Dashboard
+  tetap `/admin` polos), dan `src/app/admin/page.tsx` membaca `?panel=` sekali saat mount untuk
+  memilih panel awalnya — dulu keempat item itu semuanya menuju `/admin` polos, jadi klik "Order
+  Management" dari subhalaman admin selalu mendarat di Dashboard lebih dulu. Panel baru di sidebar
+  subhalaman: tulis href-nya dengan pola `?panel=` itu (urutan & grup tetap harus sama dengan
+  sidebar dashboard). Verifikasi tanpa browser:
   `curl -s http://localhost:3000/admin/open-order | grep -o 'href="/admin[^"]*"'` harus sama
   urutannya dengan sidebar dashboard (yang di-SSR spinner, jadi bandingkan dengan sumber `page.tsx`).
   Admin memilih **tanggal mulai + tanggal tutup** (`<input type="date">`) dan **series yang dibuka**
   (chip multi-pilih dari katalog); tidak ada lagi toggle buka/tutup manual.
+  Halaman ini memakai pola kartu **Pengaturan** (`SettingsCard`): default **read-only** — tanggal
+  tampil sebagai teks ("8 Agustus 2026", atau "Belum diatur"), chip series jadi label `<span>`
+  (bukan `<button>`), footer hanya tombol **Edit** — lalu klik **Edit** membuat tanggal jadi input
+  dan chip bisa diklik, footer berganti **Simpan + Batal** dan kembali read-only setelah simpan
+  berhasil (`original` = nilai tersimpan, dasar Batal + penanda `dirty`; Simpan nonaktif selama
+  tidak ada perubahan). Permintaan pemilik 2026-10-11: "button simpan nya harusnya jadi edit gitu
+  bro, soalnya kan udah di simpan, bikin kaya yg di pengaturan".
+  Tombol **"Buka semua series"** kini benar-benar **memilih semua chip** (`setSeries([...allSeries])`),
+  hanya tampil selama belum semua terpilih (`series.length < allSeries.length`) **dan** hanya di
+  mode Edit (chip-nya sendiri juga tidak bisa diubah di mode read-only). Sebelumnya
+  tombol itu **mengosongkan** pilihan (`setSeries([])`) — secara semantik sama-sama "semua series
+  dibuka" (array kosong = semua, lihat `restrictOpenOrderProducts`), tapi chip-nya jadi terlihat
+  ter-uncheck dan pemilik melaporkannya sebagai bug ("pas gue klik buka semua series malah jadi ke
+  un centang"). Nilai kosong tetap berarti "semua series" di database, jadi jangan ubah arti itu —
+  cukup jangan lagi memakai tombol ini untuk mengosongkan. Verifikasi (sesi admin diputar ulang,
+  halaman admin harus dibuka lewat kunjungan penuh `preview_screenshot({path:'/admin/open-order'})`
+  dulu): lepas satu chip (mis. Jiharkah) → ringkasan "5 series dibuka …" + tombol muncul → klik
+  tombol → enam `aria-pressed="true"` + "6 series dibuka: …" dan tombolnya hilang lagi, tanpa error
+  console (tanpa menekan Simpan, jadi tidak ada perubahan tersimpan).
 - Aturan jendela ada di **satu** modul, `src/lib/open-order-window.ts` — dipakai halaman admin
   *dan* publik: `resolveOpenOrderState()` (`before` / `open` / `closed`, dibandingkan sebagai teks
   `YYYY-MM-DD` lokal, bukan objek `Date`, supaya tidak bergeser zona waktu),
@@ -548,20 +576,38 @@ Yang tidak kelihatan dari kode:
   persis dengan `created_at`, termasuk pesanan yang sudah `dibatalkan`/`diproses`/`selesai`. Dulu
   langkah "Pesanan dibatalkan" menampilkan `updated_at` apa adanya, jadi jamnya selalu menyalin jam
   pesanan dibuat (pemilik melihat "dibuat 13:38, dibatalkan 13:38" pada pesanan yang batalnya
-  belakangan). Sekarang:
-  - ketiga jalur pembatalan (dan update status lain) **menulis `updated_at` sendiri** —
-    `PATCH /api/admin/orders` (action `cancelJnt` **dan** update status biasa), `POST
-    /api/orders/cancel`, dan `GET /api/cron/auto-cancel`; `Order`/`AdminDetailOrder` di
-    `src/app/admin/page.tsx` + `src/components/admin/OrderDetailContent.tsx` ikut membawa field itu,
-    dan `RincianPesanan.tsx` menyuntik jam lokal saat customer membatalkan dari halaman pesanan;
-  - `waktuBatal()` mengembalikan **"Dibatalkan" tanpa jam** kalau `updated_at` masih sama dengan
-    `created_at` (baris lama, jamnya tidak bisa dipercaya) dan jam aslinya kalau berbeda.
-  Jam pembatalan **tidak bisa dipulihkan** untuk pesanan yang dibatalkan sebelum perubahan ini;
-  kalau nanti ada jalur DDL (SQL Editor Supabase), kolom `cancelled_at timestamptz` jelas lebih
-  benar daripada menumpang `updated_at`. Verifikasi: pesanan uji buatan sendiri (insert REST) →
-  `PATCH` status `dibatalkan` → `updated_at` > `created_at` (terbukti, +29 detik), di drawer timeline
-  bertambah langkah "Pesanan dibatalkan" berjam valid, sedangkan `SMQ-20261010-364` (lama) hanya
-  menampilkan "Dibatalkan"; hapus pesanan uji lewat `DELETE /api/admin/orders` setelahnya.
+  belakangan). Sekarang jam batalnya punya kolom sendiri:
+  - **`orders.cancelled_at`** = jam batal yang akurat, dibuat lewat
+    **`supabase/migrations/20261011_order_cancelled_at.sql`** yang dijalankan manual di SQL Editor
+    Supabase (sandbox tidak punya jalur DDL). **Belum dijalankan** (dicek 2026-10-11: select
+    `id,cancelled_at` → `400` `42703`), jadi selama belum dijalankan linimasa masih memakai
+    `updated_at` seperti sebelumnya. File itu sekaligus mem-backfill `cancelled_at = updated_at`
+    untuk pesanan `dibatalkan` yang `updated_at` ≠ `created_at` — nilai yang selama ini sudah
+    dipakai `waktuBatal`; baris dengan `updated_at` = `created_at` dibiarkan NULL karena jam
+    batalnya memang tidak pernah tersimpan.
+  - `cancelOrderCompletely()` (`src/lib/cancel-order.ts`) — satu jalur untuk `PATCH
+    /api/admin/orders` (action `cancelJnt` **dan** chip status `dibatalkan`), `POST
+    /api/orders/cancel`, dan `GET /api/cron/auto-cancel` — menulis `status`, `cancelled_at`, dan
+    `updated_at` sekaligus. Selama kolomnya belum ada, update **diulang tanpa `cancelled_at`**
+    (`error.message` memuat nama kolomnya) supaya pembatalan tetap jalan — jangan hapus fallback
+    itu sebelum SQL-nya dijalankan.
+  - `waktuBatal()` memakai `cancelled_at` kalau ada (jam pasti, tampil polos); kalau tidak,
+    `updated_at` yang berbeda dari `created_at` (jam sebenarnya sejak ketiga jalur pembatalan
+    menulis kolom itu), dan jam terakhir yang tersimpan **dengan penanda `(perkiraan)`** kalau
+    `updated_at` masih sama dengan `created_at`. Penandanya wajib: pemilik dua kali melaporkan
+    masalah ini — pertama "dibuat 13:38, dibatalkan 13:38" (jam salinan tampil polos), lalu "kok
+    ngga ada jam sama tgl" setelah jamnya disembunyikan — jadi jamnya tetap terlihat, tapi tidak
+    boleh terbaca sebagai jam pasti.
+  - `Order`/`AdminDetailOrder`/`RincianOrder` (`src/app/admin/page.tsx`,
+    `src/components/admin/OrderDetailContent.tsx`, `src/components/akun/RincianPesanan.tsx`) ikut
+    membawa `cancelled_at`; baris admin yang baru dibatalkan menimpanya lokal, dan
+    `RincianPesanan.tsx` menyuntik jam lokal saat customer membatalkan dari halaman pesanan;
+  Verifikasi: pesanan uji buatan sendiri (insert REST) → dibatalkan lewat chip "Ubah Status" di
+  drawer admin → `updated_at` > `created_at` dan timeline menampilkan jam valid tanpa `(perkiraan)`,
+  sedangkan pesanan lama (mis. `SMQ-20261009-386`) menampilkan `9 Okt 2026 • 16:53 (perkiraan)`;
+  hapus pesanan uji setelahnya. Cek kolomnya: `curl -s -o /dev/null -w '%{http_code}\n'
+  "$NEXT_PUBLIC_SUPABASE_URL/rest/v1/orders?select=id,cancelled_at&limit=1" -H "apikey:
+  $SUPABASE_SERVICE_ROLE_KEY"` → `200` = SQL sudah dijalankan, `400` = belum (perilaku lama).
 - Label pill ikut disamakan dengan admin: `pending` = **"Menunggu Pembayaran"** (dipakai daftar
   pesanan, dashboard akun, banner struk, dan modal admin), `dibatalkan` pakai `akun-pill-batal` (merah). Dipakai bersama oleh `/akun` (dashboard),
   list pesanan, dan detail — ubah di `src/lib/akun-format.ts` saja.
@@ -614,6 +660,13 @@ pemilik "drawer modern", mengikuti referensi desain yang dikirim). Dipakai di **
   merender `ProductDetailPanel` dengan `mode="page"` (lembar terpusat, gaya sama) — jadi tidak ada
   dua tampilan detail yang berbeda. Ubah tampilan detail → ubah komponen itu saja.
 
+**Warna `"default"` jangan ditampilkan**: produk satu warna (semua baris `Thobe …`) menyimpan
+`product_variants.color = "default"`, jadi baris varian dan judul blok Media harus menampilkannya
+sebagai "Semua" / tanpa nama warna — bukan nilai mentahnya (`default · XS`, `Media (default)`).
+Konvensi ini sudah dipakai di blok Riwayat Pesanan (`item.color === "default" ? "" : …`) dan
+drawer pesanan; ikuti pola itu. Catatan: kolom `product_variants.series` **tidak ada** di database
+ini (`42703`), jadi cabang "Varian Series" tidak pernah aktif dari klien.
+
 Angka drawer semuanya dari data asli: stok & SKU dari `product_variants`, harga dari `products`
 (harga minimum bila Create Your Price aktif), penjualan dari `order_items`. Skema **tidak** punya
 "stok awal"/"total masuk"/"profit", jadi baris statistiknya memakai angka nyata (Total Pesanan,
@@ -656,6 +709,12 @@ saja (`produk/edit/[id]` masih salinan terpisah dan **tidak** ikut berubah).
   kolom (`84px 84px 1fr 1fr 34px`) di `sm+`. Kelasnya `pf-size-*` di string CSS form.
 - Baris field dibuat konsisten dua kolom (`grid sm:grid-cols-2 gap-4`): Nama/Kategori, Slug/SKU
   Produk, Harga Dasar (non-Thobe)/Berat.
+- **Chip warna & tombol hapusnya**: chip pemilih warna adalah `<button>` untuk mengaktifkan
+  warna, sedangkan kontrol hapus (X) di dalamnya memakai **`<span role="button" tabIndex={0}>`**
+  dengan `onClick`/`onKeyDown`, **bukan** `<button>` — tombol di dalam tombol membuat React
+  melaporkan `In HTML, <button> cannot be a descendant of <button>` (hydration error) dan
+  men-gagalkan hidrasi seluruh halaman. Salinan `produk/edit/[id]` (kedua prefix locale) memakai
+  pola yang sama, jadi perbaiki di ketiga tempat.
 - Verifikasi: `tsc --noEmit` bersih + `curl /admin/produk/tambah` & `/id/admin/produk/tambah` = `200`
   (HTML SSR-nya memuat field "SKU Produk"). **Tidak bisa lewat preview** (route admin tidak bisa
   dicapai navigasi SPA, dan full page load di-reset ke route home di panggilan berikutnya) — jadi
@@ -751,6 +810,82 @@ saja (`produk/edit/[id]` masih salinan terpisah dan **tidak** ikut berubah).
   bernilai sama + Simpan/Batal, Batal kembali ke read-only, kartu J&T tidak ada lagi, dan panel
   Pelanggan memuat (59 pelanggan, 4 kartu ringkasan) tanpa error.
 
+## Daftar pesanan ala Shopee Seller Centre (panel Order Management)
+
+Permintaan pemilik (2026-10-11): "rapihkan flow orderan management broo . pengen setara ecommerce
+shopee seller jgn rusak logic nya broo" — daftar pesanan ditata menurut **langkah kerja penjual**,
+tanpa menyentuh status ataupun logika database sama sekali.
+
+- **Satu modul tahap**: `src/lib/order-flow.ts` (murni, tanpa React) → `orderStage(order)`
+  (`belum_bayar` / `perlu_dikirim` / `dikirim` / `selesai` / `dibatalkan`), `ORDER_STAGE_LABEL`,
+  `ORDER_STAGE_TABS`, `ORDER_STAGE_STYLE`, `matchesStage()`, `stageNeedsAdminAction()`, dan
+  `shippingLine()`. **Pemetaannya**: `pending` → Belum Bayar; `diproses` **tanpa resi** → Perlu
+  Dikirim; `diproses`/`dikirim` **ber-resi** → Dikirim; `selesai`/`dibatalkan` apa adanya. Tidak ada
+  status baru yang ditulis ke `orders` dan tidak ada query yang berubah — penamaan + pengelompokan
+  lapisan tampilan saja. **Jangan** jadikan tahap ini nilai `status` di database.
+- **Satu panel**: seluruh alur panel Pesanan (tab sumber, kotak cari, tab tahap, daftar, tabel)
+  pindah dari `src/app/admin/page.tsx` ke **`src/components/admin/OrdersView.tsx`** (file `page.tsx`
+  sudah ~1000 baris). Kedua dashboard tetap ikut otomatis karena `/id/admin` cuma
+  `export { default } from "@/app/admin/page"`. Props tinggal `orders` + `onSelect(row)`: halaman
+  admin mencari ulang pesanan lengkapnya lewat `id` saat baris diklik, jadi `selectedOrder` tetap
+  objek dari state `orders` dan drawer + chip status bekerja persis seperti sebelumnya. Prop
+  `onArrangeOrder` **sudah dihapus** (aksi pesanan hanya ada di drawer detail — lihat "Aksi hanya di
+  drawer detail"); `arrangeOrder` (konfirmasi `ConfirmModal` + `PATCH action: "createJnt"`, **tetap
+  digerbangi `diproses` di server**) sekarang hanya dipakai `OrderDetailDrawer`, bertipe
+  `{ order_number: string }` — hanya field itu yang dipakainya.
+- **Aksi hanya di drawer detail** (permintaan pemilik 2026-10-11: "tabel nya jadi berantakan ini
+  broo harus nya atur pesanan hubungi pembeli di detail aja bro, rapihin juga tabel yg di open
+  order"): tombol per baris yang dulu ditulis `OrdersView.rowAction()` (**Atur Pesanan** saat Perlu
+  Dikirim, **Cetak Label** saat Dikirim ber-resi, **Hubungi Pembeli** saat Belum Bayar) sudah
+  **dihapus** bersama helper `waLink()`-nya — daftar pesanan kini cuma menyaring, menampilkan, dan
+  membuka detail. Satu-satunya tombol di baris adalah **Detail** (di bawah `lg` seluruh kartunya jadi
+  tombol), dan `onClick={(e) => { e.stopPropagation(); onSelect(o); }}` menjaga klik tombol tidak ikut
+  memanggil handler barisnya. Semua aksi itu tetap lengkap di `OrderDetailContent` (drawer), jadi
+  **jangan** menambahkan tombol aksi ke `OrdersView`/`OrdersMobileList` lagi tanpa permintaan baru —
+  kolom aksi yang berisi dua tombol itulah yang membuat tabelnya berantakan. **Jangan** mengubah
+  gerbang "Atur Pesanan" di `OrderDetailContent` (masih `status === "diproses"`): `orderStage` hanya
+  memberi tahu keadaan pesanan, bukan menggantikan gerbangnya.
+- **Kolom "Total" sudah dihapus dari tabel** (permintaan pemilik 2026-10-11: "tabel total mending
+  hapus aja deh bro di menu manage pesanan") — kolomnya cuma mengulang angka yang sudah ada di kartu
+  dan di total produk/ringkasan drawer. Menghapusnya juga menghapus helper `money()` di
+  `OrdersView` (tidak dipakai lagi) dan menurunkan `colSpan` baris kosong `7` → `6`. Kartu
+  (`OrdersMobileList`) sengaja **tetap** menampilkan `tanggal · total`. Tabelnya kini tinggal enam
+  kolom: `ID · Pelanggan · Tanggal · Pengiriman · Status · Aksi` (`min-w-[860px]` tidak berubah,
+  jadi masih muat).
+- **Tabel dipepetkan satu baris per sel** supaya tidak berantakan (bagian "rapihin juga tabel yg di
+  open order"): `whitespace-nowrap` di kolom ID, Tanggal, dan kolom Aksi; nama pelanggan
+  dipotong `max-w-[200px] truncate` (+ `title`); kolom
+  Pengiriman `min-w-[150px]`. Nomor Open Order (`CYO-20261011-…`) dan nama panjang tidak lagi membuat
+  baris tumbuh tinggi sendiri-sendiri. Tab **Open Order** memakai tabel yang sama persis — tidak ada
+  tabel terpisah, jadi perbaikan ini ikut keduanya.
+- **Kolom "Pengiriman" (tabel) + baris pengiriman (kartu)** memakai `shippingLine()`: kurir (mis.
+  "J&T - EZ") + nomor resi, atau **"Resi belum dibuat"** (oranye, `awaiting`) untuk tahap Perlu
+  Dikirim, dan "Tanpa resi" untuk pesanan yang memang tidak pernah ber-resi (banyak `selesai` lama).
+  Tabel minimumnya naik `720px` → `860px` (tujuh kolom) dan tetap di dalam pembungkus
+  `overflow-x-auto` yang sama.
+- **Warna pill tahap** ada di `ORDER_STAGE_STYLE` (Belum Bayar amber, Perlu Dikirim oranye
+  `#fff7ed`/`#c2410c`, Dikirim biru, Selesai hijau, Dibatalkan abu). Tab "Perlu Dikirim" disorot
+  oranye selama jumlahnya > 0 (`stageNeedsAdminAction`) — pengingat pesanan yang menunggu resi.
+  `StatusBadge` + helper `statusLabel`/`money` di `page.tsx` sudah dihapus (digantikan `StageBadge`
+  + helper di `OrdersView`), tetapi kelas `badge` (CSS admin) masih dipakai di sidebar & kartu.
+- **Verifikasi (2026-10-11, sesi admin diputar ulang, 768 px + desktop)**: `tsc --noEmit` bersih;
+  `curl /admin` & `/id/admin` = `200`; tab berbunyi `Semua (35) · Belum Bayar (1) · Perlu Dikirim (2)
+  · Dikirim (0) · Selesai (22) · Dibatalkan (10)`; 35 kartu dengan pill tahap + baris pengiriman;
+  klik tab **Perlu Dikirim** → 2 baris, semuanya "Perlu Dikirim" + "Resi belum dibuat"; di desktop
+  tabel menampilkan tujuh kolom (termasuk `Total` — kolom itu dihapus belakangan, lihat "Kolom
+  "Total" sudah dihapus dari tabel" di atas); tidak ada scroll samping di kedua lebar; tanpa error
+  console. (Klik **Atur Pesanan** di baris masih ada saat
+  pengujian itu, kini sudah dipindah ke drawer detail — lihat "Aksi hanya di drawer detail"; setelah
+  pemindahan itu yang bisa dibuktikan hanya `tsc --noEmit` bersih + `curl /admin` & `/id/admin` =
+  `200`, karena route admin memang tidak dapat dibuka lewat preview tool.) **Belum** terbukti end-to-end: menekan **konfirmasi** "Atur
+  Pesanan" (kredensial J&T toko production — akan menerbitkan pengiriman asli), serta tautan **Cetak
+  Label**/**Hubungi Pembeli** (tautan keluar, tidak diklik).
+- **Catatan tool preview**: `preview_screenshot({path:'/admin'})` hanya melakukan kunjungan penuh
+  kalau halaman preview baru saja di-reset (perintah shell/edit sebelumnya) — kalau dipanggil di
+  tengah turn ia mencoba SPA nav dan gagal (`navigation_failed`, URL berubah tapi konten tetap).
+  Jadi: **jalankan perintah shell dulu**, baru `preview_screenshot({path:'/admin'})`, lalu
+  `preview_execute_code` tanpa shell/edit di antaranya.
+
 ## "Atur Pesanan" — resi J&T diterbitkan admin (ala Shopee Seller Centre)
 
 Permintaan pemilik (2026-10-11): alur pengiriman disamakan dengan Shopee Seller — resi/AWB J&T
@@ -768,12 +903,31 @@ pembayaran diverifikasi.
   ada, 400 sudah punya `awb_no`, 400 kalau `dibatalkan`), panggil J&T, lalu simpan `awb_no` +
   `jnt_order_id` **dan ubah status ke `diproses`**. Tombol **"Atur Pesanan"** (kelas `od-a-primary`,
   ikon kotak) ada di blok aksi `OrderDetailContent.tsx`, muncul hanya bila pesanan belum punya resi
-  dan statusnya `pending`/`diproses`; kliknya membuka `ConfirmModal` (label konfirmasinya "Atur
+  dan statusnya sudah **`diproses`** (permintaan pemilik 2026-10-11: "ini kan orderan menunggu
+  pembayaran, tapi kok ada atur pesanan — harusnya munculnya ketika admin ubah ke proses, mirip
+  Shopee"; sebelumnya `pending` juga menampilkan tombolnya, jadi pesanan yang belum dibayar/
+  diverifikasi sudah menawarkan pembuatan resi). Konsekuensinya admin harus menekan chip
+  **Diproses** dulu; petunjuk "Nomor resi belum dibuat…" di blok Info Pengiriman ikut menyesuaikan
+  (`canArrange`) supaya tidak menyuruh klik tombol yang belum tampil. Guard route `createJnt`
+  **tidak** ikut berubah (masih menolak `dibatalkan`/pesanan ber-`awb_no`) — itu jalur langka yang
+  hanya bisa dipanggil langsung, bukan dari UI. Kliknya membuka `ConfirmModal` (label konfirmasinya "Atur
   Pesanan", bukan "Hapus" — `showConfirm` di `src/app/admin/page.tsx` menerima
   `options: { confirmText, danger }`), lalu `arrangeOrder()` meng-update baris tabel + drawer tanpa
   reload. Status `dikirim` tetap datang dari pelacakan, bukan dari sini.
 - **Kalau J&T menolak** (kredensial/kode area gagal) route membalas 400 dengan pesan `reason`/`desc`
   dari J&T, status pesanan tidak berubah, dan tombolnya tetap ada untuk dicoba lagi.
+- **Pemulihan resi yang tidak sengaja dibatalkan** (kejadian nyata 2026-10-11, `SMQ-20261008-432`):
+  J&T **tidak bisa menghidupkan AWB yang sudah di-void** ("Cancelled AWB by Seller" di Riwayat
+  Pengiriman), jadi satu-satunya jalur adalah **terbit resi baru**. Karena `createJnt` menolak
+  pesanan yang masih ber-`awb_no`, resi mati itu harus dikosongkan lebih dulu lewat REST/PATCH
+  `orders` (`awb_no = null`, `jnt_order_id = null`; status dibiarkan `diproses`) — setelah itu
+  tombol **Atur Pesanan** muncul lagi dengan petunjuk "Nomor resi belum dibuat…". Pembatalan tadi
+  juga sudah mengembalikan stok (khusus `SMQ-`), jadi stok barang itu **dipotong ulang** dengan
+  `samaqu_decrement_stock(product_id, color, size, qty)` dari baris `order_items`-nya supaya tidak
+  dobel-hitung. Ini perbaikan data sekali jalan (skrip `/tmp`/REST), bukan kode app — jangan
+  menambah jalur "un-cancel" di aplikasi tanpa permintaan. Dibuktikan lewat preview (sesi admin
+  diputar ulang): drawer `SMQ-20261008-432` → "Nomor resi belum dibuat…" + tombol **Atur Pesanan**
+  ada, tombol Lacak/Batalkan/Cetak Label hilang, tanpa error console.
 - **`shipping_city` kini menyimpan "Kecamatan, Kota" di kedua jalur** (checkout website dulu hanya
   menyimpan kota, jadi kecamatan hilang dan `receiver_area` J&T cuma bisa ditebak dari kota).
   `splitCityDistrict()` di `order-from-order.ts` memecahnya lagi saat membuat resi; order lama yang
@@ -787,20 +941,37 @@ pembayaran diverifikasi.
   -d '{"orderNumber":"SMQ-20261008-432","action":"createJnt"}'` → `400` "sudah punya nomor resi";
   order asing → `404`. **Pembuatan resi yang benar-benar sukses belum diuji otomatis**: kredensial
   J&T toko ini production, jadi mengonfirmasi dialognya akan membuat pengiriman J&T asli — uji
-  manual dengan satu pesanan nyata.
+  manual dengan satu pesanan nyata. Setelah gerbang status di atas (2026-10-11) tombolnya **hanya**
+untuk `diproses`; verified ulang lewat preview (sesi admin diputar ulang): `pending`
+(`SMQ-20261011-643`) → chip Pending, **tanpa** tombol Atur Pesanan; `diproses` tanpa resi
+(`SMQ-20261011-371`) → tombol muncul + petunjuk "Klik Atur Pesanan", tanpa error console. Kasus
+**`pending` tanpa resi** tidak bisa direproduksi saat itu (satu-satunya pesanan `pending` sudah
+ber-resi) — kondisi `order.status === "diproses"` yang menutupnya.
 
 ## Lacak paket di drawer pesanan & status selesai otomatis
 
 Permintaan pemilik (2026-10-11): "di detail tambahin tombol Lacak", "ketika paket sudah diterima
 otomatis statusnya selesai sendiri", plus chip filter "dibatalkan" di panel Pesanan.
 
-- **Chip filter**: baris chip di `src/app/admin/page.tsx` kini
-  `["Semua","pending","diproses","selesai","dibatalkan"]` (satu sumber untuk `/admin` dan
-  `/id/admin`). Chip tetap `flex-wrap`, jadi lima chip tidak memotong "Selesai" di ~370 px.
-  Setiap chip menampilkan **jumlahnya** (`Pending (3)`) dan **judul daftar ikut filter aktif**
-  ("Semua Pesanan" → "Pesanan Diproses"; tab Open Order → "Open Order Diproses"). Angkanya dari
-  `statusCounts` yang dihitung atas `sourceOrders` (tab yang aktif), jadi selalu cocok dengan baris
-  di bawahnya — bukan query terpisah.
+- **Tab tahap** (dulu chips status mentah `["Semua","pending","diproses","selesai","dibatalkan"]`,
+  kini di `src/components/admin/OrdersView.tsx`): `ORDER_STAGE_TABS` di `src/lib/order-flow.ts` —
+  Semua · Belum Bayar · Perlu Dikirim · Dikirim · Selesai · Dibatalkan. Satu sumber untuk `/admin`
+  dan `/id/admin`. Barisnya tetap `flex-wrap`, jadi enam tab tidak memotong apa pun di ~370 px.
+  Setiap tab menampilkan **jumlahnya** (`Perlu Dikirim (2)`) dan **judul daftar ikut tab aktif**
+  ("Semua Pesanan" → "Pesanan Perlu Dikirim"; tab Open Order → "Open Order Selesai"). Angkanya dari
+  `stageCounts` yang dihitung atas `searchedOrders` (tab sumber yang aktif **setelah** kotak cari),
+  jadi selalu cocok dengan baris di bawahnya — bukan query terpisah.
+- **Kotak cari pesanan** (permintaan pemilik 2026-10-11: "di menu management order tambahin search
+  biar enak, bikin yg modern"): state `orderSearch` + kotak di bawah baris judul/chip, mencocokkan
+  `order_number`, `customer_name`, `customer_email`, dan `customer_whatsapp` (substring,
+  case-insensitive). Saringannya **sebelum** chip status (AND), angka chip "Semua" ikut
+  `searchedOrders.length`, dan pesan kosong dibedakan (`ordersEmptyText`): "Tidak ada pesanan yang
+  cocok dengan pencarian" vs "belum ada pesanan". Kotak ini **beda** dari kotak "Cari produk…" di
+  topbar (`productSearch`, menggerakkan panel Produk). Verifikasi (sesi admin diputar ulang;
+  `preview_screenshot({path:'/admin'})` dulu karena `navigate()` tidak bereaksi di route admin):
+  "Sri" → 2 baris (`SMQ-20261011-643` cocok dari email `naniusriyati@…` + `SMQ-20261008-432`) dan
+  chip jadi `Semua (2)`/`Pending (1)`/`Diproses (1)`/`Selesai (0)`; "SMQ-20261008-432" → 1 baris;
+  teks ngawur → 0 baris + pesan kosong; tombol X mengembalikan 35 baris; tanpa error console.
 - **Tipografi admin seragam**: satu aturan di `ADMIN_WF_VARS` (`src/components/admin/admin-theme.ts`,
   `#admin-root h1..h4 { font-family: var(--font-inter) !important; font-style: normal !important }`)
   memaksa SEMUA judul admin memakai font UI, bukan Cormorant serif italic (gaya storefront).
@@ -875,7 +1046,8 @@ bisa dikembalikan ke `pending` atau ditandai `dibatalkan` sementara resinya teta
 
 - **Satu modul**: `src/lib/cancel-order.ts` → `cancelOrderCompletely(order, remark)`. Urutannya
   void resi J&T (kalau `awb_no`/`jnt_order_id` ada) → stok website dikembalikan → status
-  `dibatalkan` + `updated_at` ditulis manual. Kalau J&T menolak, status **tidak** diubah dan
+  `dibatalkan` + `cancelled_at`/`updated_at` ditulis manual (lihat "Jam pembatalan pesanan" di
+  atas). Kalau J&T menolak, status **tidak** diubah dan
   fungsinya mengembalikan `{ success: false, stage: "jnt" }` supaya resi tidak menggantung.
   Dipakai **empat** pemanggil: `PATCH /api/admin/orders` (action `cancelJnt` **dan** status
   `dibatalkan`), `POST /api/orders/cancel` (customer), dan `GET /api/cron/auto-cancel`.

@@ -12,15 +12,20 @@
  * `open_order_end_date`, `open_order_series` (JSONB array). Kolomnya dibuat oleh
  * `supabase/open-order-settings.sql` yang dijalankan manual di Supabase SQL editor — selama
  * belum dijalankan halaman ini menampilkan peringatan dan simpan akan gagal.
+ *
+ * Tampilannya memakai pola kartu **Pengaturan**: default read-only (tanggal & chip series sebagai
+ * teks, footer hanya tombol **Edit**), lalu klik Edit membuat tanggal jadi input dan chip bisa
+ * dipilih, dengan footer **Simpan + Batal**. Setelah simpan berhasil halaman kembali read-only.
  */
 
 import { useEffect, useState } from "react";
-import { AlertTriangle, Calendar, Check, Loader2, Save } from "lucide-react";
+import { AlertTriangle, Calendar, Check, Edit, Loader2, Save } from "lucide-react";
 import { useToast } from "@/components/AdminToast";
 import { getProducts } from "@/lib/db";
 import { OPEN_ORDER_PERIOD } from "@/lib/open-order-config";
 import { buildOpenOrderProducts } from "@/lib/open-order-offering";
 import {
+  formatDateLabel,
   formatOpenOrderPeriod,
   openOrderSeriesList,
   resolveOpenOrderState,
@@ -42,10 +47,13 @@ export default function OpenOrderSettingsForm() {
   const toast = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [needsSql, setNeedsSql] = useState(false);
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
   const [series, setSeries] = useState<string[]>([]);
+  // Nilai terakhir yang tersimpan — dasar tombol Batal & penanda perubahan.
+  const [original, setOriginal] = useState({ start: "", end: "", series: [] as string[] });
   const [allSeries, setAllSeries] = useState<string[]>([]);
 
   useEffect(() => {
@@ -62,9 +70,13 @@ export default function OpenOrderSettingsForm() {
           // Paling sering: kolomnya belum ada karena SQL-nya belum dijalankan.
           setNeedsSql(true);
         } else if (data) {
-          setStart(data.open_order_start_date ?? "");
-          setEnd(data.open_order_end_date ?? "");
-          setSeries(openOrderSeriesList(data.open_order_series));
+          const savedStart = data.open_order_start_date ?? "";
+          const savedEnd = data.open_order_end_date ?? "";
+          const savedSeries = openOrderSeriesList(data.open_order_series);
+          setStart(savedStart);
+          setEnd(savedEnd);
+          setSeries(savedSeries);
+          setOriginal({ start: savedStart, end: savedEnd, series: savedSeries });
         }
         setLoading(false);
       });
@@ -91,8 +103,19 @@ export default function OpenOrderSettingsForm() {
   const periodLabel = formatOpenOrderPeriod(windowSettings, OPEN_ORDER_PERIOD);
   const invalidRange = Boolean(start && end && end < start);
 
+  // Urutan series tidak penting (JSONB array) — bandingkan setelah diurutkan.
+  const seriesChanged = [...series].sort().join("|") !== [...original.series].sort().join("|");
+  const dirty = start !== original.start || end !== original.end || seriesChanged;
+
   function toggleSeries(name: string) {
     setSeries((prev) => (prev.includes(name) ? prev.filter((item) => item !== name) : [...prev, name]));
+  }
+
+  function cancel() {
+    setStart(original.start);
+    setEnd(original.end);
+    setSeries([...original.series]);
+    setEditing(false);
   }
 
   async function save() {
@@ -110,6 +133,8 @@ export default function OpenOrderSettingsForm() {
       toast.showToast("error", error.message);
       return;
     }
+    setOriginal({ start, end, series: [...series] });
+    setEditing(false);
     toast.showToast("success", "Pengaturan Open Order disimpan");
   }
 
@@ -118,6 +143,13 @@ export default function OpenOrderSettingsForm() {
     border: "1px solid rgba(17,17,17,.12)",
     color: "var(--espresso)",
   };
+  const chipClass =
+    "inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-[12.5px] font-medium transition-colors duration-150";
+  const chipStyle = (active: boolean) =>
+    active
+      ? { background: "var(--espresso)", borderColor: "var(--espresso)", color: "#fff" }
+      : { background: "#fff", borderColor: "rgba(17,17,17,.14)", color: "var(--espresso)" };
+  const labelStyle = { color: LABEL_COLOR };
 
   return (
     <section className="mx-auto max-w-3xl p-5 lg:p-8">
@@ -169,35 +201,62 @@ export default function OpenOrderSettingsForm() {
               </div>
             </div>
 
-            <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              <label className="block">
-                <span className={LABEL} style={{ color: LABEL_COLOR }}>
-                  Tanggal mulai
-                </span>
-                <input
-                  type="date"
-                  value={start}
-                  onChange={(e) => setStart(e.target.value)}
-                  className="mt-2 w-full rounded-xl px-4 py-3 text-sm outline-none transition-colors duration-150"
-                  style={fieldStyle}
-                />
-              </label>
-              <label className="block">
-                <span className={LABEL} style={{ color: LABEL_COLOR }}>
-                  Tanggal tutup
-                </span>
-                <input
-                  type="date"
-                  value={end}
-                  min={start || undefined}
-                  onChange={(e) => setEnd(e.target.value)}
-                  className="mt-2 w-full rounded-xl px-4 py-3 text-sm outline-none transition-colors duration-150"
-                  style={fieldStyle}
-                />
-              </label>
-            </div>
+            {editing ? (
+              <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                <label className="block">
+                  <span className={LABEL} style={labelStyle}>
+                    Tanggal mulai
+                  </span>
+                  <input
+                    type="date"
+                    value={start}
+                    onChange={(e) => setStart(e.target.value)}
+                    className="mt-2 w-full rounded-xl px-4 py-3 text-sm outline-none transition-colors duration-150"
+                    style={fieldStyle}
+                  />
+                </label>
+                <label className="block">
+                  <span className={LABEL} style={labelStyle}>
+                    Tanggal tutup
+                  </span>
+                  <input
+                    type="date"
+                    value={end}
+                    min={start || undefined}
+                    onChange={(e) => setEnd(e.target.value)}
+                    className="mt-2 w-full rounded-xl px-4 py-3 text-sm outline-none transition-colors duration-150"
+                    style={fieldStyle}
+                  />
+                </label>
+              </div>
+            ) : (
+              <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                <div>
+                  <span className={LABEL} style={labelStyle}>
+                    Tanggal mulai
+                  </span>
+                  <p
+                    className="mt-2 text-sm font-medium"
+                    style={{ color: start ? "var(--espresso)" : LABEL_COLOR }}
+                  >
+                    {formatDateLabel(start) || "Belum diatur"}
+                  </p>
+                </div>
+                <div>
+                  <span className={LABEL} style={labelStyle}>
+                    Tanggal tutup
+                  </span>
+                  <p
+                    className="mt-2 text-sm font-medium"
+                    style={{ color: end ? "var(--espresso)" : LABEL_COLOR }}
+                  >
+                    {formatDateLabel(end) || "Belum diatur"}
+                  </p>
+                </div>
+              </div>
+            )}
 
-            {invalidRange && (
+            {editing && invalidRange && (
               <p className="mt-3 text-[12.5px]" style={{ color: "#b3261e" }}>
                 Tanggal tutup harus setelah tanggal mulai.
               </p>
@@ -219,10 +278,10 @@ export default function OpenOrderSettingsForm() {
                   Series yang tidak dipilih tidak muncul di /open-order.
                 </p>
               </div>
-              {series.length > 0 && (
+              {editing && allSeries.length > 0 && series.length < allSeries.length && (
                 <button
                   type="button"
-                  onClick={() => setSeries([])}
+                  onClick={() => setSeries([...allSeries])}
                   className="text-[12px] font-medium underline underline-offset-2"
                   style={{ color: LABEL_COLOR }}
                 >
@@ -239,18 +298,23 @@ export default function OpenOrderSettingsForm() {
               <div className="mt-5 flex flex-wrap gap-2">
                 {allSeries.map((name) => {
                   const active = series.includes(name);
+                  // Read-only: chip-nya jadi label biasa supaya tidak bisa diubah sebelum menekan Edit.
+                  if (!editing) {
+                    return (
+                      <span key={name} className={chipClass} style={chipStyle(active)}>
+                        {active && <Check size={13} strokeWidth={2.5} />}
+                        {name}
+                      </span>
+                    );
+                  }
                   return (
                     <button
                       key={name}
                       type="button"
                       onClick={() => toggleSeries(name)}
                       aria-pressed={active}
-                      className="inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-[12.5px] font-medium transition-colors duration-150"
-                      style={
-                        active
-                          ? { background: "var(--espresso)", borderColor: "var(--espresso)", color: "#fff" }
-                          : { background: "#fff", borderColor: "rgba(17,17,17,.14)", color: "var(--espresso)" }
-                      }
+                      className={chipClass}
+                      style={chipStyle(active)}
                     >
                       {active && <Check size={13} strokeWidth={2.5} />}
                       {name}
@@ -277,16 +341,39 @@ export default function OpenOrderSettingsForm() {
               {STATE_STYLE[state].label}
             </span>
 
-            <button
-              type="button"
-              onClick={save}
-              disabled={saving || invalidRange}
-              className="inline-flex items-center gap-2 rounded-xl px-5 py-3 text-[13.5px] font-semibold text-white transition-opacity duration-150 disabled:opacity-50"
-              style={{ background: "var(--espresso)" }}
-            >
-              {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-              Simpan
-            </button>
+            {editing ? (
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={save}
+                  disabled={saving || invalidRange || !dirty}
+                  className="inline-flex items-center gap-2 rounded-xl px-5 py-3 text-[13.5px] font-semibold text-white transition-opacity duration-150 disabled:opacity-50"
+                  style={{ background: "var(--espresso)" }}
+                >
+                  {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                  Simpan
+                </button>
+                <button
+                  type="button"
+                  onClick={cancel}
+                  disabled={saving}
+                  className="inline-flex items-center rounded-xl px-5 py-3 text-[13.5px] font-semibold transition-colors duration-150 disabled:opacity-50"
+                  style={{ border: "1px solid rgba(17,17,17,.14)", color: "var(--espresso)" }}
+                >
+                  Batal
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setEditing(true)}
+                className="inline-flex items-center gap-2 rounded-xl px-5 py-3 text-[13.5px] font-semibold transition-colors duration-150"
+                style={{ border: "1px solid rgba(17,17,17,.14)", color: "var(--espresso)" }}
+              >
+                <Edit size={16} />
+                Edit
+              </button>
+            )}
           </div>
         </div>
       )}
