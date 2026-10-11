@@ -576,24 +576,38 @@ Yang tidak kelihatan dari kode:
   persis dengan `created_at`, termasuk pesanan yang sudah `dibatalkan`/`diproses`/`selesai`. Dulu
   langkah "Pesanan dibatalkan" menampilkan `updated_at` apa adanya, jadi jamnya selalu menyalin jam
   pesanan dibuat (pemilik melihat "dibuat 13:38, dibatalkan 13:38" pada pesanan yang batalnya
-  belakangan). Sekarang:
-  - ketiga jalur pembatalan (dan update status lain) **menulis `updated_at` sendiri** —
-    `PATCH /api/admin/orders` (action `cancelJnt` **dan** update status biasa), `POST
-    /api/orders/cancel`, dan `GET /api/cron/auto-cancel`; `Order`/`AdminDetailOrder` di
-    `src/app/admin/page.tsx` + `src/components/admin/OrderDetailContent.tsx` ikut membawa field itu,
-    dan `RincianPesanan.tsx` menyuntik jam lokal saat customer membatalkan dari halaman pesanan;
-  - `waktuBatal()` mengembalikan jam aslinya kalau `updated_at` berbeda dari `created_at`, dan
-    jam terakhir yang tersimpan **dengan penanda `(perkiraan)`** kalau `updated_at` masih sama
-    dengan `created_at` (baris lama, jam batalnya tidak pernah tersimpan). Penandanya wajib:
-    pemilik dua kali melaporkan masalah ini — pertama "dibuat 13:38, dibatalkan 13:38" (jam salinan
-    tampil polos), lalu "kok ngga ada jam sama tgl" setelah jamnya disembunyikan — jadi jamnya tetap
-    terlihat, tapi tidak boleh terbaca sebagai jam pasti.
-  Jam pembatalan **tidak bisa dipulihkan** untuk pesanan yang dibatalkan sebelum perubahan ini;
-  kalau nanti ada jalur DDL (SQL Editor Supabase), kolom `cancelled_at timestamptz` jelas lebih
-  benar daripada menumpang `updated_at`. Verifikasi: pesanan uji buatan sendiri (insert REST) →
-  dibatalkan lewat chip "Ubah Status" di drawer admin → `updated_at` > `created_at` dan timeline
-  menampilkan jam valid tanpa `(perkiraan)`, sedangkan pesanan lama (mis. `SMQ-20261009-386`)
-  menampilkan `9 Okt 2026 • 16:53 (perkiraan)`; hapus pesanan uji setelahnya.
+  belakangan). Sekarang jam batalnya punya kolom sendiri:
+  - **`orders.cancelled_at`** = jam batal yang akurat, dibuat lewat
+    **`supabase/migrations/20261011_order_cancelled_at.sql`** yang dijalankan manual di SQL Editor
+    Supabase (sandbox tidak punya jalur DDL). **Belum dijalankan** (dicek 2026-10-11: select
+    `id,cancelled_at` → `400` `42703`), jadi selama belum dijalankan linimasa masih memakai
+    `updated_at` seperti sebelumnya. File itu sekaligus mem-backfill `cancelled_at = updated_at`
+    untuk pesanan `dibatalkan` yang `updated_at` ≠ `created_at` — nilai yang selama ini sudah
+    dipakai `waktuBatal`; baris dengan `updated_at` = `created_at` dibiarkan NULL karena jam
+    batalnya memang tidak pernah tersimpan.
+  - `cancelOrderCompletely()` (`src/lib/cancel-order.ts`) — satu jalur untuk `PATCH
+    /api/admin/orders` (action `cancelJnt` **dan** chip status `dibatalkan`), `POST
+    /api/orders/cancel`, dan `GET /api/cron/auto-cancel` — menulis `status`, `cancelled_at`, dan
+    `updated_at` sekaligus. Selama kolomnya belum ada, update **diulang tanpa `cancelled_at`**
+    (`error.message` memuat nama kolomnya) supaya pembatalan tetap jalan — jangan hapus fallback
+    itu sebelum SQL-nya dijalankan.
+  - `waktuBatal()` memakai `cancelled_at` kalau ada (jam pasti, tampil polos); kalau tidak,
+    `updated_at` yang berbeda dari `created_at` (jam sebenarnya sejak ketiga jalur pembatalan
+    menulis kolom itu), dan jam terakhir yang tersimpan **dengan penanda `(perkiraan)`** kalau
+    `updated_at` masih sama dengan `created_at`. Penandanya wajib: pemilik dua kali melaporkan
+    masalah ini — pertama "dibuat 13:38, dibatalkan 13:38" (jam salinan tampil polos), lalu "kok
+    ngga ada jam sama tgl" setelah jamnya disembunyikan — jadi jamnya tetap terlihat, tapi tidak
+    boleh terbaca sebagai jam pasti.
+  - `Order`/`AdminDetailOrder`/`RincianOrder` (`src/app/admin/page.tsx`,
+    `src/components/admin/OrderDetailContent.tsx`, `src/components/akun/RincianPesanan.tsx`) ikut
+    membawa `cancelled_at`; baris admin yang baru dibatalkan menimpanya lokal, dan
+    `RincianPesanan.tsx` menyuntik jam lokal saat customer membatalkan dari halaman pesanan;
+  Verifikasi: pesanan uji buatan sendiri (insert REST) → dibatalkan lewat chip "Ubah Status" di
+  drawer admin → `updated_at` > `created_at` dan timeline menampilkan jam valid tanpa `(perkiraan)`,
+  sedangkan pesanan lama (mis. `SMQ-20261009-386`) menampilkan `9 Okt 2026 • 16:53 (perkiraan)`;
+  hapus pesanan uji setelahnya. Cek kolomnya: `curl -s -o /dev/null -w '%{http_code}\n'
+  "$NEXT_PUBLIC_SUPABASE_URL/rest/v1/orders?select=id,cancelled_at&limit=1" -H "apikey:
+  $SUPABASE_SERVICE_ROLE_KEY"` → `200` = SQL sudah dijalankan, `400` = belum (perilaku lama).
 - Label pill ikut disamakan dengan admin: `pending` = **"Menunggu Pembayaran"** (dipakai daftar
   pesanan, dashboard akun, banner struk, dan modal admin), `dibatalkan` pakai `akun-pill-batal` (merah). Dipakai bersama oleh `/akun` (dashboard),
   list pesanan, dan detail — ubah di `src/lib/akun-format.ts` saja.
@@ -1032,7 +1046,8 @@ bisa dikembalikan ke `pending` atau ditandai `dibatalkan` sementara resinya teta
 
 - **Satu modul**: `src/lib/cancel-order.ts` → `cancelOrderCompletely(order, remark)`. Urutannya
   void resi J&T (kalau `awb_no`/`jnt_order_id` ada) → stok website dikembalikan → status
-  `dibatalkan` + `updated_at` ditulis manual. Kalau J&T menolak, status **tidak** diubah dan
+  `dibatalkan` + `cancelled_at`/`updated_at` ditulis manual (lihat "Jam pembatalan pesanan" di
+  atas). Kalau J&T menolak, status **tidak** diubah dan
   fungsinya mengembalikan `{ success: false, stage: "jnt" }` supaya resi tidak menggantung.
   Dipakai **empat** pemanggil: `PATCH /api/admin/orders` (action `cancelJnt` **dan** status
   `dibatalkan`), `POST /api/orders/cancel` (customer), dan `GET /api/cron/auto-cancel`.

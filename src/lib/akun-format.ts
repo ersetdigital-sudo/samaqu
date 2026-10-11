@@ -38,19 +38,29 @@ export interface StrukStep {
 
 /** Jam pembatalan pesanan.
  *
- * Tabel `orders` tidak punya trigger `updated_at`, jadi baris lama masih menyimpan
- * `updated_at` = `created_at` persis — jam itu salinan jam pembuatan, bukan jam pembatalannya.
- * Sejak ketiga jalur pembatalan (`/api/orders/cancel`, `PATCH /api/admin/orders`, dan
- * `/api/cron/auto-cancel`) menulis `updated_at` sendiri, nilai yang **berbeda** dari `created_at`
- * adalah jam pembatalan yang sebenarnya.
+ * Sumber utamanya kolom `orders.cancelled_at` — diisi `cancelOrderCompletely()`
+ * (src/lib/cancel-order.ts) saat pesanan benar-benar dibatalkan, lewat
+ * `supabase/migrations/20261011_order_cancelled_at.sql` yang dijalankan manual di SQL Editor
+ * Supabase. Nilainya jam pasti, jadi tampil polos.
  *
- * Pesanan yang dibatalkan sebelum perubahan itu tidak menyimpan jam batalnya sama sekali, tapi
- * langkah "Pesanan dibatalkan" tetap harus menampilkan tanggal & jam. Jam terakhir yang tersimpan
- * ditampilkan dengan penanda "(perkiraan)" supaya tidak terbaca sebagai jam pasti — penandanya
- * jangan dihapus: dulu jam salinan itu tampil polos dan terbaca seperti bug ("dibuat 13:38,
- * dibatalkan 13:38"), lalu sempat disembunyikan sampai pemilik melaporkan jamnya hilang.
+ * Tabel `orders` tidak punya trigger `updated_at`, jadi baris yang dibatalkan sebelum kolom itu
+ * ada tidak menyimpan jam batalnya sama sekali: `updated_at` = `created_at` persis — salinan jam
+ * pembuatan, bukan jam pembatalannya. Sejak ketiga jalur pembatalan (`/api/orders/cancel`,
+ * `PATCH /api/admin/orders`, dan `/api/cron/auto-cancel`) menulis `updated_at` sendiri, nilai
+ * yang **berbeda** dari `created_at` adalah jam pembatalan yang sebenarnya (dipakai selama SQL
+ * di atas belum dijalankan).
+ *
+ * Pesanan seperti itu tetap harus menampilkan tanggal & jam, tapi jam terakhir yang tersimpan
+ * diberi penanda "(perkiraan)" supaya tidak terbaca sebagai jam pasti — penandanya jangan
+ * dihapus: dulu jam salinan itu tampil polos dan terbaca seperti bug ("dibuat 13:38, dibatalkan
+ * 13:38"), lalu sempat disembunyikan sampai pemilik melaporkan jamnya hilang.
  */
-export function waktuBatal(order: { created_at: string; updated_at?: string }): string {
+export function waktuBatal(order: {
+  created_at: string;
+  updated_at?: string;
+  cancelled_at?: string | null;
+}): string {
+  if (order.cancelled_at) return tglJamID(order.cancelled_at);
   const u = order.updated_at;
   if (!u) return "Dibatalkan";
   return u === order.created_at ? `${tglJamID(u)} (perkiraan)` : tglJamID(u);
@@ -61,6 +71,8 @@ export function strukSteps(order: {
   status: string;
   created_at: string;
   updated_at?: string;
+  /** Jam pembatalan yang akurat (kolom `orders.cancelled_at`); `updated_at` cuma cadangan. */
+  cancelled_at?: string | null;
   awb_no?: string | null;
 }): StrukStep[] {
   const s = order.status;
