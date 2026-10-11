@@ -304,10 +304,13 @@ Page presentation (not obvious from the code):
   (pesanan website lama) disembunyikan — ubah keduanya bersamaan, jangan kembalikan ke
   `{color} {size} × qty`.
 - **Dashboard akun** (`/[locale]/akun`, `src/app/[locale]/akun/page.tsx`) ditata ulang untuk mobile:
-  di bawah breakpoint `sm` baris "Pesanan Terakhir" menaruh harga + pill status di barisnya sendiri
-  (blok `sm:hidden`, pasangan `hidden sm:block` mempertahankan tata letak desktop), dan kartu "Akses
-  Cepat" menumpuk ikon + chevron di atas judul + subteks (bukan ikon di samping teks dengan chevron
-  `absolute`) supaya tidak berdesakan di layar ~370 px.
+  baris "Pesanan Terakhir" = satu baris atas (thumbnail, nama pesanan + `#nomor · tanggal` yang
+  dipotong `truncate` satu baris, chevron rata tengah) lalu satu baris penuh di bawahnya berisi
+  harga + pill status yang rata dengan tepi kartu (blok `sm:hidden`; pasangan `hidden sm:block`
+  dengan kolom kanan harga/pill mempertahankan tata letak desktop persis seperti sebelumnya).
+  Kartu "Akses Cepat" menumpuk ikon (36 px) + chevron di baris atas dengan judul + subteks
+  didorong ke bawah lewat `mt-auto`, dan `min-h-[112px]` menjaga keempat kartu sejajar walau
+  judulnya membungkus dua baris di layar ~370 px.
 - **Nav bawah ala aplikasi (mobile)** di semua halaman toko: `src/components/MobileBottomNav.tsx`
   (Beranda · Kategori · Open Order · Pesanan · Akun) dipasang oleh
   `src/app/[locale]/(customer)/layout.tsx` dan tampil di bawah breakpoint `lg` — sama dengan navbar
