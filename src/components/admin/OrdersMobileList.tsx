@@ -8,14 +8,14 @@
  * Tata letaknya mengikuti kartu pesanan Shopee Seller Centre: nomor pesanan + pill **tahap**
  * (Belum Bayar / Perlu Dikirim / Dikirim / … dari `src/lib/order-flow.ts`, bukan nama status
  * mentah), nama pembeli, tanggal · total, lalu **baris pengiriman** (kurir + nomor resi) supaya
- * pesanan yang resinya belum dibuat langsung kelihatan tanpa membuka drawer. Tombol aksinya
- * datang dari pemanggil lewat `renderActions` — satu-satunya tombol yang butuh handler halaman
- * (mis. "Atur Pesanan"), sedangkan kartunya sendiri tetap membuka detail lewat `onSelect`.
+ * pesanan yang resinya belum dibuat langsung kelihatan tanpa membuka drawer. Kartunya sendiri
+ * membuka detail lewat `onSelect` — **tidak ada tombol aksi di kartu**: "Atur Pesanan" /
+ * "Cetak Label" / "Hubungi Pembeli" hanya ada di drawer detail (permintaan pemilik: "atur
+ * pesanan hubungi pembeli di detail aja").
  *
  * Komponen ini menyembunyikan dirinya sendiri di layar besar (`lg:hidden`); di sebelahnya
  * pemanggil tetap merender tabelnya (`hidden lg:table`).
  */
-import type { ReactNode } from "react";
 import { ChevronRight, Truck } from "lucide-react";
 import { ORDER_STAGE_LABEL, ORDER_STAGE_STYLE, orderStage, shippingLine } from "@/lib/order-flow";
 
@@ -43,14 +43,11 @@ export default function OrdersMobileList<T extends OrderSummary>({
   orders,
   emptyText,
   onSelect,
-  renderActions,
 }: {
   orders: T[];
   emptyText: string;
   /** Kalau diberikan, badan kartu jadi tombol yang membuka detail pesanan. */
   onSelect?: (order: T) => void;
-  /** Tombol aksi kontekstual di bawah kartu (Atur Pesanan, Cetak Label, …). */
-  renderActions?: (order: T) => ReactNode;
 }) {
   if (orders.length === 0) {
     return <p className="lg:hidden px-5 py-8 text-center text-sm" style={{ color: "var(--text-muted)" }}>{emptyText}</p>;
@@ -62,7 +59,6 @@ export default function OrdersMobileList<T extends OrderSummary>({
         const stage = orderStage(o);
         const st = ORDER_STAGE_STYLE[stage];
         const ship = shippingLine(o);
-        const actions = renderActions?.(o);
 
         const body = (
           <>
@@ -75,7 +71,7 @@ export default function OrdersMobileList<T extends OrderSummary>({
             <p className="text-sm mt-1 truncate" style={{ color: "var(--espresso)" }}>{o.customer_name}</p>
             <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>{tanggal(o.created_at)} · {rupiah(o.total)}</p>
             {/* Baris pengiriman: kurir + resi. "Resi belum dibuat" disorot karena itu pesanan
-                yang menunggu admin menekan "Atur Pesanan". */}
+                yang menunggu admin menekan "Atur Pesanan" (tombolnya ada di drawer detail). */}
             <div className="flex items-center gap-1.5 mt-1.5 min-w-0" style={{ color: ship.awaiting ? "#c2410c" : "var(--text-muted)" }}>
               <Truck size={13} strokeWidth={1.9} className="shrink-0" />
               <span className="text-xs font-medium truncate">{ship.courier} · {ship.resi}</span>
@@ -93,7 +89,6 @@ export default function OrdersMobileList<T extends OrderSummary>({
             ) : (
               <div className="w-full">{body}</div>
             )}
-            {actions ? <div className="mt-3 flex flex-wrap gap-2">{actions}</div> : null}
           </div>
         );
       })}

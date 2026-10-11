@@ -10,12 +10,15 @@
  *
  * Yang bikin "setara Shopee": daftar dipecah per **tahap** (Belum Bayar / Perlu Dikirim /
  * Dikirim / Selesai / Dibatalkan) yang diturunkan `src/lib/order-flow.ts` dari status + resi,
- * bukan per nama status mentah; tiap baris membawa **aksi kontekstual** yang harus dikerjakan
- * admin (Atur Pesanan saat resi belum dibuat, Cetak Label saat paket jalan, Hubungi Pembeli saat
- * belum dibayar) supaya admin tidak perlu membuka tiap drawer. Tidak ada status baru yang
- * ditulis ke database dan query-nya tidak berubah — `arrangeOrder` tetap milik halaman admin
- * (konfirmasi + PATCH `/api/admin/orders` action `createJnt`) dan tetap digerbangi status
- * `diproses` di server.
+ * bukan per nama status mentah.
+ *
+ * Listing-nya sengaja **tanpa tombol aksi di tiap baris**: dulu baris pesanan membawa tombol
+ * "Atur Pesanan" / "Cetak Label" / "Hubungi Pembeli" sehingga kolom aksi berisi sampai dua tombol
+ * dan tabelnya jadi berantakan (permintaan pemilik: "atur pesanan hubungi pembeli di detail aja").
+ * Semua aksi pesanan sekarang hidup **hanya di drawer detail** (`OrderDetailContent`), jadi
+ * halaman admin tidak lagi mengoper `arrangeOrder` ke sini — komponen ini cuma menyaring,
+ * menampilkan, dan membuka detail. Tidak ada status baru yang ditulis ke database dan query-nya
+ * tidak berubah.
  */
 import { useMemo, useState } from "react";
 import { Search, X } from "lucide-react";
@@ -53,11 +56,6 @@ function tanggal(iso: string) {
   return new Date(iso).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
 }
 
-function waLink(value?: string | null) {
-  const digits = (value || "").replace(/[^0-9]/g, "");
-  return digits ? `https://wa.me/${digits}` : null;
-}
-
 /** Pill tahap — istilah yang sama dengan tab di atasnya, jadi tab dan baris tidak beda bahasa. */
 function StageBadge({ order }: { order: AdminOrderRow }) {
   const stage = orderStage(order);
@@ -72,12 +70,9 @@ function StageBadge({ order }: { order: AdminOrderRow }) {
 export default function OrdersView({
   orders,
   onSelect,
-  onArrangeOrder,
 }: {
   orders: AdminOrderRow[];
   onSelect: (order: AdminOrderRow) => void;
-  /** "Atur Pesanan" — buat resi J&T; konfirmasi + PATCH ditangani halaman admin. */
-  onArrangeOrder: (order: AdminOrderRow) => void;
 }) {
   const [orderSource, setOrderSource] = useState<"website" | "open">("website");
   const [orderFilter, setOrderFilter] = useState<OrderStageFilter>("semua");
@@ -116,53 +111,6 @@ export default function OrdersView({
   const listTitle = orderSource === "open"
     ? orderFilter === "semua" ? "Semua Open Order" : `Open Order ${ORDER_STAGE_LABEL[orderFilter]}`
     : orderFilter === "semua" ? "Semua Pesanan" : `Pesanan ${ORDER_STAGE_LABEL[orderFilter]}`;
-
-  /** Aksi kontekstual per pesanan — ala tombol utama di kartu pesanan Shopee Seller Centre. */
-  function rowAction(o: AdminOrderRow) {
-    const stage = orderStage(o);
-    if (stage === "perlu_dikirim") {
-      return (
-        <button
-          type="button"
-          onClick={() => onArrangeOrder(o)}
-          className="text-xs px-3 py-1.5 rounded-lg font-semibold transition-opacity hover:opacity-90"
-          style={{ background: "var(--gold)", color: "#fff" }}
-        >
-          Atur Pesanan
-        </button>
-      );
-    }
-    if (stage === "dikirim" && o.awb_no) {
-      return (
-        <a
-          href={`/admin/label/${o.order_number}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-xs px-3 py-1.5 rounded-lg font-semibold transition-colors hover:bg-[var(--bg-secondary)]"
-          style={{ border: "1px solid #d4d4d8", color: "var(--espresso)" }}
-        >
-          Cetak Label
-        </a>
-      );
-    }
-    if (stage === "belum_bayar") {
-      const wa = waLink(o.customer_whatsapp);
-      if (wa) {
-        return (
-          <a
-            href={wa}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs px-3 py-1.5 rounded-lg font-semibold transition-colors hover:bg-[var(--bg-secondary)]"
-            style={{ border: "1px solid #d4d4d8", color: "var(--espresso)" }}
-          >
-            Hubungi Pembeli
-          </a>
-        );
-      }
-    }
-    return null;
-  }
 
   return (
     <div className="card overflow-hidden">
@@ -232,7 +180,6 @@ export default function OrdersView({
           orders={visibleOrders}
           onSelect={onSelect}
           emptyText={ordersEmptyText}
-          renderActions={rowAction}
         />
         <table className="w-full text-sm min-w-[860px] hidden lg:table">
           <thead>
@@ -240,7 +187,7 @@ export default function OrdersView({
               <th className="font-medium px-5 py-3">ID</th>
               <th className="font-medium px-5 py-3">Pelanggan</th>
               <th className="font-medium px-5 py-3">Tanggal</th>
-              <th className="font-medium px-5 py-3">Total</th>
+              <th className="font-medium px-5 py-3 text-right">Total</th>
               <th className="font-medium px-5 py-3">Pengiriman</th>
               <th className="font-medium px-5 py-3">Status</th>
               <th className="font-medium px-5 py-3 text-right">Aksi</th>
@@ -251,21 +198,30 @@ export default function OrdersView({
               const ship = shippingLine(o);
               return (
                 <tr key={o.id} className="cursor-pointer transition-colors hover:bg-[#fafafa]" style={{ borderTop: "1px solid #f1f1f3" }} onClick={() => onSelect(o)}>
-                  <td className="px-5 py-3.5 font-semibold">{o.order_number}</td>
-                  <td className="px-5 py-3.5">{o.customer_name}</td>
-                  <td className="px-5 py-3.5" style={{ color: "var(--text-muted)" }}>{tanggal(o.created_at)}</td>
-                  <td className="px-5 py-3.5 font-semibold">{money(o.total)}</td>
-                  <td className="px-5 py-3.5">
-                    <span className="block text-xs" style={{ color: "var(--text-muted)" }}>{ship.courier}</span>
-                    <span className="block text-xs font-semibold mt-0.5" style={{ color: ship.awaiting ? "#c2410c" : "var(--espresso)" }}>{ship.resi}</span>
+                  {/* Tiap sel dipepetkan satu baris (`whitespace-nowrap`, nama pelanggan dipotong
+                      dengan `truncate`) supaya baris tidak tumbuh tinggi sendiri-sendiri — nomor
+                      `CYO-…` dan nama panjang tidak lagi bikin tabel berantakan. */}
+                  <td className="px-5 py-3.5 font-semibold whitespace-nowrap">{o.order_number}</td>
+                  <td className="px-5 py-3.5 max-w-[200px] truncate" title={o.customer_name}>{o.customer_name}</td>
+                  <td className="px-5 py-3.5 whitespace-nowrap" style={{ color: "var(--text-muted)" }}>{tanggal(o.created_at)}</td>
+                  <td className="px-5 py-3.5 font-semibold whitespace-nowrap text-right">{money(o.total)}</td>
+                  <td className="px-5 py-3.5 min-w-[150px]">
+                    <span className="block text-xs whitespace-nowrap" style={{ color: "var(--text-muted)" }}>{ship.courier}</span>
+                    <span className="block text-xs font-semibold mt-0.5 whitespace-nowrap" style={{ color: ship.awaiting ? "#c2410c" : "var(--espresso)" }}>{ship.resi}</span>
                   </td>
                   <td className="px-5 py-3.5"><StageBadge order={o} /></td>
                   <td className="px-5 py-3.5 text-right">
-                    {/* Klik di dalam sel aksi tidak boleh ikut membuka drawer barisnya. */}
-                    <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-                      {rowAction(o)}
-                      <button onClick={() => onSelect(o)} className="text-xs px-3 py-1.5 rounded-lg font-medium" style={{ border: "1px solid #d4d4d8", color: "var(--gold)" }}>Detail</button>
-                    </div>
+                    {/* Satu-satunya tombol di daftar: buka detail. Aksi lain (Atur Pesanan, Cetak
+                        Label, Hubungi Pembeli) ada di drawer detail. `stopPropagation` supaya klik
+                        tombol tidak ikut memanggil handler barisnya. */}
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); onSelect(o); }}
+                      className="text-xs px-3 py-1.5 rounded-lg font-medium whitespace-nowrap"
+                      style={{ border: "1px solid #d4d4d8", color: "var(--gold)" }}
+                    >
+                      Detail
+                    </button>
                   </td>
                 </tr>
               );

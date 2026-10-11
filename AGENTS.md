@@ -365,9 +365,9 @@ Page presentation (not obvious from the code):
   (dihitung sendiri oleh komponen dari `src/lib/order-flow.ts`, bukan prop `renderStatus` yang dulu),
   nama pelanggan, `tanggal · total`, lalu **baris pengiriman** (ikon truk + kurir + nomor resi;
   "Resi belum dibuat" disorot oranye untuk tahap Perlu Dikirim). Badan kartunya jadi tombol yang
-  membuka drawer detail (dengan chevron) bila prop `onSelect` diberi, dan **tombol aksi
-  kontekstual** dirender di baris bawah kartu lewat prop `renderActions` (pengganti `renderStatus`);
-  tanpa prop itu kartunya statis. Komponen itu menyembunyikan dirinya sendiri di `lg` (`lg:hidden`),
+  membuka drawer detail (dengan chevron) bila prop `onSelect` diberi; kartunya **tanpa tombol
+  aksi** — prop `renderActions` (dan `renderStatus` sebelumnya) sudah dihapus, karena semua aksi
+  pesanan hanya boleh ada di drawer detail (lihat "Aksi hanya di drawer detail" di bawah). Komponen itu menyembunyikan dirinya sendiri di `lg` (`lg:hidden`),
   sedangkan `<table>`-nya tetap di dalam pembungkus `overflow-x-auto` yang sama dan cukup diberi
   `hidden lg:table` — jangan menambah pembungkus kedua (dua root elemen di dalam ternary
   `{loading ? … : ( … )}` menghasilkan parse error JSX "Expected '</', got 'ident'"). Tombol aksi
@@ -789,19 +789,31 @@ tanpa menyentuh status ataupun logika database sama sekali.
 - **Satu panel**: seluruh alur panel Pesanan (tab sumber, kotak cari, tab tahap, daftar, tabel)
   pindah dari `src/app/admin/page.tsx` ke **`src/components/admin/OrdersView.tsx`** (file `page.tsx`
   sudah ~1000 baris). Kedua dashboard tetap ikut otomatis karena `/id/admin` cuma
-  `export { default } from "@/app/admin/page"`. Props: `orders`, `onSelect(row)`,
-  `onArrangeOrder(row)`. Halaman admin menyerahkan `arrangeOrder` (konfirmasi `ConfirmModal` +
-  `PATCH action: "createJnt"`, **tetap digerbangi `diproses` di server**) dan mencari ulang pesanan
-  lengkapnya lewat `id` saat baris diklik, jadi `selectedOrder` tetap objek dari state `orders` dan
-  drawer + chip status bekerja persis seperti sebelumnya. `arrangeOrder` kini bertipe
+  `export { default } from "@/app/admin/page"`. Props tinggal `orders` + `onSelect(row)`: halaman
+  admin mencari ulang pesanan lengkapnya lewat `id` saat baris diklik, jadi `selectedOrder` tetap
+  objek dari state `orders` dan drawer + chip status bekerja persis seperti sebelumnya. Prop
+  `onArrangeOrder` **sudah dihapus** (aksi pesanan hanya ada di drawer detail — lihat "Aksi hanya di
+  drawer detail"); `arrangeOrder` (konfirmasi `ConfirmModal` + `PATCH action: "createJnt"`, **tetap
+  digerbangi `diproses` di server**) sekarang hanya dipakai `OrderDetailDrawer`, bertipe
   `{ order_number: string }` — hanya field itu yang dipakainya.
-- **Aksi per baris (inti "setara Shopee")**: `OrdersView.rowAction()` menaruh tombol utama di tiap
-  baris — Perlu Dikirim → **Atur Pesanan** (tombol utama; dialognya sama, jadi admin tidak perlu
-  buka drawer), Dikirim ber-resi → **Cetak Label** (`/admin/label/<order_number>`, tab baru), Belum
-  Bayar → **Hubungi Pembeli** (`wa.me`), Selesai/Dibatalkan → tanpa aksi. Sel aksi tabel dibungkus
-  `onClick={(e) => e.stopPropagation()}` supaya klik tombol tidak ikut membuka drawer barisnya.
-  **Jangan** mengubah gerbang "Atur Pesanan" di `OrderDetailContent` (masih `status === "diproses"`):
-  `orderStage` hanya memberi tahu keadaan pesanan, bukan menggantikan gerbangnya.
+- **Aksi hanya di drawer detail** (permintaan pemilik 2026-10-11: "tabel nya jadi berantakan ini
+  broo harus nya atur pesanan hubungi pembeli di detail aja bro, rapihin juga tabel yg di open
+  order"): tombol per baris yang dulu ditulis `OrdersView.rowAction()` (**Atur Pesanan** saat Perlu
+  Dikirim, **Cetak Label** saat Dikirim ber-resi, **Hubungi Pembeli** saat Belum Bayar) sudah
+  **dihapus** bersama helper `waLink()`-nya — daftar pesanan kini cuma menyaring, menampilkan, dan
+  membuka detail. Satu-satunya tombol di baris adalah **Detail** (di bawah `lg` seluruh kartunya jadi
+  tombol), dan `onClick={(e) => { e.stopPropagation(); onSelect(o); }}` menjaga klik tombol tidak ikut
+  memanggil handler barisnya. Semua aksi itu tetap lengkap di `OrderDetailContent` (drawer), jadi
+  **jangan** menambahkan tombol aksi ke `OrdersView`/`OrdersMobileList` lagi tanpa permintaan baru —
+  kolom aksi yang berisi dua tombol itulah yang membuat tabelnya berantakan. **Jangan** mengubah
+  gerbang "Atur Pesanan" di `OrderDetailContent` (masih `status === "diproses"`): `orderStage` hanya
+  memberi tahu keadaan pesanan, bukan menggantikan gerbangnya.
+- **Tabel dipepetkan satu baris per sel** supaya tidak berantakan (bagian "rapihin juga tabel yg di
+  open order"): `whitespace-nowrap` di kolom ID, Tanggal, Total, dan kolom Aksi; nama pelanggan
+  dipotong `max-w-[200px] truncate` (+ `title`); kolom `Total` rata kanan seperti header-nya; kolom
+  Pengiriman `min-w-[150px]`. Nomor Open Order (`CYO-20261011-…`) dan nama panjang tidak lagi membuat
+  baris tumbuh tinggi sendiri-sendiri. Tab **Open Order** memakai tabel yang sama persis — tidak ada
+  tabel terpisah, jadi perbaikan ini ikut keduanya.
 - **Kolom "Pengiriman" (tabel) + baris pengiriman (kartu)** memakai `shippingLine()`: kurir (mis.
   "J&T - EZ") + nomor resi, atau **"Resi belum dibuat"** (oranye, `awaiting`) untuk tahap Perlu
   Dikirim, dan "Tanpa resi" untuk pesanan yang memang tidak pernah ber-resi (banyak `selesai` lama).
@@ -815,12 +827,12 @@ tanpa menyentuh status ataupun logika database sama sekali.
 - **Verifikasi (2026-10-11, sesi admin diputar ulang, 768 px + desktop)**: `tsc --noEmit` bersih;
   `curl /admin` & `/id/admin` = `200`; tab berbunyi `Semua (35) · Belum Bayar (1) · Perlu Dikirim (2)
   · Dikirim (0) · Selesai (22) · Dibatalkan (10)`; 35 kartu dengan pill tahap + baris pengiriman;
-  klik tab **Perlu Dikirim** → 2 baris, semuanya "Perlu Dikirim" + "Resi belum dibuat"; klik **Atur
-  Pesanan** di baris → dialog "Atur Pesanan?" muncul, **0** request `/api/admin/orders` selama dialog
-  terbuka (tidak ada resi J&T asli yang terbit), lalu **Batal** menutup dialog; di desktop tabel
-  menampilkan kolom `ID · Pelanggan · Tanggal · Total · Pengiriman · Status · Aksi` dengan baris
-  `… J&T - EZ / Resi belum dibuat / Perlu Dikirim / Atur Pesanan / Detail`; tidak ada scroll samping
-  di kedua lebar; tanpa error console. **Belum** terbukti end-to-end: menekan **konfirmasi** "Atur
+  klik tab **Perlu Dikirim** → 2 baris, semuanya "Perlu Dikirim" + "Resi belum dibuat"; di desktop
+  tabel menampilkan kolom `ID · Pelanggan · Tanggal · Total · Pengiriman · Status · Aksi`; tidak ada
+  scroll samping di kedua lebar; tanpa error console. (Klik **Atur Pesanan** di baris masih ada saat
+  pengujian itu, kini sudah dipindah ke drawer detail — lihat "Aksi hanya di drawer detail"; setelah
+  pemindahan itu yang bisa dibuktikan hanya `tsc --noEmit` bersih + `curl /admin` & `/id/admin` =
+  `200`, karena route admin memang tidak dapat dibuka lewat preview tool.) **Belum** terbukti end-to-end: menekan **konfirmasi** "Atur
   Pesanan" (kredensial J&T toko production — akan menerbitkan pengiriman asli), serta tautan **Cetak
   Label**/**Hubungi Pembeli** (tautan keluar, tidak diklik).
 - **Catatan tool preview**: `preview_screenshot({path:'/admin'})` hanya melakukan kunjungan penuh

@@ -792,14 +792,15 @@ function AdminPageInner() {
                 />
               )}
 
-              {/* ORDER MANAGEMENT — ala Shopee Seller Centre: tab tahap + aksi per baris.
+              {/* ORDER MANAGEMENT — ala Shopee Seller Centre: tab tahap + daftar.
                   Seluruh alurnya (tab sumber, pencarian, tab tahap, daftar, tabel) hidup di
-                  `OrdersView` supaya file ini tidak lagi menampung panel pesanan sepanjang itu. */}
+                  `OrdersView` supaya file ini tidak lagi menampung panel pesanan sepanjang itu.
+                  Aksi pesanan (Atur Pesanan / Cetak Label / Hubungi Pembeli) sengaja hanya ada di
+                  drawer detail, jadi halaman ini tidak mengoper `arrangeOrder` ke daftarnya. */}
               {activePanel === "orders" && (
                 <OrdersView
                   orders={orders}
                   onSelect={(row) => setSelectedOrder(orders.find((o) => o.id === row.id) || null)}
-                  onArrangeOrder={arrangeOrder}
                 />
               )}
 
