@@ -401,3 +401,52 @@ Kredensial toko ini **production**, bukan demo: `data` + `sign` yang sama membal
 `is_success: "true"` di `partner-track.jet.co.id`. Karena itu `JNT_ENV=production` diset di
 `.base44/env.defaults` (bukan rahasia, jadi aman di repo; nilai dari dashboard tetap menang).
 Kalau ongkir tiba-tiba `fail` lagi, cek `JNT_ENV` dulu sebelum menuduh sign/kredensialnya salah.
+
+## Halaman pesanan customer (`/akun/pesanan`)
+
+Yang tidak kelihatan dari kode:
+
+- **Status di detail pesanan mengikuti `orders.status`**, bukan hardcode: `buildSteps()` di
+  `src/app/[locale]/akun/pesanan/[orderNo]/page.tsx` memetakan pending → baru dikonfirmasi,
+  diproses → diproses, dikirim → diserahkan ke kurir/dalam perjalanan, selesai → semua langkah
+  selesai, dibatalkan → berhenti setelah dikonfirmasi (+ catatan merah). **Dulu langkah 1 & 2
+  selalu "done"**, jadi pesanan `pending` di akun tampak sudah diproses sementara admin
+  menampilkannya `pending` — itu bug yang diperbaiki, jangan kembalikan hardcode itu.
+- Label pill ikut disamakan dengan admin: `pending` = **"Menunggu"** (dulu "Diproses"),
+  `dibatalkan` pakai `akun-pill-batal` (merah). Dipakai bersama oleh `/akun` (dashboard),
+  list pesanan, dan detail — ubah di `src/lib/akun-format.ts` saja.
+- **Foto "Informasi Produk" diambil dari katalog.** Baris `order_items` pesanan Open Order tidak
+  menyimpan `product_image` (route `/api/open-order` tidak pernah mengisinya), jadi
+  `orderItemImage(item, catalog)` di `src/lib/open-order-catalog.ts` mencocokkan `kain` + warna +
+  `series` ke baris `products` lalu memakai `getProductThumbnail`. Karena itu
+  `getCustomerOrders()` di `src/lib/customer-auth.ts` **wajib memilih `kain, series`** — kalau
+  kolomnya tidak ikut di-select, fotonya hilang tanpa error (placeholder ikon lagi).
+- **Nomor resi terbit saat pesanan dibuat**: `/api/open-order` sekarang memanggil J&T Order Create
+  (`createOrder` di `src/lib/jnt/*`) tepat setelah baris `order_items` masuk, lalu menyimpan
+  `awb_no` + `jnt_order_id` (dan mengembalikan `awbNo`), sama seperti `/api/orders` pada checkout
+  website. Kode area dari nama wilayah RajaOngkir: `getOriginCode("DEPOK")` (= "DPK"),
+  `getDestinationCode(city)`, `getReceiverArea(city, district)` — wizard menyimpan nama resmi
+  ("Kota Depok", "Beji") dan `area-mapping.ts` membuang prefix administratif, jadi biarkan
+  namanya apa adanya. Kegagalan J&T hanya di-`console.error` (`[OPEN-ORDER] J&T`) dan pesanan
+  tetap tersimpan, jadi **resi kosong ≠ pesanan gagal**; periksa log sebelum menuduh route-nya.
+  Pesanan yang sudah ada sebelum perubahan ini tetap tanpa resi (tidak ada backfill, dan belum
+  ada tombol "buat resi" di admin).
+- **Customer bisa membatalkan pesanannya sendiri**: `POST /api/orders/cancel` (body
+  `{ orderNumber }`, header `Authorization: Bearer <access_token>`) — verifikasi sesi, pesanan
+  harus milik customer itu (kalau bukan → 404, bukan 403), hanya status `pending`/`diproses` yang
+  boleh, batalkan pengiriman di J&T dulu baru `status = dibatalkan`. Stok **tidak** dikembalikan
+  karena `/api/open-order` tidak pernah memotong stok (memanggil `samaqu_restore_stock` justru
+  menambah stok yang tidak pernah diambil). Tombolnya di aside halaman detail + `ConfirmModal`.
+
+Verify (mobile 374px, akun customer):
+
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' -X POST http://localhost:3000/api/orders/cancel \
+  -H 'Content-Type: application/json' -d '{"orderNumber":"CYO-..."}'   # 401 tanpa sesi
+```
+
+Lalu di browser: buka `/id/akun/pesanan` → detail pesanan. Timeline harus sama dengan status di
+`/id/admin` (Pesanan), foto produk muncul (Cloudinary), kartu **Nomor Resi** terisi begitu pesanan
+baru dibuat, dan tombol **Batalkan Pesanan** muncul hanya untuk `pending`/`diproses`. Bikin
+pesanan uji sebisa mungkin **dibatalkan lalu dihapus** (admin detail → Hapus, atau REST
+`DELETE /rest/v1/orders?order_number=eq.…`) agar daftar pesanan asli tidak kotor.

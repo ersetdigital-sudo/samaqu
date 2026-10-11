@@ -70,6 +70,25 @@ export function catalogProductFor(
 }
 
 /**
+ * Foto untuk satu baris `order_items` pesanan Open Order: baris itu menyimpan kode kain
+ * (`kain` / `product_id`) + warna + series, bukan id baris katalog, jadi dicocokkan dulu ke
+ * baris `products` yang sama seperti galeri di wizard.
+ */
+export function orderItemImage(
+  item: { kain?: string | null; color?: string | null; series?: string | null },
+  catalog: Product[]
+): string {
+  const kain = (item.kain ?? "").trim();
+  if (!kain) return "";
+  const color = (item.color ?? "").trim().toLowerCase();
+  const matches = catalog.filter(
+    (row) => (row.jenis_kain?.name ?? row.kain) === kain && (!color || row.name.toLowerCase().endsWith(color))
+  );
+  const row = matches.find((match) => match.series === item.series) ?? matches[0];
+  return row ? getProductThumbnail(row) : "";
+}
+
+/**
  * Foto galeri (tanpa video) untuk kombinasi produk + warna + series — sumbernya baris katalog
  * yang sama dengan yang dipakai halaman detail katalog, supaya fotonya sama persis.
  */
