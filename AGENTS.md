@@ -323,6 +323,16 @@ Page presentation (not obvious from the code):
   "Expected '</', got 'ident'"). Baris "Pesanan Terbaru" di dashboard memakai komponen yang sama
   (5 baris pertama, tanpa `onSelect`) dan baris chip filter pesanan memakai `flex-wrap` supaya
   "Selesai" tidak terpotong di layar ~370 px.
+  **Tata letak modal detail di mobile** (permintaan pemilik: "kurang rapih, bikin lebih responsif"):
+  pembungkus modal memakai varian `md:` (`md:pt-10 md:px-4 md:pb-10`, `md:rounded-2xl`, `md:min-h-0`,
+  header `px-4 py-4 md:px-6 md:py-5`) supaya di bawah 768 px modalnya jadi lembar penuh tanpa
+  gutter — breakpoint-nya sengaja `md` (768 px), sama dengan breakpoint "struk" di `RINCIAN_CSS`;
+  `OrderDetailContent`'s `OD_CSS` menambahkan override `max-width:767.98px` yang **hanya** berlaku
+  di dalam modal: `.od-root .rp-root` jadi transparan (latar abu `#F5F6F7` milik halaman customer
+  dibuang, kalau tidak ada blok abu di dalam kertas krem modal), banner status menempel di bawah
+  header (`margin-top:0` + radius 0), chip "Ubah Status" jadi grid 2×2 dan tombol aksi jadi baris
+  penuh (flex-wrap membuat 3 chip + 1 dan tombol berlebar pincang). Yang ≥768 px tidak berubah:
+  tetap lembar "struk hangat" krem di dalam kartu modal.
 - **Dashboard akun** (`/[locale]/akun`, `src/app/[locale]/akun/page.tsx`) ditata ulang untuk mobile:
   baris "Pesanan Terakhir" = satu baris atas (thumbnail, nama pesanan + `#nomor · tanggal` yang
   dipotong `truncate` satu baris, chevron rata tengah) lalu satu baris penuh di bawahnya berisi

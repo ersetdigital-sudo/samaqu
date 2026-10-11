@@ -65,6 +65,20 @@ const OD_CSS = `
 .od-a-danger{border-color:#EBC7C0;color:#B4392A}
 .od-a-danger:hover{background:#FCF0EA}
 .od-email{display:block;font-size:12.5px;color:#8D9297;font-weight:500;margin-top:2px}
+/* Mobile: modal admin bukan halaman customer — latar abu (dan ruangnya) dibuang supaya
+   isi struk duduk langsung di kertas krem modal, dan banner status menempel rapi di
+   bawah header (tanpa celah + sudut). Kartu putih di bawahnya jadi sama seperti kartu
+   dashboard admin. */
+@media (max-width:767.98px){
+ .od-root .rp-root{background:transparent;padding-bottom:0}
+ .od-root .rp-banner{margin-top:0;border-radius:0;padding:15px 16px}
+ /* Panel aksi: chip status rata 2×2 dan tombol selebar kartu — di layar sempit
+    baris tombol ala flex-wrap jadi pincang (3 chip + 1, tombol lebarnya beda-beda). */
+ .od-chips{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+ .od-chip{padding:11px 10px}
+ .od-acts{flex-direction:column;align-items:stretch;gap:8px}
+ .od-a{justify-content:center;padding:12px 14px}
+}
 @media (min-width:768px){
  .od-root .rp-root{background:transparent}
  .od-root .rp-act{padding:16px 20px 20px}
