@@ -267,6 +267,21 @@ Page presentation (not obvious from the code):
   and only its appearance changed. The summary box below it lists the item lines, an `Extra Cover &
   Hanger` line while the add-on is selected, and a `Total` (subtotal + add-on) so toggling the card
   visibly changes the amount; ongkir is only added in step 5 (review).
+- **Checkout Open Order wajib punya akun**: langkah 4 adalah gerbangnya. Kalau belum ada sesi
+  customer, langkah 4 merender `StepAuth` (masuk/daftar **inline** — bukan redirect — supaya
+  keranjang & data yang sudah diisi di state wizard tidak hilang) dan judul header jadi
+  "Masuk / Daftar"; sesi dibaca sekali saat `OpenOrderWizard` mount lewat `getCurrentCustomer()`.
+  Setelah masuk/daftar, form data pemesan langsung tampil terisi nama + WhatsApp dari akun (hanya
+  field yang masih kosong) dan judul kembali "Data Pemesanan". Kalau project Supabase meminta
+  verifikasi email, `signUp` tidak menghasilkan sesi: `StepAuth` pindah ke tab Masuk sambil
+  menampilkan pesan cek email.
+- `/api/open-order` **menolak** request tanpa sesi (`401`; header `Authorization: Bearer
+  <access_token>` diverifikasi `supabaseAdmin.auth.getUser`) dan menolak sesi yang bukan akun
+  pelanggan (`403`, dicek dari baris `customers` — `orders.customer_id` ber-FK ke tabel itu, jadi
+  insert-nya akan gagal kalau tidak dicek). Order disimpan dengan `customer_id` +
+  `customer_email` **dari token**, bukan dari body — order `CYO-` jadi muncul di `/akun/pesanan`.
+  (Order checkout website lama maupun baru masih `customer_id: null`; itu di luar cakupan gerbang
+  ini.)
 - The admin **Pesanan** panel splits the list into sub-tabs **Pesanan Website** / **Open Order**
   (`orderSource` state): Open Order rows are the `CYO-` numbers, everything else is the website
   checkout, and the status chips (Semua/pending/diproses/selesai) filter inside the selected tab.
