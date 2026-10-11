@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { cancelOrderCompletely } from "@/lib/cancel-order";
 
 /**
  * Auto-cancel unpaid orders after 24 hours.
  * GET /api/cron/auto-cancel — safe for Vercel Cron or manual trigger.
- * Restores stock via samaqu_restore_stock RPC (resolves base product).
+ *
+ * Pembatalannya memakai jalur bersama `cancelOrderCompletely()`: kalau pesanan ternyata
+ * masih memegang resi J&T (mis. statusnya pernah ditarik balik ke `pending` dari chip admin),
+ * resinya di-void dulu baru status jadi `dibatalkan` — kalau J&T menolak, pesanan dilewati
+ * supaya resi aktif tidak menggantung. Stok hanya dikembalikan untuk pesanan website (`SMQ-`),
+ * karena Open Order (`CYO-`) tidak pernah memotong stok (lihat src/lib/cancel-order.ts).
  */
 export async function GET(request: NextRequest) {
   // Verify cron secret (Vercel Cron sends CRON_SECRET header)
@@ -21,7 +27,7 @@ export async function GET(request: NextRequest) {
 
   const { data: expiredOrders, error: fetchError } = await supabase
     .from("orders")
-    .select("id, order_number")
+    .select("id, order_number, status, awb_no, jnt_order_id")
     .eq("status", "pending")
     .lt("created_at", cutoff);
 
@@ -39,38 +45,14 @@ export async function GET(request: NextRequest) {
 
   for (const order of expiredOrders) {
     try {
-      // Fetch order items for stock restoration
-      const { data: items } = await supabase
-        .from("order_items")
-        .select("product_id, color, size, quantity")
-        .eq("order_id", order.id);
+      const result = await cancelOrderCompletely(order, "Dibatalkan otomatis (belum dibayar 24 jam)");
 
-      // Restore stock for each item
-      if (items && items.length > 0) {
-        for (const item of items) {
-          if (item.product_id && item.color && item.size && item.quantity) {
-            await supabase.rpc("samaqu_restore_stock", {
-              p_product_id: item.product_id,
-              p_color: item.color,
-              p_size: item.size,
-              p_qty: item.quantity,
-            });
-          }
-        }
-      }
-
-      // Update status to auto-cancelled (+ jam pembatalan; tabel orders tidak punya trigger updated_at)
-      const { error: updateError } = await supabase
-        .from("orders")
-        .update({ status: "dibatalkan", updated_at: new Date().toISOString() })
-        .eq("id", order.id);
-
-      if (updateError) {
-        console.error("[AUTO-CANCEL] Status update error:", order.order_number, updateError);
-        errors++;
-      } else {
+      if (result.success) {
         cancelled++;
-        console.log("[AUTO-CANCEL] Cancelled:", order.order_number, "items:", items?.length ?? 0);
+        console.log("[AUTO-CANCEL] Cancelled:", order.order_number);
+      } else {
+        console.error("[AUTO-CANCEL] Gagal membatalkan:", order.order_number, result.stage, result.message);
+        errors++;
       }
     } catch (e) {
       console.error("[AUTO-CANCEL] Unexpected error:", order.order_number, e);

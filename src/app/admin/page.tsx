@@ -443,6 +443,17 @@ function AdminPageInner() {
   }
 
   async function updateOrderStatus(orderNumber: string, newStatus: string) {
+    // Pesanan yang sudah punya resi J&T: `dibatalkan` wajib lewat jalur void resi yang sama
+    // seperti tombol "Batalkan di J&T" (termasuk konfirmasinya), supaya pengiriman di J&T
+    // tidak tertinggal aktif saat pesanannya dianggap batal.
+    if (newStatus === "dibatalkan") {
+      const target = orders.find((o) => o.order_number === orderNumber);
+      if (target?.awb_no) {
+        cancelJntOrder(target);
+        return;
+      }
+    }
+
     try {
       const res = await fetch("/api/admin/orders", {
         method: "PATCH",
@@ -524,7 +535,7 @@ function AdminPageInner() {
   }
 
   async function cancelJntOrder(order: Order) {
-    showConfirm("Batalkan di J&T?", `Yakin ingin membatalkan pengiriman J&T untuk pesanan ${order.order_number}? AWB ${order.awb_no || "-"} akan dicancel.`, async () => {
+    showConfirm("Batalkan di J&T?", `Yakin ingin membatalkan pengiriman J&T untuk pesanan ${order.order_number}? AWB ${order.awb_no || "-"} akan di-void di J&T.`, async () => {
       try {
         const res = await fetch("/api/admin/orders", {
           method: "PATCH",
@@ -544,7 +555,7 @@ function AdminPageInner() {
         console.error("Cancel J&T error:", err);
         toast.showToast("error", "Gagal membatalkan J&T, coba lagi");
       }
-    });
+    }, { confirmText: "Ya, Batalkan", danger: true });
   }
 
   function go(panel: Panel) {

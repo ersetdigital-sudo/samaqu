@@ -865,3 +865,51 @@ sendiri sementara halaman admin di belakangnya masih bisa di-scroll — dua bar 
   membalas `navigation_failed` (route admin tidak bereaksi ke SPA nav) dan URL-nya tertinggal
   menunjuk `/id/admin` padahal isinya halaman lain — panggil `preview_screenshot({path:'/id/admin'})`
   (yang melakukan kunjungan halaman penuh) dulu sebelum menguji panel admin.
+
+## Satu jalur pembatalan: resi J&T selalu di-void dulu
+
+Permintaan pemilik (2026-10-11): "bagus gimana buat alur yg skrng, kasih yg terbaik aja" —
+setelah dibahas, celahnya bukan di cron (order `pending` normalnya belum beresi) melainkan di
+chip **"Ubah Status"** drawer admin: chip itu dulu menulis status apa adanya, jadi pesanan beresi
+bisa dikembalikan ke `pending` atau ditandai `dibatalkan` sementara resinya tetap hidup di J&T.
+
+- **Satu modul**: `src/lib/cancel-order.ts` → `cancelOrderCompletely(order, remark)`. Urutannya
+  void resi J&T (kalau `awb_no`/`jnt_order_id` ada) → stok website dikembalikan → status
+  `dibatalkan` + `updated_at` ditulis manual. Kalau J&T menolak, status **tidak** diubah dan
+  fungsinya mengembalikan `{ success: false, stage: "jnt" }` supaya resi tidak menggantung.
+  Dipakai **empat** pemanggil: `PATCH /api/admin/orders` (action `cancelJnt` **dan** status
+  `dibatalkan`), `POST /api/orders/cancel` (customer), dan `GET /api/cron/auto-cancel`.
+  Jangan tulis ulang urutan void→stok→status di route baru; panggil modul ini.
+- **Stok hanya untuk `SMQ-`**: `hasStockReservation()` di modul itu memakai prefix nomor pesanan,
+  karena hanya checkout website yang memotong stok (`samaqu_decrement_stock`); `CYO-` (Open Order)
+  tidak pernah memotong, jadi dulu jalur admin & cron **menambah** stok yang tidak pernah diambil.
+  Customer hanya bisa membatalkan order miliknya (`customer_id`), dan order website lama/baru
+  `customer_id`-nya null → praktis tidak berubah, tapi aturannya sekarang eksplisit.
+- **Dua penjagaan di `PATCH /api/admin/orders`** (selain `cancelJnt`): status `pending` **ditolak
+  400** kalau pesanan sudah punya resi (`Pesanan ini sudah punya resi J&T (<resi>)…`), dan status
+  `dibatalkan` dirutekan ke `cancelOrderCompletely()` — jadi chip "Dibatalkan" kini ikut mem-void
+  resi, bukan cuma mengganti status.
+- **Klien**: `updateOrderStatus()` di `src/app/admin/page.tsx` mendelegasikan `dibatalkan` untuk
+  pesanan ber-`awb_no` ke `cancelJntOrder()` (konfirmasi + void), dan dialog itu memakai
+  `{ confirmText: "Ya, Batalkan", danger: true }` (sebelumnya tombolnya berbunyi "Hapus").
+  Penjagaan server tetap yang mengikat — klien cuma UX.
+- **Pesan error J&T**: `cancelOrder()` hanya melihat `raw.detail[0].status === "Sukses"`, sedangkan
+  `raw.desc` bisa berbunyi "Request berhasil" walau `detail[0].reason` menolak; karena itu pesan
+  error memakai `detail[0].reason` lebih dulu.
+- **Verifikasi (2026-10-11, semua lolos)**: `tsc --noEmit` bersih. Lewat API + baca REST:
+  (a) order uji tanpa resi + status `dibatalkan` → 200, `updated_at` > `created_at`;
+  (b) order uji pending **beresi** + chip `pending` → 400 (ditolak) dan chip `dibatalkan` → 400
+  dengan status tetap `pending` (J&T menolak void);
+  (c) order uji `created_at` 25 jam lalu → cron `auto-cancel` → `{cancelled:1}` dan statusnya
+  `dibatalkan`; (d) sesi admin diputar ulang: `/id/admin` → Order Management → baris pesanan uji
+  → chip "Dibatalkan" membuka dialog "Batalkan di J&T?" berisi nomor AWB, **tidak** ada
+  `PATCH /api/admin/orders` selama dialog terbuka, status tetap Pending, dialog/drawer ditutup
+  tanpa error console. Semua pesanan uji dihapus lagi setelah uji (tidak ada sisa `TEST*`).
+  Perubahan terakhir pada label tombol dialog tidak diuji ulang di browser (jatah panggilan
+  preview habis) — hanya `tsc` bersih.
+- **Temuan kredensial (belum bisa saya perbaiki, perlu pemilik)**: panggilan void ke J&T production
+  (`api.jet.co.id/.../order/cancel`) dijawab `detail[0].reason: "Username atau Api Key salah"`
+  sementara kredensial yang sama dipakai untuk tariff/track (`partner-track`) berhasil. Artinya
+  kredensial **order API** (`JNT_ORDER_USERNAME` / `JNT_ORDER_API_KEY` / `JNT_ORDER_KEY`) belum
+  diterima endpoint ecommerce production — sampai dibetulkan, pembatalan pesanan beresi akan
+  ditolak 400 dan "Atur Pesanan" (createJnt) juga akan gagal.
