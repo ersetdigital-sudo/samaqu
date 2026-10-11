@@ -299,10 +299,20 @@ Page presentation (not obvious from the code):
   There are **two near-duplicate admin dashboards** — `src/app/[locale]/admin/page.tsx` (served at
   `/id/admin`) and `src/app/admin/page.tsx` (`/admin`, kept outside the locale prefix by
   `src/middleware.ts`) — so an orders-panel change belongs in both files.
-  Baris item di modal detail pesanan (blok "Produk Dipesan") kedua dashboard memakai susunan yang
-  sama: `Kain <kode> · <series> · <warna> · <size> × <qty>`, dengan warna tempat sampah `default`
-  (pesanan website lama) disembunyikan — ubah keduanya bersamaan, jangan kembalikan ke
-  `{color} {size} × qty`.
+  **Modal detail pesanan** kedua dashboard kini hanya berisi header (nomor pesanan + tanggal + tombol
+  tutup) + satu komponen bersama **`src/components/admin/OrderDetailContent.tsx`**, yang isinya memakai
+  susunan & gaya halaman detail pesanan customer: banner status berwarna → "Info Pengiriman" →
+  "Alamat Pengiriman" → kartu produk + baris "Total Pesanan" yang dilipat → "Status Pesanan"
+  (linimasa `strukSteps`) → aksi. Gaya/DOM-nya dipinjam dari `RincianPesanan`: kelas `rp-`,
+  `RINCIAN_CSS`, dan `FALLBACK_PHOTO` **diekspor dari sana** — ubah salah satunya, halaman customer
+  dan modal admin ikut berubah (itu yang diinginkan: satu sumber gaya). Kontrol khusus admin
+  (chip "Ubah Status", WhatsApp, Cetak Label, Batalkan J&T, Hapus Pesanan) memakai kelas `od-` di
+  `OD_CSS` file yang sama. Perbedaan yang disengaja dari halaman customer: baris item tetap memakai
+  `Kain <kode> · <series> · <warna> · <size> × <qty>` (warna `default` disembunyikan) dengan
+  `Min: … · Dipilih: …` untuk Open Order, ditambah baris Email + Catatan di blok alamat, dan **tanpa**
+  panggilan `/api/jnt/track`. `order_items` di query kedua dashboard menyertakan `product_image`
+  untuk thumbnail (object-fit contain, tanpa bingkai). Perubahan lain pada panel Pesanan tetap harus
+  dikerjakan di kedua file.
 - **Dashboard akun** (`/[locale]/akun`, `src/app/[locale]/akun/page.tsx`) ditata ulang untuk mobile:
   baris "Pesanan Terakhir" = satu baris atas (thumbnail, nama pesanan + `#nomor · tanggal` yang
   dipotong `truncate` satu baris, chevron rata tengah) lalu satu baris penuh di bawahnya berisi
