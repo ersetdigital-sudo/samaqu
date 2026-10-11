@@ -451,6 +451,17 @@ Page presentation (not obvious from the code):
   urutannya dengan sidebar dashboard (yang di-SSR spinner, jadi bandingkan dengan sumber `page.tsx`).
   Admin memilih **tanggal mulai + tanggal tutup** (`<input type="date">`) dan **series yang dibuka**
   (chip multi-pilih dari katalog); tidak ada lagi toggle buka/tutup manual.
+  Tombol **"Buka semua series"** kini benar-benar **memilih semua chip** (`setSeries([...allSeries])`)
+  dan hanya tampil selama belum semua terpilih (`series.length < allSeries.length`). Sebelumnya
+  tombol itu **mengosongkan** pilihan (`setSeries([])`) — secara semantik sama-sama "semua series
+  dibuka" (array kosong = semua, lihat `restrictOpenOrderProducts`), tapi chip-nya jadi terlihat
+  ter-uncheck dan pemilik melaporkannya sebagai bug ("pas gue klik buka semua series malah jadi ke
+  un centang"). Nilai kosong tetap berarti "semua series" di database, jadi jangan ubah arti itu —
+  cukup jangan lagi memakai tombol ini untuk mengosongkan. Verifikasi (sesi admin diputar ulang,
+  halaman admin harus dibuka lewat kunjungan penuh `preview_screenshot({path:'/admin/open-order'})`
+  dulu): lepas satu chip (mis. Jiharkah) → ringkasan "5 series dibuka …" + tombol muncul → klik
+  tombol → enam `aria-pressed="true"` + "6 series dibuka: …" dan tombolnya hilang lagi, tanpa error
+  console (tanpa menekan Simpan, jadi tidak ada perubahan tersimpan).
 - Aturan jendela ada di **satu** modul, `src/lib/open-order-window.ts` — dipakai halaman admin
   *dan* publik: `resolveOpenOrderState()` (`before` / `open` / `closed`, dibandingkan sebagai teks
   `YYYY-MM-DD` lokal, bukan objek `Date`, supaya tidak bergeser zona waktu),
