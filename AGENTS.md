@@ -659,6 +659,12 @@ saja (`produk/edit/[id]` masih salinan terpisah dan **tidak** ikut berubah).
   kolom (`84px 84px 1fr 1fr 34px`) di `sm+`. Kelasnya `pf-size-*` di string CSS form.
 - Baris field dibuat konsisten dua kolom (`grid sm:grid-cols-2 gap-4`): Nama/Kategori, Slug/SKU
   Produk, Harga Dasar (non-Thobe)/Berat.
+- **Chip warna & tombol hapusnya**: chip pemilih warna adalah `<button>` untuk mengaktifkan
+  warna, sedangkan kontrol hapus (X) di dalamnya memakai **`<span role="button" tabIndex={0}>`**
+  dengan `onClick`/`onKeyDown`, **bukan** `<button>` — tombol di dalam tombol membuat React
+  melaporkan `In HTML, <button> cannot be a descendant of <button>` (hydration error) dan
+  men-gagalkan hidrasi seluruh halaman. Salinan `produk/edit/[id]` (kedua prefix locale) memakai
+  pola yang sama, jadi perbaiki di ketiga tempat.
 - Verifikasi: `tsc --noEmit` bersih + `curl /admin/produk/tambah` & `/id/admin/produk/tambah` = `200`
   (HTML SSR-nya memuat field "SKU Produk"). **Tidak bisa lewat preview** (route admin tidak bisa
   dicapai navigasi SPA, dan full page load di-reset ke route home di panggilan berikutnya) — jadi
