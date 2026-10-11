@@ -332,7 +332,7 @@ Page presentation (not obvious from the code):
   (`src/components/admin/ProductForm.tsx`, lihat "Form tambah produk admin" di bawah).
   **Drawer detail pesanan** kedua dashboard memakai komponen bersama
   **`src/components/admin/OrderDetailDrawer.tsx`** — panel meluncur dari kanan, pola yang sama dengan
-  `ProductDetailDrawer` (`ODR_CSS`, kelas `odr-`, lebar 640 px / penuh di mobile). Isinya satu
+  `ProductDetailDrawer` (`ODR_CSS`, kelas `odr-`, lebar 520 px / penuh di mobile). Isinya satu
   komponen bersama **`src/components/admin/OrderDetailContent.tsx`**, yang memakai susunan & gaya
   halaman detail pesanan customer: banner status berwarna → "Info Pengiriman" (kurir + **Nomor
   Resi J&T**) → **"Metode Pembayaran"** → "Alamat Pengiriman" → kartu produk + baris "Total
@@ -378,7 +378,18 @@ Page presentation (not obvious from the code):
   milik halaman customer dibuang, kalau tidak ada blok abu di dalam lembar drawer), banner status
   menempel di bawah header drawer (`margin-top:0` + radius 0), chip "Ubah Status" jadi grid 2×2 dan
   tombol aksi jadi baris penuh (flex-wrap membuat 3 chip + 1 dan tombol berlebar pincang). Yang
-  ≥768 px tidak berubah: drawer 640 px dengan lembar "struk hangat" krem 600 px terpusat di dalamnya.
+  Sejak 2026-10-11 (permintaan pemilik: "drawer di detail pesanan jadi jelek, terlalu lebar,
+  bagusan yg sebelumnya, biar modern") drawer ≥768 px jadi **520 px** dan **isi struk mengisi lebar
+  drawer**: dulu panelnya 640 px sementara `RINCIAN_CSS` membatasi `.rp-wrap` ke 600 px terpusat,
+  jadi ada sisa 20 px krem di kiri-kanan yang membuat panel terasa lebar & seperti dua lapis krem
+  bertumpuk. Override-nya di blok `@media (min-width:768px)` `OD_CSS`: `.od-root .rp-wrap{max-width:none}`
+  + `.od-root .rp-sheet{background:transparent;border:0;border-radius:0;box-shadow:none}` (panelnya
+  sendiri yang jadi "kertas", latar `#FFFDF8`, overlay diberi `backdrop-filter:blur(3px)`).
+  Jangan menyentuh `RINCIAN_CSS` untuk ini — lembar struk 600 px itu masih dipakai halaman detail
+  pesanan customer. Verifikasi (sesi admin diputar ulang): `preview_screenshot({path:'/admin'})` →
+  panel Order Management → tombol **Detail** → `.odr-panel` harus `width:520px`, `.rp-wrap`
+  `max-width:none`, `.rp-sheet` border/radius `0px`, tanpa error console, dan di 375 px drawer
+  100% tanpa scroll samping.
 - **Dashboard akun** (`/[locale]/akun`, `src/app/[locale]/akun/page.tsx`) ditata ulang untuk mobile:
   baris "Pesanan Terakhir" = satu baris atas (thumbnail, nama pesanan + `#nomor · tanggal` yang
   dipotong `truncate` satu baris, chevron rata tengah) lalu satu baris penuh di bawahnya berisi
