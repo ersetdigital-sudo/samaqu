@@ -340,10 +340,10 @@ Page presentation (not obvious from the code):
   pembayaran sengaja jadi blok yang selalu terlihat** (permintaan pemilik: "kok resi-nya ilang",
   "harusnya tampil metode pembayaran") — dulu keduanya hanya ada di dalam ringkasan "Total Pesanan"
   yang terlipat dan resi cuma ditempel di belakang nama kurir (`J&T - EZ: JO…`), jadi terbaca
-  seperti hilang. Nomor pesanan `awb_no` tetap terisi otomatis saat pesanan masuk
-  (`/api/open-order` & `/api/orders` memanggil J&T Order Create) — resi kosong di drawer berarti
-  order itu memang belum punya `awb_no`, bukan field-nya yang dibuang; halaman detail customer
-  (`RincianPesanan.tsx`) tidak ikut diubah. Header drawer (nomor pesanan + tanggal + tombol X) hidup di
+  seperti hilang. **Resi J&T tidak lagi terisi otomatis saat pesanan masuk** — admin yang
+  menerbitkannya lewat tombol **"Atur Pesanan"** di blok aksi drawer (lihat "Atur Pesanan" di
+  bawah); resi kosong di drawer berarti pesanan itu memang belum diatur, bukan field-nya yang
+  dibuang; halaman detail customer (`RincianPesanan.tsx`) tidak ikut diubah. Header drawer (nomor pesanan + tanggal + tombol X) hidup di
   `OrderDetailDrawer.tsx` saja; nomor pesanan memakai font UI admin (dulu serif Cormorant di header
   modal — permintaan pemilik: "samain kaya yg lain biar seragam"). Drawer tertutup lewat X, klik
   latar, atau `Escape`, dan `z-index`-nya **50** supaya `ConfirmModal` (Hapus Pesanan / Batalkan
@@ -552,16 +552,13 @@ Yang tidak kelihatan dari kode:
   `series` ke baris `products` lalu memakai `getProductThumbnail`. Karena itu
   `getCustomerOrders()` di `src/lib/customer-auth.ts` **wajib memilih `kain, series`** — kalau
   kolomnya tidak ikut di-select, fotonya hilang tanpa error (placeholder ikon lagi).
-- **Nomor resi terbit saat pesanan dibuat**: `/api/open-order` sekarang memanggil J&T Order Create
-  (`createOrder` di `src/lib/jnt/*`) tepat setelah baris `order_items` masuk, lalu menyimpan
-  `awb_no` + `jnt_order_id` (dan mengembalikan `awbNo`), sama seperti `/api/orders` pada checkout
-  website. Kode area dari nama wilayah RajaOngkir: `getOriginCode("DEPOK")` (= "DPK"),
+- **Nomor resi TIDAK dibuat saat pesanan dibuat** (sejak 2026-10-11): `/api/open-order` dan
+  `/api/orders` hanya menyimpan pesanan (`awb_no: null` di responsnya) dan tidak lagi memanggil
+  J&T. Resi diterbitkan admin lewat **"Atur Pesanan"** — lihat bagian "Atur Pesanan" di bawah.
+  Kode area dari nama wilayah RajaOngkir: `getOriginCode("DEPOK")` (= "DPK"),
   `getDestinationCode(city)`, `getReceiverArea(city, district)` — wizard menyimpan nama resmi
   ("Kota Depok", "Beji") dan `area-mapping.ts` membuang prefix administratif, jadi biarkan
-  namanya apa adanya. Kegagalan J&T hanya di-`console.error` (`[OPEN-ORDER] J&T`) dan pesanan
-  tetap tersimpan, jadi **resi kosong ≠ pesanan gagal**; periksa log sebelum menuduh route-nya.
-  Pesanan yang sudah ada sebelum perubahan ini tetap tanpa resi (tidak ada backfill, dan belum
-  ada tombol "buat resi" di admin).
+  namanya apa adanya. Order lama tetap tanpa resi (tidak ada backfill) sampai admin mengaturnya.
 - **Customer bisa membatalkan pesanannya sendiri**: `POST /api/orders/cancel` (body
   `{ orderNumber }`, header `Authorization: Bearer <access_token>`) — verifikasi sesi, pesanan
   harus milik customer itu (kalau bukan → 404, bukan 403), hanya status `pending`/`diproses` yang
@@ -734,6 +731,44 @@ saja (`produk/edit/[id]` masih salinan terpisah dan **tidak** ikut berubah).
   0 **Simpan/Batal** saat read-only, `Nama Toko` = "SAMAQU" sebagai teks, setelah Edit muncul input
   bernilai sama + Simpan/Batal, Batal kembali ke read-only, kartu J&T tidak ada lagi, dan panel
   Pelanggan memuat (59 pelanggan, 4 kartu ringkasan) tanpa error.
+
+## "Atur Pesanan" — resi J&T diterbitkan admin (ala Shopee Seller Centre)
+
+Permintaan pemilik (2026-10-11): alur pengiriman disamakan dengan Shopee Seller — resi/AWB J&T
+**tidak lagi terbit saat customer checkout**, tapi saat admin menekan **"Atur Pesanan"** setelah
+pembayaran diverifikasi.
+
+- **Checkout berhenti memanggil J&T**: `/api/orders` (checkout website) dan `/api/open-order` tidak
+  lagi memanggil `createOrder` dan membalas `awbNo: null`. Logika payload J&T-nya sekarang **satu**
+  modul: `src/lib/jnt/order-from-order.ts` → `createJntOrderForOrder(order)` (dulu disalin di dua
+  route checkout). Modul itu juga menentukan COD (`payment_methods.method_type`, atau nilai lama
+  `'cod'`) dan berat kirim (`orders.weight`; kalau kosong dijumlah dari `products.weight` per
+  `order_items`, fallback 1200 g/item — pesanan Open Order menyimpan `weight: null`).
+  Salinan mati `src/app/[locale]/api/**` sengaja tidak diubah.
+- **Aksi admin**: `PATCH /api/admin/orders` dengan `action: "createJnt"` → guard (404 pesanan tidak
+  ada, 400 sudah punya `awb_no`, 400 kalau `dibatalkan`), panggil J&T, lalu simpan `awb_no` +
+  `jnt_order_id` **dan ubah status ke `diproses`**. Tombol **"Atur Pesanan"** (kelas `od-a-primary`,
+  ikon kotak) ada di blok aksi `OrderDetailContent.tsx`, muncul hanya bila pesanan belum punya resi
+  dan statusnya `pending`/`diproses`; kliknya membuka `ConfirmModal` (label konfirmasinya "Atur
+  Pesanan", bukan "Hapus" — `showConfirm` di `src/app/admin/page.tsx` menerima
+  `options: { confirmText, danger }`), lalu `arrangeOrder()` meng-update baris tabel + drawer tanpa
+  reload. Status `dikirim` tetap datang dari pelacakan, bukan dari sini.
+- **Kalau J&T menolak** (kredensial/kode area gagal) route membalas 400 dengan pesan `reason`/`desc`
+  dari J&T, status pesanan tidak berubah, dan tombolnya tetap ada untuk dicoba lagi.
+- **`shipping_city` kini menyimpan "Kecamatan, Kota" di kedua jalur** (checkout website dulu hanya
+  menyimpan kota, jadi kecamatan hilang dan `receiver_area` J&T cuma bisa ditebak dari kota).
+  `splitCityDistrict()` di `order-from-order.ts` memecahnya lagi saat membuat resi; order lama yang
+  isinya hanya nama kota tetap jalan (district kosong → lookup per kota).
+- **Verifikasi**: `tsc --noEmit` bersih; `curl /admin` & `/id/admin` = `200`. Lewat preview (sesi
+  admin diputar ulang): Order Management → baris pesanan tanpa resi (mis. `SMQ-20261007-761`) →
+  tombol **Atur Pesanan** ada; pesanan ber-resi (mis. `SMQ-20261008-432`) tidak punya tombol itu;
+  klik tombol → `ConfirmModal` muncul, klik **Batal** → tidak ada request `PATCH /api/admin/orders`
+  (cek `getNetworkRequests`). Guard route tanpa menyentuh J&T:
+  `curl -X PATCH http://localhost:3000/api/admin/orders -H 'Content-Type: application/json'
+  -d '{"orderNumber":"SMQ-20261008-432","action":"createJnt"}'` → `400` "sudah punya nomor resi";
+  order asing → `404`. **Pembuatan resi yang benar-benar sukses belum diuji otomatis**: kredensial
+  J&T toko ini production, jadi mengonfirmasi dialognya akan membuat pengiriman J&T asli — uji
+  manual dengan satu pesanan nyata.
 
 ## Lacak paket di drawer pesanan & status selesai otomatis
 

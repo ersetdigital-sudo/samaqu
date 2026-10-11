@@ -410,10 +410,17 @@ function AdminPageInner() {
   }
 
   const toast = useToast();
-  const [confirmModal, setConfirmModal] = useState<{ open: boolean; title: string; message: string; onConfirm: () => void }>({ open: false, title: "", message: "", onConfirm: () => {} });
+  const [confirmModal, setConfirmModal] = useState<{ open: boolean; title: string; message: string; confirmText?: string; danger?: boolean; onConfirm: () => void }>({ open: false, title: "", message: "", onConfirm: () => {} });
 
-  function showConfirm(title: string, message: string, onConfirm: () => void) {
-    setConfirmModal({ open: true, title, message, onConfirm });
+  // `options` dipakai kalau aksinya bukan tindakan merusak (mis. "Atur Pesanan"), supaya tombol
+  // konfirmasinya tidak berlabel "Hapus".
+  function showConfirm(
+    title: string,
+    message: string,
+    onConfirm: () => void,
+    options?: { confirmText?: string; danger?: boolean }
+  ) {
+    setConfirmModal({ open: true, title, message, onConfirm, ...options });
   }
 
   async function handleDeleteProduct(id: string, name: string, memberIds?: string[]) {
@@ -452,6 +459,39 @@ function AdminPageInner() {
       console.error("Update status error:", err);
       toast.showToast("error", "Gagal memperbarui status, coba lagi");
     }
+  }
+
+  /**
+   * "Atur Pesanan" ala Shopee: resi J&T dibuat manual oleh admin setelah pembayaran
+   * diverifikasi. Sukses → nomor resi tersimpan dan status pesanan jadi "diproses".
+   */
+  async function arrangeOrder(order: Order) {
+    showConfirm(
+      "Atur Pesanan?",
+      `Buat nomor resi J&T untuk pesanan ${order.order_number}? Pesanan akan berstatus "diproses".`,
+      async () => {
+        try {
+          const res = await fetch("/api/admin/orders", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ orderNumber: order.order_number, action: "createJnt" }),
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            toast.showToast("error", data.error || "Gagal membuat resi J&T");
+            return;
+          }
+          const awbNo = data.awbNo as string;
+          setOrders((prev) => prev.map((o) => o.order_number === order.order_number ? { ...o, awb_no: awbNo, status: "diproses" } : o));
+          setSelectedOrder((prev) => prev && prev.order_number === order.order_number ? { ...prev, awb_no: awbNo, status: "diproses" } : prev);
+          toast.showToast("success", `Resi J&T terbit: ${awbNo}`);
+        } catch (err) {
+          console.error("Arrange order error:", err);
+          toast.showToast("error", "Gagal membuat resi J&T, coba lagi");
+        }
+      },
+      { confirmText: "Atur Pesanan", danger: false }
+    );
   }
 
   async function deleteOrder(orderNumber: string) {
@@ -879,6 +919,7 @@ function AdminPageInner() {
         onClose={() => setSelectedOrder(null)}
         onStatusChange={(status) => { if (selectedOrder) updateOrderStatus(selectedOrder.order_number, status); }}
         onCancelJnt={() => { if (selectedOrder) cancelJntOrder(selectedOrder); }}
+        onArrangeOrder={() => { if (selectedOrder) arrangeOrder(selectedOrder); }}
         onDelete={() => { if (selectedOrder) deleteOrder(selectedOrder.order_number); }}
       />
 
@@ -886,6 +927,8 @@ function AdminPageInner() {
         open={confirmModal.open}
         title={confirmModal.title}
         message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        danger={confirmModal.danger}
         onConfirm={() => { confirmModal.onConfirm(); setConfirmModal((prev) => ({ ...prev, open: false })); }}
         onCancel={() => setConfirmModal((prev) => ({ ...prev, open: false }))}
       />
