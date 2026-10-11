@@ -219,10 +219,10 @@ export default function OpenOrderSettingsForm() {
                   Series yang tidak dipilih tidak muncul di /open-order.
                 </p>
               </div>
-              {series.length > 0 && (
+              {allSeries.length > 0 && series.length < allSeries.length && (
                 <button
                   type="button"
-                  onClick={() => setSeries([])}
+                  onClick={() => setSeries([...allSeries])}
                   className="text-[12px] font-medium underline underline-offset-2"
                   style={{ color: LABEL_COLOR }}
                 >
