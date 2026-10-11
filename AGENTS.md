@@ -738,6 +738,17 @@ otomatis statusnya selesai sendiri", plus chip filter "dibatalkan" di panel Pesa
 - **Chip filter**: baris chip di `src/app/admin/page.tsx` kini
   `["Semua","pending","diproses","selesai","dibatalkan"]` (satu sumber untuk `/admin` dan
   `/id/admin`). Chip tetap `flex-wrap`, jadi lima chip tidak memotong "Selesai" di ~370 px.
+  Setiap chip menampilkan **jumlahnya** (`Pending (3)`) dan **judul daftar ikut filter aktif**
+  ("Semua Pesanan" → "Pesanan Diproses"; tab Open Order → "Open Order Diproses"). Angkanya dari
+  `statusCounts` yang dihitung atas `sourceOrders` (tab yang aktif), jadi selalu cocok dengan baris
+  di bawahnya — bukan query terpisah.
+- **Tipografi admin seragam**: satu aturan di `ADMIN_WF_VARS` (`src/components/admin/admin-theme.ts`,
+  `#admin-root h1..h4 { font-family: var(--font-inter) !important; font-style: normal !important }`)
+  memaksa SEMUA judul admin memakai font UI, bukan Cormorant serif italic (gaya storefront).
+  Dipaksa `!important` karena banyak judul menulis `fontFamily` inline — jadi menghapus satu per satu
+  di puluhan file (termasuk salinan locale) tidak perlu; elemen serif yang **bukan** judul (kode
+  voucher, nama produk di blok "Preview Produk") sengaja dibiarkan. Verifikasi: `getComputedStyle`
+  pada h2 "Semua Pesanan" & "Konten Website" → `fontFamily` Inter, `fontStyle` normal.
 - **Tombol Lacak**: `OrderDetailContent.tsx` (drawer detail pesanan, kedua dashboard) punya tombol
   **Lacak Paket** di blok aksi, muncul hanya bila pesanan punya `awb_no`. Tombol membuka panel
   **Riwayat Pengiriman** di dalam drawer yang memanggil `/api/jnt/track?awb=…` sekali (data
