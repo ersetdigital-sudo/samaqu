@@ -333,9 +333,16 @@ Page presentation (not obvious from the code):
   **`src/components/admin/OrderDetailDrawer.tsx`** — panel meluncur dari kanan, pola yang sama dengan
   `ProductDetailDrawer` (`ODR_CSS`, kelas `odr-`, lebar 640 px / penuh di mobile). Isinya satu
   komponen bersama **`src/components/admin/OrderDetailContent.tsx`**, yang memakai susunan & gaya
-  halaman detail pesanan customer: banner status berwarna → "Info Pengiriman" →
-  "Alamat Pengiriman" → kartu produk + baris "Total Pesanan" yang dilipat → "Status Pesanan"
-  (linimasa `strukSteps`) → aksi. Header drawer (nomor pesanan + tanggal + tombol X) hidup di
+  halaman detail pesanan customer: banner status berwarna → "Info Pengiriman" (kurir + **Nomor
+  Resi J&T**) → **"Metode Pembayaran"** → "Alamat Pengiriman" → kartu produk + baris "Total
+  Pesanan" yang dilipat → "Status Pesanan" (linimasa `strukSteps`) → aksi. **Nomor resi dan metode
+  pembayaran sengaja jadi blok yang selalu terlihat** (permintaan pemilik: "kok resi-nya ilang",
+  "harusnya tampil metode pembayaran") — dulu keduanya hanya ada di dalam ringkasan "Total Pesanan"
+  yang terlipat dan resi cuma ditempel di belakang nama kurir (`J&T - EZ: JO…`), jadi terbaca
+  seperti hilang. Nomor pesanan `awb_no` tetap terisi otomatis saat pesanan masuk
+  (`/api/open-order` & `/api/orders` memanggil J&T Order Create) — resi kosong di drawer berarti
+  order itu memang belum punya `awb_no`, bukan field-nya yang dibuang; halaman detail customer
+  (`RincianPesanan.tsx`) tidak ikut diubah. Header drawer (nomor pesanan + tanggal + tombol X) hidup di
   `OrderDetailDrawer.tsx` saja; nomor pesanan memakai font UI admin (dulu serif Cormorant di header
   modal — permintaan pemilik: "samain kaya yg lain biar seragam"). Drawer tertutup lewat X, klik
   latar, atau `Escape`, dan `z-index`-nya **50** supaya `ConfirmModal` (Hapus Pesanan / Batalkan
@@ -393,6 +400,13 @@ Page presentation (not obvious from the code):
   hanya merender `src/components/admin/OpenOrderSettingsForm.tsx` di dalam `AdminShell` — formulirnya
   **satu file** supaya dua halaman itu tidak dobel. (Entri sidebar-nya sendiri masih perlu ada di
   `AdminShell`'s `navGroups` **dan** di sidebar dua dashboard admin, karena masing-masing punya sidebar.)
+  **Urutan item di grup "Lainnya" wajib identik di kedua sidebar** (`AdminShell`'s `navGroups` dan
+  blok "Lainnya" di `src/app/admin/page.tsx`): kalau tidak, menu terlihat "berubah urutan" begitu
+  admin membuka salah satu subhalaman — dulu "Open Order" ada di posisi ketiga di `AdminShell` tapi
+  paling bawah di dashboard. Urutan yang benar: Konten Website · Pengaturan · Voucher · Testimoni ·
+  Panduan Ukuran · Halaman Garansi &amp; Retur · Open Order. Verifikasi tanpa browser:
+  `curl -s http://localhost:3000/admin/open-order | grep -o 'href="/admin[^"]*"'` harus sama
+  urutannya dengan sidebar dashboard (yang di-SSR spinner, jadi bandingkan dengan sumber `page.tsx`).
   Admin memilih **tanggal mulai + tanggal tutup** (`<input type="date">`) dan **series yang dibuka**
   (chip multi-pilih dari katalog); tidak ada lagi toggle buka/tutup manual.
 - Aturan jendela ada di **satu** modul, `src/lib/open-order-window.ts` — dipakai halaman admin

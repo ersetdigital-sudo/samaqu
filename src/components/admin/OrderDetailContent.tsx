@@ -143,17 +143,33 @@ export default function OrderDetailContent({
               <div className="rp-sec">
                 <span className="rp-h">Info Pengiriman</span>
                 <div className="rp-line" style={{ marginTop: 8 }}>
-                  <span className="rp-sub">
-                    {order.shipping_method || "Pengiriman"}
-                    {resi ? `: ${resi}` : ""}
-                  </span>
+                  <span className="rp-sub">{order.shipping_method || "Pengiriman"}</span>
                 </div>
-                {!resi ? (
+                {/* Nomor resi J&T tampil sebagai baris tersendiri (dulu cuma ditempel di belakang
+                    nama kurir, jadi terlihat seperti hilang) — resi terbit otomatis begitu
+                    pesanan masuk, jadi barisnya muncul tanpa admin perlu membuka apa pun. */}
+                {resi ? (
+                  <div className="rp-line" style={{ marginTop: 8 }}>
+                    <span className="rp-sub">Nomor Resi J&amp;T</span>
+                    <span className="rp-strong rp-mono" style={{ marginLeft: "auto" }}>{resi}</span>
+                  </div>
+                ) : (
                   <div className="rp-line rp-sub" style={{ marginTop: 8 }}>
                     <span>Nomor resi belum dibuat. Resi muncul setelah pesanan diserahkan ke kurir.</span>
                   </div>
-                ) : null}
+                )}
               </div>
+
+              {/* Metode pembayaran selalu terlihat (dulu hanya ada di dalam ringkasan "Total
+                  Pesanan" yang terlipat), supaya admin tahu pembayarannya sebelum memproses. */}
+              {order.payment_method ? (
+                <div className="rp-sec" style={{ borderTop: "1px solid #F2F3F4" }}>
+                  <span className="rp-h">Metode Pembayaran</span>
+                  <div className="rp-line" style={{ marginTop: 8 }}>
+                    <span className="rp-strong"><PaymentMethodValue value={order.payment_method} /></span>
+                  </div>
+                </div>
+              ) : null}
 
               {alamat ? (
                 <div className="rp-sec" style={{ borderTop: "1px solid #F2F3F4" }}>
