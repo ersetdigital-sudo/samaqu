@@ -32,8 +32,8 @@ export async function createOrder(params: {
   insurance?: number;
   serviceType?: number;
 }): Promise<{ success: boolean; awbNo: string | null; raw: OrderResponse }> {
-  const config = getJntConfig();
-  const url = getJntBaseUrl("order");
+  const config = await getJntConfig();
+  const url = getJntBaseUrl("order", config.env);
 
   const now = new Date();
   const pad = (n: number) => String(n).padStart(2, "0");

@@ -6,13 +6,12 @@ import { getOriginCode, getReceiverArea, getSendSiteCode, resolveTariffCodes, ge
 
 export async function GET() {
   const results: Record<string, unknown> = {};
-  const config = getJntConfig();
+  const config = await getJntConfig();
 
   results.config = {
     env: config.env,
     hasOrderUsername: !!config.orderUsername,
     hasOrderApiKey: !!config.orderApiKey,
-    orderApiKey: config.orderApiKey,
     hasOrderKey: !!config.orderKey,
     orderKeyLength: config.orderKey.length,
     hasTariffKey: !!config.tariffKey,
@@ -38,7 +37,7 @@ export async function GET() {
 
   // Test 1: Tariff — DEPOK → WOYLA
   try {
-    const tariffUrl = getJntBaseUrl("tariff");
+    const tariffUrl = getJntBaseUrl("tariff", config.env);
     const tariffData = JSON.stringify({
       weight: 1,
       sendSiteCode: depokSendSite || "DEPOK",
@@ -73,7 +72,7 @@ export async function GET() {
 
   // Test 3: Order — create test order (JAKARTA → WOYLA)
   try {
-    const orderUrl = getJntBaseUrl("order");
+    const orderUrl = getJntBaseUrl("order", config.env);
     const testOrderId = "TEST-" + Date.now();
 
     const now = new Date();
