@@ -1,5 +1,5 @@
 export const AKUN_STATUS: Record<string, { pill: string; label: string }> = {
-  pending: { pill: "akun-pill akun-pill-proses", label: "Diproses" },
+  pending: { pill: "akun-pill akun-pill-proses", label: "Menunggu Pembayaran" },
   diproses: { pill: "akun-pill akun-pill-proses", label: "Diproses" },
   dikirim: { pill: "akun-pill akun-pill-kirim", label: "Dikirim" },
   selesai: { pill: "akun-pill akun-pill-selesai", label: "Selesai" },
@@ -11,8 +11,8 @@ export function statusInfo(status: string) {
 }
 
 /* ── Halaman struk (detail pesanan & lacak) ──
-   Halaman struk pakai label sendiri: pesanan `pending` belum dibayar, jadi statusnya
-   "Menunggu Pembayaran" — bukan "Diproses" seperti pill di daftar pesanan. */
+   Pesanan `pending` belum dibayar, jadi labelnya "Menunggu Pembayaran" — sama dengan pill
+   di daftar pesanan (AKUN_STATUS di atas) supaya tidak ada dua istilah untuk status yang sama. */
 
 export type StrukTone = "wait" | "process" | "ship" | "done" | "cancel";
 
