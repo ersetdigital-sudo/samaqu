@@ -12,7 +12,8 @@ export function useWishlist() {
     supabase.auth.getUser().then(({ data }) => {
       if (!data.user) { setLoaded(true); return; }
       // Check if user exists in customers table (not admin)
-      supabase.from("customers").select("id").eq("id", data.user.id).single().then(({ data: c }) => {
+      // maybeSingle: akun auth tanpa baris `customers` (bukan pelanggan) → null, bukan 406.
+      supabase.from("customers").select("id").eq("id", data.user.id).maybeSingle().then(({ data: c }) => {
         if (c) {
           setIsLoggedIn(true);
           supabase.from("wishlists").select("product_id").eq("customer_id", data.user.id).then(({ data: rows }) => {
