@@ -45,7 +45,7 @@ const FALLBACK_PHOTO =
 /**
  * Gaya halaman rincian pesanan: kartu putih di atas latar abu terang, mengikuti
  * tata letak halaman pesanan marketplace (banner status → info pengiriman → alamat →
- * produk → bantuan → aksi bawah). Semua kelas berawalan `rp-` dan hanya hidup di
+ * produk → status → aksi bawah). Semua kelas berawalan `rp-` dan hanya hidup di
  * dalam <style> ini, jadi tidak menyentuh halaman akun lain.
  */
 export const RINCIAN_CSS = `
@@ -127,13 +127,6 @@ export const RINCIAN_CSS = `
 .rp-step.is-active .rp-txt i{color:#B4552F;font-weight:600}
 .rp-hint{display:flex;gap:9px;align-items:flex-start;margin-top:14px;padding:11px 13px;border-radius:10px;background:#FCF0EA;color:#9A4622;font-size:12.5px;line-height:1.45;font-weight:600}
 .rp-hint svg{flex:none;margin-top:1px}
-
-/* ── Butuh bantuan ── */
-.rp-list{list-style:none;margin:0;padding:0}
-.rp-link{display:flex;align-items:center;gap:11px;padding:14px 16px;font-size:13.5px;font-weight:600;color:#22262A;text-decoration:none}
-.rp-link + .rp-link{border-top:1px solid #F2F3F4}
-.rp-link:active{background:#FAFBFC}
-.rp-link svg{margin-left:auto;color:#BFC4C8}
 
 /* ── Aksi bawah ── */
 .rp-act{position:sticky;bottom:var(--mobile-nav-h,62px);z-index:20;padding:10px 0 14px;background:linear-gradient(180deg,rgba(245,246,247,0),#F5F6F7 40%)}
@@ -367,35 +360,6 @@ export default function RincianPesanan({ order }: { order: RincianOrder }) {
             ) : null}
           </div>
         </details>
-
-        <section className="rp-card">
-          <div className="rp-sec" style={{ paddingBottom: 4 }}>
-            <span className="rp-h">Butuh Bantuan?</span>
-          </div>
-          <ul className="rp-list">
-            <li>
-              <Link href={to("/garansi-retur")} className="rp-link">
-                <svg className="rp-ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7" /><path d="M3 4v5h5" /></svg>
-                Garansi &amp; Pengembalian
-                <Chevron />
-              </Link>
-            </li>
-            <li>
-              <Link href={to("/akun/bantuan")} className="rp-link">
-                <svg className="rp-ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a8 8 0 1 1-3.2-6.4" /><path d="M8 11h8M8 15h5" /></svg>
-                Hubungi Admin
-                <Chevron />
-              </Link>
-            </li>
-            <li>
-              <Link href={to("/akun/panduan-ukuran")} className="rp-link">
-                <svg className="rp-ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 14 14 3l7 7L10 21z" /><path d="M7.5 12.5 9 14M10.5 9.5 12 11" /></svg>
-                Panduan Ukuran
-                <Chevron />
-              </Link>
-            </li>
-          </ul>
-        </section>
 
         <p className="rp-ft md:hidden">&copy; 2026 SAMAQU. All rights reserved.</p>
 

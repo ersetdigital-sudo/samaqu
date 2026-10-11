@@ -273,7 +273,9 @@ Page presentation (not obvious from the code):
   mengambil pesanan lewat `getCustomerOrders()` lalu merendernya. Urutan bloknya: banner status → "Info
   Pengiriman" → "Alamat Pengiriman" (alamat dipotong 2 baris + tombol "Lihat") → kartu produk (baris
   `Total Pesanan` dibuka untuk Ringkasan Pembayaran) → "Status Pesanan" yang dilipat (`<details>`) →
-  "Butuh Bantuan?" → tombol "Lacak Pesanan" lengket di atas nav bawah (`bottom: var(--mobile-nav-h)`).
+  tombol "Lacak Pesanan" lengket di atas nav bawah (`bottom: var(--mobile-nav-h)`).
+  Blok "Butuh Bantuan?" (Garansi & Pengembalian / Hubungi Admin / Panduan Ukuran) sudah **dihapus**
+  atas permintaan pemilik — jangan ditambahkan lagi di halaman ini.
   Halaman ini **tidak lagi memakai `STRUK_CSS`/`StrukHeader`** (keduanya masih dipakai halaman lacak —
   jangan hapus, dan perbaikan gaya halaman lacak terpisah). Foto produk memakai `order_items.product_image`
   dengan `object-fit: contain` di atas kotak abu muda **tanpa bingkai/lis** (permintaan pemilik: lis emas
