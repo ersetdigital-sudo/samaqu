@@ -358,7 +358,11 @@ export function ProductDetailPanel({
         <button onClick={onClose} className="pd-close">Tutup</button>
       </footer>
 
-      <style jsx global>{PD_CSS}</style>
+      {/* Gaya panel ditulis sebagai <style> biasa (pola sama dengan RINCIAN_CSS/OD_CSS/
+          STRUK_CSS): `style jsx global` dengan isi variabel tidak punya id statis
+          ("jsx-undefined"), jadi registry styled-jsx menganggapnya duplikat tema admin
+          dan membuang CSS ini — panel detail jadi tampil tanpa gaya. */}
+      <style>{PD_CSS}</style>
     </div>
   );
 }
