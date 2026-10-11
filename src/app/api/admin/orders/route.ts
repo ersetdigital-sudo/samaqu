@@ -43,9 +43,11 @@ export async function PATCH(request: NextRequest) {
       }
 
       // Update status to dibatalkan
+      // `orders.updated_at` tidak diisi trigger apa pun — jam pembatalan ditulis manual
+      // supaya linimasa "Pesanan dibatalkan" (strukSteps) akurat.
       const { error } = await supabaseAdmin
         .from("orders")
-        .update({ status: "dibatalkan" })
+        .update({ status: "dibatalkan", updated_at: new Date().toISOString() })
         .eq("order_number", identifier);
 
       if (error) {
@@ -142,7 +144,7 @@ export async function PATCH(request: NextRequest) {
 
     const { error } = await supabaseAdmin
       .from("orders")
-      .update({ status })
+      .update({ status, updated_at: new Date().toISOString() })
       .eq("order_number", identifier);
 
     if (error) {

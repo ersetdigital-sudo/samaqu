@@ -59,10 +59,10 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      // Update status to auto-cancelled
+      // Update status to auto-cancelled (+ jam pembatalan; tabel orders tidak punya trigger updated_at)
       const { error: updateError } = await supabase
         .from("orders")
-        .update({ status: "dibatalkan" })
+        .update({ status: "dibatalkan", updated_at: new Date().toISOString() })
         .eq("id", order.id);
 
       if (updateError) {

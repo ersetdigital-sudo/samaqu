@@ -44,6 +44,8 @@ interface Order {
   status: string;
   awb_no: string | null;
   created_at: string;
+  /** Jam perubahan terakhir; jam pembatalan dibaca dari sini (lihat `waktuBatal`). */
+  updated_at?: string;
   order_items?: { product_name: string; color: string; size: string; series?: string | null; kain?: string | null; quantity: number; price: number; customer_price: number | null; minimum_price: number | null; product_image?: string | null }[];
 }
 
@@ -452,8 +454,11 @@ function AdminPageInner() {
         toast.showToast("error", data.error || "Gagal memperbarui status");
         return;
       }
-      setOrders((prev) => prev.map((o) => o.order_number === orderNumber ? { ...o, status: newStatus } : o));
-      setSelectedOrder((prev) => prev && prev.order_number === orderNumber ? { ...prev, status: newStatus } : prev);
+      // `updated_at` ditimpa lokal supaya linimasa "Pesanan dibatalkan" di drawer langsung
+      // memakai jam pembatalan yang baru (server menulis nilai yang sama — lihat PATCH /api/admin/orders).
+      const changedAt = new Date().toISOString();
+      setOrders((prev) => prev.map((o) => o.order_number === orderNumber ? { ...o, status: newStatus, updated_at: changedAt } : o));
+      setSelectedOrder((prev) => prev && prev.order_number === orderNumber ? { ...prev, status: newStatus, updated_at: changedAt } : prev);
       toast.showToast("success", "Status pesanan berhasil diperbarui");
     } catch (err) {
       console.error("Update status error:", err);
@@ -531,8 +536,9 @@ function AdminPageInner() {
           toast.showToast("error", data.error || "Gagal membatalkan J&T");
           return;
         }
-        setOrders((prev) => prev.map((o) => o.order_number === order.order_number ? { ...o, status: "dibatalkan" } : o));
-        setSelectedOrder((prev) => prev && prev.order_number === order.order_number ? { ...prev, status: "dibatalkan" } : prev);
+        const cancelledAt = new Date().toISOString();
+        setOrders((prev) => prev.map((o) => o.order_number === order.order_number ? { ...o, status: "dibatalkan", updated_at: cancelledAt } : o));
+        setSelectedOrder((prev) => prev && prev.order_number === order.order_number ? { ...prev, status: "dibatalkan", updated_at: cancelledAt } : prev);
         toast.showToast("success", "Berhasil membatalkan pesanan di J&T");
       } catch (err) {
         console.error("Cancel J&T error:", err);

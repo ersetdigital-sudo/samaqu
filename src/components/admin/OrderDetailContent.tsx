@@ -35,6 +35,8 @@ export interface AdminDetailOrder {
   order_number: string;
   status: string;
   created_at: string;
+  /** Jam pembatalan dibaca dari sini oleh `strukSteps` (lihat `waktuBatal`). */
+  updated_at?: string;
   total: number;
   subtotal: number;
   discount: number;

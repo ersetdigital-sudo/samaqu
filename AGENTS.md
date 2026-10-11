@@ -543,6 +543,25 @@ Yang tidak kelihatan dari kode:
   selesai, dibatalkan → linimasa berhenti di langkah pembatalan (banner tone `cancel`). **Dulu langkah 1 & 2
   selalu "done"**, jadi pesanan `pending` di akun tampak sudah diproses sementara admin
   menampilkannya `pending` — itu bug yang diperbaiki, jangan kembalikan hardcode itu.
+- **Jam pembatalan pesanan (`waktuBatal` di `src/lib/akun-format.ts`).** Tabel `orders` **tidak
+  punya trigger yang mengisi `updated_at`** — dicek 2026-10-11: di semua baris `updated_at` sama
+  persis dengan `created_at`, termasuk pesanan yang sudah `dibatalkan`/`diproses`/`selesai`. Dulu
+  langkah "Pesanan dibatalkan" menampilkan `updated_at` apa adanya, jadi jamnya selalu menyalin jam
+  pesanan dibuat (pemilik melihat "dibuat 13:38, dibatalkan 13:38" pada pesanan yang batalnya
+  belakangan). Sekarang:
+  - ketiga jalur pembatalan (dan update status lain) **menulis `updated_at` sendiri** —
+    `PATCH /api/admin/orders` (action `cancelJnt` **dan** update status biasa), `POST
+    /api/orders/cancel`, dan `GET /api/cron/auto-cancel`; `Order`/`AdminDetailOrder` di
+    `src/app/admin/page.tsx` + `src/components/admin/OrderDetailContent.tsx` ikut membawa field itu,
+    dan `RincianPesanan.tsx` menyuntik jam lokal saat customer membatalkan dari halaman pesanan;
+  - `waktuBatal()` mengembalikan **"Dibatalkan" tanpa jam** kalau `updated_at` masih sama dengan
+    `created_at` (baris lama, jamnya tidak bisa dipercaya) dan jam aslinya kalau berbeda.
+  Jam pembatalan **tidak bisa dipulihkan** untuk pesanan yang dibatalkan sebelum perubahan ini;
+  kalau nanti ada jalur DDL (SQL Editor Supabase), kolom `cancelled_at timestamptz` jelas lebih
+  benar daripada menumpang `updated_at`. Verifikasi: pesanan uji buatan sendiri (insert REST) →
+  `PATCH` status `dibatalkan` → `updated_at` > `created_at` (terbukti, +29 detik), di drawer timeline
+  bertambah langkah "Pesanan dibatalkan" berjam valid, sedangkan `SMQ-20261010-364` (lama) hanya
+  menampilkan "Dibatalkan"; hapus pesanan uji lewat `DELETE /api/admin/orders` setelahnya.
 - Label pill ikut disamakan dengan admin: `pending` = **"Menunggu Pembayaran"** (dipakai daftar
   pesanan, dashboard akun, banner struk, dan modal admin), `dibatalkan` pakai `akun-pill-batal` (merah). Dipakai bersama oleh `/akun` (dashboard),
   list pesanan, dan detail — ubah di `src/lib/akun-format.ts` saja.
