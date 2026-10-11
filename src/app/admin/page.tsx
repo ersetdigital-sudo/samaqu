@@ -90,6 +90,11 @@ function money(n: number) {
   return "Rp " + n.toLocaleString("id-ID");
 }
 
+/** "pending" → "Pending" — dipakai chip filter dan judul daftar pesanan. */
+function statusLabel(status: string) {
+  return status.charAt(0).toUpperCase() + status.slice(1);
+}
+
 function effectivePrice(p: Product): number {
   return p.create_your_price_enabled && p.minimum_price ? p.minimum_price : p.price;
 }
@@ -170,6 +175,13 @@ function AdminPageInner() {
     orderSource === "open" ? o.order_number.startsWith("CYO-") : !o.order_number.startsWith("CYO-")
   );
   const visibleOrders = sourceOrders.filter((o) => orderFilter === "Semua" || o.status === orderFilter);
+  // Jumlah per status ikut tab yang aktif (Pesanan Website / Open Order), jadi angka
+  // di chip filter selalu cocok dengan daftar di bawahnya.
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const o of sourceOrders) counts[o.status] = (counts[o.status] || 0) + 1;
+    return counts;
+  }, [sourceOrders]);
   const [productSearch, setProductSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [productVariants, setProductVariants] = useState<{ product_id: string; stock: number; base_product_id: string | null }[]>([]);
@@ -751,11 +763,16 @@ function AdminPageInner() {
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center gap-3 justify-between p-5" style={{ borderBottom: "1px solid #f1f1f3" }}>
-                    <h2 className="font-serif italic text-xl" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>{orderSource === "open" ? "Pesanan Open Order" : "Semua Pesanan"}</h2>
+                    {/* Judul ikut filter yang aktif, mis. "Pesanan Diproses". */}
+                    <h2 className="text-xl font-extrabold" style={{ color: "var(--fg)" }}>
+                      {orderSource === "open"
+                        ? orderFilter === "Semua" ? "Semua Open Order" : `Open Order ${statusLabel(orderFilter)}`
+                        : orderFilter === "Semua" ? "Semua Pesanan" : `Pesanan ${statusLabel(orderFilter)}`}
+                    </h2>
                     <div className="flex flex-wrap gap-2">
                       {["Semua", "pending", "diproses", "selesai", "dibatalkan"].map((s) => (
                         <button key={s} onClick={() => setOrderFilter(s)} className="text-sm px-3 py-1.5 rounded-lg font-medium transition-colors" style={{ background: orderFilter === s ? "var(--gold)" : "transparent", color: orderFilter === s ? "#fff" : "var(--text-secondary)", border: orderFilter === s ? "none" : "1px solid #d4d4d8" }}>
-                          {s === "Semua" ? "Semua" : s.charAt(0).toUpperCase() + s.slice(1)}
+                          {s === "Semua" ? "Semua" : statusLabel(s)} ({s === "Semua" ? sourceOrders.length : statusCounts[s] || 0})
                         </button>
                       ))}
                     </div>
