@@ -222,9 +222,10 @@ keystroke) while the `error` field is kept so the checkout callers behave exactl
 logs a single `console.warn` per process. `OpenOrderWizard` detects `configured: false` and shows the
 fallback message with the ongkir line at `—` without a `console.error` (the order still submits,
 admin prices shipping later) — that is the state of this sandbox: no J&T credential is stored, so
-live tariffs stay off until the J&T secrets are supplied. The J&T **testing** credential values this app used before live in
-commit `e48a6fe`; supply them through the platform secrets (`/run/base44/app.env`), never in the
-repo. `JNT_ENV` defaults to `testing`.
+live tariffs stay off until credentials are supplied — sekarang admin bisa mengisinya sendiri lewat
+form di Pengaturan (lihat "Kredensial J&T Express (form admin)" di bawah). Nilai J&T **testing**
+yang dulu dipakai app ini ada di commit `e48a6fe`; nilai asli tidak boleh masuk repo. `JNT_ENV`
+defaults to `testing`, dipakai selama kolom `env` di `jnt_settings` masih kosong.
 
 No new table: the hosted Supabase project has **no DDL path** from the sandbox, so a new table
 would have needed the user to run SQL by hand. Verified dead ends with the stored credentials:
@@ -333,3 +334,35 @@ does not pollute the real order list. The price clamp can be checked without the
 `/api/open-order` with a below-minimum `price` must come back with `total` equal to the series
 minimum.
 ```
+
+## Kredensial J&T Express (form admin)
+
+Kredensial J&T diisi admin lewat **Pengaturan → "Kredensial J&T Express"**
+(`src/components/admin/JntCredentialsForm.tsx`; dirender di **dua** dashboard admin — `/admin` dan
+`/id/admin` — tepat setelah `ApiKeySection`, komponennya satu file supaya tidak dobel).
+
+- Disimpan di tabel **`jnt_settings`** (satu baris, `id = 1`), **bukan** `store_settings`:
+  `store_settings` punya policy "Public read" dan dibaca anon client (`select("*")` di
+  `src/lib/store-settings.ts`), jadi kredensial di sana akan ikut terkirim ke browser. `jnt_settings`
+  dibuat **tanpa policy RLS** → hanya service role yang bisa membacanya.
+- Tabelnya dibuat lewat **`supabase/jnt-settings.sql`**, dijalankan manual di SQL Editor Supabase
+  (sandbox tidak punya jalur DDL). Sebelum dijalankan: form menampilkan peringatan, tombol simpan
+  nonaktif, dan GET `/api/admin/jnt-settings` membalas `{ tableReady: false }`. Jalankan dulu
+  sebelum memakai form ini.
+- Akses lewat **`/api/admin/jnt-settings`** (GET status, POST simpan). Route-nya memverifikasi
+  session Supabase **dan** keanggotaan di tabel `admins`, dan hanya mengembalikan status terisi +
+  pilihan `env` — nilai kredensial tidak pernah dikirim ke browser (karena itu nilai lama tidak bisa
+  ditampilkan; field kosong = jangan diubah).
+- `getJntConfig()` di `src/lib/jnt/config.ts` kini **async**: baca `jnt_settings` dengan service role
+  (cache 60 detik; `clearJntConfigCache()` dipanggil setelah simpan) → field yang kosong jatuh ke
+  environment variable (`JNT_ORDER_USERNAME`, `JNT_TARIFF_KEY`, …). Pemanggilnya sudah `await`
+  (`src/lib/jnt/{tariff,order,track,cancel}.ts`, `/api/shipping/jnt-cost`, `/api/jnt/test`), dan
+  `getJntBaseUrl(endpoint, env)` menerima env supaya pilihan testing/production dari form ikut
+  terpakai.
+- Tanpa kredensial sama sekali perilakunya tidak berubah: `/api/shipping/jnt-cost` tetap membalas
+  `{ configured: false }` (bukan 500), dan `/api/jnt/test` tidak lagi menyertakan `orderApiKey` di
+  responsnya (dulu membocorkan key).
+
+Verify: `curl -s -o /dev/null -w '%{http_code}\n' http://localhost:3000/api/admin/jnt-settings` →
+`401` (tanpa session admin). POST `/api/shipping/jnt-cost` tanpa kredensial → `configured: false`.
+Simpan-dari-form baru bisa terbukti setelah `supabase/jnt-settings.sql` dijalankan.
