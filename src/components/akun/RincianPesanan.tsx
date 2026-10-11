@@ -137,15 +137,27 @@ export const RINCIAN_CSS = `
 .rp-note{padding:12px 14px;border-radius:10px;background:#fff;border:1px solid #ECEDEE;color:#757575;font-size:12.5px;text-align:center}
 .rp-ft{text-align:center;font-size:11px;color:#9AA0A5;padding:16px 0 0}
 
+/* ── Desktop: satu kolom struk yang sempit & terpusat, bukan melebar ── */
 @media (min-width:768px){
  .rp-top{display:none}
- .rp-dhead{display:flex;align-items:center;gap:14px;margin-bottom:12px}
+ .rp-wrap{max-width:560px}
+ .rp-dhead{display:flex;align-items:center;gap:14px;margin-bottom:14px}
  .rp-dhead h1{font-size:22px;font-weight:800;letter-spacing:-.025em}
  .rp-dhead a{margin-left:auto;display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:#757575;text-decoration:none}
  .rp-dhead a:hover{color:#B4552F}
- .rp-card{margin-top:14px}
- .rp-banner{margin-top:14px}
- .rp-act{position:static;padding:14px 0 0;background:none}
+ .rp-card{margin-top:12px;border-radius:14px}
+ .rp-banner{margin-top:12px;border-radius:14px;padding:18px 20px}
+ .rp-banner b{font-size:18px}
+ .rp-banner small{font-size:13px}
+ .rp-sec{padding:16px 20px}
+ .rp-line{font-size:14px}
+ .rp-it{padding:16px 20px;gap:16px}
+ .rp-thumb{width:88px;height:88px;border-radius:10px}
+ .rp-nm,.rp-pr{font-size:14px}
+ .rp-var{font-size:13px}
+ .rp-sum{padding:15px 20px;font-size:14px}
+ .rp-paysum .rp-row{font-size:13.5px;padding:6px 0}
+ .rp-act{position:static;padding:16px 0 0;background:none}
  .rp-ft{display:none}
 }
 `;
