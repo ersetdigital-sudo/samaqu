@@ -36,7 +36,7 @@ interface Order {
   status: string;
   awb_no: string | null;
   created_at: string;
-  order_items?: { product_name: string; color: string; size: string; quantity: number; price: number; customer_price: number | null; minimum_price: number | null }[];
+  order_items?: { product_name: string; color: string; size: string; kain?: string | null; series?: string | null; quantity: number; price: number; customer_price: number | null; minimum_price: number | null }[];
 }
 
 interface Product {
@@ -215,7 +215,7 @@ function AdminPageInner() {
     async function fetchData() {
       try {
         const [ordersRes, productsRes] = await Promise.all([
-          supabase.from("orders").select("*, order_items(product_name, color, size, quantity, price, customer_price, minimum_price)").order("created_at", { ascending: false }).limit(50),
+          supabase.from("orders").select("*, order_items(product_name, color, size, kain, series, quantity, price, customer_price, minimum_price)").order("created_at", { ascending: false }).limit(50),
           supabase.from("products").select("*").order("created_at", { ascending: true }),
         ]);
         if (mounted) {
@@ -1014,7 +1014,9 @@ function AdminPageInner() {
                         <div key={i} className="flex justify-between items-start text-sm">
                           <div>
                             <p className="font-medium" style={{ color: "var(--espresso)" }}>{item.product_name}</p>
-                            <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{item.color || ""} {item.size || ""} &times; {item.quantity}</p>
+                            <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
+                              {[item.kain ? `Kain ${item.kain}` : null, item.series, item.color && item.color !== "default" ? item.color : null, item.size].filter(Boolean).join(" · ")} &times; {item.quantity}
+                            </p>
                             {/* CYP info */}
                             {item.customer_price && item.minimum_price && (
                               <p className="text-[10px] mt-0.5" style={{ color: "var(--gold)" }}>

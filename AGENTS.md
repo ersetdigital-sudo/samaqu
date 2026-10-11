@@ -299,6 +299,15 @@ Page presentation (not obvious from the code):
   There are **two near-duplicate admin dashboards** — `src/app/[locale]/admin/page.tsx` (served at
   `/id/admin`) and `src/app/admin/page.tsx` (`/admin`, kept outside the locale prefix by
   `src/middleware.ts`) — so an orders-panel change belongs in both files.
+  Baris item di modal detail pesanan (blok "Produk Dipesan") kedua dashboard memakai susunan yang
+  sama: `Kain <kode> · <series> · <warna> · <size> × <qty>`, dengan warna tempat sampah `default`
+  (pesanan website lama) disembunyikan — ubah keduanya bersamaan, jangan kembalikan ke
+  `{color} {size} × qty`.
+- **Dashboard akun** (`/[locale]/akun`, `src/app/[locale]/akun/page.tsx`) ditata ulang untuk mobile:
+  di bawah breakpoint `sm` baris "Pesanan Terakhir" menaruh harga + pill status di barisnya sendiri
+  (blok `sm:hidden`, pasangan `hidden sm:block` mempertahankan tata letak desktop), dan kartu "Akses
+  Cepat" menumpuk ikon + chevron di atas judul + subteks (bukan ikon di samping teks dengan chevron
+  `absolute`) supaya tidak berdesakan di layar ~370 px.
 - **Nav bawah ala aplikasi (mobile)** di semua halaman toko: `src/components/MobileBottomNav.tsx`
   (Beranda · Kategori · Open Order · Pesanan · Akun) dipasang oleh
   `src/app/[locale]/(customer)/layout.tsx` dan tampil di bawah breakpoint `lg` — sama dengan navbar
