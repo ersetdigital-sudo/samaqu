@@ -753,7 +753,7 @@ function AdminPageInner() {
                   <div className="flex flex-wrap items-center gap-3 justify-between p-5" style={{ borderBottom: "1px solid #f1f1f3" }}>
                     <h2 className="font-serif italic text-xl" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>{orderSource === "open" ? "Pesanan Open Order" : "Semua Pesanan"}</h2>
                     <div className="flex flex-wrap gap-2">
-                      {["Semua", "pending", "diproses", "selesai"].map((s) => (
+                      {["Semua", "pending", "diproses", "selesai", "dibatalkan"].map((s) => (
                         <button key={s} onClick={() => setOrderFilter(s)} className="text-sm px-3 py-1.5 rounded-lg font-medium transition-colors" style={{ background: orderFilter === s ? "var(--gold)" : "transparent", color: orderFilter === s ? "#fff" : "var(--text-secondary)", border: orderFilter === s ? "none" : "1px solid #d4d4d8" }}>
                           {s === "Semua" ? "Semua" : s.charAt(0).toUpperCase() + s.slice(1)}
                         </button>

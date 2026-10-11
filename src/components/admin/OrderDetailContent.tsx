@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { strukStatus, strukSteps, tglJamID, rupiah } from "@/lib/akun-format";
+import type { TrackHistoryItem } from "@/lib/jnt/types";
+import { isDelivered } from "@/lib/jnt/track-status";
 import { PaymentMethodValue } from "@/components/admin/PaymentMethodsManager";
 import { RINCIAN_CSS, FALLBACK_PHOTO } from "@/components/akun/RincianPesanan";
 
@@ -62,9 +64,19 @@ const OD_CSS = `
 .od-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid #F2F3F4}
 .od-a{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:700;padding:10px 14px;border-radius:10px;border:1px solid #E1E3E5;background:#fff;color:#5A6067;text-decoration:none;cursor:pointer;transition:background .2s}
 .od-a:hover{background:#F5F6F7}
+.od-a.is-on{background:#FBF1EA;border-color:#E5C3B1;color:#B4552F}
 .od-a-danger{border-color:#EBC7C0;color:#B4392A}
 .od-a-danger:hover{background:#FCF0EA}
 .od-email{display:block;font-size:12.5px;color:#8D9297;font-weight:500;margin-top:2px}
+/* Pelacakan J&T di dalam drawer (tombol "Lacak Paket"). */
+.od-track{margin-top:14px;padding-top:14px;border-top:1px solid #F2F3F4}
+.od-tnote{margin:0;font-size:12.5px;font-weight:600;color:#8D9297}
+.od-ups{display:flex;flex-direction:column;gap:12px}
+.od-up{display:flex;gap:10px}
+.od-up-dot{width:10px;height:10px;border-radius:50%;background:#D9DCE0;flex:none;margin-top:4px}
+.od-up.is-first .od-up-dot{background:#B4552F;box-shadow:0 0 0 3px rgba(180,85,47,.14)}
+.od-up b{display:block;font-size:12.5px;font-weight:700;color:#3F454B}
+.od-up i{display:block;font-size:11.5px;font-style:normal;color:#8D9297;margin-top:2px}
 /* Mobile: drawer admin bukan halaman customer — latar abu (dan ruangnya) dibuang supaya
    isi struk duduk langsung di kertas drawer, dan banner status menempel rapi di bawah
    header drawer (tanpa celah + sudut). Kartu putih di bawahnya jadi sama seperti kartu
@@ -98,6 +110,13 @@ function Chevron() {
   );
 }
 
+/** J&T mengirim "YYYY-MM-DD HH:mm:ss"; jadikan ISO supaya stabil di semua browser. */
+function waktu(value?: string) {
+  if (!value) return "";
+  const stamp = tglJamID(value.includes("T") ? value : value.replace(" ", "T"));
+  return stamp === "-" ? value : stamp;
+}
+
 const WHATSAPP_PATH =
   "M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.71.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.002-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.548 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0 0 20.885 3.488";
 
@@ -120,6 +139,45 @@ export default function OrderDetailContent({
   const alamat = [order.shipping_address, order.shipping_city, order.shipping_postal].filter(Boolean).join(", ");
 
   const [showAlamat, setShowAlamat] = useState(false);
+
+  // Pelacakan J&T — dibuka dari tombol "Lacak Paket". Data diambil sekali per drawer.
+  const [showTrack, setShowTrack] = useState(false);
+  const [tracking, setTracking] = useState(false);
+  const [trackHistory, setTrackHistory] = useState<TrackHistoryItem[] | null>(null);
+  const [trackError, setTrackError] = useState<string | null>(null);
+
+  async function openTrack() {
+    if (showTrack) {
+      setShowTrack(false);
+      return;
+    }
+    setShowTrack(true);
+    if (trackHistory || !resi) return;
+
+    setTracking(true);
+    setTrackError(null);
+    try {
+      const res = await fetch(`/api/jnt/track?awb=${encodeURIComponent(resi)}`);
+      const json = await res.json();
+      if (json?.success && json?.data) {
+        const data = json.data as { history?: TrackHistoryItem[] };
+        setTrackHistory(data.history || []);
+        // Otomatis: paket sudah diterima penerima (status_code 200) → status pesanan jadi selesai.
+        if (isDelivered(data) && ["pending", "diproses", "dikirim"].includes(order.status)) {
+          onStatusChange("selesai");
+        }
+      } else {
+        setTrackError(json?.error || "Data pelacakan J&T belum bisa diambil.");
+      }
+    } catch {
+      setTrackError("Tidak bisa menghubungi layanan J&T. Coba lagi sebentar lagi.");
+    } finally {
+      setTracking(false);
+    }
+  }
+
+  // J&T mengirim riwayat dari kejadian terlama; yang terbaru tampil di atas.
+  const trackUpdates = trackHistory ? [...trackHistory].reverse() : [];
 
   return (
     <div className="od-root">
@@ -293,6 +351,12 @@ export default function OrderDetailContent({
                     Hubungi via WhatsApp
                   </a>
                 ) : null}
+                {resi ? (
+                  <button type="button" className={`od-a${showTrack ? " is-on" : ""}`} onClick={openTrack}>
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7h11v9H3z" /><path d="M14 10h4l3 3v3h-7z" /><circle cx="7" cy="18" r="1.5" /><circle cx="17.5" cy="18" r="1.5" /></svg>
+                    {showTrack ? "Tutup Lacak" : "Lacak Paket"}
+                  </button>
+                ) : null}
                 {resi && order.status !== "dibatalkan" && onCancelJnt ? (
                   <button type="button" className="od-a od-a-danger" onClick={onCancelJnt}>
                     Batalkan J&amp;T
@@ -307,6 +371,33 @@ export default function OrderDetailContent({
                   Hapus Pesanan
                 </button>
               </div>
+
+              {/* Pelacakan J&T: riwayat perjalanan paket. Begitu J&T melaporkan paket
+                  diterima (status_code 200), status pesanan otomatis diubah ke selesai. */}
+              {showTrack ? (
+                <div className="od-track">
+                  <p className="od-title">Riwayat Pengiriman</p>
+                  {tracking ? (
+                    <p className="od-tnote">Memuat pelacakan J&amp;T…</p>
+                  ) : trackError ? (
+                    <p className="od-tnote">{trackError}</p>
+                  ) : trackUpdates.length > 0 ? (
+                    <div className="od-ups">
+                      {trackUpdates.map((u, i) => (
+                        <div key={`${u.date_time}-${i}`} className={`od-up${i === 0 ? " is-first" : ""}`}>
+                          <span className="od-up-dot" />
+                          <div>
+                            <b>{u.status || "Update pengiriman"}</b>
+                            <i>{[u.city_name, waktu(u.date_time)].filter(Boolean).join(" • ")}</i>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="od-tnote">Belum ada update dari J&amp;T. Riwayat muncul setelah kurir memindai paket.</p>
+                  )}
+                </div>
+              ) : null}
             </div>
           </div>
         </div>
