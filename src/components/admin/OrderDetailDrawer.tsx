@@ -31,12 +31,15 @@ export default function OrderDetailDrawer({
   onStatusChange,
   onCancelJnt,
   onDelete,
+  onArrangeOrder,
 }: {
   order: AdminDetailOrder | null;
   onClose: () => void;
   onStatusChange: (status: string) => void;
   onCancelJnt?: () => void;
   onDelete: () => void;
+  /** "Atur Pesanan" — buat resi J&T untuk pesanan yang belum punya resi. */
+  onArrangeOrder?: () => Promise<void> | void;
 }) {
   useEffect(() => {
     if (!order) return;
@@ -94,6 +97,7 @@ export default function OrderDetailDrawer({
                 onStatusChange={onStatusChange}
                 onCancelJnt={onCancelJnt}
                 onDelete={onDelete}
+                onArrangeOrder={onArrangeOrder}
               />
             </div>
 

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { createJntOrderForOrder } from "@/lib/jnt/order-from-order";
+import { cancelOrderCompletely } from "@/lib/cancel-order";
 
 export async function PATCH(request: NextRequest) {
   try {
@@ -17,7 +19,7 @@ export async function PATCH(request: NextRequest) {
     if (action === "cancelJnt") {
       const { data: order, error: fetchError } = await supabaseAdmin
         .from("orders")
-        .select("awb_no, jnt_order_id")
+        .select("id, order_number, status, awb_no, jnt_order_id")
         .eq("order_number", identifier)
         .single();
 
@@ -29,50 +31,75 @@ export async function PATCH(request: NextRequest) {
         return NextResponse.json({ error: "Pesanan ini belum memiliki AWB J&T" }, { status: 400 });
       }
 
-      const cancelId = order.jnt_order_id || order.awb_no;
-      console.log("[ADMIN] Cancelling J&T order:", cancelId);
-
-      const { cancelOrder } = await import("@/lib/jnt");
-      const cancelResult = await cancelOrder({ orderId: cancelId, remark: "Dibatalkan oleh admin" });
-      console.log("[ADMIN] J&T cancel result:", cancelResult);
-
-      if (!cancelResult.success) {
-        const desc = cancelResult.raw?.desc || "Gagal membatalkan di J&T";
-        return NextResponse.json({ error: `Gagal batalkan J&T: ${desc}` }, { status: 400 });
-      }
-
-      // Update status to dibatalkan
-      const { error } = await supabaseAdmin
-        .from("orders")
-        .update({ status: "dibatalkan" })
-        .eq("order_number", identifier);
-
-      if (error) {
-        console.error("[ADMIN] Failed to update order status after J&T cancel:", error);
-        return NextResponse.json({ error: "J&T dibatalkan tapi gagal update status" }, { status: 500 });
-      }
-
-      // Restore stock for all order items (resolves base product via RPC)
-      const { data: orderItems } = await supabaseAdmin
-        .from("order_items")
-        .select("product_id, color, size, quantity")
-        .eq("order_id", (await supabaseAdmin.from("orders").select("id").eq("order_number", identifier).single()).data?.id);
-
-      if (orderItems && orderItems.length > 0) {
-        for (const item of orderItems) {
-          if (item.product_id && item.color && item.size && item.quantity) {
-            await supabaseAdmin.rpc("samaqu_restore_stock", {
-              p_product_id: item.product_id,
-              p_color: item.color,
-              p_size: item.size,
-              p_qty: item.quantity,
-            });
-          }
-        }
-        console.log("[ADMIN] Stock restored for cancelled order:", identifier, "items:", orderItems.length);
+      // Void resi di J&T dulu, stok website dikembalikan, baru status `dibatalkan` — satu jalur
+      // bersama dengan chip status & cron auto-cancel (lihat src/lib/cancel-order.ts).
+      const result = await cancelOrderCompletely(order, "Dibatalkan oleh admin");
+      if (!result.success) {
+        return result.stage === "jnt"
+          ? NextResponse.json({ error: `Gagal batalkan J&T: ${result.message}` }, { status: 400 })
+          : NextResponse.json({ error: "J&T dibatalkan tapi gagal update status" }, { status: 500 });
       }
 
       return NextResponse.json({ success: true, message: "Berhasil membatalkan pesanan di J&T" });
+    }
+
+    // ── "Atur Pesanan": buat resi J&T setelah pembayaran diverifikasi ──
+    // Dulu resi terbit otomatis saat customer checkout; sekarang admin yang memicunya (ala
+    // Shopee Seller Centre). Sukses → pesanan langsung berstatus `diproses`.
+    if (action === "createJnt") {
+      const { data: order, error: fetchError } = await supabaseAdmin
+        .from("orders")
+        .select(
+          "id, order_number, customer_name, customer_whatsapp, shipping_address, shipping_city, shipping_postal_code, total, weight, payment_method, awb_no, status, order_items(product_id, product_name, quantity)"
+        )
+        .eq("order_number", identifier)
+        .single();
+
+      if (fetchError || !order) {
+        return NextResponse.json({ error: "Pesanan tidak ditemukan" }, { status: 404 });
+      }
+
+      if (order.awb_no) {
+        return NextResponse.json(
+          { error: `Pesanan ini sudah punya nomor resi J&T (${order.awb_no}).` },
+          { status: 400 }
+        );
+      }
+
+      if (order.status === "dibatalkan") {
+        return NextResponse.json({ error: "Pesanan sudah dibatalkan, resi tidak bisa dibuat." }, { status: 400 });
+      }
+
+      const result = await createJntOrderForOrder({
+        order_number: order.order_number,
+        customer_name: order.customer_name,
+        customer_whatsapp: order.customer_whatsapp,
+        shipping_address: order.shipping_address,
+        shipping_city: order.shipping_city,
+        shipping_postal_code: order.shipping_postal_code,
+        total: order.total,
+        weight: order.weight,
+        payment_method: order.payment_method,
+        order_items: order.order_items ?? [],
+      });
+
+      if (!result.success || !result.awbNo) {
+        console.error("[ADMIN] J&T order create failed:", identifier, result.error);
+        return NextResponse.json({ error: `Gagal membuat resi J&T: ${result.error}` }, { status: 400 });
+      }
+
+      const { error: updateError } = await supabaseAdmin
+        .from("orders")
+        .update({ awb_no: result.awbNo, jnt_order_id: order.order_number, status: "diproses" })
+        .eq("id", order.id);
+
+      if (updateError) {
+        console.error("[ADMIN] Failed to save J&T AWB:", updateError);
+        return NextResponse.json({ error: "Resi J&T terbit tapi gagal disimpan. Coba lagi." }, { status: 500 });
+      }
+
+      console.log("[ADMIN] J&T AWB created:", identifier, result.awbNo);
+      return NextResponse.json({ success: true, awbNo: result.awbNo, status: "diproses" });
     }
 
     // Normal status update
@@ -80,9 +107,39 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "Status wajib diisi" }, { status: 400 });
     }
 
+    // Chip "Ubah Status" di drawer admin: `dibatalkan` harus lewat jalur void resi yang sama,
+    // dan pesanan yang sudah punya resi J&T tidak boleh dikembalikan ke `pending` — kombinasi
+    // itulah yang dulu meninggalkan pesanan `pending` dengan resi yang masih hidup.
+    if (status === "dibatalkan" || status === "pending") {
+      const { data: order } = await supabaseAdmin
+        .from("orders")
+        .select("id, order_number, status, awb_no, jnt_order_id")
+        .eq("order_number", identifier)
+        .maybeSingle();
+
+      const resi = order?.awb_no || order?.jnt_order_id;
+
+      if (status === "pending" && resi) {
+        return NextResponse.json(
+          { error: `Pesanan ini sudah punya resi J&T (${resi}). Status tidak bisa dikembalikan ke pending.` },
+          { status: 400 }
+        );
+      }
+
+      if (status === "dibatalkan" && order) {
+        const result = await cancelOrderCompletely(order, "Dibatalkan oleh admin");
+        if (!result.success) {
+          return result.stage === "jnt"
+            ? NextResponse.json({ error: `Gagal batalkan J&T: ${result.message}` }, { status: 400 })
+            : NextResponse.json({ error: "Gagal memperbarui status pesanan" }, { status: 500 });
+        }
+        return NextResponse.json({ success: true });
+      }
+    }
+
     const { error } = await supabaseAdmin
       .from("orders")
-      .update({ status })
+      .update({ status, updated_at: new Date().toISOString() })
       .eq("order_number", identifier);
 
     if (error) {

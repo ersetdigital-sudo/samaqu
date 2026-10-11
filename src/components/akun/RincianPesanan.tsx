@@ -236,10 +236,14 @@ export default function RincianPesanan({ order }: { order: RincianOrder }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [cancelError, setCancelError] = useState("");
+  /** Jam pembatalan lokal, dipakai sampai halaman dimuat ulang dari server. */
+  const [cancelTime, setCancelTime] = useState("");
 
   const status = cancelled ? "dibatalkan" : order.status;
   const sc = strukStatus(status);
-  const steps = strukSteps({ ...order, status });
+  // Pesanan lama menyimpan `updated_at` = `created_at` (lihat `waktuBatal`), jadi pembatalan yang
+  // baru terjadi dari halaman ini diberi jam sendiri supaya linimasa tidak menampilkan jam lama.
+  const steps = strukSteps({ ...order, status, updated_at: cancelTime || order.updated_at });
   const items = order.order_items || [];
   // Hanya pesanan yang belum diserahkan ke kurir yang boleh dibatalkan sendiri (lihat /api/orders/cancel).
   const cancellable = !cancelled && (status === "pending" || status === "diproses");
@@ -272,6 +276,7 @@ export default function RincianPesanan({ order }: { order: RincianOrder }) {
         setCancelError(data.error || "Gagal membatalkan pesanan. Coba lagi ya.");
         return;
       }
+      setCancelTime(new Date().toISOString());
       setCancelled(true);
     } catch (err) {
       console.error("[AKUN] batal pesanan gagal:", err);

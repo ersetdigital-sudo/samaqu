@@ -1,19 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
-import { cancelOrder } from "@/lib/jnt";
+import { cancelOrderCompletely } from "@/lib/cancel-order";
 
 /**
  * POST /api/orders/cancel — customer membatalkan pesanannya sendiri dari halaman
  * /akun/pesanan/<order>. Body: { orderNumber }.
  *
- * Sama seperti jalur admin (`/api/admin/orders` action `cancelJnt`), pengiriman di J&T
- * dibatalkan dulu baru status pesanan jadi `dibatalkan` — kalau J&T menolak, status tidak
- * diubah supaya resi tidak menggantung. Bedanya: route ini memverifikasi sesi customer dan
- * memastikan pesanan itu memang miliknya.
+ * Pembatalannya memakai jalur bersama `cancelOrderCompletely()` (sama seperti admin dan cron
+ * auto-cancel): resi di-void dulu di J&T, baru status pesanan jadi `dibatalkan` — kalau J&T
+ * menolak, status tidak diubah supaya resi tidak menggantung. Bedanya: route ini memverifikasi
+ * sesi customer dan memastikan pesanan itu memang miliknya.
  *
- * Stok tidak dikembalikan di sini karena pesanan Open Order (`CYO-`) tidak pernah mengurangi
- * stok di `/api/open-order` — memanggil `samaqu_restore_stock` justru menambah stok yang
- * tidak pernah dipotong.
+ * Stok hanya dikembalikan untuk pesanan checkout website (`SMQ-`), karena hanya jalur itu yang
+ * memotong stok; pesanan Open Order (`CYO-`) tidak pernah memotong stok, jadi memanggil
+ * `samaqu_restore_stock` untuknya justru menambah stok yang tidak pernah diambil.
  */
 
 /** Status yang masih boleh dibatalkan customer (belum diserahkan ke kurir). */
@@ -60,23 +60,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Resi sudah terbit saat pesanan dibuat, jadi pengirimannya ikut dibatalkan di J&T.
-    if (order.awb_no || order.jnt_order_id) {
-      const cancelId = order.jnt_order_id || order.awb_no;
-      const cancelResult = await cancelOrder({ orderId: cancelId, remark: "Dibatalkan oleh customer" });
-      if (!cancelResult.success) {
-        console.error("[ORDER-CANCEL] J&T cancel failed:", cancelResult.raw);
+    // Jalur pembatalan bersama (src/lib/cancel-order.ts): void resi J&T dulu → stok website
+    // dikembalikan → status `dibatalkan` + jam pembatalannya.
+    const result = await cancelOrderCompletely(order, "Dibatalkan oleh customer");
+
+    if (!result.success) {
+      if (result.stage === "jnt") {
         return NextResponse.json({ error: "Gagal membatalkan pengiriman di J&T. Coba lagi ya." }, { status: 400 });
       }
-    }
-
-    const { error: updateError } = await supabaseAdmin
-      .from("orders")
-      .update({ status: "dibatalkan" })
-      .eq("id", order.id);
-
-    if (updateError) {
-      console.error("[ORDER-CANCEL] Status update error:", updateError);
       return NextResponse.json({ error: "Gagal memperbarui status pesanan" }, { status: 500 });
     }
 
