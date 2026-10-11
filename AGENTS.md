@@ -259,8 +259,8 @@ Page presentation (not obvious from the code):
   `OPEN_ORDER_PERIOD` di `src/lib/open-order-config.ts` ("8-15 Agustus 2026") kini hanya **nilai
   default/fallback** — dipakai selama kolomnya kosong.
 - The **Extra Cover & Hanger** row in step 3 follows the catalog look: a cream card with a thin
-  gold spine on the left edge (grows to full height on hover), the serif espresso name, a gold
-  uppercase caption, the serif price and a round gold ring that fills with a check while the
+  gold spine on the left edge (grows to full height on hover), a sans-serif espresso name and
+  price (on request, matched to the cart lines / summary rows), a gold uppercase caption, and a round gold ring that fills with a check while the
   add-on is selected (`is-on` class). Its CSS is scoped in `StepCart.tsx` (the `ADDON_CSS` string
   rendered in a `<style>` tag) instead of being added to the shared `ui.tsx` tokens, because the
   ornament is used nowhere else; the row is still the same toggle button (click selects/deselects)
