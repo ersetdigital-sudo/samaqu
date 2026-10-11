@@ -907,6 +907,46 @@ bisa dikembalikan ke `pending` atau ditandai `dibatalkan` sementara resinya teta
   tanpa error console. Semua pesanan uji dihapus lagi setelah uji (tidak ada sisa `TEST*`).
   Perubahan terakhir pada label tombol dialog tidak diuji ulang di browser (jatah panggilan
   preview habis) — hanya `tsc` bersih.
+## Alamat pesanan: kecamatan & kode pos (2026-10-11)
+
+Pemilik menemukan pesanan `SMQ-20261011-643` (Damar) alamatnya cuma "Jl.Medokan Asri Barat IV
+Blok F No.44, Surabaya" — kecamatan dan kode pos tidak muncul, padahal checkout meminta keduanya.
+Dua bug berbeda, keduanya di `src/app/[locale]/(customer)/checkout/page.tsx` (pohon
+`src/app/(customer)/` sengaja **tidak** disentuh: tidak terpakai) dan di drawer admin:
+
+- **Kecamatan alamat manual terbuang.** Payload checkout dulu mengirim
+  `district: selectedAddr?.kecamatan || ""`, jadi untuk tamu/alamat manual (yang kecamatannya
+  diketik di field "Kecamatan") nilainya selalu kosong → `shipping_city` cuma berisi kota dan
+  `getReceiverArea()` J&T kehilangan kode area. Sekarang:
+  `district: selectedAddr ? selectedAddr.kecamatan || "" : kecamatanName.trim()`, dan karena
+  field Kecamatan berlabel wajib, submit manual tanpa kecamatan **ditolak** klien
+  (`e.kecamatan = "Kecamatan wajib diisi"`, pesan + border merah ditampilkan seperti field lain).
+  `const selectedAddr` diangkat ke atas blok validasi supaya dipakai validasi & payload sekaligus.
+- **"Gunakan Alamat Baru" masih memakai alamat tersimpan.** Dulu `selectedAddressId` tidak
+  dikosongkan, jadi setelah menekan "+ Gunakan Alamat Baru" kecamatan tetap diambil dari alamat
+  tersimpan sementara jalan/kota/kode pos dari field yang diketik — campur dua alamat. Sekarang
+  tombol itu `setSelectedAddressId("")`, dan "← Kembali ke alamat tersimpan" memilih ulang alamat
+  default lewat `handleSelectAddress` supaya payload tidak tertinggal di mode manual.
+- **Kode pos tidak tampil di drawer admin.** Drawer membaca `order.shipping_postal`, padahal
+  kolomnya `orders.shipping_postal_code` (API admin pun mengirim nama itu) → kode pos hilang dari
+  blok "Alamat Pengiriman". Sudah diperbaiki di `src/components/admin/OrderDetailContent.tsx`
+  (tipe + perakit `alamat`) dan tipe `Order` di `src/app/admin/page.tsx`. Halaman customer
+  (`RincianPesanan.tsx`) memang sudah benar sejak awal, jadi kode pos selalu terlihat di
+  `/akun/pesanan` — yang bolong hanya sisi admin.
+
+Konsekuensi data: kecamatan yang sudah telanjur hilang **tidak bisa dipulihkan** (tidak ada
+`saved_addresses` untuk pembeli itu dan kolomnya tidak menyimpan jejaknya) — `SMQ-20261011-643`
+masih perlu kecamatan diisi manual/konfirmasi ke pembeli saat resi diterbitkan (kode posnya aman:
+`60295`). Pesanan `SMQ-`/`CYO-` baru sudah ikut membaik otomatis.
+
+Verifikasi: `tsc --noEmit` bersih; `/id/checkout` = `200` dan HTML SSR-nya memuat
+`data-field="alamat|kecamatan|kota|kodepos"`; `/admin` = `200`; baris REST pesanan menunjukkan
+`shipping_postal_code: "60295"` (masukannya ada, cuma tidak dirender). **Belum terbukti di
+browser**: klik "Buat Pesanan" dengan kecamatan terisi benar-benar mengirim `district` yang
+diketik (jatah panggilan preview habis; `navigate('/id/checkout')` di preview balas
+`navigation_failed` — route tidak merender lewat SPA nav, jadi checkout harus dibuka dengan
+kunjungan halaman penuh lalu diuji manual).
+
 - **Temuan kredensial (belum bisa saya perbaiki, perlu pemilik)**: panggilan void ke J&T production
   (`api.jet.co.id/.../order/cancel`) dijawab `detail[0].reason: "Username atau Api Key salah"`
   sementara kredensial yang sama dipakai untuk tariff/track (`partner-track`) berhasil. Artinya
