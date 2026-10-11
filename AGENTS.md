@@ -326,9 +326,10 @@ Page presentation (not obvious from the code):
   `src/middleware.ts`) dan `/id/admin` — kini merender **satu komponen yang sama**:
   `src/app/[locale]/admin/page.tsx` cuma `export { default } from "@/app/admin/page"`. Dulu file itu
   salinan penuh dan sudah drift (kartu Pengaturan tidak ikut tersalin), jadi cukup ubah
-  `src/app/admin/page.tsx`. **Subhalaman** admin lain (`produk`, `voucher`, `open-order`,
-  `testimoni`, `ukuran-produk`, dll.) masih punya salinan locale sendiri dan tetap perlu diedit di
-  dua tempat.
+  `src/app/admin/page.tsx`. **Subhalaman** admin lain (`voucher`, `open-order`, `testimoni`,
+  `ukuran-produk`, dll.) masih punya salinan locale sendiri dan tetap perlu diedit di dua tempat —
+  kecuali **`produk/tambah`**, yang juga sudah jadi satu komponen bersama
+  (`src/components/admin/ProductForm.tsx`, lihat "Form tambah produk admin" di bawah).
   **Drawer detail pesanan** kedua dashboard memakai komponen bersama
   **`src/components/admin/OrderDetailDrawer.tsx`** — panel meluncur dari kanan, pola yang sama dengan
   `ProductDetailDrawer` (`ODR_CSS`, kelas `odr-`, lebar 640 px / penuh di mobile). Isinya satu
@@ -600,6 +601,33 @@ header, lalu isi struk (banner status → info pengiriman → alamat → produk 
 Status Pesanan); chip "Ubah Status" & tombol aksi (WhatsApp / Cetak Label / Hapus) tetap bekerja,
 dan tutup lewat **X**, klik latar, atau `Escape`. Ulangi di lebar <768 px: drawer selebar penuh,
 chip status 2×2, tombol aksi satu kolom.
+
+## Form tambah produk admin
+
+Dulu form ini dua salinan (~1400 baris) di `src/app/admin/produk/tambah/page.tsx` dan salinan
+locale-nya, dan salinan locale sudah tertinggal fitur "Stok dari Produk Dasar". Sekarang **satu**
+komponen bersama **`src/components/admin/ProductForm.tsx`**; kedua route cuma
+`export { default } from "@/components/admin/ProductForm"`. Ubah form tambah produk → ubah file itu
+saja (`produk/edit/[id]` masih salinan terpisah dan **tidak** ikut berubah).
+
+- **SKU produk**: field baru di kartu *Info Dasar* (`sku` state) — dulu produk cuma punya SKU
+  per-ukuran, padahal panel detail produk (`ProductDetailDrawer`) menampilkan satu baris "SKU:".
+  Tabel `products` **tidak punya kolom `sku`** dan sandbox tidak punya jalur DDL, jadi SKU produk
+  disimpan di `product_variants.sku`: nilai per-ukuran dipakai kalau diisi, kalau kosong jatuh ke
+  SKU produk (`sku: s.sku.trim() || sku.trim() || null`), dan placeholder kolom SKU tiap ukuran
+  menampilkan SKU produk itu. Jangan pindahkan ke kolom `products.sku` tanpa migration yang
+  dijalankan manual: select `products.sku` membalas `400` `42703` sampai kolomnya ada
+  (`curl -s -o /dev/null -w '%{http_code}\n' "$NEXT_PUBLIC_SUPABASE_URL/rest/v1/products?select=sku&limit=1"`).
+- **Tabel ukuran** kini satu komponen `SizeGrid` (dipakai blok series Thobe **dan** varian biasa,
+  sebelumnya markahnya disalin dua kali): di bawah `640px` tiap ukuran jadi kartu berlabel — kolom
+  tetap 444 px yang lama membuat form melebar keluar layar di HP — dan kembali jadi satu baris 5
+  kolom (`84px 84px 1fr 1fr 34px`) di `sm+`. Kelasnya `pf-size-*` di string CSS form.
+- Baris field dibuat konsisten dua kolom (`grid sm:grid-cols-2 gap-4`): Nama/Kategori, Slug/SKU
+  Produk, Harga Dasar (non-Thobe)/Berat.
+- Verifikasi: `tsc --noEmit` bersih + `curl /admin/produk/tambah` & `/id/admin/produk/tambah` = `200`
+  (HTML SSR-nya memuat field "SKU Produk"). **Tidak bisa lewat preview** (route admin tidak bisa
+  dicapai navigasi SPA, dan full page load di-reset ke route home di panggilan berikutnya) — jadi
+  tampilan form di HP/desktop dan simpan-SKU harus diuji manual di browser.
 
 ## Panel Pengaturan (read-only + Edit) & panel Pelanggan
 
