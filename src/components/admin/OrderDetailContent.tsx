@@ -65,9 +65,9 @@ const OD_CSS = `
 .od-a-danger{border-color:#EBC7C0;color:#B4392A}
 .od-a-danger:hover{background:#FCF0EA}
 .od-email{display:block;font-size:12.5px;color:#8D9297;font-weight:500;margin-top:2px}
-/* Mobile: modal admin bukan halaman customer — latar abu (dan ruangnya) dibuang supaya
-   isi struk duduk langsung di kertas krem modal, dan banner status menempel rapi di
-   bawah header (tanpa celah + sudut). Kartu putih di bawahnya jadi sama seperti kartu
+/* Mobile: drawer admin bukan halaman customer — latar abu (dan ruangnya) dibuang supaya
+   isi struk duduk langsung di kertas drawer, dan banner status menempel rapi di bawah
+   header drawer (tanpa celah + sudut). Kartu putih di bawahnya jadi sama seperti kartu
    dashboard admin. */
 @media (max-width:767.98px){
  .od-root .rp-root{background:transparent;padding-bottom:0}

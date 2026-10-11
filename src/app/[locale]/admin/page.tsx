@@ -15,7 +15,7 @@ import ConfirmModal from "@/components/ConfirmModal";
 import { useToast } from "@/components/AdminToast";
 import PaymentMethodsManager, { PaymentMethodValue } from "@/components/admin/PaymentMethodsManager";
 import JntCredentialsForm from "@/components/admin/JntCredentialsForm";
-import OrderDetailContent from "@/components/admin/OrderDetailContent";
+import OrderDetailDrawer from "@/components/admin/OrderDetailDrawer";
 import OrdersMobileList from "@/components/admin/OrdersMobileList";
 import DashboardView from "@/components/admin/DashboardView";
 import ProductsCatalog from "@/components/admin/ProductsCatalog";
@@ -912,31 +912,14 @@ function AdminPageInner() {
       {/* Drawer detail produk — dibuka dari kartu katalog (tombol mata) */}
       <ProductDetailDrawer productId={selectedProductId} onClose={() => setSelectedProductId(null)} />
 
-      {/* Order Detail Modal */}
-      <AnimatePresence>
-        {selectedOrder && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-start justify-center md:pt-10 md:px-4 md:pb-10 overflow-y-auto" style={{ background: "rgba(42,33,27,.4)", backdropFilter: "blur(4px)" }} onClick={() => setSelectedOrder(null)}>
-            <motion.div initial={{ opacity: 0, y: 20, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.98 }} transition={{ duration: 0.25 }} className="w-full max-w-2xl rounded-none md:rounded-2xl overflow-hidden min-h-full md:min-h-0" style={{ background: "var(--cream)", boxShadow: "0 25px 60px -12px rgba(42,33,27,.5)" }} onClick={(e) => e.stopPropagation()}>
-              {/* Header */}
-              <div className="px-4 py-4 md:px-6 md:py-5 flex items-center justify-between" style={{ borderBottom: "1px solid #f1f1f3" }}>
-                <div>
-                  <h2 className="text-xl font-medium" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>{selectedOrder.order_number}</h2>
-                  <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{new Date(selectedOrder.created_at).toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</p>
-                </div>
-                <button onClick={() => setSelectedOrder(null)} className="p-2 rounded-lg hover:bg-[#f4f4f5]" style={{ color: "var(--text-muted)" }}><X size={18} /></button>
-              </div>
-
-              {/* Isi detail memakai susunan & gaya yang sama dengan halaman detail pesanan customer. */}
-              <OrderDetailContent
-                order={selectedOrder}
-                onStatusChange={(status) => updateOrderStatus(selectedOrder.order_number, status)}
-                onCancelJnt={() => cancelJntOrder(selectedOrder)}
-                onDelete={() => deleteOrder(selectedOrder.order_number)}
-              />
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Drawer detail pesanan — meluncur dari kanan, sama seperti drawer detail produk */}
+      <OrderDetailDrawer
+        order={selectedOrder}
+        onClose={() => setSelectedOrder(null)}
+        onStatusChange={(status) => { if (selectedOrder) updateOrderStatus(selectedOrder.order_number, status); }}
+        onCancelJnt={() => { if (selectedOrder) cancelJntOrder(selectedOrder); }}
+        onDelete={() => { if (selectedOrder) deleteOrder(selectedOrder.order_number); }}
+      />
 
       <ConfirmModal
         open={confirmModal.open}
