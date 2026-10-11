@@ -15,6 +15,7 @@ import ConfirmModal from "@/components/ConfirmModal";
 import { useToast } from "@/components/AdminToast";
 import PaymentMethodsManager from "@/components/admin/PaymentMethodsManager";
 import OrderDetailContent from "@/components/admin/OrderDetailContent";
+import OrdersMobileList from "@/components/admin/OrdersMobileList";
 
 type Panel = "dashboard" | "orders" | "products" | "customers" | "content" | "featured" | "settings";
 
@@ -673,7 +674,8 @@ function AdminPageInner() {
                       <h2 className="font-serif italic text-xl mb-4" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Pesanan Terbaru</h2>
                       {loading ? <p className="text-sm" style={{ color: "var(--text-muted)" }}>Memuat...</p> : (
                         <div className="overflow-x-auto">
-                          <table className="w-full text-sm min-w-[500px]">
+                          <OrdersMobileList orders={orders.slice(0, 5)} emptyText="Belum ada pesanan" renderStatus={(s) => <StatusBadge status={s} />} />
+                          <table className="w-full text-sm min-w-[500px] hidden lg:table">
                             <thead>
                               <tr className="text-left" style={{ color: "var(--text-muted)", background: "var(--bg-secondary)" }}>
                                 <th className="font-medium px-4 py-3">ID</th>
@@ -735,7 +737,7 @@ function AdminPageInner() {
                   </div>
                   <div className="flex flex-wrap items-center gap-3 justify-between p-5" style={{ borderBottom: "1px solid rgba(64,50,37,.06)" }}>
                     <h2 className="font-serif italic text-xl" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>{orderSource === "open" ? "Pesanan Open Order" : "Semua Pesanan"}</h2>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       {["Semua", "pending", "diproses", "selesai"].map((s) => (
                         <button key={s} onClick={() => setOrderFilter(s)} className="text-sm px-3 py-1.5 rounded-lg font-medium transition-colors" style={{ background: orderFilter === s ? "var(--gold)" : "transparent", color: orderFilter === s ? "#fff" : "var(--text-secondary)", border: orderFilter === s ? "none" : "1px solid rgba(64,50,37,.15)" }}>
                           {s === "Semua" ? "Semua" : s.charAt(0).toUpperCase() + s.slice(1)}
@@ -744,7 +746,13 @@ function AdminPageInner() {
                     </div>
                   </div>
                   <div className="overflow-x-auto">
-                    <table className="w-full text-sm min-w-[720px]">
+                    <OrdersMobileList
+                      orders={visibleOrders}
+                      onSelect={setSelectedOrder}
+                      emptyText={orderSource === "open" ? "Belum ada pesanan Open Order" : "Tidak ada pesanan"}
+                      renderStatus={(s) => <StatusBadge status={s} />}
+                    />
+                    <table className="w-full text-sm min-w-[720px] hidden lg:table">
                       <thead>
                         <tr className="text-left" style={{ color: "var(--text-muted)", background: "var(--bg-secondary)" }}>
                           <th className="font-medium px-5 py-3">ID</th>
