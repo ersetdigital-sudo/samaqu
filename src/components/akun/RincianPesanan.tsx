@@ -38,8 +38,10 @@ export interface RincianOrder {
   order_items: RincianOrderItem[];
 }
 
-/** Foto cadangan kalau baris pesanan tidak punya gambar dan katalog tidak ketemu. */
-const FALLBACK_PHOTO =
+/** Foto cadangan kalau baris pesanan tidak punya gambar dan katalog tidak ketemu.
+    Dipakai juga oleh OrderDetailContent (modal detail pesanan admin) — jangan diganti
+    tanpa memikirkan kedua tempat. */
+export const FALLBACK_PHOTO =
   "https://media.base44.com/images/public/6ac9c2148b24683dd1215a67/1c559b304_generated_5f8be940.jpg";
 
 /**
