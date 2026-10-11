@@ -266,6 +266,16 @@ Page presentation (not obvious from the code):
   and only its appearance changed. The summary box below it lists the item lines, an `Extra Cover &
   Hanger` line while the add-on is selected, and a `Total` (subtotal + add-on) so toggling the card
   visibly changes the amount; ongkir is only added in step 5 (review).
+- **Halaman detail pesanan akun** (`/[locale]/akun/pesanan/<order_number>`) memakai desain "Struk Hangat":
+  renderernya satu komponen klien `src/components/akun/DetailPesananStruk.tsx` (CSS scoped dengan awalan
+  `sk-` di dalam komponen itu, mengikuti pola `ADDON_CSS` di `StepCart.tsx`), sementara file route hanya
+  mengambil pesanan lewat `getCustomerOrders()` lalu merendernya. Grid waktu yang dulu vertikal kini
+  batang langkah mendatar (`sk-bar`), ringkasan pembayaran muncul sebelum Informasi Produk yang bisa
+  dilipat (`<details>`), dan "Lacak Pesanan" jadi bar lengket di atas nav bawah. Foto produk memakai
+  `order_items.product_image` dengan `object-fit: contain` **supaya tidak terpotong**, dan jatuh ke
+  konstanta `FALLBACK_PHOTO` (aset Base44) kalau kolomnya kosong — banyak `order_items` lama memang
+  menyimpan `product_image` NULL. Header halaman lama (`AkunHeader` dari `AkunShell.tsx`) masih dipakai
+  halaman akun lain, jadi jangan ubah gaya globalnya untuk halaman ini.
 - The admin **Pesanan** panel splits the list into sub-tabs **Pesanan Website** / **Open Order**
   (`orderSource` state): Open Order rows are the `CYO-` numbers, everything else is the website
   checkout, and the status chips (Semua/pending/diproses/selesai) filter inside the selected tab.
