@@ -618,6 +618,17 @@ chip status 2×2, tombol aksi satu kolom.
 - Panel **Pelanggan** kini `src/components/admin/CustomersView.tsx`: kartu ringkas per pelanggan
   (tanggal lahir, total belanja, jumlah pesanan, belanja terakhir) + tombol **"Riwayat Belanja &
   Alamat (n)"**, plus chip filter "Ulang Tahun Bulan Ini" dan kartu ringkasan di atasnya.
+- **Tombol Export di panel Pelanggan** merakit CSV-nya di **`src/lib/customer-csv.ts`**
+  (`customersToCsv` + `formatWhatsapp`), bukan lagi inline di `CustomersView`. Permintaan pemilik:
+  "pas di export No WA nya malah berantakan" — Excel mengubah digit panjang (`85299954529`) jadi
+  notasi ilmiah `8,52999E+10`, jadi No WA sekarang ditulis sebagai teks `+62 852-9995-4529`
+  (angka aslinya tidak diubah, cuma awalan `62`/`0` dibuang dulu). Tanda `+`/`-` membuat Excel
+  memperlakukannya sebagai teks, dan panjang tiap baris jadi seragam; tanggal lahir tetap
+  `YYYY-MM-DD`. File itu sengaja bebas JSX/React supaya bisa diuji langsung tanpa browser:
+  `docker compose exec -T web node --input-type=module -e "import {formatWhatsapp} from './src/lib/customer-csv.ts'; console.log(formatWhatsapp('085299954529'))"`
+  (Node 22 sudah men-strip tipe TS, jadi impor `.ts` langsung jalan). Ekspor lewat UI sendiri cuma
+  bisa dicek sampai "tidak ada error console" — unduhan `blob:` tidak muncul di
+  `getNetworkRequests`, jadi isi CSV-nya dibuktikan lewat Node di atas, bukan lewat preview.
 - **Drawer detail pelanggan** = `src/components/admin/CustomerDetailDrawer.tsx` (panel netral
   putih/abu tema admin, kelas `cd-`, lebar 460 px / penuh di bawah 768 px, tutup lewat X / klik
   latar / `Escape` — pola sama dengan `ProductDetailDrawer`/`OrderDetailDrawer`). Isinya: header

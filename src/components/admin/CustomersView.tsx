@@ -4,6 +4,7 @@ import { ReactNode, useEffect, useMemo, useState } from "react";
 import { Cake, ChevronRight, Download, Loader2, Phone, Search, ShoppingBag, User, Users, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import CustomerDetailDrawer, { type AdminCustomer } from "@/components/admin/CustomerDetailDrawer";
+import { customersToCsv } from "@/lib/customer-csv";
 
 /**
  * Panel "Pelanggan" dashboard admin — kartu ringkas per pelanggan; detail lengkap
@@ -31,16 +32,13 @@ function formatDate(iso: string) {
 
 /**
  * Export daftar pelanggan ke CSV (Nama, No WA, Tanggal Lahir) — isinya mengikuti
- * filter/pencarian yang sedang aktif di panel. Tanggal lahir ditulis `YYYY-MM-DD`
- * supaya bisa diurutkan di Excel/Sheets; kosong kalau belum diisi.
+ * filter/pencarian yang sedang aktif di panel.
+ *
+ * Isi CSV-nya dirakit `src/lib/customer-csv.ts` supaya format No WA & tanggalnya
+ * satu tempat dan bisa diuji lewat Node.
  */
 function exportCustomers(rows: AdminCustomer[]) {
-  const cell = (v: string) => `"${String(v ?? "").replace(/"/g, '""')}"`;
-  const lines = [["Nama", "No WA", "Tanggal Lahir"].map(cell).join(",")];
-  for (const c of rows) lines.push([c.name, c.whatsapp, c.birthDate || ""].map(cell).join(","));
-
-  // BOM di depan supaya Excel membaca UTF-8 dengan benar.
-  const blob = new Blob(["\uFEFF" + lines.join("\r\n")], { type: "text/csv;charset=utf-8;" });
+  const blob = new Blob([customersToCsv(rows)], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
