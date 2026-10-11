@@ -6,6 +6,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { useSafeLocale } from "@/lib/safe-i18n";
 import { useAkunCustomer } from "./AkunContext";
 import AkunPageTransition from "./AkunPageTransition";
+import AkunBreadcrumb from "./AkunBreadcrumb";
 
 interface NavItem {
   href: string;
@@ -56,7 +57,7 @@ export function AkunHeader({ title, back }: { title: string; back?: string }) {
       >
         <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="#0f3d33" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 6-6 6 6 6" /></svg>
       </button>
-      <h1 className="text-[17px] font-extrabold" style={{ color: "#0f3d33" }}>{title}</h1>
+      <AkunBreadcrumb current={title} className="min-w-0 flex-1" />
     </div>
   );
 }
@@ -157,6 +158,7 @@ export default function AkunShell({ children }: { children: ReactNode }) {
 
         <main className="flex-1 w-full">
           <div className="px-4 pt-4 pb-40 md:px-6 md:py-6 md:pb-6">
+            <AkunBreadcrumb className="hidden md:block mb-5" />
             <AkunPageTransition>{children}</AkunPageTransition>
           </div>
         </main>
