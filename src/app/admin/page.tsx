@@ -202,19 +202,33 @@ function AdminPageInner() {
   const [deleteConfirmOrder, setDeleteConfirmOrder] = useState<Order | null>(null);
   const [orderFilter, setOrderFilter] = useState("Semua");
   const [orderSource, setOrderSource] = useState<"website" | "open">("website");
+  const [orderSearch, setOrderSearch] = useState("");
 
   // Pesanan Open Order (Create Your Price) bernomor `CYO-`; sisanya pesanan checkout website.
   const sourceOrders = orders.filter((o) =>
     orderSource === "open" ? o.order_number.startsWith("CYO-") : !o.order_number.startsWith("CYO-")
   );
-  const visibleOrders = sourceOrders.filter((o) => orderFilter === "Semua" || o.status === orderFilter);
-  // Jumlah per status ikut tab yang aktif (Pesanan Website / Open Order), jadi angka
-  // di chip filter selalu cocok dengan daftar di bawahnya.
+  // Kotak "Cari pesanan": cocokkan nomor pesanan, nama pelanggan, email, atau nomor WhatsApp.
+  // Pencarian dan chip status dipakai bersamaan (AND), jadi admin bisa menyaring dua arah.
+  const orderQuery = orderSearch.trim().toLowerCase();
+  const searchedOrders = orderQuery
+    ? sourceOrders.filter((o) =>
+        [o.order_number, o.customer_name, o.customer_email, o.customer_whatsapp]
+          .some((v) => (v || "").toLowerCase().includes(orderQuery))
+      )
+    : sourceOrders;
+  const visibleOrders = searchedOrders.filter((o) => orderFilter === "Semua" || o.status === orderFilter);
+  // Pesan kosong dibedakan: "pencarian tidak ketemu" vs "belum ada pesanan sama sekali".
+  const ordersEmptyText = orderQuery
+    ? "Tidak ada pesanan yang cocok dengan pencarian"
+    : orderSource === "open" ? "Belum ada pesanan Open Order" : "Tidak ada pesanan";
+  // Jumlah per status ikut tab yang aktif (Pesanan Website / Open Order) **dan** kotak
+  // pencarian, jadi angka di chip filter selalu cocok dengan daftar di bawahnya.
   const statusCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    for (const o of sourceOrders) counts[o.status] = (counts[o.status] || 0) + 1;
+    for (const o of searchedOrders) counts[o.status] = (counts[o.status] || 0) + 1;
     return counts;
-  }, [sourceOrders]);
+  }, [searchedOrders]);
   const [productSearch, setProductSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [productVariants, setProductVariants] = useState<{ product_id: string; stock: number; base_product_id: string | null }[]>([]);
@@ -832,26 +846,54 @@ function AdminPageInner() {
                       ))}
                     </div>
                   </div>
-                  <div className="flex flex-wrap items-center gap-3 justify-between p-5" style={{ borderBottom: "1px solid #f1f1f3" }}>
-                    {/* Judul ikut filter yang aktif, mis. "Pesanan Diproses". */}
-                    <h2 className="text-xl font-extrabold" style={{ color: "var(--fg)" }}>
-                      {orderSource === "open"
-                        ? orderFilter === "Semua" ? "Semua Open Order" : `Open Order ${statusLabel(orderFilter)}`
-                        : orderFilter === "Semua" ? "Semua Pesanan" : `Pesanan ${statusLabel(orderFilter)}`}
-                    </h2>
-                    <div className="flex flex-wrap gap-2">
-                      {["Semua", "pending", "diproses", "selesai", "dibatalkan"].map((s) => (
-                        <button key={s} onClick={() => setOrderFilter(s)} className="text-sm px-3 py-1.5 rounded-lg font-medium transition-colors" style={{ background: orderFilter === s ? "var(--gold)" : "transparent", color: orderFilter === s ? "#fff" : "var(--text-secondary)", border: orderFilter === s ? "none" : "1px solid #d4d4d8" }}>
-                          {s === "Semua" ? "Semua" : statusLabel(s)} ({s === "Semua" ? sourceOrders.length : statusCounts[s] || 0})
+                  <div className="p-5" style={{ borderBottom: "1px solid #f1f1f3" }}>
+                    <div className="flex flex-wrap items-center gap-3 justify-between">
+                      {/* Judul ikut filter yang aktif, mis. "Pesanan Diproses". */}
+                      <h2 className="text-xl font-extrabold" style={{ color: "var(--fg)" }}>
+                        {orderSource === "open"
+                          ? orderFilter === "Semua" ? "Semua Open Order" : `Open Order ${statusLabel(orderFilter)}`
+                          : orderFilter === "Semua" ? "Semua Pesanan" : `Pesanan ${statusLabel(orderFilter)}`}
+                      </h2>
+                      <div className="flex flex-wrap gap-2">
+                        {["Semua", "pending", "diproses", "selesai", "dibatalkan"].map((s) => (
+                          <button key={s} onClick={() => setOrderFilter(s)} className="text-sm px-3 py-1.5 rounded-lg font-medium transition-colors" style={{ background: orderFilter === s ? "var(--gold)" : "transparent", color: orderFilter === s ? "#fff" : "var(--text-secondary)", border: orderFilter === s ? "none" : "1px solid #d4d4d8" }}>
+                            {s === "Semua" ? "Semua" : statusLabel(s)} ({s === "Semua" ? searchedOrders.length : statusCounts[s] || 0})
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Kotak cari pesanan: nomor pesanan, nama, email, atau WhatsApp — daftar panjang
+                        tidak perlu di-scroll satu per satu. Angka di chip ikut hasil pencarian, jadi
+                        tetap cocok dengan baris di bawahnya. */}
+                    <div className="relative mt-4 w-full sm:max-w-sm">
+                      <Search className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2" size={16} strokeWidth={2} style={{ color: "var(--fg3)" }} />
+                      <input
+                        type="text"
+                        value={orderSearch}
+                        onChange={(e) => setOrderSearch(e.target.value)}
+                        placeholder="Cari no. pesanan, nama, atau WhatsApp"
+                        aria-label="Cari pesanan"
+                        className="w-full rounded-xl pl-10 pr-10 py-2.5 text-sm outline-none transition-shadow focus:ring-2"
+                        style={{ border: "1px solid var(--bd)", background: "var(--sub)", color: "var(--fg)", "--tw-ring-color": "var(--gold)" } as React.CSSProperties}
+                      />
+                      {orderSearch && (
+                        <button
+                          type="button"
+                          onClick={() => setOrderSearch("")}
+                          aria-label="Bersihkan pencarian"
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-full transition-colors hover:bg-[var(--bg-secondary)]"
+                          style={{ color: "var(--fg3)" }}
+                        >
+                          <X size={15} />
                         </button>
-                      ))}
+                      )}
                     </div>
                   </div>
                   <div className="overflow-x-auto">
                     <OrdersMobileList
                       orders={visibleOrders}
                       onSelect={setSelectedOrder}
-                      emptyText={orderSource === "open" ? "Belum ada pesanan Open Order" : "Tidak ada pesanan"}
+                      emptyText={ordersEmptyText}
                       renderStatus={(s) => <StatusBadge status={s} />}
                     />
                     <table className="w-full text-sm min-w-[720px] hidden lg:table">
@@ -879,7 +921,7 @@ function AdminPageInner() {
                           </tr>
                         ))}
                         {visibleOrders.length === 0 && (
-                          <tr><td colSpan={6} className="px-5 py-8 text-center" style={{ color: "var(--text-muted)" }}>{orderSource === "open" ? "Belum ada pesanan Open Order" : "Tidak ada pesanan"}</td></tr>
+                          <tr><td colSpan={6} className="px-5 py-8 text-center" style={{ color: "var(--text-muted)" }}>{ordersEmptyText}</td></tr>
                         )}
                       </tbody>
                     </table>

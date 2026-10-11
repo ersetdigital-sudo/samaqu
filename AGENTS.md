@@ -781,6 +781,18 @@ pembayaran diverifikasi.
   reload. Status `dikirim` tetap datang dari pelacakan, bukan dari sini.
 - **Kalau J&T menolak** (kredensial/kode area gagal) route membalas 400 dengan pesan `reason`/`desc`
   dari J&T, status pesanan tidak berubah, dan tombolnya tetap ada untuk dicoba lagi.
+- **Pemulihan resi yang tidak sengaja dibatalkan** (kejadian nyata 2026-10-11, `SMQ-20261008-432`):
+  J&T **tidak bisa menghidupkan AWB yang sudah di-void** ("Cancelled AWB by Seller" di Riwayat
+  Pengiriman), jadi satu-satunya jalur adalah **terbit resi baru**. Karena `createJnt` menolak
+  pesanan yang masih ber-`awb_no`, resi mati itu harus dikosongkan lebih dulu lewat REST/PATCH
+  `orders` (`awb_no = null`, `jnt_order_id = null`; status dibiarkan `diproses`) — setelah itu
+  tombol **Atur Pesanan** muncul lagi dengan petunjuk "Nomor resi belum dibuat…". Pembatalan tadi
+  juga sudah mengembalikan stok (khusus `SMQ-`), jadi stok barang itu **dipotong ulang** dengan
+  `samaqu_decrement_stock(product_id, color, size, qty)` dari baris `order_items`-nya supaya tidak
+  dobel-hitung. Ini perbaikan data sekali jalan (skrip `/tmp`/REST), bukan kode app — jangan
+  menambah jalur "un-cancel" di aplikasi tanpa permintaan. Dibuktikan lewat preview (sesi admin
+  diputar ulang): drawer `SMQ-20261008-432` → "Nomor resi belum dibuat…" + tombol **Atur Pesanan**
+  ada, tombol Lacak/Batalkan/Cetak Label hilang, tanpa error console.
 - **`shipping_city` kini menyimpan "Kecamatan, Kota" di kedua jalur** (checkout website dulu hanya
   menyimpan kota, jadi kecamatan hilang dan `receiver_area` J&T cuma bisa ditebak dari kota).
   `splitCityDistrict()` di `order-from-order.ts` memecahnya lagi saat membuat resi; order lama yang
@@ -811,8 +823,19 @@ otomatis statusnya selesai sendiri", plus chip filter "dibatalkan" di panel Pesa
   `/id/admin`). Chip tetap `flex-wrap`, jadi lima chip tidak memotong "Selesai" di ~370 px.
   Setiap chip menampilkan **jumlahnya** (`Pending (3)`) dan **judul daftar ikut filter aktif**
   ("Semua Pesanan" → "Pesanan Diproses"; tab Open Order → "Open Order Diproses"). Angkanya dari
-  `statusCounts` yang dihitung atas `sourceOrders` (tab yang aktif), jadi selalu cocok dengan baris
-  di bawahnya — bukan query terpisah.
+  `statusCounts` yang dihitung atas `searchedOrders` (tab yang aktif **setelah** kotak cari), jadi
+  selalu cocok dengan baris di bawahnya — bukan query terpisah.
+- **Kotak cari pesanan** (permintaan pemilik 2026-10-11: "di menu management order tambahin search
+  biar enak, bikin yg modern"): state `orderSearch` + kotak di bawah baris judul/chip, mencocokkan
+  `order_number`, `customer_name`, `customer_email`, dan `customer_whatsapp` (substring,
+  case-insensitive). Saringannya **sebelum** chip status (AND), angka chip "Semua" ikut
+  `searchedOrders.length`, dan pesan kosong dibedakan (`ordersEmptyText`): "Tidak ada pesanan yang
+  cocok dengan pencarian" vs "belum ada pesanan". Kotak ini **beda** dari kotak "Cari produk…" di
+  topbar (`productSearch`, menggerakkan panel Produk). Verifikasi (sesi admin diputar ulang;
+  `preview_screenshot({path:'/admin'})` dulu karena `navigate()` tidak bereaksi di route admin):
+  "Sri" → 2 baris (`SMQ-20261011-643` cocok dari email `naniusriyati@…` + `SMQ-20261008-432`) dan
+  chip jadi `Semua (2)`/`Pending (1)`/`Diproses (1)`/`Selesai (0)`; "SMQ-20261008-432" → 1 baris;
+  teks ngawur → 0 baris + pesan kosong; tombol X mengembalikan 35 baris; tanpa error console.
 - **Tipografi admin seragam**: satu aturan di `ADMIN_WF_VARS` (`src/components/admin/admin-theme.ts`,
   `#admin-root h1..h4 { font-family: var(--font-inter) !important; font-style: normal !important }`)
   memaksa SEMUA judul admin memakai font UI, bukan Cormorant serif italic (gaya storefront).
