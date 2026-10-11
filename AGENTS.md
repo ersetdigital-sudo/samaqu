@@ -601,9 +601,21 @@ chip status 2×2, tombol aksi satu kolom.
   kecamatan *setelah* daftarnya ada (kalau tidak, `<select>` tampil kosong). `Batal` memuat ulang
   daftar kalau provinsi/kota sempat diubah, supaya nilai aslinya tetap punya option yang cocok.
   Di mode read-only label "Memuat…" hanya muncul selama daftarnya masih diambil.
-- Panel **Pelanggan** kini `src/components/admin/CustomersView.tsx`: kartu per pelanggan berisi
-  tanggal lahir, total belanja, jumlah pesanan, dan riwayat belanja yang bisa dibuka, plus chip
-  filter "Ulang Tahun Bulan Ini" dan kartu ringkasan di atasnya.
+- Panel **Pelanggan** kini `src/components/admin/CustomersView.tsx`: kartu ringkas per pelanggan
+  (tanggal lahir, total belanja, jumlah pesanan, belanja terakhir) + tombol **"Riwayat Belanja &
+  Alamat (n)"**, plus chip filter "Ulang Tahun Bulan Ini" dan kartu ringkasan di atasnya.
+- **Drawer detail pelanggan** = `src/components/admin/CustomerDetailDrawer.tsx` (panel netral
+  putih/abu tema admin, kelas `cd-`, lebar 460 px / penuh di bawah 768 px, tutup lewat X / klik
+  latar / `Escape` — pola sama dengan `ProductDetailDrawer`/`OrderDetailDrawer`). Isinya: header
+  (avatar inisial + nama + WhatsApp + badge "Belum daftar") → ringkasan 2×2 (total belanja, jumlah
+  pesanan, belanja terakhir, tanggal lahir) → **"Alamat Pengiriman"** → **"Riwayat Belanja"**.
+  Alamat diambil dari `orders` (tabel `customers` tidak menyimpan alamat): route
+  `/api/admin/customers` men-`select` `shipping_address, shipping_city, shipping_postal_code` lalu
+  menggabungkannya jadi satu string `address` per order; drawer men-dedupe alamat unik dan
+  mengurutkannya dari yang terakhir dipakai (`Dipakai n×` bila dipakai berkali-kali). Tipe
+  `AdminCustomer`/`CustomerOrder` sekarang **diekspor dari drawer** dan diimpor `CustomersView`
+  (jangan didefinisikan ulang di CustomersView). Kartu pelanggan tidak lagi membuka riwayat
+  belanja inline — satu-satunya jalan ke detail adalah tombol drawer itu.
 - Datanya dari **`/api/admin/customers`** (`src/app/api/admin/customers/route.ts`, service role).
   Ini **wajib** lewat route: tabel `customers` punya policy RLS "read own", jadi anon client admin
   tidak bisa membaca pelanggan lain. Route-nya memverifikasi sesi Supabase + keanggotaan tabel
