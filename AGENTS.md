@@ -712,6 +712,15 @@ saja (`produk/edit/[id]` masih salinan terpisah dan **tidak** ikut berubah).
   toast bahwa tanggal lahir gagal disimpan.
   Cek cepat kolom: `curl -s -o /dev/null -w '%{http_code}\n' "$NEXT_PUBLIC_SUPABASE_URL/rest/v1/customers?select=id,birth_date&limit=1" -H "apikey: $SUPABASE_SERVICE_ROLE_KEY"`
   → `200` berarti kolomnya sudah ada (`400` = belum).
+- **Lookup "user ini pelanggan?" wajib `.maybeSingle()`, bukan `.single()`.** PostgREST membalas
+  **`406`** (bukan `400`/`404`) kalau `.single()` tidak menerima tepat satu baris, jadi setiap akun
+  **auth tanpa baris `customers`** (mis. sesi admin yang diputar ulang preview, atau akun lama)
+  memunculkan `Failed to load resource: 406` di console pada request
+  `rest/v1/customers?select=…&id=eq.<uid>` — pesan yang terlihat seperti kerusakan, padahal memang
+  bukan pelanggan. `.maybeSingle()` membalas `200` + `null`, jadi hasilnya sama (`customer === null`
+  → dropdown menampilkan Masuk/Daftar) tanpa error. Sudah dipakai di `src/components/ProfileDropdown.tsx`,
+  `src/lib/use-wishlist.ts`, dan `src/lib/customer-auth.ts` (`loginCustomer`, `getCurrentCustomer`).
+  `.single()` hanya untuk baris yang dijamin ada (mis. `store_settings?id=1`).
   Cek cepat: `curl -s -o /dev/null -w '%{http_code}\n' http://localhost:3000/api/admin/customers`
   → `401` tanpa sesi admin.
 - Verifikasi panel-panel ini lewat preview: sesi admin user ikut diputar ulang, jadi
