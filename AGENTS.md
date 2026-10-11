@@ -617,6 +617,13 @@ pemilik "drawer modern", mengikuti referensi desain yang dikirim). Dipakai di **
   merender `ProductDetailPanel` dengan `mode="page"` (lembar terpusat, gaya sama) — jadi tidak ada
   dua tampilan detail yang berbeda. Ubah tampilan detail → ubah komponen itu saja.
 
+**Warna `"default"` jangan ditampilkan**: produk satu warna (semua baris `Thobe …`) menyimpan
+`product_variants.color = "default"`, jadi baris varian dan judul blok Media harus menampilkannya
+sebagai "Semua" / tanpa nama warna — bukan nilai mentahnya (`default · XS`, `Media (default)`).
+Konvensi ini sudah dipakai di blok Riwayat Pesanan (`item.color === "default" ? "" : …`) dan
+drawer pesanan; ikuti pola itu. Catatan: kolom `product_variants.series` **tidak ada** di database
+ini (`42703`), jadi cabang "Varian Series" tidak pernah aktif dari klien.
+
 Angka drawer semuanya dari data asli: stok & SKU dari `product_variants`, harga dari `products`
 (harga minimum bila Create Your Price aktif), penjualan dari `order_items`. Skema **tidak** punya
 "stok awal"/"total masuk"/"profit", jadi baris statistiknya memakai angka nyata (Total Pesanan,
