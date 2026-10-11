@@ -6,6 +6,7 @@ import Link from "next/link";
 import { User, Mail, Phone, Lock, Loader2 } from "lucide-react";
 import { registerCustomer } from "@/lib/customer-auth";
 import { trackCompleteRegistration, sendCAPIEvent } from "@/lib/meta-pixel";
+import AuthHeader from "@/components/akun/AuthHeader";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -33,7 +34,8 @@ export default function RegisterPage() {
   }
 
   return (
-    <section className="min-h-screen flex" style={{ background: "#f0f2f5" }}>
+    <section className="relative min-h-screen flex" style={{ background: "#f0f2f5" }}>
+      <AuthHeader title="Daftar" />
       {/* Desktop: slanted dark left panel */}
       <div className="hidden lg:flex lg:w-[55%] relative overflow-hidden" style={{ background: "var(--espresso)" }}>
         <div className="absolute inset-0" style={{
@@ -61,7 +63,7 @@ export default function RegisterPage() {
       </div>
 
       {/* Right: form panel */}
-      <div className="flex-1 flex items-center justify-center px-6 py-12 lg:px-16">
+      <div className="flex-1 flex items-center justify-center px-6 pt-16 pb-12 lg:px-16 lg:py-12">
         <div className="w-full max-w-sm">
           {/* Mobile: brand header */}
           <div className="lg:hidden text-center mb-10">

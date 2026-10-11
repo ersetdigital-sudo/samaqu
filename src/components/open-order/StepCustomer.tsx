@@ -3,21 +3,32 @@
 /**
  * Langkah 4 — data pemesan. Provinsi/kota/kecamatan dipilih dari data RajaOngkir
  * (lihat `LocationPicker`); kecamatan itulah yang dipakai menghitung ongkir J&T di wizard.
+ *
+ * Ongkir yang sudah terhitung (state wizard, sumber yang sama dengan langkah 5) ditampilkan
+ * di sini juga — di bawah Kode Pos — supaya customer melihat biaya kirimnya sebelum lanjut
+ * ke review, bukan baru di langkah terakhir.
  */
 
 import { useState } from "react";
+import { money } from "@/lib/open-order-catalog";
 import LocationPicker from "./LocationPicker";
-import type { CustomerData } from "./types";
-import { DANGER, Field, PrimaryButton, TextArea, TextInput } from "./ui";
+import type { CustomerData, DraftShipping } from "./types";
+import { DANGER, Field, FIELD_BG, MUTED, PrimaryButton, SummaryRow, TextArea, TextInput } from "./ui";
 
 export default function StepCustomer({
   customer,
   onChange,
   onContinue,
+  shipping,
+  loadingOngkir,
+  ongkirError,
 }: {
   customer: CustomerData;
   onChange: (field: keyof CustomerData, value: string) => void;
   onContinue: () => void;
+  shipping: DraftShipping | null;
+  loadingOngkir: boolean;
+  ongkirError: boolean;
 }) {
   const [error, setError] = useState("");
 
@@ -74,6 +85,24 @@ export default function StepCustomer({
             autoComplete="postal-code"
           />
         </Field>
+
+        {/* Ongkir dari kecamatan tujuan: terhitung otomatis (debounce 1 detik) begitu kecamatan
+            dipilih, lalu dipakai lagi di langkah 5 — nilainya sama, tidak dihitung dua kali. */}
+        <div className="rounded-2xl px-5 py-4" style={{ background: FIELD_BG, border: "1px solid rgba(201,183,156,.25)" }}>
+          <SummaryRow
+            label={shipping ? `Ongkir (J&T — ${shipping.service})` : "Ongkir"}
+            value={loadingOngkir ? "Menghitung…" : shipping ? money(shipping.cost) : "—"}
+          />
+          {ongkirError ? (
+            <p className="mt-1.5 text-[11px] leading-relaxed" style={{ color: MUTED }}>
+              Ongkir otomatis belum tersedia — admin akan menghitung dan mengabari kamu.
+            </p>
+          ) : !shipping && !loadingOngkir ? (
+            <p className="mt-1.5 text-[11px] leading-relaxed" style={{ color: MUTED }}>
+              Pilih provinsi, kota, lalu kecamatan dulu supaya ongkir J&T muncul di sini.
+            </p>
+          ) : null}
+        </div>
       </div>
 
       {error && (

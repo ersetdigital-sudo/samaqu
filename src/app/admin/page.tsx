@@ -13,7 +13,8 @@ import { supabase } from "@/lib/supabase";
 import type { User } from "@supabase/supabase-js";
 import ConfirmModal from "@/components/ConfirmModal";
 import { useToast } from "@/components/AdminToast";
-import PaymentMethodsManager from "@/components/admin/PaymentMethodsManager";
+import PaymentMethodsManager, { PaymentMethodValue } from "@/components/admin/PaymentMethodsManager";
+import JntCredentialsForm from "@/components/admin/JntCredentialsForm";
 import OrderDetailContent from "@/components/admin/OrderDetailContent";
 import OrdersMobileList from "@/components/admin/OrdersMobileList";
 
@@ -1047,6 +1048,9 @@ function AdminPageInner() {
 
                   {/* RajaOngkir API Key */}
                   <ApiKeySection />
+
+                  {/* Kredensial J&T Express */}
+                  <JntCredentialsForm />
 
                   {/* Social Media */}
                   <SocialMediaSection />

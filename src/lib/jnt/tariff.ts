@@ -16,8 +16,8 @@ export async function checkTariff(params: {
   destAreaCode: string;
   productType?: string;
 }): Promise<{ success: boolean; services: TariffService[]; raw: TariffResponse }> {
-  const config = getJntConfig();
-  const url = getJntBaseUrl("tariff");
+  const config = await getJntConfig();
+  const url = getJntBaseUrl("tariff", config.env);
 
   const data: TariffRequest = {
     weight: params.weight,

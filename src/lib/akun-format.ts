@@ -3,7 +3,7 @@ export const AKUN_STATUS: Record<string, { pill: string; label: string }> = {
   diproses: { pill: "akun-pill akun-pill-proses", label: "Diproses" },
   dikirim: { pill: "akun-pill akun-pill-kirim", label: "Dikirim" },
   selesai: { pill: "akun-pill akun-pill-selesai", label: "Selesai" },
-  dibatalkan: { pill: "akun-pill akun-pill-proses", label: "Dibatalkan" },
+  dibatalkan: { pill: "akun-pill akun-pill-batal", label: "Dibatalkan" },
 };
 
 export function statusInfo(status: string) {

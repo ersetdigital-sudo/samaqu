@@ -13,8 +13,8 @@ export async function trackShipment(awb: string): Promise<{
   data: TrackResponse | null;
   error: TrackErrorResponse | null;
 }> {
-  const config = getJntConfig();
-  const url = getJntBaseUrl("track");
+  const config = await getJntConfig();
+  const url = getJntBaseUrl("track", config.env);
 
   const authHeader = "Basic " + Buffer.from(`${config.trackUsername}:${config.trackPassword}`).toString("base64");
 
