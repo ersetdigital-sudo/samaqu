@@ -7,6 +7,7 @@ declare module "lucide-react" {
   export const ArrowRight: FC<IconProps>;
   export const Bell: FC<IconProps>;
   export const Box: FC<IconProps>;
+  export const Cake: FC<IconProps>;
   export const Calendar: FC<IconProps>;
   export const Check: FC<IconProps>;
   export const CheckCircle: FC<IconProps>;

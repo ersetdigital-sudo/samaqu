@@ -322,9 +322,13 @@ Page presentation (not obvious from the code):
 - The admin **Pesanan** panel splits the list into sub-tabs **Pesanan Website** / **Open Order**
   (`orderSource` state): Open Order rows are the `CYO-` numbers, everything else is the website
   checkout, and the status chips (Semua/pending/diproses/selesai) filter inside the selected tab.
-  There are **two near-duplicate admin dashboards** — `src/app/[locale]/admin/page.tsx` (served at
-  `/id/admin`) and `src/app/admin/page.tsx` (`/admin`, kept outside the locale prefix by
-  `src/middleware.ts`) — so an orders-panel change belongs in both files.
+  Kedua route dashboard admin — `/admin` (`src/app/admin/page.tsx`, di luar prefix locale lewat
+  `src/middleware.ts`) dan `/id/admin` — kini merender **satu komponen yang sama**:
+  `src/app/[locale]/admin/page.tsx` cuma `export { default } from "@/app/admin/page"`. Dulu file itu
+  salinan penuh dan sudah drift (kartu Pengaturan tidak ikut tersalin), jadi cukup ubah
+  `src/app/admin/page.tsx`. **Subhalaman** admin lain (`produk`, `voucher`, `open-order`,
+  `testimoni`, `ukuran-produk`, dll.) masih punya salinan locale sendiri dan tetap perlu diedit di
+  dua tempat.
   **Drawer detail pesanan** kedua dashboard memakai komponen bersama
   **`src/components/admin/OrderDetailDrawer.tsx`** — panel meluncur dari kanan, pola yang sama dengan
   `ProductDetailDrawer` (`ODR_CSS`, kelas `odr-`, lebar 640 px / penuh di mobile). Isinya satu
@@ -435,11 +439,14 @@ does not pollute the real order list. The price clamp can be checked without the
 minimum.
 ```
 
-## Kredensial J&T Express (form admin)
+## Kredensial J&T Express (kartunya sudah dihapus dari dashboard)
 
-Kredensial J&T diisi admin lewat **Pengaturan → "Kredensial J&T Express"**
-(`src/components/admin/JntCredentialsForm.tsx`; dirender di **dua** dashboard admin — `/admin` dan
-`/id/admin` — tepat setelah `ApiKeySection`, komponennya satu file supaya tidak dobel).
+Kartu **"Kredensial J&T Express"** dan komponen `src/components/admin/JntCredentialsForm.tsx` sudah
+**dihapus dari panel Pengaturan** atas permintaan pemilik — kredensial J&T diatur lewat environment
+variable (platform secrets / Vercel), dan `getJntConfig()` memang sudah membacanya dari sana, jadi
+integrasi ongkir/AWB/track tidak berubah. Route **`/api/admin/jnt-settings`** dan tabel
+`jnt_settings` sengaja dibiarkan (tidak lagi dipakai UI); catatan di bawah masih berlaku kalau
+kartunya nanti dihidupkan lagi.
 
 - Disimpan di tabel **`jnt_settings`** (satu baris, `id = 1`), **bukan** `store_settings`:
   `store_settings` punya policy "Public read" dan dibaca anon client (`select("*")` di
@@ -563,3 +570,40 @@ header, lalu isi struk (banner status → info pengiriman → alamat → produk 
 Status Pesanan); chip "Ubah Status" & tombol aksi (WhatsApp / Cetak Label / Hapus) tetap bekerja,
 dan tutup lewat **X**, klik latar, atau `Escape`. Ulangi di lebar <768 px: drawer selebar penuh,
 chip status 2×2, tombol aksi satu kolom.
+
+## Panel Pengaturan (read-only + Edit) & panel Pelanggan
+
+- Seluruh isi panel **Pengaturan** kini di **`src/components/admin/SettingsSections.tsx`** (satu
+  default export `SettingsPanel`), bukan lagi inline di `page.tsx`. Semua kartunya memakai pola yang
+  sama: default **read-only** — nilai tampil sebagai teks dan footer hanya punya tombol **Edit** —
+  lalu klik Edit membuat field jadi input dan footer jadi **Simpan + Batal** (Batal mengembalikan
+  nilai awal). Pembungkusnya `SettingsCard` + `Field` di
+  **`src/components/admin/SettingsCard.tsx`**; kartu pengaturan baru sebaiknya memakai keduanya
+  (state form & fungsi simpan tetap milik section-nya).
+  Kartu yang ikut pola ini: Informasi Toko, Alamat Pengiriman Toko, Provider Pengiriman, Ekspedisi
+  Aktif, API Key RajaOngkir, Sosial Media, Meta Pixel. `PaymentMethodsManager` sengaja **tidak**
+  ikut — itu pengelola daftar (tambah/hapus per metode), bukan satu form.
+- **Alamat Pengiriman Toko** memuat daftar wilayahnya lewat `loadLists()` lalu memasang nilai
+  kecamatan *setelah* daftarnya ada (kalau tidak, `<select>` tampil kosong). `Batal` memuat ulang
+  daftar kalau provinsi/kota sempat diubah, supaya nilai aslinya tetap punya option yang cocok.
+  Di mode read-only label "Memuat…" hanya muncul selama daftarnya masih diambil.
+- Panel **Pelanggan** kini `src/components/admin/CustomersView.tsx`: kartu per pelanggan berisi
+  tanggal lahir, total belanja, jumlah pesanan, dan riwayat belanja yang bisa dibuka, plus chip
+  filter "Ulang Tahun Bulan Ini" dan kartu ringkasan di atasnya.
+- Datanya dari **`/api/admin/customers`** (`src/app/api/admin/customers/route.ts`, service role).
+  Ini **wajib** lewat route: tabel `customers` punya policy RLS "read own", jadi anon client admin
+  tidak bisa membaca pelanggan lain. Route-nya memverifikasi sesi Supabase + keanggotaan tabel
+  `admins` (pola sama dengan `/api/admin/jnt-settings`), lalu menggabungkan `customers` dengan
+  `orders` — order lama yang `customer_id`-nya null dicocokkan lewat nama, dan pembeli tanpa akun
+  tetap tampil sebagai entri "Belum daftar" supaya tidak ada yang hilang dari daftar.
+  **Total belanja tidak menghitung pesanan `dibatalkan`.**
+  `birth_date` dibaca dengan fallback tanpa kolom itu kalau migration
+  `supabase/migrations/20260910_customer_birth_date.sql` belum dijalankan.
+  Cek cepat: `curl -s -o /dev/null -w '%{http_code}\n' http://localhost:3000/api/admin/customers`
+  → `401` tanpa sesi admin.
+- Verifikasi panel-panel ini lewat preview: sesi admin user ikut diputar ulang, jadi
+  `preview_screenshot({ path: "/admin" })` lalu `preview_execute_code` (klik "Pengaturan"/
+  "Pelanggan" — panelnya tombol in-page, bukan route) berhasil. Yang diuji: 7 tombol **Edit** dan
+  0 **Simpan/Batal** saat read-only, `Nama Toko` = "SAMAQU" sebagai teks, setelah Edit muncul input
+  bernilai sama + Simpan/Batal, Batal kembali ke read-only, kartu J&T tidak ada lagi, dan panel
+  Pelanggan memuat (59 pelanggan, 4 kartu ringkasan) tanpa error.
