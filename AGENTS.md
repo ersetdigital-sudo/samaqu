@@ -451,8 +451,16 @@ Page presentation (not obvious from the code):
   urutannya dengan sidebar dashboard (yang di-SSR spinner, jadi bandingkan dengan sumber `page.tsx`).
   Admin memilih **tanggal mulai + tanggal tutup** (`<input type="date">`) dan **series yang dibuka**
   (chip multi-pilih dari katalog); tidak ada lagi toggle buka/tutup manual.
-  Tombol **"Buka semua series"** kini benar-benar **memilih semua chip** (`setSeries([...allSeries])`)
-  dan hanya tampil selama belum semua terpilih (`series.length < allSeries.length`). Sebelumnya
+  Halaman ini memakai pola kartu **Pengaturan** (`SettingsCard`): default **read-only** — tanggal
+  tampil sebagai teks ("8 Agustus 2026", atau "Belum diatur"), chip series jadi label `<span>`
+  (bukan `<button>`), footer hanya tombol **Edit** — lalu klik **Edit** membuat tanggal jadi input
+  dan chip bisa diklik, footer berganti **Simpan + Batal** dan kembali read-only setelah simpan
+  berhasil (`original` = nilai tersimpan, dasar Batal + penanda `dirty`; Simpan nonaktif selama
+  tidak ada perubahan). Permintaan pemilik 2026-10-11: "button simpan nya harusnya jadi edit gitu
+  bro, soalnya kan udah di simpan, bikin kaya yg di pengaturan".
+  Tombol **"Buka semua series"** kini benar-benar **memilih semua chip** (`setSeries([...allSeries])`),
+  hanya tampil selama belum semua terpilih (`series.length < allSeries.length`) **dan** hanya di
+  mode Edit (chip-nya sendiri juga tidak bisa diubah di mode read-only). Sebelumnya
   tombol itu **mengosongkan** pilihan (`setSeries([])`) — secara semantik sama-sama "semua series
   dibuka" (array kosong = semua, lihat `restrictOpenOrderProducts`), tapi chip-nya jadi terlihat
   ter-uncheck dan pemilik melaporkannya sebagai bug ("pas gue klik buka semua series malah jadi ke
