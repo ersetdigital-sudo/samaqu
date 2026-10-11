@@ -31,7 +31,6 @@ const navGroups = [
     title: "Lainnya",
     items: [
       { href: "/admin/konten-website", label: "Konten Website", icon: FileText },
-      { href: "/admin", label: "Produk Pilihan", icon: Package },
       { href: "/admin", label: "Pengaturan", icon: Settings },
       { href: "/admin/open-order", label: "Open Order", icon: Shirt },
       { href: "/admin/voucher", label: "Voucher", icon: Ticket },
