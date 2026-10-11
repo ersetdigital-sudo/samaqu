@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { strukStatus, strukSteps, tglJamID, rupiah } from "@/lib/akun-format";
+import type { TrackHistoryItem } from "@/lib/jnt/types";
+import { isDelivered } from "@/lib/jnt/track-status";
 import { PaymentMethodValue } from "@/components/admin/PaymentMethodsManager";
 import { RINCIAN_CSS, FALLBACK_PHOTO } from "@/components/akun/RincianPesanan";
 
@@ -62,12 +64,22 @@ const OD_CSS = `
 .od-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid #F2F3F4}
 .od-a{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:700;padding:10px 14px;border-radius:10px;border:1px solid #E1E3E5;background:#fff;color:#5A6067;text-decoration:none;cursor:pointer;transition:background .2s}
 .od-a:hover{background:#F5F6F7}
+.od-a.is-on{background:#FBF1EA;border-color:#E5C3B1;color:#B4552F}
 .od-a-danger{border-color:#EBC7C0;color:#B4392A}
 .od-a-danger:hover{background:#FCF0EA}
 .od-email{display:block;font-size:12.5px;color:#8D9297;font-weight:500;margin-top:2px}
-/* Mobile: modal admin bukan halaman customer — latar abu (dan ruangnya) dibuang supaya
-   isi struk duduk langsung di kertas krem modal, dan banner status menempel rapi di
-   bawah header (tanpa celah + sudut). Kartu putih di bawahnya jadi sama seperti kartu
+/* Pelacakan J&T di dalam drawer (tombol "Lacak Paket"). */
+.od-track{margin-top:14px;padding-top:14px;border-top:1px solid #F2F3F4}
+.od-tnote{margin:0;font-size:12.5px;font-weight:600;color:#8D9297}
+.od-ups{display:flex;flex-direction:column;gap:12px}
+.od-up{display:flex;gap:10px}
+.od-up-dot{width:10px;height:10px;border-radius:50%;background:#D9DCE0;flex:none;margin-top:4px}
+.od-up.is-first .od-up-dot{background:#B4552F;box-shadow:0 0 0 3px rgba(180,85,47,.14)}
+.od-up b{display:block;font-size:12.5px;font-weight:700;color:#3F454B}
+.od-up i{display:block;font-size:11.5px;font-style:normal;color:#8D9297;margin-top:2px}
+/* Mobile: drawer admin bukan halaman customer — latar abu (dan ruangnya) dibuang supaya
+   isi struk duduk langsung di kertas drawer, dan banner status menempel rapi di bawah
+   header drawer (tanpa celah + sudut). Kartu putih di bawahnya jadi sama seperti kartu
    dashboard admin. */
 @media (max-width:767.98px){
  .od-root .rp-root{background:transparent;padding-bottom:0}
@@ -81,8 +93,14 @@ const OD_CSS = `
 }
 @media (min-width:768px){
  .od-root .rp-root{background:transparent}
+ /* Drawer = kertasnya sendiri. Dulu struk di sini masih jadi "lembar 600px terpusat" dengan
+    sisa ruang krem di kiri-kanannya — di dalam drawer itu bikin panel terasa lebar & tampak
+    bertumpuk. Sekarang isi struk mengisi lebar drawer; pemisah putus-putusnya tetap memberi
+    rasa struk. */
+ .od-root .rp-wrap{max-width:none}
+ .od-root .rp-sheet{background:transparent;border:0;border-radius:0;box-shadow:none}
  .od-root .rp-act{padding:16px 20px 20px}
- .od-acts{border-top-color:#F0E9DC}
+ .od-acts{border-top-color:rgba(42,33,27,.09)}
 }
 `;
 
@@ -96,6 +114,13 @@ function Chevron() {
   return (
     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
   );
+}
+
+/** J&T mengirim "YYYY-MM-DD HH:mm:ss"; jadikan ISO supaya stabil di semua browser. */
+function waktu(value?: string) {
+  if (!value) return "";
+  const stamp = tglJamID(value.includes("T") ? value : value.replace(" ", "T"));
+  return stamp === "-" ? value : stamp;
 }
 
 const WHATSAPP_PATH =
@@ -121,6 +146,45 @@ export default function OrderDetailContent({
 
   const [showAlamat, setShowAlamat] = useState(false);
 
+  // Pelacakan J&T — dibuka dari tombol "Lacak Paket". Data diambil sekali per drawer.
+  const [showTrack, setShowTrack] = useState(false);
+  const [tracking, setTracking] = useState(false);
+  const [trackHistory, setTrackHistory] = useState<TrackHistoryItem[] | null>(null);
+  const [trackError, setTrackError] = useState<string | null>(null);
+
+  async function openTrack() {
+    if (showTrack) {
+      setShowTrack(false);
+      return;
+    }
+    setShowTrack(true);
+    if (trackHistory || !resi) return;
+
+    setTracking(true);
+    setTrackError(null);
+    try {
+      const res = await fetch(`/api/jnt/track?awb=${encodeURIComponent(resi)}`);
+      const json = await res.json();
+      if (json?.success && json?.data) {
+        const data = json.data as { history?: TrackHistoryItem[] };
+        setTrackHistory(data.history || []);
+        // Otomatis: paket sudah diterima penerima (status_code 200) → status pesanan jadi selesai.
+        if (isDelivered(data) && ["pending", "diproses", "dikirim"].includes(order.status)) {
+          onStatusChange("selesai");
+        }
+      } else {
+        setTrackError(json?.error || "Data pelacakan J&T belum bisa diambil.");
+      }
+    } catch {
+      setTrackError("Tidak bisa menghubungi layanan J&T. Coba lagi sebentar lagi.");
+    } finally {
+      setTracking(false);
+    }
+  }
+
+  // J&T mengirim riwayat dari kejadian terlama; yang terbaru tampil di atas.
+  const trackUpdates = trackHistory ? [...trackHistory].reverse() : [];
+
   return (
     <div className="od-root">
       <style>{RINCIAN_CSS}</style>
@@ -143,17 +207,33 @@ export default function OrderDetailContent({
               <div className="rp-sec">
                 <span className="rp-h">Info Pengiriman</span>
                 <div className="rp-line" style={{ marginTop: 8 }}>
-                  <span className="rp-sub">
-                    {order.shipping_method || "Pengiriman"}
-                    {resi ? `: ${resi}` : ""}
-                  </span>
+                  <span className="rp-sub">{order.shipping_method || "Pengiriman"}</span>
                 </div>
-                {!resi ? (
+                {/* Nomor resi J&T tampil sebagai baris tersendiri (dulu cuma ditempel di belakang
+                    nama kurir, jadi terlihat seperti hilang) — resi terbit otomatis begitu
+                    pesanan masuk, jadi barisnya muncul tanpa admin perlu membuka apa pun. */}
+                {resi ? (
+                  <div className="rp-line" style={{ marginTop: 8 }}>
+                    <span className="rp-sub">Nomor Resi J&amp;T</span>
+                    <span className="rp-strong rp-mono" style={{ marginLeft: "auto" }}>{resi}</span>
+                  </div>
+                ) : (
                   <div className="rp-line rp-sub" style={{ marginTop: 8 }}>
                     <span>Nomor resi belum dibuat. Resi muncul setelah pesanan diserahkan ke kurir.</span>
                   </div>
-                ) : null}
+                )}
               </div>
+
+              {/* Metode pembayaran selalu terlihat (dulu hanya ada di dalam ringkasan "Total
+                  Pesanan" yang terlipat), supaya admin tahu pembayarannya sebelum memproses. */}
+              {order.payment_method ? (
+                <div className="rp-sec" style={{ borderTop: "1px solid #F2F3F4" }}>
+                  <span className="rp-h">Metode Pembayaran</span>
+                  <div className="rp-line" style={{ marginTop: 8 }}>
+                    <span className="rp-strong"><PaymentMethodValue value={order.payment_method} /></span>
+                  </div>
+                </div>
+              ) : null}
 
               {alamat ? (
                 <div className="rp-sec" style={{ borderTop: "1px solid #F2F3F4" }}>
@@ -277,6 +357,12 @@ export default function OrderDetailContent({
                     Hubungi via WhatsApp
                   </a>
                 ) : null}
+                {resi ? (
+                  <button type="button" className={`od-a${showTrack ? " is-on" : ""}`} onClick={openTrack}>
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7h11v9H3z" /><path d="M14 10h4l3 3v3h-7z" /><circle cx="7" cy="18" r="1.5" /><circle cx="17.5" cy="18" r="1.5" /></svg>
+                    {showTrack ? "Tutup Lacak" : "Lacak Paket"}
+                  </button>
+                ) : null}
                 {resi && order.status !== "dibatalkan" && onCancelJnt ? (
                   <button type="button" className="od-a od-a-danger" onClick={onCancelJnt}>
                     Batalkan J&amp;T
@@ -291,6 +377,33 @@ export default function OrderDetailContent({
                   Hapus Pesanan
                 </button>
               </div>
+
+              {/* Pelacakan J&T: riwayat perjalanan paket. Begitu J&T melaporkan paket
+                  diterima (status_code 200), status pesanan otomatis diubah ke selesai. */}
+              {showTrack ? (
+                <div className="od-track">
+                  <p className="od-title">Riwayat Pengiriman</p>
+                  {tracking ? (
+                    <p className="od-tnote">Memuat pelacakan J&amp;T…</p>
+                  ) : trackError ? (
+                    <p className="od-tnote">{trackError}</p>
+                  ) : trackUpdates.length > 0 ? (
+                    <div className="od-ups">
+                      {trackUpdates.map((u, i) => (
+                        <div key={`${u.date_time}-${i}`} className={`od-up${i === 0 ? " is-first" : ""}`}>
+                          <span className="od-up-dot" />
+                          <div>
+                            <b>{u.status || "Update pengiriman"}</b>
+                            <i>{[u.city_name, waktu(u.date_time)].filter(Boolean).join(" • ")}</i>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="od-tnote">Belum ada update dari J&amp;T. Riwayat muncul setelah kurir memindai paket.</p>
+                  )}
+                </div>
+              ) : null}
             </div>
           </div>
         </div>

@@ -322,43 +322,74 @@ Page presentation (not obvious from the code):
 - The admin **Pesanan** panel splits the list into sub-tabs **Pesanan Website** / **Open Order**
   (`orderSource` state): Open Order rows are the `CYO-` numbers, everything else is the website
   checkout, and the status chips (Semua/pending/diproses/selesai) filter inside the selected tab.
-  There are **two near-duplicate admin dashboards** — `src/app/[locale]/admin/page.tsx` (served at
-  `/id/admin`) and `src/app/admin/page.tsx` (`/admin`, kept outside the locale prefix by
-  `src/middleware.ts`) — so an orders-panel change belongs in both files.
-  **Modal detail pesanan** kedua dashboard kini hanya berisi header (nomor pesanan + tanggal + tombol
-  tutup) + satu komponen bersama **`src/components/admin/OrderDetailContent.tsx`**, yang isinya memakai
-  susunan & gaya halaman detail pesanan customer: banner status berwarna → "Info Pengiriman" →
-  "Alamat Pengiriman" → kartu produk + baris "Total Pesanan" yang dilipat → "Status Pesanan"
-  (linimasa `strukSteps`) → aksi. Gaya/DOM-nya dipinjam dari `RincianPesanan`: kelas `rp-`,
+  Kedua route dashboard admin — `/admin` (`src/app/admin/page.tsx`, di luar prefix locale lewat
+  `src/middleware.ts`) dan `/id/admin` — kini merender **satu komponen yang sama**:
+  `src/app/[locale]/admin/page.tsx` cuma `export { default } from "@/app/admin/page"`. Dulu file itu
+  salinan penuh dan sudah drift (kartu Pengaturan tidak ikut tersalin), jadi cukup ubah
+  `src/app/admin/page.tsx`. **Subhalaman** admin lain (`voucher`, `open-order`, `testimoni`,
+  `ukuran-produk`, dll.) masih punya salinan locale sendiri dan tetap perlu diedit di dua tempat —
+  kecuali **`produk/tambah`**, yang juga sudah jadi satu komponen bersama
+  (`src/components/admin/ProductForm.tsx`, lihat "Form tambah produk admin" di bawah).
+  **Drawer detail pesanan** kedua dashboard memakai komponen bersama
+  **`src/components/admin/OrderDetailDrawer.tsx`** — panel meluncur dari kanan, pola yang sama dengan
+  `ProductDetailDrawer` (`ODR_CSS`, kelas `odr-`, lebar 520 px / penuh di mobile). Isinya satu
+  komponen bersama **`src/components/admin/OrderDetailContent.tsx`**, yang memakai susunan & gaya
+  halaman detail pesanan customer: banner status berwarna → "Info Pengiriman" (kurir + **Nomor
+  Resi J&T**) → **"Metode Pembayaran"** → "Alamat Pengiriman" → kartu produk + baris "Total
+  Pesanan" yang dilipat → "Status Pesanan" (linimasa `strukSteps`) → aksi. **Nomor resi dan metode
+  pembayaran sengaja jadi blok yang selalu terlihat** (permintaan pemilik: "kok resi-nya ilang",
+  "harusnya tampil metode pembayaran") — dulu keduanya hanya ada di dalam ringkasan "Total Pesanan"
+  yang terlipat dan resi cuma ditempel di belakang nama kurir (`J&T - EZ: JO…`), jadi terbaca
+  seperti hilang. Nomor pesanan `awb_no` tetap terisi otomatis saat pesanan masuk
+  (`/api/open-order` & `/api/orders` memanggil J&T Order Create) — resi kosong di drawer berarti
+  order itu memang belum punya `awb_no`, bukan field-nya yang dibuang; halaman detail customer
+  (`RincianPesanan.tsx`) tidak ikut diubah. Header drawer (nomor pesanan + tanggal + tombol X) hidup di
+  `OrderDetailDrawer.tsx` saja; nomor pesanan memakai font UI admin (dulu serif Cormorant di header
+  modal — permintaan pemilik: "samain kaya yg lain biar seragam"). Drawer tertutup lewat X, klik
+  latar, atau `Escape`, dan `z-index`-nya **50** supaya `ConfirmModal` (Hapus Pesanan / Batalkan
+  J&T, juga z-50 tapi dirender setelah drawer) tetap tampil di atasnya. Gaya/DOM-nya dipinjam dari
+  `RincianPesanan`: kelas `rp-`,
   `RINCIAN_CSS`, dan `FALLBACK_PHOTO` **diekspor dari sana** — ubah salah satunya, halaman customer
-  dan modal admin ikut berubah (itu yang diinginkan: satu sumber gaya). Kontrol khusus admin
+  dan drawer admin ikut berubah (itu yang diinginkan: satu sumber gaya). Kontrol khusus admin
   (chip "Ubah Status", WhatsApp, Cetak Label, Batalkan J&T, Hapus Pesanan) memakai kelas `od-` di
   `OD_CSS` file yang sama. Perbedaan yang disengaja dari halaman customer: baris item tetap memakai
   `Kain <kode> · <series> · <warna> · <size> × <qty>` (warna `default` disembunyikan) dengan
-  `Min: … · Dipilih: …` untuk Open Order, ditambah baris Email + Catatan di blok alamat, dan **tanpa**
-  panggilan `/api/jnt/track`. `order_items` di query kedua dashboard menyertakan `product_image`
+  `Min: … · Dipilih: …` untuk Open Order, ditambah baris Email + Catatan di blok alamat. Tombol
+  **Lacak Paket** (dulu drawer sengaja tidak memanggil `/api/jnt/track`) sekarang ada di blok aksi —
+  lihat "Lacak paket di drawer pesanan & status selesai otomatis" di bawah.
+  `order_items` di query kedua dashboard menyertakan `product_image`
   untuk thumbnail (object-fit contain, tanpa bingkai). Perubahan lain pada panel Pesanan tetap harus
   dikerjakan di kedua file.
   **Di bawah breakpoint `lg` daftar pesanan tidak memakai tabel**: kedua dashboard merender
   `src/components/admin/OrdersMobileList.tsx` — kartu berisi nomor pesanan · pill status · nama
   pelanggan · `tanggal · total`, dan bila prop `onSelect` diberi kartunya jadi tombol yang membuka
-  modal detail (dengan chevron); tanpa `onSelect` kartunya statis. Komponen itu menyembunyikan
+  drawer detail (dengan chevron); tanpa `onSelect` kartunya statis. Komponen itu menyembunyikan
   dirinya sendiri di `lg` (`lg:hidden`), sedangkan `<table>`-nya tetap di dalam pembungkus
   `overflow-x-auto` yang sama dan cukup diberi `hidden lg:table` — jangan menambah pembungkus kedua
   (dua root elemen di dalam ternary `{loading ? … : ( … )}` menghasilkan parse error JSX
   "Expected '</', got 'ident'"). Baris "Pesanan Terbaru" di dashboard memakai komponen yang sama
   (5 baris pertama, tanpa `onSelect`) dan baris chip filter pesanan memakai `flex-wrap` supaya
   "Selesai" tidak terpotong di layar ~370 px.
-  **Tata letak modal detail di mobile** (permintaan pemilik: "kurang rapih, bikin lebih responsif"):
-  pembungkus modal memakai varian `md:` (`md:pt-10 md:px-4 md:pb-10`, `md:rounded-2xl`, `md:min-h-0`,
-  header `px-4 py-4 md:px-6 md:py-5`) supaya di bawah 768 px modalnya jadi lembar penuh tanpa
-  gutter — breakpoint-nya sengaja `md` (768 px), sama dengan breakpoint "struk" di `RINCIAN_CSS`;
-  `OrderDetailContent`'s `OD_CSS` menambahkan override `max-width:767.98px` yang **hanya** berlaku
-  di dalam modal: `.od-root .rp-root` jadi transparan (latar abu `#F5F6F7` milik halaman customer
-  dibuang, kalau tidak ada blok abu di dalam kertas krem modal), banner status menempel di bawah
-  header (`margin-top:0` + radius 0), chip "Ubah Status" jadi grid 2×2 dan tombol aksi jadi baris
-  penuh (flex-wrap membuat 3 chip + 1 dan tombol berlebar pincang). Yang ≥768 px tidak berubah:
-  tetap lembar "struk hangat" krem di dalam kartu modal.
+  **Tata letak drawer detail di mobile** (permintaan pemilik: "kurang rapih, bikin lebih responsif",
+  lalu "pastikan responsif di mobile"): `ODR_CSS` membuat drawer selebar penuh di bawah 768 px
+  (header lebih rapat, `padding:14px 16px`) — breakpoint-nya sengaja sama (768 px) dengan breakpoint
+  "struk" di `RINCIAN_CSS`; `OrderDetailContent`'s `OD_CSS` menambahkan override `max-width:767.98px`
+  yang **hanya** berlaku di dalam drawer: `.od-root .rp-root` jadi transparan (latar abu `#F5F6F7`
+  milik halaman customer dibuang, kalau tidak ada blok abu di dalam lembar drawer), banner status
+  menempel di bawah header drawer (`margin-top:0` + radius 0), chip "Ubah Status" jadi grid 2×2 dan
+  tombol aksi jadi baris penuh (flex-wrap membuat 3 chip + 1 dan tombol berlebar pincang). Yang
+  Sejak 2026-10-11 (permintaan pemilik: "drawer di detail pesanan jadi jelek, terlalu lebar,
+  bagusan yg sebelumnya, biar modern") drawer ≥768 px jadi **520 px** dan **isi struk mengisi lebar
+  drawer**: dulu panelnya 640 px sementara `RINCIAN_CSS` membatasi `.rp-wrap` ke 600 px terpusat,
+  jadi ada sisa 20 px krem di kiri-kanan yang membuat panel terasa lebar & seperti dua lapis krem
+  bertumpuk. Override-nya di blok `@media (min-width:768px)` `OD_CSS`: `.od-root .rp-wrap{max-width:none}`
+  + `.od-root .rp-sheet{background:transparent;border:0;border-radius:0;box-shadow:none}` (panelnya
+  sendiri yang jadi "kertas", latar `#FFFDF8`, overlay diberi `backdrop-filter:blur(3px)`).
+  Jangan menyentuh `RINCIAN_CSS` untuk ini — lembar struk 600 px itu masih dipakai halaman detail
+  pesanan customer. Verifikasi (sesi admin diputar ulang): `preview_screenshot({path:'/admin'})` →
+  panel Order Management → tombol **Detail** → `.odr-panel` harus `width:520px`, `.rp-wrap`
+  `max-width:none`, `.rp-sheet` border/radius `0px`, tanpa error console, dan di 375 px drawer
+  100% tanpa scroll samping.
 - **Dashboard akun** (`/[locale]/akun`, `src/app/[locale]/akun/page.tsx`) ditata ulang untuk mobile:
   baris "Pesanan Terakhir" = satu baris atas (thumbnail, nama pesanan + `#nomor · tanggal` yang
   dipotong `truncate` satu baris, chevron rata tengah) lalu satu baris penuh di bawahnya berisi
@@ -367,6 +398,20 @@ Page presentation (not obvious from the code):
   Kartu "Akses Cepat" menumpuk ikon (36 px) + chevron di baris atas dengan judul + subteks
   didorong ke bawah lewat `mt-auto`, dan `min-h-[112px]` menjaga keempat kartu sejajar walau
   judulnya membungkus dua baris di layar ~370 px.
+- **Sidebar akun (desktop) harus muat tanpa scroll** (permintaan pemilik: "harusnya ngga ada scroll
+  di menunya, bikin responsif di semua ukuran") — sama seperti sidebar admin yang lebih dulu
+  dirapatkan. `AkunShell`'s `<aside>`: `<nav>` memakai **`min-h-0`** (tanpa itu flex item tidak bisa
+  mengecil dari isinya, jadi menu luber dan scrollbar muncul) + kelas `akun-side-nav` / `-brand` /
+  `-group` / `-item` / `-foot`, dan blok CSS di `src/app/globals.css` yang (a) menyembunyikan
+  scrollbar nav (`scrollbar-width: none` + `::-webkit-scrollbar{display:none}`) dan (b)
+  merapatkan jarak vertikal lewat kueri `max-height` 820 / 700 / 600 / 520 px (di bawah 520 px
+  label grup disembunyikan). Lebar & warna sidebar tidak berubah, dan semua halaman `/akun/*`
+  ikut karena semuanya memakai shell yang sama. Kueri itu di luar `@layer` Tailwind, jadi
+  menang atas utility `py-*` (jangan dipindah ke dalam layer).
+  **Tidak bisa diverifikasi lewat preview**: `/akun/*` butuh sesi **customer**, sedangkan sesi
+  yang diputar ulang preview adalah sesi **admin** → selalu mendarat di `/akun/login`. Uji manual:
+  masuk sebagai customer di `/id/akun`, lalu kecilkan tinggi jendela (≤700 px, lalu ≤600 px) dan
+  pastikan tidak ada bar di menu.
 - **Nav bawah ala aplikasi (mobile)** di semua halaman toko: `src/components/MobileBottomNav.tsx`
   (Beranda · Kategori · Open Order · Pesanan · Akun) dipasang oleh
   `src/app/[locale]/(customer)/layout.tsx` dan tampil di bawah breakpoint `lg` — sama dengan navbar
@@ -383,6 +428,18 @@ Page presentation (not obvious from the code):
   hanya merender `src/components/admin/OpenOrderSettingsForm.tsx` di dalam `AdminShell` — formulirnya
   **satu file** supaya dua halaman itu tidak dobel. (Entri sidebar-nya sendiri masih perlu ada di
   `AdminShell`'s `navGroups` **dan** di sidebar dua dashboard admin, karena masing-masing punya sidebar.)
+  **Grup & urutan menu wajib identik di kedua sidebar** (`AdminShell`'s `navGroups` dan `navGroups`
+  di `src/app/admin/page.tsx`): kalau tidak, menu terlihat "berubah urutan" begitu admin membuka
+  salah satu subhalaman. Sejak permintaan pemilik 2026-10-11 ("rapihin menu, yg bisa digabung
+  gabungin aja, terus Open Order pindahin ke atas di bawah Order Management") kedua sidebar punya
+  **tiga grup yang sama**: **Menu Utama** (Dashboard · Order Management · **Open Order** · Produk ·
+  Pelanggan), **Konten** (Konten Website · Biolink · Foto Carousel · Testimoni · Panduan Ukuran ·
+  Halaman Garansi &amp; Retur), dan **Lainnya** (Voucher · Pengaturan). Grup "Biolink" lama
+  dibubarkan — Biolink/Foto Carousel pindah ke "Konten", dan "Open Order" naik tepat di bawah
+  "Order Management". Di dashboard `navGroups` sekarang menyatukan item panel (`panel: Panel`) dan
+  item halaman (`href: string`) — pakai pola itu saat menambah menu. Verifikasi tanpa browser:
+  `curl -s http://localhost:3000/admin/open-order | grep -o 'href="/admin[^"]*"'` harus sama
+  urutannya dengan sidebar dashboard (yang di-SSR spinner, jadi bandingkan dengan sumber `page.tsx`).
   Admin memilih **tanggal mulai + tanggal tutup** (`<input type="date">`) dan **series yang dibuka**
   (chip multi-pilih dari katalog); tidak ada lagi toggle buka/tutup manual.
 - Aturan jendela ada di **satu** modul, `src/lib/open-order-window.ts` — dipakai halaman admin
@@ -429,11 +486,14 @@ does not pollute the real order list. The price clamp can be checked without the
 minimum.
 ```
 
-## Kredensial J&T Express (form admin)
+## Kredensial J&T Express (kartunya sudah dihapus dari dashboard)
 
-Kredensial J&T diisi admin lewat **Pengaturan → "Kredensial J&T Express"**
-(`src/components/admin/JntCredentialsForm.tsx`; dirender di **dua** dashboard admin — `/admin` dan
-`/id/admin` — tepat setelah `ApiKeySection`, komponennya satu file supaya tidak dobel).
+Kartu **"Kredensial J&T Express"** dan komponen `src/components/admin/JntCredentialsForm.tsx` sudah
+**dihapus dari panel Pengaturan** atas permintaan pemilik — kredensial J&T diatur lewat environment
+variable (platform secrets / Vercel), dan `getJntConfig()` memang sudah membacanya dari sana, jadi
+integrasi ongkir/AWB/track tidak berubah. Route **`/api/admin/jnt-settings`** dan tabel
+`jnt_settings` sengaja dibiarkan (tidak lagi dipakai UI); catatan di bawah masih berlaku kalau
+kartunya nanti dihidupkan lagi.
 
 - Disimpan di tabel **`jnt_settings`** (satu baris, `id = 1`), **bukan** `store_settings`:
   `store_settings` punya policy "Public read" dan dibaca anon client (`select("*")` di
@@ -522,3 +582,232 @@ Lalu di browser: buka `/id/akun/pesanan` → detail pesanan. Timeline harus sama
 baru dibuat, dan tombol **Batalkan Pesanan** muncul hanya untuk `pending`/`diproses`. Bikin
 pesanan uji sebisa mungkin **dibatalkan lalu dihapus** (admin detail → Hapus, atau REST
 `DELETE /rest/v1/orders?order_number=eq.…`) agar daftar pesanan asli tidak kotor.
+
+## Drawer detail produk admin
+
+Detail produk admin kini satu komponen bersama, **`src/components/admin/ProductDetailDrawer.tsx`**
+(panel gelap charcoal `#1b1e25`, kartu `#232730`, aksen hijau `#22c55e` / biru `#3b82f6` — permintaan
+pemilik "drawer modern", mengikuti referensi desain yang dikirim). Dipakai di **dua tempat**:
+
+- **Drawer dari daftar produk**: `ProductsCatalog` menerima prop `onDetail(id)`; tombol mata di
+  kartu memanggilnya (dulu `<Link>` ke halaman detail). Kedua dashboard (`/admin` dan `/id/admin`)
+  menyimpan `selectedProductId` dan merender `<ProductDetailDrawer productId={…} onClose={…} />`
+  tepat sebelum `<OrderDetailDrawer … />`. Drawer tertutup lewat tombol **Tutup**, klik latar, atau
+  `Escape`.
+- **Halaman route tetap ada** (`/admin/produk/detail/<id>` + salinan locale) dan sekarang hanya
+  merender `ProductDetailPanel` dengan `mode="page"` (lembar terpusat, gaya sama) — jadi tidak ada
+  dua tampilan detail yang berbeda. Ubah tampilan detail → ubah komponen itu saja.
+
+Angka drawer semuanya dari data asli: stok & SKU dari `product_variants`, harga dari `products`
+(harga minimum bila Create Your Price aktif), penjualan dari `order_items`. Skema **tidak** punya
+"stok awal"/"total masuk"/"profit", jadi baris statistiknya memakai angka nyata (Total Pesanan,
+Total Transaksi, Varian Menipis) — jangan mengarang kolom yang tidak ada. Gaya ditulis di string
+`PD_CSS` (pola sama seperti `RINCIAN_CSS`), kelasnya berawalan `pd-`.
+
+**Verifikasi manual** (route admin tidak bisa dicapai lewat navigasi SPA preview:
+`window.__base44_preview.navigate('/admin'|'/id/admin')` mengubah URL tapi konten tidak berganti,
+dan full page load di-reset ke route home pada panggilan preview berikutnya — jadi perubahan
+dashboard admin **tidak bisa** dibuktikan lewat preview tool, cukup `tsc --noEmit` bersih + curl
+`/admin` & `/id/admin` = 200 tanpa error kompilasi di log): buka
+`/id/admin` → panel **Produk** → klik tombol mata di kartu produk; drawer harus meluncur dari kanan,
+tombol **Tutup** menutupnya, dan `/admin/produk/detail/<id>` menampilkan panel yang sama.
+Untuk **drawer detail pesanan**: panel **Order Management** → klik baris pesanan (atau tombol
+"Detail"); drawer meluncur dari kanan dengan nomor pesanan (font UI, bukan serif) + tanggal di
+header, lalu isi struk (banner status → info pengiriman → alamat → produk → Total Pesanan →
+Status Pesanan); chip "Ubah Status" & tombol aksi (WhatsApp / Cetak Label / Hapus) tetap bekerja,
+dan tutup lewat **X**, klik latar, atau `Escape`. Ulangi di lebar <768 px: drawer selebar penuh,
+chip status 2×2, tombol aksi satu kolom.
+
+## Form tambah produk admin
+
+Dulu form ini dua salinan (~1400 baris) di `src/app/admin/produk/tambah/page.tsx` dan salinan
+locale-nya, dan salinan locale sudah tertinggal fitur "Stok dari Produk Dasar". Sekarang **satu**
+komponen bersama **`src/components/admin/ProductForm.tsx`**; kedua route cuma
+`export { default } from "@/components/admin/ProductForm"`. Ubah form tambah produk → ubah file itu
+saja (`produk/edit/[id]` masih salinan terpisah dan **tidak** ikut berubah).
+
+- **SKU produk**: field baru di kartu *Info Dasar* (`sku` state) — dulu produk cuma punya SKU
+  per-ukuran, padahal panel detail produk (`ProductDetailDrawer`) menampilkan satu baris "SKU:".
+  Tabel `products` **tidak punya kolom `sku`** dan sandbox tidak punya jalur DDL, jadi SKU produk
+  disimpan di `product_variants.sku`: nilai per-ukuran dipakai kalau diisi, kalau kosong jatuh ke
+  SKU produk (`sku: s.sku.trim() || sku.trim() || null`), dan placeholder kolom SKU tiap ukuran
+  menampilkan SKU produk itu. Jangan pindahkan ke kolom `products.sku` tanpa migration yang
+  dijalankan manual: select `products.sku` membalas `400` `42703` sampai kolomnya ada
+  (`curl -s -o /dev/null -w '%{http_code}\n' "$NEXT_PUBLIC_SUPABASE_URL/rest/v1/products?select=sku&limit=1"`).
+- **Tabel ukuran** kini satu komponen `SizeGrid` (dipakai blok series Thobe **dan** varian biasa,
+  sebelumnya markahnya disalin dua kali): di bawah `640px` tiap ukuran jadi kartu berlabel — kolom
+  tetap 444 px yang lama membuat form melebar keluar layar di HP — dan kembali jadi satu baris 5
+  kolom (`84px 84px 1fr 1fr 34px`) di `sm+`. Kelasnya `pf-size-*` di string CSS form.
+- Baris field dibuat konsisten dua kolom (`grid sm:grid-cols-2 gap-4`): Nama/Kategori, Slug/SKU
+  Produk, Harga Dasar (non-Thobe)/Berat.
+- Verifikasi: `tsc --noEmit` bersih + `curl /admin/produk/tambah` & `/id/admin/produk/tambah` = `200`
+  (HTML SSR-nya memuat field "SKU Produk"). **Tidak bisa lewat preview** (route admin tidak bisa
+  dicapai navigasi SPA, dan full page load di-reset ke route home di panggilan berikutnya) — jadi
+  tampilan form di HP/desktop dan simpan-SKU harus diuji manual di browser.
+
+## Panel Pengaturan (read-only + Edit) & panel Pelanggan
+
+- Seluruh isi panel **Pengaturan** kini di **`src/components/admin/SettingsSections.tsx`** (satu
+  default export `SettingsPanel`), bukan lagi inline di `page.tsx`. Semua kartunya memakai pola yang
+  sama: default **read-only** — nilai tampil sebagai teks dan footer hanya punya tombol **Edit** —
+  lalu klik Edit membuat field jadi input dan footer jadi **Simpan + Batal** (Batal mengembalikan
+  nilai awal). Pembungkusnya `SettingsCard` + `Field` di
+  **`src/components/admin/SettingsCard.tsx`**; kartu pengaturan baru sebaiknya memakai keduanya
+  (state form & fungsi simpan tetap milik section-nya).
+  Kartu yang ikut pola ini: Informasi Toko, Alamat Pengiriman Toko, Provider Pengiriman, Ekspedisi
+  Aktif, API Key RajaOngkir, Sosial Media, Meta Pixel. `PaymentMethodsManager` sengaja **tidak**
+  ikut — itu pengelola daftar (tambah/hapus per metode), bukan satu form.
+- **Alamat Pengiriman Toko** memuat daftar wilayahnya lewat `loadLists()` lalu memasang nilai
+  kecamatan *setelah* daftarnya ada (kalau tidak, `<select>` tampil kosong). `Batal` memuat ulang
+  daftar kalau provinsi/kota sempat diubah, supaya nilai aslinya tetap punya option yang cocok.
+  Di mode read-only label "Memuat…" hanya muncul selama daftarnya masih diambil.
+- Panel **Pelanggan** kini `src/components/admin/CustomersView.tsx`: kartu ringkas per pelanggan
+  (tanggal lahir, total belanja, jumlah pesanan, belanja terakhir) + tombol **"Riwayat Belanja &
+  Alamat (n)"**, plus chip filter "Ulang Tahun Bulan Ini" dan kartu ringkasan di atasnya.
+- **Tombol Export di panel Pelanggan** merakit CSV-nya di **`src/lib/customer-csv.ts`**
+  (`customersToCsv` + `formatWhatsapp`), bukan lagi inline di `CustomersView`. Permintaan pemilik:
+  "pas di export No WA nya malah berantakan" — Excel mengubah digit panjang (`85299954529`) jadi
+  notasi ilmiah `8,52999E+10`, jadi No WA sekarang ditulis sebagai teks `+62 852-9995-4529`
+  (angka aslinya tidak diubah, cuma awalan `62`/`0` dibuang dulu). Tanda `+`/`-` membuat Excel
+  memperlakukannya sebagai teks, dan panjang tiap baris jadi seragam; tanggal lahir tetap
+  `YYYY-MM-DD`. File itu sengaja bebas JSX/React supaya bisa diuji langsung tanpa browser:
+  `docker compose exec -T web node --input-type=module -e "import {formatWhatsapp} from './src/lib/customer-csv.ts'; console.log(formatWhatsapp('085299954529'))"`
+  (Node 22 sudah men-strip tipe TS, jadi impor `.ts` langsung jalan). Ekspor lewat UI sendiri cuma
+  bisa dicek sampai "tidak ada error console" — unduhan `blob:` tidak muncul di
+  `getNetworkRequests`, jadi isi CSV-nya dibuktikan lewat Node di atas, bukan lewat preview.
+- **Drawer detail pelanggan** = `src/components/admin/CustomerDetailDrawer.tsx` (panel netral
+  putih/abu tema admin, kelas `cd-`, lebar 460 px / penuh di bawah 768 px, tutup lewat X / klik
+  latar / `Escape` — pola sama dengan `ProductDetailDrawer`/`OrderDetailDrawer`). Isinya: header
+  (avatar inisial + nama + WhatsApp + badge "Belum daftar") → ringkasan 2×2 (total belanja, jumlah
+  pesanan, belanja terakhir, tanggal lahir) → **"Alamat Pengiriman"** → **"Riwayat Belanja"**.
+  Alamat diambil dari `orders` (tabel `customers` tidak menyimpan alamat): route
+  `/api/admin/customers` men-`select` `shipping_address, shipping_city, shipping_postal_code` lalu
+  menggabungkannya jadi satu string `address` per order; drawer men-dedupe alamat unik dan
+  mengurutkannya dari yang terakhir dipakai (`Dipakai n×` bila dipakai berkali-kali). Tipe
+  `AdminCustomer`/`CustomerOrder` sekarang **diekspor dari drawer** dan diimpor `CustomersView`
+  (jangan didefinisikan ulang di CustomersView). Kartu pelanggan tidak lagi membuka riwayat
+  belanja inline — satu-satunya jalan ke detail adalah tombol drawer itu.
+- Datanya dari **`/api/admin/customers`** (`src/app/api/admin/customers/route.ts`, service role).
+  Ini **wajib** lewat route: tabel `customers` punya policy RLS "read own", jadi anon client admin
+  tidak bisa membaca pelanggan lain. Route-nya memverifikasi sesi Supabase + keanggotaan tabel
+  `admins` (pola sama dengan `/api/admin/jnt-settings`), lalu menggabungkan `customers` dengan
+  `orders` — order lama yang `customer_id`-nya null dicocokkan lewat nama, dan pembeli tanpa akun
+  tetap tampil sebagai entri "Belum daftar" supaya tidak ada yang hilang dari daftar.
+  **Total belanja tidak menghitung pesanan `dibatalkan`.**
+- Halaman **profil pelanggan** (`/[locale]/akun/profil`) memakai pola yang sama dengan kartu
+  Pengaturan admin (diminta pemilik: "samain button nya kaya di menu setting admin"): Nama, Email,
+  Nomor HP/WhatsApp, dan Tanggal Lahir tampil sebagai **teks read-only** dengan satu tombol **Edit**;
+  setelah diklik barulah muncul input + **Simpan Perubahan + Batal** (Batal mengembalikan nilai yang
+  terakhir tersimpan, dan setelah Simpan berhasil halaman kembali read-only). Tanggal lahir
+  ditampilkan sebagai `15 Agustus 1995`, atau "Belum diisi". Polanya ditiru dari `SettingsCard` tapi
+  gayanya tetap gaya halaman akun (hijau `#0f3d33` / krem), bukan tema admin.
+  **Route ini tidak bisa dibuka preview tool** (`navigate('/id/akun/profil')` mengubah URL tapi
+  konten tetap halaman home), jadi perubahan halaman profil diverifikasi lewat `tsc --noEmit` +
+  `curl /id/akun/profil` = `200`, sisanya uji manual — jangan buang panggilan preview untuk itu.
+  `birth_date` dibaca dengan fallback tanpa kolom itu kalau migration
+  `supabase/migrations/20260910_customer_birth_date.sql` belum dijalankan.
+  **Migration itu BELUM dijalankan** (dicek 2026-10-11: `select=id,name,birth_date` → `400`
+  `42703 column customers.birth_date does not exist`), jadi tanggal lahir belum tersimpan di mana
+  pun. Simpan profil customer (`/[locale]/akun/profil`) menulis `birth_date` langsung dari browser,
+  dan tanpa kolomnya PostgREST menolak seluruh update dengan **400** — itulah error
+  `rest/v1/customers?id=eq.<uuid>` di console. Sandbox tidak punya jalur DDL, jadi kolomnya dibuat
+  lewat SQL Editor Supabase: `ALTER TABLE customers ADD COLUMN IF NOT EXISTS birth_date DATE;`
+  (sudah ada di `supabase/migrations/20260910_customer_birth_date.sql`). Selama belum dijalankan,
+  halaman profil tetap menyimpan nama/WhatsApp (update diulang tanpa `birth_date`) dan menampilkan
+  toast bahwa tanggal lahir gagal disimpan.
+  Cek cepat kolom: `curl -s -o /dev/null -w '%{http_code}\n' "$NEXT_PUBLIC_SUPABASE_URL/rest/v1/customers?select=id,birth_date&limit=1" -H "apikey: $SUPABASE_SERVICE_ROLE_KEY"`
+  → `200` berarti kolomnya sudah ada (`400` = belum).
+- **Lookup "user ini pelanggan?" wajib `.maybeSingle()`, bukan `.single()`.** PostgREST membalas
+  **`406`** (bukan `400`/`404`) kalau `.single()` tidak menerima tepat satu baris, jadi setiap akun
+  **auth tanpa baris `customers`** (mis. sesi admin yang diputar ulang preview, atau akun lama)
+  memunculkan `Failed to load resource: 406` di console pada request
+  `rest/v1/customers?select=…&id=eq.<uid>` — pesan yang terlihat seperti kerusakan, padahal memang
+  bukan pelanggan. `.maybeSingle()` membalas `200` + `null`, jadi hasilnya sama (`customer === null`
+  → dropdown menampilkan Masuk/Daftar) tanpa error. Sudah dipakai di `src/components/ProfileDropdown.tsx`,
+  `src/lib/use-wishlist.ts`, dan `src/lib/customer-auth.ts` (`loginCustomer`, `getCurrentCustomer`).
+  `.single()` hanya untuk baris yang dijamin ada (mis. `store_settings?id=1`).
+  Cek cepat: `curl -s -o /dev/null -w '%{http_code}\n' http://localhost:3000/api/admin/customers`
+  → `401` tanpa sesi admin.
+- Verifikasi panel-panel ini lewat preview: sesi admin user ikut diputar ulang, jadi
+  `preview_screenshot({ path: "/admin" })` lalu `preview_execute_code` (klik "Pengaturan"/
+  "Pelanggan" — panelnya tombol in-page, bukan route) berhasil. Yang diuji: 7 tombol **Edit** dan
+  0 **Simpan/Batal** saat read-only, `Nama Toko` = "SAMAQU" sebagai teks, setelah Edit muncul input
+  bernilai sama + Simpan/Batal, Batal kembali ke read-only, kartu J&T tidak ada lagi, dan panel
+  Pelanggan memuat (59 pelanggan, 4 kartu ringkasan) tanpa error.
+
+## Lacak paket di drawer pesanan & status selesai otomatis
+
+Permintaan pemilik (2026-10-11): "di detail tambahin tombol Lacak", "ketika paket sudah diterima
+otomatis statusnya selesai sendiri", plus chip filter "dibatalkan" di panel Pesanan.
+
+- **Chip filter**: baris chip di `src/app/admin/page.tsx` kini
+  `["Semua","pending","diproses","selesai","dibatalkan"]` (satu sumber untuk `/admin` dan
+  `/id/admin`). Chip tetap `flex-wrap`, jadi lima chip tidak memotong "Selesai" di ~370 px.
+  Setiap chip menampilkan **jumlahnya** (`Pending (3)`) dan **judul daftar ikut filter aktif**
+  ("Semua Pesanan" → "Pesanan Diproses"; tab Open Order → "Open Order Diproses"). Angkanya dari
+  `statusCounts` yang dihitung atas `sourceOrders` (tab yang aktif), jadi selalu cocok dengan baris
+  di bawahnya — bukan query terpisah.
+- **Tipografi admin seragam**: satu aturan di `ADMIN_WF_VARS` (`src/components/admin/admin-theme.ts`,
+  `#admin-root h1..h4 { font-family: var(--font-inter) !important; font-style: normal !important }`)
+  memaksa SEMUA judul admin memakai font UI, bukan Cormorant serif italic (gaya storefront).
+  Dipaksa `!important` karena banyak judul menulis `fontFamily` inline — jadi menghapus satu per satu
+  di puluhan file (termasuk salinan locale) tidak perlu; elemen serif yang **bukan** judul (kode
+  voucher, nama produk di blok "Preview Produk") sengaja dibiarkan. Verifikasi: `getComputedStyle`
+  pada h2 "Semua Pesanan" & "Konten Website" → `fontFamily` Inter, `fontStyle` normal.
+- **Tombol Lacak**: `OrderDetailContent.tsx` (drawer detail pesanan, kedua dashboard) punya tombol
+  **Lacak Paket** di blok aksi, muncul hanya bila pesanan punya `awb_no`. Tombol membuka panel
+  **Riwayat Pengiriman** di dalam drawer yang memanggil `/api/jnt/track?awb=…` sekali (data
+  disimpan di state, tutup/buka lagi tidak fetch ulang); riwayat J&T datang terlama-dulu, jadi
+  dibalik supaya yang terbaru di atas. Gaya memakai kelas `od-` di `OD_CSS` (bukan komponen
+  halaman lacak customer yang butuh sesi customer).
+- **Auto "selesai"**: begitu pelacakan menunjukkan paket **diterima penerima**, status pesanan
+  otomatis jadi `selesai` tanpa admin mengubahnya:
+  - **saat dilihat** — panel Lacak memanggil `onStatusChange("selesai")` (prop drawer yang sudah
+    ada → `PATCH /api/admin/orders`) hanya bila `isDelivered()` benar dan status masih
+    `pending`/`diproses`/`dikirim` (jadi pesanan `dibatalkan`/`selesai` tidak tersentuh);
+  - **di latar belakang** — cron **`/api/cron/sync-tracking`** (`src/app/api/cron/sync-tracking/route.ts`)
+    memindai ≤100 pesanan ber-resi berstatus belum final, melacak tiap resi, dan menandai yang
+    sudah diterima sebagai `selesai`. Gerbang `CRON_SECRET` sama dengan `/api/cron/auto-cancel`
+    (`Authorization: Bearer $CRON_SECRET`; `401` kalau salah/kosong) — **belum ada penjadwal di
+    repo**: jadwalkan endpoint ini (mis. tiap jam) bersama `auto-cancel` di penjadwal cron/Vercel
+    yang sudah dipakai untuk endpoint itu. Tanpa penjadwal, auto-selesai tetap jalan begitu admin
+    membuka panel Lacak.
+- **Deteksi "diterima"** ada di satu modul murni **`src/lib/jnt/track-status.ts`** →
+  `isDelivered({history})` = ada riwayat dengan `status_code === 200` ("Paket telah diterima" /
+  Delivered, per dokumentasi J&T). **Jangan** mencocokkan teks: `status_code` 100 juga berbunyi
+  "Paket telah diterima oleh <gerai>" (paket baru diserahkan ke J&T di gerai asal), bukan bukti
+  sampai ke penerima. Modulnya cuma impor tipe, jadi dipakai klien & server.
+- Verifikasi: `tsc --noEmit` bersih; `curl /admin` & `/id/admin` = `200`; `/api/cron/sync-tracking`
+  tanpa/`salah` header = `401`; `isDelivered` diuji lewat Node (200 → true, 100/401/kosong →
+  false). Lewat preview (sesi admin diputar ulang): chip **Dibatalkan** tampil, filter menyisakan
+  10 pesanan dibatalkan, drawer terbuka, tombol **Lacak Paket** muncul untuk pesanan ber-resi
+  `SMQ-20261010-364`, panel Riwayat Pengiriman terisi (`Manifes DEPOK …`), tanpa error console,
+  dan tidak ada scroll samping di 375 px. **Belum** terbukti live: status berubah sendiri saat
+  paket benar-benar diterima (perlu pesanan yang resinya sudah `status_code 200`) — logikanya
+  diuji unit, bukan end-to-end.
+
+## Satu scrollbar untuk panel meluncur (drawer) admin
+
+Permintaan pemilik (2026-10-11): "kok scroll nya jadi ada 2 sih di detail pesanan satu aja broo
+jgn 2 gitu cek juga di yg lain, tolong bikin kaya website mahal". Dulu drawer punya scrollbar
+sendiri sementara halaman admin di belakangnya masih bisa di-scroll — dua bar terlihat sekaligus.
+
+- **Kunci scroll halaman**: hook bersama **`src/lib/use-scroll-lock.ts`** → `useBodyScrollLock(active)`.
+  Dipanggil `OrderDetailDrawer` (`!!order`), `ProductDetailDrawer` (`!!productId` — hanya jalur
+  drawer; `ProductDetailPanel` mode `page` tidak ikut terkunci) dan `CustomerDetailDrawer`
+  (`!!customer`). Hook menulis `overflow:hidden` ke `<html>` + `<body>` dan menambah
+  `padding-right` selebar scrollbar yang hilang supaya tata letak tidak bergeser saat panel dibuka;
+  penghitung di modulnya membuat beberapa panel yang terbuka bersamaan (mis. drawer + `ConfirmModal`)
+  hanya mengunci sekali dan membuka kunci saat panel terakhir ditutup. Panel baru: pakai hook ini,
+  jangan menulis kunci scroll sendiri.
+- **Bar ramping**: kelas **`drawer-scroll`** di `src/app/globals.css` (`overscroll-behavior:contain`,
+  `scrollbar-width:thin`, `::-webkit-scrollbar` dengan track transparan & thumb membulat) dipasang di
+  `.odr-body`, `.pd-body`, `.cd-body`; itu juga yang mencegah scroll panel "menular" ke halaman.
+- Verifikasi (sesi admin diputar ulang): `/id/admin` → Order Management → tombol **Detail** →
+  `overflow` `<body>` = `hidden`, `window.scrollTo(0,700)` tidak menggeser halaman, `.odr-body`
+  berkelas `drawer-scroll` dengan `overscroll-behavior:contain` dan tetap bisa di-scroll, di 768 px
+  panel 520 px tanpa scroll samping, lalu setelah drawer ditutup `overflow` body kembali normal dan
+  halaman bisa di-scroll lagi. **Catatan tool**: `navigate('/id/admin')` di `preview_execute_code`
+  membalas `navigation_failed` (route admin tidak bereaksi ke SPA nav) dan URL-nya tertinggal
+  menunjuk `/id/admin` padahal isinya halaman lain — panggil `preview_screenshot({path:'/id/admin'})`
+  (yang melakukan kunjungan halaman penuh) dulu sebelum menguji panel admin.

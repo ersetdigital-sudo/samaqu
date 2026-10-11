@@ -6,38 +6,40 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, ShoppingBag, Package, Users, FileText, Settings,
   Search, Bell, Menu, LogOut, X, Ticket, Ruler, Image, Shirt, ChevronDown,
-  MessageCircle,
+  MessageCircle, Star,
 } from "lucide-react";
 import { ADMIN_SHELL_CSS } from "@/components/admin/admin-theme";
 
+// Grup & urutan menu harus sama persis dengan sidebar dashboard admin
+// (navGroups di src/app/admin/page.tsx) — kalau beda, menu terlihat "berubah"
+// begitu admin membuka salah satu subhalaman (mis. Open Order).
 const navGroups = [
   {
     title: "Menu Utama",
     items: [
       { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
-      { href: "/admin", label: "Pesanan", icon: ShoppingBag },
+      { href: "/admin", label: "Order Management", icon: ShoppingBag },
+      { href: "/admin/open-order", label: "Open Order", icon: Shirt },
       { href: "/admin", label: "Produk", icon: Package },
       { href: "/admin", label: "Pelanggan", icon: Users },
     ],
   },
   {
-    title: "Biolink",
+    title: "Konten",
     items: [
+      { href: "/admin/konten-website", label: "Konten Website", icon: FileText },
       { href: "/admin/biolink", label: "Biolink", icon: FileText },
       { href: "/admin/bio-carousel", label: "Foto Carousel", icon: Image },
+      { href: "/admin/testimoni", label: "Testimoni", icon: Star },
+      { href: "/admin/ukuran-produk", label: "Panduan Ukuran", icon: Ruler },
+      { href: "/admin/garansi-retur-page", label: "Halaman Garansi & Retur", icon: FileText },
     ],
   },
   {
     title: "Lainnya",
     items: [
-      { href: "/admin/konten-website", label: "Konten Website", icon: FileText },
-      { href: "/admin", label: "Produk Pilihan", icon: Package },
-      { href: "/admin", label: "Pengaturan", icon: Settings },
-      { href: "/admin/open-order", label: "Open Order", icon: Shirt },
       { href: "/admin/voucher", label: "Voucher", icon: Ticket },
-      { href: "/admin/testimoni", label: "Testimoni", icon: FileText },
-      { href: "/admin/ukuran-produk", label: "Panduan Ukuran", icon: Ruler },
-      { href: "/admin/garansi-retur-page", label: "Halaman Garansi & Retur", icon: FileText },
+      { href: "/admin", label: "Pengaturan", icon: Settings },
     ],
   },
 ];

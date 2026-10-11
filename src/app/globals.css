@@ -566,10 +566,61 @@ a { text-decoration: none; }
 .akun-thumb { background: linear-gradient(150deg,#e7e1d6,#cfc7b8); border-radius: 1rem; display: flex; align-items: center; justify-content: center; color: #0f3d33; opacity: .95; }
 .akun-sect { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; font-weight: 700; color: #7c8b85; }
 
+/* ── Sidebar akun (desktop) — menu harus muat tanpa scroll ──
+   Permintaan pemilik: "harusnya ngga ada scroll di menunya, bikin responsif di semua ukuran".
+   Lebar & warna tidak berubah; hanya jarak vertikal yang menyusut saat layar pendek, dan
+   scrollbar disembunyikan sebagai jaring pengaman supaya menu tidak pernah menampilkan bar. */
+.akun-side-nav { scrollbar-width: none; -ms-overflow-style: none; }
+.akun-side-nav::-webkit-scrollbar { display: none; }
+
+@media (max-height: 820px) {
+  .akun-side-nav { padding-top: .5rem; padding-bottom: .5rem; }
+  .akun-side-group { padding-top: .625rem; padding-bottom: .35rem; }
+}
+@media (max-height: 700px) {
+  .akun-side-brand { height: 3.5rem; }
+  .akun-side-item { padding-top: .4rem; padding-bottom: .4rem; }
+  .akun-side-foot { padding: .5rem; }
+  .akun-side-foot > a { padding-top: .5rem; padding-bottom: .5rem; }
+}
+@media (max-height: 600px) {
+  .akun-side-nav { padding-top: .375rem; padding-bottom: .375rem; font-size: 12.5px; }
+  .akun-side-group { padding-top: .4rem; padding-bottom: .2rem; font-size: 9px; }
+  .akun-side-item { padding-top: .3rem; padding-bottom: .3rem; }
+  .akun-side-item svg { width: 16px; height: 16px; }
+}
+@media (max-height: 520px) {
+  .akun-side-group { display: none; }
+  .akun-side-item { padding-top: .25rem; padding-bottom: .25rem; }
+}
+
 /* ── Nav bawah ala aplikasi (mobile, halaman toko) ── */
 /* Tinggi bar dipakai untuk (a) memberi padding bawah pada layout toko dan (b) menggeser bar
    aksi bawah milik halaman (keranjang, checkout, detail produk). 0 px di desktop. */
 :root { --mobile-nav-h: 0px; }
 @media (max-width: 1023px) {
   :root { --mobile-nav-h: 62px; }
+}
+
+/* ── Panel meluncur (drawer) admin: satu scrollbar saja ──
+   Permintaan pemilik: "kok scroll nya jadi ada 2 sih di detail pesanan ... bikin kaya website mahal".
+   Halaman di belakang panel dikunci oleh `useBodyScrollLock` (src/lib/use-scroll-lock.ts), jadi
+   yang tersisa hanya scrollbar isi panel. `overscroll-behavior:contain` mencegah scroll panel
+   "menular" ke halaman, dan bar-nya dibuat ramping dengan track transparan supaya rapi. */
+.drawer-scroll {
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(42, 33, 27, .22) transparent;
+}
+.drawer-scroll::-webkit-scrollbar { width: 10px; height: 10px; }
+.drawer-scroll::-webkit-scrollbar-track { background: transparent; }
+.drawer-scroll::-webkit-scrollbar-thumb {
+  background: rgba(42, 33, 27, .16);
+  border: 3px solid transparent;
+  border-radius: 99px;
+  background-clip: content-box;
+}
+.drawer-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(42, 33, 27, .3);
+  background-clip: content-box;
 }

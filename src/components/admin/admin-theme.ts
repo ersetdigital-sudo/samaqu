@@ -43,6 +43,17 @@ export const ADMIN_WF_VARS = `
   }
   #admin-root button, #admin-root a, #admin-root [role="button"], #admin-root select { cursor: pointer; }
 
+  /* Tipografi seragam untuk panel admin. Sebagian judul masih memakai Cormorant
+     serif italic (gaya storefront), jadi font terasa berubah-ubah antar halaman.
+     Permintaan pemilik: "font nya di ganti biar seragam gitu jadi lebih enak di
+     liat nya". Ditulis di sini (satu sumber) supaya semua halaman admin ikut —
+     termasuk salinan locale — dan dipaksa !important karena banyak judul
+     menulis fontFamily-nya inline. */
+  #admin-root h1, #admin-root h2, #admin-root h3, #admin-root h4 {
+    font-family: var(--font-inter), system-ui, sans-serif !important;
+    font-style: normal !important;
+  }
+
   /* Menu tanpa scrollbar (permintaan: "di menu jgn ada scrol") */
   .no-scrollbar, .admin-sidebar { scrollbar-width: none; -ms-overflow-style: none; }
   .no-scrollbar::-webkit-scrollbar, .admin-sidebar::-webkit-scrollbar { display: none; }
