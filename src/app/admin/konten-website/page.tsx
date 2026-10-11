@@ -249,7 +249,7 @@ export default function KontenWebsitePage() {
   }
 
   function CharCounter({ current, max }: { current: number; max: number }) {
-    return <p className="text-[10px] mt-0.5" style={{ color: current > max * 0.9 ? "#8a6f42" : "var(--text-muted)" }}>{current}/{max}</p>;
+    return <p className="text-[10px] mt-0.5" style={{ color: current > max * 0.9 ? "#52525b" : "var(--text-muted)" }}>{current}/{max}</p>;
   }
 
   if (loading) return <section className="min-h-screen flex items-center justify-center" style={{ background: "var(--cream)" }}><Loader2 size={24} className="animate-spin" style={{ color: "var(--gold)" }} /></section>;
@@ -280,11 +280,11 @@ export default function KontenWebsitePage() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                   <h3 className="font-semibold" style={{ color: "var(--espresso)" }}>{s.title}</h3>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ background: s.active ? "#e7ecdf" : "#f0ebe5", color: s.active ? "#5b6b45" : "var(--text-muted)" }}>{s.active ? "Aktif" : "Kosong"}</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ background: s.active ? "#f4f4f5" : "#f4f4f5", color: s.active ? "#3f3f46" : "var(--text-muted)" }}>{s.active ? "Aktif" : "Kosong"}</span>
                 </div>
                 <p className="text-sm" style={{ color: "var(--text-muted)" }}>{s.desc}</p>
               </div>
-              {s.edit && <button onClick={s.edit} className="shrink-0 px-5 py-2 rounded-xl text-sm font-medium transition-colors hover:bg-[rgba(64,50,37,.05)]" style={{ border: "1px solid rgba(64,50,37,.15)", color: "var(--gold)" }}>Edit Bagian</button>}
+              {s.edit && <button onClick={s.edit} className="shrink-0 px-5 py-2 rounded-xl text-sm font-medium transition-colors hover:bg-[#f4f4f5]" style={{ border: "1px solid #d4d4d8", color: "var(--gold)" }}>Edit Bagian</button>}
             </div>
           ))}
         </div>
@@ -300,15 +300,15 @@ export default function KontenWebsitePage() {
                 <button onClick={() => setEditModal(null)}><X size={20} style={{ color: "var(--text-muted)" }} /></button>
               </div>
               <div className="space-y-3">
-                <div><label className="block text-xs font-medium mb-1" style={{ color: "var(--text-muted)" }}>Eyebrow Text</label><input value={editHero.eyebrow_text} onChange={(e) => setEditHero({ ...editHero, eyebrow_text: e.target.value.slice(0, 40) })} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white" }} /><CharCounter current={editHero.eyebrow_text.length} max={40} /></div>
-                <div><label className="block text-xs font-medium mb-1" style={{ color: "var(--text-muted)" }}>Title Line 1</label><div className="flex gap-2"><input value={editHero.title_line1} onChange={(e) => setEditHero({ ...editHero, title_line1: e.target.value.slice(0, 30) })} className="flex-1 rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white" }} /><div className="relative"><input type="color" value={editHero.title_line1_color || "#f8f5f1"} onChange={(e) => setEditHero({ ...editHero, title_line1_color: e.target.value })} className="w-10 h-10 rounded-lg cursor-pointer border-0 p-0.5" style={{ background: "white" }} /><span className="absolute -bottom-4 left-0 text-[9px] font-mono" style={{ color: "var(--text-muted)" }}>{editHero.title_line1_color || "#f8f5f1"}</span></div></div><CharCounter current={editHero.title_line1.length} max={30} /></div>
-                <div className="mt-2"><label className="block text-xs font-medium mb-1" style={{ color: "var(--text-muted)" }}>Title Line 2</label><div className="flex gap-2"><input value={editHero.title_line2} onChange={(e) => setEditHero({ ...editHero, title_line2: e.target.value.slice(0, 30) })} className="flex-1 rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white" }} /><div className="relative"><input type="color" value={editHero.title_line2_color || "#e0b563"} onChange={(e) => setEditHero({ ...editHero, title_line2_color: e.target.value })} className="w-10 h-10 rounded-lg cursor-pointer border-0 p-0.5" style={{ background: "white" }} /><span className="absolute -bottom-4 left-0 text-[9px] font-mono" style={{ color: "var(--text-muted)" }}>{editHero.title_line2_color || "#e0b563"}</span></div></div><CharCounter current={editHero.title_line2.length} max={30} /></div>
-                <div><label className="block text-xs font-medium mb-1" style={{ color: "var(--text-muted)" }}>Deskripsi</label><textarea value={editHero.description} onChange={(e) => setEditHero({ ...editHero, description: e.target.value.slice(0, 150) })} rows={3} className="w-full rounded-lg px-3 py-2 text-sm outline-none resize-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white" }} /><CharCounter current={editHero.description.length} max={150} /></div>
+                <div><label className="block text-xs font-medium mb-1" style={{ color: "var(--text-muted)" }}>Eyebrow Text</label><input value={editHero.eyebrow_text} onChange={(e) => setEditHero({ ...editHero, eyebrow_text: e.target.value.slice(0, 40) })} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid #d4d4d8", background: "white" }} /><CharCounter current={editHero.eyebrow_text.length} max={40} /></div>
+                <div><label className="block text-xs font-medium mb-1" style={{ color: "var(--text-muted)" }}>Title Line 1</label><div className="flex gap-2"><input value={editHero.title_line1} onChange={(e) => setEditHero({ ...editHero, title_line1: e.target.value.slice(0, 30) })} className="flex-1 rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid #d4d4d8", background: "white" }} /><div className="relative"><input type="color" value={editHero.title_line1_color || "#f8f5f1"} onChange={(e) => setEditHero({ ...editHero, title_line1_color: e.target.value })} className="w-10 h-10 rounded-lg cursor-pointer border-0 p-0.5" style={{ background: "white" }} /><span className="absolute -bottom-4 left-0 text-[9px] font-mono" style={{ color: "var(--text-muted)" }}>{editHero.title_line1_color || "#f8f5f1"}</span></div></div><CharCounter current={editHero.title_line1.length} max={30} /></div>
+                <div className="mt-2"><label className="block text-xs font-medium mb-1" style={{ color: "var(--text-muted)" }}>Title Line 2</label><div className="flex gap-2"><input value={editHero.title_line2} onChange={(e) => setEditHero({ ...editHero, title_line2: e.target.value.slice(0, 30) })} className="flex-1 rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid #d4d4d8", background: "white" }} /><div className="relative"><input type="color" value={editHero.title_line2_color || "#e0b563"} onChange={(e) => setEditHero({ ...editHero, title_line2_color: e.target.value })} className="w-10 h-10 rounded-lg cursor-pointer border-0 p-0.5" style={{ background: "white" }} /><span className="absolute -bottom-4 left-0 text-[9px] font-mono" style={{ color: "var(--text-muted)" }}>{editHero.title_line2_color || "#e0b563"}</span></div></div><CharCounter current={editHero.title_line2.length} max={30} /></div>
+                <div><label className="block text-xs font-medium mb-1" style={{ color: "var(--text-muted)" }}>Deskripsi</label><textarea value={editHero.description} onChange={(e) => setEditHero({ ...editHero, description: e.target.value.slice(0, 150) })} rows={3} className="w-full rounded-lg px-3 py-2 text-sm outline-none resize-none" style={{ border: "1px solid #d4d4d8", background: "white" }} /><CharCounter current={editHero.description.length} max={150} /></div>
                 <div className="grid grid-cols-3 gap-2">
-                  {[1, 2, 3].map((n) => { const k = `feature${n}` as keyof HeroContent; return <div key={k}><label className="block text-[10px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>Fitur {n}</label><input value={editHero[k] as string} onChange={(e) => setEditHero({ ...editHero, [k]: e.target.value.slice(0, 30) })} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white" }} /><CharCounter current={(editHero[k] as string).length} max={30} /></div>; })}
+                  {[1, 2, 3].map((n) => { const k = `feature${n}` as keyof HeroContent; return <div key={k}><label className="block text-[10px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>Fitur {n}</label><input value={editHero[k] as string} onChange={(e) => setEditHero({ ...editHero, [k]: e.target.value.slice(0, 30) })} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid #d4d4d8", background: "white" }} /><CharCounter current={(editHero[k] as string).length} max={30} /></div>; })}
                 </div>
               </div>
-              <div className="flex gap-3 mt-5"><button onClick={() => setEditModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-medium" style={{ border: "1px solid rgba(64,50,37,.15)" }}>Batal</button><button onClick={saveHero} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: "var(--gold)" }}>{saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null} Simpan</button></div>
+              <div className="flex gap-3 mt-5"><button onClick={() => setEditModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-medium" style={{ border: "1px solid #d4d4d8" }}>Batal</button><button onClick={saveHero} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: "var(--gold)" }}>{saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null} Simpan</button></div>
             </motion.div>
           </motion.div>
         )}
@@ -323,7 +323,7 @@ export default function KontenWebsitePage() {
                 <h3 className="font-serif italic text-xl" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Kategori Koleksi</h3>
                 <button onClick={() => setEditModal(null)}><X size={20} style={{ color: "var(--text-muted)" }} /></button>
               </div>
-              <div className="text-xs mb-4 px-3 py-2.5 rounded-lg space-y-1" style={{ background: "#f0e7d8", color: "#8a6f42" }}>
+              <div className="text-xs mb-4 px-3 py-2.5 rounded-lg space-y-1" style={{ background: "#f4f4f5", color: "#52525b" }}>
                 <p className="font-semibold mb-1">Ukuran gambar yang disarankan:</p>
                 <p><strong>Thobe & Kandora</strong> → 1080 × 1350px (4:5 portrait)</p>
                 <p><strong>Koko, Vest, Kabak, Cover Hanger</strong> → 1920 × 1080px (16:9 landscape)</p>
@@ -331,19 +331,19 @@ export default function KontenWebsitePage() {
               </div>
               <div className="space-y-4 mb-4">
                 {editCategories.map((cat, i) => (
-                  <div key={cat.id || i} className="p-4 rounded-xl" style={{ border: "1px solid rgba(64,50,37,.1)", background: "rgba(255,255,255,.5)" }}>
+                  <div key={cat.id || i} className="p-4 rounded-xl" style={{ border: "1px solid #e4e4e7", background: "rgba(255,255,255,.5)" }}>
                     <div className="flex items-center justify-between mb-3">
                       <input value={cat.name} onChange={(e) => { const u = [...editCategories]; u[i] = { ...u[i], name: e.target.value }; editCategoriesRef.current = u; setEditCategories(u); }} className="text-sm font-semibold outline-none bg-transparent" style={{ color: "var(--espresso)" }} placeholder="Nama kategori" />
-                      {editCategories.length > 1 && <button onClick={() => setEditCategories(editCategories.filter((_, j) => j !== i))} className="p-1 hover:bg-red-50 rounded"><Trash2 size={14} style={{ color: "#e74c3c" }} /></button>}
+                      {editCategories.length > 1 && <button onClick={() => setEditCategories(editCategories.filter((_, j) => j !== i))} className="p-1 hover:bg-red-50 rounded"><Trash2 size={14} style={{ color: "#dc2626" }} /></button>}
                     </div>
                     <div className="flex gap-3">
-                      <div className="w-20 h-20 rounded-lg overflow-hidden shrink-0" style={{ background: "#e8dfd1" }}>
+                      <div className="w-20 h-20 rounded-lg overflow-hidden shrink-0" style={{ background: "#f4f4f5" }}>
                         {cat.image_url ? <img src={cat.image_url} alt={cat.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><ImageIcon size={20} style={{ color: "var(--text-muted)" }} /></div>}
                       </div>
                       <div className="flex-1">
-                        <textarea value={cat.description} onChange={(e) => { const v = e.target.value.slice(0, 60); const u = [...editCategories]; u[i] = { ...u[i], description: v }; editCategoriesRef.current = u; setEditCategories(u); }} rows={2} placeholder="Deskripsi singkat kategori (max 60 karakter)" className="w-full rounded-lg px-3 py-2 text-xs outline-none resize-none mb-1" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white" }} />
-                        <p className="text-[10px] mb-2" style={{ color: cat.description.length > 54 ? "#8a6f42" : "var(--text-muted)" }}>{cat.description.length}/60</p>
-                        <label className="flex items-center gap-2 text-xs cursor-pointer px-3 py-2 rounded-lg transition-colors hover:bg-[rgba(64,50,37,.05)]" style={{ border: "1px dashed rgba(64,50,37,.2)", color: "var(--gold)" }}>
+                        <textarea value={cat.description} onChange={(e) => { const v = e.target.value.slice(0, 60); const u = [...editCategories]; u[i] = { ...u[i], description: v }; editCategoriesRef.current = u; setEditCategories(u); }} rows={2} placeholder="Deskripsi singkat kategori (max 60 karakter)" className="w-full rounded-lg px-3 py-2 text-xs outline-none resize-none mb-1" style={{ border: "1px solid #d4d4d8", background: "white" }} />
+                        <p className="text-[10px] mb-2" style={{ color: cat.description.length > 54 ? "#52525b" : "var(--text-muted)" }}>{cat.description.length}/60</p>
+                        <label className="flex items-center gap-2 text-xs cursor-pointer px-3 py-2 rounded-lg transition-colors hover:bg-[#f4f4f5]" style={{ border: "1px dashed #d4d4d8", color: "var(--gold)" }}>
                           <Upload size={14} />
                           {uploadingId === cat.id ? "Uploading..." : "Ganti Gambar"}
                           <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadCategoryImage(i, f); }} />
@@ -354,7 +354,7 @@ export default function KontenWebsitePage() {
                 ))}
               </div>
               {editCategories.length < 6 && <button onClick={() => setEditCategories([...editCategories, { id: "new-" + Date.now(), name: "", description: "", image_url: "", display_order: editCategories.length }])} className="flex items-center gap-1.5 text-sm font-medium mb-4" style={{ color: "var(--gold)" }}><Plus size={14} /> Tambah Kategori</button>}
-              <div className="flex gap-3"><button onClick={() => setEditModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-medium" style={{ border: "1px solid rgba(64,50,37,.15)" }}>Batal</button><button onClick={saveCategories} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: "var(--gold)" }}>{saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null} Simpan</button></div>
+              <div className="flex gap-3"><button onClick={() => setEditModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-medium" style={{ border: "1px solid #d4d4d8" }}>Batal</button><button onClick={saveCategories} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: "var(--gold)" }}>{saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null} Simpan</button></div>
             </motion.div>
           </motion.div>
         )}
@@ -371,18 +371,18 @@ export default function KontenWebsitePage() {
               </div>
               <div className="space-y-4 mb-4">
                 {editSteps.map((s, i) => (
-                  <div key={s.id} className="p-4 rounded-xl" style={{ border: "1px solid rgba(64,50,37,.1)", background: "rgba(255,255,255,.5)" }}>
+                  <div key={s.id} className="p-4 rounded-xl" style={{ border: "1px solid #e4e4e7", background: "rgba(255,255,255,.5)" }}>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-xs font-semibold" style={{ color: "var(--gold)" }}>Langkah {i + 1}</span>
-                      {editSteps.length > 1 && <button onClick={() => setEditSteps(editSteps.filter((_, j) => j !== i))} className="p-1 hover:bg-red-50 rounded"><Trash2 size={14} style={{ color: "#e74c3c" }} /></button>}
+                      {editSteps.length > 1 && <button onClick={() => setEditSteps(editSteps.filter((_, j) => j !== i))} className="p-1 hover:bg-red-50 rounded"><Trash2 size={14} style={{ color: "#dc2626" }} /></button>}
                     </div>
-                    <input value={s.title} onChange={(e) => { const u = [...editSteps]; u[i] = { ...u[i], title: e.target.value.slice(0, 30) }; setEditSteps(u); }} placeholder="Judul" className="w-full rounded-lg px-3 py-2 text-sm outline-none mb-1" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white" }} />
-                    <textarea value={s.description} onChange={(e) => { const u = [...editSteps]; u[i] = { ...u[i], description: e.target.value.slice(0, 100) }; setEditSteps(u); }} placeholder="Deskripsi" rows={2} className="w-full rounded-lg px-3 py-2 text-sm outline-none resize-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white" }} />
+                    <input value={s.title} onChange={(e) => { const u = [...editSteps]; u[i] = { ...u[i], title: e.target.value.slice(0, 30) }; setEditSteps(u); }} placeholder="Judul" className="w-full rounded-lg px-3 py-2 text-sm outline-none mb-1" style={{ border: "1px solid #d4d4d8", background: "white" }} />
+                    <textarea value={s.description} onChange={(e) => { const u = [...editSteps]; u[i] = { ...u[i], description: e.target.value.slice(0, 100) }; setEditSteps(u); }} placeholder="Deskripsi" rows={2} className="w-full rounded-lg px-3 py-2 text-sm outline-none resize-none" style={{ border: "1px solid #d4d4d8", background: "white" }} />
                   </div>
                 ))}
               </div>
               {editSteps.length < 6 && <button onClick={() => setEditSteps([...editSteps, { id: String(Date.now()), step_number: editSteps.length + 1, title: "", description: "" }])} className="flex items-center gap-1.5 text-sm font-medium mb-4" style={{ color: "var(--gold)" }}><Plus size={14} /> Tambah</button>}
-              <div className="flex gap-3"><button onClick={() => setEditModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-medium" style={{ border: "1px solid rgba(64,50,37,.15)" }}>Batal</button><button onClick={saveSteps} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: "var(--gold)" }}>{saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null} Simpan</button></div>
+              <div className="flex gap-3"><button onClick={() => setEditModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-medium" style={{ border: "1px solid #d4d4d8" }}>Batal</button><button onClick={saveSteps} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: "var(--gold)" }}>{saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null} Simpan</button></div>
             </motion.div>
           </motion.div>
         )}
@@ -400,10 +400,10 @@ export default function KontenWebsitePage() {
               <p className="text-sm font-medium mb-3" style={{ color: "var(--espresso)" }}>Kartu Jaminan</p>
               <div className="space-y-3 mb-4">
                 {editGaransi.map((g, i) => (
-                  <div key={i} className="p-3 rounded-lg relative" style={{ border: "1px solid rgba(64,50,37,.1)" }}>
-                    {editGaransi.length > 1 && <button onClick={() => setEditGaransi(editGaransi.filter((_, j) => j !== i))} className="absolute top-2 right-2 p-1 hover:bg-red-50 rounded"><Trash2 size={14} style={{ color: "#e74c3c" }} /></button>}
-                    <input value={g.title} onChange={(e) => { const u = [...editGaransi]; u[i] = { ...u[i], title: e.target.value }; setEditGaransi(u); }} placeholder="Judul" className="w-full rounded-lg px-3 py-2 text-sm outline-none mb-2" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white" }} />
-                    <textarea value={g.description} onChange={(e) => { const u = [...editGaransi]; u[i] = { ...u[i], description: e.target.value }; setEditGaransi(u); }} placeholder="Deskripsi" rows={2} className="w-full rounded-lg px-3 py-2 text-sm outline-none resize-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white" }} />
+                  <div key={i} className="p-3 rounded-lg relative" style={{ border: "1px solid #e4e4e7" }}>
+                    {editGaransi.length > 1 && <button onClick={() => setEditGaransi(editGaransi.filter((_, j) => j !== i))} className="absolute top-2 right-2 p-1 hover:bg-red-50 rounded"><Trash2 size={14} style={{ color: "#dc2626" }} /></button>}
+                    <input value={g.title} onChange={(e) => { const u = [...editGaransi]; u[i] = { ...u[i], title: e.target.value }; setEditGaransi(u); }} placeholder="Judul" className="w-full rounded-lg px-3 py-2 text-sm outline-none mb-2" style={{ border: "1px solid #d4d4d8", background: "white" }} />
+                    <textarea value={g.description} onChange={(e) => { const u = [...editGaransi]; u[i] = { ...u[i], description: e.target.value }; setEditGaransi(u); }} placeholder="Deskripsi" rows={2} className="w-full rounded-lg px-3 py-2 text-sm outline-none resize-none" style={{ border: "1px solid #d4d4d8", background: "white" }} />
                   </div>
                 ))}
               </div>
@@ -412,13 +412,13 @@ export default function KontenWebsitePage() {
               <div className="space-y-2 mb-4">
                 {editBadges.map((b, i) => (
                   <div key={i} className="flex items-center gap-2">
-                    <input value={b.label} onChange={(e) => { const u = [...editBadges]; u[i] = { ...u[i], label: e.target.value }; setEditBadges(u); }} className="flex-1 rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white" }} />
-                    {editBadges.length > 1 && <button onClick={() => setEditBadges(editBadges.filter((_, j) => j !== i))} className="p-1"><Trash2 size={14} style={{ color: "#e74c3c" }} /></button>}
+                    <input value={b.label} onChange={(e) => { const u = [...editBadges]; u[i] = { ...u[i], label: e.target.value }; setEditBadges(u); }} className="flex-1 rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid #d4d4d8", background: "white" }} />
+                    {editBadges.length > 1 && <button onClick={() => setEditBadges(editBadges.filter((_, j) => j !== i))} className="p-1"><Trash2 size={14} style={{ color: "#dc2626" }} /></button>}
                   </div>
                 ))}
                 {editBadges.length < 5 && <button onClick={() => setEditBadges([...editBadges, { id: String(Date.now()), label: "", display_order: editBadges.length }])} className="text-sm font-medium" style={{ color: "var(--gold)" }}><Plus size={14} className="inline mr-1" />Tambah Badge</button>}
               </div>
-              <div className="flex gap-3"><button onClick={() => setEditModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-medium" style={{ border: "1px solid rgba(64,50,37,.15)" }}>Batal</button><button onClick={saveGaransi} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: "var(--gold)" }}>{saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null} Simpan</button></div>
+              <div className="flex gap-3"><button onClick={() => setEditModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-medium" style={{ border: "1px solid #d4d4d8" }}>Batal</button><button onClick={saveGaransi} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: "var(--gold)" }}>{saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null} Simpan</button></div>
             </motion.div>
           </motion.div>
         )}
@@ -435,14 +435,14 @@ export default function KontenWebsitePage() {
               </div>
               <div className="space-y-4 mb-4">
                 {editFaqs.map((f, i) => (
-                  <div key={i} className="p-4 rounded-xl" style={{ border: "1px solid rgba(64,50,37,.1)", background: "rgba(255,255,255,.5)" }}>
+                  <div key={i} className="p-4 rounded-xl" style={{ border: "1px solid #e4e4e7", background: "rgba(255,255,255,.5)" }}>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-xs font-semibold" style={{ color: "var(--gold)" }}>Pertanyaan {i + 1}</span>
-                      {editFaqs.length > 1 && <button onClick={() => setEditFaqs(editFaqs.filter((_, j) => j !== i))} className="p-1 hover:bg-red-50 rounded"><Trash2 size={14} style={{ color: "#e74c3c" }} /></button>}
+                      {editFaqs.length > 1 && <button onClick={() => setEditFaqs(editFaqs.filter((_, j) => j !== i))} className="p-1 hover:bg-red-50 rounded"><Trash2 size={14} style={{ color: "#dc2626" }} /></button>}
                     </div>
-                    <input value={f.question} onChange={(e) => { const u = [...editFaqs]; u[i] = { ...u[i], question: e.target.value }; setEditFaqs(u); }} placeholder="Pertanyaan" className="w-full rounded-lg px-3 py-2 text-sm outline-none mb-1" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white" }} />
-                    <textarea value={f.answer} onChange={(e) => { const u = [...editFaqs]; u[i] = { ...u[i], answer: e.target.value }; setEditFaqs(u); }} placeholder="Jawaban" rows={2} className="w-full rounded-lg px-3 py-2 text-sm outline-none resize-none mb-2" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white" }} />
-                    <select value={f.category || ""} onChange={(e) => { const u = [...editFaqs]; u[i] = { ...u[i], category: e.target.value }; setEditFaqs(u); }} className="w-full rounded-lg px-3 py-2 text-sm outline-none appearance-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }}>
+                    <input value={f.question} onChange={(e) => { const u = [...editFaqs]; u[i] = { ...u[i], question: e.target.value }; setEditFaqs(u); }} placeholder="Pertanyaan" className="w-full rounded-lg px-3 py-2 text-sm outline-none mb-1" style={{ border: "1px solid #d4d4d8", background: "white" }} />
+                    <textarea value={f.answer} onChange={(e) => { const u = [...editFaqs]; u[i] = { ...u[i], answer: e.target.value }; setEditFaqs(u); }} placeholder="Jawaban" rows={2} className="w-full rounded-lg px-3 py-2 text-sm outline-none resize-none mb-2" style={{ border: "1px solid #d4d4d8", background: "white" }} />
+                    <select value={f.category || ""} onChange={(e) => { const u = [...editFaqs]; u[i] = { ...u[i], category: e.target.value }; setEditFaqs(u); }} className="w-full rounded-lg px-3 py-2 text-sm outline-none appearance-none" style={{ border: "1px solid #d4d4d8", background: "white", color: "var(--espresso)" }}>
                       <option value="">Pilih Kategori</option>
                       <option value="Order & Pembayaran">Order & Pembayaran</option>
                       <option value="Pengiriman">Pengiriman</option>
@@ -453,7 +453,7 @@ export default function KontenWebsitePage() {
                 ))}
               </div>
               {editFaqs.length < 30 && <button onClick={() => setEditFaqs([...editFaqs, { id: String(Date.now()), question: "", answer: "", category: "", type: editFaqsType, display_order: editFaqs.length }])} className="flex items-center gap-1.5 text-sm font-medium mb-4" style={{ color: "var(--gold)" }}><Plus size={14} /> Tambah</button>}
-              <div className="flex gap-3"><button onClick={() => setEditModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-medium" style={{ border: "1px solid rgba(64,50,37,.15)" }}>Batal</button><button onClick={saveFaqs} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: "var(--gold)" }}>{saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null} Simpan</button></div>
+              <div className="flex gap-3"><button onClick={() => setEditModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-medium" style={{ border: "1px solid #d4d4d8" }}>Batal</button><button onClick={saveFaqs} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: "var(--gold)" }}>{saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null} Simpan</button></div>
             </motion.div>
           </motion.div>
         )}
@@ -471,13 +471,13 @@ export default function KontenWebsitePage() {
               <div className="space-y-2 mb-4">
                 {editMarquee.map((m, i) => (
                   <div key={i} className="flex items-center gap-2">
-                    <input value={m.label} onChange={(e) => { const u = [...editMarquee]; u[i] = { ...u[i], label: e.target.value }; setEditMarquee(u); }} className="flex-1 rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white" }} />
-                    {editMarquee.length > 1 && <button onClick={() => setEditMarquee(editMarquee.filter((_, j) => j !== i))} className="p-1"><Trash2 size={14} style={{ color: "#e74c3c" }} /></button>}
+                    <input value={m.label} onChange={(e) => { const u = [...editMarquee]; u[i] = { ...u[i], label: e.target.value }; setEditMarquee(u); }} className="flex-1 rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid #d4d4d8", background: "white" }} />
+                    {editMarquee.length > 1 && <button onClick={() => setEditMarquee(editMarquee.filter((_, j) => j !== i))} className="p-1"><Trash2 size={14} style={{ color: "#dc2626" }} /></button>}
                   </div>
                 ))}
                 {editMarquee.length < 10 && <button onClick={() => setEditMarquee([...editMarquee, { id: String(Date.now()), label: "", display_order: editMarquee.length }])} className="text-sm font-medium" style={{ color: "var(--gold)" }}><Plus size={14} className="inline mr-1" />Tambah Item</button>}
               </div>
-              <div className="flex gap-3"><button onClick={() => setEditModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-medium" style={{ border: "1px solid rgba(64,50,37,.15)" }}>Batal</button><button onClick={saveMarquee} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: "var(--gold)" }}>{saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null} Simpan</button></div>
+              <div className="flex gap-3"><button onClick={() => setEditModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-medium" style={{ border: "1px solid #d4d4d8" }}>Batal</button><button onClick={saveMarquee} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: "var(--gold)" }}>{saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null} Simpan</button></div>
             </motion.div>
           </motion.div>
         )}
@@ -492,32 +492,32 @@ export default function KontenWebsitePage() {
                 <h3 className="font-serif italic text-xl" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Gambar Info Katalog</h3>
                 <button onClick={() => setEditModal(null)}><X size={20} style={{ color: "var(--text-muted)" }} /></button>
               </div>
-              <p className="text-xs mb-4 px-3 py-2.5 rounded-lg" style={{ background: "#f0e7d8", color: "#8a6f42" }}>Upload gambar berukuran 9:16 (portrait) untuk Perbedaan Jenis Kain dan Series. Format JPG/PNG, max 2MB.</p>
+              <p className="text-xs mb-4 px-3 py-2.5 rounded-lg" style={{ background: "#f4f4f5", color: "#52525b" }}>Upload gambar berukuran 9:16 (portrait) untuk Perbedaan Jenis Kain dan Series. Format JPG/PNG, max 2MB.</p>
               <div className="space-y-4 mb-4">
                 {editKatalogInfo.map((k, i) => (
-                  <div key={i} className="p-4 rounded-xl" style={{ border: "1px solid rgba(64,50,37,.1)", background: "rgba(255,255,255,.5)" }}>
+                  <div key={i} className="p-4 rounded-xl" style={{ border: "1px solid #e4e4e7", background: "rgba(255,255,255,.5)" }}>
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-xs font-semibold" style={{ color: "var(--gold)" }}>Gambar {i + 1}</span>
-                      <button onClick={() => setEditKatalogInfo(editKatalogInfo.filter((_, j) => j !== i))} className="p-1 hover:bg-red-50 rounded"><Trash2 size={14} style={{ color: "#e74c3c" }} /></button>
+                      <button onClick={() => setEditKatalogInfo(editKatalogInfo.filter((_, j) => j !== i))} className="p-1 hover:bg-red-50 rounded"><Trash2 size={14} style={{ color: "#dc2626" }} /></button>
                     </div>
                     <div className="grid grid-cols-2 gap-2 mb-3">
                       <div>
                         <label className="block text-[10px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>Kategori</label>
-                        <select value={k.category} onChange={(e) => { const u = [...editKatalogInfo]; u[i] = { ...u[i], category: e.target.value }; setEditKatalogInfo(u); }} className="w-full rounded-lg px-3 py-2 text-sm outline-none appearance-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }}>
+                        <select value={k.category} onChange={(e) => { const u = [...editKatalogInfo]; u[i] = { ...u[i], category: e.target.value }; setEditKatalogInfo(u); }} className="w-full rounded-lg px-3 py-2 text-sm outline-none appearance-none" style={{ border: "1px solid #d4d4d8", background: "white", color: "var(--espresso)" }}>
                           <option value="Thobe">Thobe</option>
                           <option value="Kandora">Kandora</option>
                         </select>
                       </div>
                       <div>
                         <label className="block text-[10px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>Tipe</label>
-                        <select value={k.type} onChange={(e) => { const u = [...editKatalogInfo]; u[i] = { ...u[i], type: e.target.value }; setEditKatalogInfo(u); }} className="w-full rounded-lg px-3 py-2 text-sm outline-none appearance-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }}>
+                        <select value={k.type} onChange={(e) => { const u = [...editKatalogInfo]; u[i] = { ...u[i], type: e.target.value }; setEditKatalogInfo(u); }} className="w-full rounded-lg px-3 py-2 text-sm outline-none appearance-none" style={{ border: "1px solid #d4d4d8", background: "white", color: "var(--espresso)" }}>
                           <option value="kain">Perbedaan Jenis Kain</option>
                           <option value="series">Perbedaan Series</option>
                         </select>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      <div className="w-20 h-36 rounded-lg overflow-hidden shrink-0 flex items-center justify-center" style={{ border: "1px dashed rgba(64,50,37,.2)", background: "rgba(64,50,37,.02)" }}>
+                      <div className="w-20 h-36 rounded-lg overflow-hidden shrink-0 flex items-center justify-center" style={{ border: "1px dashed #d4d4d8", background: "rgba(0,0,0,.03)" }}>
                         {uploadingId === `uploading-${i}` ? (
                           <Loader2 size={20} className="animate-spin" style={{ color: "var(--gold)" }} />
                         ) : k.image_url ? (
@@ -527,7 +527,7 @@ export default function KontenWebsitePage() {
                         )}
                       </div>
                       <div className="flex-1">
-                        <label className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium cursor-pointer transition-colors hover:bg-[rgba(64,50,37,.05)]" style={{ border: "1px solid rgba(64,50,37,.15)", color: "var(--gold)" }}>
+                        <label className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium cursor-pointer transition-colors hover:bg-[#f4f4f5]" style={{ border: "1px solid #d4d4d8", color: "var(--gold)" }}>
                           <Upload size={14} />
                           {k.image_url ? "Ganti Gambar" : "Upload Gambar"}
                           <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadKatalogInfoImage(i, f); }} />
@@ -544,7 +544,7 @@ export default function KontenWebsitePage() {
                 </button>
               )}
               <div className="flex gap-3">
-                <button onClick={() => setEditModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-medium" style={{ border: "1px solid rgba(64,50,37,.15)" }}>Batal</button>
+                <button onClick={() => setEditModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-medium" style={{ border: "1px solid #d4d4d8" }}>Batal</button>
                 <button onClick={saveKatalogInfo} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: "var(--gold)" }}>{saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null} Simpan</button>
               </div>
             </motion.div>
@@ -554,7 +554,7 @@ export default function KontenWebsitePage() {
     </section>
 
     <style jsx global>{`
-      .card { background: #fffdfb; border: 1px solid rgba(64,50,37,.06); border-radius: 1rem; box-shadow: 0 1px 2px rgba(64,50,37,.03); }
+      .card { background: #ffffff; border: 1px solid #f1f1f3; border-radius: 1rem; box-shadow: 0 1px 2px rgba(0,0,0,.03); }
       .badge { font-size: .72rem; font-weight: 600; padding: .2rem .6rem; border-radius: 999px; white-space: nowrap; }
     `}</style>
     </AdminShell>

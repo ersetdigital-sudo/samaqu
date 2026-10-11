@@ -141,12 +141,12 @@ export default function BioCarouselPage() {
         {/* Image list */}
         <div className="space-y-3">
           {images.map((img, idx) => (
-            <div key={img.id} className="flex items-center gap-4 p-4 rounded-xl" style={{ background: "#fffdfb", border: "1px solid rgba(64,50,37,.08)" }}>
+            <div key={img.id} className="flex items-center gap-4 p-4 rounded-xl" style={{ background: "#ffffff", border: "1px solid #e4e4e7" }}>
               {/* Drag handle */}
               <GripVertical size={16} style={{ color: "var(--text-muted)" }} className="shrink-0" />
 
               {/* Preview */}
-              <div className="w-24 h-12 rounded-lg overflow-hidden shrink-0" style={{ background: "#e8e1d9" }}>
+              <div className="w-24 h-12 rounded-lg overflow-hidden shrink-0" style={{ background: "#f4f4f5" }}>
                 <img src={img.image_url} alt={img.alt} className="w-full h-full object-cover" />
               </div>
 
@@ -162,7 +162,7 @@ export default function BioCarouselPage() {
                   onClick={() => moveImage(img.id, "up")}
                   disabled={idx === 0 || saving === img.id}
                   className="text-[10px] px-2 py-0.5 rounded border disabled:opacity-30"
-                  style={{ borderColor: "rgba(64,50,37,.15)", color: "var(--text-muted)" }}
+                  style={{ borderColor: "#d4d4d8", color: "var(--text-muted)" }}
                 >
                   ▲
                 </button>
@@ -170,7 +170,7 @@ export default function BioCarouselPage() {
                   onClick={() => moveImage(img.id, "down")}
                   disabled={idx === images.length - 1 || saving === img.id}
                   className="text-[10px] px-2 py-0.5 rounded border disabled:opacity-30"
-                  style={{ borderColor: "rgba(64,50,37,.15)", color: "var(--text-muted)" }}
+                  style={{ borderColor: "#d4d4d8", color: "var(--text-muted)" }}
                 >
                   ▼
                 </button>
@@ -181,7 +181,7 @@ export default function BioCarouselPage() {
                 onClick={() => updateImage(img.id, { enabled: !img.enabled })}
                 disabled={saving === img.id}
                 className="w-10 h-5 rounded-full relative transition-colors shrink-0"
-                style={{ background: img.enabled ? "var(--gold)" : "rgba(64,50,37,.15)" }}
+                style={{ background: img.enabled ? "var(--gold)" : "#d4d4d8" }}
               >
                 <span className="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all" style={{ left: img.enabled ? "22px" : "2px" }} />
               </button>
@@ -191,7 +191,7 @@ export default function BioCarouselPage() {
                 onClick={() => deleteImage(img.id)}
                 disabled={saving === img.id}
                 className="p-2 rounded-lg transition-colors shrink-0 hover:bg-red-50"
-                style={{ color: "#e74c3c" }}
+                style={{ color: "#dc2626" }}
               >
                 {saving === img.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
               </button>
@@ -199,7 +199,7 @@ export default function BioCarouselPage() {
           ))}
 
           {images.length === 0 && (
-            <div className="text-center py-12 rounded-xl" style={{ background: "#fffdfb", border: "1px solid rgba(64,50,37,.08)" }}>
+            <div className="text-center py-12 rounded-xl" style={{ background: "#ffffff", border: "1px solid #e4e4e7" }}>
               <p className="text-sm" style={{ color: "var(--text-muted)" }}>Belum ada foto. Klik &quot;Tambah Foto&quot; untuk menambahkan.</p>
             </div>
           )}

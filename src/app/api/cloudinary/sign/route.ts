@@ -8,7 +8,38 @@ export const runtime = "nodejs";
 // - w_2400   → batasi sisi terpanjang supaya storage tidak boros
 // - q_auto   → kompresi cerdas (tanpa f_auto agar format asli tidak diubah di storage)
 const IMAGE_TRANSFORMATION = "c_limit,w_2400,q_auto:good";
-const VIDEO_TRANSFORMATION = "c_limit,w_1280,q_auto";
+
+// VIDEO: incoming transformation diturunkan dari w_1280 (1080p) ke w_720 (720p).
+//
+// Menurut aturan billing resmi Cloudinary (docs "Transformation counts"), biaya video
+// dihitung dari resolusi OUTPUT — bukan input:
+//   SD  = ≤ 921.600 pixel  → 2 unit/detik  (mis. 1280x720)
+//   HD  = ≤ 2.073.600 pixel → 4 unit/detik  (mis. 1920x1080)
+//
+// Video katalog SAMAQU semuanya portrait 1080x1920 = 2.073.600 pixel — pas di ambang
+// HD. Setting lama "c_limit,w_1280" justru skenario terburuk: lebar 1080 sudah di bawah
+// 1280 sehingga c_limit tidak melakukan resize sama sekali, tapi Cloudinary tetap
+// re-encode penuh dan menagih tarif HD penuh (4 unit/detik) — membayar mahal untuk
+// hasil yang tidak mengecil.
+//
+// "c_limit,w_720" menghasilkan 720x1280 = 921.600 pixel = pas di ambang SD, jadi tarif
+// turun separuh (4 → 2 unit/detik) sekaligus file mengecil. Terukur pada sampel yang sama
+// (1080x1920, 13.42 detik, asli 6.34 MB):
+//   1080p q_auto → 2.57 MB, biaya 0.0537 credit   (setting lama)
+//   720p  q_auto → 1.60 MB, biaya 0.0268 credit   (setting baru)  ← 38% lebih kecil, 50% lebih murah
+// 720p dinilai memadai untuk demo produk tekstil yang mayoritas ditonton di mobile;
+// kalau suatu saat perlu 1080p, cukup ubah w_720 → w_1080 (tarif kembali HD).
+//
+// q_auto dipakai (bukan q_auto:good — hasilnya identik, jadi percuma — dan bukan
+// q_auto:eco yang berisiko melembutkan detail kain).
+//
+// Catatan: incoming transformation MENGGANTI aset tersimpan dengan hasil 720p, jadi file
+// asli tidak disimpan di Cloudinary. Cadangan original tetap ada di bucket Supabase
+// `media-backup` (lihat AGENTS.md), jadi ini aman.
+//
+// Delivery video tetap tanpa transformasi (cloudinaryUrl() melewati video), sehingga
+// menonton video tidak pernah memicu transcoding tambahan.
+const VIDEO_TRANSFORMATION = "c_limit,w_720,q_auto";
 
 type SignParams = Record<string, string | number>;
 
@@ -65,8 +96,13 @@ export async function POST(request: Request) {
   }
 
   const timestamp = Math.floor(Date.now() / 1000);
+
+  // Gambar → c_limit,w_2400,q_auto:good. Video → c_limit,w_720,q_auto (lihat catatan
+  // VIDEO_* di atas: tarif SD, bukan HD). Keduanya incoming transformation yang dibayar
+  // satu kali saat upload, lalu hasilnya dipakai berulang saat delivery.
   const transformation = resourceType === "video" ? VIDEO_TRANSFORMATION : IMAGE_TRANSFORMATION;
-  const signature = signParams({ timestamp, transformation }, apiSecret);
+  const signatureParams: SignParams = { timestamp, transformation };
+  const signature = signParams(signatureParams, apiSecret);
 
   return NextResponse.json({
     cloudName,

@@ -65,12 +65,12 @@ export default function OrdersMobileList<T extends OrderSummary>({
             key={o.id}
             onClick={() => onSelect(o)}
             className="w-full flex items-center gap-3 px-5 py-4 text-left transition-colors active:bg-[rgba(248,246,242,.6)]"
-            style={{ borderTop: "1px solid rgba(64,50,37,.06)" }}
+            style={{ borderTop: "1px solid #f1f1f3" }}
           >
             {body}
           </button>
         ) : (
-          <div key={o.id} className="w-full flex items-center gap-3 px-5 py-4" style={{ borderTop: "1px solid rgba(64,50,37,.06)" }}>
+          <div key={o.id} className="w-full flex items-center gap-3 px-5 py-4" style={{ borderTop: "1px solid #f1f1f3" }}>
             {body}
           </div>
         );

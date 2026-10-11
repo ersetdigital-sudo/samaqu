@@ -8,7 +8,7 @@ import { colorMap } from "@/lib/katalog-data";
 import AdminShell from "@/components/AdminShell";
 import JenisKainForm from "@/components/JenisKainForm";
 import PresetColorPicker from "@/components/PresetColorPicker";
-import { uploadToCloudinary } from "@/lib/cloudinary";
+import { uploadToCloudinary, validateMediaFile } from "@/lib/cloudinary";
 import { useStoreSettings } from "@/lib/store-settings";
 
 const CATEGORIES = ["Thobe", "Kandora", "Koko", "Vest", "Kabak", "Cover & Hanger"] as const;
@@ -69,18 +69,18 @@ function EditSeriesBlock({ sn, block, errors, updateSeriesBlock, addSizeToSeries
     <div className="space-y-5">
       <div>
         <p className="text-sm font-semibold mb-3" style={{ color: "var(--espresso)" }}><span style={{ color: "var(--gold)" }}>{sn}</span> — Harga</p>
-        <div className="p-4 rounded-xl" style={{ background: "rgba(255,255,255,.6)", border: "1px solid rgba(64,50,37,.06)" }}>
+        <div className="p-4 rounded-xl" style={{ background: "rgba(255,255,255,.6)", border: "1px solid #f1f1f3" }}>
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Harga Dasar (Rp) <span style={{ color: "var(--gold)" }}>*</span></label>
-              <input type="text" inputMode="numeric" value={formatRupiah(block.price)} onChange={(e) => updateSeriesBlock(sn, { price: parseRupiah(e.target.value) })} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: `1px solid ${errors[`series_${sn}_price`] ? "#e74c3c" : "rgba(64,50,37,.15)"}`, background: "white", color: "var(--espresso)" }} placeholder="389.000" />
-              {errors[`series_${sn}_price`] && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors[`series_${sn}_price`]}</p>}
+              <input type="text" inputMode="numeric" value={formatRupiah(block.price)} onChange={(e) => updateSeriesBlock(sn, { price: parseRupiah(e.target.value) })} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: `1px solid ${errors[`series_${sn}_price`] ? "#dc2626" : "#d4d4d8"}`, background: "white", color: "var(--espresso)" }} placeholder="389.000" />
+              {errors[`series_${sn}_price`] && <p className="text-[11px] mt-1" style={{ color: "#dc2626" }}>{errors[`series_${sn}_price`]}</p>}
             </div>
           </div>
-          <div className="mt-4 p-4 rounded-xl" style={{ background: block.cypEnabled ? "rgba(181,140,74,.06)" : "rgba(64,50,37,.02)", border: `1px solid ${block.cypEnabled ? "rgba(181,140,74,.3)" : "rgba(64,50,37,.1)"}` }}>
+          <div className="mt-4 p-4 rounded-xl" style={{ background: block.cypEnabled ? "rgba(0,0,0,.03)" : "rgba(0,0,0,.03)", border: `1px solid ${block.cypEnabled ? "#e4e4e7" : "#e4e4e7"}` }}>
             <div className="flex items-center justify-between mb-3">
               <div><p className="text-sm font-medium" style={{ color: "var(--espresso)" }}>Create Your Price</p></div>
-              <button type="button" onClick={() => updateSeriesBlock(sn, { cypEnabled: !block.cypEnabled })} className="relative w-11 h-6 rounded-full transition-colors duration-200" style={{ background: block.cypEnabled ? "var(--gold)" : "rgba(64,50,37,.2)" }}>
+              <button type="button" onClick={() => updateSeriesBlock(sn, { cypEnabled: !block.cypEnabled })} className="relative w-11 h-6 rounded-full transition-colors duration-200" style={{ background: block.cypEnabled ? "var(--gold)" : "#d4d4d8" }}>
                 <span className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200" style={{ transform: block.cypEnabled ? "translateX(20px)" : "translateX(0)" }} />
               </button>
             </div>
@@ -88,12 +88,12 @@ function EditSeriesBlock({ sn, block, errors, updateSeriesBlock, addSizeToSeries
               <div className="grid sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Harga Minimum (Rp) <span style={{ color: "var(--gold)" }}>*</span></label>
-                  <input type="text" inputMode="numeric" value={formatRupiah(block.minimumPrice)} onChange={(e) => updateSeriesBlock(sn, { minimumPrice: parseRupiah(e.target.value) })} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: `1px solid ${errors[`series_${sn}_min`] ? "#e74c3c" : "rgba(64,50,37,.15)"}`, background: "white", color: "var(--espresso)" }} placeholder="350.000" />
-                  {errors[`series_${sn}_min`] && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors[`series_${sn}_min`]}</p>}
+                  <input type="text" inputMode="numeric" value={formatRupiah(block.minimumPrice)} onChange={(e) => updateSeriesBlock(sn, { minimumPrice: parseRupiah(e.target.value) })} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: `1px solid ${errors[`series_${sn}_min`] ? "#dc2626" : "#d4d4d8"}`, background: "white", color: "var(--espresso)" }} placeholder="350.000" />
+                  {errors[`series_${sn}_min`] && <p className="text-[11px] mt-1" style={{ color: "#dc2626" }}>{errors[`series_${sn}_min`]}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Harga Rekomendasi (Rp)</label>
-                  <input type="text" inputMode="numeric" value={formatRupiah(block.recommendedPrice)} onChange={(e) => updateSeriesBlock(sn, { recommendedPrice: parseRupiah(e.target.value) })} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="—" />
+                  <input type="text" inputMode="numeric" value={formatRupiah(block.recommendedPrice)} onChange={(e) => updateSeriesBlock(sn, { recommendedPrice: parseRupiah(e.target.value) })} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: "1px solid #d4d4d8", background: "white", color: "var(--espresso)" }} placeholder="—" />
                 </div>
               </div>
             )}
@@ -102,9 +102,9 @@ function EditSeriesBlock({ sn, block, errors, updateSeriesBlock, addSizeToSeries
       </div>
       <div>
         <p className="text-sm font-semibold mb-3" style={{ color: "var(--espresso)" }}><span style={{ color: "var(--gold)" }}>{sn}</span> — Foto & Video</p>
-        {errors[`series_${sn}_media`] && <p className="text-[11px] mb-2" style={{ color: "#e74c3c" }}>{errors[`series_${sn}_media`]}</p>}
-        <div className="p-4 rounded-xl" style={{ background: "rgba(255,255,255,.6)", border: "1px solid rgba(64,50,37,.06)" }}>
-          <label className="block rounded-xl p-5 text-center cursor-pointer transition-all hover:border-[var(--gold)]" style={{ border: "2px dashed rgba(201,183,156,.3)", background: "rgba(255,255,255,.5)" }}>
+        {errors[`series_${sn}_media`] && <p className="text-[11px] mb-2" style={{ color: "#dc2626" }}>{errors[`series_${sn}_media`]}</p>}
+        <div className="p-4 rounded-xl" style={{ background: "rgba(255,255,255,.6)", border: "1px solid #f1f1f3" }}>
+          <label className="block rounded-xl p-5 text-center cursor-pointer transition-all hover:border-[var(--gold)]" style={{ border: "2px dashed #e4e4e7", background: "rgba(255,255,255,.5)" }}>
             <Upload size={20} className="mx-auto mb-2" style={{ color: "var(--text-muted)" }} />
             <p className="text-sm font-medium" style={{ color: "var(--espresso)" }}>Upload untuk {sn}</p>
             <input type="file" multiple accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" onChange={(e) => handleSeriesFileSelect(e, sn)} className="hidden" />
@@ -112,9 +112,9 @@ function EditSeriesBlock({ sn, block, errors, updateSeriesBlock, addSizeToSeries
           {block.media.length > 0 && (
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mt-3">
               {block.media.map((m, idx) => (
-                <div key={m.id} className="relative aspect-square rounded-lg overflow-hidden group" style={{ background: "#e8dfd1" }}>
+                <div key={m.id} className="relative aspect-square rounded-lg overflow-hidden group" style={{ background: "#f4f4f5" }}>
                   {m.uploading ? <div className="absolute inset-0 flex items-center justify-center"><Loader2 size={16} className="animate-spin" style={{ color: "var(--gold)" }} /></div>
-                  : m.error ? <div className="absolute inset-0 flex items-center justify-center p-1"><p className="text-[9px] text-center" style={{ color: "#e74c3c" }}>{m.error}</p></div>
+                  : m.error ? <div className="absolute inset-0 flex items-center justify-center p-1"><p className="text-[9px] text-center" style={{ color: "#dc2626" }}>{m.error}</p></div>
                   : m.isVideo ? <video src={m.url || m.preview} className="w-full h-full object-cover" muted />
                   : <img src={m.url || m.preview} alt="" className="w-full h-full object-cover" />}
                   {idx === 0 && !m.uploading && !m.error && <span className="absolute bottom-1 left-1 rounded px-1 py-0.5 text-[8px] font-medium text-white" style={{ background: "rgba(0,0,0,.65)" }}>Utama</span>}
@@ -127,18 +127,18 @@ function EditSeriesBlock({ sn, block, errors, updateSeriesBlock, addSizeToSeries
       </div>
       <div>
         <p className="text-sm font-semibold mb-3" style={{ color: "var(--espresso)" }}><span style={{ color: "var(--gold)" }}>{sn}</span> — Stok Ukuran</p>
-        {errors[`series_${sn}_stock`] && <p className="text-[11px] mb-2" style={{ color: "#e74c3c" }}>{errors[`series_${sn}_stock`]}</p>}
-        <div className="p-4 rounded-xl" style={{ background: "rgba(255,255,255,.6)", border: "1px solid rgba(64,50,37,.06)" }}>
+        {errors[`series_${sn}_stock`] && <p className="text-[11px] mb-2" style={{ color: "#dc2626" }}>{errors[`series_${sn}_stock`]}</p>}
+        <div className="p-4 rounded-xl" style={{ background: "rgba(255,255,255,.6)", border: "1px solid #f1f1f3" }}>
           <div className="grid grid-cols-[72px_80px_112px_112px_36px] gap-2 text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>
             <span>Ukuran</span><span>Stok</span><span>Harga Khusus</span><span>SKU</span><span></span>
           </div>
           {v0.sizes.map((s, i) => (
             <div key={i} className="grid grid-cols-[72px_80px_112px_112px_36px] gap-2 items-center mb-1.5">
-              <input value={s.size} onChange={(e) => updateSeriesBlockSizeField(sn, i, "size", e.target.value.toUpperCase())} onFocus={(e) => e.target.select()} list="size-suggestions" className="rounded-lg px-2.5 py-2 text-sm outline-none text-center" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="—" />
-              <input type="number" value={s.stock || ""} onChange={(e) => updateSeriesBlockSizeField(sn, i, "stock", parseInt(e.target.value) || 0)} placeholder="0" className="rounded-lg px-2.5 py-2 text-sm outline-none text-center" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
-              <input type="text" inputMode="numeric" value={formatRupiah(s.priceOverride)} onChange={(e) => updateSeriesBlockSizeField(sn, i, "priceOverride", parseRupiah(e.target.value))} placeholder="—" className="rounded-lg px-2.5 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
-              <input value={s.sku} onChange={(e) => updateSeriesBlockSizeField(sn, i, "sku", e.target.value)} placeholder="—" className="rounded-lg px-2.5 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
-              {v0.sizes.length > 1 && <button onClick={() => removeSizeFromSeriesBlock(sn, i)} className="p-1.5 rounded-lg hover:bg-red-50 transition-colors" style={{ color: "#e74c3c" }}><Trash2 size={14} /></button>}
+              <input value={s.size} onChange={(e) => updateSeriesBlockSizeField(sn, i, "size", e.target.value.toUpperCase())} onFocus={(e) => e.target.select()} list="size-suggestions" className="rounded-lg px-2.5 py-2 text-sm outline-none text-center" style={{ border: "1px solid #d4d4d8", background: "white", color: "var(--espresso)" }} placeholder="—" />
+              <input type="number" value={s.stock || ""} onChange={(e) => updateSeriesBlockSizeField(sn, i, "stock", parseInt(e.target.value) || 0)} placeholder="0" className="rounded-lg px-2.5 py-2 text-sm outline-none text-center" style={{ border: "1px solid #d4d4d8", background: "white", color: "var(--espresso)" }} />
+              <input type="text" inputMode="numeric" value={formatRupiah(s.priceOverride)} onChange={(e) => updateSeriesBlockSizeField(sn, i, "priceOverride", parseRupiah(e.target.value))} placeholder="—" className="rounded-lg px-2.5 py-2 text-sm outline-none" style={{ border: "1px solid #d4d4d8", background: "white", color: "var(--espresso)" }} />
+              <input value={s.sku} onChange={(e) => updateSeriesBlockSizeField(sn, i, "sku", e.target.value)} placeholder="—" className="rounded-lg px-2.5 py-2 text-sm outline-none" style={{ border: "1px solid #d4d4d8", background: "white", color: "var(--espresso)" }} />
+              {v0.sizes.length > 1 && <button onClick={() => removeSizeFromSeriesBlock(sn, i)} className="p-1.5 rounded-lg hover:bg-red-50 transition-colors" style={{ color: "#dc2626" }}><Trash2 size={14} /></button>}
             </div>
           ))}
           <datalist id="size-suggestions">{SIZES.map((sz) => <option key={sz} value={sz} />)}</datalist>
@@ -434,8 +434,14 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
     const newMedia: MediaFile[] = [];
     for (const file of Array.from(files)) {
       const isVideo = file.type.startsWith("video/");
-      const maxSize = isVideo ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
-      if (file.size > maxSize) { alert(`${file.name} terlalu besar`); continue; }
+      // Validasi terpusat (MIME, ekstensi, ukuran, durasi, resolusi). Halaman edit
+      // dulu hanya memeriksa ukuran — MIME lolos begitu saja, itu celah yang ditutup.
+      try {
+        await validateMediaFile(file);
+      } catch (err) {
+        alert(err instanceof Error ? err.message : `${file.name}: format tidak didukung`);
+        continue;
+      }
       const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
       newMedia.push({ id, file, url: "", isVideo, color, preview: URL.createObjectURL(file), uploading: true });
     }
@@ -757,7 +763,7 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
   return (
     <AdminShell>
     <section className="min-h-screen" style={{ background: "var(--cream)" }}>
-      <div className="sticky top-0 z-20 backdrop-blur" style={{ background: "rgba(248,245,241,.8)", borderBottom: "1px solid rgba(64,50,37,.06)" }}>
+      <div className="sticky top-0 z-20 backdrop-blur" style={{ background: "rgba(255,255,255,.9)", borderBottom: "1px solid #f1f1f3" }}>
         <div className="max-w-6xl mx-auto px-5 lg:px-8 py-4 flex items-center gap-4">
           <button onClick={() => router.push("/admin")} className="p-2 -ml-2 rounded-lg hover:bg-[var(--bg-tertiary)]" style={{ color: "var(--espresso)" }}><ArrowLeft size={20} /></button>
           <div>
@@ -765,7 +771,7 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
             <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>{name}</p>
           </div>
           <div className="ml-auto flex gap-3">
-            <button onClick={() => router.push("/admin")} className="px-4 py-2 rounded-xl text-sm font-medium" style={{ border: "1px solid rgba(64,50,37,.15)" }}>Batal</button>
+            <button onClick={() => router.push("/admin")} className="px-4 py-2 rounded-xl text-sm font-medium" style={{ border: "1px solid #d4d4d8" }}>Batal</button>
             <button onClick={handleSubmit} disabled={saving} className="px-5 py-2 rounded-xl text-sm font-semibold text-white" style={{ background: "var(--gold)" }}>
               {saving ? <><Loader2 size={14} className="animate-spin inline mr-1" /> Menyimpan...</> : "Simpan Perubahan"}
             </button>
@@ -782,42 +788,42 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Nama Produk</label>
-                    <input value={name} onChange={(e) => setName(e.target.value)} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: `1px solid ${errors.name ? "#e74c3c" : "rgba(64,50,37,.15)"}`, background: "white", color: "var(--espresso)" }} />
-                    {errors.name && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.name}</p>}
+                    <input value={name} onChange={(e) => setName(e.target.value)} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: `1px solid ${errors.name ? "#dc2626" : "#d4d4d8"}`, background: "white", color: "var(--espresso)" }} />
+                    {errors.name && <p className="text-[11px] mt-1" style={{ color: "#dc2626" }}>{errors.name}</p>}
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Kategori</label>
                     <div className="relative">
-                      <select value={category} onChange={(e) => { const val = e.target.value; setCategory(val); if (val !== "Thobe") { setSeries(""); setSelectedSeries([]); setSeriesBlocks({}); } if (val !== "Thobe" && val !== "Kandora") setSelectedJenisKainId(""); }} className="w-full rounded-xl px-4 py-3 text-sm outline-none appearance-none" style={{ border: `1px solid ${errors.category ? "#e74c3c" : "rgba(64,50,37,.15)"}`, background: "white", color: "var(--espresso)" }}>
+                      <select value={category} onChange={(e) => { const val = e.target.value; setCategory(val); if (val !== "Thobe") { setSeries(""); setSelectedSeries([]); setSeriesBlocks({}); } if (val !== "Thobe" && val !== "Kandora") setSelectedJenisKainId(""); }} className="w-full rounded-xl px-4 py-3 text-sm outline-none appearance-none" style={{ border: `1px solid ${errors.category ? "#dc2626" : "#d4d4d8"}`, background: "white", color: "var(--espresso)" }}>
                         <option value="">Pilih kategori</option>
                         {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
                       </select>
                       <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--text-muted)" }} />
                     </div>
-                    {errors.category && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.category}</p>}
+                    {errors.category && <p className="text-[11px] mt-1" style={{ color: "#dc2626" }}>{errors.category}</p>}
                   </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Slug</label>
-                  <input value={slug} onChange={(e) => setSlug(e.target.value)} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
+                  <input value={slug} onChange={(e) => setSlug(e.target.value)} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: "1px solid #d4d4d8", background: "white", color: "var(--espresso)" }} />
                   <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>URL: /katalog/{slug || "..."}</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Deskripsi</label>
-                  <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className="w-full rounded-xl px-4 py-3 text-sm outline-none resize-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="Deskripsi produk..." />
+                  <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className="w-full rounded-xl px-4 py-3 text-sm outline-none resize-none" style={{ border: "1px solid #d4d4d8", background: "white", color: "var(--espresso)" }} placeholder="Deskripsi produk..." />
                 </div>
                 {category !== "Thobe" && (
                 <div className={cypEnabled ? "" : "grid sm:grid-cols-2 gap-4"}>
-                  {!cypEnabled && (<div><label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Harga Dasar (Rp)</label><input type="text" inputMode="numeric" value={formatRupiah(basePrice)} onChange={(e) => setBasePrice(parseRupiah(e.target.value))} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: `1px solid ${errors.basePrice ? "#e74c3c" : "rgba(64,50,37,.15)"}`, background: "white", color: "var(--espresso)" }} placeholder="389.000" />{errors.basePrice && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.basePrice}</p>}</div>)}
-                  <div><label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Berat (gram)</label><input type="number" value={weight} onChange={(e) => setWeight(e.target.value)} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="800" /></div>
+                  {!cypEnabled && (<div><label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Harga Dasar (Rp)</label><input type="text" inputMode="numeric" value={formatRupiah(basePrice)} onChange={(e) => setBasePrice(parseRupiah(e.target.value))} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: `1px solid ${errors.basePrice ? "#dc2626" : "#d4d4d8"}`, background: "white", color: "var(--espresso)" }} placeholder="389.000" />{errors.basePrice && <p className="text-[11px] mt-1" style={{ color: "#dc2626" }}>{errors.basePrice}</p>}</div>)}
+                  <div><label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Berat (gram)</label><input type="number" value={weight} onChange={(e) => setWeight(e.target.value)} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: "1px solid #d4d4d8", background: "white", color: "var(--espresso)" }} placeholder="800" /></div>
                 </div>
                 )}
-                {category === "Thobe" && (<div><label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Berat (gram)</label><input type="number" value={weight} onChange={(e) => setWeight(e.target.value)} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="800" /></div>)}
+                {category === "Thobe" && (<div><label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Berat (gram)</label><input type="number" value={weight} onChange={(e) => setWeight(e.target.value)} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: "1px solid #d4d4d8", background: "white", color: "var(--espresso)" }} placeholder="800" /></div>)}
                 {/* Badge Katalog */}
                 <div>
                   <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Badge Katalog (opsional)</label>
                   <div className="relative">
-                    <select value={badgeType} onChange={(e) => setBadgeType(e.target.value)} className="w-full rounded-xl px-4 py-3 text-sm outline-none appearance-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }}>
+                    <select value={badgeType} onChange={(e) => setBadgeType(e.target.value)} className="w-full rounded-xl px-4 py-3 text-sm outline-none appearance-none" style={{ border: "1px solid #d4d4d8", background: "white", color: "var(--espresso)" }}>
                       <option value="">Tanpa Badge</option>
                       <option value="terlaris">Terlaris</option>
                       <option value="rekomendasi">Rekomendasi</option>
@@ -828,37 +834,37 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
                   <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>Badge yang tampil di pojok kanan atas foto card katalog.</p>
                 </div>
                 {category !== "Thobe" && (
-                <div className="p-4 rounded-xl" style={{ background: cypEnabled ? "rgba(181,140,74,.06)" : "rgba(64,50,37,.02)", border: `1px solid ${cypEnabled ? "rgba(181,140,74,.3)" : "rgba(64,50,37,.1)"}` }}>
+                <div className="p-4 rounded-xl" style={{ background: cypEnabled ? "rgba(0,0,0,.03)" : "rgba(0,0,0,.03)", border: `1px solid ${cypEnabled ? "#e4e4e7" : "#e4e4e7"}` }}>
                   <div className="flex items-center justify-between mb-3"><div><p className="text-sm font-medium" style={{ color: "var(--espresso)" }}>Create Your Price</p></div>
-                    <button type="button" onClick={toggleCyp} className="relative w-11 h-6 rounded-full transition-colors duration-200" style={{ background: cypEnabled ? "var(--gold)" : "rgba(64,50,37,.2)" }}><span className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200" style={{ transform: cypEnabled ? "translateX(20px)" : "translateX(0)" }} /></button>
+                    <button type="button" onClick={toggleCyp} className="relative w-11 h-6 rounded-full transition-colors duration-200" style={{ background: cypEnabled ? "var(--gold)" : "#d4d4d8" }}><span className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200" style={{ transform: cypEnabled ? "translateX(20px)" : "translateX(0)" }} /></button>
                   </div>
                   {cypEnabled && (<div className="space-y-3">
-                    <div><label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Harga Minimum (Rp)</label><input type="text" inputMode="numeric" value={formatRupiah(minimumPrice)} onChange={(e) => setMinimumPrice(parseRupiah(e.target.value))} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: `1px solid ${errors.minimumPrice ? "#e74c3c" : "rgba(64,50,37,.15)"}`, background: "white", color: "var(--espresso)" }} placeholder="350.000" />{errors.minimumPrice && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.minimumPrice}</p>}</div>
-                    <div><label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Harga Rekomendasi (Rp)</label><input type="text" inputMode="numeric" value={formatRupiah(recommendedPrice)} onChange={(e) => setRecommendedPrice(parseRupiah(e.target.value))} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="—" /></div>
+                    <div><label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Harga Minimum (Rp)</label><input type="text" inputMode="numeric" value={formatRupiah(minimumPrice)} onChange={(e) => setMinimumPrice(parseRupiah(e.target.value))} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: `1px solid ${errors.minimumPrice ? "#dc2626" : "#d4d4d8"}`, background: "white", color: "var(--espresso)" }} placeholder="350.000" />{errors.minimumPrice && <p className="text-[11px] mt-1" style={{ color: "#dc2626" }}>{errors.minimumPrice}</p>}</div>
+                    <div><label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Harga Rekomendasi (Rp)</label><input type="text" inputMode="numeric" value={formatRupiah(recommendedPrice)} onChange={(e) => setRecommendedPrice(parseRupiah(e.target.value))} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: "1px solid #d4d4d8", background: "white", color: "var(--espresso)" }} placeholder="—" /></div>
                   </div>)}
                 </div>
                 )}
                 {(category === "Thobe" || category === "Kandora") && (
                 <div><label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Jenis Kain</label>
-                  <div className="flex gap-2"><div className="relative flex-1"><select value={selectedJenisKainId} onChange={(e) => setSelectedJenisKainId(e.target.value)} className="w-full rounded-xl px-4 py-3 text-sm outline-none appearance-none" style={{ border: `1px solid ${errors.jenisKain ? "#e74c3c" : "rgba(64,50,37,.15)"}`, background: "white", color: "var(--espresso)" }}><option value="">Pilih Jenis Kain</option>{jenisKainList.map((jk) => <option key={jk.id} value={jk.id}>{jk.name}</option>)}</select></div>
-                    <button type="button" onClick={() => setShowNewKainForm(!showNewKainForm)} className="px-3 py-2 rounded-xl text-xs font-medium shrink-0" style={{ border: "1px dashed rgba(181,140,74,.4)", color: "var(--gold)" }}>+ Baru</button></div>
-                  {errors.jenisKain && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.jenisKain}</p>}
+                  <div className="flex gap-2"><div className="relative flex-1"><select value={selectedJenisKainId} onChange={(e) => setSelectedJenisKainId(e.target.value)} className="w-full rounded-xl px-4 py-3 text-sm outline-none appearance-none" style={{ border: `1px solid ${errors.jenisKain ? "#dc2626" : "#d4d4d8"}`, background: "white", color: "var(--espresso)" }}><option value="">Pilih Jenis Kain</option>{jenisKainList.map((jk) => <option key={jk.id} value={jk.id}>{jk.name}</option>)}</select></div>
+                    <button type="button" onClick={() => setShowNewKainForm(!showNewKainForm)} className="px-3 py-2 rounded-xl text-xs font-medium shrink-0" style={{ border: "1px dashed #d4d4d8", color: "var(--gold)" }}>+ Baru</button></div>
+                  {errors.jenisKain && <p className="text-[11px] mt-1" style={{ color: "#dc2626" }}>{errors.jenisKain}</p>}
                   {showNewKainForm && (<div className="mt-3"><JenisKainForm onSave={(newKain) => { setJenisKainList((prev) => [...prev, { id: newKain.id, name: newKain.name }]); setSelectedJenisKainId(newKain.id); setShowNewKainForm(false); }} onCancel={() => setShowNewKainForm(false)} /></div>)}
                 </div>
                 )}
                 {category === "Thobe" && (
                 <div><label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Series</label>
-                  {errors.series && <p className="text-[11px] mb-2" style={{ color: "#e74c3c" }}>{errors.series}</p>}
+                  {errors.series && <p className="text-[11px] mb-2" style={{ color: "#dc2626" }}>{errors.series}</p>}
                   {duplicateSeriesWarning.length > 0 && (
-                    <p className="text-[11px] mb-2 rounded-lg px-3 py-2" style={{ background: "rgba(231,76,60,.08)", border: "1px solid rgba(231,76,60,.2)", color: "#c0392b" }}>
+                    <p className="text-[11px] mb-2 rounded-lg px-3 py-2" style={{ background: "rgba(231,76,60,.08)", border: "1px solid rgba(231,76,60,.2)", color: "#dc2626" }}>
                       Peringatan: ada {duplicateSeriesWarning.length} series yang datanya duplikat di database ({duplicateSeriesWarning.join(", ")}). Yang tampil di sini adalah entri terlama. Harap bersihkan lewat laporan audit sebelum disimpan agar tidak tersimpan data ganda.
                     </p>
                   )}
                   <div className="flex flex-wrap gap-2 mb-3">
-                    {seriesList.map((s) => (<button key={s} type="button" onClick={() => toggleSeries(s)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all" style={{ background: selectedSeries.includes(s) ? "var(--espresso)" : "transparent", color: selectedSeries.includes(s) ? "var(--cream)" : "var(--coffee)", border: `1px solid ${selectedSeries.includes(s) ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>{selectedSeries.includes(s) && <span className="text-[10px]">✓</span>}{s}</button>))}
-                    <button type="button" onClick={() => setShowNewSeries(!showNewSeries)} className="px-3 py-1.5 rounded-full text-xs font-medium shrink-0" style={{ border: "1px dashed rgba(181,140,74,.4)", color: "var(--gold)" }}>+ Baru</button>
+                    {seriesList.map((s) => (<button key={s} type="button" onClick={() => toggleSeries(s)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all" style={{ background: selectedSeries.includes(s) ? "var(--espresso)" : "transparent", color: selectedSeries.includes(s) ? "var(--cream)" : "var(--coffee)", border: `1px solid ${selectedSeries.includes(s) ? "var(--espresso)" : "#e4e4e7"}` }}>{selectedSeries.includes(s) && <span className="text-[10px]">✓</span>}{s}</button>))}
+                    <button type="button" onClick={() => setShowNewSeries(!showNewSeries)} className="px-3 py-1.5 rounded-full text-xs font-medium shrink-0" style={{ border: "1px dashed #d4d4d8", color: "var(--gold)" }}>+ Baru</button>
                   </div>
-                  {showNewSeries && (<div className="mb-3 flex gap-2"><input value={newSeriesName} onChange={(e) => setNewSeriesName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addNewSeries(); } }} placeholder="Nama series baru…" autoFocus className="flex-1 rounded-xl px-4 py-2.5 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} /><button type="button" onClick={addNewSeries} className="px-4 py-2 rounded-xl text-xs font-semibold text-white shrink-0" style={{ background: "var(--gold)" }}>Tambah</button></div>)}
+                  {showNewSeries && (<div className="mb-3 flex gap-2"><input value={newSeriesName} onChange={(e) => setNewSeriesName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addNewSeries(); } }} placeholder="Nama series baru…" autoFocus className="flex-1 rounded-xl px-4 py-2.5 text-sm outline-none" style={{ border: "1px solid #d4d4d8", background: "white", color: "var(--espresso)" }} /><button type="button" onClick={addNewSeries} className="px-4 py-2 rounded-xl text-xs font-semibold text-white shrink-0" style={{ background: "var(--gold)" }}>Tambah</button></div>)}
                 </div>
                 )}
               </div>
@@ -870,7 +876,7 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
                 <div className="flex flex-wrap gap-2 mb-5">
                   {selectedSeries.map((sn) => {
                     const hasError = seriesBlocks[sn] && (errors[`series_${sn}_price`] || errors[`series_${sn}_media`] || errors[`series_${sn}_stock`]);
-                    return (<button key={sn} type="button" onClick={() => setActiveSeriesTab(sn)} className="px-4 py-2 rounded-xl text-xs font-semibold transition-all" style={{ background: activeSeriesTab === sn ? "var(--espresso)" : "transparent", color: activeSeriesTab === sn ? "var(--cream)" : "var(--coffee)", border: `1px solid ${activeSeriesTab === sn ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>{sn}{hasError && <span className="ml-1.5 w-1.5 h-1.5 rounded-full inline-block" style={{ background: "#e74c3c" }} />}</button>);
+                    return (<button key={sn} type="button" onClick={() => setActiveSeriesTab(sn)} className="px-4 py-2 rounded-xl text-xs font-semibold transition-all" style={{ background: activeSeriesTab === sn ? "var(--espresso)" : "transparent", color: activeSeriesTab === sn ? "var(--cream)" : "var(--coffee)", border: `1px solid ${activeSeriesTab === sn ? "var(--espresso)" : "#e4e4e7"}` }}>{sn}{hasError && <span className="ml-1.5 w-1.5 h-1.5 rounded-full inline-block" style={{ background: "#dc2626" }} />}</button>);
                   })}
                 </div>
                 {activeSeriesTab && seriesBlocks[activeSeriesTab] && (
@@ -881,19 +887,19 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
               <>
               <div className="card p-5">
                 <h2 className="font-serif italic text-xl mb-4" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Varian & Stok</h2>
-                {errors.variants && <p className="text-[12px] mb-3" style={{ color: "#e74c3c" }}>{errors.variants}</p>}
+                {errors.variants && <p className="text-[12px] mb-3" style={{ color: "#dc2626" }}>{errors.variants}</p>}
                 <div className="flex flex-wrap gap-2 mb-4">
-                  {variants.map((v) => (<button key={v.color} onClick={() => { setActiveColor(v.color); setPreviewIndex(0); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all" style={{ background: activeColor === v.color ? "var(--espresso)" : "transparent", color: activeColor === v.color ? "var(--cream)" : "var(--coffee)", border: `1px solid ${activeColor === v.color ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}><span className="w-3 h-3 rounded-full" style={{ background: v.hex || colorMap[v.color] || "#ccc", border: "1px solid rgba(42,33,27,.1)" }} />{v.color}<button onClick={(e) => { e.stopPropagation(); removeColor(v.color); }} className="ml-1 hover:opacity-60"><X size={12} /></button></button>))}
+                  {variants.map((v) => (<button key={v.color} onClick={() => { setActiveColor(v.color); setPreviewIndex(0); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all" style={{ background: activeColor === v.color ? "var(--espresso)" : "transparent", color: activeColor === v.color ? "var(--cream)" : "var(--coffee)", border: `1px solid ${activeColor === v.color ? "var(--espresso)" : "#e4e4e7"}` }}><span className="w-3 h-3 rounded-full" style={{ background: v.hex || colorMap[v.color] || "#ccc", border: "1px solid rgba(42,33,27,.1)" }} />{v.color}<button onClick={(e) => { e.stopPropagation(); removeColor(v.color); }} className="ml-1 hover:opacity-60"><X size={12} /></button></button>))}
                   <PresetColorPicker existing={variants.map((v) => v.color)} onAdd={addColor} />
                 </div>
                 {activeVariant && (<div className="space-y-3"><p className="text-sm font-medium" style={{ color: "var(--espresso)" }}>Ukuran untuk <span style={{ color: "var(--gold)" }}>{activeColor}</span></p>
                   <div className="grid grid-cols-[72px_80px_112px_112px_36px] gap-2 text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}><span>Ukuran</span><span>Stok</span><span>Harga Khusus</span><span>SKU</span><span></span></div>
                   {activeVariant.sizes.map((s, i) => (<div key={i} className="grid grid-cols-[72px_80px_112px_112px_36px] gap-2 items-center">
-                    <input value={s.size} onChange={(e) => updateSizeField(activeColor!, i, "size", e.target.value.toUpperCase())} onFocus={(e) => e.target.select()} list="size-suggestions" className="rounded-lg px-2.5 py-2 text-sm outline-none text-center" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="—" />
-                    <input type="number" value={s.stock || ""} onChange={(e) => updateSizeField(activeColor!, i, "stock", parseInt(e.target.value) || 0)} placeholder="0" className="rounded-lg px-2.5 py-2 text-sm outline-none text-center" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
-                    <input type="text" inputMode="numeric" value={formatRupiah(s.priceOverride)} onChange={(e) => updateSizeField(activeColor!, i, "priceOverride", parseRupiah(e.target.value))} placeholder="—" className="rounded-lg px-2.5 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
-                    <input value={s.sku} onChange={(e) => updateSizeField(activeColor!, i, "sku", e.target.value)} placeholder="—" className="rounded-lg px-2.5 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
-                    {activeVariant.sizes.length > 1 && <button onClick={() => removeSize(activeColor!, i)} className="p-1.5 rounded-lg hover:bg-red-50 transition-colors" style={{ color: "#e74c3c" }}><Trash2 size={14} /></button>}
+                    <input value={s.size} onChange={(e) => updateSizeField(activeColor!, i, "size", e.target.value.toUpperCase())} onFocus={(e) => e.target.select()} list="size-suggestions" className="rounded-lg px-2.5 py-2 text-sm outline-none text-center" style={{ border: "1px solid #d4d4d8", background: "white", color: "var(--espresso)" }} placeholder="—" />
+                    <input type="number" value={s.stock || ""} onChange={(e) => updateSizeField(activeColor!, i, "stock", parseInt(e.target.value) || 0)} placeholder="0" className="rounded-lg px-2.5 py-2 text-sm outline-none text-center" style={{ border: "1px solid #d4d4d8", background: "white", color: "var(--espresso)" }} />
+                    <input type="text" inputMode="numeric" value={formatRupiah(s.priceOverride)} onChange={(e) => updateSizeField(activeColor!, i, "priceOverride", parseRupiah(e.target.value))} placeholder="—" className="rounded-lg px-2.5 py-2 text-sm outline-none" style={{ border: "1px solid #d4d4d8", background: "white", color: "var(--espresso)" }} />
+                    <input value={s.sku} onChange={(e) => updateSizeField(activeColor!, i, "sku", e.target.value)} placeholder="—" className="rounded-lg px-2.5 py-2 text-sm outline-none" style={{ border: "1px solid #d4d4d8", background: "white", color: "var(--espresso)" }} />
+                    {activeVariant.sizes.length > 1 && <button onClick={() => removeSize(activeColor!, i)} className="p-1.5 rounded-lg hover:bg-red-50 transition-colors" style={{ color: "#dc2626" }}><Trash2 size={14} /></button>}
                   </div>))}
                   <datalist id="size-suggestions">{SIZES.map((sz) => <option key={sz} value={sz} />)}</datalist>
                   <button onClick={() => addSize(activeColor!)} className="flex items-center gap-1.5 text-sm font-medium" style={{ color: "var(--gold)" }}><Plus size={14} /> Tambah Ukuran</button>
@@ -901,16 +907,16 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
               </div>
               <div className="card p-5">
                 <h2 className="font-serif italic text-xl mb-4" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Media</h2>
-                {errors.media && <p className="text-[12px] mb-3" style={{ color: "#e74c3c" }}>{errors.media}</p>}
+                {errors.media && <p className="text-[12px] mb-3" style={{ color: "#dc2626" }}>{errors.media}</p>}
                 {!activeColor ? <p className="text-sm text-center py-6" style={{ color: "var(--text-muted)" }}>Pilih warna terlebih dahulu</p> : (
                   <div>
                     <p className="text-sm mb-3" style={{ color: "var(--text-secondary)" }}>Upload untuk: <span className="font-medium" style={{ color: "var(--gold)" }}>{activeColor}</span></p>
-                    <label className="block rounded-xl p-6 text-center cursor-pointer transition-all hover:border-[var(--gold)]" style={{ border: "2px dashed rgba(201,183,156,.3)", background: "rgba(255,255,255,.5)" }}>
+                    <label className="block rounded-xl p-6 text-center cursor-pointer transition-all hover:border-[var(--gold)]" style={{ border: "2px dashed #e4e4e7", background: "rgba(255,255,255,.5)" }}>
                       <Upload size={24} className="mx-auto mb-2" style={{ color: "var(--text-muted)" }} /><p className="text-sm font-medium" style={{ color: "var(--espresso)" }}>Klik atau seret file</p>
                       <input type="file" multiple accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" onChange={(e) => handleFileSelect(e, activeColor || "default")} className="hidden" />
                     </label>
-                    <div className="flex gap-2 mt-2.5"><input value={mediaUrl} onChange={(e) => setMediaUrl(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addMediaByUrl(); } }} placeholder="atau tempel URL gambar / video…" className="flex-1 rounded-xl px-4 py-2.5 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} /><button type="button" onClick={addMediaByUrl} className="px-4 py-2 rounded-xl text-xs font-semibold text-white shrink-0" style={{ background: "var(--gold)" }}>Tambah</button></div>
-                    {activeMedia.length > 0 && (<div className="grid grid-cols-3 sm:grid-cols-4 gap-3 mt-4">{activeMedia.map((m, idx) => (<div key={m.id} className="relative aspect-square rounded-lg overflow-hidden group" style={{ background: "#e8dfd1" }} onClick={() => { if (!m.uploading && !m.error) { setPreviewIndex(idx); } }}>
+                    <div className="flex gap-2 mt-2.5"><input value={mediaUrl} onChange={(e) => setMediaUrl(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addMediaByUrl(); } }} placeholder="atau tempel URL gambar / video…" className="flex-1 rounded-xl px-4 py-2.5 text-sm outline-none" style={{ border: "1px solid #d4d4d8", background: "white", color: "var(--espresso)" }} /><button type="button" onClick={addMediaByUrl} className="px-4 py-2 rounded-xl text-xs font-semibold text-white shrink-0" style={{ background: "var(--gold)" }}>Tambah</button></div>
+                    {activeMedia.length > 0 && (<div className="grid grid-cols-3 sm:grid-cols-4 gap-3 mt-4">{activeMedia.map((m, idx) => (<div key={m.id} className="relative aspect-square rounded-lg overflow-hidden group" style={{ background: "#f4f4f5" }} onClick={() => { if (!m.uploading && !m.error) { setPreviewIndex(idx); } }}>
                       {m.uploading ? <div className="absolute inset-0 flex items-center justify-center"><Loader2 size={20} className="animate-spin" style={{ color: "var(--gold)" }} /></div> : m.isVideo ? <video src={m.url || m.preview} className="w-full h-full object-cover" muted /> : <img src={m.url || m.preview} alt="" className="w-full h-full object-cover" />}
                       <button onClick={(e) => { e.stopPropagation(); removeMedia(m.id); }} className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: "rgba(0,0,0,.6)", color: "white" }}><X size={12} /></button>
                     </div>))}</div>)}
@@ -924,10 +930,10 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
           <div className="hidden lg:block sticky top-24">
             <div className="card p-5">
               <h3 className="font-serif italic text-lg mb-4" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>Preview Produk</h3>
-              <div className="aspect-[4/5] rounded-xl overflow-hidden mb-3" style={{ background: "#e8dfd1" }}>
+              <div className="aspect-[4/5] rounded-xl overflow-hidden mb-3" style={{ background: "#f4f4f5" }}>
                 {activeMedia.length > 0 ? (() => { const item = activeMedia[Math.min(previewIndex, activeMedia.length - 1)]; return item.isVideo ? <video src={item.url || item.preview} className="w-full h-full object-cover" muted loop /> : <img src={item.url || item.preview} alt="" className="w-full h-full object-cover" />; })() : <div className="w-full h-full flex items-center justify-center"><ImageIcon size={32} style={{ color: "var(--text-muted)" }} /></div>}
               </div>
-              {activeMedia.length > 1 && (<div className="flex gap-1.5 overflow-x-auto mb-3 pb-1">{activeMedia.map((m, i) => (<button key={m.id} onClick={() => setPreviewIndex(i)} className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 transition-all" style={{ border: i === Math.min(previewIndex, activeMedia.length - 1) ? "2px solid var(--gold)" : "1px solid rgba(64,50,37,.1)" }}>{m.isVideo ? <video src={m.url || m.preview} className="w-full h-full object-cover" muted /> : <img src={m.url || m.preview} alt="" className="w-full h-full object-cover" />}</button>))}</div>)}
+              {activeMedia.length > 1 && (<div className="flex gap-1.5 overflow-x-auto mb-3 pb-1">{activeMedia.map((m, i) => (<button key={m.id} onClick={() => setPreviewIndex(i)} className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 transition-all" style={{ border: i === Math.min(previewIndex, activeMedia.length - 1) ? "2px solid var(--gold)" : "1px solid #e4e4e7" }}>{m.isVideo ? <video src={m.url || m.preview} className="w-full h-full object-cover" muted /> : <img src={m.url || m.preview} alt="" className="w-full h-full object-cover" />}</button>))}</div>)}
               <p className="text-sm font-medium" style={{ color: "var(--espresso)" }}>{name}</p>
               <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{category}{activeSeriesTab && category === "Thobe" ? ` · ${activeSeriesTab}` : ""}</p>
               <p className="text-lg font-serif italic mt-1.5" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--gold)" }}>
@@ -944,7 +950,7 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
         </button>
       </div>
 
-      <style jsx global>{`.card { background: #fffdfb; border: 1px solid rgba(64,50,37,.06); border-radius: 1rem; box-shadow: 0 1px 2px rgba(64,50,37,.03); }`}</style>
+      <style jsx global>{`.card { background: #ffffff; border: 1px solid #f1f1f3; border-radius: 1rem; box-shadow: 0 1px 2px rgba(0,0,0,.03); }`}</style>
     </section>
     </AdminShell>
   );

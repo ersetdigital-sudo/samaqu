@@ -95,7 +95,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   }, [id]);
 
   if (loading) {
-    return <AdminShell><section className="min-h-screen flex items-center justify-center" style={{ background: "var(--cream)" }}><div className="w-6 h-6 border-2 rounded-full animate-spin" style={{ borderColor: "rgba(201,183,156,.3)", borderTopColor: "var(--gold)" }} /></section></AdminShell>;
+    return <AdminShell><section className="min-h-screen flex items-center justify-center" style={{ background: "var(--cream)" }}><div className="w-6 h-6 border-2 rounded-full animate-spin" style={{ borderColor: "#e4e4e7", borderTopColor: "var(--gold)" }} /></section></AdminShell>;
   }
 
   if (!product) {
@@ -135,7 +135,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     <AdminShell>
     <section className="min-h-screen" style={{ background: "var(--cream)" }}>
       {/* Header */}
-      <div className="sticky top-0 z-20 backdrop-blur" style={{ background: "rgba(248,245,241,.8)", borderBottom: "1px solid rgba(64,50,37,.06)" }}>
+      <div className="sticky top-0 z-20 backdrop-blur" style={{ background: "rgba(255,255,255,.9)", borderBottom: "1px solid #f1f1f3" }}>
         <div className="max-w-6xl mx-auto px-5 lg:px-8 py-4 flex items-center gap-4">
           <button onClick={() => router.push("/admin")} className="p-2 -ml-2 rounded-lg hover:bg-[var(--bg-tertiary)]" style={{ color: "var(--espresso)" }}><ArrowLeft size={20} /></button>
           <div className="min-w-0 flex-1">
@@ -157,7 +157,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           </div>
           <div className="card p-4">
             <p className="text-xs" style={{ color: "var(--text-muted)" }}>Total Stok</p>
-            <p className="text-xl font-bold mt-1" style={{ color: totalStock < 10 ? "#e74c3c" : "var(--espresso)" }}>{totalStock}</p>
+            <p className="text-xl font-bold mt-1" style={{ color: totalStock < 10 ? "#dc2626" : "var(--espresso)" }}>{totalStock}</p>
           </div>
           <div className="card p-4">
             <p className="text-xs" style={{ color: "var(--text-muted)" }}>Terjual</p>
@@ -175,7 +175,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           {/* Tabs: series or color */}
           <div className="flex flex-wrap gap-2 mb-4">
             {(showSeriesTabs ? uniqueSeries : uniqueColors).map((tab) => (
-              <button key={tab} onClick={() => setActiveColor(tab)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all" style={{ background: activeColor === tab ? "var(--espresso)" : "transparent", color: activeColor === tab ? "var(--cream)" : "var(--coffee)", border: `1px solid ${activeColor === tab ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
+              <button key={tab} onClick={() => setActiveColor(tab)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all" style={{ background: activeColor === tab ? "var(--espresso)" : "transparent", color: activeColor === tab ? "var(--cream)" : "var(--coffee)", border: `1px solid ${activeColor === tab ? "var(--espresso)" : "#e4e4e7"}` }}>
                 {!showSeriesTabs && <span className="w-3 h-3 rounded-full" style={{ background: colorMap[tab] || "#ccc", border: "1px solid rgba(42,33,27,.1)" }} />}
                 {tab}
               </button>
@@ -195,7 +195,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                       Total: <strong style={{ color: "var(--espresso)" }}>{isDerived ? baseStock : baseStock}</strong> stok
                     </span>
                     {isDerived && derivedVariants[0]?.base_product_id && (
-                      <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: "rgba(181,140,74,.1)", color: "var(--gold)" }}>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: "#f4f4f5", color: "var(--gold)" }}>
                         Mengikuti stok {variants.find((v) => v.product_id === derivedVariants[0].base_product_id && !v.base_product_id)?.series || "base"}
                       </span>
                     )}
@@ -218,7 +218,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               </thead>
               <tbody>
                 {displayVariants.map((v, i) => (
-                  <tr key={i} style={{ borderTop: "1px solid rgba(64,50,37,.06)" }}>
+                  <tr key={i} style={{ borderTop: "1px solid #f1f1f3" }}>
                     {showSeriesTabs && (
                       <td className="px-4 py-3">
                         <span className="font-medium text-xs" style={{ color: "var(--gold)" }}>{v.series || "-"}</span>
@@ -226,13 +226,13 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                       </td>
                     )}
                     <td className="px-4 py-3 font-semibold">{v.size}</td>
-                    <td className="px-4 py-3" style={{ color: v.stock === 0 ? "#e74c3c" : v.stock < 5 ? "#8a6f42" : "var(--espresso)", fontWeight: v.stock < 5 ? 600 : 400 }}>{v.stock}</td>
+                    <td className="px-4 py-3" style={{ color: v.stock === 0 ? "#dc2626" : v.stock < 5 ? "#52525b" : "var(--espresso)", fontWeight: v.stock < 5 ? 600 : 400 }}>{v.stock}</td>
                     <td className="px-4 py-3" style={{ color: "var(--text-muted)" }}>{v.price_override ? `Rp ${v.price_override.toLocaleString("id-ID")}` : "-"}</td>
                     <td className="px-4 py-3 font-mono text-xs" style={{ color: "var(--text-muted)" }}>{v.sku || "-"}</td>
                     <td className="px-4 py-3">
-                      {v.stock === 0 ? <span className="badge" style={{ background: "#fde8e8", color: "#e74c3c" }}>Habis</span>
-                        : v.stock < 5 ? <span className="badge" style={{ background: "#fef3cd", color: "#8a6f42" }}>Menipis</span>
-                        : <span className="badge" style={{ background: "#e7ecdf", color: "#5b6b45" }}>Tersedia</span>}
+                      {v.stock === 0 ? <span className="badge" style={{ background: "#fef2f2", color: "#dc2626" }}>Habis</span>
+                        : v.stock < 5 ? <span className="badge" style={{ background: "#fef3cd", color: "#52525b" }}>Menipis</span>
+                        : <span className="badge" style={{ background: "#f4f4f5", color: "#3f3f46" }}>Tersedia</span>}
                     </td>
                   </tr>
                 ))}
@@ -252,7 +252,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           ) : (
             <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3">
               {colorImages.map((img, i) => (
-                <div key={i} className="aspect-square rounded-lg overflow-hidden" style={{ background: "#e8dfd1" }}>
+                <div key={i} className="aspect-square rounded-lg overflow-hidden" style={{ background: "#f4f4f5" }}>
                   {img.is_video ? (
                     <video src={img.url} className="w-full h-full object-cover" muted loop playsInline onMouseEnter={(e) => (e.target as HTMLVideoElement).play()} onMouseLeave={(e) => { (e.target as HTMLVideoElement).pause(); (e.target as HTMLVideoElement).currentTime = 0; }} />
                   ) : (
@@ -266,7 +266,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
         {/* Order history */}
         <div className="card overflow-hidden">
-          <div className="p-5 border-b" style={{ borderColor: "rgba(64,50,37,.06)" }}>
+          <div className="p-5 border-b" style={{ borderColor: "#f1f1f3" }}>
             <h2 className="font-serif italic text-xl" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Riwayat Pesanan</h2>
             <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>{orderItems.length} pesanan ditemukan</p>
           </div>
@@ -287,14 +287,14 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 </thead>
                 <tbody>
                   {orderItems.map((item, i) => (
-                    <tr key={i} style={{ borderTop: "1px solid rgba(64,50,37,.06)" }}>
+                    <tr key={i} style={{ borderTop: "1px solid #f1f1f3" }}>
                       <td className="px-4 py-3 font-semibold">{item.orders?.order_number || "-"}</td>
                       <td className="px-4 py-3">{item.orders?.customer_name || "-"}</td>
                       <td className="px-4 py-3" style={{ color: "var(--text-secondary)" }}>{item.color} / {item.size}</td>
                       <td className="px-4 py-3">{item.quantity}</td>
                       <td className="px-4 py-3 font-semibold">{item.orders?.total ? `Rp ${item.orders.total.toLocaleString("id-ID")}` : "-"}</td>
                       <td className="px-4 py-3">
-                        <span className="badge" style={{ background: item.orders?.status === "selesai" ? "#e7ecdf" : item.orders?.status === "pending" ? "#f0ebe5" : "#f0e7d8", color: item.orders?.status === "selesai" ? "#5b6b45" : item.orders?.status === "pending" ? "#6b5d50" : "#8a6f42" }}>
+                        <span className="badge" style={{ background: item.orders?.status === "selesai" ? "#f4f4f5" : item.orders?.status === "pending" ? "#f4f4f5" : "#f4f4f5", color: item.orders?.status === "selesai" ? "#3f3f46" : item.orders?.status === "pending" ? "#52525b" : "#52525b" }}>
                           {item.orders?.status || "-"}
                         </span>
                       </td>
@@ -307,7 +307,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         </div>
       </main>
 
-      <style jsx global>{`.card { background: #fffdfb; border: 1px solid rgba(64,50,37,.06); border-radius: 1rem; box-shadow: 0 1px 2px rgba(64,50,37,.03); } .badge { font-size: .72rem; font-weight: 600; padding: .2rem .6rem; border-radius: 999px; white-space: nowrap; }`}</style>
+      <style jsx global>{`.card { background: #ffffff; border: 1px solid #f1f1f3; border-radius: 1rem; box-shadow: 0 1px 2px rgba(0,0,0,.03); } .badge { font-size: .72rem; font-weight: 600; padding: .2rem .6rem; border-radius: 999px; white-space: nowrap; }`}</style>
     </section>
     </AdminShell>
   );

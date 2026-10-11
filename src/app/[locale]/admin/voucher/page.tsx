@@ -215,24 +215,24 @@ export default function VoucherPage() {
               const isExpired = v.end_date && new Date(v.end_date) < new Date();
               const isFull = v.usage_limit > 0 && v.used_count >= v.usage_limit;
               const statusLabel = isExpired ? "Kadaluarsa" : isFull ? "Habis" : v.is_active ? "Aktif" : "Nonaktif";
-              const statusColor = isExpired ? { bg: "#f0ebe5", text: "#9D8F86" } : isFull ? { bg: "#fde8e8", text: "#c0392b" } : v.is_active ? { bg: "#e7ecdf", text: "#5b6b45" } : { bg: "#f0ebe5", text: "#6b5d50" };
+              const statusColor = isExpired ? { bg: "#f4f4f5", text: "#71717a" } : isFull ? { bg: "#fef2f2", text: "#dc2626" } : v.is_active ? { bg: "#f4f4f5", text: "#3f3f46" } : { bg: "#f4f4f5", text: "#52525b" };
               const usagePct = v.usage_limit > 0 ? Math.min(100, (v.used_count / v.usage_limit) * 100) : 0;
 
               return (
-                <div key={v.id} className="rounded-2xl overflow-hidden" style={{ background: "#fffdfb", border: "1px solid rgba(64,50,37,.06)", boxShadow: "0 1px 3px rgba(64,50,37,.04)" }}>
+                <div key={v.id} className="rounded-2xl overflow-hidden" style={{ background: "#ffffff", border: "1px solid #f1f1f3", boxShadow: "0 1px 3px #fafafa" }}>
                   <div className="flex">
                     {/* Left: discount badge (ticket stub) */}
-                    <div className="flex flex-col items-center justify-center px-5 py-5 min-w-[100px] relative" style={{ background: "linear-gradient(135deg, #f0e7d8 0%, #e8dfd1 100%)" }}>
+                    <div className="flex flex-col items-center justify-center px-5 py-5 min-w-[100px] relative" style={{ background: "linear-gradient(135deg, #f4f4f5 0%, #f4f4f5 100%)" }}>
                       <span className="text-2xl font-bold leading-none" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--gold)" }}>
                         {v.discount_type === "percentage" ? `${v.discount_value}%` : `Rp${Math.round(v.discount_value / 1000)}K`}
                       </span>
-                      <span className="text-[10px] uppercase tracking-wider mt-1 font-medium" style={{ color: "#8a6f42" }}>
+                      <span className="text-[10px] uppercase tracking-wider mt-1 font-medium" style={{ color: "#52525b" }}>
                         {v.discount_type === "percentage" ? "Diskon" : "Potongan"}
                       </span>
                       {/* Ticket notch */}
-                      <div className="absolute top-0 right-0 w-3 h-3 rounded-bl-full" style={{ background: "#fffdfb" }} />
-                      <div className="absolute bottom-0 right-0 w-3 h-3 rounded-tl-full" style={{ background: "#fffdfb" }} />
-                      <div className="absolute top-0 right-0 w-[1px] h-full" style={{ borderRight: "2px dashed rgba(64,50,37,.12)" }} />
+                      <div className="absolute top-0 right-0 w-3 h-3 rounded-bl-full" style={{ background: "#ffffff" }} />
+                      <div className="absolute bottom-0 right-0 w-3 h-3 rounded-tl-full" style={{ background: "#ffffff" }} />
+                      <div className="absolute top-0 right-0 w-[1px] h-full" style={{ borderRight: "2px dashed #e4e4e7" }} />
                     </div>
 
                     {/* Right: voucher details */}
@@ -243,7 +243,7 @@ export default function VoucherPage() {
                           <div className="flex items-center gap-2.5 flex-wrap">
                             <span className="text-lg font-bold tracking-wide" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>{v.code}</span>
                             <span className="text-[10px] px-2.5 py-1 rounded-full font-medium" style={{ background: statusColor.bg, color: statusColor.text }}>{statusLabel}</span>
-                            {v.limit_per_wa && <span className="text-[10px] px-2.5 py-1 rounded-full font-medium" style={{ background: "#e4e6ea", color: "#5c6473" }}>1x/WA</span>}
+                            {v.limit_per_wa && <span className="text-[10px] px-2.5 py-1 rounded-full font-medium" style={{ background: "#e4e4e7", color: "#52525b" }}>1x/WA</span>}
                           </div>
 
                           {/* Info row */}
@@ -256,7 +256,7 @@ export default function VoucherPage() {
                             )}
                             <span className="inline-flex items-center gap-1">
                               <Calendar size={11} />
-                              {isExpired ? <span style={{ color: "#c0392b" }}>Kadaluarsa</span> : `Hingga ${formatDate(v.end_date)}`}
+                              {isExpired ? <span style={{ color: "#dc2626" }}>Kadaluarsa</span> : `Hingga ${formatDate(v.end_date)}`}
                             </span>
                           </div>
 
@@ -267,8 +267,8 @@ export default function VoucherPage() {
                                 <span>Terpakai {v.used_count} / {v.usage_limit}</span>
                                 <span>{Math.round(usagePct)}%</span>
                               </div>
-                              <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(64,50,37,.08)" }}>
-                                <div className="h-full rounded-full transition-all" style={{ width: `${usagePct}%`, background: usagePct >= 100 ? "#c0392b" : "var(--gold)" }} />
+                              <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "#e4e4e7" }}>
+                                <div className="h-full rounded-full transition-all" style={{ width: `${usagePct}%`, background: usagePct >= 100 ? "#dc2626" : "var(--gold)" }} />
                               </div>
                             </div>
                           ) : (
@@ -278,9 +278,9 @@ export default function VoucherPage() {
 
                         {/* Action buttons */}
                         <div className="flex items-center gap-1.5 shrink-0">
-                          <button onClick={() => openEdit(v)} className="p-2 rounded-lg transition-colors hover:bg-[rgba(64,50,37,.05)]" style={{ color: "var(--gold)", border: "1px solid rgba(64,50,37,.12)" }} title="Edit"><Edit size={14} /></button>
-                          <button onClick={() => handleDelete(v)} className="p-2 rounded-lg transition-colors hover:bg-red-50" style={{ color: "#e74c3c", border: "1px solid rgba(231,76,60,.15)" }} title="Hapus"><Trash2 size={14} /></button>
-                          <button onClick={() => { setExpandedId(isExpanded ? null : v.id); loadUsages(v.id); }} className="p-2 rounded-lg transition-colors hover:bg-[rgba(64,50,37,.05)]" style={{ color: "var(--text-muted)", border: "1px solid rgba(64,50,37,.12)" }} title="Lihat pemakaian">
+                          <button onClick={() => openEdit(v)} className="p-2 rounded-lg transition-colors hover:bg-[#f4f4f5]" style={{ color: "var(--gold)", border: "1px solid #e4e4e7" }} title="Edit"><Edit size={14} /></button>
+                          <button onClick={() => handleDelete(v)} className="p-2 rounded-lg transition-colors hover:bg-red-50" style={{ color: "#dc2626", border: "1px solid rgba(231,76,60,.15)" }} title="Hapus"><Trash2 size={14} /></button>
+                          <button onClick={() => { setExpandedId(isExpanded ? null : v.id); loadUsages(v.id); }} className="p-2 rounded-lg transition-colors hover:bg-[#f4f4f5]" style={{ color: "var(--text-muted)", border: "1px solid #e4e4e7" }} title="Lihat pemakaian">
                             {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                           </button>
                         </div>
@@ -290,12 +290,12 @@ export default function VoucherPage() {
 
                   {/* Expanded usage list */}
                   {isExpanded && (
-                    <div className="px-5 py-4" style={{ borderTop: "1px dashed rgba(64,50,37,.12)", background: "rgba(255,255,255,.3)" }}>
+                    <div className="px-5 py-4" style={{ borderTop: "1px dashed #e4e4e7", background: "rgba(255,255,255,.3)" }}>
                       <p className="text-[11px] font-medium mb-2.5" style={{ color: "var(--text-muted)" }}>Nomor WA yang sudah menggunakan voucher:</p>
                       {usageList && usageList.length > 0 ? (
                         <div className="flex flex-wrap gap-2">
                           {usageList.map((u) => (
-                            <span key={u.id} className="inline-flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-lg font-medium" style={{ background: "rgba(64,50,37,.04)", color: "var(--espresso)" }}>
+                            <span key={u.id} className="inline-flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-lg font-medium" style={{ background: "#fafafa", color: "var(--espresso)" }}>
                               <span className="w-1.5 h-1.5 rounded-full" style={{ background: "var(--gold)" }} />
                               {u.whatsapp_number}
                               <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>{new Date(u.used_at).toLocaleDateString("id-ID")}</span>
@@ -329,15 +329,15 @@ export default function VoucherPage() {
                 {/* Code */}
                 <div>
                   <label className="block text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>Kode Voucher *</label>
-                  <input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })} className="w-full rounded-lg px-3 py-2.5 text-sm outline-none" style={{ border: errors.code ? "1px solid #e74c3c" : "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="CONTOHPromo" />
-                  {errors.code && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.code}</p>}
+                  <input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })} className="w-full rounded-lg px-3 py-2.5 text-sm outline-none" style={{ border: errors.code ? "1px solid #dc2626" : "1px solid #d4d4d8", background: "white", color: "var(--espresso)" }} placeholder="CONTOHPromo" />
+                  {errors.code && <p className="text-[11px] mt-1" style={{ color: "#dc2626" }}>{errors.code}</p>}
                 </div>
 
                 {/* Type + Value */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>Tipe Diskon</label>
-                    <select value={form.discount_type} onChange={(e) => setForm({ ...form, discount_type: e.target.value })} className="w-full rounded-lg px-3 py-2.5 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }}>
+                    <select value={form.discount_type} onChange={(e) => setForm({ ...form, discount_type: e.target.value })} className="w-full rounded-lg px-3 py-2.5 text-sm outline-none" style={{ border: "1px solid #d4d4d8", background: "white", color: "var(--espresso)" }}>
                       <option value="percentage">Persen (%)</option>
                       <option value="fixed">Nominal (Rp)</option>
                     </select>
@@ -346,9 +346,9 @@ export default function VoucherPage() {
                     <label className="block text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>Nilai Diskon *</label>
                     <div className="relative">
                       {form.discount_type === "fixed" && <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm" style={{ color: "var(--text-muted)" }}>Rp</span>}
-                      <input type="text" value={formDisplay.discount_value} onChange={(e) => handleFieldChange("discount_value", e.target.value)} className="w-full rounded-lg py-2.5 text-sm outline-none" style={{ border: errors.discount_value ? "1px solid #e74c3c" : "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)", paddingLeft: form.discount_type === "fixed" ? "2.2rem" : "0.75rem", paddingRight: "0.75rem" }} placeholder={form.discount_type === "percentage" ? "10" : "50.000"} />
+                      <input type="text" value={formDisplay.discount_value} onChange={(e) => handleFieldChange("discount_value", e.target.value)} className="w-full rounded-lg py-2.5 text-sm outline-none" style={{ border: errors.discount_value ? "1px solid #dc2626" : "1px solid #d4d4d8", background: "white", color: "var(--espresso)", paddingLeft: form.discount_type === "fixed" ? "2.2rem" : "0.75rem", paddingRight: "0.75rem" }} placeholder={form.discount_type === "percentage" ? "10" : "50.000"} />
                     </div>
-                    {errors.discount_value && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.discount_value}</p>}
+                    {errors.discount_value && <p className="text-[11px] mt-1" style={{ color: "#dc2626" }}>{errors.discount_value}</p>}
                   </div>
                 </div>
 
@@ -358,7 +358,7 @@ export default function VoucherPage() {
                     <label className="block text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>Minimal Belanja</label>
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm" style={{ color: "var(--text-muted)" }}>Rp</span>
-                      <input type="text" value={formDisplay.min_purchase} onChange={(e) => handleFieldChange("min_purchase", e.target.value)} className="w-full rounded-lg pl-9 pr-3 py-2.5 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="0" />
+                      <input type="text" value={formDisplay.min_purchase} onChange={(e) => handleFieldChange("min_purchase", e.target.value)} className="w-full rounded-lg pl-9 pr-3 py-2.5 text-sm outline-none" style={{ border: "1px solid #d4d4d8", background: "white", color: "var(--espresso)" }} placeholder="0" />
                     </div>
                   </div>
                   {form.discount_type === "percentage" && (
@@ -366,7 +366,7 @@ export default function VoucherPage() {
                       <label className="block text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>Max Diskon</label>
                       <div className="relative">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm" style={{ color: "var(--text-muted)" }}>Rp</span>
-                        <input type="text" value={formDisplay.max_discount} onChange={(e) => handleFieldChange("max_discount", e.target.value)} className="w-full rounded-lg pl-9 pr-3 py-2.5 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="Tanpa batas" />
+                        <input type="text" value={formDisplay.max_discount} onChange={(e) => handleFieldChange("max_discount", e.target.value)} className="w-full rounded-lg pl-9 pr-3 py-2.5 text-sm outline-none" style={{ border: "1px solid #d4d4d8", background: "white", color: "var(--espresso)" }} placeholder="Tanpa batas" />
                       </div>
                     </div>
                   )}
@@ -375,11 +375,11 @@ export default function VoucherPage() {
                 {/* Usage limit */}
                 <div>
                   <label className="block text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>Batas Penggunaan Total (0 = tanpa batas)</label>
-                  <input type="number" value={form.usage_limit || ""} onChange={(e) => setForm({ ...form, usage_limit: Number(e.target.value) })} className="w-full rounded-lg px-3 py-2.5 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="0" />
+                  <input type="number" value={form.usage_limit || ""} onChange={(e) => setForm({ ...form, usage_limit: Number(e.target.value) })} className="w-full rounded-lg px-3 py-2.5 text-sm outline-none" style={{ border: "1px solid #d4d4d8", background: "white", color: "var(--espresso)" }} placeholder="0" />
                 </div>
 
                 {/* Limit per WA */}
-                <label className="flex items-start gap-2.5 cursor-pointer p-3 rounded-lg" style={{ background: "rgba(255,255,255,.5)", border: "1px solid rgba(64,50,37,.08)" }}>
+                <label className="flex items-start gap-2.5 cursor-pointer p-3 rounded-lg" style={{ background: "rgba(255,255,255,.5)", border: "1px solid #e4e4e7" }}>
                   <input type="checkbox" checked={form.limit_per_wa} onChange={(e) => setForm({ ...form, limit_per_wa: e.target.checked })} className="rounded mt-0.5" />
                   <div>
                     <span className="text-sm font-medium" style={{ color: "var(--espresso)" }}>Batasi 1x pakai per nomor WhatsApp</span>
@@ -391,12 +391,12 @@ export default function VoucherPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>Tanggal Mulai</label>
-                    <input type="date" value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} className="w-full rounded-lg px-3 py-2.5 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
+                    <input type="date" value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} className="w-full rounded-lg px-3 py-2.5 text-sm outline-none" style={{ border: "1px solid #d4d4d8", background: "white", color: "var(--espresso)" }} />
                   </div>
                   <div>
                     <label className="block text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>Tanggal Berakhir *</label>
-                    <input type="date" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} className="w-full rounded-lg px-3 py-2.5 text-sm outline-none" style={{ border: errors.end_date ? "1px solid #e74c3c" : "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />
-                    {errors.end_date && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.end_date}</p>}
+                    <input type="date" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} className="w-full rounded-lg px-3 py-2.5 text-sm outline-none" style={{ border: errors.end_date ? "1px solid #dc2626" : "1px solid #d4d4d8", background: "white", color: "var(--espresso)" }} />
+                    {errors.end_date && <p className="text-[11px] mt-1" style={{ color: "#dc2626" }}>{errors.end_date}</p>}
                   </div>
                 </div>
 
@@ -408,7 +408,7 @@ export default function VoucherPage() {
               </div>
 
               <div className="flex gap-3 mt-6">
-                <button onClick={() => setModalOpen(false)} className="flex-1 py-2.5 rounded-xl text-sm font-medium" style={{ border: "1px solid rgba(64,50,37,.15)", color: "var(--espresso)" }}>Batal</button>
+                <button onClick={() => setModalOpen(false)} className="flex-1 py-2.5 rounded-xl text-sm font-medium" style={{ border: "1px solid #d4d4d8", color: "var(--espresso)" }}>Batal</button>
                 <button onClick={handleSave} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: "var(--gold)" }}>
                   {saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null}
                   {editing ? "Simpan" : "Tambah"}

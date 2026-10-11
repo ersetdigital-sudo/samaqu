@@ -72,9 +72,137 @@ interface CloudinarySignature {
   cloudName: string;
   apiKey: string;
   timestamp: number;
-  transformation: string;
+  /** Selalu diisi server: gambar → w_2400, video → w_720 (tarif SD). */
+  transformation?: string;
   resourceType: "image" | "video";
   signature: string;
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   Validasi berkas media sebelum upload.
+
+   Upload video kini di-downscale Cloudinary ke 720p via incoming transformation
+   (c_limit,w_720,q_auto — lihat VIDEO_TRANSFORMATION di api/cloudinary/sign),
+   yang menagih 2 unit per detik (tarif SD). Validasi di sini adalah pagar
+   pelengkap yang gratis dan tidak menyentuh Cloudinary:
+
+   - Durasi → biaya transformasi video berbanding lurus dengan durasi, jadi
+     video yang kepanjangan langsung dibatasi sebelum sempat membakar kredit.
+   - Resolusi → mencegah upload 1440p/4K yang percuma (tetap di-downscale ke
+     720p, hanya memperlambat upload).
+   - MIME + ekstensi → menangkas berkas yang rusak atau berkedok.
+   - Ukuran → batas yang sudah ada sebelumnya.
+
+   Angka-angka di bawah mengikuti target katalog SAMAQU: video demo produk
+   30 detik – 2 menit, maksimal 1080p.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+export const MEDIA_LIMITS = {
+  /** Gambar: 10 MB (sama seperti aturan lama). */
+  imageMaxBytes: 10 * 1024 * 1024,
+  /** Video: 50 MB (sama seperti aturan lama). */
+  videoMaxBytes: 50 * 1024 * 1024,
+  /** Sisi terpendek video — 1080 = 1080p. Lewat dari ini dianggap 1440p/4K. */
+  videoMaxShortSide: 1080,
+  /** Durasi maksimal video katalog, detik. */
+  videoMaxDurationSec: 120,
+} as const;
+
+const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
+const VIDEO_TYPES = ["video/mp4", "video/webm"] as const;
+
+/** Ekstensi yang diterima, dipakai sebagai pemeriksaan kedua di samping MIME. */
+const IMAGE_EXT = /\.(jpe?g|png|webp)$/i;
+const VIDEO_EXT = /\.(mp4|m4v|webm)$/i;
+
+/**
+ * Baca durasi + dimensi video tanpa mengunduh seluruh berkas (cukup metadata).
+ * Mengembalikan null kalau browser gagal membaca berkasnya.
+ */
+function readVideoMetadata(file: File): Promise<{ durationSec: number; width: number; height: number } | null> {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const el = document.createElement("video");
+    let settled = false;
+
+    const finish = (value: { durationSec: number; width: number; height: number } | null) => {
+      if (settled) return;
+      settled = true;
+      URL.revokeObjectURL(url);
+      el.removeAttribute("src");
+      resolve(value);
+    };
+
+    // Timeout: kalau metadata tidak datang dalam 10 detik, anggap gagal dibaca.
+    const timer = window.setTimeout(() => finish(null), 10_000);
+
+    el.preload = "metadata";
+    el.onloadedmetadata = () => {
+      window.clearTimeout(timer);
+      finish({
+        durationSec: Number.isFinite(el.duration) ? el.duration : 0,
+        width: el.videoWidth,
+        height: el.videoHeight,
+      });
+    };
+    el.onerror = () => {
+      window.clearTimeout(timer);
+      finish(null);
+    };
+    el.src = url;
+  });
+}
+
+/**
+ * Validasi berkas media sebelum diunggah. Melempar Error dengan pesan Bahasa
+ * Indonesia (siap ditampilkan admin) bila berkas tidak lolos.
+ *
+ * Dipakai bersama oleh halaman tambah & edit produk supaya aturannya satu.
+ */
+export async function validateMediaFile(file: File): Promise<void> {
+  const isVideo = file.type.startsWith("video/");
+  const isImage = file.type.startsWith("image/");
+
+  if (!isVideo && !isImage) {
+    throw new Error(`${file.name}: format tidak didukung`);
+  }
+
+  // MIME dan ekstensi harus sama-sama cocok — menangkas berkas yang MIME-nya
+  // di-spoof tapi ekstensinya aneh (atau sebaliknya).
+  if (isVideo) {
+    if (!(VIDEO_TYPES as readonly string[]).includes(file.type) || !VIDEO_EXT.test(file.name)) {
+      throw new Error(`${file.name}: format video harus MP4 atau WebM`);
+    }
+    if (file.size > MEDIA_LIMITS.videoMaxBytes) {
+      throw new Error(`${file.name}: terlalu besar. Maks: 50MB`);
+    }
+
+    const meta = await readVideoMetadata(file);
+    if (!meta) {
+      throw new Error(`${file.name}: metadata video tidak terbaca, file rusak atau format tidak didukung browser`);
+    }
+
+    const shortSide = Math.min(meta.width, meta.height);
+    if (shortSide > MEDIA_LIMITS.videoMaxShortSide) {
+      throw new Error(
+        `${file.name}: resolusi ${meta.width}x${meta.height} melebihi batas 1080p. Kompres dulu sebelum diunggah.`
+      );
+    }
+    if (meta.durationSec > MEDIA_LIMITS.videoMaxDurationSec) {
+      throw new Error(
+        `${file.name}: durasi ${Math.round(meta.durationSec)} detik melebihi batas ${MEDIA_LIMITS.videoMaxDurationSec} detik (2 menit).`
+      );
+    }
+    return;
+  }
+
+  // Gambar
+  if (!(IMAGE_TYPES as readonly string[]).includes(file.type) || !IMAGE_EXT.test(file.name)) {
+    throw new Error(`${file.name}: format gambar harus JPG, PNG, atau WebP`);
+  }
+  if (file.size > MEDIA_LIMITS.imageMaxBytes) {
+    throw new Error(`${file.name}: terlalu besar. Maks: 10MB`);
+  }
 }
 
 /**
@@ -109,7 +237,12 @@ export async function uploadToCloudinary(file: File): Promise<string> {
   formData.append("api_key", sign.apiKey);
   formData.append("timestamp", String(sign.timestamp));
   formData.append("signature", sign.signature);
-  formData.append("transformation", sign.transformation);
+  // Transformation selalu diisi server (gambar → w_2400, video → w_720). Guard-nya
+  // dipertahankan supaya aman kalau server suatu saat mengembalikan video tanpa
+  // transformation — mengirim string kosong justru bikin Cloudinary menolak.
+  if (sign.transformation) {
+    formData.append("transformation", sign.transformation);
+  }
 
   const res = await fetch(`https://api.cloudinary.com/v1_1/${cloud}/${resourceType}/upload`, {
     method: "POST",

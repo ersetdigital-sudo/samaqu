@@ -7,7 +7,7 @@ import { getThumbnailFromImages } from "@/lib/product-thumbnail";
 import {
   LayoutDashboard, ShoppingBag, Package, Users, FileText, Settings,
   Search, Bell, Menu, X, ChevronDown, Plus, TrendingUp, Eye, Edit,
-  DollarSign, ShoppingCart, UserPlus, Box, LogOut, Lock, Mail, Loader2, Trash2, Ticket, Star, Ruler, Image, Shirt,
+  DollarSign, ShoppingCart, UserPlus, Box, LogOut, Lock, Mail, Loader2, Trash2, Ticket, Star, Ruler, Image, Shirt, MessageCircle,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { User } from "@supabase/supabase-js";
@@ -17,6 +17,9 @@ import PaymentMethodsManager, { PaymentMethodValue } from "@/components/admin/Pa
 import JntCredentialsForm from "@/components/admin/JntCredentialsForm";
 import OrderDetailContent from "@/components/admin/OrderDetailContent";
 import OrdersMobileList from "@/components/admin/OrdersMobileList";
+import DashboardView from "@/components/admin/DashboardView";
+import ProductsCatalog from "@/components/admin/ProductsCatalog";
+import { ADMIN_WF_VARS } from "@/components/admin/admin-theme";
 
 type Panel = "dashboard" | "orders" | "products" | "customers" | "content" | "featured" | "settings";
 
@@ -125,15 +128,18 @@ function groupByMainProduct(raw: Product[]): AdminCatalogProduct[] {
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const styles: Record<string, { bg: string; color: string }> = {
-    selesai: { bg: "#e7ecdf", color: "#5b6b45" },
-    diproses: { bg: "#f0e7d8", color: "#8a6f42" },
-    dikirim: { bg: "#e4e6ea", color: "#5c6473" },
-    menunggu: { bg: "#f0ebe5", color: "#6b5d50" },
-    pending: { bg: "#f0ebe5", color: "#6b5d50" },
+  // Pill status ala wireframe: hijau = selesai/sukses, amber = proses/menunggu,
+  // abu = dibatalkan. Pairing teks-atas-fill dipilih agar kontras lolos.
+  const styles: Record<string, { bg: string; color: string; border: string }> = {
+    selesai: { bg: "#ecfdf5", color: "#047857", border: "#d1fae5" },
+    diproses: { bg: "#fffbeb", color: "#b45309", border: "#fef3c7" },
+    dikirim: { bg: "#eff6ff", color: "#1d4ed8", border: "#dbeafe" },
+    menunggu: { bg: "#fffbeb", color: "#b45309", border: "#fef3c7" },
+    pending: { bg: "#fffbeb", color: "#b45309", border: "#fef3c7" },
+    dibatalkan: { bg: "#f4f4f5", color: "#52525b", border: "#e4e4e7" },
   };
   const s = styles[status.toLowerCase()] || styles.pending;
-  return <span className="badge" style={{ background: s.bg, color: s.color }}>{status}</span>;
+  return <span className="badge" style={{ background: s.bg, color: s.color, border: `1px solid ${s.border}` }}>{status}</span>;
 }
 
 function AdminPageInner() {
@@ -148,8 +154,11 @@ function AdminPageInner() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [productVariants, setProductVariants] = useState<{ product_id: string; stock: number; base_product_id: string | null }[]>([]);
   const [productThumbnails, setProductThumbnails] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+  const [productSearch, setProductSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [profileOpen, setProfileOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [deleteConfirmOrder, setDeleteConfirmOrder] = useState<Order | null>(null);
@@ -171,23 +180,91 @@ function AdminPageInner() {
   }), [orders, products]);
 
   const topProducts = useMemo(() => {
-    const counts: Record<string, { name: string; count: number; image: string }> = {};
+    // Grup per SERIES + WARNA, bukan per nama produk: satu thobe dijual per
+    // series (Imron, Jiharkah, …), jadi "Thobe Broken White" menggabungkan
+    // pembelian yang sebenarnya produk berbeda. (Sama dengan dashboard /admin.)
+    const counts: Record<string, { name: string; sub: string | null; count: number }> = {};
     orders.forEach((o) => {
       o.order_items?.forEach((item) => {
-        if (!counts[item.product_name]) counts[item.product_name] = { name: item.product_name, count: 0, image: "" };
-        counts[item.product_name].count += item.quantity;
+        const series = (item.series || "").trim();
+        const color = (item.color || "").trim();
+        // Produk tanpa series (mis. Kandora) tetap tampil memakai nama produknya.
+        const name = series || item.product_name || "Tanpa nama";
+        const key = `${name}||${color.toLowerCase()}`;
+        if (!counts[key]) {
+          // "default" = placeholder karena pembeli tidak memilih warna, jadi
+          // jangan ditampilkan; dan bila nama produk sudah memuat warnanya,
+          // jangan ditulis dua kali.
+          const showColor =
+            !!color && color.toLowerCase() !== "default" && !name.toLowerCase().includes(color.toLowerCase());
+          counts[key] = { name, sub: showColor ? color : null, count: 0 };
+        }
+        counts[key].count += item.quantity;
       });
     });
-    // Match product images (use thumbnails to skip videos)
-    const result = Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 5);
-    result.forEach((item) => {
-      const product = products.find((p) => p.name === item.name);
-      if (product) item.image = productThumbnails[product.id] || product.image || "";
-    });
-    return result;
-  }, [orders, products]);
+    return Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 5);
+  }, [orders]);
 
   const catalogItems = useMemo(() => groupByMainProduct(products), [products]);
+
+  // Susun stok per produk dari `product_variants` (produk turunan mengambil stok
+  // dari produk basisnya lewat base_product_id) — sama persis dengan dashboard /admin.
+  const catalogItemsWithStock = useMemo(() => {
+    const seriesByName: Record<string, string> = {};
+    for (const p of products) {
+      if (p.series) seriesByName[p.id] = p.series;
+    }
+    const stockByProduct: Record<string, number> = {};
+    const baseLinkByProduct: Record<string, string> = {};
+    for (const v of productVariants) {
+      if (v.base_product_id) {
+        baseLinkByProduct[v.product_id] = v.base_product_id;
+      } else {
+        stockByProduct[v.product_id] = (stockByProduct[v.product_id] || 0) + v.stock;
+      }
+    }
+    return catalogItems.map((p) => {
+      let totalStock = 0;
+      const seriesStock: { name: string; stock: number; isDerived: boolean; follows?: string }[] = [];
+      for (const mid of p.memberIds || []) {
+        const sName = seriesByName[mid] || mid;
+        const baseId = baseLinkByProduct[mid];
+        if (baseId) {
+          const baseStock = stockByProduct[baseId] || 0;
+          const baseSeries = seriesByName[baseId] || baseId;
+          seriesStock.push({ name: sName, stock: baseStock, isDerived: true, follows: baseSeries });
+          totalStock += baseStock;
+        } else {
+          const st = stockByProduct[mid] || 0;
+          seriesStock.push({ name: sName, stock: st, isDerived: false });
+          totalStock += st;
+        }
+      }
+      seriesStock.sort((a, b) => a.name.localeCompare(b.name));
+      return { ...p, totalStock, seriesStock };
+    });
+  }, [catalogItems, productVariants, products]);
+
+  // Pencarian produk (kolom di topbar + rail filter katalog) — jeda 200ms.
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(productSearch), 200);
+    return () => clearTimeout(timer);
+  }, [productSearch]);
+
+  const filteredCatalogItems = useMemo(() => {
+    if (!debouncedSearch.trim()) return catalogItemsWithStock;
+    const q = debouncedSearch.toLowerCase();
+    return catalogItemsWithStock
+      .map((p) => {
+        const nameMatch = p.name.toLowerCase().includes(q);
+        const catMatch = p.category.toLowerCase().includes(q);
+        if (nameMatch || catMatch) return { ...p, matchedSeries: undefined };
+        const seriesHit = p.availableSeries?.find((s) => s.toLowerCase().includes(q));
+        if (seriesHit) return { ...p, matchedSeries: seriesHit };
+        return null;
+      })
+      .filter(Boolean) as AdminCatalogProduct[];
+  }, [catalogItemsWithStock, debouncedSearch]);
 
   // All useEffect hooks
   useEffect(() => {
@@ -217,9 +294,10 @@ function AdminPageInner() {
     let mounted = true;
     async function fetchData() {
       try {
-        const [ordersRes, productsRes] = await Promise.all([
+        const [ordersRes, productsRes, variantsRes] = await Promise.all([
           supabase.from("orders").select("*, order_items(product_name, color, size, kain, series, quantity, price, customer_price, minimum_price, product_image)").order("created_at", { ascending: false }).limit(50),
           supabase.from("products").select("*").order("created_at", { ascending: true }),
+          supabase.from("product_variants").select("product_id, stock, base_product_id"),
         ]);
         if (mounted) {
           if (ordersRes.data) setOrders(ordersRes.data as Order[]);
@@ -242,6 +320,8 @@ function AdminPageInner() {
             }
             setProductThumbnails(thumbs);
           }
+          if (variantsRes.data)
+            setProductVariants(variantsRes.data as { product_id: string; stock: number; base_product_id: string | null }[]);
         }
       } catch (err) {
         console.error("Error fetching data:", err);
@@ -384,25 +464,25 @@ function AdminPageInner() {
   // NOW early returns are safe (all hooks already called)
   if (authLoading) {
     return (
-      <section className="min-h-screen flex items-center justify-center" style={{ background: "var(--cream)" }}>
-        <div className="w-6 h-6 border-2 rounded-full animate-spin" style={{ borderColor: "rgba(201,183,156,.3)", borderTopColor: "var(--gold)" }} />
+      <section className="min-h-screen flex items-center justify-center" style={{ background: "#f8f9fb" }}>
+        <div className="w-6 h-6 border-2 rounded-full animate-spin" style={{ borderColor: "#e4e4e7", borderTopColor: "#18181b" }} />
       </section>
     );
   }
 
   if (user && role !== "admin") {
     return (
-      <section className="min-h-screen flex items-center justify-center" style={{ background: "var(--cream)" }}>
+      <section className="min-h-screen flex items-center justify-center" style={{ background: "#f8f9fb" }}>
         <div className="text-center px-6 max-w-sm">
-          <div className="w-16 h-16 rounded-full mx-auto mb-5 flex items-center justify-center" style={{ background: "rgba(231,76,60,.1)", border: "2px solid rgba(231,76,60,.3)" }}>
-            <Lock size={28} style={{ color: "#e74c3c" }} />
+          <div className="w-16 h-16 rounded-full mx-auto mb-5 flex items-center justify-center" style={{ background: "rgba(220,38,38,.1)", border: "2px solid rgba(220,38,38,.3)" }}>
+            <Lock size={28} style={{ color: "#dc2626" }} />
           </div>
-          <h1 className="text-2xl font-medium mb-2" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>Akses Ditolak</h1>
-          <p className="text-sm mb-6" style={{ color: "var(--text-muted)" }}>
+          <h1 className="text-2xl font-medium mb-2" style={{ color: "#18181b" }}>Akses Ditolak</h1>
+          <p className="text-sm mb-6" style={{ color: "#71717a" }}>
             Akun Anda tidak memiliki akses ke dashboard admin. Hubungi pemilik toko untuk mendapatkan akses.
           </p>
-          <p className="text-xs mb-6" style={{ color: "var(--text-muted)" }}>Login sebagai: {user.email}</p>
-          <button onClick={handleLogout} className="px-6 py-2.5 rounded-xl text-sm font-semibold" style={{ border: "1px solid rgba(64,50,37,.2)", color: "var(--espresso)" }}>
+          <p className="text-xs mb-6" style={{ color: "#a1a1aa" }}>Login sebagai: {user.email}</p>
+          <button onClick={handleLogout} className="px-6 py-2.5 rounded-xl text-sm font-semibold" style={{ border: "1px solid #e4e4e7", color: "#18181b" }}>
             Keluar & Login Ulang
           </button>
         </div>
@@ -412,30 +492,27 @@ function AdminPageInner() {
 
   if (!user) {
     return (
-      <section className="min-h-screen flex" style={{ background: "#f0f2f5" }}>
-        {/* Desktop: slanted dark left panel */}
-        <div className="hidden lg:flex lg:w-[55%] relative overflow-hidden" style={{ background: "var(--espresso)" }}>
+      <section className="min-h-screen flex" style={{ background: "#f8f9fb" }}>
+        {/* Desktop: panel gelap kiri (zinc-900) */}
+        <div className="hidden lg:flex lg:w-[55%] relative overflow-hidden" style={{ background: "#18181b" }}>
           <div className="absolute inset-0" style={{
             clipPath: "polygon(0 0, 100% 0, 88% 100%, 0 100%)",
-            background: "linear-gradient(135deg, rgba(181,140,74,.15) 0%, rgba(45,33,27,.95) 50%, rgba(45,33,27,1) 100%)",
-          }} />
-          <div className="absolute inset-0 opacity-20" style={{
-            background: "radial-gradient(circle at 30% 40%, rgba(181,140,74,.4) 0%, transparent 50%), radial-gradient(circle at 70% 80%, rgba(157,122,58,.3) 0%, transparent 40%)",
+            background: "linear-gradient(135deg, rgba(63,63,70,.6) 0%, rgba(24,24,27,.98) 50%, rgba(9,9,11,1) 100%)",
           }} />
           <div className="relative z-10 flex flex-col justify-between p-12 lg:p-16 w-full">
             <div>
-              <span className="text-3xl tracking-[0.2em] font-medium" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--cream)" }}>SAMAQU</span>
-              <p className="text-[11px] tracking-[0.28em] uppercase mt-2" style={{ color: "rgba(212,197,181,.6)" }}>Admin Panel</p>
+              <span className="text-3xl tracking-[0.2em] font-medium" style={{ color: "#fafafa" }}>SAMAQU</span>
+              <p className="text-[11px] tracking-[0.28em] uppercase mt-2" style={{ color: "#a1a1aa" }}>Admin Panel</p>
             </div>
             <div className="max-w-md">
-              <h1 className="text-4xl lg:text-5xl font-medium leading-tight mb-4" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--cream)" }}>
-                Kelola Toko<br /><em style={{ color: "#d4a86a" }}>SAMAQU</em> Anda
+              <h1 className="text-4xl lg:text-5xl font-medium leading-tight mb-4" style={{ color: "#fafafa" }}>
+                Kelola Toko<br /><em style={{ color: "#d4d4d8" }}>SAMAQU</em> Anda
               </h1>
-              <p className="text-sm leading-relaxed" style={{ color: "rgba(212,197,181,.7)" }}>
+              <p className="text-sm leading-relaxed" style={{ color: "#a1a1aa" }}>
                 Dashboard admin untuk mengelola pesanan, produk, pelanggan, dan konten website SAMAQU.
               </p>
             </div>
-            <p className="text-xs" style={{ color: "rgba(212,197,181,.4)" }}>© 2026 SAMAQU. Semua hak cipta dilindungi.</p>
+            <p className="text-xs" style={{ color: "#71717a" }}>© 2026 SAMAQU. Semua hak cipta dilindungi.</p>
           </div>
         </div>
 
@@ -444,53 +521,53 @@ function AdminPageInner() {
           <div className="w-full max-w-sm">
             {/* Mobile: brand header */}
             <div className="lg:hidden text-center mb-10">
-              <span className="text-3xl tracking-[0.2em] font-medium" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>SAMAQU</span>
-              <p className="text-[11px] tracking-[0.28em] uppercase mt-2" style={{ color: "var(--text-muted)" }}>Admin Panel</p>
+              <span className="text-3xl tracking-[0.2em] font-medium" style={{ color: "#18181b" }}>SAMAQU</span>
+              <p className="text-[11px] tracking-[0.28em] uppercase mt-2" style={{ color: "#a1a1aa" }}>Admin Panel</p>
             </div>
 
             <div className="hidden lg:block mb-8">
-              <h2 className="text-2xl font-medium mb-2" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>Selamat Datang</h2>
-              <p className="text-sm" style={{ color: "var(--text-muted)" }}>Masuk ke dashboard admin SAMAQU</p>
+              <h2 className="text-2xl font-medium mb-2" style={{ color: "#18181b" }}>Selamat Datang</h2>
+              <p className="text-sm" style={{ color: "#71717a" }}>Masuk ke dashboard admin SAMAQU</p>
             </div>
 
             <form onSubmit={handleAuth} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--espresso)" }}>Email</label>
+                <label className="block text-sm font-medium mb-1.5" style={{ color: "#18181b" }}>Email</label>
                 <div className="relative">
-                  <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: "var(--text-muted)" }} />
+                  <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: "#a1a1aa" }} />
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="admin@samaqu.id"
                     className="w-full rounded-xl pl-10 pr-4 py-3.5 text-sm outline-none transition-all focus:ring-2"
-                    style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)", "--tw-ring-color": "var(--gold)" } as React.CSSProperties}
+                    style={{ border: "1px solid #e4e4e7", background: "white", color: "#18181b", "--tw-ring-color": "#d4d4d8" } as React.CSSProperties}
                     required
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--espresso)" }}>Password</label>
+                <label className="block text-sm font-medium mb-1.5" style={{ color: "#18181b" }}>Password</label>
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Masukkan password"
                   className="w-full rounded-xl px-4 py-3.5 text-sm outline-none transition-all focus:ring-2"
-                  style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)", "--tw-ring-color": "var(--gold)" } as React.CSSProperties}
+                  style={{ border: "1px solid #e4e4e7", background: "white", color: "#18181b", "--tw-ring-color": "#d4d4d8" } as React.CSSProperties}
                   required
                   minLength={6}
                 />
               </div>
               {authError && (
-                <p className="text-[13px]" style={{ color: "#e74c3c" }}>{authError}</p>
+                <p className="text-[13px]" style={{ color: "#dc2626" }}>{authError}</p>
               )}
-              <button type="submit" className="w-full py-3.5 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90 active:scale-[0.98]" style={{ background: "var(--espresso)", boxShadow: "0 4px 14px -4px rgba(45,33,27,.4)" }}>
+              <button type="submit" className="w-full py-3.5 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90 active:scale-[0.98]" style={{ background: "#18181b", boxShadow: "0 4px 14px -4px rgba(0,0,0,.4)" }}>
                 Masuk
               </button>
             </form>
 
-            <p className="mt-8 text-center text-xs" style={{ color: "var(--text-muted)" }}>
+            <p className="mt-8 text-center text-xs" style={{ color: "#a1a1aa" }}>
               Butuh akses? Hubungi pemilik toko.
             </p>
           </div>
@@ -500,104 +577,87 @@ function AdminPageInner() {
   }
 
   return (
-    <div id="admin-root" className="flex min-h-screen" style={{ background: "var(--cream)" }}>
-      {/* Sidebar */}
+    <div id="admin-root" className="flex min-h-screen" style={{ background: "var(--bg)" }}>
+      {/* Sidebar — dikelompokkan per section, item ringkas supaya muat tanpa scroll */}
       <aside
-        className={`fixed lg:sticky z-40 top-0 left-0 h-screen lg:self-start w-72 shrink-0 transition-transform duration-300 flex flex-col overflow-y-auto admin-sidebar ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}
-        style={{ background: "var(--espresso)" }}
+        className={`fixed lg:sticky z-40 top-0 left-0 h-screen lg:self-start w-64 shrink-0 transition-transform duration-300 flex flex-col admin-sidebar ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}
+        style={{ background: "var(--card)", borderRight: "1px solid var(--bd)" }}
       >
-        <div className="flex flex-col gap-2 px-6 py-6" style={{ borderBottom: "1px solid rgba(255,255,255,.08)" }}>
-          <img src="/logo.svg" alt="SAMAQU" className="h-8 w-auto" style={{ filter: "brightness(0) invert(1)" }} />
-          <p className="text-[11px] tracking-[0.28em] uppercase" style={{ color: "#9f9690" }}>Admin Panel</p>
+        <div className="h-16 flex items-center gap-2.5 px-4 shrink-0" style={{ borderBottom: "1px solid var(--bd)" }}>
+          <div className="w-9 h-9 flex items-center justify-center shrink-0" style={{ background: "var(--fg)", borderRadius: "var(--rad3)" }}>
+            <span className="text-white font-extrabold text-sm">S</span>
+          </div>
+          <div className="min-w-0">
+            <p className="text-[13px] font-extrabold leading-tight truncate" style={{ color: "var(--fg)" }}>SAMAQU</p>
+            <p className="text-[10px] font-bold" style={{ color: "var(--fg3)" }}>Admin Panel</p>
+          </div>
         </div>
 
-        <nav className="flex-1 px-4 py-5 space-y-1.5">
-          <p className="px-3 text-[11px] font-semibold uppercase tracking-wider mb-2" style={{ color: "#8f8680" }}>Menu Utama</p>
-          {navItems.slice(0, 4).map((item) => (
-            <button
-              key={item.id}
-              onClick={() => go(item.id)}
-              className={`sidebar-link w-full text-left ${activePanel === item.id ? "active" : ""}`}
-            >
-              <item.icon size={20} strokeWidth={1.6} />
-              <span className="flex-1">{item.label}</span>
-              {item.badge && orders.filter((o) => o.status === "pending").length > 0 && (
-                <span className="badge" style={{ background: "var(--gold)", color: "#fff" }}>
-                  {orders.filter((o) => o.status === "pending").length}
-                </span>
-              )}
-            </button>
-          ))}
+        {/* min-h-0 wajib: tanpa itu flex item nggak bisa mengecil dari isinya,
+            jadi nav luber dan menutup footer (menu & "Keluar" jadi kepotong). */}
+        <nav className="flex-1 min-h-0 overflow-y-auto px-3 py-3 no-scrollbar">
+          <div>
+            <p className="px-2 mb-1.5 text-[10px] font-extrabold uppercase tracking-[0.08em]" style={{ color: "var(--fg3)" }}>Menu Utama</p>
+            <ul className="space-y-0.5">
+              {navItems.slice(0, 4).map((item) => (
+                <li key={item.id}>
+                  <button onClick={() => go(item.id)} className={`sidebar-link ${activePanel === item.id ? "active" : ""}`}>
+                    <item.icon size={16} strokeWidth={1.9} />
+                    <span className="flex-1 text-left truncate">{item.label}</span>
+                    {item.badge && orders.filter((o) => o.status === "pending").length > 0 && (
+                      <span className="badge" style={{ background: "var(--sub)", color: "var(--fg)" }}>
+                        {orders.filter((o) => o.status === "pending").length}
+                      </span>
+                    )}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
 
-          <p className="px-3 text-[11px] font-semibold uppercase tracking-wider mb-2 mt-6" style={{ color: "#8f8680" }}>Biolink</p>
-          <Link href="/admin/biolink" className="sidebar-link w-full text-left" onClick={() => setSidebarOpen(false)}>
-            <FileText size={20} strokeWidth={1.6} />
-            <span>Biolink</span>
-          </Link>
-          <Link href="/admin/bio-carousel" className="sidebar-link w-full text-left" onClick={() => setSidebarOpen(false)}>
-            <Image size={20} strokeWidth={1.6} />
-            <span>Foto Carousel</span>
-          </Link>
+          <div className="mt-3 pt-3" style={{ borderTop: "1px solid var(--bd)" }}>
+            <p className="px-2 mb-1.5 text-[10px] font-extrabold uppercase tracking-[0.08em]" style={{ color: "var(--fg3)" }}>Biolink</p>
+            <ul className="space-y-0.5">
+              <li><Link href="/admin/biolink" className="sidebar-link" onClick={() => setSidebarOpen(false)}><FileText size={16} strokeWidth={1.9} /><span className="flex-1">Biolink</span></Link></li>
+              <li><Link href="/admin/bio-carousel" className="sidebar-link" onClick={() => setSidebarOpen(false)}><Image size={16} strokeWidth={1.9} /><span className="flex-1">Foto Carousel</span></Link></li>
+            </ul>
+          </div>
 
-          <p className="px-3 text-[11px] font-semibold uppercase tracking-wider mb-2 mt-6" style={{ color: "#8f8680" }}>Lainnya</p>
-          {navItems.slice(4).map((item) => (
-            <button
-              key={item.id}
-              onClick={() => go(item.id)}
-              className={`sidebar-link w-full text-left ${activePanel === item.id ? "active" : ""}`}
-            >
-              <item.icon size={20} strokeWidth={1.6} />
-              <span>{item.label}</span>
-            </button>
-          ))}
-          <Link
-            href="/admin/voucher"
-            className="sidebar-link w-full text-left"
-            onClick={() => setSidebarOpen(false)}
-          >
-            <Ticket size={20} strokeWidth={1.6} />
-            <span>Voucher</span>
-          </Link>
-          <Link
-            href="/admin/testimoni"
-            className="sidebar-link w-full text-left"
-            onClick={() => setSidebarOpen(false)}
-          >
-            <Star size={20} strokeWidth={1.6} />
-            <span>Testimoni</span>
-          </Link>
-          <Link
-            href="/admin/ukuran-produk"
-            className="sidebar-link w-full text-left"
-            onClick={() => setSidebarOpen(false)}
-          >
-            <Ruler size={20} strokeWidth={1.6} />
-            <span>Panduan Ukuran</span>
-          </Link>
-          <Link
-            href="/admin/garansi-retur-page"
-            className="sidebar-link w-full text-left"
-            onClick={() => setSidebarOpen(false)}
-          >
-            <FileText size={20} strokeWidth={1.6} />
-            <span>Halaman Garansi &amp; Retur</span>
-          </Link>
-          <Link
-            href="/admin/open-order"
-            className="sidebar-link w-full text-left"
-            onClick={() => setSidebarOpen(false)}
-          >
-            <Shirt size={20} strokeWidth={1.6} />
-            <span>Open Order</span>
-          </Link>
+          <div className="mt-3 pt-3" style={{ borderTop: "1px solid var(--bd)" }}>
+            <p className="px-2 mb-1.5 text-[10px] font-extrabold uppercase tracking-[0.08em]" style={{ color: "var(--fg3)" }}>Lainnya</p>
+            <ul className="space-y-0.5">
+              {navItems.slice(4).map((item) => (
+                <li key={item.id}>
+                  <button onClick={() => go(item.id)} className={`sidebar-link ${activePanel === item.id ? "active" : ""}`}>
+                    <item.icon size={16} strokeWidth={1.9} />
+                    <span className="flex-1 text-left truncate">{item.label}</span>
+                  </button>
+                </li>
+              ))}
+              <li><Link href="/admin/voucher" className="sidebar-link" onClick={() => setSidebarOpen(false)}><Ticket size={16} strokeWidth={1.9} /><span className="flex-1">Voucher</span></Link></li>
+              <li><Link href="/admin/testimoni" className="sidebar-link" onClick={() => setSidebarOpen(false)}><Star size={16} strokeWidth={1.9} /><span className="flex-1">Testimoni</span></Link></li>
+              <li><Link href="/admin/ukuran-produk" className="sidebar-link" onClick={() => setSidebarOpen(false)}><Ruler size={16} strokeWidth={1.9} /><span className="flex-1">Panduan Ukuran</span></Link></li>
+              <li><Link href="/admin/garansi-retur-page" className="sidebar-link" onClick={() => setSidebarOpen(false)}><FileText size={16} strokeWidth={1.9} /><span className="flex-1">Halaman Garansi &amp; Retur</span></Link></li>
+              <li><Link href="/admin/open-order" className="sidebar-link" onClick={() => setSidebarOpen(false)}><Shirt size={16} strokeWidth={1.9} /><span className="flex-1">Open Order</span></Link></li>
+            </ul>
+          </div>
         </nav>
 
-        <div className="px-4 pb-6">
-          <div className="rounded-xl p-4" style={{ background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.08)" }}>
-            <p className="text-sm font-semibold" style={{ color: "var(--cream)" }}>Butuh bantuan?</p>
-            <p className="text-xs mt-1 leading-relaxed" style={{ color: "#9f9690" }}>Butuh bantuan atau ingin tambah fitur? Hubungi kami.</p>
-            <a href="https://wa.me/6285212150100?text=Halo,%20saya%20ingin%20bertanya%20seputar%20dashboard%20admin%20SAMAQU." target="_blank" rel="noopener noreferrer" className="mt-3 w-full text-sm font-semibold py-2 rounded-lg text-white text-center block" style={{ background: "linear-gradient(135deg, var(--gold), #96742f)" }}>Hubungi Kami</a>
-          </div>
+        {/* Footer sidebar — bantuan + keluar, ala wireframe */}
+        <div className="shrink-0 px-3 py-3 space-y-0.5" style={{ borderTop: "1px solid var(--bd)" }}>
+          <a
+            href="https://wa.me/6285212150100?text=Halo,%20saya%20ingin%20bertanya%20seputar%20dashboard%20admin%20SAMAQU."
+            target="_blank"
+            rel="noopener noreferrer"
+            className="sidebar-link"
+          >
+            <MessageCircle size={16} strokeWidth={1.9} />
+            <span className="flex-1">Butuh Bantuan?</span>
+          </a>
+          <button onClick={handleLogout} className="sidebar-link w-full" style={{ color: "#ef4444" }}>
+            <LogOut size={16} strokeWidth={1.9} />
+            <span className="flex-1 text-left">Keluar</span>
+          </button>
         </div>
       </aside>
 
@@ -607,27 +667,39 @@ function AdminPageInner() {
       {/* Main */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Topbar */}
-        <header className="sticky top-0 z-20 backdrop-blur" style={{ background: "rgba(248,245,241,.8)", borderBottom: "1px solid rgba(64,50,37,.06)" }}>
-          <div className="flex items-center gap-4 px-5 lg:px-8 py-4">
-            <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 -ml-2 rounded-lg" style={{ color: "var(--espresso)" }}>
+        <header className="sticky top-0 z-20" style={{ background: "var(--card)", borderBottom: "1px solid var(--bd)" }}>
+          <div className="flex items-center gap-4 px-5 lg:px-8 h-20">
+            <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 -ml-2 rounded-lg" style={{ color: "var(--fg)" }}>
               <Menu size={24} strokeWidth={1.8} />
             </button>
             <div className="min-w-0">
-              <h1 className="text-2xl lg:text-3xl italic leading-none" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>{panelTitles[activePanel].title}</h1>
-              <p className="text-sm mt-1 hidden sm:block" style={{ color: "var(--text-muted)" }}>{panelTitles[activePanel].sub}</p>
+              <h1 className="text-xl lg:text-2xl font-extrabold leading-tight truncate" style={{ color: "var(--fg)" }}>{panelTitles[activePanel].title}</h1>
+              <p className="text-xs mt-1 hidden sm:block truncate" style={{ color: "var(--fg3)" }}>{panelTitles[activePanel].sub}</p>
             </div>
             <div className="ml-auto flex items-center gap-3">
               <div className="relative hidden md:block">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2" size={18} strokeWidth={1.8} style={{ color: "var(--text-muted)" }} />
-                <input type="text" placeholder="Cari pesanan, produk..." className="pl-10 pr-4 py-2.5 w-64 rounded-xl bg-white text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.06)" }} />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2" size={16} strokeWidth={1.9} style={{ color: "var(--fg3)" }} />
+                <input
+                  type="text"
+                  value={productSearch}
+                  onChange={(e) => setProductSearch(e.target.value)}
+                  placeholder="Cari pesanan, produk..."
+                  className="pl-9 pr-8 py-2 w-56 rounded-lg text-sm outline-none"
+                  style={{ border: "1px solid var(--bd)", background: "var(--sub)", color: "var(--fg)" }}
+                />
+                {productSearch && (
+                  <button onClick={() => setProductSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2" style={{ color: "var(--fg3)" }}>
+                    <X size={15} />
+                  </button>
+                )}
               </div>
-              <button className="relative p-2.5 rounded-xl bg-white" style={{ border: "1px solid rgba(64,50,37,.06)" }}>
-                <Bell size={20} strokeWidth={1.7} style={{ color: "var(--espresso)" }} />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full" style={{ background: "var(--gold)" }} />
+              <button className="relative p-2.5 rounded-lg" style={{ border: "1px solid var(--bd)", background: "var(--card)" }}>
+                <Bell size={19} strokeWidth={1.8} style={{ color: "var(--fg2)" }} />
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full" style={{ background: "var(--fg)" }} />
               </button>
               <div className="relative">
                 <button onClick={() => setProfileOpen(!profileOpen)} className="flex items-center gap-2.5 pl-2 cursor-pointer">
-                  <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-semibold text-sm" style={{ background: "linear-gradient(135deg, var(--gold), #96742f)" }}>
+                  <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-semibold text-sm" style={{ background: "#18181b" }}>
                     {user.email?.charAt(0).toUpperCase() || "A"}
                   </div>
                   <div className="hidden sm:block leading-tight text-left">
@@ -638,8 +710,8 @@ function AdminPageInner() {
                 {profileOpen && (
                   <>
                     <div className="fixed inset-0 z-40" onClick={() => setProfileOpen(false)} />
-                    <div className="absolute right-0 top-full mt-2 w-64 rounded-xl z-50 overflow-hidden" style={{ background: "white", border: "1px solid rgba(64,50,37,.1)", boxShadow: "0 12px 40px -8px rgba(45,33,27,.2)" }}>
-                      <div className="px-4 py-3" style={{ borderBottom: "1px solid rgba(64,50,37,.06)" }}>
+                    <div className="absolute right-0 top-full mt-2 w-64 rounded-xl z-50 overflow-hidden" style={{ background: "white", border: "1px solid #e4e4e7", boxShadow: "0 12px 40px -8px rgba(0,0,0,.12)" }}>
+                      <div className="px-4 py-3" style={{ borderBottom: "1px solid #f1f1f3" }}>
                         <p className="text-sm font-semibold" style={{ color: "var(--espresso)" }}>{user.email?.split("@")[0] || "Admin"}</p>
                         <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>{user.email}</p>
                       </div>
@@ -662,73 +734,20 @@ function AdminPageInner() {
 
               {/* DASHBOARD */}
               {activePanel === "dashboard" && (
-                <div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-5">
-                    <StatCard icon={<DollarSign size={20} />} label="Pendapatan" value={money(stats.revenue)} badge="+18%" badgeColor="#e7ecdf,#5b6b45" />
-                    <StatCard icon={<ShoppingCart size={20} />} label="Total Pesanan" value={stats.totalOrders.toString()} badge={`+${stats.pendingOrders}`} badgeColor="#e7ecdf,#5b6b45" />
-                    <StatCard icon={<UserPlus size={20} />} label="Menunggu Verifikasi" value={stats.pendingOrders.toString()} badge="pending" badgeColor="#f0e7d8,#8a6f42" />
-                    <StatCard icon={<Box size={20} />} label="Produk Aktif" value={stats.totalProducts.toString()} badge={`${products.length} item`} badgeColor="#f0e7d8,#8a6f42" />
-                  </div>
-
-                  <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 lg:gap-5 mt-5">
-                    <div className="card p-5 xl:col-span-2">
-                      <h2 className="font-serif italic text-xl mb-4" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Pesanan Terbaru</h2>
-                      {loading ? <p className="text-sm" style={{ color: "var(--text-muted)" }}>Memuat...</p> : (
-                        <div className="overflow-x-auto">
-                          <OrdersMobileList orders={orders.slice(0, 5)} emptyText="Belum ada pesanan" renderStatus={(s) => <StatusBadge status={s} />} />
-                          <table className="w-full text-sm min-w-[500px] hidden lg:table">
-                            <thead>
-                              <tr className="text-left" style={{ color: "var(--text-muted)", background: "var(--bg-secondary)" }}>
-                                <th className="font-medium px-4 py-3">ID</th>
-                                <th className="font-medium px-4 py-3">Pelanggan</th>
-                                <th className="font-medium px-4 py-3">Total</th>
-                                <th className="font-medium px-4 py-3">Status</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {orders.slice(0, 5).map((o) => (
-                                <tr key={o.id} style={{ borderTop: "1px solid rgba(64,50,37,.06)" }}>
-                                  <td className="px-4 py-3 font-semibold">{o.order_number}</td>
-                                  <td className="px-4 py-3">{o.customer_name}</td>
-                                  <td className="px-4 py-3 font-semibold">{money(o.total)}</td>
-                                  <td className="px-4 py-3"><StatusBadge status={o.status} /></td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="card p-5">
-                      <h2 className="font-serif italic text-xl mb-4" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Koleksi Terlaris</h2>
-                      <div className="space-y-4">
-                        {topProducts.map((p, i) => (
-                          <div key={i} className="flex items-center gap-3">
-                            <div className="w-11 h-11 rounded-lg shrink-0 overflow-hidden" style={{ background: "#e8dfd1" }}>
-                              {p.image ? (
-                                <img src={p.image} alt={p.name} className="w-full h-full object-cover" loading="lazy" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; (e.target as HTMLImageElement).nextElementSibling?.classList.remove("hidden"); }} />
-                              ) : null}
-                              <div className={`w-full h-full ${p.image ? "hidden" : ""}`} style={{ background: `linear-gradient(135deg, ${["#c8b18a,#8b6f42", "#e0d3bd,#b58c4a", "#9c8468,#403225", "#d4a574,#8b6f42", "#bfa789,#6b5d50"][i]})` }} />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="text-sm font-semibold truncate">{p.name}</p>
-                              <p className="text-xs" style={{ color: "var(--text-muted)" }}>{p.count} terjual</p>
-                            </div>
-                          </div>
-                        ))}
-                        {topProducts.length === 0 && <p className="text-sm" style={{ color: "var(--text-muted)" }}>Belum ada data penjualan</p>}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <DashboardView
+                  revenue={stats.revenue}
+                  orders={orders}
+                  products={products}
+                  topProducts={topProducts}
+                  loading={loading}
+                />
               )}
 
               {/* ORDERS */}
               {activePanel === "orders" && (
                 <div className="card overflow-hidden">
                   <div className="px-5 pt-4">
-                    <div className="flex gap-6" style={{ borderBottom: "1px solid rgba(64,50,37,.06)" }}>
+                    <div className="flex gap-6" style={{ borderBottom: "1px solid #f1f1f3" }}>
                       {([{ id: "website", label: "Pesanan Website" }, { id: "open", label: "Open Order" }] as const).map((t) => (
                         <button key={t.id} onClick={() => setOrderSource(t.id)} className="pb-3 -mb-px text-sm font-medium transition-colors" style={{ color: orderSource === t.id ? "var(--espresso)" : "var(--text-muted)", borderBottom: orderSource === t.id ? "2px solid var(--gold)" : "2px solid transparent" }}>
                           {t.label}
@@ -736,11 +755,11 @@ function AdminPageInner() {
                       ))}
                     </div>
                   </div>
-                  <div className="flex flex-wrap items-center gap-3 justify-between p-5" style={{ borderBottom: "1px solid rgba(64,50,37,.06)" }}>
+                  <div className="flex flex-wrap items-center gap-3 justify-between p-5" style={{ borderBottom: "1px solid #f1f1f3" }}>
                     <h2 className="font-serif italic text-xl" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>{orderSource === "open" ? "Pesanan Open Order" : "Semua Pesanan"}</h2>
                     <div className="flex flex-wrap gap-2">
                       {["Semua", "pending", "diproses", "selesai"].map((s) => (
-                        <button key={s} onClick={() => setOrderFilter(s)} className="text-sm px-3 py-1.5 rounded-lg font-medium transition-colors" style={{ background: orderFilter === s ? "var(--gold)" : "transparent", color: orderFilter === s ? "#fff" : "var(--text-secondary)", border: orderFilter === s ? "none" : "1px solid rgba(64,50,37,.15)" }}>
+                        <button key={s} onClick={() => setOrderFilter(s)} className="text-sm px-3 py-1.5 rounded-lg font-medium transition-colors" style={{ background: orderFilter === s ? "var(--gold)" : "transparent", color: orderFilter === s ? "#fff" : "var(--text-secondary)", border: orderFilter === s ? "none" : "1px solid #d4d4d8" }}>
                           {s === "Semua" ? "Semua" : s.charAt(0).toUpperCase() + s.slice(1)}
                         </button>
                       ))}
@@ -766,14 +785,14 @@ function AdminPageInner() {
                       </thead>
                       <tbody>
                         {visibleOrders.map((o) => (
-                          <tr key={o.id} className="cursor-pointer transition-colors hover:bg-[rgba(248,246,242,.5)]" style={{ borderTop: "1px solid rgba(64,50,37,.06)" }} onClick={() => setSelectedOrder(o)}>
+                          <tr key={o.id} className="cursor-pointer transition-colors hover:bg-[#fafafa]" style={{ borderTop: "1px solid #f1f1f3" }} onClick={() => setSelectedOrder(o)}>
                             <td className="px-5 py-3.5 font-semibold">{o.order_number}</td>
                             <td className="px-5 py-3.5">{o.customer_name}</td>
                             <td className="px-5 py-3.5" style={{ color: "var(--text-muted)" }}>{new Date(o.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}</td>
                             <td className="px-5 py-3.5 font-semibold">{money(o.total)}</td>
                             <td className="px-5 py-3.5"><StatusBadge status={o.status} /></td>
                             <td className="px-5 py-3.5 text-right">
-                              <button onClick={(e) => { e.stopPropagation(); setSelectedOrder(o); }} className="text-xs px-3 py-1.5 rounded-lg font-medium" style={{ border: "1px solid rgba(64,50,37,.15)", color: "var(--gold)" }}>Detail</button>
+                              <button onClick={(e) => { e.stopPropagation(); setSelectedOrder(o); }} className="text-xs px-3 py-1.5 rounded-lg font-medium" style={{ border: "1px solid #d4d4d8", color: "var(--gold)" }}>Detail</button>
                             </td>
                           </tr>
                         ))}
@@ -788,75 +807,21 @@ function AdminPageInner() {
 
               {/* PRODUCTS */}
               {activePanel === "products" && (
-                <div>
-                  <div className="flex items-center justify-between mb-5">
-                    <div>
-                      <h2 className="text-2xl italic" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Katalog Produk</h2>
-                      <p className="text-sm" style={{ color: "var(--text-muted)" }}>Kelola koleksi busana SAMAQU</p>
-                    </div>
-                    <Link href="/admin/produk/tambah" className="flex items-center gap-2 text-sm font-semibold px-4 py-2.5 rounded-xl text-white" style={{ background: "linear-gradient(135deg, var(--gold), #96742f)" }}>
-                      <Plus size={18} strokeWidth={2} /> Tambah Produk
-                    </Link>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                    {catalogItems.map((p) => (
-                      <div key={p.id} className="card overflow-hidden group">
-                        {/* Image */}
-                        <div className="relative aspect-[4/5] overflow-hidden" style={{ background: "#e8dfd1" }}>
-                          <img src={productThumbnails[p.id] || p.image || ""} alt={p.name} className="w-full h-full object-cover" loading="lazy" />
-                          <span className="absolute top-3 left-3 badge" style={{ background: "rgba(255,255,255,.8)", color: "var(--espresso)" }}>{p.category}</span>
-                        </div>
-                        {/* Info */}
-                        <div className="p-4 flex flex-col">
-                          {/* Name */}
-                          <h3 className="font-semibold text-sm leading-snug" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
-                            {p.name}
-                          </h3>
-                          {/* Kain */}
-                          {(p.jenis_kain?.name || p.kain) && (
-                            <p className="mt-1 text-[11px] font-ui" style={{ color: "var(--gold)" }}>
-                              Kain {p.jenis_kain?.name || p.kain}
-                            </p>
-                          )}
-                          {/* Series info */}
-                          {p.availableSeries && p.availableSeries.length > 1 && (
-                            <p className="mt-1.5 inline-flex items-center gap-1.5 text-[10.5px] font-ui" style={{ color: "var(--text-muted)" }}>
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full" style={{ background: "rgba(181,140,74,.08)", border: "1px solid rgba(181,140,74,.2)" }}>
-                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" style={{ color: "var(--gold)" }}>
-                                  <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
-                                  <path d="m3.3 7 8.7 5 8.7-5" />
-                                  <path d="M12 22V12" />
-                                </svg>
-                                {p.availableSeries.length} series tersedia
-                              </span>
-                            </p>
-                          )}
-                          {/* Price */}
-                          <p className="mt-2 text-[12.5px] font-ui" style={{ color: "var(--text-muted)" }}>
-                            Mulai{" "}
-                            <span className="font-medium" style={{ color: "var(--espresso)" }}>
-                              {p.create_your_price_enabled && p.minimum_price
-                                ? `Rp ${p.minimum_price.toLocaleString("id-ID")}`
-                                : `Rp ${p.price.toLocaleString("id-ID")}`}
-                            </span>
-                          </p>
-                          {/* Actions */}
-                          <div className="flex gap-2 mt-3">
-                            <Link href={`/admin/produk/edit/${p.id}`} className="flex-1 text-xs font-semibold py-2 rounded-lg text-center" style={{ border: "1px solid rgba(64,50,37,.15)" }}>Edit</Link>
-                            <Link href={`/admin/produk/detail/${p.id}`} className="flex-1 text-xs font-semibold py-2 rounded-lg text-center text-white" style={{ background: "var(--gold)" }}>Detail</Link>
-                            <button onClick={() => handleDeleteProduct(p.id, p.name, p.memberIds)} className="flex-1 text-xs font-semibold py-2 rounded-lg text-center" style={{ border: "1px solid rgba(231,76,60,.3)", color: "#e74c3c" }}>Hapus</button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <ProductsCatalog
+                  items={filteredCatalogItems}
+                  total={catalogItemsWithStock.length}
+                  thumbnails={productThumbnails}
+                  search={productSearch}
+                  setSearch={setProductSearch}
+                  onDelete={handleDeleteProduct}
+                  loading={loading}
+                />
               )}
 
               {/* CUSTOMERS */}
               {activePanel === "customers" && (
                 <div className="card overflow-hidden">
-                  <div className="p-5" style={{ borderBottom: "1px solid rgba(64,50,37,.06)" }}>
+                  <div className="p-5" style={{ borderBottom: "1px solid #f1f1f3" }}>
                     <h2 className="font-serif italic text-xl" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Daftar Pelanggan</h2>
                   </div>
                   <div className="overflow-x-auto">
@@ -879,7 +844,7 @@ function AdminPageInner() {
                           });
                           return Object.values(customers).sort((a, b) => b.total - a.total);
                         })().map((c, i) => (
-                          <tr key={i} style={{ borderTop: "1px solid rgba(64,50,37,.06)" }}>
+                          <tr key={i} style={{ borderTop: "1px solid #f1f1f3" }}>
                             <td className="px-5 py-3.5 font-semibold">{c.name}</td>
                             <td className="px-5 py-3.5" style={{ color: "var(--text-secondary)" }}>{c.whatsapp}</td>
                             <td className="px-5 py-3.5">{c.orders} pesanan</td>
@@ -956,12 +921,12 @@ function AdminPageInner() {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-start justify-center md:pt-10 md:px-4 md:pb-10 overflow-y-auto" style={{ background: "rgba(42,33,27,.4)", backdropFilter: "blur(4px)" }} onClick={() => setSelectedOrder(null)}>
             <motion.div initial={{ opacity: 0, y: 20, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.98 }} transition={{ duration: 0.25 }} className="w-full max-w-2xl rounded-none md:rounded-2xl overflow-hidden min-h-full md:min-h-0" style={{ background: "var(--cream)", boxShadow: "0 25px 60px -12px rgba(42,33,27,.5)" }} onClick={(e) => e.stopPropagation()}>
               {/* Header */}
-              <div className="px-4 py-4 md:px-6 md:py-5 flex items-center justify-between" style={{ borderBottom: "1px solid rgba(64,50,37,.06)" }}>
+              <div className="px-4 py-4 md:px-6 md:py-5 flex items-center justify-between" style={{ borderBottom: "1px solid #f1f1f3" }}>
                 <div>
                   <h2 className="text-xl font-medium" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>{selectedOrder.order_number}</h2>
                   <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{new Date(selectedOrder.created_at).toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</p>
                 </div>
-                <button onClick={() => setSelectedOrder(null)} className="p-2 rounded-lg hover:bg-[rgba(64,50,37,.05)]" style={{ color: "var(--text-muted)" }}><X size={18} /></button>
+                <button onClick={() => setSelectedOrder(null)} className="p-2 rounded-lg hover:bg-[#f4f4f5]" style={{ color: "var(--text-muted)" }}><X size={18} /></button>
               </div>
 
               {/* Isi detail memakai susunan & gaya yang sama dengan halaman detail pesanan customer. */}
@@ -984,37 +949,9 @@ function AdminPageInner() {
         onCancel={() => setConfirmModal((prev) => ({ ...prev, open: false }))}
       />
 
-      <style jsx global>{`
-        /* All interactive elements in admin dashboard */
-        #admin-root button,
-        #admin-root a,
-        #admin-root [role="button"],
-        #admin-root select {
-          cursor: pointer;
-        }
-        /* Hidden scrollbar - keeps scroll functionality, hides visual scrollbar */
-        .admin-sidebar {
-          scrollbar-width: none; /* Firefox */
-          -ms-overflow-style: none; /* IE/Edge */
-        }
-        .admin-sidebar::-webkit-scrollbar {
-          display: none; /* Chrome, Safari, Opera */
-        }
-        .sidebar-link {
-          display: flex; align-items: center; gap: 0.75rem;
-          padding: 0.7rem 0.9rem; border-radius: 0.7rem;
-          color: #d4ccc2; font-size: 0.9rem; font-weight: 500;
-          cursor: pointer; transition: all .2s ease; border: 1px solid transparent;
-        }
-        .sidebar-link:hover { background: rgba(255,255,255,.06); color: #f8f5f1; }
-        .sidebar-link.active { background: rgba(255,255,255,.12); color: #f8f5f1; border-color: rgba(255,255,255,.1); }
-        .sidebar-link.active svg { color: var(--gold); }
-        .card { background: #fffdfb; border: 1px solid rgba(64,50,37,.06); border-radius: 1rem; box-shadow: 0 1px 2px rgba(64,50,37,.03); }
-        .badge { font-size: .72rem; font-weight: 600; padding: .2rem .6rem; border-radius: 999px; white-space: nowrap; }
-        .scrollbar-thin::-webkit-scrollbar { width: 6px; height: 6px; }
-        .scrollbar-thin::-webkit-scrollbar-thumb { background: rgba(64,50,37,.2); border-radius: 999px; }
-        .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
-      `}</style>
+      {/* Token tema admin (wireframe-accurate "Sales Analytics View") — satu sumber
+          yang sama dengan AdminShell & dashboard /admin, supaya tidak drift. */}
+      <style jsx global>{ADMIN_WF_VARS}</style>
     </div>
   );
 }
@@ -1192,11 +1129,11 @@ function ShippingOriginSection() {
         <div>
           <label className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Provinsi</label>
           {dropdownsLoading && form.origin_province_id ? (
-            <div className="mt-1 w-full rounded-xl px-3 py-2.5 bg-white text-sm" style={{ border: "1px solid rgba(64,50,37,.1)" }}>
+            <div className="mt-1 w-full rounded-xl px-3 py-2.5 bg-white text-sm" style={{ border: "1px solid #e4e4e7" }}>
               {findName(provinces, form.origin_province_id) || "Memuat..."}
             </div>
           ) : (
-            <select value={form.origin_province_id} onChange={(e) => handleProvChange(e.target.value)} className="mt-1 w-full rounded-xl px-3 py-2.5 bg-white text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.1)" }}>
+            <select value={form.origin_province_id} onChange={(e) => handleProvChange(e.target.value)} className="mt-1 w-full rounded-xl px-3 py-2.5 bg-white text-sm outline-none" style={{ border: "1px solid #e4e4e7" }}>
               <option value="">Pilih</option>
               {provinces.map((p) => <option key={p.id} value={String(p.id)}>{p.name}</option>)}
             </select>
@@ -1205,11 +1142,11 @@ function ShippingOriginSection() {
         <div>
           <label className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Kota / Kabupaten</label>
           {dropdownsLoading && form.origin_city_id ? (
-            <div className="mt-1 w-full rounded-xl px-3 py-2.5 bg-white text-sm" style={{ border: "1px solid rgba(64,50,37,.1)", opacity: !form.origin_province_id ? 0.5 : 1 }}>
+            <div className="mt-1 w-full rounded-xl px-3 py-2.5 bg-white text-sm" style={{ border: "1px solid #e4e4e7", opacity: !form.origin_province_id ? 0.5 : 1 }}>
               {findName(cities, form.origin_city_id) || "Memuat..."}
             </div>
           ) : (
-            <select value={form.origin_city_id} onChange={(e) => handleCityChange(e.target.value)} disabled={!form.origin_province_id} className="mt-1 w-full rounded-xl px-3 py-2.5 bg-white text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.1)", opacity: !form.origin_province_id ? 0.5 : 1 }}>
+            <select value={form.origin_city_id} onChange={(e) => handleCityChange(e.target.value)} disabled={!form.origin_province_id} className="mt-1 w-full rounded-xl px-3 py-2.5 bg-white text-sm outline-none" style={{ border: "1px solid #e4e4e7", opacity: !form.origin_province_id ? 0.5 : 1 }}>
               <option value="">Pilih</option>
               {cities.map((c) => <option key={c.id} value={String(c.id)}>{c.name}</option>)}
             </select>
@@ -1218,11 +1155,11 @@ function ShippingOriginSection() {
         <div>
           <label className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>Kecamatan</label>
           {dropdownsLoading && form.origin_district_id ? (
-            <div className="mt-1 w-full rounded-xl px-3 py-2.5 bg-white text-sm" style={{ border: "1px solid rgba(64,50,37,.1)", opacity: !form.origin_city_id ? 0.5 : 1 }}>
+            <div className="mt-1 w-full rounded-xl px-3 py-2.5 bg-white text-sm" style={{ border: "1px solid #e4e4e7", opacity: !form.origin_city_id ? 0.5 : 1 }}>
               {findName(districts, form.origin_district_id) || "Memuat..."}
             </div>
           ) : (
-            <select value={form.origin_district_id} onChange={(e) => setForm((f) => ({ ...f, origin_district_id: e.target.value }))} disabled={!form.origin_city_id} className="mt-1 w-full rounded-xl px-3 py-2.5 bg-white text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.1)", opacity: !form.origin_city_id ? 0.5 : 1 }}>
+            <select value={form.origin_district_id} onChange={(e) => setForm((f) => ({ ...f, origin_district_id: e.target.value }))} disabled={!form.origin_city_id} className="mt-1 w-full rounded-xl px-3 py-2.5 bg-white text-sm outline-none" style={{ border: "1px solid #e4e4e7", opacity: !form.origin_city_id ? 0.5 : 1 }}>
               <option value="">Pilih</option>
               {districts.map((d) => <option key={d.id} value={String(d.id)}>{d.name}</option>)}
             </select>
@@ -1231,7 +1168,7 @@ function ShippingOriginSection() {
       </div>
       <div className="flex gap-3 pt-2">
         {form.origin_district_id && (
-          <button onClick={handleSave} disabled={saving} className="text-sm font-semibold px-5 py-2.5 rounded-xl text-white" style={{ background: "linear-gradient(135deg, var(--gold), #96742f)" }}>
+          <button onClick={handleSave} disabled={saving} className="text-sm font-semibold px-5 py-2.5 rounded-xl text-white" style={{ background: "#18181b" }}>
             {saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null} Simpan
           </button>
         )}
@@ -1292,7 +1229,7 @@ function CourierSettingsSection() {
       <p className="text-xs" style={{ color: "var(--text-muted)" }}>Pilih ekspedisi yang ingin ditampilkan di halaman checkout.</p>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
         {AVAILABLE_COURIERS.map((c) => (
-          <label key={c.code} className="flex items-center gap-2.5 rounded-xl px-4 py-3 cursor-pointer transition-all" style={{ border: `1.5px solid ${enabled.includes(c.code) ? "var(--gold)" : "rgba(64,50,37,.15)"}`, background: enabled.includes(c.code) ? "rgba(181,140,74,.04)" : "white" }}>
+          <label key={c.code} className="flex items-center gap-2.5 rounded-xl px-4 py-3 cursor-pointer transition-all" style={{ border: `1.5px solid ${enabled.includes(c.code) ? "var(--gold)" : "#d4d4d8"}`, background: enabled.includes(c.code) ? "#fafafa" : "white" }}>
             <input type="checkbox" checked={enabled.includes(c.code)} onChange={() => toggle(c.code)} className="sr-only" />
             <span className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0" style={{ border: `2px solid ${enabled.includes(c.code) ? "var(--gold)" : "var(--text-muted)"}`, background: enabled.includes(c.code) ? "var(--gold)" : "transparent" }}>
               {enabled.includes(c.code) && <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={3}><path d="M5 12l5 5L20 7" /></svg>}
@@ -1303,7 +1240,7 @@ function CourierSettingsSection() {
       </div>
       <div className="flex gap-3 pt-2">
         {dirty && (
-          <button onClick={handleSave} disabled={saving} className="text-sm font-semibold px-5 py-2.5 rounded-xl text-white" style={{ background: "linear-gradient(135deg, var(--gold), #96742f)" }}>
+          <button onClick={handleSave} disabled={saving} className="text-sm font-semibold px-5 py-2.5 rounded-xl text-white" style={{ background: "#18181b" }}>
             {saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null} Simpan Perubahan
           </button>
         )}
@@ -1353,7 +1290,7 @@ function ApiKeySection() {
       {masked && (
         <div className="flex items-center gap-2 text-sm font-mono" style={{ color: "var(--text-secondary)" }}>
           <span>Key tersimpan:</span>
-          <span className="px-2 py-1 rounded" style={{ background: "rgba(64,50,37,.06)" }}>{masked}</span>
+          <span className="px-2 py-1 rounded" style={{ background: "#f1f1f3" }}>{masked}</span>
         </div>
       )}
 
@@ -1364,14 +1301,14 @@ function ApiKeySection() {
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
             className="w-full rounded-xl px-4 py-2.5 pr-10 bg-white text-sm outline-none font-mono"
-            style={{ border: "1px solid rgba(64,50,37,.1)" }}
+            style={{ border: "1px solid #e4e4e7" }}
             placeholder={masked ? "Masukkan key baru untuk mengganti" : "Masukkan API key RajaOngkir"}
           />
           <button type="button" onClick={() => setShowKey(!showKey)} className="absolute right-3 top-1/2 -translate-y-1/2 text-xs" style={{ color: "var(--text-muted)" }}>
             {showKey ? "🙈" : "👁️"}
           </button>
         </div>
-        <button onClick={handleSave} disabled={saving || !apiKey.trim()} className="text-sm font-semibold px-5 py-2.5 rounded-xl text-white disabled:opacity-40" style={{ background: "linear-gradient(135deg, var(--gold), #96742f)" }}>
+        <button onClick={handleSave} disabled={saving || !apiKey.trim()} className="text-sm font-semibold px-5 py-2.5 rounded-xl text-white disabled:opacity-40" style={{ background: "#18181b" }}>
           {saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null} Simpan
         </button>
       </div>
@@ -1418,7 +1355,7 @@ function SocialMediaSection() {
           value={instagramUrl}
           onChange={(e) => setInstagramUrl(e.target.value)}
           className="w-full rounded-xl px-4 py-2.5 bg-white text-sm outline-none"
-          style={{ border: "1px solid rgba(64,50,37,.1)" }}
+          style={{ border: "1px solid #e4e4e7" }}
           placeholder="https://instagram.com/samaqu.id"
         />
         <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>Kosongkan untuk menyembunyikan icon Instagram di footer.</p>
@@ -1470,34 +1407,34 @@ function StoreInfoSection() {
       <h3 className="text-lg font-semibold" style={{ color: "var(--espresso)" }}>Informasi Toko</h3>
       <div>
         <label className="text-sm font-semibold" style={{ color: "var(--espresso)" }}>Nama Toko</label>
-        <input value={form.store_name} onChange={(e) => setForm({ ...form, store_name: e.target.value })} className="mt-1.5 w-full rounded-xl px-4 py-2.5 bg-white text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.1)" }} />
+        <input value={form.store_name} onChange={(e) => setForm({ ...form, store_name: e.target.value })} className="mt-1.5 w-full rounded-xl px-4 py-2.5 bg-white text-sm outline-none" style={{ border: "1px solid #e4e4e7" }} />
       </div>
       <div>
         <label className="text-sm font-semibold" style={{ color: "var(--espresso)" }}>Tagline</label>
-        <input value={form.tagline} onChange={(e) => setForm({ ...form, tagline: e.target.value })} className="mt-1.5 w-full rounded-xl px-4 py-2.5 bg-white text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.1)" }} />
+        <input value={form.tagline} onChange={(e) => setForm({ ...form, tagline: e.target.value })} className="mt-1.5 w-full rounded-xl px-4 py-2.5 bg-white text-sm outline-none" style={{ border: "1px solid #e4e4e7" }} />
       </div>
       <div className="grid sm:grid-cols-2 gap-4">
         <div>
           <label className="text-sm font-semibold" style={{ color: "var(--espresso)" }}>Email</label>
-          <input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="mt-1.5 w-full rounded-xl px-4 py-2.5 bg-white text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.1)" }} />
+          <input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="mt-1.5 w-full rounded-xl px-4 py-2.5 bg-white text-sm outline-none" style={{ border: "1px solid #e4e4e7" }} />
         </div>
         <div>
           <label className="text-sm font-semibold" style={{ color: "var(--espresso)" }}>WhatsApp</label>
-          <input value={form.whatsapp} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} className="mt-1.5 w-full rounded-xl px-4 py-2.5 bg-white text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.1)" }} />
+          <input value={form.whatsapp} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} className="mt-1.5 w-full rounded-xl px-4 py-2.5 bg-white text-sm outline-none" style={{ border: "1px solid #e4e4e7" }} />
         </div>
       </div>
       <div>
         <label className="text-sm font-semibold" style={{ color: "var(--espresso)" }}>Teks Microcopy Create Your Price</label>
         <p className="text-[11px] font-ui mt-0.5 mb-1.5" style={{ color: "var(--text-muted)" }}>Teks kecil yang muncul di bawah pilihan harga pada halaman produk CYP. Kosongkan untuk gunakan default.</p>
-        <textarea value={form.cyp_microcopy} onChange={(e) => setForm({ ...form, cyp_microcopy: e.target.value })} rows={2} className="w-full rounded-xl px-4 py-2.5 bg-white text-sm outline-none resize-none" style={{ border: "1px solid rgba(64,50,37,.1)" }} placeholder="Harga Minimum boleh dipilih. Itulah alasan kami membuat Create Your Price." />
+        <textarea value={form.cyp_microcopy} onChange={(e) => setForm({ ...form, cyp_microcopy: e.target.value })} rows={2} className="w-full rounded-xl px-4 py-2.5 bg-white text-sm outline-none resize-none" style={{ border: "1px solid #e4e4e7" }} placeholder="Harga Minimum boleh dipilih. Itulah alasan kami membuat Create Your Price." />
       </div>
       <div className="flex gap-3 pt-2">
         {dirty && (
-          <button onClick={handleSave} disabled={saving} className="text-sm font-semibold px-5 py-2.5 rounded-xl text-white" style={{ background: "linear-gradient(135deg, var(--gold), #96742f)" }}>
+          <button onClick={handleSave} disabled={saving} className="text-sm font-semibold px-5 py-2.5 rounded-xl text-white" style={{ background: "#18181b" }}>
             {saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null} Simpan Perubahan
           </button>
         )}
-        <button onClick={handleReset} className="text-sm font-semibold px-5 py-2.5 rounded-xl" style={{ border: "1px solid rgba(64,50,37,.15)" }}>Batal</button>
+        <button onClick={handleReset} className="text-sm font-semibold px-5 py-2.5 rounded-xl" style={{ border: "1px solid #d4d4d8" }}>Batal</button>
       </div>
     </div>
   );
@@ -1564,7 +1501,7 @@ function CustomerProductsSection() {
           <h3 className="text-lg font-semibold" style={{ color: "var(--espresso)" }}>Produk Pilihan Customer</h3>
           <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Tampil di dashboard customer section "Koleksi Pilihan" (maks 8)</p>
         </div>
-        <button onClick={save} disabled={saving || featuredIds.length === 0} className="text-xs px-4 py-2 rounded-xl font-semibold text-white" style={{ background: saved ? "#5b6b45" : "var(--gold)", opacity: saving || featuredIds.length === 0 ? 0.5 : 1 }}>
+        <button onClick={save} disabled={saving || featuredIds.length === 0} className="text-xs px-4 py-2 rounded-xl font-semibold text-white" style={{ background: saved ? "#3f3f46" : "var(--gold)", opacity: saving || featuredIds.length === 0 ? 0.5 : 1 }}>
           {saving ? "..." : saved ? "Tersimpan" : "Simpan"}
         </button>
       </div>
@@ -1573,33 +1510,19 @@ function CustomerProductsSection() {
         {allProducts.map((p) => {
           const selected = featuredIds.includes(p.id);
           return (
-            <button key={p.id} onClick={() => { if (!selected && featuredIds.length >= 8) return; toggleProduct(p.id); }} className="rounded-xl overflow-hidden text-left transition-all" style={{ border: selected ? "2px solid var(--gold)" : "1px solid rgba(64,50,37,.1)", opacity: !selected && featuredIds.length >= 8 ? 0.4 : 1 }}>
-              <div className="aspect-square" style={{ background: "#e8dfd1" }}>
+            <button key={p.id} onClick={() => { if (!selected && featuredIds.length >= 8) return; toggleProduct(p.id); }} className="rounded-xl overflow-hidden text-left transition-all" style={{ border: selected ? "2px solid var(--gold)" : "1px solid #e4e4e7", opacity: !selected && featuredIds.length >= 8 ? 0.4 : 1 }}>
+              <div className="aspect-square" style={{ background: "#f4f4f5" }}>
                 <img src={productThumbnails[p.id] || p.image || ""} alt={p.name} className="w-full h-full object-cover" />
               </div>
               <div className="p-2">
                 <p className="text-xs font-medium truncate" style={{ color: "var(--espresso)" }}>{p.name}</p>
                 <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>{p.category}</p>
               </div>
-              {selected && <div className="text-center text-[10px] py-1 font-medium" style={{ background: "rgba(181,140,74,.1)", color: "var(--gold)" }}>Dipilih</div>}
+              {selected && <div className="text-center text-[10px] py-1 font-medium" style={{ background: "#f4f4f5", color: "var(--gold)" }}>Dipilih</div>}
             </button>
           );
         })}
       </div>
-    </div>
-  );
-}
-
-function StatCard({ icon, label, value, badge, badgeColor }: { icon: React.ReactNode; label: string; value: string; badge: string; badgeColor: string }) {
-  const [bg, color] = badgeColor.split(",");
-  return (
-    <div className="card p-5">
-      <div className="flex items-center justify-between">
-        <span className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "var(--bg-secondary)", color: "var(--gold)" }}>{icon}</span>
-        <span className="badge" style={{ background: bg, color }}>{badge}</span>
-      </div>
-      <p className="text-sm mt-4" style={{ color: "var(--text-muted)" }}>{label}</p>
-      <p className="text-2xl font-bold mt-1" style={{ color: "var(--espresso)" }}>{value}</p>
     </div>
   );
 }
