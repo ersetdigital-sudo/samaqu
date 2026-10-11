@@ -70,9 +70,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Tabel `orders` tidak punya trigger yang mengisi `updated_at`, jadi jam pembatalan harus
+    // ditulis sendiri: linimasa "Pesanan dibatalkan" (strukSteps) membacanya.
     const { error: updateError } = await supabaseAdmin
       .from("orders")
-      .update({ status: "dibatalkan" })
+      .update({ status: "dibatalkan", updated_at: new Date().toISOString() })
       .eq("id", order.id);
 
     if (updateError) {

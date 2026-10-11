@@ -36,6 +36,20 @@ export interface StrukStep {
   state: StrukStepState;
 }
 
+/** Jam pembatalan pesanan.
+ *
+ * Tabel `orders` tidak punya trigger `updated_at`, jadi baris hasil `update` yang lama masih
+ * menyimpan `updated_at` = `created_at` persis — jam itu cuma salinan jam pembuatan dan tidak
+ * boleh ditampilkan seolah-olah waktu pembatalannya. Sejak ketiga jalur pembatalan
+ * (`/api/orders/cancel`, `PATCH /api/admin/orders` action `cancelJnt`, `/api/cron/auto-cancel`)
+ * menulis `updated_at` sendiri, nilai yang berbeda dari `created_at` barulah waktu sebenarnya.
+ */
+export function waktuBatal(order: { created_at: string; updated_at?: string }): string {
+  const u = order.updated_at;
+  if (!u || u === order.created_at) return "Dibatalkan";
+  return tglJamID(u);
+}
+
 /** Langkah pesanan untuk batang status struk; pembayaran jadi langkah kedua. */
 export function strukSteps(order: {
   status: string;
@@ -47,7 +61,7 @@ export function strukSteps(order: {
   if (s === "dibatalkan") {
     return [
       { label: "Pesanan dibuat", sub: tglJamID(order.created_at), state: "done" },
-      { label: "Pesanan dibatalkan", sub: order.updated_at ? tglJamID(order.updated_at) : "Dibatalkan", state: "active" },
+      { label: "Pesanan dibatalkan", sub: waktuBatal(order), state: "active" },
     ];
   }
 
