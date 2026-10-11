@@ -15,7 +15,7 @@ const navGroups = [
     title: "Menu Utama",
     items: [
       { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
-      { href: "/admin", label: "Pesanan", icon: ShoppingBag },
+      { href: "/admin", label: "Order Management", icon: ShoppingBag },
       { href: "/admin", label: "Produk", icon: Package },
       { href: "/admin", label: "Pelanggan", icon: Users },
     ],

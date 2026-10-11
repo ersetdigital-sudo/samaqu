@@ -67,7 +67,7 @@ interface AdminCatalogProduct extends Product {
 
 const navItems = [
   { id: "dashboard" as Panel, label: "Dashboard", icon: LayoutDashboard },
-  { id: "orders" as Panel, label: "Pesanan", icon: ShoppingBag, badge: true },
+  { id: "orders" as Panel, label: "Order Management", icon: ShoppingBag, badge: true },
   { id: "products" as Panel, label: "Produk", icon: Package },
   { id: "customers" as Panel, label: "Pelanggan", icon: Users },
   { id: "content" as Panel, label: "Konten Website", icon: FileText },
