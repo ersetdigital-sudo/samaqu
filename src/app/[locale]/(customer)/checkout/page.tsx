@@ -513,6 +513,7 @@ function CheckoutContent() {
     if (kodepos && !/^\d{5}$/.test(kodepos)) e.kodepos = "Kode pos harus 5 digit";
     if (!selectedShipping) e.shipping = "Pilih metode pengiriman";
     if (!payment || !paymentMethods.some((m) => m.id === payment)) e.payment = "Pilih metode pembayaran";
+    if (!isCartMode && !product) e.submit = "Keranjang Anda kosong. Pilih produk terlebih dahulu.";
 
     if (Object.keys(e).length > 0) {
       console.log("[CHECKOUT] ❌ Validation errors:", e);
@@ -948,10 +949,14 @@ function CheckoutContent() {
                   </div>
                 ))}
               </div>
+            ) : !product ? (
+              <p className="text-sm font-ui" style={{ color: "var(--text-muted)" }}>
+                Keranjang Anda kosong. Pilih produk terlebih dahulu untuk melanjutkan.
+              </p>
             ) : (
               <div className="flex gap-3 sm:gap-4">
                 <div className="w-16 h-20 sm:w-20 sm:h-24 rounded-lg flex-shrink-0 overflow-hidden" style={{ background: "#e8dfd1" }}>
-                  <img src={cloudinaryUrl(product!.image, { width: 160 })} alt={product!.name} className="w-full h-full object-cover" />
+                  <img src={cloudinaryUrl(product.image, { width: 160 })} alt={product.name} className="w-full h-full object-cover" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[13px] sm:text-sm font-ui font-medium leading-snug" style={{ color: "var(--espresso)" }}>{product!.name}</p>
