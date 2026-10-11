@@ -65,6 +65,11 @@ const OD_CSS = `
 .od-a{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:700;padding:10px 14px;border-radius:10px;border:1px solid #E1E3E5;background:#fff;color:#5A6067;text-decoration:none;cursor:pointer;transition:background .2s}
 .od-a:hover{background:#F5F6F7}
 .od-a.is-on{background:#FBF1EA;border-color:#E5C3B1;color:#B4552F}
+/* Aksi utama drawer: pembuatan resi J&T ("Atur Pesanan"). */
+.od-a-primary{background:#B4552F;border-color:#B4552F;color:#fff}
+.od-a-primary:hover{background:#9E4826;border-color:#9E4826}
+.od-a-primary:disabled{opacity:.6;cursor:default}
+.od-a-primary:disabled:hover{background:#B4552F;border-color:#B4552F}
 .od-a-danger{border-color:#EBC7C0;color:#B4392A}
 .od-a-danger:hover{background:#FCF0EA}
 .od-email{display:block;font-size:12.5px;color:#8D9297;font-weight:500;margin-top:2px}
@@ -131,11 +136,14 @@ export default function OrderDetailContent({
   onStatusChange,
   onCancelJnt,
   onDelete,
+  onArrangeOrder,
 }: {
   order: AdminDetailOrder;
   onStatusChange: (status: string) => void;
   onCancelJnt?: () => void;
   onDelete: () => void;
+  /** "Atur Pesanan": buat resi J&T setelah pembayaran diverifikasi (ala Shopee). */
+  onArrangeOrder?: () => Promise<void> | void;
 }) {
   const sc = strukStatus(order.status);
   const steps = strukSteps(order);
@@ -145,6 +153,21 @@ export default function OrderDetailContent({
   const alamat = [order.shipping_address, order.shipping_city, order.shipping_postal].filter(Boolean).join(", ");
 
   const [showAlamat, setShowAlamat] = useState(false);
+
+  // "Atur Pesanan" — pembuatan resi J&T manual. Selama proses, tombolnya dikunci supaya
+  // admin tidak menekan dua kali (dua kali klik = dua pesanan J&T).
+  const [arranging, setArranging] = useState(false);
+  const canArrange = !resi && !!onArrangeOrder && (order.status === "pending" || order.status === "diproses");
+
+  async function handleArrange() {
+    if (!onArrangeOrder || arranging) return;
+    setArranging(true);
+    try {
+      await onArrangeOrder();
+    } finally {
+      setArranging(false);
+    }
+  }
 
   // Pelacakan J&T — dibuka dari tombol "Lacak Paket". Data diambil sekali per drawer.
   const [showTrack, setShowTrack] = useState(false);
@@ -210,8 +233,8 @@ export default function OrderDetailContent({
                   <span className="rp-sub">{order.shipping_method || "Pengiriman"}</span>
                 </div>
                 {/* Nomor resi J&T tampil sebagai baris tersendiri (dulu cuma ditempel di belakang
-                    nama kurir, jadi terlihat seperti hilang) — resi terbit otomatis begitu
-                    pesanan masuk, jadi barisnya muncul tanpa admin perlu membuka apa pun. */}
+                    nama kurir, jadi terlihat seperti hilang). Resi tidak lagi terbit saat
+                    checkout: admin menerbitkannya lewat tombol "Atur Pesanan" di bawah. */}
                 {resi ? (
                   <div className="rp-line" style={{ marginTop: 8 }}>
                     <span className="rp-sub">Nomor Resi J&amp;T</span>
@@ -219,7 +242,7 @@ export default function OrderDetailContent({
                   </div>
                 ) : (
                   <div className="rp-line rp-sub" style={{ marginTop: 8 }}>
-                    <span>Nomor resi belum dibuat. Resi muncul setelah pesanan diserahkan ke kurir.</span>
+                    <span>Nomor resi belum dibuat. Klik &ldquo;Atur Pesanan&rdquo; untuk menerbitkan resi J&amp;T.</span>
                   </div>
                 )}
               </div>
@@ -351,6 +374,16 @@ export default function OrderDetailContent({
               </div>
 
               <div className="od-acts">
+                {canArrange ? (
+                  <button type="button" className="od-a od-a-primary" onClick={handleArrange} disabled={arranging}>
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M21 8 12 3 3 8v8l9 5 9-5z" />
+                      <path d="m3 8 9 5 9-5" />
+                      <path d="M12 13v8" />
+                    </svg>
+                    {arranging ? "Memproses…" : "Atur Pesanan"}
+                  </button>
+                ) : null}
                 {wa ? (
                   <a href={`https://wa.me/${wa}`} target="_blank" rel="noopener noreferrer" className="od-a">
                     <svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24"><path d={WHATSAPP_PATH} /></svg>

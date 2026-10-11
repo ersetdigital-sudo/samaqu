@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { createJntOrderForOrder } from "@/lib/jnt/order-from-order";
 
 export async function PATCH(request: NextRequest) {
   try {
@@ -73,6 +74,65 @@ export async function PATCH(request: NextRequest) {
       }
 
       return NextResponse.json({ success: true, message: "Berhasil membatalkan pesanan di J&T" });
+    }
+
+    // ── "Atur Pesanan": buat resi J&T setelah pembayaran diverifikasi ──
+    // Dulu resi terbit otomatis saat customer checkout; sekarang admin yang memicunya (ala
+    // Shopee Seller Centre). Sukses → pesanan langsung berstatus `diproses`.
+    if (action === "createJnt") {
+      const { data: order, error: fetchError } = await supabaseAdmin
+        .from("orders")
+        .select(
+          "id, order_number, customer_name, customer_whatsapp, shipping_address, shipping_city, shipping_postal_code, total, weight, payment_method, awb_no, status, order_items(product_id, product_name, quantity)"
+        )
+        .eq("order_number", identifier)
+        .single();
+
+      if (fetchError || !order) {
+        return NextResponse.json({ error: "Pesanan tidak ditemukan" }, { status: 404 });
+      }
+
+      if (order.awb_no) {
+        return NextResponse.json(
+          { error: `Pesanan ini sudah punya nomor resi J&T (${order.awb_no}).` },
+          { status: 400 }
+        );
+      }
+
+      if (order.status === "dibatalkan") {
+        return NextResponse.json({ error: "Pesanan sudah dibatalkan, resi tidak bisa dibuat." }, { status: 400 });
+      }
+
+      const result = await createJntOrderForOrder({
+        order_number: order.order_number,
+        customer_name: order.customer_name,
+        customer_whatsapp: order.customer_whatsapp,
+        shipping_address: order.shipping_address,
+        shipping_city: order.shipping_city,
+        shipping_postal_code: order.shipping_postal_code,
+        total: order.total,
+        weight: order.weight,
+        payment_method: order.payment_method,
+        order_items: order.order_items ?? [],
+      });
+
+      if (!result.success || !result.awbNo) {
+        console.error("[ADMIN] J&T order create failed:", identifier, result.error);
+        return NextResponse.json({ error: `Gagal membuat resi J&T: ${result.error}` }, { status: 400 });
+      }
+
+      const { error: updateError } = await supabaseAdmin
+        .from("orders")
+        .update({ awb_no: result.awbNo, jnt_order_id: order.order_number, status: "diproses" })
+        .eq("id", order.id);
+
+      if (updateError) {
+        console.error("[ADMIN] Failed to save J&T AWB:", updateError);
+        return NextResponse.json({ error: "Resi J&T terbit tapi gagal disimpan. Coba lagi." }, { status: 500 });
+      }
+
+      console.log("[ADMIN] J&T AWB created:", identifier, result.awbNo);
+      return NextResponse.json({ success: true, awbNo: result.awbNo, status: "diproses" });
     }
 
     // Normal status update
