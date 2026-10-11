@@ -15,6 +15,14 @@ function WhatsAppIcon() {
   );
 }
 
+/**
+ * Tombol WhatsApp mengambang + tooltip yang muncul setelah 5 detik atau 30% scroll.
+ *
+ * Dipaku di kanan bawah dengan jarak dasar `bottom-6` **plus** `--mobile-nav-h`, karena nav
+ * bawah mobile (MobileBottomNav, `lg:hidden`) tinggi 62 px di bawah breakpoint `lg` — tanpa
+ * offset itu tombolnya menutupi menu "Akun". Variabelnya 0 px di desktop, jadi posisi lama
+ * tidak berubah di sana. Tooltip-nya relatif ke tombol ini, jadi ikut naik.
+ */
 export default function AutoCTA() {
   const t = useSafeTranslations("autoCTA");
   const [visible, setVisible] = useState(false);
@@ -97,7 +105,7 @@ export default function AutoCTA() {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 20, scale: 0.9 }}
           transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-          className="fixed bottom-6 right-4 sm:right-6 z-[90]"
+          className="fixed bottom-[calc(var(--mobile-nav-h)_+_1.5rem)] right-4 sm:right-6 z-[90]"
         >
           {/* Tooltip — above the FAB */}
           <AnimatePresence>

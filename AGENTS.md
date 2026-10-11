@@ -279,6 +279,8 @@ Page presentation (not obvious from the code):
   (`src/app/globals.css`: 0 px di desktop, 62 px di bawah 1024 px); layout memakai variabel itu untuk
   padding bawah halaman, dan tiga halaman yang punya bar aksi bawah sendiri (keranjang, checkout,
   detail produk) menggeser bar-nya dengan `bottom-[var(--mobile-nav-h)]` supaya tidak bertumpuk.
+  Elemen mengambang ikut aturan itu: tombol WhatsApp `AutoCTA` (hanya dipasang di beranda) memakai
+  `bottom-[calc(var(--mobile-nav-h)_+_1.5rem)]` — dengan `bottom-6` tombolnya menutupi menu "Akun".
   Route group `src/app/(customer)/` (tanpa locale) sengaja tidak disentuh — middleware me-redirect
   semua path toko ke `/<locale>/…`, jadi pohon itu tidak terpakai.
 - **Jendela Open Order diatur dari dashboard admin** (dulu hardcode `OPEN_ORDER_PERIOD`).
