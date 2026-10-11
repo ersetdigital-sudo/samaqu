@@ -222,9 +222,10 @@ keystroke) while the `error` field is kept so the checkout callers behave exactl
 logs a single `console.warn` per process. `OpenOrderWizard` detects `configured: false` and shows the
 fallback message with the ongkir line at `—` without a `console.error` (the order still submits,
 admin prices shipping later) — that is the state of this sandbox: no J&T credential is stored, so
-live tariffs stay off until the J&T secrets are supplied. The J&T **testing** credential values this app used before live in
-commit `e48a6fe`; supply them through the platform secrets (`/run/base44/app.env`), never in the
-repo. `JNT_ENV` defaults to `testing`.
+live tariffs stay off until credentials are supplied — sekarang admin bisa mengisinya sendiri lewat
+form di Pengaturan (lihat "Kredensial J&T Express (form admin)" di bawah). Nilai J&T **testing**
+yang dulu dipakai app ini ada di commit `e48a6fe`; nilai asli tidak boleh masuk repo. `JNT_ENV`
+defaults to `testing`, dipakai selama kolom `env` di `jnt_settings` masih kosong.
 
 No new table: the hosted Supabase project has **no DDL path** from the sandbox, so a new table
 would have needed the user to run SQL by hand. Verified dead ends with the stored credentials:
@@ -252,20 +253,43 @@ Page presentation (not obvious from the code):
   `customer.city` / `customer.district`, so ongkir no longer depends on the customer's spelling.
   If the lists can't be loaded it falls back to the old plain Kota + Kecamatan text inputs, so the
   order still submits; the same debounced `/api/shipping/jnt-cost` call and the same graceful
-  `configured: false` fallback (`Ongkir —`) apply either way.
+  `configured: false` fallback (`Ongkir —`) apply either way. Langkah 4 juga menampilkan **baris
+  Ongkir** sendiri (label service + harga, `Menghitung…` selagi menunggu, `—` + catatan saat gagal)
+  tepat di bawah Kode Pos — nilainya dari state wizard yang sama dengan langkah 5, jadi terhitung
+  sekali. Sebelum wilayah dipilih, barisnya `—` dengan petunjuk singkat memilih provinsi/kota/kecamatan.
 - The period line under the title comes from `store_settings.open_order_period`, diatur di menu admin
   **Open Order** dan dibaca lewat `useStoreSettings()` (`StepCatalog` merendernya sebagai `Periode …`).
   `OPEN_ORDER_PERIOD` di `src/lib/open-order-config.ts` ("8-15 Agustus 2026") kini hanya **nilai
   default/fallback** — dipakai selama kolomnya kosong.
 - The **Extra Cover & Hanger** row in step 3 follows the catalog look: a cream card with a thin
-  gold spine on the left edge (grows to full height on hover), the serif espresso name, a gold
-  uppercase caption, the serif price and a round gold ring that fills with a check while the
+  gold spine on the left edge (grows to full height on hover), a sans-serif espresso name and
+  price (on request, matched to the cart lines / summary rows), a gold uppercase caption, and a round gold ring that fills with a check while the
   add-on is selected (`is-on` class). Its CSS is scoped in `StepCart.tsx` (the `ADDON_CSS` string
   rendered in a `<style>` tag) instead of being added to the shared `ui.tsx` tokens, because the
   ornament is used nowhere else; the row is still the same toggle button (click selects/deselects)
   and only its appearance changed. The summary box below it lists the item lines, an `Extra Cover &
   Hanger` line while the add-on is selected, and a `Total` (subtotal + add-on) so toggling the card
-  visibly changes the amount; ongkir is only added in step 5 (review).
+  visibly changes the amount; ongkir is added in step 5 (review) — dan sudah tampil juga sebagai
+  baris tersendiri di langkah 4, tepat di bawah Kode Pos.
+- **Checkout Open Order wajib punya akun**: langkah 4 adalah gerbangnya. Kalau belum ada sesi
+  customer, langkah 4 merender `StepAuth` (masuk/daftar **inline** — bukan redirect — supaya
+  keranjang & data yang sudah diisi di state wizard tidak hilang) dan judul header jadi
+  "Masuk / Daftar"; sesi dibaca sekali saat `OpenOrderWizard` mount lewat `getCurrentCustomer()`.
+  Setelah masuk/daftar, form data pemesan langsung tampil terisi nama + WhatsApp dari akun (hanya
+  field yang masih kosong) dan judul kembali "Data Pemesanan". Kalau project Supabase meminta
+  verifikasi email, `signUp` tidak menghasilkan sesi: `StepAuth` pindah ke tab Masuk sambil
+  menampilkan pesan cek email.
+- `/api/open-order` **menolak** request tanpa sesi (`401`; header `Authorization: Bearer
+  <access_token>` diverifikasi `supabaseAdmin.auth.getUser`) dan menolak sesi yang bukan akun
+  pelanggan (`403`, dicek dari baris `customers` — `orders.customer_id` ber-FK ke tabel itu, jadi
+  insert-nya akan gagal kalau tidak dicek). Order disimpan dengan `customer_id` +
+  `customer_email` **dari token**, bukan dari body — order `CYO-` jadi muncul di `/akun/pesanan`.
+  (Order checkout website lama maupun baru masih `customer_id: null`; itu di luar cakupan gerbang
+  ini.)
+  Sebelum gerbang `customers` ini ada, akun auth tanpa baris `customers` membuat insert `orders`
+  gagal `23503` (FK `orders_customer_id_fkey`) → `500`. Sekarang kasus itu berhenti di `403`:
+  pernah ada **satu akun lama** (dibuat 2026-07-25) yang tidak punya baris `customers`, jadi
+  `403` di log bukan tanda gerbangnya rusak — cek dulu `GET /rest/v1/customers?id=eq.<uid>`.
 - The admin **Pesanan** panel splits the list into sub-tabs **Pesanan Website** / **Open Order**
   (`orderSource` state): Open Order rows are the `CYO-` numbers, everything else is the website
   checkout, and the status chips (Semua/pending/diproses/selesai) filter inside the selected tab.
@@ -279,6 +303,8 @@ Page presentation (not obvious from the code):
   (`src/app/globals.css`: 0 px di desktop, 62 px di bawah 1024 px); layout memakai variabel itu untuk
   padding bawah halaman, dan tiga halaman yang punya bar aksi bawah sendiri (keranjang, checkout,
   detail produk) menggeser bar-nya dengan `bottom-[var(--mobile-nav-h)]` supaya tidak bertumpuk.
+  Elemen mengambang ikut aturan itu: tombol WhatsApp `AutoCTA` (hanya dipasang di beranda) memakai
+  `bottom-[calc(var(--mobile-nav-h)_+_1.5rem)]` — dengan `bottom-6` tombolnya menutupi menu "Akun".
   Route group `src/app/(customer)/` (tanpa locale) sengaja tidak disentuh — middleware me-redirect
   semua path toko ke `/<locale>/…`, jadi pohon itu tidak terpakai.
 - **Jendela Open Order diatur dari dashboard admin** (dulu hardcode `OPEN_ORDER_PERIOD`).
@@ -331,3 +357,96 @@ does not pollute the real order list. The price clamp can be checked without the
 `/api/open-order` with a below-minimum `price` must come back with `total` equal to the series
 minimum.
 ```
+
+## Kredensial J&T Express (form admin)
+
+Kredensial J&T diisi admin lewat **Pengaturan → "Kredensial J&T Express"**
+(`src/components/admin/JntCredentialsForm.tsx`; dirender di **dua** dashboard admin — `/admin` dan
+`/id/admin` — tepat setelah `ApiKeySection`, komponennya satu file supaya tidak dobel).
+
+- Disimpan di tabel **`jnt_settings`** (satu baris, `id = 1`), **bukan** `store_settings`:
+  `store_settings` punya policy "Public read" dan dibaca anon client (`select("*")` di
+  `src/lib/store-settings.ts`), jadi kredensial di sana akan ikut terkirim ke browser. `jnt_settings`
+  dibuat **tanpa policy RLS** → hanya service role yang bisa membacanya.
+- Tabelnya dibuat lewat **`supabase/jnt-settings.sql`**, dijalankan manual di SQL Editor Supabase
+  (sandbox tidak punya jalur DDL). Sebelum dijalankan: form menampilkan peringatan, tombol simpan
+  nonaktif, dan GET `/api/admin/jnt-settings` membalas `{ tableReady: false }`. Jalankan dulu
+  sebelum memakai form ini.
+- Akses lewat **`/api/admin/jnt-settings`** (GET status, POST simpan). Route-nya memverifikasi
+  session Supabase **dan** keanggotaan di tabel `admins`, dan hanya mengembalikan status terisi +
+  pilihan `env` — nilai kredensial tidak pernah dikirim ke browser (karena itu nilai lama tidak bisa
+  ditampilkan; field kosong = jangan diubah).
+- `getJntConfig()` di `src/lib/jnt/config.ts` kini **async**: baca `jnt_settings` dengan service role
+  (cache 60 detik; `clearJntConfigCache()` dipanggil setelah simpan) → field yang kosong jatuh ke
+  environment variable (`JNT_ORDER_USERNAME`, `JNT_TARIFF_KEY`, …). Pemanggilnya sudah `await`
+  (`src/lib/jnt/{tariff,order,track,cancel}.ts`, `/api/shipping/jnt-cost`, `/api/jnt/test`), dan
+  `getJntBaseUrl(endpoint, env)` menerima env supaya pilihan testing/production dari form ikut
+  terpakai.
+- Tanpa kredensial sama sekali perilakunya tidak berubah: `/api/shipping/jnt-cost` tetap membalas
+  `{ configured: false }` (bukan 500), dan `/api/jnt/test` tidak lagi menyertakan `orderApiKey` di
+  responsnya (dulu membocorkan key).
+
+Verify: `curl -s -o /dev/null -w '%{http_code}\n' http://localhost:3000/api/admin/jnt-settings` →
+`401` (tanpa session admin). POST `/api/shipping/jnt-cost` tanpa kredensial → `configured: false`.
+Simpan-dari-form baru bisa terbukti setelah `supabase/jnt-settings.sql` dijalankan.
+
+**Kredensial J&T sekarang datang dari platform secrets** (2026-10-11): `JNT_ORDER_USERNAME`,
+`JNT_ORDER_API_KEY`, `JNT_TARIFF_KEY`, `JNT_TARIFF_CUS_NAME`, `JNT_TRACK_PASSWORD` diisi pemilik
+toko lewat kartu secrets Base44 (`/run/base44/app.env`), dibaca `getJntConfig()` dari environment
+variable. **Tabel `jnt_settings` masih belum dibuat** (GET `/rest/v1/jnt_settings` masih 404) dan itu
+tidak lagi menghalangi ongkir — form admin tetap butuh SQL itu kalau nanti mau dipakai.
+
+Kredensial toko ini **production**, bukan demo: `data` + `sign` yang sama membalas
+`{ is_success: "false", message: "fail" }` di `demo-general.inuat-jntexpress.id`, tetapi
+`is_success: "true"` di `partner-track.jet.co.id`. Karena itu `JNT_ENV=production` diset di
+`.base44/env.defaults` (bukan rahasia, jadi aman di repo; nilai dari dashboard tetap menang).
+Kalau ongkir tiba-tiba `fail` lagi, cek `JNT_ENV` dulu sebelum menuduh sign/kredensialnya salah.
+
+## Halaman pesanan customer (`/akun/pesanan`)
+
+Yang tidak kelihatan dari kode:
+
+- **Status di detail pesanan mengikuti `orders.status`**, bukan hardcode: `buildSteps()` di
+  `src/app/[locale]/akun/pesanan/[orderNo]/page.tsx` memetakan pending → baru dikonfirmasi,
+  diproses → diproses, dikirim → diserahkan ke kurir/dalam perjalanan, selesai → semua langkah
+  selesai, dibatalkan → berhenti setelah dikonfirmasi (+ catatan merah). **Dulu langkah 1 & 2
+  selalu "done"**, jadi pesanan `pending` di akun tampak sudah diproses sementara admin
+  menampilkannya `pending` — itu bug yang diperbaiki, jangan kembalikan hardcode itu.
+- Label pill ikut disamakan dengan admin: `pending` = **"Menunggu"** (dulu "Diproses"),
+  `dibatalkan` pakai `akun-pill-batal` (merah). Dipakai bersama oleh `/akun` (dashboard),
+  list pesanan, dan detail — ubah di `src/lib/akun-format.ts` saja.
+- **Foto "Informasi Produk" diambil dari katalog.** Baris `order_items` pesanan Open Order tidak
+  menyimpan `product_image` (route `/api/open-order` tidak pernah mengisinya), jadi
+  `orderItemImage(item, catalog)` di `src/lib/open-order-catalog.ts` mencocokkan `kain` + warna +
+  `series` ke baris `products` lalu memakai `getProductThumbnail`. Karena itu
+  `getCustomerOrders()` di `src/lib/customer-auth.ts` **wajib memilih `kain, series`** — kalau
+  kolomnya tidak ikut di-select, fotonya hilang tanpa error (placeholder ikon lagi).
+- **Nomor resi terbit saat pesanan dibuat**: `/api/open-order` sekarang memanggil J&T Order Create
+  (`createOrder` di `src/lib/jnt/*`) tepat setelah baris `order_items` masuk, lalu menyimpan
+  `awb_no` + `jnt_order_id` (dan mengembalikan `awbNo`), sama seperti `/api/orders` pada checkout
+  website. Kode area dari nama wilayah RajaOngkir: `getOriginCode("DEPOK")` (= "DPK"),
+  `getDestinationCode(city)`, `getReceiverArea(city, district)` — wizard menyimpan nama resmi
+  ("Kota Depok", "Beji") dan `area-mapping.ts` membuang prefix administratif, jadi biarkan
+  namanya apa adanya. Kegagalan J&T hanya di-`console.error` (`[OPEN-ORDER] J&T`) dan pesanan
+  tetap tersimpan, jadi **resi kosong ≠ pesanan gagal**; periksa log sebelum menuduh route-nya.
+  Pesanan yang sudah ada sebelum perubahan ini tetap tanpa resi (tidak ada backfill, dan belum
+  ada tombol "buat resi" di admin).
+- **Customer bisa membatalkan pesanannya sendiri**: `POST /api/orders/cancel` (body
+  `{ orderNumber }`, header `Authorization: Bearer <access_token>`) — verifikasi sesi, pesanan
+  harus milik customer itu (kalau bukan → 404, bukan 403), hanya status `pending`/`diproses` yang
+  boleh, batalkan pengiriman di J&T dulu baru `status = dibatalkan`. Stok **tidak** dikembalikan
+  karena `/api/open-order` tidak pernah memotong stok (memanggil `samaqu_restore_stock` justru
+  menambah stok yang tidak pernah diambil). Tombolnya di aside halaman detail + `ConfirmModal`.
+
+Verify (mobile 374px, akun customer):
+
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' -X POST http://localhost:3000/api/orders/cancel \
+  -H 'Content-Type: application/json' -d '{"orderNumber":"CYO-..."}'   # 401 tanpa sesi
+```
+
+Lalu di browser: buka `/id/akun/pesanan` → detail pesanan. Timeline harus sama dengan status di
+`/id/admin` (Pesanan), foto produk muncul (Cloudinary), kartu **Nomor Resi** terisi begitu pesanan
+baru dibuat, dan tombol **Batalkan Pesanan** muncul hanya untuk `pending`/`diproses`. Bikin
+pesanan uji sebisa mungkin **dibatalkan lalu dihapus** (admin detail → Hapus, atau REST
+`DELETE /rest/v1/orders?order_number=eq.…`) agar daftar pesanan asli tidak kotor.

@@ -24,7 +24,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "district dan weight wajib" }, { status: 400 });
     }
 
-    const config = getJntConfig();
+    const config = await getJntConfig();
     if (!config.orderUsername) {
       // J&T belum dikonfigurasi: kondisi wajar, bukan kegagalan server. Balas 200 dengan
       // daftar kosong + `configured:false` supaya pemanggil bisa menampilkan fallback

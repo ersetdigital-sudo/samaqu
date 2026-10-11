@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { createOrder, getDestinationCode, getOriginCode, getReceiverArea } from "@/lib/jnt";
 import { OPEN_ORDER_ADDON, OPEN_ORDER_SIZES } from "@/lib/open-order-config";
 import {
   buildOpenOrderProducts,
@@ -18,7 +19,14 @@ import { openOrderSeriesList } from "@/lib/open-order-window";
  * - `shipping_method` = "J&T - <service>" dan `shipping_cost` = tarif J&T; kalau customer
  *   belum mengisi kecamatan atau hitungannya gagal, jatuh ke "manual" / 0 dan admin
  *   menghitung ongkir menyusul,
- * - `status` = "pending" supaya muncul di dashboard admin sebagai pesanan baru.
+ * - `status` = "pending" supaya muncul di dashboard admin sebagai pesanan baru,
+ * - pesanannya sekaligus dibuat di J&T (Order Create API) supaya `awb_no` sudah terisi sejak
+ *   pesanan dibuat dan customer bisa melihat nomor resinya di halaman detail pesanan. Kalau J&T
+ *   menolak/gagal, pesanan tetap tersimpan dan admin mengurus resinya manual — sama seperti
+ *   checkout website di /api/orders,
+ * - `customer_id` dari sesi yang terverifikasi (header `Authorization`), jadi checkout Open Order
+ *   hanya bisa diselesaikan customer yang sudah masuk/daftar dan pesanannya muncul di menu
+ *   "Pesanan" milik akun itu. Tanpa sesi valid route membalas 401.
  *
  * Harga produk/series tidak dipercaya dari client: baris katalog (`products`) dibaca ulang di
  * sini lewat `buildOpenOrderProducts()` — sumber yang sama dengan wizard — lalu dipakai
@@ -72,6 +80,28 @@ function generateOrderNumber(): string {
 
 export async function POST(request: NextRequest) {
   try {
+    const supabaseAdmin = getSupabaseAdmin();
+
+    // Checkout Open Order hanya untuk customer yang sudah masuk/daftar (gerbang `StepAuth` di
+    // wizard). Token sesi diverifikasi di sini supaya request langsung tanpa login ikut ditolak,
+    // dan `customer_id` diambil dari token — bukan dari body — sehingga pesanan selalu menempel
+    // ke akun pemilik sesi dan muncul di menu "Pesanan".
+    const token = (request.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
+    const { data: authData, error: authError } = token
+      ? await supabaseAdmin.auth.getUser(token)
+      : { data: { user: null }, error: null };
+    const customerId = authData?.user?.id ?? null;
+    if (authError || !customerId) {
+      return NextResponse.json({ error: "Silakan masuk atau daftar dulu untuk menyelesaikan pesanan." }, { status: 401 });
+    }
+
+    // Sesi harus milik akun pelanggan (baris di tabel `customers`) — sama seperti yang dicek
+    // `loginCustomer` di klien, dan `orders.customer_id` memang ber-FK ke tabel itu.
+    const { data: customerRow } = await supabaseAdmin.from("customers").select("id").eq("id", customerId).maybeSingle();
+    if (!customerRow) {
+      return NextResponse.json({ error: "Akun ini bukan akun pelanggan. Silakan masuk dengan akun pelanggan." }, { status: 403 });
+    }
+
     const body = await request.json();
     const rawCustomer = body.customer ?? {};
     const rawItems: OpenOrderItemInput[] = Array.isArray(body.items) ? body.items : [];
@@ -92,8 +122,6 @@ export async function POST(request: NextRequest) {
     if (rawItems.length === 0) {
       return NextResponse.json({ error: "Pesanan masih kosong" }, { status: 400 });
     }
-
-    const supabaseAdmin = getSupabaseAdmin();
 
     // Penawaran Open Order diturunkan dari katalog (sama seperti wizard), jadi harga/warna/
     // series yang berlaku selalu yang ada di tabel `products` — bukan yang dikirim client.
@@ -183,8 +211,9 @@ export async function POST(request: NextRequest) {
       .from("orders")
       .insert({
         order_number: orderNumber,
+        customer_id: customerId,
         customer_name: name,
-        customer_email: null,
+        customer_email: authData?.user?.email ?? null,
         customer_whatsapp: whatsapp,
         shipping_address: address,
         shipping_city: [district, city].filter(Boolean).join(", "),
@@ -244,8 +273,55 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Gagal menyimpan detail pesanan" }, { status: 500 });
     }
 
-    console.log("[OPEN-ORDER] Created:", { orderNumber, items: orderItems.length, total });
-    return NextResponse.json({ success: true, orderNumber, total });
+    // ── Buat pesanan di J&T supaya nomor resi ada sejak pesanan dibuat ──
+    // Sama seperti checkout website (/api/orders): kegagalan J&T tidak membatalkan pesanan.
+    let awbNo: string | null = null;
+    try {
+      const originCode = getOriginCode("DEPOK") || "DPK";
+      const destinationCode = getDestinationCode(city) || "";
+      const receiverArea = getReceiverArea(city, district) || "";
+      const totalQty = validatedItems.reduce((sum, item) => sum + item.quantity, 0);
+      // Berat kirim = berat katalog per item × qty + Cover & Hanger, sama seperti hitungan
+      // ongkir di wizard.
+      const totalWeight =
+        validatedItems.reduce(
+          (sum, item) => sum + (findOpenOrderProduct(products, item.productId)?.weight ?? 1200) * item.quantity,
+          0
+        ) + (extraCover ? OPEN_ORDER_ADDON.weight : 0);
+
+      const jntResult = await createOrder({
+        orderId: orderNumber,
+        shipperName: "SAMAQU",
+        shipperPhone: "+6281234567890",
+        shipperAddress: "Jl. Depok, Depok, Jawa Barat",
+        originCode,
+        receiverName: name.slice(0, 30),
+        receiverPhone: whatsapp.startsWith("+") ? whatsapp : `+62${whatsapp.replace(/^0/, "")}`,
+        receiverAddress: address.slice(0, 200),
+        receiverZip: postalCode || "00000",
+        destinationCode,
+        receiverArea,
+        qty: totalQty || 1,
+        weight: Math.max(totalWeight / 1000, 0.1),
+        goodsDesc: (validatedItems[0]?.productName || "Pesanan SAMAQU").slice(0, 40),
+        itemName: validatedItems.map((item) => item.productName).join(", ").slice(0, 50),
+        goodsValue: total,
+        cod: 0,
+      });
+
+      if (jntResult.success && jntResult.awbNo) {
+        awbNo = jntResult.awbNo;
+        await supabaseAdmin.from("orders").update({ awb_no: awbNo, jnt_order_id: orderNumber }).eq("id", order.id);
+        console.log("[OPEN-ORDER] J&T AWB:", awbNo);
+      } else {
+        console.error("[OPEN-ORDER] J&T order failed:", jntResult.raw);
+      }
+    } catch (jntError) {
+      console.error("[OPEN-ORDER] J&T order error:", jntError);
+    }
+
+    console.log("[OPEN-ORDER] Created:", { orderNumber, items: orderItems.length, total, awbNo });
+    return NextResponse.json({ success: true, orderNumber, total, awbNo });
   } catch (error) {
     console.error("[OPEN-ORDER] Failed:", error);
     return NextResponse.json({ error: "Terjadi kesalahan server" }, { status: 500 });
