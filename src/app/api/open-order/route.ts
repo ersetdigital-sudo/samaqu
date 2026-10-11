@@ -18,7 +18,10 @@ import { openOrderSeriesList } from "@/lib/open-order-window";
  * - `shipping_method` = "J&T - <service>" dan `shipping_cost` = tarif J&T; kalau customer
  *   belum mengisi kecamatan atau hitungannya gagal, jatuh ke "manual" / 0 dan admin
  *   menghitung ongkir menyusul,
- * - `status` = "pending" supaya muncul di dashboard admin sebagai pesanan baru.
+ * - `status` = "pending" supaya muncul di dashboard admin sebagai pesanan baru,
+ * - `customer_id` dari sesi yang terverifikasi (header `Authorization`), jadi checkout Open Order
+ *   hanya bisa diselesaikan customer yang sudah masuk/daftar dan pesanannya muncul di menu
+ *   "Pesanan" milik akun itu. Tanpa sesi valid route membalas 401.
  *
  * Harga produk/series tidak dipercaya dari client: baris katalog (`products`) dibaca ulang di
  * sini lewat `buildOpenOrderProducts()` — sumber yang sama dengan wizard — lalu dipakai
@@ -72,6 +75,28 @@ function generateOrderNumber(): string {
 
 export async function POST(request: NextRequest) {
   try {
+    const supabaseAdmin = getSupabaseAdmin();
+
+    // Checkout Open Order hanya untuk customer yang sudah masuk/daftar (gerbang `StepAuth` di
+    // wizard). Token sesi diverifikasi di sini supaya request langsung tanpa login ikut ditolak,
+    // dan `customer_id` diambil dari token — bukan dari body — sehingga pesanan selalu menempel
+    // ke akun pemilik sesi dan muncul di menu "Pesanan".
+    const token = (request.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
+    const { data: authData, error: authError } = token
+      ? await supabaseAdmin.auth.getUser(token)
+      : { data: { user: null }, error: null };
+    const customerId = authData?.user?.id ?? null;
+    if (authError || !customerId) {
+      return NextResponse.json({ error: "Silakan masuk atau daftar dulu untuk menyelesaikan pesanan." }, { status: 401 });
+    }
+
+    // Sesi harus milik akun pelanggan (baris di tabel `customers`) — sama seperti yang dicek
+    // `loginCustomer` di klien, dan `orders.customer_id` memang ber-FK ke tabel itu.
+    const { data: customerRow } = await supabaseAdmin.from("customers").select("id").eq("id", customerId).maybeSingle();
+    if (!customerRow) {
+      return NextResponse.json({ error: "Akun ini bukan akun pelanggan. Silakan masuk dengan akun pelanggan." }, { status: 403 });
+    }
+
     const body = await request.json();
     const rawCustomer = body.customer ?? {};
     const rawItems: OpenOrderItemInput[] = Array.isArray(body.items) ? body.items : [];
@@ -92,8 +117,6 @@ export async function POST(request: NextRequest) {
     if (rawItems.length === 0) {
       return NextResponse.json({ error: "Pesanan masih kosong" }, { status: 400 });
     }
-
-    const supabaseAdmin = getSupabaseAdmin();
 
     // Penawaran Open Order diturunkan dari katalog (sama seperti wizard), jadi harga/warna/
     // series yang berlaku selalu yang ada di tabel `products` — bukan yang dikirim client.
@@ -183,8 +206,9 @@ export async function POST(request: NextRequest) {
       .from("orders")
       .insert({
         order_number: orderNumber,
+        customer_id: customerId,
         customer_name: name,
-        customer_email: null,
+        customer_email: authData?.user?.email ?? null,
         customer_whatsapp: whatsapp,
         shipping_address: address,
         shipping_city: [district, city].filter(Boolean).join(", "),
