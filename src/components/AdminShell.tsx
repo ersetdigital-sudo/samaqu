@@ -30,13 +30,16 @@ const navGroups = [
   {
     title: "Lainnya",
     items: [
+      // Urutan grup "Lainnya" harus sama persis dengan sidebar dashboard admin
+      // (src/app/admin/page.tsx) — kalau beda, urutan menu terlihat "berubah" begitu
+      // admin membuka salah satu subhalaman (mis. Open Order).
       { href: "/admin/konten-website", label: "Konten Website", icon: FileText },
       { href: "/admin", label: "Pengaturan", icon: Settings },
-      { href: "/admin/open-order", label: "Open Order", icon: Shirt },
       { href: "/admin/voucher", label: "Voucher", icon: Ticket },
       { href: "/admin/testimoni", label: "Testimoni", icon: FileText },
       { href: "/admin/ukuran-produk", label: "Panduan Ukuran", icon: Ruler },
       { href: "/admin/garansi-retur-page", label: "Halaman Garansi & Retur", icon: FileText },
+      { href: "/admin/open-order", label: "Open Order", icon: Shirt },
     ],
   },
 ];
