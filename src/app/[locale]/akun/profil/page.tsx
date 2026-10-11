@@ -60,10 +60,25 @@ export default function ProfilPage() {
     if (!user) { setSaving(false); return; }
     const payload: Record<string, unknown> = { name: name.trim(), whatsapp: whatsapp.trim() || null };
     if (dd && mm && yyyy) payload.birth_date = `${yyyy}-${String(mm).padStart(2, "0")}-${String(dd).padStart(2, "0")}`;
-    const { error } = await supabase.from("customers").update(payload).eq("id", user.id);
+
+    let { error } = await supabase.from("customers").update(payload).eq("id", user.id);
+    let birthSkipped = false;
+    // Kolom `birth_date` datang dari migration yang dijalankan manual di Supabase; selama
+    // belum ada, PostgREST menolak seluruh update (400). Simpan sisanya dan beri tahu.
+    if (error && payload.birth_date && /birth_date/i.test(error.message)) {
+      delete payload.birth_date;
+      birthSkipped = true;
+      ({ error } = await supabase.from("customers").update(payload).eq("id", user.id));
+    }
     setSaving(false);
-    setToast(error ? "Gagal menyimpan perubahan." : "Perubahan berhasil disimpan.");
-    setTimeout(() => setToast(""), 2400);
+    setToast(
+      error
+        ? "Gagal menyimpan perubahan."
+        : birthSkipped
+          ? "Perubahan tersimpan, tapi tanggal lahir belum bisa disimpan."
+          : "Perubahan berhasil disimpan."
+    );
+    setTimeout(() => setToast(""), birthSkipped ? 4000 : 2400);
   }
 
   const days = Array.from({ length: 31 }, (_, i) => i + 1);
