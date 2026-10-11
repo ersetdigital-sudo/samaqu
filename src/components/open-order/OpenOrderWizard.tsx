@@ -451,7 +451,14 @@ export default function OpenOrderWizard() {
 
             {step === 4 &&
               (account ? (
-                <StepCustomer customer={customer} onChange={setCustomerField} onContinue={() => setStep(5)} />
+                <StepCustomer
+                  customer={customer}
+                  onChange={setCustomerField}
+                  onContinue={() => setStep(5)}
+                  shipping={shipping}
+                  loadingOngkir={loadingOngkir}
+                  ongkirError={ongkirError}
+                />
               ) : (
                 <StepAuth onAuthenticated={applyAccount} />
               ))}
