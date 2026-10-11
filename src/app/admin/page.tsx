@@ -9,6 +9,7 @@ import {
   Search, Bell, Menu, X, ChevronDown, Plus, TrendingUp, Eye, Edit,
   DollarSign, ShoppingCart, UserPlus, Box, LogOut, Lock, Mail, Trash2, Ticket, Star, Ruler, Image, Shirt, MessageCircle,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { User } from "@supabase/supabase-js";
 import ConfirmModal from "@/components/ConfirmModal";
@@ -68,13 +69,43 @@ interface AdminCatalogProduct extends Product {
   seriesStock?: { name: string; stock: number; isDerived: boolean; follows?: string }[];
 }
 
-const navItems = [
-  { id: "dashboard" as Panel, label: "Dashboard", icon: LayoutDashboard },
-  { id: "orders" as Panel, label: "Order Management", icon: ShoppingBag, badge: true },
-  { id: "products" as Panel, label: "Produk", icon: Package },
-  { id: "customers" as Panel, label: "Pelanggan", icon: Users },
-  { id: "content" as Panel, label: "Konten Website", icon: FileText },
-  { id: "settings" as Panel, label: "Pengaturan", icon: Settings },
+// Sidebar dikelompokkan: alur jualan (pesanan/produk/pelanggan) dipisah dari konten
+// website dan pengaturan. Satu item bisa berupa panel dashboard (`panel`) atau
+// halaman admin tersendiri (`href`). "Open Order" diletakkan tepat di bawah
+// "Order Management" karena masih satu alur pesanan.
+type NavItem =
+  | { label: string; icon: LucideIcon; panel: Panel; badge?: boolean }
+  | { label: string; icon: LucideIcon; href: string };
+
+const navGroups: { title: string; items: NavItem[] }[] = [
+  {
+    title: "Menu Utama",
+    items: [
+      { label: "Dashboard", icon: LayoutDashboard, panel: "dashboard" },
+      { label: "Order Management", icon: ShoppingBag, panel: "orders", badge: true },
+      { label: "Open Order", icon: Shirt, href: "/admin/open-order" },
+      { label: "Produk", icon: Package, panel: "products" },
+      { label: "Pelanggan", icon: Users, panel: "customers" },
+    ],
+  },
+  {
+    title: "Konten",
+    items: [
+      { label: "Konten Website", icon: FileText, panel: "content" },
+      { label: "Biolink", icon: FileText, href: "/admin/biolink" },
+      { label: "Foto Carousel", icon: Image, href: "/admin/bio-carousel" },
+      { label: "Testimoni", icon: Star, href: "/admin/testimoni" },
+      { label: "Panduan Ukuran", icon: Ruler, href: "/admin/ukuran-produk" },
+      { label: "Halaman Garansi & Retur", icon: FileText, href: "/admin/garansi-retur-page" },
+    ],
+  },
+  {
+    title: "Lainnya",
+    items: [
+      { label: "Voucher", icon: Ticket, href: "/admin/voucher" },
+      { label: "Pengaturan", icon: Settings, panel: "settings" },
+    ],
+  },
 ];
 
 const panelTitles: Record<Panel, { title: string; sub: string }> = {
@@ -610,51 +641,33 @@ function AdminPageInner() {
         {/* min-h-0 wajib: tanpa itu flex item nggak bisa mengecil dari isinya,
             jadi nav luber dan menutup footer (menu & "Keluar" jadi kepotong). */}
         <nav className="flex-1 min-h-0 overflow-y-auto px-3 py-3 no-scrollbar">
-          <div>
-            <p className="px-2 mb-1.5 text-[10px] font-extrabold uppercase tracking-[0.08em]" style={{ color: "var(--fg3)" }}>Menu Utama</p>
-            <ul className="space-y-0.5">
-              {navItems.slice(0, 4).map((item) => (
-                <li key={item.id}>
-                  <button onClick={() => go(item.id)} className={`sidebar-link ${activePanel === item.id ? "active" : ""}`}>
-                    <item.icon size={16} strokeWidth={1.9} />
-                    <span className="flex-1 text-left truncate">{item.label}</span>
-                    {item.badge && orders.filter((o) => o.status === "pending").length > 0 && (
-                      <span className="badge" style={{ background: "var(--sub)", color: "var(--fg)" }}>
-                        {orders.filter((o) => o.status === "pending").length}
-                      </span>
+          {navGroups.map((group, gi) => (
+            <div key={group.title} className={gi > 0 ? "mt-3 pt-3" : ""} style={gi > 0 ? { borderTop: "1px solid var(--bd)" } : undefined}>
+              <p className="px-2 mb-1.5 text-[10px] font-extrabold uppercase tracking-[0.08em]" style={{ color: "var(--fg3)" }}>{group.title}</p>
+              <ul className="space-y-0.5">
+                {group.items.map((item) => (
+                  <li key={item.label}>
+                    {"panel" in item ? (
+                      <button onClick={() => go(item.panel)} className={`sidebar-link ${activePanel === item.panel ? "active" : ""}`}>
+                        <item.icon size={16} strokeWidth={1.9} />
+                        <span className="flex-1 text-left truncate">{item.label}</span>
+                        {item.badge && orders.filter((o) => o.status === "pending").length > 0 && (
+                          <span className="badge" style={{ background: "var(--sub)", color: "var(--fg)" }}>
+                            {orders.filter((o) => o.status === "pending").length}
+                          </span>
+                        )}
+                      </button>
+                    ) : (
+                      <Link href={item.href} className="sidebar-link" onClick={() => setSidebarOpen(false)}>
+                        <item.icon size={16} strokeWidth={1.9} />
+                        <span className="flex-1">{item.label}</span>
+                      </Link>
                     )}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="mt-3 pt-3" style={{ borderTop: "1px solid var(--bd)" }}>
-            <p className="px-2 mb-1.5 text-[10px] font-extrabold uppercase tracking-[0.08em]" style={{ color: "var(--fg3)" }}>Biolink</p>
-            <ul className="space-y-0.5">
-              <li><Link href="/admin/biolink" className="sidebar-link" onClick={() => setSidebarOpen(false)}><FileText size={16} strokeWidth={1.9} /><span className="flex-1">Biolink</span></Link></li>
-              <li><Link href="/admin/bio-carousel" className="sidebar-link" onClick={() => setSidebarOpen(false)}><Image size={16} strokeWidth={1.9} /><span className="flex-1">Foto Carousel</span></Link></li>
-            </ul>
-          </div>
-
-          <div className="mt-3 pt-3" style={{ borderTop: "1px solid var(--bd)" }}>
-            <p className="px-2 mb-1.5 text-[10px] font-extrabold uppercase tracking-[0.08em]" style={{ color: "var(--fg3)" }}>Lainnya</p>
-            <ul className="space-y-0.5">
-              {navItems.slice(4).map((item) => (
-                <li key={item.id}>
-                  <button onClick={() => go(item.id)} className={`sidebar-link ${activePanel === item.id ? "active" : ""}`}>
-                    <item.icon size={16} strokeWidth={1.9} />
-                    <span className="flex-1 text-left truncate">{item.label}</span>
-                  </button>
-                </li>
-              ))}
-              <li><Link href="/admin/voucher" className="sidebar-link" onClick={() => setSidebarOpen(false)}><Ticket size={16} strokeWidth={1.9} /><span className="flex-1">Voucher</span></Link></li>
-              <li><Link href="/admin/testimoni" className="sidebar-link" onClick={() => setSidebarOpen(false)}><Star size={16} strokeWidth={1.9} /><span className="flex-1">Testimoni</span></Link></li>
-              <li><Link href="/admin/ukuran-produk" className="sidebar-link" onClick={() => setSidebarOpen(false)}><Ruler size={16} strokeWidth={1.9} /><span className="flex-1">Panduan Ukuran</span></Link></li>
-              <li><Link href="/admin/garansi-retur-page" className="sidebar-link" onClick={() => setSidebarOpen(false)}><FileText size={16} strokeWidth={1.9} /><span className="flex-1">Halaman Garansi &amp; Retur</span></Link></li>
-              <li><Link href="/admin/open-order" className="sidebar-link" onClick={() => setSidebarOpen(false)}><Shirt size={16} strokeWidth={1.9} /><span className="flex-1">Open Order</span></Link></li>
-            </ul>
-          </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </nav>
 
         {/* Footer sidebar — bantuan + keluar, ala wireframe */}
