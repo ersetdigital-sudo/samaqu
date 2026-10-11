@@ -15,6 +15,8 @@ import ConfirmModal from "@/components/ConfirmModal";
 import { useToast } from "@/components/AdminToast";
 import PaymentMethodsManager, { PaymentMethodValue } from "@/components/admin/PaymentMethodsManager";
 import JntCredentialsForm from "@/components/admin/JntCredentialsForm";
+import OrderDetailContent from "@/components/admin/OrderDetailContent";
+import OrdersMobileList from "@/components/admin/OrdersMobileList";
 
 type Panel = "dashboard" | "orders" | "products" | "customers" | "content" | "featured" | "settings";
 
@@ -37,7 +39,7 @@ interface Order {
   status: string;
   awb_no: string | null;
   created_at: string;
-  order_items?: { product_name: string; color: string; size: string; series?: string | null; kain?: string | null; quantity: number; price: number; customer_price: number | null; minimum_price: number | null }[];
+  order_items?: { product_name: string; color: string; size: string; series?: string | null; kain?: string | null; quantity: number; price: number; customer_price: number | null; minimum_price: number | null; product_image?: string | null }[];
 }
 
 interface Product {
@@ -275,7 +277,7 @@ function AdminPageInner() {
     async function fetchData() {
       try {
         const [ordersRes, productsRes, variantsRes] = await Promise.all([
-          supabase.from("orders").select("*, order_items(product_name, color, size, series, kain, quantity, price, customer_price, minimum_price)").order("created_at", { ascending: false }).limit(50),
+          supabase.from("orders").select("*, order_items(product_name, color, size, series, kain, quantity, price, customer_price, minimum_price, product_image)").order("created_at", { ascending: false }).limit(50),
           supabase.from("products").select("*").order("created_at", { ascending: true }),
           supabase.from("product_variants").select("product_id, stock, base_product_id"),
         ]);
@@ -745,7 +747,8 @@ function AdminPageInner() {
                       <h2 className="font-serif italic text-xl mb-4" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Pesanan Terbaru</h2>
                       {loading ? <p className="text-sm" style={{ color: "var(--text-muted)" }}>Memuat...</p> : (
                         <div className="overflow-x-auto">
-                          <table className="w-full text-sm min-w-[500px]">
+                          <OrdersMobileList orders={orders.slice(0, 5)} emptyText="Belum ada pesanan" renderStatus={(s) => <StatusBadge status={s} />} />
+                          <table className="w-full text-sm min-w-[500px] hidden lg:table">
                             <thead>
                               <tr className="text-left" style={{ color: "var(--text-muted)", background: "var(--bg-secondary)" }}>
                                 <th className="font-medium px-4 py-3">ID</th>
@@ -807,7 +810,7 @@ function AdminPageInner() {
                   </div>
                   <div className="flex flex-wrap items-center gap-3 justify-between p-5" style={{ borderBottom: "1px solid rgba(64,50,37,.06)" }}>
                     <h2 className="font-serif italic text-xl" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>{orderSource === "open" ? "Pesanan Open Order" : "Semua Pesanan"}</h2>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       {["Semua", "pending", "diproses", "selesai"].map((s) => (
                         <button key={s} onClick={() => setOrderFilter(s)} className="text-sm px-3 py-1.5 rounded-lg font-medium transition-colors" style={{ background: orderFilter === s ? "var(--gold)" : "transparent", color: orderFilter === s ? "#fff" : "var(--text-secondary)", border: orderFilter === s ? "none" : "1px solid rgba(64,50,37,.15)" }}>
                           {s === "Semua" ? "Semua" : s.charAt(0).toUpperCase() + s.slice(1)}
@@ -816,7 +819,13 @@ function AdminPageInner() {
                     </div>
                   </div>
                   <div className="overflow-x-auto">
-                    <table className="w-full text-sm min-w-[720px]">
+                    <OrdersMobileList
+                      orders={visibleOrders}
+                      onSelect={setSelectedOrder}
+                      emptyText={orderSource === "open" ? "Belum ada pesanan Open Order" : "Tidak ada pesanan"}
+                      renderStatus={(s) => <StatusBadge status={s} />}
+                    />
+                    <table className="w-full text-sm min-w-[720px] hidden lg:table">
                       <thead>
                         <tr className="text-left" style={{ color: "var(--text-muted)", background: "var(--bg-secondary)" }}>
                           <th className="font-medium px-5 py-3">ID</th>
@@ -1069,135 +1078,24 @@ function AdminPageInner() {
       {/* Order Detail Modal */}
       <AnimatePresence>
         {selectedOrder && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-start justify-center pt-10 px-4 pb-10 overflow-y-auto" style={{ background: "rgba(42,33,27,.4)", backdropFilter: "blur(4px)" }} onClick={() => setSelectedOrder(null)}>
-            <motion.div initial={{ opacity: 0, y: 20, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.98 }} transition={{ duration: 0.25 }} className="w-full max-w-2xl rounded-2xl overflow-hidden" style={{ background: "var(--cream)", boxShadow: "0 25px 60px -12px rgba(42,33,27,.5)" }} onClick={(e) => e.stopPropagation()}>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-start justify-center md:pt-10 md:px-4 md:pb-10 overflow-y-auto" style={{ background: "rgba(42,33,27,.4)", backdropFilter: "blur(4px)" }} onClick={() => setSelectedOrder(null)}>
+            <motion.div initial={{ opacity: 0, y: 20, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.98 }} transition={{ duration: 0.25 }} className="w-full max-w-2xl rounded-none md:rounded-2xl overflow-hidden min-h-full md:min-h-0" style={{ background: "var(--cream)", boxShadow: "0 25px 60px -12px rgba(42,33,27,.5)" }} onClick={(e) => e.stopPropagation()}>
               {/* Header */}
-              <div className="px-6 py-5 flex items-center justify-between" style={{ borderBottom: "1px solid rgba(64,50,37,.06)" }}>
+              <div className="px-4 py-4 md:px-6 md:py-5 flex items-center justify-between" style={{ borderBottom: "1px solid rgba(64,50,37,.06)" }}>
                 <div>
                   <h2 className="text-xl font-medium" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>{selectedOrder.order_number}</h2>
                   <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{new Date(selectedOrder.created_at).toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <StatusBadge status={selectedOrder.status} />
-                  <button onClick={() => setSelectedOrder(null)} className="p-2 rounded-lg hover:bg-[rgba(64,50,37,.05)]" style={{ color: "var(--text-muted)" }}><X size={18} /></button>
-                </div>
+                <button onClick={() => setSelectedOrder(null)} className="p-2 rounded-lg hover:bg-[rgba(64,50,37,.05)]" style={{ color: "var(--text-muted)" }}><X size={18} /></button>
               </div>
 
-              <div className="px-6 py-5 space-y-5">
-                {/* Status Update */}
-                <div className="rounded-xl p-4" style={{ background: "rgba(255,255,255,.6)", border: "1px solid rgba(64,50,37,.06)" }}>
-                  <p className="text-[11px] tracking-[0.15em] uppercase mb-3 font-medium" style={{ color: "var(--text-muted)" }}>Ubah Status</p>
-                  <div className="flex flex-wrap gap-2">
-                    {["pending", "diproses", "selesai", "dibatalkan"].map((s) => (
-                       <button key={s} onClick={() => updateOrderStatus(selectedOrder.order_number, s)} className="text-xs px-4 py-2 rounded-lg font-medium transition-all" style={{ background: selectedOrder.status === s ? "var(--gold)" : "transparent", color: selectedOrder.status === s ? "#fff" : "var(--text-secondary)", border: selectedOrder.status === s ? "none" : "1px solid rgba(64,50,37,.15)" }}>
-                        {s.charAt(0).toUpperCase() + s.slice(1)}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Customer Info */}
-                <div className="rounded-xl p-4" style={{ background: "rgba(255,255,255,.6)", border: "1px solid rgba(64,50,37,.06)" }}>
-                  <p className="text-[11px] tracking-[0.15em] uppercase mb-3 font-medium" style={{ color: "var(--text-muted)" }}>Informasi Pelanggan</p>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm"><span style={{ color: "var(--text-secondary)" }}>Nama</span><span className="font-medium" style={{ color: "var(--espresso)" }}>{selectedOrder.customer_name}</span></div>
-                    {selectedOrder.customer_email && <div className="flex justify-between text-sm"><span style={{ color: "var(--text-secondary)" }}>Email</span><span className="font-medium" style={{ color: "var(--espresso)" }}>{selectedOrder.customer_email}</span></div>}
-                    <div className="flex justify-between text-sm"><span style={{ color: "var(--text-secondary)" }}>WhatsApp</span><span className="font-medium" style={{ color: "var(--espresso)" }}>{selectedOrder.customer_whatsapp}</span></div>
-                    {selectedOrder.shipping_address && <div className="flex justify-between text-sm gap-4"><span style={{ color: "var(--text-secondary)" }}>Alamat</span><span className="font-medium text-right" style={{ color: "var(--espresso)" }}>{selectedOrder.shipping_address}{selectedOrder.shipping_city ? `, ${selectedOrder.shipping_city}` : ""}{selectedOrder.shipping_postal ? ` ${selectedOrder.shipping_postal}` : ""}</span></div>}
-                    {selectedOrder.shipping_notes && <div className="flex justify-between text-sm gap-4"><span style={{ color: "var(--text-secondary)" }}>Catatan</span><span className="text-right" style={{ color: "var(--espresso)" }}>{selectedOrder.shipping_notes}</span></div>}
-                  </div>
-                </div>
-
-                {/* Payment & Shipping */}
-                <div className="rounded-xl p-4" style={{ background: "rgba(255,255,255,.6)", border: "1px solid rgba(64,50,37,.06)" }}>
-                  <p className="text-[11px] tracking-[0.15em] uppercase mb-3 font-medium" style={{ color: "var(--text-muted)" }}>Pembayaran & Pengiriman</p>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm"><span style={{ color: "var(--text-secondary)" }}>Metode Pembayaran</span><PaymentMethodValue value={selectedOrder.payment_method} className="font-medium" style={{ color: "var(--espresso)" }} /></div>
-                    <div className="flex justify-between text-sm"><span style={{ color: "var(--text-secondary)" }}>Metode Pengiriman</span><span className="font-medium" style={{ color: "var(--espresso)" }}>{selectedOrder.shipping_method || "-"}</span></div>
-                  </div>
-                </div>
-
-                {/* Expedition + Shipping Cost */}
-                {selectedOrder.shipping_method && selectedOrder.shipping_method !== "manual" && (
-                  <div className="rounded-xl p-4" style={{ background: "rgba(255,255,255,.6)", border: "1px solid rgba(64,50,37,.06)" }}>
-                    <p className="text-[11px] tracking-[0.15em] uppercase mb-2 font-medium" style={{ color: "var(--text-muted)" }}>Pengiriman</p>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium" style={{ color: "var(--espresso)" }}>{selectedOrder.shipping_method}</span>
-                      <span className="text-sm font-semibold" style={{ color: "var(--espresso)" }}>{money(selectedOrder.shipping_cost)}</span>
-                    </div>
-                    {selectedOrder.awb_no && (
-                      <div className="flex justify-between items-center mt-2 pt-2" style={{ borderTop: "1px solid rgba(64,50,37,.06)" }}>
-                        <span className="text-sm" style={{ color: "var(--text-muted)" }}>No. Resi</span>
-                        <span className="text-sm font-semibold" style={{ color: "var(--gold)", fontFamily: "'Consolas', 'Courier New', monospace", letterSpacing: "1px" }}>{selectedOrder.awb_no}</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Order Items */}
-                <div className="rounded-xl p-4" style={{ background: "rgba(255,255,255,.6)", border: "1px solid rgba(64,50,37,.06)" }}>
-                  <p className="text-[11px] tracking-[0.15em] uppercase mb-3 font-medium" style={{ color: "var(--text-muted)" }}>Produk Dipesan</p>
-                  {selectedOrder.order_items && selectedOrder.order_items.length > 0 ? (
-                    <div className="space-y-3">
-                      {selectedOrder.order_items.map((item, i) => (
-                        <div key={i} className="flex justify-between items-start text-sm">
-                          <div>
-                            <p className="font-medium" style={{ color: "var(--espresso)" }}>{item.product_name}</p>
-                            <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
-                              {[item.kain ? `Kain ${item.kain}` : null, item.series, item.color && item.color !== "default" ? item.color : null, item.size].filter(Boolean).join(' · ')} &times; {item.quantity}
-                            </p>
-                            {/* CYP info */}
-                            {item.customer_price && item.minimum_price && (
-                              <p className="text-[10px] mt-0.5" style={{ color: "var(--gold)" }}>
-                                Min: {money(item.minimum_price)} · Dipilih: {money(item.customer_price)}
-                              </p>
-                            )}
-                          </div>
-                          <span className="font-semibold" style={{ color: "var(--espresso)" }}>{money(item.price * item.quantity)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm" style={{ color: "var(--text-muted)" }}>Detail item tidak tersedia</p>
-                  )}
-                </div>
-
-                {/* Total */}
-                <div className="rounded-xl p-4" style={{ background: "rgba(255,255,255,.6)", border: "1px solid rgba(64,50,37,.06)" }}>
-                  <div className="space-y-2">
-                    {selectedOrder.subtotal > 0 && <div className="flex justify-between text-sm"><span style={{ color: "var(--text-secondary)" }}>Subtotal</span><span>{money(selectedOrder.subtotal)}</span></div>}
-                    {selectedOrder.discount > 0 && <div className="flex justify-between text-sm"><span style={{ color: "var(--text-secondary)" }}>Diskon</span><span style={{ color: "#e74c3c" }}>-{money(selectedOrder.discount)}</span></div>}
-                    {selectedOrder.shipping_cost > 0 && <div className="flex justify-between text-sm"><span style={{ color: "var(--text-secondary)" }}>Ongkos Kirim</span><span>{money(selectedOrder.shipping_cost)}</span></div>}
-                    <div className="flex justify-between text-base font-semibold pt-2" style={{ borderTop: "1px solid rgba(64,50,37,.06)" }}>
-                      <span style={{ color: "var(--espresso)" }}>Total</span>
-                      <span style={{ color: "var(--gold)", fontFamily: "var(--font-cormorant), Georgia, serif", fontSize: "1.15rem" }}>{money(selectedOrder.total)}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Footer */}
-              <div className="px-6 py-4 flex items-center justify-between" style={{ borderTop: "1px solid rgba(64,50,37,.06)", background: "rgba(255,255,255,.3)" }}>
-                <a href={`https://wa.me/${selectedOrder.customer_whatsapp?.replace(/[^0-9]/g, "")}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-xs font-medium px-4 py-2 rounded-lg" style={{ border: "1px solid rgba(64,50,37,.15)", color: "var(--gold)" }}>
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.71.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.002-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.548 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0 0 20.885 3.488" /></svg>
-                  Hubungi via WhatsApp
-                </a>
-                <div className="flex items-center gap-2">
-                   {selectedOrder.awb_no && selectedOrder.status !== "dibatalkan" && (
-                    <button onClick={(e) => { e.stopPropagation(); cancelJntOrder(selectedOrder); }} className="text-xs font-medium px-4 py-2 rounded-lg" style={{ border: "1px solid rgba(231,76,60,.3)", color: "#e74c3c" }}>
-                      Batalkan J&T
-                    </button>
-                  )}
-                  {selectedOrder.awb_no && (
-                    <a href={`/admin/label/${selectedOrder.order_number}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-xs font-medium px-4 py-2 rounded-lg" style={{ border: "1px solid rgba(64,50,37,.3)", color: "var(--gold)", textDecoration: "none" }}>
-                      Cetak Label
-                    </a>
-                  )}
-                   <button onClick={(e) => { e.stopPropagation(); deleteOrder(selectedOrder.order_number); }} className="text-xs font-medium px-4 py-2 rounded-lg" style={{ border: "1px solid rgba(231,76,60,.3)", color: "#e74c3c" }}>
-                    Hapus Pesanan
-                  </button>
-                </div>
-              </div>
+              {/* Isi detail memakai susunan & gaya yang sama dengan halaman detail pesanan customer. */}
+              <OrderDetailContent
+                order={selectedOrder}
+                onStatusChange={(status) => updateOrderStatus(selectedOrder.order_number, status)}
+                onCancelJnt={() => cancelJntOrder(selectedOrder)}
+                onDelete={() => deleteOrder(selectedOrder.order_number)}
+              />
             </motion.div>
           </motion.div>
         )}
