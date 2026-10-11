@@ -440,7 +440,13 @@ Page presentation (not obvious from the code):
   Halaman Garansi &amp; Retur), dan **Lainnya** (Voucher · Pengaturan). Grup "Biolink" lama
   dibubarkan — Biolink/Foto Carousel pindah ke "Konten", dan "Open Order" naik tepat di bawah
   "Order Management". Di dashboard `navGroups` sekarang menyatukan item panel (`panel: Panel`) dan
-  item halaman (`href: string`) — pakai pola itu saat menambah menu. Verifikasi tanpa browser:
+  item halaman (`href: string`) — pakai pola itu saat menambah menu.
+  Sejak 2026-10-11 item panel di **`AdminShell`** mengarah ke **`/admin?panel=<panel>`** (Dashboard
+  tetap `/admin` polos), dan `src/app/admin/page.tsx` membaca `?panel=` sekali saat mount untuk
+  memilih panel awalnya — dulu keempat item itu semuanya menuju `/admin` polos, jadi klik "Order
+  Management" dari subhalaman admin selalu mendarat di Dashboard lebih dulu. Panel baru di sidebar
+  subhalaman: tulis href-nya dengan pola `?panel=` itu (urutan & grup tetap harus sama dengan
+  sidebar dashboard). Verifikasi tanpa browser:
   `curl -s http://localhost:3000/admin/open-order | grep -o 'href="/admin[^"]*"'` harus sama
   urutannya dengan sidebar dashboard (yang di-SSR spinner, jadi bandingkan dengan sumber `page.tsx`).
   Admin memilih **tanggal mulai + tanggal tutup** (`<input type="date">`) dan **series yang dibuka**

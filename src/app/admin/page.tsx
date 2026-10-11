@@ -341,6 +341,17 @@ function AdminPageInner() {
     return () => clearTimeout(timer);
   }, [productSearch]);
 
+  // Panel awal dari URL (`/admin?panel=orders`): sidebar subhalaman admin
+  // (`AdminShell`) mengarahkan item panel ke `/admin?panel=…` supaya klik
+  // "Order Management" dari halaman lain langsung mendarat di panelnya — dulu
+  // semuanya menuju `/admin` dan nyangkut di Dashboard lebih dulu.
+  useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get("panel");
+    if (requested && (Object.keys(panelTitles) as Panel[]).includes(requested as Panel)) {
+      setActivePanel(requested as Panel);
+    }
+  }, []);
+
   // Handler functions (not hooks)
   async function handleAuth(e: React.FormEvent) {
     e.preventDefault();
