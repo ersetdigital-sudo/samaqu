@@ -1,26 +1,43 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { getCurrentCustomer, getCustomerOrders } from "@/lib/customer-auth";
 import { useSafeLocale } from "@/lib/safe-i18n";
-import { AkunHeader } from "@/components/akun/AkunShell";
-import { tglJamID, tglPanjangID } from "@/lib/akun-format";
+import { strukStatus, tglJamID } from "@/lib/akun-format";
+import type { TrackHistoryItem } from "@/lib/jnt/types";
+import { STRUK_CSS, StrukHeader, StrukTitle } from "@/components/akun/StrukShell";
 
 interface Order {
-  id: string;
   order_number: string;
   status: string;
   created_at: string;
   updated_at?: string;
   awb_no?: string | null;
-  shipping_method?: string;
+  shipping_method?: string | null;
 }
 
-interface TrackHistory {
-  date?: string;
-  desc?: string;
-  city?: string;
+interface TrackDetail {
+  services_code?: string;
+  qty?: number;
+  weight?: number;
+  itemname?: string;
+  shipped_date?: string;
+  receiver?: { name?: string; city?: string };
+}
+
+interface TrackPayload {
+  awb?: string;
+  orderid?: string;
+  detail?: TrackDetail;
+  history?: TrackHistoryItem[];
+}
+
+/** J&T mengirim tanggal "YYYY-MM-DD HH:mm:ss" — jadikan ISO supaya stabil di semua browser. */
+function updateTime(value?: string) {
+  if (!value) return "";
+  const stamp = tglJamID(value.includes("T") ? value : value.replace(" ", "T"));
+  return stamp === "-" ? value : stamp;
 }
 
 export default function LacakPage() {
@@ -28,118 +45,182 @@ export default function LacakPage() {
   const orderNo = decodeURIComponent(String(params.orderNo));
   const locale = useSafeLocale();
   const [order, setOrder] = useState<Order | null>(null);
-  const [history, setHistory] = useState<TrackHistory[]>([]);
+  const [payload, setPayload] = useState<TrackPayload | null>(null);
   const [loading, setLoading] = useState(true);
+  const [tracking, setTracking] = useState(false);
   const [trackError, setTrackError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     async function init() {
-      const c = await getCurrentCustomer();
-      if (!c) return;
-      const all = (await getCustomerOrders(c.id)) as Order[];
-      const found = all.find((o) => o.order_number === orderNo) || null;
+      const customer = await getCurrentCustomer();
+      if (!customer) return;
+
+      const orders = (await getCustomerOrders(customer.id)) as Order[];
+      const found = orders.find((o) => o.order_number === orderNo) || null;
       setOrder(found);
-      if (found?.awb_no) {
-        try {
-          const res = await fetch(`/api/jnt/track?awb=${encodeURIComponent(found.awb_no)}`);
-          const json = await res.json();
-          if (json?.success && json?.data?.history) setHistory(json.data.history);
-          else if (json?.error) setTrackError("Gagal mengambil data tracking dari kurir.");
-        } catch {
-          setTrackError("Gagal mengambil data tracking dari kurir.");
-        }
-      }
       setLoading(false);
+      if (!found?.awb_no) return;
+
+      setTracking(true);
+      try {
+        const res = await fetch(`/api/jnt/track?awb=${encodeURIComponent(found.awb_no)}`);
+        const json = await res.json();
+        if (json?.success && json?.data) setPayload(json.data as TrackPayload);
+        else setTrackError(json?.error || "Data pelacakan J&T belum bisa diambil.");
+      } catch {
+        setTrackError("Tidak bisa menghubungi layanan J&T. Coba muat ulang sebentar lagi.");
+      } finally {
+        setTracking(false);
+      }
     }
     init();
   }, [orderNo]);
 
+  // J&T mengirim riwayat dari kejadian terlama; yang terbaru tampil di atas.
+  const updates = useMemo(() => [...(payload?.history || [])].reverse(), [payload]);
+  const sc = order ? strukStatus(order.status) : null;
+  const awb = order?.awb_no || payload?.awb;
+
   async function salin() {
-    if (!order?.awb_no) return;
+    if (!awb) return;
     try {
-      await navigator.clipboard.writeText(order.awb_no);
+      await navigator.clipboard.writeText(awb);
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);
-    } catch { /* ignore */ }
+    } catch {
+      /* clipboard bisa diblokir browser — abaikan */
+    }
   }
 
-  const awb = order?.awb_no;
-
   return (
-    <>
-      <AkunHeader title="Lacak Pesanan" back={`/akun/pesanan/${orderNo}`} />
+    <div className="sk-root -mx-4 -mt-4 md:mx-0 md:mt-0">
+      <style>{STRUK_CSS}</style>
+      <StrukHeader title="Lacak Pesanan" back={`/akun/pesanan/${orderNo}`} />
 
-      <div className="md:flex md:gap-6 md:items-start">
-        <div className="md:w-[340px] md:shrink-0 space-y-3 md:space-y-4">
-          <div className="akun-card p-5 flex gap-4 items-start">
-            <span className="shrink-0 px-3 py-2 rounded-xl bg-[#e11d48] text-white font-extrabold text-xs">J&amp;T</span>
-            <div>
-              <p className="font-bold text-sm md:text-base" style={{ color: "#0f3d33" }}>Pengiriman menggunakan J&amp;T Express</p>
-              <p className="text-[12px] md:text-sm text-[#6c7a75] mt-1">Nomor resi terhubung langsung dengan sistem J&amp;T.</p>
-            </div>
-          </div>
+      <div className="sk-wrap sk-body">
+        <StrukTitle
+          title="Lacak Pesanan"
+          back={`/${locale}/akun/pesanan/${orderNo}`}
+          backLabel="Detail Pesanan"
+        />
 
-          <div className="akun-card p-5">
-            <p className="akun-sect mb-2">Nomor Resi</p>
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-lg md:text-xl font-extrabold tracking-wide" style={{ color: "#0f3d33" }}>{awb || "—"}</p>
-              <button onClick={salin} disabled={!awb} className="flex items-center gap-1.5 text-xs font-bold border border-[#cfdcd7] rounded-full px-3 py-1.5 disabled:opacity-40" style={{ color: "#0f3d33" }}>
-                <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.6"><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V5h10" /></svg>
-                {copied ? "Tersalin" : "Salin"}
-              </button>
-            </div>
-          </div>
+        <div className="sk-cols">
+          <section className="sk-hero sk-up sk-d2">
+            <div
+              className="sk-card"
+              style={{ margin: 0, padding: "20px 18px" }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <span
+                  style={{
+                    flex: "none",
+                    padding: "7px 12px",
+                    borderRadius: 12,
+                    background: "#ED1C24",
+                    color: "#fff",
+                    fontSize: 12,
+                    fontWeight: 800,
+                    letterSpacing: ".02em",
+                  }}
+                >
+                  J&amp;T
+                </span>
+                <div>
+                  <p className="sk-eyebrow">Kurir</p>
+                  <p style={{ fontSize: 13.5, fontWeight: 700, marginTop: 3 }}>
+                    J&amp;T Express{payload?.detail?.services_code ? ` — ${payload.detail.services_code}` : ""}
+                  </p>
+                </div>
+                {sc ? (
+                  <span className={`sk-chip sk-t-${sc.tone}`} style={{ position: "static", marginLeft: "auto" }}>
+                    <span className="sk-dot" />
+                    {sc.label}
+                  </span>
+                ) : null}
+              </div>
 
-          <div className="rounded-2xl p-5 flex items-center gap-3" style={{ background: "#efe8db" }}>
-            <svg viewBox="0 0 24 24" className="w-8 h-8 shrink-0" fill="none" stroke="#0f3d33" strokeWidth="1.5"><rect x="3" y="5" width="18" height="16" rx="3" /><path d="M8 3v4M16 3v4M3 11h18" /></svg>
-            <div>
-              <p className="text-[11px] md:text-xs font-bold text-[#6c7a75] uppercase tracking-wider">Terakhir diperbarui</p>
-              <p className="font-extrabold text-base md:text-lg" style={{ color: "#0f3d33" }}>{tglPanjangID(order?.updated_at || order?.created_at)}</p>
-            </div>
-          </div>
-        </div>
+              <div className="sk-sep" style={{ margin: "16px 0 14px" }} />
 
-        <div className="akun-card p-5 md:p-6 mt-3 md:mt-0 md:flex-1 md:min-w-0">
-          <h3 className="font-extrabold mb-4 md:text-lg" style={{ color: "#0f3d33" }}>Status Pengiriman</h3>
-          {loading ? (
-            <div className="space-y-4">
-              {[0, 1, 2].map((i) => <div key={i} className="h-10 rounded bg-[#f2efe8] animate-pulse" />)}
+              <p className="sk-eyebrow">Nomor Resi</p>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 6 }}>
+                <p
+                  style={{
+                    fontSize: 19,
+                    fontWeight: 800,
+                    letterSpacing: ".04em",
+                    fontFamily: "'Consolas','Courier New',monospace",
+                    wordBreak: "break-all",
+                  }}
+                >
+                  {awb || "—"}
+                </p>
+                <button
+                  type="button"
+                  onClick={salin}
+                  disabled={!awb}
+                  className="sk-bk"
+                  style={{ width: "auto", marginLeft: "auto", padding: "0 13px", height: 36, gap: 7, display: "flex", alignItems: "center", fontSize: 12, fontWeight: 700 }}
+                >
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V5h10" /></svg>
+                  {copied ? "Tersalin" : "Salin"}
+                </button>
+              </div>
+
+              {payload?.detail?.receiver?.city ? (
+                <p style={{ fontSize: 12.5, color: "#6b665a", marginTop: 12 }}>
+                  Tujuan: {payload.detail.receiver.city}
+                  {payload.detail.weight ? ` • ${payload.detail.weight} kg` : ""}
+                </p>
+              ) : null}
             </div>
-          ) : trackError ? (
-            <div className="rounded-xl p-4 text-sm" style={{ background: "#fef2f2", color: "#b91c1c" }}>{trackError}</div>
-          ) : history.length > 0 ? (
-            <ol className="relative">
-              {history.map((h, i) => {
-                const last = i === history.length - 1;
-                const active = i === 0;
-                return (
-                  <li key={i} className="flex gap-3">
-                    <div className="flex flex-col items-center">
-                      {active ? (
-                        <span className="w-6 h-6 rounded-full grid place-items-center" style={{ background: "#dcefe8" }}><span className="w-2.5 h-2.5 rounded-full" style={{ background: "#0f3d33" }} /></span>
-                      ) : (
-                        <span className="w-6 h-6 rounded-full grid place-items-center" style={{ background: "#0f3d33" }}>
-                          <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="#fff" strokeWidth="3"><path d="m5 13 4 4 10-10" /></svg>
-                        </span>
-                      )}
-                      {!last && <span className="w-px flex-1 my-1" style={{ background: "#bcd3cb" }} />}
+          </section>
+
+          <section className="sk-card sk-pay sk-up sk-d3">
+            <h3>Riwayat Pengiriman</h3>
+
+            {loading || tracking ? (
+              <div className="sk-steps">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="sk-step">
+                    <div className="sk-rail"><span className="sk-node" /></div>
+                    <div className="sk-txt" style={{ width: "100%" }}>
+                      <span style={{ display: "block", height: 13, borderRadius: 7, background: "#f2ecdd" }} />
+                      <span style={{ display: "block", height: 11, width: "45%", borderRadius: 7, background: "#f2ecdd", marginTop: 8 }} />
                     </div>
-                    <div className={last ? "pb-0" : "pb-5"}>
-                      <p className="font-bold text-sm md:text-base" style={{ color: "#0f3d33" }}>{h.desc || "Update"}{h.city ? ` — ${h.city}` : ""}</p>
-                      <p className="text-[11px] md:text-xs text-[#8b9793] mt-0.5">{h.date ? tglJamID(h.date) : ""}</p>
+                  </div>
+                ))}
+              </div>
+            ) : trackError ? (
+              <div className="sk-hint" style={{ marginTop: 0 }}>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="9" /><path d="M12 8v5M12 16h.01" /></svg>
+                {trackError}
+              </div>
+            ) : updates.length > 0 ? (
+              <div className="sk-steps">
+                {updates.map((update, i) => (
+                  <div key={`${update.date_time}-${i}`} className={`sk-step ${i === 0 ? "is-active" : "is-done"}`}>
+                    <div className="sk-rail">
+                      <span className="sk-node" />
+                      {i < updates.length - 1 ? <span className="sk-line" /> : null}
                     </div>
-                  </li>
-                );
-              })}
-            </ol>
-          ) : (
-            <div className="rounded-xl p-4 text-sm text-[#6c7a75]" style={{ background: "#f5f1ea" }}>
-              Belum ada data tracking. {awb ? "Data akan muncul setelah kurir memindai paket." : "Nomor resi belum tersedia."}
-            </div>
-          )}
+                    <div className="sk-txt">
+                      <b>{update.status || "Update pengiriman"}</b>
+                      <i>{[update.city_name, updateTime(update.date_time)].filter(Boolean).join(" • ")}</i>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="sk-note" style={{ margin: 0 }}>
+                {awb
+                  ? "Belum ada update dari J&T. Riwayat muncul setelah kurir memindai paket."
+                  : "Nomor resi belum tersedia. Kami kabari begitu paket diserahkan ke J&T."}
+              </div>
+            )}
+          </section>
         </div>
       </div>
-    </>
+    </div>
   );
 }

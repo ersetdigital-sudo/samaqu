@@ -10,6 +10,77 @@ export function statusInfo(status: string) {
   return AKUN_STATUS[status] || AKUN_STATUS.pending;
 }
 
+/* ── Halaman struk (detail pesanan & lacak) ──
+   Halaman struk pakai label sendiri: pesanan `pending` belum dibayar, jadi statusnya
+   "Menunggu Pembayaran" — bukan "Diproses" seperti pill di daftar pesanan. */
+
+export type StrukTone = "wait" | "process" | "ship" | "done" | "cancel";
+
+export const STRUK_STATUS: Record<string, { label: string; tone: StrukTone }> = {
+  pending: { label: "Menunggu Pembayaran", tone: "wait" },
+  diproses: { label: "Diproses", tone: "process" },
+  dikirim: { label: "Dikirim", tone: "ship" },
+  selesai: { label: "Selesai", tone: "done" },
+  dibatalkan: { label: "Dibatalkan", tone: "cancel" },
+};
+
+export function strukStatus(status: string) {
+  return STRUK_STATUS[status] || STRUK_STATUS.pending;
+}
+
+export type StrukStepState = "done" | "active" | "todo";
+
+export interface StrukStep {
+  label: string;
+  sub: string;
+  state: StrukStepState;
+}
+
+/** Langkah pesanan untuk batang status struk; pembayaran jadi langkah kedua. */
+export function strukSteps(order: {
+  status: string;
+  created_at: string;
+  updated_at?: string;
+  awb_no?: string | null;
+}): StrukStep[] {
+  const s = order.status;
+  if (s === "dibatalkan") {
+    return [
+      { label: "Pesanan dibuat", sub: tglJamID(order.created_at), state: "done" },
+      { label: "Pesanan dibatalkan", sub: order.updated_at ? tglJamID(order.updated_at) : "Dibatalkan", state: "active" },
+    ];
+  }
+
+  const paid = s !== "pending";
+  const processing = s === "diproses" || s === "dikirim" || s === "selesai";
+  const shipped = s === "dikirim" || s === "selesai";
+  const received = s === "selesai";
+
+  return [
+    { label: "Pesanan dibuat", sub: tglJamID(order.created_at), state: "done" },
+    {
+      label: paid ? "Pembayaran diterima" : "Menunggu Pembayaran",
+      sub: paid ? "Pembayaran sudah dikonfirmasi" : "Selesaikan pembayaran",
+      state: paid ? "done" : "active",
+    },
+    {
+      label: "Pesanan diproses",
+      sub: processing ? "Pesanan sedang disiapkan" : "Menunggu pembayaran",
+      state: processing ? (s === "diproses" ? "active" : "done") : "todo",
+    },
+    {
+      label: "Dikirim",
+      sub: shipped ? (order.awb_no ? `Resi ${order.awb_no}` : "Sedang dikirim") : "Resi menyusul",
+      state: shipped ? (s === "dikirim" ? "active" : "done") : "todo",
+    },
+    {
+      label: "Pesanan diterima",
+      sub: received ? "Terima kasih!" : "Estimasi menyusul",
+      state: received ? "done" : "todo",
+    },
+  ];
+}
+
 export function rupiah(n: number | null | undefined): string {
   return `Rp${(n || 0).toLocaleString("id-ID")}`;
 }

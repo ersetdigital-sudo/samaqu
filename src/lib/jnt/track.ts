@@ -34,7 +34,12 @@ export async function trackShipment(awb: string): Promise<{
 
   const body = await res.json();
 
-  console.log("[J&T Track] Response:", JSON.stringify(body, null, 2));
+  // Jangan log isi lengkapnya: respons berisi nama & alamat penerima.
+  console.log("[J&T Track] Response:", {
+    status: res.status,
+    error: body.error_message,
+    history: Array.isArray(body.history) ? body.history.length : 0,
+  });
 
   if (body.error_id) {
     return { success: false, data: null, error: body as TrackErrorResponse };
