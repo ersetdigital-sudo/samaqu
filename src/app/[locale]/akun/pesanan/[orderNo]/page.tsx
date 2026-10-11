@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { supabase } from "@/lib/supabase";
 import { getCurrentCustomer, getCustomerOrders } from "@/lib/customer-auth";
+import { getProducts } from "@/lib/db";
+import { itemsWithCatalogPhotos } from "@/lib/order-photo";
 import { useSafeLocale } from "@/lib/safe-i18n";
-import DetailPesananStruk, { StrukHeader, type StrukOrder } from "@/components/akun/DetailPesananStruk";
+import DetailPesananStruk, { type StrukOrder, type StrukOrderItem } from "@/components/akun/DetailPesananStruk";
+import { StrukHeader } from "@/components/akun/StrukShell";
 
 export default function DetailPesananPage() {
   const params = useParams();
@@ -19,12 +21,24 @@ export default function DetailPesananPage() {
 
   useEffect(() => {
     async function init() {
-      const c = await getCurrentCustomer();
-      if (!c) return;
-      const all = (await getCustomerOrders(c.id)) as StrukOrder[];
-      const found = all.find((o) => o.order_number === orderNo);
-      if (found) setOrder(found);
-      else setNotFound(true);
+      const customer = await getCurrentCustomer();
+      if (!customer) return;
+
+      // Katalog diambil bersamaan dengan pesanan: fotonya dipakai untuk mengisi item
+      // yang `product_image`-nya kosong (lihat src/lib/order-photo.ts).
+      const [orders, catalog] = await Promise.all([getCustomerOrders(customer.id), getProducts()]);
+      const found = (orders as StrukOrder[]).find((o) => o.order_number === orderNo);
+
+      if (!found) {
+        setNotFound(true);
+        setLoading(false);
+        return;
+      }
+
+      setOrder({
+        ...found,
+        order_items: itemsWithCatalogPhotos<StrukOrderItem>(found.order_items || [], catalog),
+      });
       setLoading(false);
     }
     init();
@@ -32,22 +46,31 @@ export default function DetailPesananPage() {
 
   if (loading) {
     return (
-      <>
+      <div className="sk-root -mx-4 -mt-4 md:mx-0 md:mt-0">
         <StrukHeader title="Detail Pesanan" back="/akun/pesanan" />
-        <div className="akun-card h-52 animate-pulse" />
-      </>
+        <div className="sk-wrap sk-body">
+          <div className="sk-card h-52 animate-pulse" />
+        </div>
+      </div>
     );
   }
 
   if (notFound || !order) {
     return (
-      <>
+      <div className="sk-root -mx-4 -mt-4 md:mx-0 md:mt-0">
         <StrukHeader title="Detail Pesanan" back="/akun/pesanan" />
-        <div className="akun-card p-10 text-center">
-          <p className="font-extrabold" style={{ color: "#0f3d33" }}>Pesanan tidak ditemukan</p>
-          <Link href={to("/akun/pesanan")} className="inline-block mt-4 akun-btn-green px-6 py-3 rounded-full text-sm font-extrabold">Kembali</Link>
+        <div className="sk-wrap sk-body">
+          <div className="sk-card p-10 text-center">
+            <p style={{ fontWeight: 800 }}>Pesanan tidak ditemukan</p>
+            <p style={{ fontSize: 13, color: "#6b665a", marginTop: 6 }}>
+              Pesanan ini tidak ada di akun Anda.
+            </p>
+            <Link href={to("/akun/pesanan")} className="sk-btn" style={{ marginTop: 16 }}>
+              Kembali ke Pesanan Saya
+            </Link>
+          </div>
         </div>
-      </>
+      </div>
     );
   }
 
