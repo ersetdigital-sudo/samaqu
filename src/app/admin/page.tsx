@@ -22,7 +22,7 @@ import ProductsCatalog from "@/components/admin/ProductsCatalog";
 import ProductDetailDrawer from "@/components/admin/ProductDetailDrawer";
 import { ADMIN_WF_VARS } from "@/components/admin/admin-theme";
 
-type Panel = "dashboard" | "orders" | "products" | "customers" | "content" | "featured" | "settings";
+type Panel = "dashboard" | "orders" | "products" | "customers" | "content" | "settings";
 
 interface Order {
   id: string;
@@ -74,7 +74,6 @@ const navItems = [
   { id: "products" as Panel, label: "Produk", icon: Package },
   { id: "customers" as Panel, label: "Pelanggan", icon: Users },
   { id: "content" as Panel, label: "Konten Website", icon: FileText },
-  { id: "featured" as Panel, label: "Produk Pilihan", icon: Package },
   { id: "settings" as Panel, label: "Pengaturan", icon: Settings },
 ];
 
@@ -84,7 +83,6 @@ const panelTitles: Record<Panel, { title: string; sub: string }> = {
   products: { title: "Produk", sub: "Kelola katalog dan stok koleksi." },
   customers: { title: "Pelanggan", sub: "Data dan riwayat belanja pelanggan." },
   content: { title: "Konten Website", sub: "Atur tampilan halaman publik SAMAQU." },
-  featured: { title: "Produk Pilihan Customer", sub: "Pilih produk yang tampil di dashboard customer." },
   settings: { title: "Pengaturan", sub: "Konfigurasi informasi toko." },
 };
 
@@ -907,13 +905,6 @@ function AdminPageInner() {
                 </div>
               )}
 
-              {/* PRODUCTS PRIORITY */}
-              {activePanel === "featured" && (
-                <div className="space-y-6">
-                  <CustomerProductsSection />
-                </div>
-              )}
-
             </motion.div>
           </AnimatePresence>
         </main>
@@ -1501,93 +1492,6 @@ function StoreInfoSection() {
           </button>
         )}
         <button onClick={handleReset} className="text-sm font-semibold px-5 py-2.5 rounded-xl" style={{ border: "1px solid #d4d4d8" }}>Batal</button>
-      </div>
-    </div>
-  );
-}
-
-function CustomerProductsSection() {
-  const [featuredIds, setFeaturedIds] = useState<string[]>([]);
-  const [allProducts, setAllProducts] = useState<{ id: string; name: string; image: string; category: string }[]>([]);
-  const [productThumbnails, setProductThumbnails] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const toast = useToast();
-
-  useEffect(() => {
-    Promise.all([
-      supabase.from("customer_featured_products").select("product_id, display_order").order("display_order"),
-      supabase.from("products").select("id, name, image, category").order("created_at", { ascending: false }),
-    ]).then(async ([fpRes, pRes]) => {
-      if (fpRes.data) setFeaturedIds(fpRes.data.map((r) => r.product_id));
-      if (pRes.data) {
-        setAllProducts(pRes.data);
-        // Fetch thumbnails (skip videos)
-        const ids = pRes.data.map((p) => p.id);
-        const { data: imgs } = await supabase.from("product_images").select("product_id, url, is_video").in("product_id", ids).order("display_order");
-        if (imgs) {
-          const thumbs: Record<string, string> = {};
-          for (const p of pRes.data) {
-            const firstImage = imgs.find((img: any) => img.product_id === p.id && !img.is_video);
-            thumbs[p.id] = firstImage?.url || (p.image && !p.image.match(/\.(mp4|webm|ogg)$/i) ? p.image : "");
-          }
-          setProductThumbnails(thumbs);
-        }
-      }
-      setLoading(false);
-    });
-  }, []);
-
-  function toggleProduct(id: string) {
-    setSaved(false);
-    setFeaturedIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
-  }
-
-  async function save() {
-    setSaving(true);
-    const { data: existingIds } = await supabase.from("customer_featured_products").select("id");
-    if (existingIds && existingIds.length > 0) {
-      for (const row of existingIds) await supabase.from("customer_featured_products").delete().eq("id", row.id);
-    }
-    if (featuredIds.length > 0) {
-      await supabase.from("customer_featured_products").insert(featuredIds.map((id, i) => ({ product_id: id, display_order: i })));
-    }
-    setSaving(false);
-    setSaved(true);
-    toast.showToast("success", "Produk pilihan berhasil disimpan");
-  }
-
-  if (loading) return <div className="card p-6"><Loader2 size={20} className="animate-spin" style={{ color: "var(--gold)" }} /></div>;
-
-  return (
-    <div className="card p-6 max-w-2xl">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h3 className="text-lg font-semibold" style={{ color: "var(--espresso)" }}>Produk Pilihan Customer</h3>
-          <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Tampil di dashboard customer section "Koleksi Pilihan" (maks 8)</p>
-        </div>
-        <button onClick={save} disabled={saving || featuredIds.length === 0} className="text-xs px-4 py-2 rounded-xl font-semibold text-white" style={{ background: saved ? "#3f3f46" : "var(--gold)", opacity: saving || featuredIds.length === 0 ? 0.5 : 1 }}>
-          {saving ? "..." : saved ? "Tersimpan" : "Simpan"}
-        </button>
-      </div>
-      <p className="text-xs mb-3" style={{ color: "var(--text-muted)" }}>Dipilih: {featuredIds.length} / 8 produk</p>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        {allProducts.map((p) => {
-          const selected = featuredIds.includes(p.id);
-          return (
-            <button key={p.id} onClick={() => { if (!selected && featuredIds.length >= 8) return; toggleProduct(p.id); }} className="rounded-xl overflow-hidden text-left transition-all" style={{ border: selected ? "2px solid var(--gold)" : "1px solid #e4e4e7", opacity: !selected && featuredIds.length >= 8 ? 0.4 : 1 }}>
-              <div className="aspect-square" style={{ background: "#f4f4f5" }}>
-                <img src={productThumbnails[p.id] || p.image || ""} alt={p.name} className="w-full h-full object-cover" />
-              </div>
-              <div className="p-2">
-                <p className="text-xs font-medium truncate" style={{ color: "var(--espresso)" }}>{p.name}</p>
-                <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>{p.category}</p>
-              </div>
-              {selected && <div className="text-center text-[10px] py-1 font-medium" style={{ background: "#f4f4f5", color: "var(--gold)" }}>Dipilih</div>}
-            </button>
-          );
-        })}
       </div>
     </div>
   );
