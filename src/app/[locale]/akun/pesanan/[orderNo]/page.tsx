@@ -7,15 +7,19 @@ import { getCurrentCustomer, getCustomerOrders } from "@/lib/customer-auth";
 import { getProducts } from "@/lib/db";
 import { itemsWithCatalogPhotos } from "@/lib/order-photo";
 import { useSafeLocale } from "@/lib/safe-i18n";
-import DetailPesananStruk, { type StrukOrder, type StrukOrderItem } from "@/components/akun/DetailPesananStruk";
-import { StrukHeader } from "@/components/akun/StrukShell";
+import RincianPesanan, {
+  RincianHeader,
+  RINCIAN_CSS,
+  type RincianOrder,
+  type RincianOrderItem,
+} from "@/components/akun/RincianPesanan";
 
 export default function DetailPesananPage() {
   const params = useParams();
   const orderNo = decodeURIComponent(String(params.orderNo));
   const locale = useSafeLocale();
   const to = (href: string) => `/${locale}${href}`;
-  const [order, setOrder] = useState<StrukOrder | null>(null);
+  const [order, setOrder] = useState<RincianOrder | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
@@ -27,7 +31,7 @@ export default function DetailPesananPage() {
       // Katalog diambil bersamaan dengan pesanan: fotonya dipakai untuk mengisi item
       // yang `product_image`-nya kosong (lihat src/lib/order-photo.ts).
       const [orders, catalog] = await Promise.all([getCustomerOrders(customer.id), getProducts()]);
-      const found = (orders as StrukOrder[]).find((o) => o.order_number === orderNo);
+      const found = (orders as RincianOrder[]).find((o) => o.order_number === orderNo);
 
       if (!found) {
         setNotFound(true);
@@ -37,7 +41,7 @@ export default function DetailPesananPage() {
 
       setOrder({
         ...found,
-        order_items: itemsWithCatalogPhotos<StrukOrderItem>(found.order_items || [], catalog),
+        order_items: itemsWithCatalogPhotos<RincianOrderItem>(found.order_items || [], catalog),
       });
       setLoading(false);
     }
@@ -46,10 +50,11 @@ export default function DetailPesananPage() {
 
   if (loading) {
     return (
-      <div className="sk-root -mx-4 -mt-4 md:mx-0 md:mt-0">
-        <StrukHeader title="Detail Pesanan" back="/akun/pesanan" />
-        <div className="sk-wrap sk-body">
-          <div className="sk-card h-52 animate-pulse" />
+      <div className="rp-root -mx-4 -mt-4 md:mx-0 md:mt-0">
+        <style>{RINCIAN_CSS}</style>
+        <RincianHeader title="Detail Pesanan" back="/akun/pesanan" />
+        <div className="rp-wrap">
+          <div className="rp-card animate-pulse" style={{ height: 208 }} />
         </div>
       </div>
     );
@@ -57,15 +62,16 @@ export default function DetailPesananPage() {
 
   if (notFound || !order) {
     return (
-      <div className="sk-root -mx-4 -mt-4 md:mx-0 md:mt-0">
-        <StrukHeader title="Detail Pesanan" back="/akun/pesanan" />
-        <div className="sk-wrap sk-body">
-          <div className="sk-card p-10 text-center">
+      <div className="rp-root -mx-4 -mt-4 md:mx-0 md:mt-0">
+        <style>{RINCIAN_CSS}</style>
+        <RincianHeader title="Detail Pesanan" back="/akun/pesanan" />
+        <div className="rp-wrap">
+          <div className="rp-card" style={{ padding: 32, textAlign: "center" }}>
             <p style={{ fontWeight: 800 }}>Pesanan tidak ditemukan</p>
-            <p style={{ fontSize: 13, color: "#6b665a", marginTop: 6 }}>
+            <p style={{ fontSize: 13, color: "#757575", marginTop: 6 }}>
               Pesanan ini tidak ada di akun Anda.
             </p>
-            <Link href={to("/akun/pesanan")} className="sk-btn" style={{ marginTop: 16 }}>
+            <Link href={to("/akun/pesanan")} className="rp-btn" style={{ marginTop: 16 }}>
               Kembali ke Pesanan Saya
             </Link>
           </div>
@@ -74,5 +80,5 @@ export default function DetailPesananPage() {
     );
   }
 
-  return <DetailPesananStruk order={order} />;
+  return <RincianPesanan order={order} />;
 }
