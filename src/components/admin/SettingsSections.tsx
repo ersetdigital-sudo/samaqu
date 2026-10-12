@@ -48,6 +48,15 @@ const PROVIDER_OPTIONS = [
   { value: "jnt" as const, label: "J&T API Langsung", desc: "Hanya J&T, tanpa perantara" },
 ];
 
+// Model teks MiMo (dari GET /v1/models). TTS/ASR tidak ditampilkan karena bukan untuk chat.
+const CHAT_MODEL_OPTIONS = [
+  { value: "mimo-v2.6-flash", label: "mimo-v2.6-flash — murah & cepat (rekomendasi)" },
+  { value: "mimo-v2.6-pro", label: "mimo-v2.6-pro — paling pintar (lebih lambat)" },
+  { value: "mimo-v2.6-pro-ultraspeed", label: "mimo-v2.6-pro-ultraspeed — tercepat (paling mahal)" },
+  { value: "mimo-v2.5", label: "mimo-v2.5 — generasi lama (pensiun 21 Okt 2026)" },
+  { value: "mimo-v2.5-pro", label: "mimo-v2.5-pro — generasi lama (pensiun 21 Okt 2026)" },
+];
+
 function StoreInfoSection() {
   const [form, setForm] = useState({ store_name: "", tagline: "", email: "", whatsapp: "", cyp_microcopy: "" });
   const [original, setOriginal] = useState({ store_name: "", tagline: "", email: "", whatsapp: "", cyp_microcopy: "" });
@@ -1163,14 +1172,27 @@ function ChatSection() {
       )}
 
       <div className="grid sm:grid-cols-2 gap-4">
-        <Field
-          label="Model"
-          value={model}
-          editing={editing}
-          onChange={setModel}
-          mono
-          hint={envModel ? `Kosong = pakai ${envModel} (env). Contoh: mimo-v2.6-flash, mimo-v2.6-pro` : "Contoh: mimo-v2.6-flash (murah), mimo-v2.6-pro (paling pinter)"}
-        />
+        {editing ? (
+          <div>
+            <label className="block text-sm font-semibold" style={{ color: "var(--espresso)" }}>Model</label>
+            <select
+              value={model}
+              onChange={(e) => setModel(e.target.value)}
+              className="mt-1.5 w-full rounded-xl px-3 py-2.5 bg-white text-sm outline-none font-mono"
+              style={{ border: "1px solid #e4e4e7" }}
+            >
+              {CHAT_MODEL_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+              {model && !CHAT_MODEL_OPTIONS.some((o) => o.value === model) && (
+                <option value={model}>{model} (nilai tersimpan)</option>
+              )}
+            </select>
+            {envModel && <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>Default env: {envModel}</p>}
+          </div>
+        ) : (
+          <Field label="Model" value={model} editing={false} mono />
+        )}
         <Field
           label="Base URL"
           value={baseUrl}
