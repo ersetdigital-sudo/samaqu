@@ -104,6 +104,24 @@
       "description": "Admin WhatsApp number that receives new-order notifications. Comma-separated for multiple numbers. Optional: falls back to store_settings.whatsapp when empty.",
       "requiredAtBoot": false,
       "generatedForDevelopment": false
+    },
+    {
+      "name": "MIMO_API_KEY",
+      "description": "Xiaomi MiMo API key (platform.xiaomimimo.com > API Keys). Optional: powers the storefront AI live chat (src/app/api/chat). Can also be set from the admin dashboard (chat_settings table). Keep secret.",
+      "requiredAtBoot": false,
+      "generatedForDevelopment": false
+    },
+    {
+      "name": "MIMO_MODEL",
+      "description": "MiMo model id for the live chat (e.g. mimo-v2-flash, mimo-v2.5, mimo-v2.5-pro). Optional, default mimo-v2-flash.",
+      "requiredAtBoot": false,
+      "generatedForDevelopment": false
+    },
+    {
+      "name": "MIMO_BASE_URL",
+      "description": "MiMo OpenAI-compatible base URL. Optional, default https://api.mimo.mi.com/v1.",
+      "requiredAtBoot": false,
+      "generatedForDevelopment": false
     }
   ]
 }
