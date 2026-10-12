@@ -556,7 +556,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
   if (loading) {
     return (
-      <section className="min-h-screen flex items-center justify-center" style={{ background: "var(--cream)" }}>
+      <section className="min-h-screen flex items-center justify-center" style={{ background: "#F3F3F3" }}>
         <div className="w-6 h-6 border-2 rounded-full animate-spin" style={{ borderColor: "rgba(201,183,156,.3)", borderTopColor: "var(--gold)" }} />
       </section>
     );
@@ -564,7 +564,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
   if (!product) {
     return (
-      <section className="min-h-screen flex items-center justify-center" style={{ background: "var(--cream)" }}>
+      <section className="min-h-screen flex items-center justify-center" style={{ background: "#F3F3F3" }}>
         <div className="text-center px-6">
           <p className="text-lg font-medium mb-4" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
             Produk tidak ditemukan
@@ -606,7 +606,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     .filter(({ item }) => (item.type === "video" ? item.poster || product.image : item.src) !== activeVisualSrc);
 
   return (
-    <section className="min-h-screen" style={{ background: "var(--cream)" }}>
+    <section className="min-h-screen" style={{ background: "#F3F3F3" }}>
       {/* ═══════════════════════════════════════
           MOBILE LAYOUT (max-md)
       ═══════════════════════════════════════ */}
