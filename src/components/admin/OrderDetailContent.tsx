@@ -6,6 +6,7 @@ import type { TrackHistoryItem } from "@/lib/jnt/types";
 import { isDelivered } from "@/lib/jnt/track-status";
 import { PaymentMethodValue } from "@/components/admin/PaymentMethodsManager";
 import { RINCIAN_CSS, FALLBACK_PHOTO } from "@/components/akun/RincianPesanan";
+import { waNumber, waLink, pesanPembayaran } from "@/lib/whatsapp";
 
 /**
  * Isi detail pesanan untuk dashboard admin — memakai susunan & gaya yang sama dengan
@@ -153,7 +154,11 @@ export default function OrderDetailContent({
   const steps = strukSteps(order);
   const items = order.order_items || [];
   const resi = order.awb_no || "";
-  const wa = (order.customer_whatsapp || "").replace(/[^0-9]/g, "");
+  const wa = waNumber(order.customer_whatsapp);
+  // Pesan chat sudah terisi (satu teks standar untuk semua pesanan) supaya admin tinggal
+  // kirim — teksnya di `pesanPembayaran`, hanya nama panggilan pelanggan dan nomor
+  // pesanan yang berubah.
+  const waPesan = pesanPembayaran(order.customer_name, order.order_number);
   const alamat = [order.shipping_address, order.shipping_city, order.shipping_postal_code].filter(Boolean).join(", ");
 
   const [showAlamat, setShowAlamat] = useState(false);
@@ -397,7 +402,7 @@ export default function OrderDetailContent({
                   </button>
                 ) : null}
                 {wa ? (
-                  <a href={`https://wa.me/${wa}`} target="_blank" rel="noopener noreferrer" className="od-a">
+                  <a href={waLink(order.customer_whatsapp, waPesan)} target="_blank" rel="noopener noreferrer" className="od-a">
                     <svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24"><path d={WHATSAPP_PATH} /></svg>
                     Hubungi via WhatsApp
                   </a>
