@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { base44 } from "@/lib/ops-api";
 import { motion, AnimatePresence } from "framer-motion";
-import { ClipboardPaste, CheckCircle2, XCircle, Loader2, Info, Copy } from "lucide-react";
+import { ClipboardPaste, CheckCircle2, XCircle, Loader2, Info, Copy, Upload } from "lucide-react";
 import { useToast } from "@/components/ops/ui/use-toast";
 
 const SOURCES = ["Meta ads", "WA", "IG", "Website"];
@@ -86,7 +86,29 @@ export function normalizeKontak(raw) {
   return n || digits;
 }
 
-// Parse semua baris TSV dari Google Sheets
+// Pecah satu baris: kalau ada TAB pakai TAB (hasil copy dari Google Sheet),
+// kalau tidak anggap CSV (perhatikan tanda kutip).
+function splitLine(line) {
+  if (line.includes('\t')) return line.split('\t').map((c) => c.trim());
+  const out = [];
+  let cur = '';
+  let q = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (q && line[i + 1] === '"') { cur += '"'; i++; } else { q = !q; }
+    } else if ((ch === ',' || ch === ';') && !q) {
+      out.push(cur.trim());
+      cur = '';
+    } else {
+      cur += ch;
+    }
+  }
+  out.push(cur.trim());
+  return out;
+}
+
+// Parse semua baris TSV/CSV dari Google Sheets (paste) atau file .csv
 export function parsePastedRows(text, existingKeys = new Set()) {
   const lines = String(text || '').split(/\r?\n/).filter((l) => l.trim() !== '');
   const rows = [];
@@ -95,7 +117,7 @@ export function parsePastedRows(text, existingKeys = new Set()) {
   // Baris lanjutan (sel Sheet yang mengandung enter) digabung ke baris sebelumnya
   const colRows = [];
   lines.forEach((line) => {
-    const cols = line.split('\t').map((c) => c.trim());
+    const cols = splitLine(line);
     // Skip baris header (TANGGAL, JAM, ...)
     if (colRows.length === 0 && /tanggal/i.test(cols[0] || '')) return;
     if (cols[0] && splitDate(cols[0])) { colRows.push(cols); return; }
@@ -267,19 +289,44 @@ export default function PasteImportModal({ isOpen, onClose, onSuccess }) {
                 <Info size={15} className="text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
                 <p className="text-xs text-blue-800 dark:text-blue-300 leading-relaxed">
                   Copy kolom <b>TANGGAL, JAM, NO/IG, SUMBER, KETERANGAN, NOMINAL</b> dari Google Sheet (blok sel â Ctrl+C),
-                  lalu paste di bawah. Baris header ikut di-copy juga tidak masalah â otomatis dilewati.
+                  lalu paste di bawah — atau <b>pilih file .csv</b> hasil download dari Google Sheet (File → Download → CSV). Baris header ikut di-copy juga tidak masalah â otomatis dilewati.
                   Lead dengan <b>tanggal &amp; kontak yang sama</b> dengan data yang sudah ada otomatis dilewati (anti duplikat).
                 </p>
               </div>
 
-              <button
-                disabled={isImporting}
-                onClick={handlePasteFromClipboard}
-                className="w-full flex items-center justify-center gap-2 py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all active:scale-[0.98]"
-              >
-                <ClipboardPaste size={16} />
-                Paste dari Clipboard
-              </button>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <button
+                  disabled={isImporting}
+                  onClick={handlePasteFromClipboard}
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all active:scale-[0.98]"
+                >
+                  <ClipboardPaste size={16} />
+                  Paste dari Clipboard
+                </button>
+                <label
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold transition-all ${
+                    isImporting
+                      ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer active:scale-[0.98]'
+                  }`}
+                >
+                  <Upload size={16} />
+                  Pilih file .csv / .txt
+                  <input
+                    type="file"
+                    accept=".csv,.txt,text/csv,text/plain"
+                    disabled={isImporting}
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files && e.target.files[0];
+                      if (!file) return;
+                      const content = await file.text();
+                      setText(content);
+                      e.target.value = '';
+                    }}
+                  />
+                </label>
+              </div>
 
               <textarea
                 disabled={isImporting}
