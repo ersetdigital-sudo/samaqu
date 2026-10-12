@@ -10,7 +10,7 @@ import { getSupabaseAdmin } from "@/lib/supabase-admin";
 // POST → balasan AI yang di-streaming (SSE). Model dibatasi konteks SAMAQU dan boleh memanggil
 //        tool (cari produk/stok, panduan ukuran) supaya harga & stok selalu dari database.
 
-const MAX_MESSAGES = 20;
+const MAX_MESSAGES = 12;
 const MAX_CHARS = 2000;
 const MAX_TOOL_ROUNDS = 3;
 
@@ -25,7 +25,7 @@ ATURAN:
 - Jawab HANYA topik seputar SAMAQU: produk, kain/bahan, ukuran, cara pesan, Create Your Price, pembayaran, pengiriman, garansi/retur, open order, dan kontak.
 - Kalau pertanyaannya di luar topik itu (mis. coding, politik, pelajaran), TOLAK sopan dan singkat, contoh: "${REFUSAL}". Jangan menjawab pertanyaannya.
 - Pakai Bahasa Indonesia yang ramah, santai, ringkas.
-- FORMAT agar mudah dibaca: kalau menyebut beberapa produk, pakai daftar berpoin (awali "- "), satu produk per baris. Tebalkan nama produk dan harga dengan **teks**. Ringkas info stok (mis. "S: 16, M: 12"). Hindari paragraf panjang tanpa jeda.
+- FORMAT & PANJANG: jawab sesingkat mungkin — maksimal ~4 baris/poin. Kalau menyebut beberapa produk, pakai daftar berpoin (awali "- "), satu produk per baris. Tebalkan nama produk/harga dengan **teks**. JANGAN menuliskan seluruh stok semua warna/ukuran — cukup yang ditanyakan atau yang paling relevan.
 - JANGAN mengarang produk, harga, warna, atau stok. Untuk data produk/harga/stok TERKINI, panggil tool "cari_produk". Untuk ukuran, panggil "panduan_ukuran".
 - Pelanggan bisa melampirkan gambar (mis. kondisi produk, referensi model). Kalau ada gambar, perhatikan isinya dan tanggapi sesuai konteks SAMAQU.
 - Untuk pertanyaan "pesanan saya sudah diproses/dikirim belum?", pakai tool "cek_status_pesanan". Minta nomor pesanan (mis. SMQ-... atau CYO-...) DAN nomor HP yang dipakai saat memesan. Jangan pernah menampilkan alamat lengkap atau data pribadi lain — cukup status & nomor resi.
@@ -212,7 +212,7 @@ export async function POST(req: NextRequest) {
               model: config.model,
               messages: convo,
               temperature: 0.4,
-              max_tokens: 1500,
+              max_tokens: 700,
               tools: CHAT_TOOLS,
               tool_choice: "auto",
               stream: true,
@@ -260,7 +260,9 @@ export async function POST(req: NextRequest) {
         // Simpan log DULU (di-await) baru tutup stream. Fire-and-forget TIDAK aman di
         // serverless (Vercel): fungsi bisa dimatikan begitu respons selesai sehingga log hilang.
         if (answer) {
-          const escalated = toolsUsed.includes("hubungi_admin") || /whatsapp|admin/i.test(answer);
+          // Hanya tandai "diarahkan ke admin" kalau tool hubungi_admin benar-benar dipakai —
+          // kata "admin/WhatsApp" saja di jawaban bukan eskalasi (dulu salah nempel badge).
+          const escalated = toolsUsed.includes("hubungi_admin");
           try {
             const { error } = await getSupabaseAdmin()
               .from("chat_logs")
