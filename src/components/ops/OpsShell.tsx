@@ -57,7 +57,16 @@ const MENU_GROUPS: { label: string; items: MenuItem[] }[] = [
 ];
 
 const queryClient = new QueryClient({
-  defaultOptions: { queries: { refetchOnWindowFocus: false, retry: 1 } },
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+      // Data dianggap masih segar 60 detik → pindah-pindah menu terasa instan
+      // (pakai cache, tidak fetch ulang), sedangkan simpan/edit tetap invalidate.
+      staleTime: 60 * 1000,
+      gcTime: 10 * 60 * 1000,
+    },
+  },
 });
 
 function SidebarContent({
@@ -69,6 +78,9 @@ function SidebarContent({
   onNavigate?: () => void;
   stripOps?: boolean;
 }) {
+  const router = useRouter();
+  // Prefetch halaman begitu kursor menyentuh menu → klik jadi instan.
+  const prefetch = (href: string) => { try { router.prefetch(href); } catch { /* diabaikan */ } };
   return (
     <div className="flex-1 px-3 py-3 space-y-3 no-scrollbar overflow-y-auto">
       {MENU_GROUPS.map((group, idx) => (
@@ -96,7 +108,15 @@ function SidebarContent({
                   <span className="text-[9px] font-black tracking-wider opacity-70">SOON</span>
                 </div>
               ) : (
-                <Link key={item.href} href={href} onClick={onNavigate} className={cls}>
+                <Link
+                  key={item.href}
+                  href={href}
+                  onClick={onNavigate}
+                  onMouseEnter={() => prefetch(href)}
+                  onFocus={() => prefetch(href)}
+                  prefetch
+                  className={cls}
+                >
                   <Icon size={17} />
                   <span className="flex-1 text-left">{item.title}</span>
                 </Link>

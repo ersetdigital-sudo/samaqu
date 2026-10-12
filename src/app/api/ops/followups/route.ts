@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
-import { isOpsAdmin, unauthorized } from "@/lib/ops-auth";
+import { isOpsAdmin, unauthorized, opsActorEmail } from "@/lib/ops-auth";
 import { OUTCOMES, jakartaDayBounds, isActiveTask } from "@/lib/ops-followup";
 
 /**
@@ -13,17 +13,6 @@ import { OUTCOMES, jakartaDayBounds, isActiveTask } from "@/lib/ops-followup";
  */
 
 const OUTCOME_CODES = OUTCOMES.map((o) => o.code) as readonly string[];
-
-async function actorEmail(req: NextRequest): Promise<string> {
-  try {
-    const token = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
-    const admin = getSupabaseAdmin();
-    const { data } = await admin.auth.getUser(token);
-    return data?.user?.email || "admin";
-  } catch {
-    return "admin";
-  }
-}
 
 function validDateOrNull(v: unknown): string | null {
   if (!v || typeof v !== "string") return null;
@@ -242,7 +231,7 @@ export async function POST(req: NextRequest) {
   if (!(await isOpsAdmin(req))) return unauthorized();
 
   const admin = getSupabaseAdmin();
-  const actor = await actorEmail(req);
+  const actor = await opsActorEmail(req);
 
   try {
     const body = await req.json();

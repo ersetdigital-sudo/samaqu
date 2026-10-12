@@ -1877,36 +1877,30 @@ export default function MasterProduk() {
               {/* Table - Google Sheet Style */}
               <div className="bg-white dark:bg-[#1a1d28] rounded-xl shadow-sm border border-gray-200 dark:border-slate-800 overflow-hidden transition-colors duration-300">
                 <div className="overflow-x-auto">
-                  <table className="w-full border-collapse">
+                  <table className="w-full border-collapse min-w-[720px]">
                     <thead>
                       <tr className="bg-[#1e3a5f] dark:bg-[#1e3a5f]">
-                        <th className="px-4 py-3.5 text-left font-inter text-xs font-bold text-white uppercase tracking-wide">
+                        <th className="px-4 py-3.5 text-left font-inter text-xs font-bold text-white uppercase tracking-wide whitespace-nowrap">
                           Tanggal
                         </th>
-                        <th className="px-4 py-3.5 text-left font-inter text-xs font-bold text-white uppercase tracking-wide">
+                        <th className="px-4 py-3.5 text-left font-inter text-xs font-bold text-white uppercase tracking-wide whitespace-nowrap">
                           Order ID
                         </th>
                         <th className="px-4 py-3.5 text-left font-inter text-xs font-bold text-white uppercase tracking-wide">
-                          SKU
+                          Produk
                         </th>
-                        <th className="px-4 py-3.5 text-left font-inter text-xs font-bold text-white uppercase tracking-wide">
-                          Nama Produk
+                        <th className="px-4 py-3.5 text-center font-inter text-xs font-bold text-white uppercase tracking-wide whitespace-nowrap">
+                          Qty
                         </th>
-                        <th className="px-4 py-3.5 text-center font-inter text-xs font-bold text-white uppercase tracking-wide">
-                          Qty Keluar
-                        </th>
-                        <th className="px-4 py-3.5 text-center font-inter text-xs font-bold text-white uppercase tracking-wide">
+                        <th className="px-4 py-3.5 text-right font-inter text-xs font-bold text-white uppercase tracking-wide whitespace-nowrap">
                           Total
-                        </th>
-                        <th className="px-4 py-3.5 text-center font-inter text-xs font-bold text-white uppercase tracking-wide">
-                          Platform
                         </th>
                       </tr>
                     </thead>
                     <tbody>
                       {transactions.length === 0 ? (
                         <tr>
-                          <td colSpan="7" className="px-6 py-12 text-center font-inter text-sm text-gray-400 dark:text-slate-500">
+                          <td colSpan="5" className="px-6 py-12 text-center font-inter text-sm text-gray-400 dark:text-slate-500">
                             Belum ada data barang keluar
                           </td>
                         </tr>
@@ -1915,11 +1909,11 @@ export default function MasterProduk() {
                           const product = products.find(p => p.id === t.product_id);
                           const rowBg = index % 2 === 0 ? 'bg-white dark:bg-[#16171d]' : 'bg-blue-50/30 dark:bg-[#1a1d28]';
                           return (
-                           <tr key={t.id} className={`${rowBg} hover:bg-blue-100/50 dark:hover:bg-slate-800 transition-colors border-b border-gray-100 dark:border-slate-800/50`}>
-                              <td className="px-4 py-3.5 text-left align-middle font-inter text-sm text-gray-700 dark:text-slate-300">
+                            <tr key={t.id} className={`${rowBg} hover:bg-blue-100/50 dark:hover:bg-slate-800 transition-colors border-b border-gray-100 dark:border-slate-800/50`}>
+                              <td className="px-4 py-3 align-middle font-inter text-sm text-gray-700 dark:text-slate-300 whitespace-nowrap">
                                 {format(new Date(t.date), 'dd MMM yyyy')}
                               </td>
-                              <td className="px-4 py-3.5 text-left align-middle font-inter text-sm font-semibold text-gray-900 dark:text-white">
+                              <td className="px-4 py-3 align-middle font-inter text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">
                                 <span className="inline-flex items-center gap-1.5">
                                   {t.order_id || '-'}
                                   {String(t.status || '') === 'return' && (
@@ -1927,18 +1921,20 @@ export default function MasterProduk() {
                                   )}
                                 </span>
                               </td>
-                              <td className="px-4 py-3.5 text-left align-middle font-inter text-sm font-semibold text-gray-900 dark:text-white">
-                                {product?.sku || '-'}
+                              <td className="px-4 py-3 align-middle font-inter">
+                                <span className="block text-sm font-medium text-gray-900 dark:text-white leading-snug">
+                                  {t.product_name || product?.name || '-'}
+                                </span>
+                                <span className="block text-[11px] text-gray-400 dark:text-slate-500 leading-snug">
+                                  {product?.sku || '-'}
+                                </span>
                               </td>
-                              <td className="px-4 py-3.5 text-left align-middle font-inter text-sm font-medium text-gray-700 dark:text-slate-300">
-                                {t.product_name || product?.name || '-'}
-                              </td>
-                              <td className="px-4 py-3.5 text-center align-middle">
+                              <td className="px-4 py-3 text-center align-middle whitespace-nowrap">
                                 <span className="inline-flex items-center px-3 py-1 rounded-full bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-400 text-sm font-bold">
                                   -{t.qty}
                                 </span>
                               </td>
-                              <td className="px-4 py-3.5 text-center align-middle font-inter text-sm font-semibold">
+                              <td className="px-4 py-3 text-right align-middle font-inter text-sm font-semibold whitespace-nowrap">
                                 {product?.product_type === 'free_gift' || t.is_free_gift ? (
                                   <span className="inline-flex items-center gap-1 px-2 py-1 bg-pink-100 dark:bg-pink-900/50 text-pink-600 dark:text-pink-400 rounded-full text-xs font-bold border border-pink-200 dark:border-pink-700">
                                     <Gift size={12} /> Free Gift
@@ -1946,11 +1942,6 @@ export default function MasterProduk() {
                                 ) : (
                                   <span className="text-emerald-600 dark:text-emerald-400">Rp {(t.total || 0).toLocaleString('id-ID')}</span>
                                 )}
-                              </td>
-                              <td className="px-4 py-3.5 text-center align-middle">
-                                <span className="inline-flex items-center px-3 py-1 rounded-lg bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-400 text-xs font-semibold">
-                                  {t.platform || 'Bayar Ditempat'}
-                                </span>
                               </td>
                             </tr>
                           );
