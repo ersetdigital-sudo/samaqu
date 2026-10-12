@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* Dark mode berbasis class, bukan prefers-color-scheme.
+   Situs SAMAQU dan dashboard internal (/ops) didesain light-only, jadi varian `dark:`
+   hanya aktif kalau memang ada elemen ber-class `.dark` (tidak ada). Tanpa ini,
+   browser yang OS-nya dark mode akan merender dashboard jadi gelap. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* ── Brand color tokens ── */
 :root {
   --sand: #d9d9d9;
