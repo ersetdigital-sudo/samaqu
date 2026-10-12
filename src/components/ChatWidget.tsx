@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { X, Send, Loader2 } from "lucide-react";
 import { useSafeTranslations, useSafeLocale } from "@/lib/safe-i18n";
 import { waNumber } from "@/lib/whatsapp";
@@ -43,6 +43,41 @@ interface Msg {
   role: "user" | "assistant";
   content: string;
   products?: ChatProductCard[];
+}
+
+/** Tebal `**text**` → <strong>. Tanpa HTML mentah (aman dari injeksi). */
+function renderInline(text: string, keyBase: string) {
+  return text.split(/(\*\*[^*\n]+\*\*)/g).filter(Boolean).map((part, i) =>
+    part.startsWith("**") && part.endsWith("**") && part.length > 4 ? (
+      <strong key={`${keyBase}-${i}`}>{part.slice(2, -2)}</strong>
+    ) : (
+      <Fragment key={`${keyBase}-${i}`}>{part}</Fragment>
+    )
+  );
+}
+
+/** Render sederhana: baris kosong jadi jarak, `- `/`1. ` jadi daftar, sisanya paragraf. */
+function renderRichText(text: string) {
+  return text.split("\n").map((line, i) => {
+    const bullet = line.match(/^\s*[-*]\s+(.*)$/);
+    const numbered = line.match(/^\s*(\d+)[.)]\s+(.*)$/);
+
+    if (bullet || numbered) {
+      const content = bullet ? bullet[1] : numbered![2];
+      return (
+        <span key={i} className="flex gap-2">
+          <span aria-hidden style={{ opacity: 0.6 }}>{bullet ? "•" : `${numbered![1]}.`}</span>
+          <span className="min-w-0">{renderInline(content, `l${i}`)}</span>
+        </span>
+      );
+    }
+    if (!line.trim()) return <span key={i} className="block h-1.5" />;
+    return (
+      <span key={i} className="block">
+        {renderInline(line, `l${i}`)}
+      </span>
+    );
+  });
 }
 
 export default function ChatWidget() {
@@ -220,8 +255,8 @@ export default function ChatWidget() {
         {messages.map((m, i) => (
           <div key={i} className={`flex flex-col gap-1.5 ${m.role === "user" ? "items-end" : "items-start"}`}>
             <div
-              className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap break-words ${
-                m.role === "user" ? "text-white" : ""
+              className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm break-words ${
+                m.role === "user" ? "text-white whitespace-pre-wrap" : "space-y-px"
               }`}
               style={
                 m.role === "user"
@@ -229,7 +264,7 @@ export default function ChatWidget() {
                   : { background: "#fff", color: "var(--fg, #18181b)", border: "1px solid #ececec" }
               }
             >
-              {m.content}
+              {m.role === "user" ? m.content : renderRichText(m.content)}
             </div>
             {m.products && m.products.length > 0 && (
               <div className="w-full space-y-1.5">
