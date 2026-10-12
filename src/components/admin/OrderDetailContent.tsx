@@ -6,7 +6,7 @@ import type { TrackHistoryItem } from "@/lib/jnt/types";
 import { isDelivered } from "@/lib/jnt/track-status";
 import { PaymentMethodValue } from "@/components/admin/PaymentMethodsManager";
 import { RINCIAN_CSS, FALLBACK_PHOTO } from "@/components/akun/RincianPesanan";
-import { waNumber, waLink } from "@/lib/whatsapp";
+import { waNumber, waLink, pesanPembayaran } from "@/lib/whatsapp";
 
 /**
  * Isi detail pesanan untuk dashboard admin — memakai susunan & gaya yang sama dengan
@@ -155,9 +155,9 @@ export default function OrderDetailContent({
   const items = order.order_items || [];
   const resi = order.awb_no || "";
   const wa = waNumber(order.customer_whatsapp);
-  // Pesan disiapkan dari nomor pesanan supaya chat langsung terbuka dengan konteks,
-  // bukan ruang kosong — admin tinggal kirim.
-  const waPesan = `Halo ${order.customer_name || "Kak"}, saya Admin SAMAQU. Kami ingin mengonfirmasi pesanan ${order.order_number}.`;
+  // Pesan chat sudah terisi (satu teks standar untuk semua pesanan) supaya admin tinggal
+  // kirim — teksnya di `pesanPembayaran`, hanya nama panggilan pelanggan yang berubah.
+  const waPesan = pesanPembayaran(order.customer_name);
   const alamat = [order.shipping_address, order.shipping_city, order.shipping_postal_code].filter(Boolean).join(", ");
 
   const [showAlamat, setShowAlamat] = useState(false);
