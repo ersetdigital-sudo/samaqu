@@ -34,7 +34,8 @@ async function build(): Promise<string> {
       .from("faq_items")
       .select("question, answer, category")
       .eq("is_active", true)
-      .eq("type", "full")
+      // "full" = FAQ publik; "chat" = pengetahuan tambahan hasil percakapan (tidak tampil di /faq).
+      .in("type", ["full", "chat"])
       .order("display_order"),
   ]);
 

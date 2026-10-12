@@ -74,6 +74,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Percakapan ini tidak punya pertanyaan/jawaban lengkap" }, { status: 400 });
   }
 
+  // Jangan duplikat kalau pertanyaannya sudah ada di FAQ/knowledge.
+  const { data: existing } = await admin
+    .from("faq_items")
+    .select("id")
+    .eq("question", question)
+    .maybeSingle();
+  if (existing) {
+    return NextResponse.json({ ok: true, duplicate: true });
+  }
+
   const { data: last } = await admin
     .from("faq_items")
     .select("display_order")
@@ -86,16 +96,18 @@ export async function POST(req: NextRequest) {
     question,
     answer,
     category: "Lainnya",
-    type: "full",
+    // type "chat" = pengetahuan AI saja. Halaman /faq publik hanya menampilkan type "full",
+    // jadi entri ini TIDAK muncul di /faq dan tidak mengganggu FAQ yang sudah ada.
+    type: "chat",
     display_order: nextOrder,
     is_active: true,
   });
 
   if (error) {
-    console.error("[ADMIN] Gagal menambah FAQ dari log:", error.message);
+    console.error("[ADMIN] Gagal menambah knowledge dari log:", error.message);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  clearKnowledgeCache(); // knowledge base berikutnya memuat FAQ baru ini
+  clearKnowledgeCache(); // knowledge base berikutnya memuat entri baru ini
   return NextResponse.json({ ok: true });
 }
