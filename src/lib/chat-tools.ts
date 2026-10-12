@@ -10,6 +10,7 @@
  */
 
 import { getSupabaseAdmin } from "./supabase-admin";
+import { getFonnteConfig, resolveAdminTargets, sendFonnteMessage } from "./fonnte";
 
 export interface ChatProductCard {
   id: string;
@@ -73,6 +74,22 @@ export const CHAT_TOOLS = [
           no_hp: { type: "string", description: "Nomor HP/WhatsApp pemesan, untuk verifikasi." },
         },
         required: ["nomor_pesanan", "no_hp"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "hubungi_admin",
+      description:
+        "Teruskan percakapan ini ke admin manusia lewat WhatsApp. Pakai kalau pelanggan minta bicara dengan admin, atau masalahnya butuh admin (keluhan, retur/garansi, pembayaran bermasalah, permintaan khusus). Kalau nomor WhatsApp pelanggan belum diketahui, tanyakan dulu sebelum memanggil tool ini.",
+      parameters: {
+        type: "object",
+        properties: {
+          ringkasan: { type: "string", description: "Ringkasan singkat masalah/permintaan pelanggan." },
+          no_hp: { type: "string", description: "Nomor WhatsApp pelanggan supaya admin bisa membalas (opsional bila belum diberikan)." },
+        },
+        required: ["ringkasan"],
       },
     },
   },
@@ -305,9 +322,48 @@ async function cekStatusPesanan(args: Record<string, unknown>, sessionId?: strin
   return { text: parts.join(" ") };
 }
 
-/** Konteks opsional dari route (mis. sessionId untuk pembatas percobaan). */
+/**
+ * Teruskan percakapan ke admin lewat WhatsApp (Fonnte). Notifikasi memuat ringkasan,
+ * nomor WhatsApp pelanggan (bila ada), dan transkrip percakapan terakhir dari route.
+ */
+async function hubungiAdmin(args: Record<string, unknown>, ctx: ChatToolContext): Promise<ChatToolResult> {
+  const ringkasan = sanitize(args.ringkasan, 500);
+  const noHp = digits(args.no_hp);
+  if (!ringkasan) {
+    return { text: "Butuh ringkasan singkat supaya bisa diteruskan ke admin." };
+  }
+
+  const config = await getFonnteConfig();
+  if (!config.enabled || !config.token) {
+    return { text: "Kanal WhatsApp admin belum aktif. Minta pelanggan menghubungi admin lewat nomor toko." };
+  }
+
+  const target = await resolveAdminTargets(config.adminNumber);
+  if (!target) {
+    return { text: "Nomor admin belum diatur. Minta pelanggan menghubungi admin lewat nomor toko." };
+  }
+
+  const lines = [
+    "\u{1F514} *PERMINTAAN ADMIN \u2014 Live Chat SAMAQU*",
+    "",
+    `Ringkasan: ${ringkasan}`,
+    `No. WhatsApp pelanggan: ${noHp || "(belum diberikan)"}`,
+  ];
+  if (ctx.transcript) lines.push("", "Percakapan terakhir:", ctx.transcript);
+
+  const ok = await sendFonnteMessage(config.token, target, lines.join("\n"));
+  return {
+    text: ok
+      ? "Percakapan sudah diteruskan ke admin. Beri tahu pelanggan bahwa admin akan segera menghubungi."
+      : "Gagal meneruskan ke admin. Minta pelanggan menghubungi admin lewat WhatsApp toko.",
+  };
+}
+
+/** Konteks opsional dari route (sessionId untuk pembatas percobaan, transcript untuk eskalasi). */
 export interface ChatToolContext {
   sessionId?: string | null;
+  /** Cuplikan percakapan terakhir, disusun route untuk lampiran eskalasi. */
+  transcript?: string;
 }
 
 /** Jalankan tool berdasarkan nama & argumen JSON dari model. */
@@ -331,6 +387,8 @@ export async function executeChatTool(
         return panduanUkuran(args);
       case "cek_status_pesanan":
         return await cekStatusPesanan(args, ctx.sessionId);
+      case "hubungi_admin":
+        return await hubungiAdmin(args, ctx);
       default:
         return { text: `Tool "${name}" tidak dikenali.` };
     }
