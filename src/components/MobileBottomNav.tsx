@@ -72,11 +72,11 @@ export default function MobileBottomNav() {
               className="flex flex-1 flex-col items-center justify-center gap-0.5 rounded-xl transition-colors duration-200"
               style={{ color: active ? "var(--espresso)" : "var(--text-muted)" }}
             >
-              <Icon size={21} weight={active ? "bold" : "regular"} style={{ color: active ? "var(--gold)" : undefined }} />
+              <Icon size={21} weight={active ? "bold" : "regular"} style={{ color: active ? "var(--espresso)" : undefined }} />
               <span className="text-[10px] font-medium tracking-[0.02em]">{label}</span>
               <span
                 className="h-1 w-1 rounded-full"
-                style={{ background: active ? "var(--gold)" : "transparent" }}
+                style={{ background: active ? "var(--espresso)" : "transparent" }}
               />
             </Link>
           );
