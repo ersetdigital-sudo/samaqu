@@ -232,7 +232,7 @@ export default function TambahProduk() {
     
     if (!formData.sku.trim()) {
       toast({
-        title: "â ️ Form tidak lengkap",
+        title: "⚠️ Form tidak lengkap",
         description: "SKU harus diisi",
         variant: "destructive",
       });
@@ -262,7 +262,7 @@ export default function TambahProduk() {
 
     if (!formData.name.trim()) {
       toast({
-        title: "â ️ Form tidak lengkap",
+        title: "⚠️ Form tidak lengkap",
         description: "Nama produk harus diisi",
         variant: "destructive",
       });
@@ -272,7 +272,7 @@ export default function TambahProduk() {
     // Validasi harga (kecuali untuk Free Gift)
     if (formData.product_type !== 'free_gift' && formData.price <= 0) {
       toast({
-        title: "â ️ Harga tidak valid",
+        title: "⚠️ Harga tidak valid",
         description: "Harga jual harus lebih dari 0",
         variant: "destructive",
       });
@@ -286,7 +286,7 @@ export default function TambahProduk() {
 
     if (variantRows.length === 0) {
       toast({
-        title: "â ️ Variant belum diisi",
+        title: "⚠️ Variant belum diisi",
         description: "Tambahkan minimal 1 warna variant",
         variant: "destructive",
       });
@@ -295,7 +295,7 @@ export default function TambahProduk() {
 
     if (variantRows.some((v) => v.color.trim() === '')) {
       toast({
-        title: "â ️ Form tidak lengkap",
+        title: "⚠️ Form tidak lengkap",
         description: "Warna variant wajib diisi",
         variant: "destructive",
       });
