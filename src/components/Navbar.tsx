@@ -145,7 +145,7 @@ export default function Navbar() {
   /* ── Styles ── */
   const shellStyle = scrolled
     ? {
-        background: "rgba(239,232,222,.92)",
+        background: "rgba(243,243,243,.92)",
         backdropFilter: "blur(16px)",
         WebkitBackdropFilter: "blur(16px)",
         borderBottom: "1px solid rgba(201,183,156,.35)",
@@ -246,7 +246,7 @@ export default function Navbar() {
                             transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
                             className="absolute right-0 top-full z-20 mt-2 w-52 overflow-hidden rounded-2xl border p-1.5 shadow-lg"
                             style={{
-                              background: "rgba(239,232,222,.97)",
+                              background: "rgba(243,243,243,.97)",
                               borderColor: "rgba(201,183,156,.3)",
                               backdropFilter: "blur(16px)",
                             }}
