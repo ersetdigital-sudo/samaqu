@@ -50,7 +50,24 @@ import { useToast } from "@/components/ops/ui/use-toast";
 import { createPageUrl } from "@/lib/ops-router";
 import { MetricCardSkeleton } from "@/components/ops/ui/skeleton";
 import { SIZES, normalizeStock, sumStock, stockStatus } from "@/lib/ops-variants";
-import { IconBoxes, IconPackageX, IconArrowDownToLine, IconAlertTriangle } from "@/components/ops/icons";
+import { IconBoxes, IconLayers, IconCalendarClock, IconPackageX, IconArrowDownToLine, IconAlertTriangle } from "@/components/ops/icons";
+
+/**
+ * Batas kalender menurut WIB (bukan zona waktu browser): tanggal hari ini,
+ * awal bulan, dan akhir bulan berjalan dalam format YYYY-MM-DD.
+ */
+function wibCalendarRange() {
+  const now = new Date(Date.now() + 7 * 3600 * 1000);
+  const pad = (n) => String(n).padStart(2, "0");
+  const y = now.getUTCFullYear();
+  const m = now.getUTCMonth();
+  const lastDay = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+  return {
+    today: `${y}-${pad(m + 1)}-${pad(now.getUTCDate())}`,
+    monthStart: `${y}-${pad(m + 1)}-01`,
+    monthEnd: `${y}-${pad(m + 1)}-${pad(lastDay)}`,
+  };
+}
 
 function AnimatedCounter({ value, prefix = "", suffix = "", duration = 1200, delay = 0 }) {
   const [count, setCount] = useState(0);
@@ -473,6 +490,52 @@ export default function MasterProduk() {
 
   const isLoading = isLoadingProducts || isLoadingStockIns || isLoadingTransactions;
 
+  // ── Ringkasan tab Barang Masuk (dari data stock_in yang sudah dimuat) ──
+  // 1 unit = 1 pcs diterima · 1 pencatatan = 1 baris barang masuk · varian = kombinasi produk+warna+ukuran
+  const wib = useMemo(() => wibCalendarRange(), []);
+  const stockInMonth = useMemo(
+    () => (stockIns || []).filter((si) => si.date && si.date >= wib.monthStart && si.date <= wib.monthEnd),
+    [stockIns, wib],
+  );
+  const stockInMonthUnits = useMemo(
+    () => stockInMonth.reduce((s, si) => s + (Number(si.qty) || 0), 0),
+    [stockInMonth],
+  );
+  const stockInTodayUnits = useMemo(
+    () => stockInMonth.filter((si) => si.date === wib.today).reduce((s, si) => s + (Number(si.qty) || 0), 0),
+    [stockInMonth, wib],
+  );
+  const stockInMonthVariantCount = useMemo(() => {
+    const keys = new Set();
+    for (const si of stockInMonth) {
+      keys.add(si.sku || [si.product_id, si.variant_color || "", si.variant_size || ""].join("|"));
+    }
+    return keys.size;
+  }, [stockInMonth]);
+  const stockInMonthRecordCount = stockInMonth.length;
+
+  // ── Ringkasan tab Daftar Produk ──
+  // "Aktif" = varian produknya masih punya stok (status dari server: aman/menipis/habis).
+  const activeProductCount = useMemo(
+    () => (products || []).filter((p) => String(p.status || "aman") !== "habis").length,
+    [products],
+  );
+  // Terlaris = unit terjual dari order website. Order batal (status "return") tidak dihitung.
+  const topSeller = useMemo(() => {
+    const sold = {};
+    for (const t of transactions || []) {
+      if (String(t.status || "").toLowerCase() === "return") continue;
+      const name = String(t.product_name || "").trim();
+      if (!name) continue;
+      sold[name] = (sold[name] || 0) + (Number(t.qty) || 0);
+    }
+    let best = null;
+    for (const name of Object.keys(sold)) {
+      if (!best || sold[name] > best.units) best = { name, units: sold[name] };
+    }
+    return best;
+  }, [transactions]);
+
   // ── Ringkasan stok untuk tab Laporan Stok (dihitung dari data yang sudah dimuat,
   //    bukan angka statis). Satuan = unit stok, bukan jumlah produk. ──
   const [stockFilter, setStockFilter] = useState("all"); // all | menipis | habis
@@ -493,20 +556,6 @@ export default function MasterProduk() {
     () => (variants || []).filter((v) => sumStock(v.stock) === 0).length,
     [variants],
   );
-
-  // Barang masuk: periode default = bulan berjalan (WIB). Halaman belum punya filter
-  // periode, jadi dipakai periode default yang jelas & konsisten.
-  const incomingThisMonth = useMemo(() => {
-    const wib = new Date(Date.now() + 7 * 3600 * 1000);
-    const y = wib.getUTCFullYear();
-    const m = wib.getUTCMonth();
-    const start = `${y}-${String(m + 1).padStart(2, "0")}-01`;
-    const lastDay = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
-    const end = `${y}-${String(m + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
-    return (stockIns || [])
-      .filter((si) => si.date && si.date >= start && si.date <= end)
-      .reduce((s, si) => s + (Number(si.qty) || 0), 0);
-  }, [stockIns]);
 
   const reportVariants = useMemo(() => {
     if (stockFilter === "all") return variants || [];
@@ -933,7 +982,7 @@ export default function MasterProduk() {
                 </div>
                 <div>
                   <p className="text-xl md:text-3xl font-black text-emerald-300 font-inter tracking-tight">
-                    {incomingThisMonth.toLocaleString('id-ID')}
+                    {stockInMonthUnits.toLocaleString('id-ID')}
                     <span className="text-xs md:text-sm font-bold text-emerald-200/80"> unit</span>
                   </p>
                   <p className="text-[10px] md:text-xs text-blue-200 mt-1">Bulan berjalan (WIB)</p>
@@ -963,68 +1012,145 @@ export default function MasterProduk() {
               </div>
             </button>
           </>
-        ) : activeTab === 'produk' || activeTab === 'stockin' ? (
+        ) : activeTab === 'produk' ? (
+          <>
+            {/* ── Tab Daftar Produk: ringkasan katalog ── */}
+            {/* Card 1: Total Produk */}
+            <div className="col-span-2 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-4 md:p-5 hover:bg-white/15 transition-all duration-300">
+              <div className="flex flex-col h-full justify-between gap-2 md:gap-3">
+                <div className="flex items-center gap-2 text-blue-100">
+                  <Package size={18} className="shrink-0" />
+                  <p className="text-[11px] md:text-xs font-semibold md:tracking-wide">Total Produk</p>
+                </div>
+                <div>
+                  <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight">
+                    {(products || []).length.toLocaleString('id-ID')}
+                  </p>
+                  <p className="text-[10px] md:text-xs text-blue-200 mt-1">Produk terdaftar</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 2: Produk Aktif */}
+            <div className="col-span-1 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-4 md:p-5 hover:bg-white/15 transition-all duration-300">
+              <div className="flex flex-col h-full justify-between gap-2 md:gap-3">
+                <div className="flex items-center gap-2 text-blue-100">
+                  <CheckCircle size={18} className="shrink-0" />
+                  <p className="text-[11px] md:text-xs font-semibold md:tracking-wide truncate">Produk Aktif</p>
+                </div>
+                <div>
+                  <p className="text-xl md:text-3xl font-black text-white font-inter tracking-tight">
+                    {activeProductCount.toLocaleString('id-ID')}
+                  </p>
+                  <p className="text-[10px] md:text-xs text-blue-200 mt-1">Status aktif</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 3: Total Varian */}
+            <div className="col-span-1 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-4 md:p-5 hover:bg-white/15 transition-all duration-300">
+              <div className="flex flex-col h-full justify-between gap-2 md:gap-3">
+                <div className="flex items-center gap-2 text-blue-100">
+                  <IconLayers size={18} className="shrink-0" />
+                  <p className="text-[11px] md:text-xs font-semibold md:tracking-wide truncate">Total Varian</p>
+                </div>
+                <div>
+                  <p className="text-xl md:text-3xl font-black text-white font-inter tracking-tight">
+                    {(variants || []).length.toLocaleString('id-ID')}
+                  </p>
+                  <p className="text-[10px] md:text-xs text-blue-200 mt-1">Varian unik</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 4: Produk Terlaris */}
+            <div className="col-span-2 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-4 md:p-5 hover:bg-white/15 transition-all duration-300">
+              <div className="flex flex-col h-full justify-between gap-2 md:gap-3">
+                <div className="flex items-center gap-2 text-blue-100">
+                  <TrendingUp size={18} className="shrink-0" />
+                  <p className="text-[11px] md:text-xs font-semibold md:tracking-wide">Produk Terlaris</p>
+                </div>
+                <div>
+                  <p
+                    className="text-xl md:text-3xl font-black text-white font-inter tracking-tight truncate"
+                    title={topSeller ? `${topSeller.name} - ${topSeller.units} unit` : undefined}
+                  >
+                    {topSeller ? topSeller.name : '-'}
+                  </p>
+                  <p className="text-[10px] md:text-xs text-blue-200 mt-1">
+                    {topSeller ? `Berdasarkan unit terjual - ${topSeller.units} unit` : 'Belum ada penjualan'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </>
+        ) : activeTab === 'stockin' ? (
                 <>
-                  {/* Card 1: Total Penjualan (Full Width Mobile) */}
+                  {/* ── Tab Barang Masuk: ringkasan penerimaan barang dari produksi ── */}
+                  {/* Card 1: Total Barang Masuk */}
                   <div className="col-span-2 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-4 md:p-5 hover:bg-white/15 transition-all duration-300">
                     <div className="flex flex-col h-full justify-between gap-2 md:gap-3">
                       <div className="flex items-center gap-2 text-blue-100">
-                        <DollarSign size={18} className="shrink-0" />
-                        <p className="text-[10px] md:text-xs font-bold uppercase tracking-wider md:tracking-widest">TOTAL PENJUALAN</p>
-                      </div>
-                      <div>
-                        <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight truncate">
-                          Rp <AnimatedCounter value={transactions.reduce((sum, t) => sum + (t.total || 0), 0)} delay={0} />
-                        </p>
-                        <p className="text-[10px] md:text-xs text-blue-200 mt-1">Revenue</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Card 2: Transaksi (Half Width Mobile) */}
-                  <div className="col-span-1 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-4 md:p-5 hover:bg-white/15 transition-all duration-300">
-                    <div className="flex flex-col h-full justify-between gap-2 md:gap-3">
-                      <div className="flex items-center gap-2 text-blue-100">
-                        <ShoppingCart size={18} className="shrink-0" />
-                        <p className="text-[10px] md:text-xs font-bold uppercase tracking-wider md:tracking-widest truncate">TRANSAKSI</p>
-                      </div>
-                      <div>
-                        <p className="text-xl md:text-3xl font-black text-white font-inter tracking-tight">
-                          <AnimatedCounter value={transactions.length} delay={100} />
-                        </p>
-                        <p className="text-[10px] md:text-xs text-blue-200 mt-1">Total</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Card 3: Total Keluar (Half Width Mobile) */}
-                  <div className="col-span-1 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-4 md:p-5 hover:bg-white/15 transition-all duration-300">
-                    <div className="flex flex-col h-full justify-between gap-2 md:gap-3">
-                      <div className="flex items-center gap-2 text-blue-100">
-                        <TrendingDown size={18} className="shrink-0" />
-                        <p className="text-[10px] md:text-xs font-bold uppercase tracking-wider md:tracking-widest truncate">KELUAR</p>
-                      </div>
-                      <div>
-                        <p className="text-xl md:text-3xl font-black text-white font-inter tracking-tight">
-                          <AnimatedCounter value={transactions.reduce((sum, t) => sum + (t.qty || 0), 0)} delay={200} />
-                        </p>
-                        <p className="text-[10px] md:text-xs text-blue-200 mt-1">Unit</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Card 4: Produk Terjual (Full Width Mobile) */}
-                  <div className="col-span-2 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-4 md:p-5 hover:bg-white/15 transition-all duration-300">
-                    <div className="flex flex-col h-full justify-between gap-2 md:gap-3">
-                      <div className="flex items-center gap-2 text-blue-100">
-                        <Package size={18} className="shrink-0" />
-                        <p className="text-[10px] md:text-xs font-bold uppercase tracking-wider md:tracking-widest">PRODUK TERJUAL</p>
+                        <IconArrowDownToLine size={18} className="shrink-0" />
+                        <p className="text-[11px] md:text-xs font-semibold md:tracking-wide">Total Barang Masuk</p>
                       </div>
                       <div>
                         <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight">
-                          <AnimatedCounter value={new Set(transactions.map(t => t.product_id)).size} delay={300} />
+                          {stockInMonthUnits.toLocaleString('id-ID')}
+                          <span className="text-sm md:text-base font-bold text-blue-100"> unit</span>
                         </p>
-                        <p className="text-[10px] md:text-xs text-blue-200 mt-1">Jenis produk</p>
+                        <p className="text-[10px] md:text-xs text-blue-200 mt-1">Unit diterima bulan ini</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card 2: Masuk Hari Ini */}
+                  <div className="col-span-1 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-4 md:p-5 hover:bg-white/15 transition-all duration-300">
+                    <div className="flex flex-col h-full justify-between gap-2 md:gap-3">
+                      <div className="flex items-center gap-2 text-blue-100">
+                        <IconCalendarClock size={18} className="shrink-0" />
+                        <p className="text-[11px] md:text-xs font-semibold md:tracking-wide truncate">Masuk Hari Ini</p>
+                      </div>
+                      <div>
+                        <p className="text-xl md:text-3xl font-black text-white font-inter tracking-tight">
+                          {stockInTodayUnits.toLocaleString('id-ID')}
+                          <span className="text-xs md:text-sm font-bold text-blue-100"> unit</span>
+                        </p>
+                        <p className="text-[10px] md:text-xs text-blue-200 mt-1">Diterima hari ini (WIB)</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card 3: Varian Diterima */}
+                  <div className="col-span-1 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-4 md:p-5 hover:bg-white/15 transition-all duration-300">
+                    <div className="flex flex-col h-full justify-between gap-2 md:gap-3">
+                      <div className="flex items-center gap-2 text-blue-100">
+                        <IconBoxes size={18} className="shrink-0" />
+                        <p className="text-[11px] md:text-xs font-semibold md:tracking-wide truncate">Varian Diterima</p>
+                      </div>
+                      <div>
+                        <p className="text-xl md:text-3xl font-black text-white font-inter tracking-tight">
+                          {stockInMonthVariantCount.toLocaleString('id-ID')}
+                          <span className="text-xs md:text-sm font-bold text-blue-100"> varian</span>
+                        </p>
+                        <p className="text-[10px] md:text-xs text-blue-200 mt-1">SKU unik bulan ini</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card 4: Total Pencatatan */}
+                  <div className="col-span-2 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-4 md:p-5 hover:bg-white/15 transition-all duration-300">
+                    <div className="flex flex-col h-full justify-between gap-2 md:gap-3">
+                      <div className="flex items-center gap-2 text-blue-100">
+                        <ClipboardList size={18} className="shrink-0" />
+                        <p className="text-[11px] md:text-xs font-semibold md:tracking-wide">Total Pencatatan</p>
+                      </div>
+                      <div>
+                        <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight">
+                          {stockInMonthRecordCount.toLocaleString('id-ID')}
+                          <span className="text-xs md:text-sm font-bold text-blue-100"> pencatatan</span>
+                        </p>
+                        <p className="text-[10px] md:text-xs text-blue-200 mt-1">Pencatatan tersimpan bulan ini</p>
                       </div>
                     </div>
                   </div>
