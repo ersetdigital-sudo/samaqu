@@ -53,10 +53,13 @@ export default function ChatLogsView() {
       });
       const json = await res.json();
       if (!res.ok || json.error) {
-        toast.showToast("error", json.error || "Gagal menambah FAQ");
+        toast.showToast("error", json.error || "Gagal menambah pengetahuan");
         return;
       }
-      toast.showToast("success", "Ditambahkan ke FAQ — asisten akan memakainya");
+      toast.showToast(
+        "success",
+        json.duplicate ? "Percakapan ini sudah ada di pengetahuan AI" : "Ditambahkan ke pengetahuan AI (tidak tampil di /faq)"
+      );
     } catch (e) {
       console.error("[ADMIN] Gagal menambah FAQ:", e);
       toast.showToast("error", "Gagal menambah FAQ");
@@ -187,7 +190,7 @@ export default function ChatLogsView() {
                     style={{ border: "1px solid var(--bd)", color: "var(--fg)" }}
                   >
                     {addingId === log.id && <Loader2 size={12} className="animate-spin" />}
-                    Tambah ke FAQ
+                    Tambah ke Knowledge AI
                   </button>
                 </div>
               )}
