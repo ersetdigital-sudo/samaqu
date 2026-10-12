@@ -60,6 +60,22 @@ export const CHAT_TOOLS = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "cek_status_pesanan",
+      description:
+        "Cek status sebuah pesanan (diproses/dikirim/selesai + nomor resi). WAJIB punya nomor pesanan DAN nomor HP yang dipakai saat memesan sebagai verifikasi. Panggil hanya setelah pelanggan menyebutkan keduanya.",
+      parameters: {
+        type: "object",
+        properties: {
+          nomor_pesanan: { type: "string", description: "Nomor pesanan, mis. SMQ-20260815-123 atau CYO-..." },
+          no_hp: { type: "string", description: "Nomor HP/WhatsApp pemesan, untuk verifikasi." },
+        },
+        required: ["nomor_pesanan", "no_hp"],
+      },
+    },
+  },
 ] as const;
 
 /** Buang karakter yang bisa merusak sintaks filter Supabase, batasi panjang. */
@@ -209,8 +225,97 @@ function panduanUkuran(args: Record<string, unknown>): ChatToolResult {
   return { text: lines.join("\n") };
 }
 
+const STATUS_LABEL: Record<string, string> = {
+  pending: "Menunggu Pembayaran",
+  diproses: "Sedang Diproses",
+  dikirim: "Sedang Dikirim",
+  selesai: "Selesai",
+  dibatalkan: "Dibatalkan",
+};
+
+function digits(value: unknown): string {
+  return String(value ?? "").replace(/[^0-9]/g, "");
+}
+
+/**
+ * Pembatas percobaan cek pesanan per sesi — mencegah orang menebak-nebak nomor pesanan.
+ * Maks 5 percobaan per 10 menit per sesi (in-memory; cukup untuk meredam brute force).
+ */
+const orderAttempts = new Map<string, { count: number; resetAt: number }>();
+function allowOrderLookup(sessionId: string | null | undefined): boolean {
+  const key = sessionId || "anon";
+  const now = Date.now();
+  const rec = orderAttempts.get(key);
+  if (!rec || now > rec.resetAt) {
+    orderAttempts.set(key, { count: 1, resetAt: now + 10 * 60 * 1000 });
+    return true;
+  }
+  if (rec.count >= 5) return false;
+  rec.count += 1;
+  return true;
+}
+
+/**
+ * Cek status pesanan dengan verifikasi nomor HP. Sengaja hanya mengembalikan status &
+ * resi — TIDAK alamat/nama — supaya data pribadi tidak bocor lewat chat.
+ */
+async function cekStatusPesanan(args: Record<string, unknown>, sessionId?: string | null): Promise<ChatToolResult> {
+  const orderNo = sanitize(args.nomor_pesanan, 40).toUpperCase().replace(/\s/g, "");
+  const phone = digits(args.no_hp);
+
+  if (!orderNo || !phone) {
+    return { text: "Untuk cek pesanan, butuh nomor pesanan DAN nomor HP yang dipakai saat memesan." };
+  }
+  if (!allowOrderLookup(sessionId)) {
+    return { text: "Terlalu banyak percobaan cek pesanan. Minta pelanggan mencoba lagi nanti atau menghubungi admin." };
+  }
+
+  const admin = getSupabaseAdmin();
+  const { data: order, error } = await admin
+    .from("orders")
+    .select("order_number, status, customer_whatsapp, awb_no, shipping_method")
+    .eq("order_number", orderNo)
+    .maybeSingle();
+
+  if (error) {
+    console.error("[CHAT-TOOL] cek_status_pesanan error:", error.message);
+    return { text: "Gagal mengambil data pesanan. Arahkan pelanggan ke admin." };
+  }
+  if (!order) {
+    return { text: `Pesanan "${orderNo}" tidak ditemukan. Minta pelanggan memastikan nomor pesanannya.` };
+  }
+
+  // Cocokkan 9 digit terakhir — nomor Indonesia sering ditulis beda prefix (08… / 62… / +62…).
+  const tail = (s: string) => s.slice(-9);
+  const orderPhone = digits(order.customer_whatsapp);
+  if (!orderPhone || tail(orderPhone) !== tail(phone)) {
+    return { text: "Nomor HP tidak cocok dengan pesanan tersebut. Minta pelanggan memakai nomor yang dipakai saat memesan." };
+  }
+
+  const label = STATUS_LABEL[order.status as string] || (order.status as string);
+  const parts = [`Pesanan ${order.order_number} statusnya: ${label}.`];
+  // Resi bisa sudah terbit lebih awal (admin "Atur Pesanan" membuat AWB saat status diproses),
+  // jadi tampilkan kapan pun nomor resinya ada — bukan hanya saat status "dikirim".
+  if (order.awb_no) {
+    parts.push(`Nomor resi (${order.shipping_method || "ekspedisi"}): ${order.awb_no}.`);
+  }
+  if (order.status === "pending") {
+    parts.push("Masih menunggu pembayaran; kalau sudah transfer, kirim bukti ke admin lewat WhatsApp.");
+  }
+  return { text: parts.join(" ") };
+}
+
+/** Konteks opsional dari route (mis. sessionId untuk pembatas percobaan). */
+export interface ChatToolContext {
+  sessionId?: string | null;
+}
+
 /** Jalankan tool berdasarkan nama & argumen JSON dari model. */
-export async function executeChatTool(name: string, argsJson: string): Promise<ChatToolResult> {
+export async function executeChatTool(
+  name: string,
+  argsJson: string,
+  ctx: ChatToolContext = {}
+): Promise<ChatToolResult> {
   let args: Record<string, unknown> = {};
   try {
     args = argsJson ? JSON.parse(argsJson) : {};
@@ -224,6 +329,8 @@ export async function executeChatTool(name: string, argsJson: string): Promise<C
         return await cariProduk(args);
       case "panduan_ukuran":
         return panduanUkuran(args);
+      case "cek_status_pesanan":
+        return await cekStatusPesanan(args, ctx.sessionId);
       default:
         return { text: `Tool "${name}" tidak dikenali.` };
     }
