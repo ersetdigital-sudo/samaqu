@@ -104,7 +104,7 @@ export default function ChatWidget() {
     setUploading(true);
     try {
       await validateMediaFile(file);
-      const url = await uploadToCloudinary(file);
+      const url = await uploadToCloudinary(file, { scope: "chat" });
       setImageUrl(url);
     } catch (e) {
       console.error("[CHAT] Gagal mengunggah gambar:", e);
