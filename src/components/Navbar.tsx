@@ -389,7 +389,7 @@ function DrawerNavContent({
   const pathname = usePathname();
   // Katalog tidak ditampilkan di drawer — di mobile sudah ada menu "Kategori" di nav bawah.
   // (Navbar desktop tetap menampilkan Katalog.)
-  const navItems = getNavItems(t).filter((item) => item.href !== "/katalog");
+  const navItems = getNavItems(t).filter((item) => !("href" in item) || item.href !== "/katalog");
   const extraItems = getMobileExtraItems(t);
   const bantuanLinks = getBantuanLinks(t);
 
