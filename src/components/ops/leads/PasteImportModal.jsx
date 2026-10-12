@@ -77,7 +77,7 @@ const parseStatus = (raw) => {
 
 // Normalisasi kontak: HP â digit tanpa awalan 0/62, username â lowercase tanpa @
 export function normalizeKontak(raw) {
-  const s = String(raw || '').trim().toLowerCase().replace(/^["'\s]+|["'\s]+$/g, '');
+  const s = String(raw || '').trim().toLowerCase().replace(/^[=@"'\s]+|[@"'\s]+$/g, '');
   if (!s) return '';
   if (/[a-z]/.test(s.replace(/^@/, ''))) return s.replace(/^@+/, '');
   const digits = s.replace(/\D/g, '');
@@ -129,7 +129,7 @@ export function parsePastedRows(text, existingKeys = new Set()) {
     // Kolom: TANGGAL, JAM, NO/IG, lalu SUMBER/KETERANGAN/NOMINAL (bisa tergeser jika ada sel kosong â dicari dengan pola)
     const tanggal = toIso(splitDate(cols[0]), order);
     const jam = cols[1] || '';
-    const kontak = (cols[2] || '').trim().replace(/^["'\s]+|["'\s]+$/g, '');
+    const kontak = (cols[2] || '').trim().replace(/^[=@"'\s]+|[@"'\s]+$/g, '');
     const rest = cols.slice(3);
     let sumber = null, status = null;
     rest.forEach((cell) => {
