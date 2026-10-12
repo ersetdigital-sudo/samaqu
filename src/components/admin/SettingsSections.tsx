@@ -25,6 +25,7 @@ export default function SettingsPanel() {
       <SocialMediaSection />
       <MetaPixelSection />
       <FonnteSection />
+      <ChatSection />
       <PaymentMethodsManager />
     </div>
   );
@@ -969,6 +970,266 @@ function FonnteSection() {
           {testing ? <Loader2 size={14} className="animate-spin inline mr-1.5" /> : null}
           Kirim Pesan Tes
         </button>
+      </div>
+    </SettingsCard>
+  );
+}
+
+function ChatSection() {
+  const [enabled, setEnabled] = useState(false);
+  const [apiKey, setApiKey] = useState("");
+  const [showKey, setShowKey] = useState(false);
+  const [baseUrl, setBaseUrl] = useState("");
+  const [model, setModel] = useState("");
+  const [greeting, setGreeting] = useState("");
+  const [extraInstructions, setExtraInstructions] = useState("");
+  const [keyPreview, setKeyPreview] = useState("");
+  const [envKey, setEnvKey] = useState(false);
+  const [envBaseUrl, setEnvBaseUrl] = useState("");
+  const [envModel, setEnvModel] = useState("");
+  const [tableReady, setTableReady] = useState(true);
+  const [original, setOriginal] = useState({ enabled: false, baseUrl: "", model: "", greeting: "", extraInstructions: "" });
+  const [editing, setEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testReply, setTestReply] = useState("");
+  const toast = useToast();
+
+  // Lewat API admin (bukan langsung Supabase) karena API key disimpan di tabel `chat_settings`
+  // yang tanpa policy RLS — hanya service role yang boleh membacanya.
+  async function authHeaders() {
+    const { data: { session } } = await supabase.auth.getSession();
+    return { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token || ""}` };
+  }
+
+  async function load() {
+    const res = await fetch("/api/admin/chat-settings", { headers: await authHeaders() });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || "Gagal memuat pengaturan chat");
+    setTableReady(json.tableReady !== false);
+    setEnabled(json.enabled === true);
+    setBaseUrl(json.baseUrl || "");
+    setModel(json.model || "");
+    setGreeting(json.greeting || "");
+    setExtraInstructions(json.extraInstructions || "");
+    setKeyPreview(json.keyPreview || "");
+    setEnvKey(!!json.envKey);
+    setEnvBaseUrl(json.envBaseUrl || "");
+    setEnvModel(json.envModel || "");
+    setOriginal({
+      enabled: json.enabled === true,
+      baseUrl: json.baseUrl || "",
+      model: json.model || "",
+      greeting: json.greeting || "",
+      extraInstructions: json.extraInstructions || "",
+    });
+  }
+
+  useEffect(() => {
+    load()
+      .catch((e) => console.error("[ADMIN] Gagal memuat pengaturan chat:", e))
+      .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const dirty =
+    enabled !== original.enabled ||
+    baseUrl !== original.baseUrl ||
+    model !== original.model ||
+    greeting !== original.greeting ||
+    extraInstructions !== original.extraInstructions ||
+    !!apiKey.trim();
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/chat-settings", {
+        method: "POST",
+        headers: await authHeaders(),
+        body: JSON.stringify({ enabled, apiKey, baseUrl, model, greeting, extraInstructions }),
+      });
+      const json = await res.json();
+      if (!res.ok || json.error) {
+        toast.showToast("error", json.error || "Gagal menyimpan pengaturan");
+        return;
+      }
+      toast.showToast("success", "Pengaturan live chat disimpan");
+      setApiKey("");
+      setShowKey(false);
+      setEditing(false);
+      await load();
+    } catch (e) {
+      console.error("[ADMIN] Gagal menyimpan pengaturan chat:", e);
+      toast.showToast("error", "Gagal menyimpan pengaturan");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function handleCancel() {
+    setEnabled(original.enabled);
+    setBaseUrl(original.baseUrl);
+    setModel(original.model);
+    setGreeting(original.greeting);
+    setExtraInstructions(original.extraInstructions);
+    setApiKey("");
+    setShowKey(false);
+    setEditing(false);
+  }
+
+  async function handleTest() {
+    setTesting(true);
+    setTestReply("");
+    try {
+      const res = await fetch("/api/admin/chat-settings", {
+        method: "POST",
+        headers: await authHeaders(),
+        body: JSON.stringify({ action: "test" }),
+      });
+      const json = await res.json();
+      if (json.ok && json.reply) {
+        setTestReply(json.reply);
+        toast.showToast("success", "Asisten merespons dengan baik");
+      } else {
+        toast.showToast("error", json.error || "Gagal menghubungi asisten");
+      }
+    } catch (e) {
+      console.error("[ADMIN] Gagal tes chat:", e);
+      toast.showToast("error", "Gagal menghubungi asisten");
+    } finally {
+      setTesting(false);
+    }
+  }
+
+  if (loading) return <div className="card p-6 max-w-2xl"><Loader2 size={20} className="animate-spin" style={{ color: "var(--gold)" }} /></div>;
+
+  const keyLabel = keyPreview || (envKey ? "(dari environment variable)" : "");
+
+  return (
+    <SettingsCard
+      title="Live Chat AI"
+      description="Asisten AI di website yang menjawab pertanyaan pelanggan seputar SAMAQU (produk, ukuran, cara pesan, dll)."
+      headerRight={
+        <span className="text-[11px] font-medium px-2.5 py-1 rounded-full shrink-0" style={{ background: enabled ? "#f4f4f5" : "#f1f1f3", color: enabled ? "#3f3f46" : "var(--text-muted)" }}>
+          {enabled ? "Aktif" : "Nonaktif"}
+        </span>
+      }
+      editing={editing}
+      onEdit={() => setEditing(true)}
+      onCancel={handleCancel}
+      onSave={handleSave}
+      saving={saving}
+      canSave={tableReady && dirty}
+      saveLabel="Simpan"
+    >
+      {!tableReady && (
+        <p className="text-[11px] rounded-xl px-3 py-2" style={{ background: "#fff7ed", color: "#9a3412" }}>
+          Tabel <code>chat_settings</code> belum dibuat. Jalankan <code>supabase/chat-settings.sql</code> di Supabase SQL Editor dulu.
+        </p>
+      )}
+
+      {editing && (
+        <div className="flex items-center gap-3">
+          <button onClick={() => setEnabled(!enabled)} className="relative w-11 h-6 rounded-full transition-colors duration-200" style={{ background: enabled ? "var(--gold)" : "#d4d4d8" }}>
+            <span className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200" style={{ transform: enabled ? "translateX(20px)" : "translateX(0)" }} />
+          </button>
+          <span className="text-sm" style={{ color: "var(--text-secondary)" }}>{enabled ? "Chat tampil di website" : "Chat disembunyikan"}</span>
+        </div>
+      )}
+
+      {editing ? (
+        <div>
+          <label className="block text-sm font-semibold" style={{ color: "var(--espresso)" }}>API Key AI</label>
+          <div className="relative mt-1.5">
+            <input
+              type={showKey ? "text" : "password"}
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              className="w-full rounded-xl px-4 py-2.5 pr-10 bg-white text-sm outline-none font-mono"
+              style={{ border: "1px solid #e4e4e7" }}
+              placeholder={keyLabel ? "Masukkan API key baru untuk mengganti" : "Masukkan API key Xiaomi MiMo"}
+            />
+            <button type="button" onClick={() => setShowKey(!showKey)} className="absolute right-3 top-1/2 -translate-y-1/2 text-xs" style={{ color: "var(--text-muted)" }}>
+              {showKey ? "🙈" : "👁️"}
+            </button>
+          </div>
+          <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>
+            {keyLabel ? `Key tersimpan saat ini: ${keyLabel}` : "Belum ada key tersimpan."} Ambil di platform.xiaomimimo.com → API Keys.
+          </p>
+        </div>
+      ) : (
+        <Field label="API Key AI" value={keyLabel} editing={false} mono />
+      )}
+
+      <div className="grid sm:grid-cols-2 gap-4">
+        <Field
+          label="Model"
+          value={model}
+          editing={editing}
+          onChange={setModel}
+          mono
+          hint={envModel ? `Kosong = pakai ${envModel} (env). Contoh: mimo-v2-flash, mimo-v2.5, mimo-v2.5-pro` : "Contoh: mimo-v2-flash (murah), mimo-v2.5, mimo-v2.5-pro"}
+        />
+        <Field
+          label="Base URL"
+          value={baseUrl}
+          editing={editing}
+          onChange={setBaseUrl}
+          mono
+          hint={envBaseUrl ? `Kosong = pakai ${envBaseUrl} (env).` : "Default: https://api.mimo.mi.com/v1"}
+        />
+      </div>
+
+      <Field
+        label="Sapaan Pembuka"
+        value={greeting}
+        editing={editing}
+        onChange={setGreeting}
+        multiline
+        placeholder="Halo! Aku Samaqu Assistant, ada yang bisa dibantu soal produk & ukuran? 😊"
+        hint="Kosongkan untuk pakai sapaan default."
+      />
+
+      {editing ? (
+        <div>
+          <label className="block text-sm font-semibold" style={{ color: "var(--espresso)" }}>Knowledge / Instruksi Tambahan</label>
+          <textarea
+            value={extraInstructions}
+            onChange={(e) => setExtraInstructions(e.target.value)}
+            rows={6}
+            placeholder="Contoh: promo bulan ini, kebijakan khusus, info kain terbaru, dll."
+            className="mt-1.5 w-full rounded-xl px-4 py-2.5 bg-white text-sm outline-none resize-y"
+            style={{ border: "1px solid #e4e4e7" }}
+          />
+          <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>
+            Ditambahkan ke pengetahuan AI. Data produk & FAQ diambil otomatis dari katalog.
+          </p>
+        </div>
+      ) : (
+        extraInstructions && (
+          <div>
+            <label className="block text-sm font-semibold" style={{ color: "var(--espresso)" }}>Knowledge / Instruksi Tambahan</label>
+            <p className="mt-1 text-sm whitespace-pre-wrap break-words" style={{ color: "var(--fg)" }}>{extraInstructions}</p>
+          </div>
+        )
+      )}
+
+      <div className="pt-1 space-y-2">
+        <button
+          onClick={handleTest}
+          disabled={testing || !tableReady}
+          className="text-sm font-semibold px-4 py-2 rounded-xl disabled:opacity-40"
+          style={{ border: "1px solid #d4d4d8", color: "var(--espresso)" }}
+        >
+          {testing ? <Loader2 size={14} className="animate-spin inline mr-1.5" /> : null}
+          Tes Asisten
+        </button>
+        {testReply && (
+          <p className="text-xs rounded-xl px-3 py-2 whitespace-pre-wrap" style={{ background: "#f4f4f5", color: "var(--fg2)" }}>
+            {testReply}
+          </p>
+        )}
       </div>
     </SettingsCard>
   );

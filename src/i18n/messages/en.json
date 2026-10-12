@@ -694,5 +694,17 @@
     "ctaDesc": "Let clothing that matters accompany every moment of yours. Explore the SAMAQU collection and find what fits you best.",
     "ctaBtn1": "View Catalog",
     "ctaBtn2": "Contact Admin"
+  },
+  "chat": {
+    "title": "Samaqu Assistant",
+    "subtitle": "SAMAQU AI Assistant",
+    "greeting": "Hi! \ud83d\udc4b I'm Samaqu Assistant. Ask me anything about our products, fabric, sizing, or how to order. \ud83d\ude0a",
+    "placeholder": "Type your question\u2026",
+    "send": "Send",
+    "close": "Close",
+    "open": "Open chat",
+    "handoff": "Continue on WhatsApp with admin",
+    "handoffMessage": "Hi SAMAQU admin, I need help with a product.",
+    "error": "Sorry, something went wrong. Please try again \ud83d\ude4f"
   }
 }

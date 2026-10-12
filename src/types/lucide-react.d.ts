@@ -54,6 +54,7 @@ declare module "lucide-react" {
   export const Headphones: FC<IconProps>;
   export const Scissors: FC<IconProps>;
   export const Search: FC<IconProps>;
+  export const Send: FC<IconProps>;
   export const Settings: FC<IconProps>;
   export const ShieldCheck: FC<IconProps>;
   export const ShoppingBag: FC<IconProps>;
