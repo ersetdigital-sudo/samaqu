@@ -107,7 +107,7 @@ export default function AutoCTA() {
           transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
           className="fixed bottom-[calc(var(--mobile-nav-h)_+_1.5rem)] right-4 sm:right-6 z-[90]"
         >
-          {/* Tooltip — above the FAB */}
+          {/* Tooltip — di samping kiri FAB (biar nggak numpuk sama bubble chat AI) */}
           <AnimatePresence>
             {showTooltip && (
               <motion.div
@@ -115,14 +115,14 @@ export default function AutoCTA() {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 8, scale: 0.95 }}
                 transition={{ duration: 0.3 }}
-                className="absolute bottom-[calc(100%+10px)] right-0 px-4 py-2.5 rounded-lg w-max max-w-[220px]"
+                className="absolute right-[calc(100%+12px)] top-1/2 -translate-y-1/2 px-4 py-2.5 rounded-lg w-max max-w-[220px]"
                 style={{
                   background: "#000000",
-                  boxShadow: "0 4px 20px -4px rgba(42,33,27,.15)",
+                  boxShadow: "0 4px 20px -4px rgba(0,0,0,.2)",
                 }}
               >
                 <div
-                  className="absolute -bottom-1.5 right-5 w-3 h-3 rotate-45"
+                  className="absolute -right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 rotate-45"
                   style={{ background: "#000000" }}
                 />
                 <button

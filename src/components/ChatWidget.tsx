@@ -285,7 +285,7 @@ export default function ChatWidget() {
       <button
         onClick={() => setOpen(true)}
         aria-label={t("open")}
-        className="fixed right-4 sm:right-6 bottom-[calc(var(--mobile-nav-h)+5.5rem)] z-[95] w-14 h-14 rounded-full flex items-center justify-center text-white shadow-lg transition-transform hover:scale-105"
+        className="fixed right-4 sm:right-6 bottom-[calc(var(--mobile-nav-h)+5.75rem)] z-[95] w-14 h-14 rounded-full flex items-center justify-center text-white shadow-lg transition-transform hover:scale-105"
         style={{ background: "#000" }}
       >
         <RobotIcon size={26} />
