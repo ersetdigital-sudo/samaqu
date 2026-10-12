@@ -113,7 +113,7 @@ export default function SamaQuran() {
   const t = useSafeTranslations("samaQuran");
 
   return (
-    <main>
+    <main style={{ background: "#F3F3F3" }}>
       {/* ── HERO ── */}
       <section className="relative overflow-hidden" style={{ background: "#1E150E" }}>
         {/* Background SVG */}
@@ -264,7 +264,7 @@ export default function SamaQuran() {
       </section>
 
       {/* ── PERJALANAN ── */}
-      <section id="perjalanan" className="py-16 sm:py-24" style={{ background: "var(--cream-2, #EFE6D9)" }}>
+      <section id="perjalanan" className="py-16 sm:py-24" style={{ background: "#F3F3F3" }}>
         <div className="mx-auto max-w-6xl px-5 grid md:grid-cols-2 gap-12 items-center">
           <div>
             <h2
