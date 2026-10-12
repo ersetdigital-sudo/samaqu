@@ -47,7 +47,7 @@ export default function Koleksi() {
   }, []);
 
   return (
-    <section id="produk" style={{ background: "var(--sand-2)" }}>
+    <section id="produk" style={{ background: "#ffffff" }}>
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-10 sm:py-16 lg:py-20">
 
         {/* Header */}
