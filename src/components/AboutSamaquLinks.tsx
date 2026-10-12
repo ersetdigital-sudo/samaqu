@@ -17,7 +17,7 @@ export default function AboutSamaquLinks() {
   const t = useSafeTranslations("aboutLinks");
 
   return (
-    <section className="relative overflow-hidden" style={{ background: "var(--bg-primary)" }}>
+    <section className="relative overflow-hidden" style={{ background: "#F3F3F3" }}>
       {/* Fabric backdrop */}
       <Image
         src="/images/daa1981f-297f-4fa3-aebe-e68d9b0e8ea8.png"
@@ -30,7 +30,7 @@ export default function AboutSamaquLinks() {
         className="absolute inset-0 hidden lg:block"
         style={{
           background:
-            "linear-gradient(100deg, var(--bg-primary) 0%, rgba(242,236,227,.96) 26%, rgba(242,236,227,.72) 48%, rgba(242,236,227,.28) 72%, rgba(242,236,227,.1) 100%)",
+            "linear-gradient(100deg, #F3F3F3 0%, rgba(243,243,243,.96) 26%, rgba(243,243,243,.72) 48%, rgba(243,243,243,.28) 72%, rgba(243,243,243,.1) 100%)",
         }}
       />
       {/* Mobile veil */}
@@ -38,17 +38,17 @@ export default function AboutSamaquLinks() {
         className="absolute inset-0 lg:hidden"
         style={{
           background:
-            "linear-gradient(180deg, rgba(242,236,227,.92) 0%, rgba(242,236,227,.86) 45%, rgba(242,236,227,.94) 100%)",
+            "linear-gradient(180deg, rgba(243,243,243,.92) 0%, rgba(243,243,243,.86) 45%, rgba(243,243,243,.94) 100%)",
         }}
       />
 
       <div className="relative mx-auto max-w-6xl px-5 sm:px-8 py-14 sm:py-20">
         {/* Header */}
         <div className="flex items-center gap-4 mb-5">
-          <span className="h-px w-10" style={{ background: "var(--gold)" }} />
+          <span className="h-px w-10" style={{ background: "#000000" }} />
           <span
             className="font-semibold font-ui"
-            style={{ letterSpacing: "0.24em", fontSize: "11px", color: "var(--gold)" }}
+            style={{ letterSpacing: "0.24em", fontSize: "11px", color: "#000000" }}
           >
             {t("eyebrow")}
           </span>
@@ -59,13 +59,14 @@ export default function AboutSamaquLinks() {
           style={{
             fontFamily: "var(--font-cormorant), Georgia, serif",
             fontSize: "clamp(34px, 5vw, 46px)",
+            color: "#000000",
           }}
         >
           {t("title")}
         </h2>
         <p
           className="mt-4 text-[15px] leading-relaxed max-w-[34ch]"
-          style={{ color: "var(--text-secondary)" }}
+          style={{ color: "rgba(0,0,0,.6)" }}
         >
           {t("desc")}
         </p>

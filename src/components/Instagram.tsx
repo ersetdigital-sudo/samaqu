@@ -37,14 +37,14 @@ export default function Instagram() {
         <div className="text-center">
           <span
             className="inline-block h-px w-10 mb-5"
-            style={{ background: "var(--gold)" }}
+            style={{ background: "#000000" }}
           />
           <p
             className="font-semibold font-ui"
             style={{
               letterSpacing: "0.24em",
               fontSize: "11px",
-              color: "var(--gold)",
+              color: "#000000",
             }}
           >
             {t("eyebrow")}
@@ -53,7 +53,7 @@ export default function Instagram() {
             className="mt-3 text-[30px] sm:text-[40px] font-bold tracking-tight"
             style={{
               fontFamily: "var(--font-cormorant), Georgia, serif",
-              color: "var(--espresso)",
+              color: "#000000",
             }}
           >
             @samaqu.id
@@ -69,7 +69,7 @@ export default function Instagram() {
               target="_blank"
               rel="noopener"
               className="group relative overflow-hidden rounded-[6px] aspect-square"
-              style={{ background: "#e7e2da" }}
+              style={{ background: "#e5e5e5" }}
             >
               <Image
                 src={img.src}
@@ -88,9 +88,9 @@ export default function Instagram() {
           href="https://instagram.com/samaqu.id"
           target="_blank"
           rel="noopener"
-          className="mt-8 sm:mt-10 grid place-items-center rounded-md text-[13px] sm:text-[14px] font-bold tracking-[.12em] py-4 transition-colors duration-200 !no-underline !text-[#1b1b1b] visited:!text-[#1b1b1b] hover:!text-[#1b1b1b]"
+          className="mt-8 sm:mt-10 grid place-items-center rounded-md text-[13px] sm:text-[14px] font-bold tracking-[.12em] py-4 transition-colors duration-200 !no-underline !text-white visited:!text-white hover:!text-white"
           style={{
-            background: "var(--gold-bright, #d3ab72)",
+            background: "#000000",
           }}
         >
           {t("cta")}
