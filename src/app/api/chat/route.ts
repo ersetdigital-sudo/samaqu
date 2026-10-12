@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
         model: config.model,
         messages: [{ role: "system", content: system }, ...messages],
         temperature: 0.4,
-        max_tokens: 800,
+        max_tokens: 1500,
       }),
       signal: AbortSignal.timeout(30000),
     });
