@@ -1212,7 +1212,7 @@ export default function MasterProduk() {
                     <div className="flex flex-col h-full justify-between gap-2 md:gap-3">
                       <div className="flex items-center gap-2 text-white">
                         <IconLayers size={18} className="shrink-0" />
-                        <p className="text-[11px] md:text-xs font-bold uppercase tracking-wider md:tracking-widest truncate">Jenis Produk Keluar</p>
+                        <p className="text-[11px] md:text-xs font-bold uppercase tracking-wider md:tracking-widest truncate">Produk Terjual</p>
                       </div>
                       <div>
                         <p className="text-xl md:text-3xl font-black text-white font-inter tracking-tight">
