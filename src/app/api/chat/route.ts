@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getChatConfig, isChatReady } from "@/lib/chat-config";
 import { getKnowledgeContext } from "@/lib/chat-knowledge";
-import { CHAT_TOOLS, executeChatTool } from "@/lib/chat-tools";
+import { CHAT_TOOLS, executeChatTool, type ChatProductCard } from "@/lib/chat-tools";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
 // Live chat AI SAMAQU (Xiaomi MiMo, endpoint OpenAI-compatible).
@@ -165,6 +165,7 @@ export async function POST(req: NextRequest) {
 
       let answer = "";
       const toolsUsed: string[] = [];
+      const productCards: ChatProductCard[] = [];
 
       try {
         const convo: Array<Record<string, unknown>> = [{ role: "system", content: system }, ...messages];
@@ -201,7 +202,12 @@ export async function POST(req: NextRequest) {
             for (const call of toolCalls) {
               toolsUsed.push(call.function.name);
               const result = await executeChatTool(call.function.name, call.function.arguments);
-              convo.push({ role: "tool", tool_call_id: call.id, content: result });
+              if (result.products) {
+                for (const p of result.products) {
+                  if (!productCards.some((x) => x.id === p.id)) productCards.push(p);
+                }
+              }
+              convo.push({ role: "tool", tool_call_id: call.id, content: result.text });
             }
             continue;
           }
@@ -210,6 +216,7 @@ export async function POST(req: NextRequest) {
           break;
         }
 
+        if (productCards.length) send({ products: productCards.slice(0, 4) });
         send({ done: true });
       } catch (error) {
         console.error("[CHAT] Permintaan gagal:", error);

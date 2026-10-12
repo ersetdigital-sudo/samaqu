@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { X, Send, Loader2 } from "lucide-react";
 import { useSafeTranslations, useSafeLocale } from "@/lib/safe-i18n";
 import { waNumber } from "@/lib/whatsapp";
+import type { ChatProductCard } from "@/lib/chat-tools";
 
 /** Ikon robot untuk bubble chat AI (SVG inline, aman dari perubahan ikon library). */
 function RobotIcon({ size = 24 }: { size?: number }) {
@@ -41,6 +42,7 @@ function RobotIcon({ size = 24 }: { size?: number }) {
 interface Msg {
   role: "user" | "assistant";
   content: string;
+  products?: ChatProductCard[];
 }
 
 export default function ChatWidget() {
@@ -108,8 +110,9 @@ export default function ChatWidget() {
     if (!text || loading) return;
 
     const history: Msg[] = [...messages, { role: "user", content: text }];
+    let cards: ChatProductCard[] = [];
     // Pesan asisten kosong yang diisi bertahap dari stream.
-    const render = (content: string) => setMessages([...history, { role: "assistant", content }]);
+    const render = (content: string) => setMessages([...history, { role: "assistant", content, products: cards }]);
     setMessages([...history, { role: "assistant", content: "" }]);
     setInput("");
     setLoading(true);
@@ -145,7 +148,7 @@ export default function ChatWidget() {
           const payload = trimmed.slice(5).trim();
           if (!payload) continue;
 
-          let evt: { delta?: string; reset?: boolean; error?: string; done?: boolean };
+          let evt: { delta?: string; reset?: boolean; error?: string; done?: boolean; products?: ChatProductCard[] };
           try {
             evt = JSON.parse(payload);
           } catch {
@@ -153,6 +156,7 @@ export default function ChatWidget() {
           }
 
           if (evt.reset) acc = "";
+          else if (Array.isArray(evt.products)) cards = evt.products;
           else if (typeof evt.delta === "string") acc += evt.delta;
           else if (evt.error) acc = acc || evt.error;
 
@@ -214,7 +218,7 @@ export default function ChatWidget() {
 
       <div ref={listRef} className="flex-1 overflow-y-auto px-3 py-3 space-y-2" style={{ background: "var(--sub, #fafafa)" }}>
         {messages.map((m, i) => (
-          <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+          <div key={i} className={`flex flex-col gap-1.5 ${m.role === "user" ? "items-end" : "items-start"}`}>
             <div
               className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap break-words ${
                 m.role === "user" ? "text-white" : ""
@@ -227,6 +231,33 @@ export default function ChatWidget() {
             >
               {m.content}
             </div>
+            {m.products && m.products.length > 0 && (
+              <div className="w-full space-y-1.5">
+                {m.products.map((p) => (
+                  <a
+                    key={p.id}
+                    href={`/${locale}/katalog/${p.id}`}
+                    className="flex items-center gap-2.5 rounded-xl p-2"
+                    style={{ background: "#fff", border: "1px solid #ececec" }}
+                  >
+                    {p.image ? (
+                      <img src={p.image} alt={p.name} className="w-11 h-11 rounded-lg object-cover shrink-0" />
+                    ) : (
+                      <span className="w-11 h-11 rounded-lg shrink-0" style={{ background: "var(--sub, #fafafa)" }} />
+                    )}
+                    <span className="min-w-0">
+                      <span className="block text-xs font-semibold truncate" style={{ color: "var(--fg, #18181b)" }}>
+                        {p.name}
+                      </span>
+                      <span className="block text-[11px] font-medium" style={{ color: "var(--gold, #b08d57)" }}>
+                        {p.cyp ? `Mulai Rp ${p.price.toLocaleString("id-ID")}` : `Rp ${p.price.toLocaleString("id-ID")}`}
+                        <span style={{ color: "var(--fg3, #a1a1aa)" }}>{" · "}{p.category}</span>
+                      </span>
+                    </span>
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
         ))}
         {loading && !messages[messages.length - 1]?.content && (
