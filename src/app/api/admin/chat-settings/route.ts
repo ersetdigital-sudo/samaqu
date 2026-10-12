@@ -115,7 +115,7 @@ export async function POST(req: NextRequest) {
             { role: "user", content: "Halo, produknya ada apa aja?" },
           ],
           temperature: 0.4,
-          max_tokens: 300,
+          max_tokens: 800,
         }),
         signal: AbortSignal.timeout(30000),
       });
