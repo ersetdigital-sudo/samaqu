@@ -235,7 +235,7 @@ export default function GaransiRetur() {
   }, []);
 
   return (
-    <main>
+    <main style={{ background: "#F3F3F3" }}>
       {/* ── HERO ── */}
       <section className="relative overflow-hidden">
         <div className="mx-auto max-w-6xl px-5 pt-24 pb-10 md:pt-32 md:py-24 grid md:grid-cols-2 gap-10 md:gap-14 items-center">
