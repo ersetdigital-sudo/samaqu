@@ -289,7 +289,7 @@ export default function TestimoniPage() {
       </div>
 
       {/* ═══ MARQUEE ═══ */}
-      <div className="overflow-hidden py-3.5" style={{ background: "var(--bg-secondary, #eae4d9)", borderTop: "1px solid rgba(23,20,15,.1)", borderBottom: "1px solid rgba(23,20,15,.1)" }}>
+      <div className="overflow-hidden py-3.5" style={{ background: "#F3F3F3", borderTop: "1px solid rgba(23,20,15,.1)", borderBottom: "1px solid rgba(23,20,15,.1)" }}>
         <div className="marquee-track flex" style={{ width: "max-content" }}>
           {[0, 1].map((set) => (
             <div key={set} className="flex shrink-0 items-center gap-7 pr-7 text-[11px] font-semibold uppercase tracking-[0.1em]" style={{ color: "rgba(42,33,27,.5)" }}>
