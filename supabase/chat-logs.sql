@@ -11,7 +11,8 @@ CREATE TABLE IF NOT EXISTS chat_logs (
   question TEXT,                                    -- pertanyaan terakhir pelanggan
   answer TEXT,                                      -- jawaban akhir asisten
   tools_used TEXT[] DEFAULT '{}',                   -- tool yang dipakai (cari_produk, panduan_ukuran, ...)
-  escalated BOOLEAN DEFAULT false,                  -- ditandai kalau jawaban mengarahkan ke admin/WA
+  escalated BOOLEAN DEFAULT false,                  -- diisi HANYA kalau tool hubungi_admin benar-benar dipakai
+  error TEXT,                                       -- pesan galat bila balasan gagal (buat pantau kestabilan)
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

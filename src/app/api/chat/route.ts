@@ -125,6 +125,33 @@ async function consumeStream(
   return { content, toolCalls: toolCalls.filter(Boolean) };
 }
 
+/**
+ * Panggil MiMo dengan retry otomatis untuk kegagalan transient (network / 429 / 5xx).
+ * Ini yang menjaga asisten tetap stabil saat penyedia AI sesekali gagal.
+ */
+async function fetchWithRetry(url: string, init: RequestInit, attempts = 3): Promise<Response> {
+  let lastError: unknown;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      const res = await fetch(url, init);
+      if ((res.status === 429 || res.status >= 500) && i < attempts - 1) {
+        lastError = new Error(`HTTP ${res.status}`);
+        await new Promise((r) => setTimeout(r, 300 * (i + 1)));
+        continue;
+      }
+      return res;
+    } catch (e) {
+      lastError = e;
+      if (i < attempts - 1) {
+        await new Promise((r) => setTimeout(r, 300 * (i + 1)));
+        continue;
+      }
+      throw e;
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error("Gagal menghubungi penyedia AI");
+}
+
 export async function POST(req: NextRequest) {
   const config = await getChatConfig();
   if (!isChatReady(config)) {
@@ -196,6 +223,7 @@ export async function POST(req: NextRequest) {
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`));
 
       let answer = "";
+      let failure: string | null = null;
       const toolsUsed: string[] = [];
       const productCards: ChatProductCard[] = [];
 
@@ -205,7 +233,7 @@ export async function POST(req: NextRequest) {
         for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
           if (round > 0) send({ reset: true }); // buang teks parsial sebelum putaran tool berikutnya
 
-          const res = await fetch(`${baseUrl}/chat/completions`, {
+          const res = await fetchWithRetry(`${baseUrl}/chat/completions`, {
             method: "POST",
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${config.apiKey}` },
             body: JSON.stringify({
@@ -226,6 +254,7 @@ export async function POST(req: NextRequest) {
           if (!res.ok || !res.body) {
             const detail = await res.text().catch(() => "");
             console.error("[CHAT] MiMo error:", res.status, detail);
+            failure = `MiMo HTTP ${res.status}: ${String(detail).slice(0, 300)}`;
             send({ error: ERROR_REPLY });
             break;
           }
@@ -255,29 +284,28 @@ export async function POST(req: NextRequest) {
         send({ done: true });
       } catch (error) {
         console.error("[CHAT] Permintaan gagal:", error);
+        failure = `exception: ${String(error).slice(0, 300)}`;
         send({ error: ERROR_REPLY });
       } finally {
         // Simpan log DULU (di-await) baru tutup stream. Fire-and-forget TIDAK aman di
         // serverless (Vercel): fungsi bisa dimatikan begitu respons selesai sehingga log hilang.
-        if (answer) {
-          // Hanya tandai "diarahkan ke admin" kalau tool hubungi_admin benar-benar dipakai —
-          // kata "admin/WhatsApp" saja di jawaban bukan eskalasi (dulu salah nempel badge).
-          const escalated = toolsUsed.includes("hubungi_admin");
-          try {
-            const { error } = await getSupabaseAdmin()
-              .from("chat_logs")
-              .insert({
-                session_id: sessionId,
-                locale,
-                question,
-                answer,
-                tools_used: toolsUsed,
-                escalated,
-              });
-            if (error) console.error("[CHAT] gagal menulis chat_logs:", error.message);
-          } catch (e) {
-            console.error("[CHAT] gagal menulis chat_logs:", e);
-          }
+        // Log sukses maupun gagal (kolom `error`) supaya tingkat error asisten bisa dipantau.
+        const errText = failure ?? (answer ? null : "tidak ada jawaban dari model");
+        try {
+          const { error } = await getSupabaseAdmin()
+            .from("chat_logs")
+            .insert({
+              session_id: sessionId,
+              locale,
+              question,
+              answer: answer || "",
+              tools_used: toolsUsed,
+              escalated: toolsUsed.includes("hubungi_admin"),
+              error: errText,
+            });
+          if (error) console.error("[CHAT] gagal menulis chat_logs:", error.message);
+        } catch (e) {
+          console.error("[CHAT] gagal menulis chat_logs:", e);
         }
         controller.close();
       }
