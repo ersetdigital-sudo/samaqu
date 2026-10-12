@@ -21,6 +21,7 @@ import {
 // lucide-react versi ini — jadi diambil lewat namespace dengan fallback.
 import * as LucideIcons from "lucide-react";
 const WalletIcon: any = (LucideIcons as any).WalletMinimal ?? (LucideIcons as any).Wallet;
+const IconPhoneCall: any = (LucideIcons as any).PhoneCall ?? (LucideIcons as any).Phone;
 import { supabase } from "@/lib/supabase";
 import { Toaster } from "@/components/ops/ui/toaster";
 
@@ -34,6 +35,7 @@ const MENU_GROUPS: { label: string; items: MenuItem[] }[] = [
       { title: "Transaksi", href: "/ops/transaksi", icon: FileText, soon: true },
       { title: "Return", href: "/ops/retur", icon: RotateCcw, soon: true },
       { title: "Leads", href: "/ops/leads", icon: Users },
+      { title: "Follow-up", href: "/ops/follow-up", icon: IconPhoneCall },
       { title: "Laporan Leads", href: "/ops/leads/laporan", icon: BarChart3 },
     ],
   },
