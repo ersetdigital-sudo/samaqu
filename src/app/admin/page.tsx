@@ -21,7 +21,7 @@ import OrdersView from "@/components/admin/OrdersView";
 import DashboardView from "@/components/admin/DashboardView";
 import ProductsCatalog from "@/components/admin/ProductsCatalog";
 import ProductDetailDrawer from "@/components/admin/ProductDetailDrawer";
-import ChatLogsView from "@/components/admin/ChatLogsView";
+import LiveChatView from "@/components/admin/LiveChatView";
 import { ADMIN_WF_VARS } from "@/components/admin/admin-theme";
 
 type Panel = "dashboard" | "orders" | "products" | "customers" | "chats" | "content" | "settings";
@@ -829,8 +829,8 @@ function AdminPageInner() {
               {/* CUSTOMERS */}
               {activePanel === "customers" && <CustomersView />}
 
-              {/* LIVE CHAT — daftar percakapan asisten AI */}
-              {activePanel === "chats" && <ChatLogsView />}
+              {/* LIVE CHAT — tab Percakapan + Pengaturan asisten AI */}
+              {activePanel === "chats" && <LiveChatView />}
 
               {/* CONTENT */}
               {activePanel === "content" && (
