@@ -387,7 +387,9 @@ function DrawerNavContent({
   switchLocale: (locale: Locale) => void;
 }) {
   const pathname = usePathname();
-  const navItems = getNavItems(t);
+  // Katalog tidak ditampilkan di drawer — di mobile sudah ada menu "Kategori" di nav bawah.
+  // (Navbar desktop tetap menampilkan Katalog.)
+  const navItems = getNavItems(t).filter((item) => item.href !== "/katalog");
   const extraItems = getMobileExtraItems(t);
   const bantuanLinks = getBantuanLinks(t);
 
@@ -538,7 +540,7 @@ function DrawerNavContent({
           target="_blank"
           rel="noopener"
           className="flex items-center justify-center gap-2 w-full px-5 py-3.5 text-[11px] tracking-[0.16em] uppercase font-ui font-medium transition-all duration-300 hover:opacity-90 rounded-sm"
-          style={{ background: "var(--gold)", color: "white" }}
+          style={{ background: "var(--espresso)", color: "white" }}
           onClick={onClose}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
