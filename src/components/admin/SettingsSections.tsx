@@ -1169,7 +1169,7 @@ function ChatSection() {
           editing={editing}
           onChange={setModel}
           mono
-          hint={envModel ? `Kosong = pakai ${envModel} (env). Contoh: mimo-v2-flash, mimo-v2.5, mimo-v2.5-pro` : "Contoh: mimo-v2-flash (murah), mimo-v2.5, mimo-v2.5-pro"}
+          hint={envModel ? `Kosong = pakai ${envModel} (env). Contoh: mimo-v2.6-flash, mimo-v2.6-pro` : "Contoh: mimo-v2.6-flash (murah), mimo-v2.6-pro (paling pinter)"}
         />
         <Field
           label="Base URL"

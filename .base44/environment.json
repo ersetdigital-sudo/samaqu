@@ -113,7 +113,7 @@
     },
     {
       "name": "MIMO_MODEL",
-      "description": "MiMo model id for the live chat (e.g. mimo-v2-flash, mimo-v2.5, mimo-v2.5-pro). Optional, default mimo-v2-flash.",
+      "description": "MiMo model id for the live chat (e.g. mimo-v2.6-flash, mimo-v2.6-pro). Optional, default mimo-v2.6-flash.",
       "requiredAtBoot": false,
       "generatedForDevelopment": false
     },
