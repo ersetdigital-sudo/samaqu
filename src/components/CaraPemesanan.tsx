@@ -31,18 +31,26 @@ const cardVariants: Variants = {
   },
 };
 
+/* ─── Monokrom hitam-putih (tema terang) ─── */
+const INK = "#000000";
+const MUTED = "rgba(0,0,0,.6)";
+const MUTED_SOFT = "rgba(0,0,0,.35)";
+const LINE = "rgba(0,0,0,.12)";
+const CARD_BG = "#ffffff";
+const CARD_BORDER = "rgba(0,0,0,.08)";
+
 /* ─── Shared atoms ─── */
 
 function StepIconBadge({ Icon, compact }: { Icon: typeof CoatHanger; compact?: boolean }) {
   return (
     <span
       className={`relative inline-flex items-center justify-center rounded-full shrink-0 ${compact ? "w-9 h-9" : "w-11 h-11"}`}
-      style={{ background: "var(--espresso)", boxShadow: "0 10px 26px -10px rgba(45,33,27,.45)" }}
+      style={{ background: INK, boxShadow: "0 10px 26px -10px rgba(0,0,0,.35)" }}
     >
-      <Icon size={compact ? 16 : 20} weight="light" style={{ color: "var(--gold-light)" }} />
+      <Icon size={compact ? 16 : 20} weight="regular" style={{ color: "#ffffff" }} />
       <span
         className="absolute inset-0 rounded-full pointer-events-none"
-        style={{ border: "1px solid rgba(212,165,116,.25)" }}
+        style={{ border: "1px solid rgba(0,0,0,.15)" }}
       />
     </span>
   );
@@ -55,7 +63,7 @@ function GhostNumber({ n, className }: { n: number; className?: string }) {
       className={`select-none font-medium leading-none ${className || ""}`}
       style={{
         fontFamily: "var(--font-cormorant), Georgia, serif",
-        color: "rgba(216,196,168,.5)",
+        color: "rgba(0,0,0,.1)",
       }}
     >
       {String(n).padStart(2, "0")}
@@ -80,38 +88,35 @@ function MobileGrid({ steps }: { steps: { title: string; desc: string; Icon: typ
           <div
             className="relative h-full rounded-2xl p-4 overflow-hidden transition-transform duration-300 active:scale-[0.985]"
             style={{
-              background: "rgba(255,255,255,.85)",
-              border: "1px solid rgba(216,196,168,.35)",
-              boxShadow: "0 14px 34px -20px rgba(45,33,27,.28)",
+              background: CARD_BG,
+              border: `1px solid ${CARD_BORDER}`,
+              boxShadow: "0 14px 34px -20px rgba(0,0,0,.18)",
             }}
           >
             {/* Ghost numeral */}
             <GhostNumber
               n={i + 1}
-              className="absolute -top-1 right-2 text-[3.2rem] transition-colors duration-500 group-hover:text-[rgba(181,140,74,.35)]"
+              className="absolute -top-1 right-2 text-[3.2rem] transition-colors duration-500 group-hover:text-[rgba(0,0,0,.2)]"
             />
-            {/* Gold hairline accent */}
+            {/* Hairline accent */}
             <span
               className="absolute left-0 top-4 bottom-4 w-[2px] rounded-full"
-              style={{ background: "linear-gradient(180deg, var(--gold), transparent)" }}
+              style={{ background: "linear-gradient(180deg, #000000, transparent)" }}
             />
 
             <div className="relative">
               <StepIconBadge Icon={step.Icon} compact />
               <p
                 className="mt-3.5 text-[8.5px] font-medium uppercase tracking-[0.3em] font-ui"
-                style={{ color: "var(--gold)" }}
+                style={{ color: MUTED_SOFT }}
               >
                 {String(i + 1).padStart(2, "0")}
               </p>
-              <h3 className="mt-1 text-[13.5px] font-semibold leading-snug font-ui" style={{ color: "var(--espresso)" }}>
+              <h3 className="mt-1 text-[13.5px] font-semibold leading-snug font-ui" style={{ color: INK }}>
                 {step.title}
               </h3>
             </div>
-            <p
-              className="relative mt-2 text-[11px] leading-[1.55] font-ui"
-              style={{ color: "rgba(42,33,27,.68)" }}
-            >
+            <p className="relative mt-2 text-[11px] leading-[1.55] font-ui" style={{ color: MUTED }}>
               {step.desc}
             </p>
           </div>
@@ -129,13 +134,10 @@ function DesktopJourney({ steps }: { steps: { title: string; desc: string; Icon:
   return (
     <div ref={ref} className="hidden md:block relative">
       {/* Connector line */}
-      <span
-        className="absolute top-[55px] left-[9%] right-[9%] h-px overflow-hidden"
-        style={{ background: "rgba(216,196,168,.45)" }}
-      >
+      <span className="absolute top-[55px] left-[9%] right-[9%] h-px overflow-hidden" style={{ background: LINE }}>
         <motion.span
           className="absolute inset-0 origin-left block"
-          style={{ background: "linear-gradient(90deg, var(--gold), var(--gold-deep))" }}
+          style={{ background: INK }}
           initial={{ scaleX: 0 }}
           animate={inView ? { scaleX: 1 } : { scaleX: 0 }}
           transition={{ duration: 1.6, ease: PREMIUM_EASE }}
@@ -156,7 +158,7 @@ function DesktopJourney({ steps }: { steps: { title: string; desc: string; Icon:
             {/* Ghost numeral — behind everything */}
             <GhostNumber
               n={i + 1}
-              className="absolute -top-[46px] left-1 text-[7.5rem] lg:text-[8.5rem] transition-all duration-700 group-hover:text-[rgba(181,140,74,.4)] group-hover:-translate-y-1.5"
+              className="absolute -top-[46px] left-1 text-[7.5rem] lg:text-[8.5rem] transition-all duration-700 group-hover:text-[rgba(0,0,0,.18)] group-hover:-translate-y-1.5"
             />
 
             {/* Icon badge on the connector line */}
@@ -167,19 +169,13 @@ function DesktopJourney({ steps }: { steps: { title: string; desc: string; Icon:
             {/* Hairline under badge */}
             <span
               className="block w-10 h-px mb-5 transition-all duration-500 group-hover:w-16"
-              style={{ background: "var(--gold)" }}
+              style={{ background: INK }}
             />
 
-            <h3
-              className="relative z-10 text-[1.35rem] lg:text-[1.5rem] font-semibold mb-2.5 font-ui"
-              style={{ color: "var(--espresso)" }}
-            >
+            <h3 className="relative z-10 text-[1.35rem] lg:text-[1.5rem] font-semibold mb-2.5 font-ui" style={{ color: INK }}>
               {step.title}
             </h3>
-            <p
-              className="relative z-10 text-[0.9rem] leading-[1.7] max-w-[16rem] font-ui"
-              style={{ color: "rgba(42,33,27,.68)" }}
-            >
+            <p className="relative z-10 text-[0.9rem] leading-[1.7] max-w-[16rem] font-ui" style={{ color: MUTED }}>
               {step.desc}
             </p>
           </motion.div>
@@ -207,10 +203,10 @@ export default function CaraPemesanan() {
       style={{ background: "#F3F3F3" }}
       aria-labelledby="cara-pesan-title"
     >
-      {/* Ambient gold hairline at top */}
+      {/* Ambient hairline at top */}
       <span
         className="absolute top-0 left-1/2 -translate-x-1/2 w-[min(420px,70vw)] h-px"
-        style={{ background: "linear-gradient(90deg,transparent,rgba(184,145,70,.5),transparent)" }}
+        style={{ background: "linear-gradient(90deg,transparent,rgba(0,0,0,.28),transparent)" }}
         aria-hidden
       />
 
@@ -226,11 +222,11 @@ export default function CaraPemesanan() {
           <motion.p
             variants={headerVariants}
             className="inline-flex items-center gap-3 text-[0.68rem] font-medium uppercase tracking-[0.32em] font-ui"
-            style={{ color: "var(--gold)" }}
+            style={{ color: MUTED }}
           >
-            <span className="w-7 h-px" style={{ background: "linear-gradient(90deg,transparent,var(--gold))" }} />
+            <span className="w-7 h-px" style={{ background: "linear-gradient(90deg,transparent,rgba(0,0,0,.4))" }} />
             {t("eyebrow")}
-            <span className="w-7 h-px" style={{ background: "linear-gradient(90deg,var(--gold),transparent)" }} />
+            <span className="w-7 h-px" style={{ background: "linear-gradient(90deg,rgba(0,0,0,.4),transparent)" }} />
           </motion.p>
           <motion.h2
             variants={headerVariants}
@@ -238,7 +234,7 @@ export default function CaraPemesanan() {
             className="mt-3 text-[2.6rem] sm:text-5xl lg:text-[3.6rem] font-semibold tracking-[-0.015em] leading-[1.05]"
             style={{
               fontFamily: "var(--font-cormorant), Georgia, serif",
-              color: "var(--espresso)",
+              color: INK,
             }}
           >
             {t("title")}
@@ -246,9 +242,9 @@ export default function CaraPemesanan() {
           <motion.p
             variants={headerVariants}
             className="mx-auto mt-3 max-w-xl text-[15px] leading-[1.75] font-ui"
-            style={{ color: "var(--text-secondary)" }}
+            style={{ color: MUTED }}
           >
-            <strong>{t("subtitleLead")}</strong> {t("subtitle")}
+            <strong style={{ color: INK }}>{t("subtitleLead")}</strong> {t("subtitle")}
           </motion.p>
         </motion.div>
 
@@ -267,9 +263,9 @@ export default function CaraPemesanan() {
           <a
             className="group relative inline-flex items-center gap-2.5 overflow-hidden rounded-full px-8 sm:px-9 py-4 text-[0.8rem] sm:text-[0.85rem] font-semibold uppercase tracking-[0.18em] font-ui transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.97]"
             style={{
-              background: "var(--gold)",
-              color: "#fff",
-              boxShadow: "0 18px 44px -14px rgba(184,145,70,.55)",
+              background: INK,
+              color: "#ffffff",
+              boxShadow: "0 18px 44px -14px rgba(0,0,0,.4)",
             }}
             href={getWhatsAppLink(t("whatsappMsg"))}
             target="_blank"
@@ -279,7 +275,7 @@ export default function CaraPemesanan() {
           >
             <span
               className="absolute inset-0 translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]"
-              style={{ background: "var(--gold-deep)" }}
+              style={{ background: "#333333" }}
               aria-hidden
             />
             <svg className="relative" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
