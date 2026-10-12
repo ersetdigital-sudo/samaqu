@@ -163,7 +163,7 @@ export default function TambahBarangMasuk() {
     
     if (!formData.product_id) {
       toast({
-        title: "â ️ Form tidak lengkap",
+        title: "⚠️ Form tidak lengkap",
         description: "Pilih produk terlebih dahulu",
         variant: "destructive",
       });
@@ -172,7 +172,7 @@ export default function TambahBarangMasuk() {
 
     if (!formData.variant_id || !formData.size) {
       toast({
-        title: "â ️ Form tidak lengkap",
+        title: "⚠️ Form tidak lengkap",
         description: "Pilih warna dan ukuran variant",
         variant: "destructive",
       });
@@ -183,7 +183,7 @@ export default function TambahBarangMasuk() {
     
     if (!qty || qty <= 0) {
       toast({
-        title: "â ️ Jumlah tidak valid",
+        title: "⚠️ Jumlah tidak valid",
         description: "Jumlah harus lebih dari 0",
         variant: "destructive",
       });
@@ -192,7 +192,7 @@ export default function TambahBarangMasuk() {
 
     if (formData.total_price <= 0) {
       toast({
-        title: "â ️ Harga tidak valid",
+        title: "⚠️ Harga tidak valid",
         description: "Total harga beli harus lebih dari 0",
         variant: "destructive",
       });
