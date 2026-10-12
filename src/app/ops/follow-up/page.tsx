@@ -247,7 +247,7 @@ export default function FollowUpPage() {
                 onClick={() => setTab(t.key)}
                 className={`px-3.5 py-2 rounded-xl text-sm font-bold transition-all ${
                   view === t.key
-                    ? "bg-[#0f3d33] text-white"
+                    ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-md"
                     : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
                 }`}
                 aria-current={view === t.key}
@@ -271,7 +271,7 @@ export default function FollowUpPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Cari nama / nomor pelanggan…"
-              className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0f3d33]/30"
+              className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
             />
           </div>
         </div>
@@ -290,7 +290,7 @@ export default function FollowUpPage() {
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Periksa koneksi lalu coba lagi.</p>
             <button
               onClick={() => qc.invalidateQueries({ queryKey: ["followups"] })}
-              className="mt-4 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0f3d33] text-white text-sm font-bold"
+              className="mt-4 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-bold"
             >
               <RefreshCw size={14} /> Coba Lagi
             </button>
@@ -384,7 +384,7 @@ export default function FollowUpPage() {
                           )}
                           <button
                             onClick={() => setDrawerLead(lead)}
-                            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#0f3d33] text-white text-[11px] font-bold hover:bg-[#134a3e]"
+                            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-blue-600 text-white text-[11px] font-bold hover:bg-blue-700"
                           >
                             <Pencil size={13} /> Catat Hasil
                           </button>
@@ -420,7 +420,7 @@ export default function FollowUpPage() {
                     </button>
                     <button
                       onClick={() => setDrawerLead(lead)}
-                      className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-[#0f3d33] text-white text-xs font-bold"
+                      className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-blue-600 text-white text-xs font-bold"
                     >
                       <Pencil size={14} /> Catat Hasil
                     </button>
@@ -444,6 +444,7 @@ export default function FollowUpPage() {
       <ResultDrawer
         open={!!drawerLead}
         lead={drawerLead}
+        picOptions={options.pics}
         onClose={() => setDrawerLead(null)}
         onSaved={() => qc.invalidateQueries({ queryKey: ["followups"] })}
       />

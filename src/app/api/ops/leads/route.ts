@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { defaultFirstFollowup } from "@/lib/ops-followup";
 
 /**
  * API dashboard internal (/ops) — modul Leads.
@@ -9,7 +10,18 @@ import { getSupabaseAdmin } from "@/lib/supabase-admin";
  * tabel `admins`) yang boleh baca/tulis.
  */
 
-const LEAD_FIELDS = ["tanggal", "jam", "kontak", "sumber", "status", "nominal", "catatan"] as const;
+const LEAD_FIELDS = [
+  "tanggal",
+  "jam",
+  "kontak",
+  "sumber",
+  "status",
+  "nominal",
+  "catatan",
+  "produk",
+  "pic",
+  "next_followup_at",
+] as const;
 
 async function isAdmin(req: NextRequest): Promise<boolean> {
   const token = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
@@ -31,8 +43,12 @@ function pickLead(input: Record<string, unknown>) {
   for (const f of LEAD_FIELDS) {
     if (input?.[f] !== undefined) out[f] = input[f];
   }
+  // Terima juga bentuk camelCase dari form (Base44 memakai snake_case di DB).
+  if (input?.nextFollowupAt !== undefined) out.next_followup_at = input.nextFollowupAt;
   if (out.nominal !== undefined) out.nominal = Number(out.nominal) || 0;
   if (out.status === "belum_closing") out.nominal = 0;
+  if (out.produk !== undefined) out.produk = out.produk ? String(out.produk).trim() : null;
+  if (out.pic !== undefined) out.pic = out.pic ? String(out.pic).trim() : null;
   return out;
 }
 
@@ -68,7 +84,20 @@ export async function GET(req: NextRequest) {
 
   const total = count ?? data?.length ?? 0;
   const next_cursor = offset + limit < total ? String(offset + limit) : null;
-  return NextResponse.json({ items: data || [], next_cursor, count: total });
+
+  // Pilihan PIC untuk form: gabungan PIC yang sudah dipakai + akun admin SAMAQU.
+  const [{ data: picRows }, { data: adminRows }] = await Promise.all([
+    admin.from("leads").select("pic").not("pic", "is", null).limit(2000),
+    admin.from("admins").select("email").limit(50),
+  ]);
+  const pics = Array.from(
+    new Set([
+      ...((picRows as any[]) || []).map((r) => r.pic).filter(Boolean),
+      ...((adminRows as any[]) || []).map((r) => r.email).filter(Boolean),
+    ]),
+  ).sort();
+
+  return NextResponse.json({ items: data || [], next_cursor, count: total, options: { pics } });
 }
 
 export async function POST(req: NextRequest) {
@@ -80,12 +109,37 @@ export async function POST(req: NextRequest) {
     const rows = raw.map((r: Record<string, unknown>) => pickLead(r)).filter((r: Record<string, unknown>) => r.tanggal && r.kontak);
     if (rows.length === 0) return NextResponse.json({ error: "Tidak ada baris valid" }, { status: 400 });
 
+    // Setiap lead baru langsung punya jadwal follow-up sendiri (SOP: besok 10.00 WIB),
+    // jadi tidak menumpuk di antrean "Perlu Dijadwalkan" tanpa tindak lanjut.
+    const fallbackSchedule = defaultFirstFollowup();
+    const prepared = rows.map((r: Record<string, unknown>) => ({
+      ...r,
+      followup_status: "dijadwalkan",
+      next_followup_at: (r.next_followup_at as string) || fallbackSchedule,
+      do_not_contact: false,
+    }));
+
     const admin = getSupabaseAdmin();
-    const { data, error } = await admin.from("leads").insert(rows).select();
+    const { data, error } = await admin.from("leads").insert(prepared).select();
     if (error) {
       console.error("[OPS] leads POST error:", error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+
+    // Catat di timeline follow-up supaya terlihat kapan lead masuk & kapan jadwalnya.
+    if (data && data.length > 0) {
+      const activities = data.map((l: any) => ({
+        lead_id: l.id,
+        actor: "system",
+        action: "created",
+        note: `Lead baru dari ${l.sumber || "-"}`,
+        next_schedule: l.next_followup_at || null,
+        source: "office",
+      }));
+      const { error: actErr } = await admin.from("lead_activities").insert(activities);
+      if (actErr) console.error("[OPS] leads POST activity:", actErr.message);
+    }
+
     return NextResponse.json({ items: data || [], inserted: data?.length || 0 });
   } catch (e) {
     console.error("[OPS] leads POST exception:", e);

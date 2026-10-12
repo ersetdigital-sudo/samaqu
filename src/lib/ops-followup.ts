@@ -67,6 +67,34 @@ export function jakartaDayBounds(now: Date = new Date()): { startIso: string; en
   return { startIso: new Date(startUtc).toISOString(), endIso: new Date(startUtc + 86400000).toISOString() };
 }
 
+/**
+ * Jadwal follow-up pertama untuk lead baru.
+ * SOP Samaqu: besok 10.00 WIB supaya setiap lead yang baru masuk langsung
+ * punya jadwal sendiri (tidak menggantung di antrean).
+ */
+export function defaultFirstFollowup(now: Date = new Date(), daysAhead = 1, hourWib = 10): string {
+  const wib = new Date(now.getTime() + BIZ_OFFSET_MS);
+  const utc = Date.UTC(wib.getUTCFullYear(), wib.getUTCMonth(), wib.getUTCDate() + daysAhead, hourWib - 7, 0, 0);
+  return new Date(utc).toISOString();
+}
+
+/** Nilai untuk <input type="datetime-local"> (waktu WIB) dari ISO UTC. */
+export function isoToWibInput(iso?: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const wib = new Date(d.getTime() + BIZ_OFFSET_MS);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${wib.getUTCFullYear()}-${pad(wib.getUTCMonth() + 1)}-${pad(wib.getUTCDate())}T${pad(wib.getUTCHours())}:${pad(wib.getUTCMinutes())}`;
+}
+
+/** Ubah nilai <input type="datetime-local"> (dianggap WIB) jadi ISO UTC. */
+export function wibInputToIso(value?: string | null): string | null {
+  if (!value) return null;
+  const d = new Date(`${value}:00+07:00`);
+  return Number.isNaN(d.getTime()) ? null : d.toISOString();
+}
+
 /** Hasil yang menutup follow-up: lead seperti ini tidak boleh jadi tugas aktif lagi. */
 export const TERMINAL_OUTCOMES = ["buy", "not_interested", "stop"] as const;
 

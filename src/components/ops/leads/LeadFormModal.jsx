@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/lib/ops-api";
 import { motion } from "framer-motion";
-import { X, Save } from "lucide-react";
+import { X, Save, CalendarClock, User } from "lucide-react";
 import { useToast } from "@/components/ops/ui/use-toast";
+import { defaultFirstFollowup, isoToWibInput, wibInputToIso } from "@/lib/ops-followup";
 
 const SUMBER_OPTIONS = ["Website", "IG", "WA", "Meta ads"];
 
@@ -16,13 +17,53 @@ const formatRupiah = (value) => {
 
 const parseRupiah = (value) => parseInt(value.replace(/\D/g, '')) || 0;
 
+/** Input datetime-local (WIB) dari tanggal + jam, mis. "2026-10-14" + 10 -> "2026-10-14T10:00" */
+const wibInputFrom = (daysAhead, hour) => isoToWibInput(defaultFirstFollowup(new Date(), daysAhead, hour));
+
 export default function LeadFormModal({ isOpen, onClose, initialData = null, defaultDate }) {
   const isEdit = !!initialData;
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const [form, setForm] = useState({ tanggal: '', jam: '', kontak: '', sumber: 'Website', status: 'belum_closing', nominal: 0, catatan: '' });
+  const emptyForm = {
+    tanggal: '',
+    jam: '',
+    kontak: '',
+    sumber: 'Website',
+    status: 'belum_closing',
+    nominal: 0,
+    catatan: '',
+    produk: '',
+    pic: '',
+    nextFollowupAt: '',
+  };
+
+  const [form, setForm] = useState(emptyForm);
   const [displayNominal, setDisplayNominal] = useState('');
+
+  // Pilihan produk (katalog asli) & PIC (dari PIC yang sudah dipakai + akun admin)
+  const { data: products = [] } = useQuery({
+    queryKey: ['products'],
+    queryFn: () => base44.entities.Product.list(),
+    enabled: isOpen,
+    initialData: [],
+  });
+
+  const { data: picOptions = [] } = useQuery({
+    queryKey: ['leadPicOptions'],
+    enabled: isOpen,
+    initialData: [],
+    queryFn: async () => {
+      const { supabase } = await import("@/lib/supabase");
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      const res = await fetch("/api/ops/leads?limit=1", {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      const json = await res.json().catch(() => null);
+      return json?.options?.pics || [];
+    },
+  });
 
   useEffect(() => {
     if (isOpen) {
@@ -35,13 +76,17 @@ export default function LeadFormModal({ isOpen, onClose, initialData = null, def
           status: initialData.status || 'belum_closing',
           nominal: initialData.nominal || 0,
           catatan: initialData.catatan || '',
+          produk: initialData.produk || '',
+          pic: initialData.pic || '',
+          nextFollowupAt: isoToWibInput(initialData.next_followup_at) || '',
         });
         setDisplayNominal(initialData.nominal ? formatRupiah(initialData.nominal) : '');
       } else {
-        setForm({ tanggal: defaultDate || '', jam: '', kontak: '', sumber: 'Website', status: 'belum_closing', nominal: 0, catatan: '' });
+        setForm({ ...emptyForm, tanggal: defaultDate || '', nextFollowupAt: wibInputFrom(1, 10) });
         setDisplayNominal('');
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, initialData, defaultDate]);
 
   const saveMutation = useMutation({
@@ -50,18 +95,27 @@ export default function LeadFormModal({ isOpen, onClose, initialData = null, def
       : base44.entities.Lead.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries(['leads']);
+      queryClient.invalidateQueries({ queryKey: ['followups'] });
       toast({
         title: isEdit ? "✅ Lead berhasil diupdate" : "✅ Lead berhasil ditambahkan",
+        description: isEdit ? undefined : "Lead langsung masuk jadwal follow-up.",
         variant: "success",
       });
       onClose();
+    },
+    onError: (e) => {
+      toast({
+        title: "❌ Gagal menyimpan lead",
+        description: e instanceof Error ? e.message : "Coba lagi.",
+        variant: "destructive",
+      });
     },
   });
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!form.tanggal || !form.kontak.trim()) return;
-    saveMutation.mutate({
+    const payload = {
       tanggal: form.tanggal,
       jam: form.jam.trim(),
       kontak: form.kontak.trim(),
@@ -69,10 +123,18 @@ export default function LeadFormModal({ isOpen, onClose, initialData = null, def
       status: form.status,
       nominal: form.status === 'closing' ? (form.nominal || 0) : 0,
       catatan: form.catatan.trim(),
-    });
+      produk: form.produk.trim() || null,
+      pic: form.pic.trim() || null,
+    };
+    const iso = wibInputToIso(form.nextFollowupAt);
+    if (iso) payload.nextFollowupAt = iso;
+    saveMutation.mutate(payload);
   };
 
   if (!isOpen) return null;
+
+  const inputClass = "w-full px-3 py-2.5 bg-gray-50 dark:bg-slate-900 border-2 border-gray-200 dark:border-slate-700 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 text-sm font-semibold text-slate-900 dark:text-white";
+  const labelClass = "text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block mb-1.5";
 
   return (
     <>
@@ -101,52 +163,85 @@ export default function LeadFormModal({ isOpen, onClose, initialData = null, def
           <form onSubmit={handleSubmit} className="p-6 space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block mb-1.5">Tanggal <span className="text-red-500">*</span></label>
+                <label className={labelClass}>Tanggal <span className="text-red-500">*</span></label>
                 <input
                   type="date"
                   required
                   value={form.tanggal}
                   onChange={(e) => setForm({ ...form, tanggal: e.target.value })}
-                  className="w-full px-3 py-2.5 bg-gray-50 dark:bg-slate-900 border-2 border-gray-200 dark:border-slate-700 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 text-sm font-semibold text-slate-900 dark:text-white"
+                  className={inputClass}
                 />
               </div>
               <div>
-                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block mb-1.5">Jam</label>
+                <label className={labelClass}>Jam</label>
                 <input
                   type="text"
                   value={form.jam}
                   onChange={(e) => setForm({ ...form, jam: e.target.value })}
                   placeholder="10.00"
-                  className="w-full px-3 py-2.5 bg-gray-50 dark:bg-slate-900 border-2 border-gray-200 dark:border-slate-700 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 text-sm font-semibold text-slate-900 dark:text-white"
+                  className={inputClass}
                 />
               </div>
             </div>
 
             <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block mb-1.5">No HP / Username IG <span className="text-red-500">*</span></label>
+              <label className={labelClass}>No HP / Username IG <span className="text-red-500">*</span></label>
               <input
                 type="text"
                 required
                 value={form.kontak}
                 onChange={(e) => setForm({ ...form, kontak: e.target.value })}
                 placeholder="Contoh: 85892344482 atau @username"
-                className="w-full px-3 py-2.5 bg-gray-50 dark:bg-slate-900 border-2 border-gray-200 dark:border-slate-700 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 text-sm font-semibold text-slate-900 dark:text-white"
+                className={inputClass}
               />
             </div>
 
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block mb-1.5">Sumber</label>
-              <select
-                value={form.sumber}
-                onChange={(e) => setForm({ ...form, sumber: e.target.value })}
-                className="w-full px-3 py-2.5 bg-gray-50 dark:bg-slate-900 border-2 border-gray-200 dark:border-slate-700 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 text-sm font-semibold text-slate-900 dark:text-white"
-              >
-                {SUMBER_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
-              </select>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={labelClass}>Sumber</label>
+                <select
+                  value={form.sumber}
+                  onChange={(e) => setForm({ ...form, sumber: e.target.value })}
+                  className={inputClass}
+                >
+                  {SUMBER_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className={labelClass}>PIC / Penanggung jawab</label>
+                <input
+                  type="text"
+                  list="lead-pic-options"
+                  value={form.pic}
+                  onChange={(e) => setForm({ ...form, pic: e.target.value })}
+                  placeholder="Pilih atau ketik nama"
+                  className={inputClass}
+                />
+                <datalist id="lead-pic-options">
+                  {picOptions.map((p) => <option key={p} value={p} />)}
+                </datalist>
+                <p className="mt-1 text-[10px] text-slate-400">Dipakai untuk filter & pembagian tugas di Follow-up Center.</p>
+              </div>
             </div>
 
             <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block mb-1.5">Status</label>
+              <label className={labelClass}>Produk yang diminati</label>
+              <input
+                type="text"
+                list="lead-produk-options"
+                value={form.produk}
+                onChange={(e) => setForm({ ...form, produk: e.target.value })}
+                placeholder="Contoh: Thobe Superblack"
+                className={inputClass}
+              />
+              <datalist id="lead-produk-options">
+                {(products || []).map((p) => <option key={p.id || p.name} value={p.name} />)}
+              </datalist>
+              <p className="mt-1 text-[10px] text-slate-400">Bisa dipilih dari katalog atau diketik bebas.</p>
+            </div>
+
+            <div>
+              <label className={labelClass}>Status</label>
               <div className="flex gap-2">
                 <button
                   type="button"
@@ -175,7 +270,7 @@ export default function LeadFormModal({ isOpen, onClose, initialData = null, def
 
             {form.status === 'closing' && (
               <div>
-                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block mb-1.5">Nominal Transaksi</label>
+                <label className={labelClass}>Nominal Transaksi</label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 font-semibold text-sm">Rp</span>
                   <input
@@ -193,8 +288,51 @@ export default function LeadFormModal({ isOpen, onClose, initialData = null, def
               </div>
             )}
 
+            {/* Follow-up: setiap lead baru langsung punya jadwalnya sendiri */}
+            <div className="rounded-xl border-2 border-blue-100 dark:border-blue-900/40 bg-blue-50/40 dark:bg-blue-900/10 p-3.5">
+              <div className="flex items-center gap-2 mb-2">
+                <CalendarClock size={15} className="text-blue-600 dark:text-blue-400" />
+                <label className="text-[10px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-300">
+                  Jadwal follow-up pertama (WIB)
+                </label>
+              </div>
+              <input
+                type="datetime-local"
+                value={form.nextFollowupAt}
+                onChange={(e) => setForm({ ...form, nextFollowupAt: e.target.value })}
+                className={inputClass}
+              />
+              <div className="flex flex-wrap gap-2 mt-2">
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, nextFollowupAt: wibInputFrom(0, Math.min(23, new Date(Date.now() + 7 * 3600 * 1000).getUTCHours() + 2)) })}
+                  className="px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-white dark:bg-slate-900 border border-blue-200 dark:border-blue-900/40 text-blue-700 dark:text-blue-300 hover:bg-blue-50"
+                >
+                  Hari ini (+2 jam)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, nextFollowupAt: wibInputFrom(1, 10) })}
+                  className="px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-white dark:bg-slate-900 border border-blue-200 dark:border-blue-900/40 text-blue-700 dark:text-blue-300 hover:bg-blue-50"
+                >
+                  Besok 10.00
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, nextFollowupAt: wibInputFrom(3, 10) })}
+                  className="px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-white dark:bg-slate-900 border border-blue-200 dark:border-blue-900/40 text-blue-700 dark:text-blue-300 hover:bg-blue-50"
+                >
+                  H+3
+                </button>
+              </div>
+              <p className="mt-2 text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                <User size={11} className="inline -mt-0.5" /> Lead baru otomatis dijadwalkan ke antrean Follow-up Center.
+                Standar respons cepat: hubungi di jam pertama setelah lead masuk.
+              </p>
+            </div>
+
             <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block mb-1.5">Catatan</label>
+              <label className={labelClass}>Catatan</label>
               <textarea
                 value={form.catatan}
                 onChange={(e) => setForm({ ...form, catatan: e.target.value })}
