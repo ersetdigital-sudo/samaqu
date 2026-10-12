@@ -25,7 +25,6 @@ export default function SettingsPanel() {
       <SocialMediaSection />
       <MetaPixelSection />
       <FonnteSection />
-      <ChatSection />
       <PaymentMethodsManager />
     </div>
   );
@@ -984,7 +983,10 @@ function FonnteSection() {
   );
 }
 
-function ChatSection() {
+// Kartu Live Chat AI dulu tampil di dalam panel Pengaturan, sekarang pindah ke menu
+// "Live Chat" (tab Pengaturan) supaya panel Pengaturan lebih rapi. Diekspor agar
+// LiveChatView bisa memakainya.
+export function ChatSection() {
   const [enabled, setEnabled] = useState(false);
   const [apiKey, setApiKey] = useState("");
   const [showKey, setShowKey] = useState(false);
