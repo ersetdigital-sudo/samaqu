@@ -398,7 +398,7 @@ function DrawerNavContent({
                   }}
                   onClick={onClose}
                 >
-                  {item.Icon && <item.Icon size={22} weight="light" style={{ color: "var(--gold)" }} />}
+                  {item.Icon && <item.Icon size={22} weight="duotone" style={{ color: "var(--espresso)" }} />}
                   {item.label}
                 </a>
               </li>
@@ -417,13 +417,13 @@ function DrawerNavContent({
                 }}
               >
                 <span className="flex items-center gap-4">
-                  {item.Icon && <item.Icon size={22} weight="light" style={{ color: "var(--gold)" }} />}
+                  {item.Icon && <item.Icon size={22} weight="duotone" style={{ color: "var(--espresso)" }} />}
                   {item.label}
                 </span>
                 <ChevronDown
                   size={16}
                   className={`transition-transform duration-300 ${bantuanOpen ? "rotate-180" : ""}`}
-                  style={{ color: "var(--gold)" }}
+                  style={{ color: "var(--espresso)" }}
                 />
               </button>
 
@@ -448,7 +448,7 @@ function DrawerNavContent({
                         }}
                         onClick={onClose}
                       >
-                        {link.Icon && <link.Icon size={18} weight="light" style={{ color: "var(--gold)" }} />}
+                        {link.Icon && <link.Icon size={18} weight="duotone" style={{ color: "var(--espresso)" }} />}
                         {link.label}
                       </a>
                     ))}
@@ -471,7 +471,7 @@ function DrawerNavContent({
               }}
               onClick={onClose}
             >
-              {item.Icon && <item.Icon size={22} weight="light" style={{ color: "var(--gold)" }} />}
+              {item.Icon && <item.Icon size={22} weight="duotone" style={{ color: "var(--espresso)" }} />}
               {item.label}
             </a>
           </li>
@@ -516,7 +516,7 @@ function DrawerNavContent({
           }}
           onClick={onClose}
         >
-          <User size={22} strokeWidth={1.5} style={{ color: "var(--gold)" }} />
+          <User size={22} strokeWidth={1.6} style={{ color: "var(--espresso)" }} />
           {t("nav.account")}
         </a>
       </div>
