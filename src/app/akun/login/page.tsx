@@ -41,7 +41,7 @@ export default function LoginPage() {
           </div>
           <div className="max-w-md">
             <h1 className="text-4xl lg:text-5xl font-medium leading-tight mb-4" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--cream)" }}>
-              Selamat Datang<br />Kembali, <em style={{ color: "#d4a86a" }}>Sahabat</em>
+              Selamat Datang<br />Kembali, <em style={{ color: "#ADADAD" }}>Sahabat</em>
             </h1>
             <p className="text-sm leading-relaxed" style={{ color: "rgba(255,255,255,.7)" }}>
               Masuk untuk melacak pesanan, menyimpan ukuran, dan menjelajahi koleksi SAMAQU pilihan Anda.

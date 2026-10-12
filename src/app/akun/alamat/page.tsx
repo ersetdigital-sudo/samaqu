@@ -157,7 +157,7 @@ export default function AlamatPage() {
       {/* SIDEBAR (desktop) */}
       <aside className="hidden lg:flex lg:flex-col lg:w-64 xl:w-72 shrink-0 px-6 py-8 sticky top-0 h-screen" style={{ borderRight: "1px solid rgba(0,0,0,.09)", background: "var(--bg-secondary, #f0ebe5)" }}>
         <div className="flex items-center gap-3 mb-8 px-3 py-3 rounded-xl" style={{ background: "rgba(255,255,255,.5)", border: "1px solid rgba(0,0,0,.06)" }}>
-          <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold text-white shrink-0" style={{ background: "linear-gradient(135deg, var(--gold), #96742f)" }}>
+          <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold text-white shrink-0" style={{ background: "linear-gradient(135deg, var(--gold), #767676)" }}>
             {customer?.name?.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) || "U"}
           </div>
           <div className="min-w-0">
@@ -174,10 +174,10 @@ export default function AlamatPage() {
           ))}
         </nav>
 
-        <div className="mt-auto rounded-2xl p-5 text-white" style={{ background: "linear-gradient(135deg, #403225, #2d211b, #1c1511)" }}>
+        <div className="mt-auto rounded-2xl p-5 text-white" style={{ background: "linear-gradient(135deg, #000000, #000000, #1c1511)" }}>
           <p className="italic text-lg mb-1" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Konsultasi Ukuran</p>
           <p className="text-xs mb-4" style={{ color: "rgba(248,245,241,.7)" }}>Bingung pilih ukuran? Tim kami siap membantu Anda.</p>
-          <a href={getWhatsAppLink("Halo, saya butuh bantuan konsultasi ukuran.")} target="_blank" rel="noopener noreferrer" className="block text-center rounded-full text-xs font-medium py-2.5 transition-colors" style={{ background: "#b58c4a", color: "white" }}>Hubungi Kami</a>
+          <a href={getWhatsAppLink("Halo, saya butuh bantuan konsultasi ukuran.")} target="_blank" rel="noopener noreferrer" className="block text-center rounded-full text-xs font-medium py-2.5 transition-colors" style={{ background: "#909090", color: "white" }}>Hubungi Kami</a>
         </div>
       </aside>
 
@@ -196,7 +196,7 @@ export default function AlamatPage() {
             <div className="flex items-center gap-3 ml-auto">
               <button className="h-10 w-10 rounded-full relative flex items-center justify-center" style={{ background: "var(--bg-secondary, #f0ebe5)", border: "1px solid rgba(0,0,0,.09)" }}>
                 <Bell size={18} style={{ color: "var(--espresso)" }} />
-                <span className="absolute top-2 right-2 h-2 w-2 rounded-full" style={{ background: "#b58c4a" }} />
+                <span className="absolute top-2 right-2 h-2 w-2 rounded-full" style={{ background: "#909090" }} />
               </button>
               <ProfileDropdown />
             </div>
@@ -257,7 +257,7 @@ export default function AlamatPage() {
       <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40" style={{ background: "rgba(248,245,241,.95)", backdropFilter: "blur(12px)", borderTop: "1px solid rgba(0,0,0,.09)" }}>
         <div className="px-6 py-2.5 flex items-center justify-between">
           {navItems.map((item) => (
-            <Link key={item.label} href={item.href} className="flex flex-col items-center gap-1 text-[10px]" style={{ color: isActive(item) ? "#8b6f42" : "var(--text-muted)" }}>
+            <Link key={item.label} href={item.href} className="flex flex-col items-center gap-1 text-[10px]" style={{ color: isActive(item) ? "#727272" : "var(--text-muted)" }}>
               <span className="text-lg">{item.icon}</span>
               {item.label.split(" ")[0]}
             </Link>
