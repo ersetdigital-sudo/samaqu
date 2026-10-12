@@ -2,27 +2,27 @@
 
 /* ── Brand color tokens ── */
 :root {
-  --sand: #d8c4a8;
-  --warm-sand: #d8c4a8;
-  --sand-2: #f1e9dd;
-  --cream: #f8f5f1;
-  --cream-bright: #f8f6f2;
-  --ivory: #f8f6f2;
-  --bg-primary: #f8f5f1;
-  --bg-secondary: #efe8e0;
-  --beige: #efe8de;
-  --clay: #c9b79c;
-  --espresso: #2d211b;
-  --espresso-deep: #2a211b;
-  --coffee: #4a4136;
-  --stone: #8a7f6d;
-  --gold: #b58c4a;
-  --gold-bright: #b89146;
-  --gold-light: #d4a574;
-  --gold-deep: #96742f;
-  --gold-dark: #96712f;
-  --text-secondary: #6b5d52;
-  --text-muted: #9d8f86;
+  --sand: #d9d9d9;
+  --warm-sand: #d9d9d9;
+  --sand-2: #f1f1f1;
+  --cream: #ffffff;
+  --cream-bright: #ffffff;
+  --ivory: #ffffff;
+  --bg-primary: #f8f8f8;
+  --bg-secondary: #f0f0f0;
+  --beige: #f0f0f0;
+  --clay: #cfcfcf;
+  --espresso: #000000;
+  --espresso-deep: #000000;
+  --coffee: #333333;
+  --stone: #6b6b6b;
+  --gold: #000000;
+  --gold-bright: #000000;
+  --gold-light: #000000;
+  --gold-deep: #000000;
+  --gold-dark: #000000;
+  --text-secondary: #5a5a5a;
+  --text-muted: #8a8a8a;
   --wa: #25D366;
 }
 
@@ -308,7 +308,7 @@ details[open] .faq-plus {
 
 /* ── Garansi section ── */
 .dot-grid {
-  background-image: radial-gradient(rgba(42,33,27,0.13) 1.3px, transparent 1.3px);
+  background-image: radial-gradient(rgba(0,0,0,0.13) 1.3px, transparent 1.3px);
   background-size: 14px 14px;
 }
 .float-anim {
@@ -335,7 +335,7 @@ details[open] .faq-plus {
 }
 .g-card:hover {
   transform: translateY(-8px);
-  box-shadow: 0 26px 55px -26px rgba(42,33,27,0.32);
+  box-shadow: 0 26px 55px -26px rgba(0,0,0,0.32);
 }
 .g-card:hover::after {
   transform: scaleX(1);

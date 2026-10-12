@@ -65,7 +65,7 @@ function FaqItem({
             className="faq-num font-medium tabular-nums text-2xl shrink-0"
             style={{
               fontFamily: "var(--font-cormorant), Georgia, serif",
-              color: isOpen ? "var(--gold)" : "rgba(216,196,168,.9)",
+              color: isOpen ? "#000000" : "rgba(0,0,0,.35)",
             }}
           >
             {num}
@@ -80,7 +80,7 @@ function FaqItem({
           </span>
 
           {/* Chevron */}
-          <span style={{ color: isOpen ? "var(--gold)" : "var(--sand)" }}>
+          <span style={{ color: isOpen ? "#000000" : "rgba(0,0,0,.4)" }}>
             <ChevronDown
               size={24}
               strokeWidth={1.5}
@@ -100,7 +100,7 @@ function FaqItem({
         <div>
           <p
             className="pb-6 sm:pb-8 pl-14 sm:pl-[3.75rem] pr-5 sm:pr-8 text-sm sm:text-base leading-relaxed"
-            style={{ color: "rgba(42,33,27,.8)" }}
+            style={{ color: "rgba(0,0,0,.8)" }}
           >
             {item.a}
           </p>
@@ -145,7 +145,7 @@ export default function Faq() {
                 className="block text-sm font-bold uppercase tracking-[0.35em]"
                 style={{
                   fontFamily: "var(--font-cormorant), Georgia, serif",
-                  color: "var(--gold)",
+                  color: "#000000",
                 }}
               >
                 {t("eyebrow")}
@@ -162,7 +162,7 @@ export default function Faq() {
               </h2>
               <p
                 className="mt-6 max-w-xs text-base leading-relaxed"
-                style={{ color: "rgba(42,33,27,.7)" }}
+                style={{ color: "rgba(0,0,0,.7)" }}
               >
                 {t("subtitle")}
               </p>
@@ -172,7 +172,7 @@ export default function Faq() {
               />
               <p
                 className="mt-6 max-w-xs text-sm leading-relaxed"
-                style={{ color: "rgba(42,33,27,.55)" }}
+                style={{ color: "rgba(0,0,0,.55)" }}
               >
                 {t("helpText")}
               </p>
@@ -183,7 +183,7 @@ export default function Faq() {
           <div className="lg:col-span-8">
             <motion.div
               className="divide-y"
-              style={{ borderColor: "rgba(216,196,168,.5)" }}
+              style={{ borderColor: "rgba(0,0,0,.5)" }}
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true, margin: "-60px" }}

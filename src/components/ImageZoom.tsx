@@ -239,11 +239,11 @@ export default function ImageZoom({ media, initialIndex, alt, isOpen, onClose }:
                   key={i}
                   onClick={() => { setCurrentIndex(i); setScale(1); setPosition({ x: 0, y: 0 }); }}
                   className="relative shrink-0 w-11 h-14 sm:w-13 sm:h-[68px] rounded-lg overflow-hidden transition-all duration-200"
-                  style={{ border: currentIndex === i ? "2px solid var(--gold)" : "1px solid rgba(248,246,242,.15)", opacity: currentIndex === i ? 1 : 0.45 }}
+                  style={{ border: currentIndex === i ? "2px solid #ffffff" : "1px solid rgba(248,246,242,.15)", opacity: currentIndex === i ? 1 : 0.45 }}
                 >
                   {item.type === "video" ? (
                     <div className="w-full h-full flex items-center justify-center" style={{ background: "rgba(248,246,242,.08)" }}>
-                      <span className="text-[9px] font-medium" style={{ color: "var(--gold)" }}>VID</span>
+                      <span className="text-[9px] font-medium" style={{ color: "#ffffff" }}>VID</span>
                     </div>
                   ) : (
                     <img src={cloudinaryUrl(item.src, { width: 160 })} alt="" className="w-full h-full object-cover" loading="lazy" />

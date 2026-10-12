@@ -116,7 +116,7 @@ function TestimonialCard({ t, onImageClick }: { t: Testimoni; onImageClick: (url
             <button
               onClick={() => onImageClick(t.video_url!)}
               className="relative w-full aspect-video rounded-xl overflow-hidden group cursor-pointer"
-              style={{ background: "#e8dfd1" }}
+              style={{ background: "#e5e5e5" }}
             >
               <img src={cloudinaryUrl(t.img || t.video_url, { width: 600 })} alt="" className="w-full h-full object-cover" />
               <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(0,0,0,.2)" }}>
@@ -240,10 +240,10 @@ export default function TestimoniPage() {
                   <motion.h1 variants={headerVariants} className="text-[2rem] sm:text-5xl lg:text-[3.7rem] font-semibold leading-[1.05] tracking-tight mb-3" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "#ffffff" }}>
                     {t("title")}
                   </motion.h1>
-                  <motion.p variants={headerVariants} className="text-[11px] sm:text-xs font-bold uppercase tracking-[0.08em] mb-4" style={{ color: "rgba(212,197,181,.5)" }}>
+                  <motion.p variants={headerVariants} className="text-[11px] sm:text-xs font-bold uppercase tracking-[0.08em] mb-4" style={{ color: "rgba(255,255,255,.5)" }}>
                     {t("tagline")}
                   </motion.p>
-                  <motion.p variants={headerVariants} className="text-sm sm:text-base leading-relaxed max-w-lg font-ui" style={{ color: "rgba(212,197,181,.7)" }}>
+                  <motion.p variants={headerVariants} className="text-sm sm:text-base leading-relaxed max-w-lg font-ui" style={{ color: "rgba(255,255,255,.7)" }}>
                     {t("desc")}
                   </motion.p>
                 </motion.div>

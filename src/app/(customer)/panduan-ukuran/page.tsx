@@ -86,8 +86,8 @@ export default function PanduanUkuranPage() {
       {/* ═══ HERO ═══ */}
       <div className="relative overflow-hidden" style={{ background: "var(--espresso)", color: "var(--cream)" }}>
         <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "url(/hero-size.jpg)", backgroundSize: "cover", backgroundPosition: "center" }} />
-        <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(23,20,15,.85), rgba(23,20,15,.95))" }} />
-        <div className="pointer-events-none absolute -right-20 -top-24 h-72 w-72 rounded-full blur-3xl" style={{ background: "rgba(190,139,60,.12)" }} />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,.85), rgba(0,0,0,.95))" }} />
+        <div className="pointer-events-none absolute -right-20 -top-24 h-72 w-72 rounded-full blur-3xl" style={{ background: "rgba(0,0,0,.12)" }} />
 
         <div className="relative pt-28 sm:pt-32 lg:pt-36 pb-10 sm:pb-14">
           <div className="max-w-[1200px] mx-auto px-5 sm:px-8 lg:px-14">
@@ -98,16 +98,16 @@ export default function PanduanUkuranPage() {
               <motion.h1 variants={headerVariants} className="text-[2rem] sm:text-5xl lg:text-[3.7rem] font-semibold leading-[1.05] tracking-tight mb-3" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--cream)" }}>
                 {t("title")}
               </motion.h1>
-              <motion.p variants={headerVariants} className="text-sm sm:text-base leading-relaxed max-w-lg font-ui" style={{ color: "rgba(212,197,181,.7)" }}>
+              <motion.p variants={headerVariants} className="text-sm sm:text-base leading-relaxed max-w-lg font-ui" style={{ color: "rgba(255,255,255,.7)" }}>
                 {t("pageDesc")}
               </motion.p>
             </motion.div>
 
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="mt-7 flex flex-wrap gap-3">
-              <a href={getWhatsAppLink("Halo SAMAQU, saya ingin konsultasi ukuran")} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full px-6 py-3 text-[12px] tracking-[0.06em] uppercase font-ui font-semibold transition-all duration-200" style={{ background: "var(--gold)", color: "white", boxShadow: "0 10px 24px -14px rgba(190,139,60,.9)" }}>
+              <a href={getWhatsAppLink("Halo SAMAQU, saya ingin konsultasi ukuran")} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full px-6 py-3 text-[12px] tracking-[0.06em] uppercase font-ui font-semibold transition-all duration-200" style={{ background: "var(--gold)", color: "white", boxShadow: "0 10px 24px -14px rgba(0,0,0,.9)" }}>
                 <MessageCircle size={16} strokeWidth={1.5} /> {t("consultWA")}
               </a>
-              <a href="/" className="inline-flex items-center gap-2 rounded-full px-6 py-3 text-[12px] tracking-[0.06em] uppercase font-ui font-semibold transition-all duration-200" style={{ border: "1px solid rgba(244,240,233,.14)", color: "var(--cream)" }}>
+              <a href="/" className="inline-flex items-center gap-2 rounded-full px-6 py-3 text-[12px] tracking-[0.06em] uppercase font-ui font-semibold transition-all duration-200" style={{ border: "1px solid rgba(255,255,255,.14)", color: "var(--cream)" }}>
                 <ArrowLeft size={16} strokeWidth={1.5} /> {t("backToHome")}
               </a>
             </motion.div>
@@ -137,7 +137,7 @@ export default function PanduanUkuranPage() {
                 style={{
                   background: activeTab === tab.value ? "var(--espresso)" : "transparent",
                   color: activeTab === tab.value ? "var(--cream)" : "var(--coffee)",
-                  border: `1px solid ${activeTab === tab.value ? "var(--espresso)" : "rgba(201,183,156,.3)"}`,
+                  border: `1px solid ${activeTab === tab.value ? "var(--espresso)" : "rgba(0,0,0,.3)"}`,
                   opacity: !hasTabImage && !isSemua ? 0.5 : 1,
                 }}
               >
@@ -155,7 +155,7 @@ export default function PanduanUkuranPage() {
               <p className="text-sm font-ui" style={{ color: "var(--stone)" }}>{t("loading")}</p>
             </motion.div>
           ) : filteredGuides.length === 0 ? (
-            <motion.div key="empty" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="text-center py-20 rounded-2xl" style={{ background: "white", border: "1px solid rgba(201,183,156,.2)" }}>
+            <motion.div key="empty" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="text-center py-20 rounded-2xl" style={{ background: "white", border: "1px solid rgba(0,0,0,.2)" }}>
               <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: "var(--sand-2)" }}>
                 <Ruler size={28} strokeWidth={1.4} style={{ color: "var(--gold)" }} />
               </div>
@@ -170,7 +170,7 @@ export default function PanduanUkuranPage() {
                   variants={cardVariants}
                   whileHover={{ y: -4, transition: { duration: 0.2 } }}
                   className="group rounded-2xl overflow-hidden bg-white flex flex-col"
-                  style={{ boxShadow: "0 2px 12px rgba(43,38,32,.06)", border: "1px solid rgba(201,183,156,.15)" }}
+                  style={{ boxShadow: "0 2px 12px rgba(43,38,32,.06)", border: "1px solid rgba(0,0,0,.15)" }}
                 >
                   {/* Thumbnail */}
                   <div className="relative aspect-[4/3] overflow-hidden" style={{ background: "var(--sand-2)" }}>
@@ -180,8 +180,8 @@ export default function PanduanUkuranPage() {
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                       loading="lazy"
                     />
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ background: "rgba(23,20,15,.35)" }}>
-                      <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "var(--gold)", boxShadow: "0 4px 16px rgba(190,139,60,.5)" }}>
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ background: "rgba(0,0,0,.35)" }}>
+                      <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "var(--gold)", boxShadow: "0 4px 16px rgba(0,0,0,.5)" }}>
                         <Eye size={20} color="white" strokeWidth={1.8} />
                       </div>
                     </div>

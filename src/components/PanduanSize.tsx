@@ -57,7 +57,7 @@ export default function PanduanSize() {
                     key={s.size}
                     className="border-b"
                     style={{
-                      borderColor: "rgba(201,183,156,.3)",
+                      borderColor: "rgba(0,0,0,.3)",
                       background: i % 2 === 1 ? "var(--sand-2)" : undefined,
                     }}
                   >

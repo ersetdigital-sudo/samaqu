@@ -146,9 +146,9 @@ export default function DashboardPage() {
       {/* ═══════════════════════════════════
           SIDEBAR (desktop)
       ═══════════════════════════════════ */}
-      <aside className="hidden lg:flex lg:flex-col lg:w-64 xl:w-72 shrink-0 px-6 py-8 sticky top-0 h-screen" style={{ borderRight: "1px solid rgba(64,50,37,.09)", background: "var(--bg-secondary, #f0ebe5)" }}>
+      <aside className="hidden lg:flex lg:flex-col lg:w-64 xl:w-72 shrink-0 px-6 py-8 sticky top-0 h-screen" style={{ borderRight: "1px solid rgba(0,0,0,.09)", background: "var(--bg-secondary, #f0ebe5)" }}>
         {/* Profile card */}
-        <div className="flex items-center gap-3 mb-8 px-3 py-3 rounded-xl" style={{ background: "rgba(255,255,255,.5)", border: "1px solid rgba(64,50,37,.06)" }}>
+        <div className="flex items-center gap-3 mb-8 px-3 py-3 rounded-xl" style={{ background: "rgba(255,255,255,.5)", border: "1px solid rgba(0,0,0,.06)" }}>
           <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold text-white shrink-0" style={{ background: "linear-gradient(135deg, var(--gold), #96742f)" }}>
             {customer?.name?.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) || "U"}
           </div>
@@ -183,19 +183,19 @@ export default function DashboardPage() {
       ═══════════════════════════════════ */}
       <div className="flex-1 min-w-0 flex flex-col">
         {/* Topbar */}
-        <header className="sticky top-0 z-30" style={{ backdropFilter: "blur(12px)", background: "rgba(248,245,241,.85)", borderBottom: "1px solid rgba(64,50,37,.09)" }}>
+        <header className="sticky top-0 z-30" style={{ backdropFilter: "blur(12px)", background: "rgba(248,245,241,.85)", borderBottom: "1px solid rgba(0,0,0,.09)" }}>
           <div className="flex items-center gap-4 px-5 sm:px-8 py-4">
             {/* Mobile logo */}
             <div className="flex items-center gap-2 lg:hidden">
               <img src="/logo.svg" alt="SAMAQU" className="h-8 w-auto" />
             </div>
             {/* Search */}
-            <div className="hidden sm:flex flex-1 max-w-md items-center gap-2 rounded-full px-4 py-2.5" style={{ background: "var(--bg-secondary, #f0ebe5)", border: "1px solid rgba(64,50,37,.09)" }}>
+            <div className="hidden sm:flex flex-1 max-w-md items-center gap-2 rounded-full px-4 py-2.5" style={{ background: "var(--bg-secondary, #f0ebe5)", border: "1px solid rgba(0,0,0,.09)" }}>
               <Search size={16} style={{ color: "var(--text-muted)" }} />
               <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Cari thobe, koko, vest…" className="bg-transparent outline-none text-sm w-full" style={{ color: "var(--espresso)" }} />
             </div>
             <div className="flex items-center gap-3 ml-auto">
-              <button className="h-10 w-10 rounded-full relative flex items-center justify-center" style={{ background: "var(--bg-secondary, #f0ebe5)", border: "1px solid rgba(64,50,37,.09)" }}>
+              <button className="h-10 w-10 rounded-full relative flex items-center justify-center" style={{ background: "var(--bg-secondary, #f0ebe5)", border: "1px solid rgba(0,0,0,.09)" }}>
                 <Bell size={18} style={{ color: "var(--espresso)" }} />
                 <span className="absolute top-2 right-2 h-2 w-2 rounded-full" style={{ background: "#b58c4a" }} />
               </button>
@@ -217,22 +217,22 @@ export default function DashboardPage() {
                 <button onClick={() => setActiveNav("pesanan")} className="rounded-full px-6 py-3 text-sm font-medium transition-colors" style={{ border: "1px solid rgba(248,245,241,.3)" }}>Lacak Pesanan</button>
               </div>
             </div>
-            <div className="absolute -right-16 -bottom-16 h-64 w-64 rounded-full" style={{ background: "radial-gradient(circle, rgba(181,140,74,.33), transparent 70%)" }} />
+            <div className="absolute -right-16 -bottom-16 h-64 w-64 rounded-full" style={{ background: "radial-gradient(circle, rgba(0,0,0,.33), transparent 70%)" }} />
           </motion.section>
 
           {/* ── Stats ── */}
           <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="rounded-2xl p-5 transition-transform duration-300 hover:-translate-y-1" style={{ background: "var(--bg-secondary, #f0ebe5)", border: "1px solid rgba(64,50,37,.09)" }}>
+            <div className="rounded-2xl p-5 transition-transform duration-300 hover:-translate-y-1" style={{ background: "var(--bg-secondary, #f0ebe5)", border: "1px solid rgba(0,0,0,.09)" }}>
               <p className="text-xs mb-2" style={{ color: "var(--text-muted)" }}>Total Pesanan</p>
               <p className="text-3xl sm:text-4xl" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>{totalOrders}</p>
               <p className="text-xs mt-2" style={{ color: "#8b6f42" }}>+{orders.filter((o) => { const d = new Date(o.created_at); const now = new Date(); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); }).length} bulan ini</p>
             </div>
-            <div className="rounded-2xl p-5 transition-transform duration-300 hover:-translate-y-1" style={{ background: "var(--bg-secondary, #f0ebe5)", border: "1px solid rgba(64,50,37,.09)" }}>
+            <div className="rounded-2xl p-5 transition-transform duration-300 hover:-translate-y-1" style={{ background: "var(--bg-secondary, #f0ebe5)", border: "1px solid rgba(0,0,0,.09)" }}>
               <p className="text-xs mb-2" style={{ color: "var(--text-muted)" }}>Sedang Diproses</p>
               <p className="text-3xl sm:text-4xl" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>{processingOrders}</p>
               <p className="text-xs mt-2" style={{ color: "var(--text-muted)" }}>Dijahit & QC</p>
             </div>
-            <div className="rounded-2xl p-5 transition-transform duration-300 hover:-translate-y-1" style={{ background: "var(--bg-secondary, #f0ebe5)", border: "1px solid rgba(64,50,37,.09)" }}>
+            <div className="rounded-2xl p-5 transition-transform duration-300 hover:-translate-y-1" style={{ background: "var(--bg-secondary, #f0ebe5)", border: "1px solid rgba(0,0,0,.09)" }}>
               <p className="text-xs mb-2" style={{ color: "var(--text-muted)" }}>Pesanan Selesai</p>
               <p className="text-3xl sm:text-4xl" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>{orders.filter((o) => o.status === "selesai").length}</p>
               <p className="text-xs mt-2" style={{ color: "var(--text-muted)" }}>Total transaksi</p>
@@ -254,12 +254,12 @@ export default function DashboardPage() {
                 </div>
               </div>
               {orders.length > 0 ? (
-                <div className="rounded-2xl overflow-hidden" style={{ background: "var(--bg-secondary, #f0ebe5)", border: "1px solid rgba(64,50,37,.09)" }}>
+                <div className="rounded-2xl overflow-hidden" style={{ background: "var(--bg-secondary, #f0ebe5)", border: "1px solid rgba(0,0,0,.09)" }}>
                   {orders.slice(0, 5).map((order, i) => {
                     const item = order.order_items?.[0];
                     const sc = statusColors[order.status] || statusColors.pending;
                     return (
-                      <div key={order.id} className="flex items-center gap-4 p-4 sm:p-5" style={{ borderBottom: i < Math.min(orders.length, 5) - 1 ? "1px solid rgba(64,50,37,.09)" : undefined }}>
+                      <div key={order.id} className="flex items-center gap-4 p-4 sm:p-5" style={{ borderBottom: i < Math.min(orders.length, 5) - 1 ? "1px solid rgba(0,0,0,.09)" : undefined }}>
                         <div className="h-14 w-14 rounded-xl overflow-hidden shrink-0" style={{ background: "var(--bg-tertiary, #e8e1d9)" }}>
                           {item?.product_image ? (
                             <img src={item.product_image} alt={item.product_name} className="h-full w-full object-cover" />
@@ -281,7 +281,7 @@ export default function DashboardPage() {
                   })}
                 </div>
               ) : (
-                <div className="rounded-2xl p-10 text-center" style={{ background: "var(--bg-secondary, #f0ebe5)", border: "1px solid rgba(64,50,37,.09)" }}>
+                <div className="rounded-2xl p-10 text-center" style={{ background: "var(--bg-secondary, #f0ebe5)", border: "1px solid rgba(0,0,0,.09)" }}>
                   <Package size={32} className="mx-auto mb-3" style={{ color: "var(--text-muted)" }} />
                   <p className="text-sm mb-1" style={{ color: "var(--text-secondary)" }}>Belum ada pesanan</p>
                   <p className="text-xs" style={{ color: "var(--text-muted)" }}>Mulai jelajahi koleksi kami dan buat pesanan pertama Anda</p>
@@ -303,7 +303,7 @@ export default function DashboardPage() {
               {featuredProducts.length > 0 ? (
                 <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                   {featuredProducts.map((p) => (
-                    <Link key={p.id} href={`/katalog/${p.id}`} className="group rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg" style={{ background: "var(--bg-secondary, #f0ebe5)", border: "1px solid rgba(64,50,37,.09)" }}>
+                    <Link key={p.id} href={`/katalog/${p.id}`} className="group rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg" style={{ background: "var(--bg-secondary, #f0ebe5)", border: "1px solid rgba(0,0,0,.09)" }}>
                       <div className="aspect-square overflow-hidden" style={{ background: "var(--bg-tertiary, #e8e1d9)" }}>
                         <img src={productThumbnails[p.id] || p.image || ""} alt={p.name} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
                       </div>
@@ -320,7 +320,7 @@ export default function DashboardPage() {
                   ))}
                 </div>
               ) : (
-                <div className="rounded-2xl p-10 text-center" style={{ background: "var(--bg-secondary, #f0ebe5)", border: "1px solid rgba(64,50,37,.09)" }}>
+                <div className="rounded-2xl p-10 text-center" style={{ background: "var(--bg-secondary, #f0ebe5)", border: "1px solid rgba(0,0,0,.09)" }}>
                   <p className="text-sm mb-1" style={{ color: "var(--text-secondary)" }}>Belum ada produk pilihan</p>
                   <p className="text-xs" style={{ color: "var(--text-muted)" }}>Admin dapat mengatur produk pilihan di Pengaturan</p>
                 </div>
@@ -331,7 +331,7 @@ export default function DashboardPage() {
           {/* ── Size & Consult ── */}
           {activeNav === "beranda" || activeNav === "ukuran" ? (
             <section className="grid gap-4 lg:grid-cols-3">
-              <div className="lg:col-span-3 rounded-2xl p-6" style={{ background: "var(--bg-secondary, #f0ebe5)", border: "1px solid rgba(64,50,37,.09)" }}>
+              <div className="lg:col-span-3 rounded-2xl p-6" style={{ background: "var(--bg-secondary, #f0ebe5)", border: "1px solid rgba(0,0,0,.09)" }}>
                 <h3 className="text-2xl italic mb-1" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>Ukuran Saya</h3>
                 <p className="text-sm mb-5" style={{ color: "var(--text-muted)" }}>Tersimpan untuk pemesanan lebih cepat</p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -341,7 +341,7 @@ export default function DashboardPage() {
                     { label: "Panjang", value: customer?.length_size, key: "length_size" },
                     { label: "Lengan", value: customer?.sleeve_size, key: "sleeve_size" },
                   ].map((s) => (
-                    <div key={s.key} className="rounded-xl p-4 text-center" style={{ background: "var(--bg-primary, #f8f5f1)", border: "1px solid rgba(64,50,37,.09)" }}>
+                    <div key={s.key} className="rounded-xl p-4 text-center" style={{ background: "var(--bg-primary, #f8f5f1)", border: "1px solid rgba(0,0,0,.09)" }}>
                       <p className="text-xs mb-1" style={{ color: "var(--text-muted)" }}>{s.label}</p>
                       <p className="text-2xl" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
                         {s.value || "—"}{s.value ? <span className="text-sm"> cm</span> : null}
@@ -349,7 +349,7 @@ export default function DashboardPage() {
                     </div>
                   ))}
                 </div>
-                <button className="mt-5 rounded-full px-5 py-2.5 text-sm font-medium transition-colors" style={{ border: "1px solid rgba(64,50,37,.25)", color: "var(--espresso)" }}>Perbarui Ukuran</button>
+                <button className="mt-5 rounded-full px-5 py-2.5 text-sm font-medium transition-colors" style={{ border: "1px solid rgba(0,0,0,.25)", color: "var(--espresso)" }}>Perbarui Ukuran</button>
               </div>
             </section>
           ) : null}
@@ -369,7 +369,7 @@ export default function DashboardPage() {
               {wishlistProducts.length > 0 ? (
                 <div className="flex gap-4 overflow-x-auto pb-1 lg:grid lg:grid-cols-3 xl:grid-cols-4 lg:overflow-visible" style={{ scrollbarWidth: "none" }}>
                   {wishlistProducts.map((p) => (
-                    <div key={p.id} className="shrink-0 w-56 sm:w-auto rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg group" style={{ background: "var(--bg-secondary, #f0ebe5)", border: "1px solid rgba(64,50,37,.09)" }}>
+                    <div key={p.id} className="shrink-0 w-56 sm:w-auto rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg group" style={{ background: "var(--bg-secondary, #f0ebe5)", border: "1px solid rgba(0,0,0,.09)" }}>
                       <Link href={`/katalog/${p.id}`} className="block">
                         <div className="aspect-square overflow-hidden relative" style={{ background: "var(--bg-tertiary, #e8e1d9)" }}>
                           <img src={productThumbnails[p.id] || p.image || ""} alt={p.name} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
@@ -392,7 +392,7 @@ export default function DashboardPage() {
                   ))}
                 </div>
               ) : (
-                <div className="rounded-2xl p-10 text-center" style={{ background: "var(--bg-secondary, #f0ebe5)", border: "1px solid rgba(64,50,37,.09)" }}>
+                <div className="rounded-2xl p-10 text-center" style={{ background: "var(--bg-secondary, #f0ebe5)", border: "1px solid rgba(0,0,0,.09)" }}>
                   <p className="text-4xl mb-3">♡</p>
                   <p className="text-sm mb-1" style={{ color: "var(--text-secondary)" }}>Belum ada wishlist</p>
                   <p className="text-xs mb-4" style={{ color: "var(--text-muted)" }}>Klik ikon hati pada produk favorit Anda</p>
@@ -408,7 +408,7 @@ export default function DashboardPage() {
       {/* ═══════════════════════════════════
           MOBILE BOTTOM NAV
       ═══════════════════════════════════ */}
-      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40" style={{ background: "rgba(248,245,241,.95)", backdropFilter: "blur(12px)", borderTop: "1px solid rgba(64,50,37,.09)" }}>
+      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40" style={{ background: "rgba(248,245,241,.95)", backdropFilter: "blur(12px)", borderTop: "1px solid rgba(0,0,0,.09)" }}>
         <div className="px-6 py-2.5 flex items-center justify-between">
           {navItems.slice(0, 4).map((item) => (
             <button key={item.id} onClick={() => setActiveNav(item.id)} className="flex flex-col items-center gap-1 text-[10px]" style={{ color: activeNav === item.id ? "#8b6f42" : "var(--text-muted)" }}>

@@ -155,8 +155,8 @@ export default function AlamatPage() {
   return (
     <div className="flex min-h-screen" style={{ background: "var(--bg-primary, #f8f5f1)" }}>
       {/* SIDEBAR (desktop) */}
-      <aside className="hidden lg:flex lg:flex-col lg:w-64 xl:w-72 shrink-0 px-6 py-8 sticky top-0 h-screen" style={{ borderRight: "1px solid rgba(64,50,37,.09)", background: "var(--bg-secondary, #f0ebe5)" }}>
-        <div className="flex items-center gap-3 mb-8 px-3 py-3 rounded-xl" style={{ background: "rgba(255,255,255,.5)", border: "1px solid rgba(64,50,37,.06)" }}>
+      <aside className="hidden lg:flex lg:flex-col lg:w-64 xl:w-72 shrink-0 px-6 py-8 sticky top-0 h-screen" style={{ borderRight: "1px solid rgba(0,0,0,.09)", background: "var(--bg-secondary, #f0ebe5)" }}>
+        <div className="flex items-center gap-3 mb-8 px-3 py-3 rounded-xl" style={{ background: "rgba(255,255,255,.5)", border: "1px solid rgba(0,0,0,.06)" }}>
           <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold text-white shrink-0" style={{ background: "linear-gradient(135deg, var(--gold), #96742f)" }}>
             {customer?.name?.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) || "U"}
           </div>
@@ -184,17 +184,17 @@ export default function AlamatPage() {
       {/* MAIN */}
       <div className="flex-1 min-w-0 flex flex-col">
         {/* Topbar */}
-        <header className="sticky top-0 z-30" style={{ backdropFilter: "blur(12px)", background: "rgba(248,245,241,.85)", borderBottom: "1px solid rgba(64,50,37,.09)" }}>
+        <header className="sticky top-0 z-30" style={{ backdropFilter: "blur(12px)", background: "rgba(248,245,241,.85)", borderBottom: "1px solid rgba(0,0,0,.09)" }}>
           <div className="flex items-center gap-4 px-5 sm:px-8 py-4">
             <div className="flex items-center gap-2 lg:hidden">
               <img src="/logo.svg" alt="SAMAQU" className="h-8 w-auto" />
             </div>
-            <div className="hidden sm:flex flex-1 max-w-md items-center gap-2 rounded-full px-4 py-2.5" style={{ background: "var(--bg-secondary, #f0ebe5)", border: "1px solid rgba(64,50,37,.09)" }}>
+            <div className="hidden sm:flex flex-1 max-w-md items-center gap-2 rounded-full px-4 py-2.5" style={{ background: "var(--bg-secondary, #f0ebe5)", border: "1px solid rgba(0,0,0,.09)" }}>
               <Search size={16} style={{ color: "var(--text-muted)" }} />
               <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Cari thobe, koko, vest…" className="bg-transparent outline-none text-sm w-full" style={{ color: "var(--espresso)" }} />
             </div>
             <div className="flex items-center gap-3 ml-auto">
-              <button className="h-10 w-10 rounded-full relative flex items-center justify-center" style={{ background: "var(--bg-secondary, #f0ebe5)", border: "1px solid rgba(64,50,37,.09)" }}>
+              <button className="h-10 w-10 rounded-full relative flex items-center justify-center" style={{ background: "var(--bg-secondary, #f0ebe5)", border: "1px solid rgba(0,0,0,.09)" }}>
                 <Bell size={18} style={{ color: "var(--espresso)" }} />
                 <span className="absolute top-2 right-2 h-2 w-2 rounded-full" style={{ background: "#b58c4a" }} />
               </button>
@@ -215,17 +215,17 @@ export default function AlamatPage() {
             {/* Address cards */}
             <div className="space-y-4 mb-6">
               {addresses.map((addr) => (
-                <div key={addr.id} className="rounded-2xl p-5" style={{ background: "var(--bg-secondary, #f0ebe5)", border: addr.is_default ? "2px solid var(--gold)" : "1px solid rgba(64,50,37,.09)" }}>
+                <div key={addr.id} className="rounded-2xl p-5" style={{ background: "var(--bg-secondary, #f0ebe5)", border: addr.is_default ? "2px solid var(--gold)" : "1px solid rgba(0,0,0,.09)" }}>
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-semibold" style={{ color: "var(--espresso)" }}>{addr.label}</span>
-                      {addr.is_default && <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ background: "rgba(181,140,74,.15)", color: "var(--gold)" }}>Alamat Utama</span>}
+                      {addr.is_default && <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ background: "rgba(0,0,0,.15)", color: "var(--gold)" }}>Alamat Utama</span>}
                     </div>
                     <div className="flex items-center gap-2">
                       {!addr.is_default && (
-                        <button onClick={() => handleSetDefault(addr)} className="text-[11px] px-3 py-1 rounded-lg font-medium transition-colors" style={{ border: "1px solid rgba(64,50,37,.15)", color: "var(--gold)" }}>Jadikan Utama</button>
+                        <button onClick={() => handleSetDefault(addr)} className="text-[11px] px-3 py-1 rounded-lg font-medium transition-colors" style={{ border: "1px solid rgba(0,0,0,.15)", color: "var(--gold)" }}>Jadikan Utama</button>
                       )}
-                      <button onClick={() => openEdit(addr)} className="p-1.5 rounded-lg transition-colors hover:bg-[rgba(64,50,37,.05)]" style={{ color: "var(--text-muted)" }}><Pencil size={14} /></button>
+                      <button onClick={() => openEdit(addr)} className="p-1.5 rounded-lg transition-colors hover:bg-[rgba(0,0,0,.05)]" style={{ color: "var(--text-muted)" }}><Pencil size={14} /></button>
                       <button onClick={() => setDeleteConfirm(addr)} className="p-1.5 rounded-lg transition-colors hover:bg-red-50" style={{ color: "#e74c3c" }}><Trash2 size={14} /></button>
                     </div>
                   </div>
@@ -238,7 +238,7 @@ export default function AlamatPage() {
               ))}
 
               {addresses.length === 0 && (
-                <div className="rounded-2xl p-10 text-center" style={{ background: "var(--bg-secondary, #f0ebe5)", border: "1px solid rgba(64,50,37,.09)" }}>
+                <div className="rounded-2xl p-10 text-center" style={{ background: "var(--bg-secondary, #f0ebe5)", border: "1px solid rgba(0,0,0,.09)" }}>
                   <MapPin size={32} className="mx-auto mb-3" style={{ color: "var(--text-muted)" }} />
                   <p className="text-sm mb-1" style={{ color: "var(--text-secondary)" }}>Belum ada alamat tersimpan</p>
                   <p className="text-xs mb-4" style={{ color: "var(--text-muted)" }}>Tambah alamat untuk mempercepat proses checkout</p>
@@ -254,7 +254,7 @@ export default function AlamatPage() {
       </div>
 
       {/* MOBILE BOTTOM NAV */}
-      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40" style={{ background: "rgba(248,245,241,.95)", backdropFilter: "blur(12px)", borderTop: "1px solid rgba(64,50,37,.09)" }}>
+      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40" style={{ background: "rgba(248,245,241,.95)", backdropFilter: "blur(12px)", borderTop: "1px solid rgba(0,0,0,.09)" }}>
         <div className="px-6 py-2.5 flex items-center justify-between">
           {navItems.map((item) => (
             <Link key={item.label} href={item.href} className="flex flex-col items-center gap-1 text-[10px]" style={{ color: isActive(item) ? "#8b6f42" : "var(--text-muted)" }}>
@@ -268,27 +268,27 @@ export default function AlamatPage() {
       {/* Add/Edit Modal */}
       <AnimatePresence>
         {modalOpen && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(42,33,27,.4)", backdropFilter: "blur(4px)" }} onClick={() => setModalOpen(false)}>
-            <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }} className="w-full max-w-md rounded-2xl p-6 max-h-[85vh] overflow-y-auto" style={{ background: "var(--cream)", boxShadow: "0 25px 60px -12px rgba(42,33,27,.5)" }} onClick={(e) => e.stopPropagation()}>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.4)", backdropFilter: "blur(4px)" }} onClick={() => setModalOpen(false)}>
+            <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }} className="w-full max-w-md rounded-2xl p-6 max-h-[85vh] overflow-y-auto" style={{ background: "var(--cream)", boxShadow: "0 25px 60px -12px rgba(0,0,0,.5)" }} onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center justify-between mb-5">
                 <h2 className="text-lg font-semibold" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>{editing ? "Edit Alamat" : "Tambah Alamat"}</h2>
                 <button onClick={() => setModalOpen(false)}><X size={20} style={{ color: "var(--text-muted)" }} /></button>
               </div>
               <div className="space-y-4">
-                <div><label className="block text-[11px] font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>Label Alamat</label><input value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value })} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="Rumah / Kantor / dll" /></div>
-                <div><label className="block text-[11px] font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>Nama Penerima *</label><input value={form.recipient_name} onChange={(e) => setForm({ ...form, recipient_name: e.target.value })} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: errors.recipient_name ? "1px solid #e74c3c" : "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />{errors.recipient_name && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.recipient_name}</p>}</div>
-                <div><label className="block text-[11px] font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>No. HP *</label><input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: errors.phone ? "1px solid #e74c3c" : "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="0812xxxx" />{errors.phone && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.phone}</p>}</div>
-                <div><label className="block text-[11px] font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>Alamat Lengkap *</label><textarea value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} rows={3} className="w-full rounded-xl px-4 py-3 text-sm outline-none resize-none" style={{ border: errors.address ? "1px solid #e74c3c" : "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} />{errors.address && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.address}</p>}</div>
-                <div><label className="block text-[11px] font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>Provinsi *</label><select value={form.province} onChange={(e) => setForm({ ...form, province: e.target.value })} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: errors.province ? "1px solid #e74c3c" : "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }}><option value="">Pilih provinsi</option>{PROVINCES.map((p) => <option key={p} value={p}>{p}</option>)}</select>{errors.province && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.province}</p>}</div>
+                <div><label className="block text-[11px] font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>Label Alamat</label><input value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value })} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: "1px solid rgba(0,0,0,.15)", background: "white", color: "var(--espresso)" }} placeholder="Rumah / Kantor / dll" /></div>
+                <div><label className="block text-[11px] font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>Nama Penerima *</label><input value={form.recipient_name} onChange={(e) => setForm({ ...form, recipient_name: e.target.value })} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: errors.recipient_name ? "1px solid #e74c3c" : "1px solid rgba(0,0,0,.15)", background: "white", color: "var(--espresso)" }} />{errors.recipient_name && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.recipient_name}</p>}</div>
+                <div><label className="block text-[11px] font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>No. HP *</label><input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: errors.phone ? "1px solid #e74c3c" : "1px solid rgba(0,0,0,.15)", background: "white", color: "var(--espresso)" }} placeholder="0812xxxx" />{errors.phone && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.phone}</p>}</div>
+                <div><label className="block text-[11px] font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>Alamat Lengkap *</label><textarea value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} rows={3} className="w-full rounded-xl px-4 py-3 text-sm outline-none resize-none" style={{ border: errors.address ? "1px solid #e74c3c" : "1px solid rgba(0,0,0,.15)", background: "white", color: "var(--espresso)" }} />{errors.address && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.address}</p>}</div>
+                <div><label className="block text-[11px] font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>Provinsi *</label><select value={form.province} onChange={(e) => setForm({ ...form, province: e.target.value })} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: errors.province ? "1px solid #e74c3c" : "1px solid rgba(0,0,0,.15)", background: "white", color: "var(--espresso)" }}><option value="">Pilih provinsi</option>{PROVINCES.map((p) => <option key={p} value={p}>{p}</option>)}</select>{errors.province && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.province}</p>}</div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div><label className="block text-[11px] font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>Kota/Kabupaten *</label><input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: errors.city ? "1px solid #e74c3c" : "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="Contoh: Jakarta Barat" />{errors.city && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.city}</p>}</div>
-                  <div><label className="block text-[11px] font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>Kecamatan *</label><input value={form.kecamatan} onChange={(e) => setForm({ ...form, kecamatan: e.target.value })} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: errors.kecamatan ? "1px solid #e74c3c" : "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="Contoh: Cengkareng" />{errors.kecamatan && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.kecamatan}</p>}</div>
+                  <div><label className="block text-[11px] font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>Kota/Kabupaten *</label><input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: errors.city ? "1px solid #e74c3c" : "1px solid rgba(0,0,0,.15)", background: "white", color: "var(--espresso)" }} placeholder="Contoh: Jakarta Barat" />{errors.city && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.city}</p>}</div>
+                  <div><label className="block text-[11px] font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>Kecamatan *</label><input value={form.kecamatan} onChange={(e) => setForm({ ...form, kecamatan: e.target.value })} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: errors.kecamatan ? "1px solid #e74c3c" : "1px solid rgba(0,0,0,.15)", background: "white", color: "var(--espresso)" }} placeholder="Contoh: Cengkareng" />{errors.kecamatan && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.kecamatan}</p>}</div>
                 </div>
-                <div><label className="block text-[11px] font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>Kode Pos *</label><input value={form.postal_code} onChange={(e) => setForm({ ...form, postal_code: e.target.value })} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: errors.postal_code ? "1px solid #e74c3c" : "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="11750" />{errors.postal_code && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.postal_code}</p>}</div>
+                <div><label className="block text-[11px] font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>Kode Pos *</label><input value={form.postal_code} onChange={(e) => setForm({ ...form, postal_code: e.target.value })} className="w-full rounded-xl px-4 py-3 text-sm outline-none" style={{ border: errors.postal_code ? "1px solid #e74c3c" : "1px solid rgba(0,0,0,.15)", background: "white", color: "var(--espresso)" }} placeholder="11750" />{errors.postal_code && <p className="text-[11px] mt-1" style={{ color: "#e74c3c" }}>{errors.postal_code}</p>}</div>
                 <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={form.is_default} onChange={(e) => setForm({ ...form, is_default: e.target.checked })} className="rounded" style={{ accentColor: "var(--gold)" }} /><span className="text-sm" style={{ color: "var(--espresso)" }}>Jadikan alamat utama</span></label>
               </div>
               <div className="flex gap-3 mt-6">
-                <button onClick={() => setModalOpen(false)} className="flex-1 py-2.5 rounded-xl text-sm font-medium" style={{ border: "1px solid rgba(64,50,37,.15)", color: "var(--espresso)" }}>Batal</button>
+                <button onClick={() => setModalOpen(false)} className="flex-1 py-2.5 rounded-xl text-sm font-medium" style={{ border: "1px solid rgba(0,0,0,.15)", color: "var(--espresso)" }}>Batal</button>
                 <button onClick={handleSave} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: "var(--espresso)" }}>{saving ? <Loader2 size={14} className="animate-spin inline mr-2" /> : null} Simpan</button>
               </div>
             </motion.div>
@@ -299,12 +299,12 @@ export default function AlamatPage() {
       {/* Delete Confirmation */}
       <AnimatePresence>
         {deleteConfirm && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(42,33,27,.4)", backdropFilter: "blur(4px)" }} onClick={() => setDeleteConfirm(null)}>
-            <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }} className="w-full max-w-sm rounded-2xl p-6" style={{ background: "var(--cream)", boxShadow: "0 25px 60px -12px rgba(42,33,27,.5)" }} onClick={(e) => e.stopPropagation()}>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.4)", backdropFilter: "blur(4px)" }} onClick={() => setDeleteConfirm(null)}>
+            <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }} className="w-full max-w-sm rounded-2xl p-6" style={{ background: "var(--cream)", boxShadow: "0 25px 60px -12px rgba(0,0,0,.5)" }} onClick={(e) => e.stopPropagation()}>
               <h3 className="text-lg font-semibold mb-2" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>Hapus Alamat?</h3>
               <p className="text-sm mb-6" style={{ color: "var(--text-secondary)" }}>Alamat &quot;{deleteConfirm.label}&quot; akan dihapus permanen.</p>
               <div className="flex gap-3">
-                <button onClick={() => setDeleteConfirm(null)} className="flex-1 py-2.5 rounded-xl text-sm font-medium" style={{ border: "1px solid rgba(64,50,37,.15)", color: "var(--espresso)" }}>Batal</button>
+                <button onClick={() => setDeleteConfirm(null)} className="flex-1 py-2.5 rounded-xl text-sm font-medium" style={{ border: "1px solid rgba(0,0,0,.15)", color: "var(--espresso)" }}>Batal</button>
                 <button onClick={() => handleDelete(deleteConfirm)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: "#e74c3c" }}>Hapus</button>
               </div>
             </motion.div>

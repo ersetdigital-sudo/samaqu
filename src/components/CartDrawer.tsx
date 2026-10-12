@@ -49,7 +49,7 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
             className="fixed inset-0 z-[9998]"
-            style={{ background: "rgba(42,33,27,.35)", backdropFilter: "blur(2px)" }}
+            style={{ background: "rgba(0,0,0,.35)", backdropFilter: "blur(2px)" }}
             onClick={onClose}
           />
 
@@ -60,26 +60,26 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
             exit={{ x: "100%" }}
             transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
             className="fixed top-0 right-0 bottom-0 z-[9999] w-full max-w-[400px] flex flex-col"
-            style={{ background: "var(--cream)", boxShadow: "-8px 0 40px -12px rgba(42,33,27,.18)" }}>
+            style={{ background: "var(--cream)", boxShadow: "-8px 0 40px -12px rgba(0,0,0,.18)" }}>
 
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 shrink-0"
-              style={{ borderBottom: "1px solid rgba(201,183,156,.15)" }}>
+              style={{ borderBottom: "1px solid rgba(0,0,0,.15)" }}>
               <div className="flex items-center gap-2.5">
-                <ShoppingCart size={18} style={{ color: "var(--gold)" }} />
+                <ShoppingCart size={18} style={{ color: "#000000" }} />
                 <h2 className="text-[15px] font-ui font-semibold" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
                   Keranjang
                 </h2>
                 {items.length > 0 && (
                   <span className="text-[11px] font-ui px-2 py-0.5 rounded-full"
-                    style={{ background: "rgba(181,140,74,.1)", color: "var(--gold)" }}>
+                    style={{ background: "rgba(0,0,0,.1)", color: "#000000" }}>
                     {items.reduce((s, i) => s + i.qty, 0)} item
                   </span>
                 )}
               </div>
               <button onClick={onClose}
                 className="w-8 h-8 rounded-full flex items-center justify-center transition-all hover:scale-110"
-                style={{ border: "1px solid rgba(201,183,156,.25)" }}
+                style={{ border: "1px solid rgba(0,0,0,.25)" }}
                 aria-label="Tutup keranjang">
                 <X size={16} style={{ color: "var(--espresso)" }} />
               </button>
@@ -90,7 +90,7 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
               {items.length === 0 ? (
                 /* Empty state */
                 <div className="flex flex-col items-center justify-center h-full text-center py-12">
-                  <div className="w-16 h-16 rounded-full mb-4 flex items-center justify-center" style={{ background: "rgba(181,140,74,.08)" }}>
+                  <div className="w-16 h-16 rounded-full mb-4 flex items-center justify-center" style={{ background: "rgba(0,0,0,.08)" }}>
                     <ShoppingBag size={28} style={{ color: "var(--clay)" }} />
                   </div>
                   <p className="text-[15px] font-ui font-medium mb-1.5" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
@@ -101,7 +101,7 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
                   </p>
                   <button onClick={() => { onClose(); router.push("/katalog"); }}
                     className="px-6 py-2.5 rounded-xl text-[12px] tracking-[0.06em] uppercase font-ui font-semibold transition-all duration-200 hover:scale-105"
-                    style={{ background: "var(--gold)", color: "white" }}>
+                    style={{ background: "#000000", color: "white" }}>
                     Lihat Katalog
                   </button>
                 </div>
@@ -119,9 +119,9 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
                           exit={{ opacity: 0, x: -40 }}
                           transition={{ duration: 0.2 }}
                           className="flex gap-3 p-3 rounded-xl"
-                          style={{ background: "rgba(255,255,255,.6)", border: "1px solid rgba(201,183,156,.12)" }}>
+                          style={{ background: "rgba(255,255,255,.6)", border: "1px solid rgba(0,0,0,.12)" }}>
                           {/* Image */}
-                          <div className="w-16 h-16 rounded-lg overflow-hidden shrink-0" style={{ background: "#e8dfd1" }}>
+                          <div className="w-16 h-16 rounded-lg overflow-hidden shrink-0" style={{ background: "#e5e5e5" }}>
                             <img src={cloudinaryUrl(item.image, { width: 160 })} alt={item.name} className="w-full h-full object-cover" />
                           </div>
                           {/* Details */}
@@ -150,7 +150,7 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
                               {((item.kain || item.series) && item.color !== "-" && item.color !== "default") && <span className="text-[9px]" style={{ color: "var(--clay)" }}>·</span>}
                               {item.color !== "-" && item.color !== "default" && (
                                 <span className="flex items-center gap-1 text-[10px] font-ui" style={{ color: "var(--coffee)" }}>
-                                  <span className="w-2 h-2 rounded-full shrink-0" style={{ background: colorMap[item.color] || "#ccc", border: "1px solid rgba(42,33,27,.1)" }} />
+                                  <span className="w-2 h-2 rounded-full shrink-0" style={{ background: colorMap[item.color] || "#ccc", border: "1px solid rgba(0,0,0,.1)" }} />
                                   {item.color}
                                 </span>
                               )}
@@ -160,7 +160,7 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
                             <div className="flex items-center justify-between mt-1.5">
                               {/* Qty pill */}
                               <div className="inline-flex items-center rounded-full"
-                                style={{ background: "var(--cream)", border: "1px solid rgba(201,183,156,.2)", padding: "1px 2px" }}>
+                                style={{ background: "var(--cream)", border: "1px solid rgba(0,0,0,.2)", padding: "1px 2px" }}>
                                 <button onClick={() => updateQty(i, item.qty - 1)}
                                   className="w-6 h-6 rounded-full flex items-center justify-center transition-all active:scale-90"
                                   style={{ color: "var(--espresso)" }}>
@@ -176,11 +176,11 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
                                 </button>
                               </div>
                               {item.create_your_price_enabled && (
-                                <p className="text-[10px] font-ui" style={{ color: "var(--gold)" }}>
+                                <p className="text-[10px] font-ui" style={{ color: "#000000" }}>
                                   Harga pilihanmu
                                 </p>
                               )}
-                              <p className="text-[13px] font-ui font-semibold" style={{ color: "var(--gold)" }}>
+                              <p className="text-[13px] font-ui font-semibold" style={{ color: "#000000" }}>
                                 Rp {((item.create_your_price_enabled && item.customer_price ? item.customer_price : item.price) * item.qty).toLocaleString("id-ID")}
                               </p>
                             </div>
@@ -192,12 +192,12 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
 
                   {/* Promo code */}
                   <div className="p-3 rounded-xl mb-4"
-                    style={{ background: "rgba(255,255,255,.5)", border: "1px solid rgba(201,183,156,.12)" }}>
+                    style={{ background: "rgba(255,255,255,.5)", border: "1px solid rgba(0,0,0,.12)" }}>
                     {promoApplied ? (
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <Tag size={14} style={{ color: "var(--gold)" }} />
-                          <span className="text-[12px] font-ui font-semibold" style={{ color: "var(--gold)" }}>{voucher.code}</span>
+                          <Tag size={14} style={{ color: "#000000" }} />
+                          <span className="text-[12px] font-ui font-semibold" style={{ color: "#000000" }}>{voucher.code}</span>
                         </div>
                         <button onClick={handleRemovePromo} className="text-[11px] font-ui underline" style={{ color: "var(--stone)" }}>Hapus</button>
                       </div>
@@ -206,7 +206,7 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
                         <input type="text" value={promoCode} onChange={(e) => { setPromoCode(e.target.value); setPromoError(""); }}
                           placeholder="Kode promo"
                           className="flex-1 text-[12px] font-ui bg-transparent outline-none px-2 py-1.5 rounded-lg"
-                          style={{ border: `1px solid ${promoError ? "#e74c3c" : "rgba(201,183,156,.2)"}`, color: "var(--espresso)" }} />
+                          style={{ border: `1px solid ${promoError ? "#e74c3c" : "rgba(0,0,0,.2)"}`, color: "var(--espresso)" }} />
                         <button onClick={handleApplyPromo}
                           className="px-3 py-1.5 rounded-lg text-[11px] font-ui font-semibold transition-all hover:scale-105 shrink-0"
                           style={{ background: "var(--espresso)", color: "white" }}>
@@ -219,16 +219,16 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
 
                   {/* Summary */}
                   <div className="rounded-xl p-3.5"
-                    style={{ background: "rgba(255,255,255,.4)", border: "1px solid rgba(201,183,156,.1)" }}>
+                    style={{ background: "rgba(255,255,255,.4)", border: "1px solid rgba(0,0,0,.1)" }}>
                     <div className="space-y-1.5">
                       <SummaryLine label="Subtotal" value={`Rp ${subtotal.toLocaleString("id-ID")}`} />
-                      {promoApplied && <SummaryLine label={`Diskon (${voucher.code})`} value={`- Rp ${voucher.discount.toLocaleString("id-ID")}`} valueColor="var(--gold)" />}
+                      {promoApplied && <SummaryLine label={`Diskon (${voucher.code})`} value={`- Rp ${voucher.discount.toLocaleString("id-ID")}`} valueColor="#000000" />}
                       <SummaryLine label="Pengiriman" value="Dihitung saat checkout" />
                     </div>
-                    <div className="h-px my-2.5" style={{ background: "rgba(201,183,156,.15)" }} />
+                    <div className="h-px my-2.5" style={{ background: "rgba(0,0,0,.15)" }} />
                     <div className="flex justify-between items-end">
                       <span className="text-[11px] font-ui" style={{ color: "var(--stone)" }}>Total</span>
-                      <span className="text-[17px] font-ui font-semibold" style={{ color: "var(--gold)" }}>
+                      <span className="text-[17px] font-ui font-semibold" style={{ color: "#000000" }}>
                         Rp {total.toLocaleString("id-ID")}
                       </span>
                     </div>
@@ -239,10 +239,10 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
 
             {/* Footer checkout button */}
             {items.length > 0 && (
-              <div className="px-5 py-4 shrink-0" style={{ borderTop: "1px solid rgba(201,183,156,.12)" }}>
+              <div className="px-5 py-4 shrink-0" style={{ borderTop: "1px solid rgba(0,0,0,.12)" }}>
                 <button onClick={handleCheckout}
                   className="w-full py-3.5 rounded-xl text-[12px] tracking-[0.06em] uppercase font-ui font-semibold transition-all duration-300 active:scale-[0.98]"
-                  style={{ background: "var(--gold)", color: "white", boxShadow: "0 6px 20px -6px rgba(184,145,74,.4)" }}>
+                  style={{ background: "#000000", color: "white", boxShadow: "0 6px 20px -6px rgba(0,0,0,.25)" }}>
                   Checkout — Rp {total.toLocaleString("id-ID")}
                 </button>
               </div>

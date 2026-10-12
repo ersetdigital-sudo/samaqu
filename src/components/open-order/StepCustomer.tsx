@@ -88,7 +88,7 @@ export default function StepCustomer({
 
         {/* Ongkir dari kecamatan tujuan: terhitung otomatis (debounce 1 detik) begitu kecamatan
             dipilih, lalu dipakai lagi di langkah 5 — nilainya sama, tidak dihitung dua kali. */}
-        <div className="rounded-2xl px-5 py-4" style={{ background: FIELD_BG, border: "1px solid rgba(201,183,156,.25)" }}>
+        <div className="rounded-2xl px-5 py-4" style={{ background: FIELD_BG, border: "1px solid rgba(0,0,0,.25)" }}>
           <SummaryRow
             label={shipping ? `Ongkir (J&T — ${shipping.service})` : "Ongkir"}
             value={loadingOngkir ? "Menghitung…" : shipping ? money(shipping.cost) : "—"}

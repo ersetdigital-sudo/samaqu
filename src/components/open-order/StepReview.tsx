@@ -54,7 +54,7 @@ export default function StepReview({
           const image = lineImage(line, products, catalog);
           return (
             <div key={line.key} className="flex items-center gap-3.5 rounded-2xl px-4 py-3.5" style={{ border: `1px solid ${LINE}`, background: FIELD_BG }}>
-              <div className="h-14 w-11 shrink-0 overflow-hidden rounded-lg" style={{ background: "#e8dfd1" }}>
+              <div className="h-14 w-11 shrink-0 overflow-hidden rounded-lg" style={{ background: "#e5e5e5" }}>
                 {image && (
                   <img src={cloudinaryUrl(image, { width: 200 })} alt={lineName(line, products)} className="h-full w-full object-cover" />
                 )}
@@ -77,7 +77,7 @@ export default function StepReview({
       </div>
 
       {/* Ringkasan */}
-      <div className="mt-6 space-y-2.5 rounded-2xl p-5" style={{ background: FIELD_BG, border: "1px solid rgba(201,183,156,.25)" }}>
+      <div className="mt-6 space-y-2.5 rounded-2xl p-5" style={{ background: FIELD_BG, border: "1px solid rgba(0,0,0,.25)" }}>
         <SummaryRow label="Subtotal" value={money(subtotal)} />
         {extraCover && <SummaryRow label={OPEN_ORDER_ADDON.name} value={money(addonTotal)} />}
         <SummaryRow

@@ -56,8 +56,8 @@ export default function MobileBottomNav() {
         background: "rgba(248,245,241,.97)",
         backdropFilter: "blur(12px)",
         WebkitBackdropFilter: "blur(12px)",
-        borderTop: "1px solid rgba(201,183,156,.35)",
-        boxShadow: "0 -6px 24px -14px rgba(45,33,27,.18)",
+        borderTop: "1px solid rgba(0,0,0,.35)",
+        boxShadow: "0 -6px 24px -14px rgba(0,0,0,.18)",
         paddingBottom: "env(safe-area-inset-bottom)",
       }}
     >

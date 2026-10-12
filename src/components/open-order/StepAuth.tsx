@@ -104,7 +104,7 @@ export default function StepAuth({ onAuthenticated }: { onAuthenticated: (accoun
 
   return (
     <div>
-      <div className="rounded-3xl p-5 sm:p-6" style={{ background: "var(--cream-bright)", border: "1px solid rgba(201,183,156,.3)" }}>
+      <div className="rounded-3xl p-5 sm:p-6" style={{ background: "var(--cream-bright)", border: "1px solid rgba(0,0,0,.3)" }}>
         <p className="text-[11px] font-medium uppercase tracking-[0.28em]" style={{ color: "var(--gold)" }}>
           Sebelum Checkout
         </p>
@@ -120,7 +120,7 @@ export default function StepAuth({ onAuthenticated }: { onAuthenticated: (accoun
         </p>
 
         {/* Pilihan mode */}
-        <div className="mt-5 inline-flex rounded-lg p-1" style={{ background: "rgba(201,183,156,.18)" }}>
+        <div className="mt-5 inline-flex rounded-lg p-1" style={{ background: "rgba(0,0,0,.18)" }}>
           {(["masuk", "daftar"] as Mode[]).map((option) => (
             <button
               key={option}
@@ -188,7 +188,7 @@ export default function StepAuth({ onAuthenticated }: { onAuthenticated: (accoun
 
           {error && <p className="text-[12px] leading-relaxed" style={{ color: DANGER }}>{error}</p>}
           {notice && (
-            <p className="text-[12px] leading-relaxed" style={{ color: INK, background: "rgba(181,140,74,.12)", border: "1px solid rgba(201,183,156,.45)", borderRadius: 10, padding: "10px 12px" }}>
+            <p className="text-[12px] leading-relaxed" style={{ color: INK, background: "rgba(0,0,0,.12)", border: "1px solid rgba(0,0,0,.45)", borderRadius: 10, padding: "10px 12px" }}>
               {notice}
             </p>
           )}

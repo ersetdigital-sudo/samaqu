@@ -323,11 +323,11 @@ export default function OpenOrderWizard() {
 
           <div
             className="mt-7 rounded-3xl px-6 py-8"
-            style={{ background: "var(--cream-bright)", border: "1px solid rgba(201,183,156,.3)" }}
+            style={{ background: "var(--cream-bright)", border: "1px solid rgba(0,0,0,.3)" }}
           >
             <span
               className="mx-auto grid h-12 w-12 place-items-center rounded-full"
-              style={{ background: "rgba(181,140,74,.12)", color: "var(--gold)" }}
+              style={{ background: "rgba(0,0,0,.12)", color: "var(--gold)" }}
             >
               <Calendar size={20} />
             </span>
@@ -370,7 +370,7 @@ export default function OpenOrderWizard() {
       {/* Header + progres langkah */}
       <header
         className="sticky top-0 z-30"
-        style={{ borderBottom: "1px solid rgba(216,196,168,.28)", background: "rgba(248,245,241,.95)", backdropFilter: "blur(8px)" }}
+        style={{ borderBottom: "1px solid rgba(0,0,0,.28)", background: "rgba(248,245,241,.95)", backdropFilter: "blur(8px)" }}
       >
         <div className="mx-auto flex max-w-5xl items-center gap-3 px-5 pt-3.5 pb-3 sm:px-8">
           {backTo ? (
@@ -378,7 +378,7 @@ export default function OpenOrderWizard() {
               type="button"
               onClick={() => setStep(backTo)}
               aria-label="Kembali"
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-full transition-colors duration-200 hover:bg-[rgba(181,140,74,.09)]"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-full transition-colors duration-200 hover:bg-[rgba(0,0,0,.09)]"
               style={{ border: `1px solid ${LINE}` }}
             >
               <ChevronLeft size={16} />
@@ -387,7 +387,7 @@ export default function OpenOrderWizard() {
             <Link
               href="/"
               aria-label="Tutup"
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-full transition-colors duration-200 hover:bg-[rgba(181,140,74,.09)]"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-full transition-colors duration-200 hover:bg-[rgba(0,0,0,.09)]"
               style={{ border: `1px solid ${LINE}` }}
             >
               <X size={16} />
@@ -401,7 +401,7 @@ export default function OpenOrderWizard() {
           </span>
         </div>
         <div className="mx-auto max-w-5xl px-5 pb-3 sm:px-8">
-          <div className="h-[3px] w-full overflow-hidden rounded-full" style={{ background: "rgba(201,183,156,.28)" }}>
+          <div className="h-[3px] w-full overflow-hidden rounded-full" style={{ background: "rgba(0,0,0,.28)" }}>
             <div
               className="h-full rounded-full transition-all duration-300"
               style={{ background: INK, width: `${(step / 6) * 100}%` }}

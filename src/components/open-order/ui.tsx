@@ -10,10 +10,10 @@ import { Minus, Plus } from "lucide-react";
 export const INK = "var(--espresso)";
 export const MUTED = "var(--stone)";
 export const GOLD = "var(--gold)";
-export const LINE = "rgba(201,183,156,.35)";
+export const LINE = "rgba(0,0,0,.35)";
 export const FIELD_BG = "var(--cream-bright)";
 export const DANGER = "#c0392b";
-export const BADGE_BG = "rgba(181,140,74,.12)";
+export const BADGE_BG = "rgba(0,0,0,.12)";
 export const BADGE_INK = "var(--gold-deep)";
 
 export function PrimaryButton({
@@ -54,7 +54,7 @@ export function GhostButton({
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className="w-full rounded-lg px-6 py-3.5 text-[12px] font-medium uppercase tracking-[0.14em] transition-colors duration-200 disabled:opacity-40 hover:bg-[rgba(181,140,74,.09)]"
+      className="w-full rounded-lg px-6 py-3.5 text-[12px] font-medium uppercase tracking-[0.14em] transition-colors duration-200 disabled:opacity-40 hover:bg-[rgba(0,0,0,.09)]"
       style={{ border: `1px solid ${LINE}`, color: INK }}
     >
       {children}
@@ -89,7 +89,7 @@ export function Field({
 }
 
 export const inputClass =
-  "w-full rounded-lg px-4 py-3 text-[13.5px] outline-none transition-shadow duration-200 focus:ring-2 focus:ring-[rgba(181,140,74,.25)]";
+  "w-full rounded-lg px-4 py-3 text-[13.5px] outline-none transition-shadow duration-200 focus:ring-2 focus:ring-[rgba(0,0,0,.25)]";
 
 export const inputStyle: CSSProperties = {
   background: FIELD_BG,

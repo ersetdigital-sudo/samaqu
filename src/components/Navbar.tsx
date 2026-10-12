@@ -148,8 +148,8 @@ export default function Navbar() {
         background: "rgba(243,243,243,.92)",
         backdropFilter: "blur(16px)",
         WebkitBackdropFilter: "blur(16px)",
-        borderBottom: "1px solid rgba(201,183,156,.35)",
-        boxShadow: "0 8px 32px -16px rgba(45,33,27,.12)",
+        borderBottom: "1px solid rgba(0,0,0,.35)",
+        boxShadow: "0 8px 32px -16px rgba(0,0,0,.12)",
       }
     : {
         background: "transparent",
@@ -166,7 +166,7 @@ export default function Navbar() {
   const iconChipStyle = scrolled
     ? undefined
     : {
-        background: "rgba(45,33,27,.38)",
+        background: "rgba(0,0,0,.38)",
         backdropFilter: "blur(8px)",
         WebkitBackdropFilter: "blur(8px)",
       };
@@ -247,7 +247,7 @@ export default function Navbar() {
                             className="absolute right-0 top-full z-20 mt-2 w-52 overflow-hidden rounded-2xl border p-1.5 shadow-lg"
                             style={{
                               background: "rgba(243,243,243,.97)",
-                              borderColor: "rgba(201,183,156,.3)",
+                              borderColor: "rgba(0,0,0,.3)",
                               backdropFilter: "blur(16px)",
                             }}
                           >
@@ -256,19 +256,19 @@ export default function Navbar() {
                                 key={link.label}
                                 href={`/${locale}${resolveHref(link.href, isHome)}`}
                                 onClick={() => setOpenDropdown(false)}
-                                className="flex w-full items-center rounded-xl px-3.5 py-2.5 text-sm font-ui font-medium transition-colors hover:bg-[rgba(201,183,156,.15)]"
+                                className="flex w-full items-center rounded-xl px-3.5 py-2.5 text-sm font-ui font-medium transition-colors hover:bg-[rgba(0,0,0,.15)]"
                                 style={{ color: "var(--espresso)" }}
                               >
                                 {link.label}
                               </Link>
                             ))}
-                            <div className="mt-1 border-t pt-1.5" style={{ borderColor: "rgba(201,183,156,.2)" }}>
+                            <div className="mt-1 border-t pt-1.5" style={{ borderColor: "rgba(0,0,0,.2)" }}>
                               <a
                                 href={getWhatsAppLink("Halo Admin SAMAQU, saya butuh bantuan.")}
                                 target="_blank"
                                 rel="noopener"
                                 onClick={() => setOpenDropdown(false)}
-                                className="flex w-full items-center gap-2 rounded-xl px-3.5 py-2.5 text-sm font-ui font-medium transition-colors hover:bg-[rgba(201,183,156,.15)]"
+                                className="flex w-full items-center gap-2 rounded-xl px-3.5 py-2.5 text-sm font-ui font-medium transition-colors hover:bg-[rgba(0,0,0,.15)]"
                                 style={{ color: "var(--gold)" }}
                               >
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
@@ -288,7 +288,7 @@ export default function Navbar() {
               {/* Right: language switcher + profile (desktop) + cart + hamburger */}
               <div className="flex items-center gap-3 sm:gap-4">
                 {/* Language switcher */}
-                <div className="flex items-center rounded-full overflow-hidden" style={{ border: `1px solid ${scrolled ? "rgba(64,50,37,.2)" : "rgba(248,245,241,.25)"}` }}>
+                <div className="flex items-center rounded-full overflow-hidden" style={{ border: `1px solid ${scrolled ? "rgba(0,0,0,.2)" : "rgba(248,245,241,.25)"}` }}>
                   {locales.map((loc) => (
                     <button
                       key={loc}
@@ -406,7 +406,7 @@ function DrawerNavContent({
                   className="flex items-center gap-4 px-6 py-4 text-[13px] tracking-[0.18em] uppercase font-ui transition-colors duration-200 hover:text-gold hover:bg-[var(--sand-2)]"
                   style={{
                     color: "var(--espresso)",
-                    borderBottom: "1px solid rgba(201,183,156,.12)",
+                    borderBottom: "1px solid rgba(0,0,0,.12)",
                   }}
                   onClick={onClose}
                 >
@@ -424,7 +424,7 @@ function DrawerNavContent({
                 className="flex items-center justify-between w-full px-6 py-4 text-[13px] tracking-[0.18em] uppercase font-ui transition-colors duration-200 hover:text-gold hover:bg-[var(--sand-2)]"
                 style={{
                   color: "var(--espresso)",
-                  borderBottom: "1px solid rgba(201,183,156,.12)",
+                  borderBottom: "1px solid rgba(0,0,0,.12)",
                 }}
               >
                 <span>{item.label}</span>
@@ -452,7 +452,7 @@ function DrawerNavContent({
                         className="flex items-center gap-4 pl-14 pr-6 py-3.5 text-[12px] tracking-[0.16em] uppercase font-ui transition-colors duration-200 hover:text-gold hover:bg-[var(--sand-2)]"
                         style={{
                           color: "var(--espresso)",
-                          borderBottom: "1px solid rgba(201,183,156,.08)",
+                          borderBottom: "1px solid rgba(0,0,0,.08)",
                         }}
                         onClick={onClose}
                       >
@@ -474,7 +474,7 @@ function DrawerNavContent({
               className="flex items-center gap-4 px-6 py-4 text-[13px] tracking-[0.18em] uppercase font-ui transition-colors duration-200 hover:text-gold hover:bg-[var(--sand-2)]"
               style={{
                 color: "var(--espresso)",
-                borderBottom: "1px solid rgba(201,183,156,.12)",
+                borderBottom: "1px solid rgba(0,0,0,.12)",
               }}
               onClick={onClose}
             >
@@ -489,9 +489,9 @@ function DrawerNavContent({
 
       {/* Language switcher in drawer */}
       <div className="px-6 pb-2">
-        <div className="flex items-center gap-3 py-3" style={{ borderBottom: "1px solid rgba(201,183,156,.12)" }}>
+        <div className="flex items-center gap-3 py-3" style={{ borderBottom: "1px solid rgba(0,0,0,.12)" }}>
           <span className="text-[13px] tracking-[0.18em] uppercase font-ui" style={{ color: "var(--espresso)" }}>Bahasa</span>
-          <div className="flex items-center rounded-full overflow-hidden" style={{ border: "1px solid rgba(64,50,37,.2)" }}>
+          <div className="flex items-center rounded-full overflow-hidden" style={{ border: "1px solid rgba(0,0,0,.2)" }}>
             {locales.map((loc) => (
               <button
                 key={loc}
@@ -518,7 +518,7 @@ function DrawerNavContent({
           className="flex items-center gap-4 px-0 py-3 text-[13px] tracking-[0.18em] uppercase font-ui transition-colors duration-200 hover:text-gold"
           style={{
             color: "var(--espresso)",
-            borderBottom: "1px solid rgba(201,183,156,.12)",
+            borderBottom: "1px solid rgba(0,0,0,.12)",
           }}
           onClick={onClose}
         >
@@ -527,7 +527,7 @@ function DrawerNavContent({
       </div>
 
       {/* CTA area */}
-      <div className="p-6 space-y-3 border-t" style={{ borderColor: "rgba(201,183,156,.15)" }}>
+      <div className="p-6 space-y-3 border-t" style={{ borderColor: "rgba(0,0,0,.15)" }}>
         <a
           href={getWhatsAppLink("Halo Admin SAMAQU, saya tertarik dengan koleksi Anda dan ingin bertanya soal pemesanan.")}
           target="_blank"
