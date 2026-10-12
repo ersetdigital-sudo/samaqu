@@ -21,6 +21,7 @@ interface ChatLog {
   answer: string | null;
   tools_used: string[] | null;
   escalated: boolean | null;
+  error: string | null;
   created_at: string;
 }
 
@@ -36,6 +37,7 @@ export default function ChatLogsView() {
   const [logs, setLogs] = useState<ChatLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [onlyEscalated, setOnlyEscalated] = useState(false);
+  const [onlyErrors, setOnlyErrors] = useState(false);
   const [query, setQuery] = useState("");
   const [addingId, setAddingId] = useState<string | null>(null);
   const toast = useToast();
@@ -88,6 +90,7 @@ export default function ChatLogsView() {
 
   const filtered = logs.filter((l) => {
     if (onlyEscalated && !l.escalated) return false;
+    if (onlyErrors && !l.error) return false;
     const q = query.trim().toLowerCase();
     if (!q) return true;
     return (l.question || "").toLowerCase().includes(q) || (l.answer || "").toLowerCase().includes(q);
@@ -109,6 +112,11 @@ export default function ChatLogsView() {
         <label className="flex items-center gap-2 text-sm" style={{ color: "var(--fg2)" }}>
           <input type="checkbox" checked={onlyEscalated} onChange={(e) => setOnlyEscalated(e.target.checked)} />
           Hanya yang diarahkan ke admin
+        </label>
+
+        <label className="flex items-center gap-2 text-sm" style={{ color: "var(--fg2)" }}>
+          <input type="checkbox" checked={onlyErrors} onChange={(e) => setOnlyErrors(e.target.checked)} />
+          Hanya yang gagal
         </label>
 
         <button
@@ -146,6 +154,11 @@ export default function ChatLogsView() {
                     Diarahkan ke admin
                   </span>
                 )}
+                {log.error && (
+                  <span className="px-2 py-0.5 rounded-full" style={{ background: "#fee2e2", color: "#b91c1c" }}>
+                    Gagal
+                  </span>
+                )}
                 {log.tools_used && log.tools_used.length > 0 && (
                   <span className="px-2 py-0.5 rounded-full" style={{ background: "var(--sub)", color: "var(--fg2)" }}>
                     {[...new Set(log.tools_used)].join(", ")}
@@ -159,6 +172,11 @@ export default function ChatLogsView() {
               <p className="text-sm whitespace-pre-wrap break-words" style={{ color: "var(--fg2)" }}>
                 {log.answer || "(tidak ada jawaban)"}
               </p>
+              {log.error && (
+                <p className="text-[11px] whitespace-pre-wrap break-words" style={{ color: "#b91c1c" }}>
+                  Error: {log.error}
+                </p>
+              )}
 
               {log.question && log.answer && (
                 <div className="pt-1">
