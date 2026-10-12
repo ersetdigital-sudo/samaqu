@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { defaultFirstFollowup } from "@/lib/ops-followup";
+import { isOpsAdmin } from "@/lib/ops-auth";
 
 /**
  * API dashboard internal (/ops) — modul Leads.
@@ -23,20 +24,9 @@ const LEAD_FIELDS = [
   "next_followup_at",
 ] as const;
 
-async function isAdmin(req: NextRequest): Promise<boolean> {
-  const token = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
-  if (!token) return false;
-  try {
-    const admin = getSupabaseAdmin();
-    const { data: { user }, error } = await admin.auth.getUser(token);
-    if (error || !user) return false;
-    const { data } = await admin.from("admins").select("user_id").eq("user_id", user.id).maybeSingle();
-    return !!data;
-  } catch (e) {
-    console.error("[OPS] Verifikasi admin gagal:", e);
-    return false;
-  }
-}
+// Verifikasi admin dipusatkan di lib/ops-auth dan hasilnya di-cache 5 menit,
+// jadi tiap request tidak perlu 2 round-trip tambahan ke Supabase.
+const isAdmin = isOpsAdmin;
 
 function pickLead(input: Record<string, unknown>) {
   const out: Record<string, unknown> = {};
