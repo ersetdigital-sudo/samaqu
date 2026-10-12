@@ -25,15 +25,24 @@ export function waLink(raw: string | null | undefined, message: string): string 
 }
 
 /**
+ * Emoji ditulis sebagai escape Unicode, bukan karakter mentah: byte-nya jadi tidak
+ * bergantung pada encoding file, sehingga tidak bisa berubah jadi "�" di pesan yang
+ * diterima pelanggan.
+ */
+const SENYUM = "\u{1F60A}";
+
+/**
  * Teks pesan standar SAMAQU untuk menagih pembayaran — dipakai tombol
  * "Hubungi via WhatsApp" di detail pesanan untuk **semua** pesanan; hanya nama
- * panggilan pelanggan (kata pertama dari nama) yang berubah.
+ * panggilan pelanggan (kata pertama dari nama) dan nomor pesanan yang berubah.
  */
-export function pesanPembayaran(nama?: string | null): string {
+export function pesanPembayaran(nama?: string | null, noPesanan?: string | null): string {
   const panggilan = (nama || "").trim().split(/\s+/)[0] || "Kakak";
-  return `Halo Kak ${panggilan} 😊
+  const no = (noPesanan || "").trim();
+  const nomor = no ? ` (No. Pesanan: ${no})` : "";
+  return `Halo Kak ${panggilan} ${SENYUM}
 
-Pesanan Kakak di SAMAQU sudah masuk, nih! Tinggal selangkah lagi supaya pesanan bisa segera kami proses.
+Pesanan Kakak di SAMAQU${nomor} sudah masuk, nih! Tinggal selangkah lagi supaya pesanan bisa segera kami proses.
 
 Yuk, selesaikan pembayarannya sekarang ya, Kak. Setelah transfer, kirim bukti pembayarannya ke sini agar pesanan bisa langsung kami lanjutkan.
 
