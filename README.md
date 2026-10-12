@@ -473,6 +473,13 @@ NEXT_PUBLIC_META_PIXEL_ID=
 META_ACCESS_TOKEN=
 META_TEST_EVENT_CODE=
 
+# Fonnte — notifikasi WhatsApp ke admin saat ada pesanan baru
+# FONNTE_TOKEN: token device dari dashboard Fonnte.
+# ADMIN_WHATSAPP_NUMBER: nomor admin (boleh beberapa, dipisah koma). Kalau kosong,
+#   notifikasi jatuh ke nomor toko di store_settings.whatsapp.
+FONNTE_TOKEN=
+ADMIN_WHATSAPP_NUMBER=
+
 # App
 NEXT_PUBLIC_SITE_URL=
 ```

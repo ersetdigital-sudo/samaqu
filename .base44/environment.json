@@ -92,6 +92,18 @@
       "description": "J&T Express company id used by the order/track calls — J&T integration contact.",
       "requiredAtBoot": false,
       "generatedForDevelopment": false
+    },
+    {
+      "name": "FONNTE_TOKEN",
+      "description": "Fonnte device token (dashboard Fonnte > Device > token). Optional: when set, the store sends a WhatsApp notification to the admin on every new checkout (src/lib/fonnte.ts via /api/orders).",
+      "requiredAtBoot": false,
+      "generatedForDevelopment": false
+    },
+    {
+      "name": "ADMIN_WHATSAPP_NUMBER",
+      "description": "Admin WhatsApp number that receives new-order notifications. Comma-separated for multiple numbers. Optional: falls back to store_settings.whatsapp when empty.",
+      "requiredAtBoot": false,
+      "generatedForDevelopment": false
     }
   ]
 }
