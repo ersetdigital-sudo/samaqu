@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
@@ -12,14 +12,13 @@ import {
   RefreshCw,
   Search,
   Users,
-  X,
 } from "lucide-react";
 import { IconCalendarClock, IconCheckCircle } from "@/components/ops/icons";
 import { useToast } from "@/components/ops/ui/use-toast";
 import { OUTCOMES, STATUS_LABEL, taskState, waLink, fmtWibDateTime } from "@/lib/ops-followup";
 import ResultDrawer from "@/components/ops/followup/ResultDrawer";
 
-type Tab = "today" | "overdue" | "history";
+type Tab = "unscheduled" | "today" | "overdue" | "history";
 
 type TaskLead = {
   id: string;
@@ -50,6 +49,7 @@ type ActivityItem = {
 };
 
 const TABS: { key: Tab; label: string }[] = [
+  { key: "unscheduled", label: "Perlu Dijadwalkan" },
   { key: "today", label: "Hari Ini" },
   { key: "overdue", label: "Terlambat" },
   { key: "history", label: "Riwayat" },
@@ -95,8 +95,9 @@ export default function FollowUpPage() {
   const [pic, setPic] = useState("");
   const [sumber, setSumber] = useState("");
   const [drawerLead, setDrawerLead] = useState<TaskLead | null>(null);
-  const [cardView, setCardView] = useState<null | "unscheduled">(null);
-  const view = cardView ?? tab;
+  const [schedulingId, setSchedulingId] = useState<string | null>(null);
+  const [autoPicked, setAutoPicked] = useState(false);
+  const view = tab;
 
   const query = useQuery({
     queryKey: ["followups", view, search, pic, sumber],
@@ -111,17 +112,46 @@ export default function FollowUpPage() {
 
   const items: TaskLead[] = view === "history" ? [] : query.data?.items || [];
   const activities: ActivityItem[] = view === "history" ? query.data?.items || [] : [];
-  const stats = query.data?.stats || { today: 0, overdue: 0, noReply: 0 };
+  const stats = query.data?.stats || { today: 0, overdue: 0, noReply: 0, unscheduled: 0 };
   const options = query.data?.options || { pics: [], sumbers: [] };
+
+  // Kalau belum ada tugas terjadwal tapi masih ada lead aktif tanpa jadwal,
+  // halaman langsung membuka antrean "Perlu Dijadwalkan" supaya tidak terlihat kosong.
+  useEffect(() => {
+    if (autoPicked || query.isLoading || !query.data) return;
+    const s = query.data.stats || {};
+    if ((s.today || 0) === 0 && (s.overdue || 0) === 0 && (s.unscheduled || 0) > 0) setTab("unscheduled");
+    setAutoPicked(true);
+  }, [autoPicked, query.isLoading, query.data]);
 
   const cards = useMemo(
     () => [
-      { key: "noReply", label: "Belum Membalas", value: stats.noReply, icon: Users, tone: "text-blue-700 bg-blue-50 border-blue-200", onClick: () => { setCardView("unscheduled"); setTab("today"); } },
-      { key: "today", label: "Perlu Ditindaklanjuti", value: stats.today, icon: IconCalendarClock, tone: "text-amber-700 bg-amber-50 border-amber-200", onClick: () => { setCardView(null); setTab("today"); } },
-      { key: "overdue", label: "Terlambat", value: stats.overdue, icon: AlertTriangle, tone: "text-red-700 bg-red-50 border-red-200", onClick: () => { setCardView(null); setTab("overdue"); } },
+      { key: "noReply", label: "Belum Membalas", hint: "Belum ada balasan", value: stats.noReply, icon: Users, tone: "text-blue-700 bg-blue-50 border-blue-200", onClick: () => setTab("unscheduled") },
+      { key: "unscheduled", label: "Perlu Dijadwalkan", hint: "Belum punya jadwal", value: stats.unscheduled, icon: IconCalendarClock, tone: "text-indigo-700 bg-indigo-50 border-indigo-200", onClick: () => setTab("unscheduled") },
+      { key: "today", label: "Perlu Ditindaklanjuti", hint: "Jadwal jatuh tempo hari ini", value: stats.today, icon: Clock, tone: "text-amber-700 bg-amber-50 border-amber-200", onClick: () => setTab("today") },
+      { key: "overdue", label: "Terlambat", hint: "Sudah lewat jadwal", value: stats.overdue, icon: AlertTriangle, tone: "text-red-700 bg-red-50 border-red-200", onClick: () => setTab("overdue") },
     ],
     [stats],
   );
+
+  /** Aksi cepat: jadwalkan follow-up besok 10.00 WIB (SOP H+1). */
+  async function quickSchedule(lead: TaskLead) {
+    const wib = new Date(Date.now() + 7 * 3600 * 1000 + 86400000);
+    const nextIso = new Date(Date.UTC(wib.getUTCFullYear(), wib.getUTCMonth(), wib.getUTCDate(), 3, 0, 0)).toISOString();
+    setSchedulingId(lead.id);
+    try {
+      await opsFetch("/api/ops/followups", {
+        method: "POST",
+        body: JSON.stringify({ action: "schedule", leadId: lead.id, nextSchedule: nextIso, requestId: `sch-${lead.id}-${Date.now()}` }),
+      });
+      toast({ title: "Jadwal dibuat", description: `${lead.kontak} dijadwalkan besok 10.00 WIB.`, variant: "success" });
+      qc.invalidateQueries({ queryKey: ["followups"] });
+    } catch (e) {
+      toast({ title: "Gagal menjadwalkan", description: e instanceof Error ? e.message : "Coba lagi.", variant: "destructive" });
+    } finally {
+      setSchedulingId(null);
+    }
+  }
 
   async function openWa(lead: TaskLead) {
     const link = waLink(lead.kontak);
@@ -183,7 +213,7 @@ export default function FollowUpPage() {
       </header>
 
       {/* ── Ringkasan ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {cards.map((c) => {
           const Icon = c.icon;
           return (
@@ -196,9 +226,12 @@ export default function FollowUpPage() {
                 <div className={`w-10 h-10 rounded-xl border flex items-center justify-center ${c.tone}`}>
                   <Icon size={18} />
                 </div>
-                <span className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">{c.value}</span>
+                <span className="text-2xl md:text-3xl font-black tracking-tight text-slate-900 dark:text-white">
+                  {Number(c.value || 0).toLocaleString("id-ID")}
+                </span>
               </div>
               <p className="mt-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{c.label}</p>
+              <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">{c.hint}</p>
             </button>
           );
         })}
@@ -211,7 +244,7 @@ export default function FollowUpPage() {
             {TABS.map((t) => (
               <button
                 key={t.key}
-                onClick={() => { setCardView(null); setTab(t.key); }}
+                onClick={() => setTab(t.key)}
                 className={`px-3.5 py-2 rounded-xl text-sm font-bold transition-all ${
                   view === t.key
                     ? "bg-[#0f3d33] text-white"
@@ -220,6 +253,9 @@ export default function FollowUpPage() {
                 aria-current={view === t.key}
               >
                 {t.label}
+                {t.key === "unscheduled" && stats.unscheduled > 0 && (
+                  <span className="ml-2 px-1.5 py-0.5 rounded-md bg-indigo-500/15 text-indigo-700 text-[10px] font-black">{stats.unscheduled}</span>
+                )}
                 {t.key === "overdue" && stats.overdue > 0 && (
                   <span className="ml-2 px-1.5 py-0.5 rounded-md bg-red-500/15 text-red-700 text-[10px] font-black">{stats.overdue}</span>
                 )}
@@ -238,15 +274,6 @@ export default function FollowUpPage() {
               className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0f3d33]/30"
             />
           </div>
-          {cardView === "unscheduled" && (
-            <button
-              onClick={() => setCardView(null)}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-50 border border-blue-200 text-[11px] font-bold text-blue-700"
-              title="Hapus filter"
-            >
-              Filter: Belum membalas <X size={12} />
-            </button>
-          )}
         </div>
 
         {/* ── Isi ── */}
@@ -290,9 +317,25 @@ export default function FollowUpPage() {
           )
         ) : items.length === 0 ? (
           <EmptyState
-            title="Semua follow-up beres."
-            desc="Tidak ada tugas yang perlu dikerjakan untuk filter ini."
-            action={tab === "overdue" ? { label: "Lihat tugas hari ini", onClick: () => setTab("today") } : undefined}
+            title={
+              view === "unscheduled"
+                ? "Semua lead aktif sudah punya jadwal."
+                : view === "overdue"
+                ? "Tidak ada tugas yang terlambat."
+                : "Tidak ada tugas untuk hari ini."
+            }
+            desc={
+              view === "unscheduled"
+                ? "Antrean ini berisi lead aktif yang belum dijadwalkan follow-up."
+                : "Semua follow-up untuk filter ini sudah beres."
+            }
+            action={
+              view === "overdue"
+                ? { label: "Lihat tugas hari ini", onClick: () => setTab("today") }
+                : view === "today" && stats.unscheduled > 0
+                ? { label: `Lihat ${stats.unscheduled} lead belum dijadwalkan`, onClick: () => setTab("unscheduled") }
+                : undefined
+            }
           />
         ) : (
           <>
@@ -322,13 +365,23 @@ export default function FollowUpPage() {
                       <td className="px-4 py-3 text-slate-900 dark:text-white font-semibold whitespace-nowrap">{fmtWibDateTime(lead.nextFollowupAt)}</td>
                       <td className="px-4 py-3"><StatusBadge lead={lead} /></td>
                       <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           <button
                             onClick={() => openWa(lead)}
                             className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-[11px] font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
                           >
                             <MessageCircle size={13} className="text-[#25D366]" /> Buka WhatsApp
                           </button>
+                          {!lead.nextFollowupAt && (
+                            <button
+                              onClick={() => quickSchedule(lead)}
+                              disabled={schedulingId === lead.id}
+                              title="Jadwalkan follow-up besok 10.00 WIB"
+                              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-indigo-200 bg-indigo-50 text-[11px] font-bold text-indigo-700 hover:bg-indigo-100 disabled:opacity-50"
+                            >
+                              {schedulingId === lead.id ? <Loader2 size={13} className="animate-spin" /> : <IconCalendarClock size={13} />} Jadwalkan
+                            </button>
+                          )}
                           <button
                             onClick={() => setDrawerLead(lead)}
                             className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#0f3d33] text-white text-[11px] font-bold hover:bg-[#134a3e]"
@@ -371,6 +424,15 @@ export default function FollowUpPage() {
                     >
                       <Pencil size={14} /> Catat Hasil
                     </button>
+                    {!lead.nextFollowupAt && (
+                      <button
+                        onClick={() => quickSchedule(lead)}
+                        disabled={schedulingId === lead.id}
+                        className="col-span-2 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border border-indigo-200 bg-indigo-50 text-xs font-bold text-indigo-700 disabled:opacity-50"
+                      >
+                        {schedulingId === lead.id ? <Loader2 size={14} className="animate-spin" /> : <IconCalendarClock size={14} />} Jadwalkan besok 10.00 WIB
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}

@@ -67,14 +67,22 @@ export function jakartaDayBounds(now: Date = new Date()): { startIso: string; en
   return { startIso: new Date(startUtc).toISOString(), endIso: new Date(startUtc + 86400000).toISOString() };
 }
 
+/** Hasil yang menutup follow-up: lead seperti ini tidak boleh jadi tugas aktif lagi. */
+export const TERMINAL_OUTCOMES = ["buy", "not_interested", "stop"] as const;
+
+export function hasTerminalOutcome(lead: { outcome?: string | null }): boolean {
+  return (TERMINAL_OUTCOMES as readonly string[]).includes((lead.outcome || "").trim());
+}
+
 /** State tugas dari jadwal + status lead. */
 export function taskState(
-  lead: { next_followup_at?: string | null; followup_status?: string | null; do_not_contact?: boolean | null },
+  lead: { next_followup_at?: string | null; followup_status?: string | null; do_not_contact?: boolean | null; outcome?: string | null },
   now: Date = new Date(),
 ): TaskState {
   if (lead.do_not_contact) return "nonaktif";
   const status = (lead.followup_status || "baru") as FollowupStatus;
-  if (status === "lost" || status === "dnd") return "nonaktif";
+  if (status === "lost" || status === "dnd" || status === "selesai") return "nonaktif";
+  if (hasTerminalOutcome(lead)) return "nonaktif";
   if (!lead.next_followup_at) return "nonaktif";
   const { startIso } = jakartaDayBounds(now);
   const start = new Date(startIso).getTime();
@@ -84,8 +92,26 @@ export function taskState(
   return "mendatang";
 }
 
-export function isActiveTask(lead: { followup_status?: string | null; do_not_contact?: boolean | null }) {
-  return !lead.do_not_contact && (lead.followup_status === "baru" || lead.followup_status === "dijadwalkan");
+export function isActiveTask(lead: {
+  followup_status?: string | null;
+  do_not_contact?: boolean | null;
+  outcome?: string | null;
+}) {
+  return (
+    !lead.do_not_contact &&
+    (lead.followup_status === "baru" || lead.followup_status === "dijadwalkan") &&
+    !hasTerminalOutcome(lead)
+  );
+}
+
+/** Aktif tapi belum punya jadwal → masuk antrean "Perlu Dijadwalkan". */
+export function isUnscheduled(lead: {
+  followup_status?: string | null;
+  do_not_contact?: boolean | null;
+  outcome?: string | null;
+  next_followup_at?: string | null;
+}) {
+  return isActiveTask(lead) && !lead.next_followup_at;
 }
 
 const WIB_FMT = new Intl.DateTimeFormat("id-ID", {
