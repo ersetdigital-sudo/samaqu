@@ -40,7 +40,7 @@ const MENU_GROUPS: { label: string; items: MenuItem[] }[] = [
   {
     label: "Produk & Stok",
     items: [
-      { title: "Produk", href: "/ops/master-produk", icon: Package, soon: true },
+      { title: "Produk", href: "/ops/master-produk", icon: Package },
       { title: "Pembelian", href: "/ops/rekap-pembelian", icon: ShoppingBag, soon: true },
     ],
   },

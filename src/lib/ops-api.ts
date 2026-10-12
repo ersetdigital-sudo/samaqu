@@ -3,21 +3,12 @@ import { supabase } from "@/lib/supabase";
 /**
  * Shim data-layer untuk dashboard internal (/ops).
  *
- * Halaman-halaman /ops di-port apa adanya dari app Base44 (markup & logika sama),
- * jadi panggilan `base44.entities.X.*` dipertahankan bentuknya di sini dan
- * diteruskan ke API internal kita (/api/ops/...) yang jalan di atas DB SAMAQU.
+ * Halaman /ops di-port apa adanya dari app Base44, jadi bentuk `base44.entities.X.*`
+ * dipertahankan di sini dan diteruskan ke API internal kita (/api/ops/...) yang
+ * membaca/menulis DB SAMAQU yang sama dengan website (satu sumber kebenaran).
  */
 
-export interface OpsLead {
-  id: string;
-  tanggal: string;
-  jam?: string | null;
-  kontak: string;
-  sumber: string;
-  status: string;
-  nominal: number;
-  catatan?: string | null;
-}
+export const SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
 
 async function authHeaders(): Promise<Record<string, string>> {
   const { data } = await supabase.auth.getSession();
@@ -37,11 +28,20 @@ async function call<T = any>(method: string, path: string, body?: unknown): Prom
 }
 
 const LEADS = "/api/ops/leads";
+const PRODUCTS = "/api/ops/products";
+const VARIANTS = "/api/ops/product-variants";
+const STOCK_IN = "/api/ops/stock-in";
+const TRANSACTIONS = "/api/ops/transactions";
+
+/** Base44 memakai sort "-created_date" (desc). Kita terjemahkan ke parameter API. */
+function sortParam(sort?: string) {
+  if (!sort) return "created_at:asc";
+  return sort.startsWith("-") ? "created_at:desc" : "created_at:asc";
+}
 
 export const base44 = {
   entities: {
     Lead: {
-      /** filter({ tanggal: { $gte, $lte }, kontak: { $regex } }, { sort, limit }) */
       async filter(query: any = {}, opts: any = {}) {
         const params = new URLSearchParams();
         if (query?.tanggal?.$gte) params.set("start", String(query.tanggal.$gte));
@@ -49,10 +49,9 @@ export const base44 = {
         if (query?.kontak?.$regex) params.set("search", String(query.kontak.$regex));
         params.set("sort", String(opts?.sort ?? "tanggal"));
         params.set("limit", String(opts?.limit ?? 1000));
-        const json = await call<{ items: OpsLead[] }>("GET", `${LEADS}?${params.toString()}`);
+        const json = await call<{ items: any[] }>("GET", `${LEADS}?${params.toString()}`);
         return { items: json.items ?? [] };
       },
-      /** list({ fields, limit, cursor }) — dipakai untuk cek duplikat lintas halaman */
       async list(opts: any = {}) {
         const params = new URLSearchParams();
         params.set("limit", String(opts?.limit ?? 500));
@@ -61,18 +60,66 @@ export const base44 = {
         return { items: json.items ?? [], next_cursor: json.next_cursor ?? null };
       },
       async create(data: any) {
-        const json = await call<{ items: OpsLead[] }>("POST", LEADS, { rows: [data] });
+        const json = await call<{ items: any[] }>("POST", LEADS, { rows: [data] });
         return json.items?.[0] ?? null;
       },
       async bulkCreate(rows: any[]) {
         return call<{ inserted: number }>("POST", LEADS, { rows });
       },
       async update(id: string, data: any) {
-        const json = await call<{ item: OpsLead }>("PATCH", LEADS, { id, ...data });
+        const json = await call<{ item: any }>("PATCH", LEADS, { id, ...data });
         return json.item ?? null;
       },
       async delete(id: string) {
         return call<{ deleted: number }>("DELETE", LEADS, { id });
+      },
+    },
+
+    Product: {
+      async list(_sort?: string) {
+        const json = await call<{ items: any[] }>("GET", PRODUCTS);
+        return json.items ?? [];
+      },
+      async create(data: any) {
+        const json = await call<{ item: any }>("POST", PRODUCTS, data);
+        return json.item ?? null;
+      },
+      async update(id: string, data: any) {
+        const json = await call<{ item: any }>("PATCH", PRODUCTS, { id, ...data });
+        return json.item ?? null;
+      },
+      async delete(id: string) {
+        return call<{ deleted: number }>("DELETE", PRODUCTS, { id });
+      },
+    },
+
+    ProductVariant: {
+      async list(_sort?: string) {
+        const json = await call<{ items: any[] }>("GET", VARIANTS);
+        return json.items ?? [];
+      },
+    },
+
+    StockIn: {
+      async list(sort?: string, opts: any = {}) {
+        const params = new URLSearchParams({ sort: sortParam(sort), limit: String(opts?.limit ?? 1000) });
+        const json = await call<{ items: any[] }>("GET", `${STOCK_IN}?${params.toString()}`);
+        return json.items ?? [];
+      },
+      async create(data: any) {
+        const json = await call<{ item: any }>("POST", STOCK_IN, data);
+        return json.item ?? null;
+      },
+      async delete(id: string) {
+        return call<{ deleted: number }>("DELETE", STOCK_IN, { id });
+      },
+    },
+
+    Transaction: {
+      async list(sort?: string, opts: any = {}) {
+        const params = new URLSearchParams({ sort: sortParam(sort), limit: String(opts?.limit ?? 2000) });
+        const json = await call<{ items: any[] }>("GET", `${TRANSACTIONS}?${params.toString()}`);
+        return json.items ?? [];
       },
     },
   },
