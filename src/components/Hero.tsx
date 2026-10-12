@@ -126,6 +126,8 @@ export default function Hero() {
         >
           <source src={HERO_VIDEO} type="video/mp4" />
         </video>
+        {/* Cool gray tint (#A0A1AC) — menyelaraskan video ke tone monokrom & menjaga kontras teks */}
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "rgba(160,161,172,.4)" }} />
       </div>
 
       {/* ── Cinematic overlays ── */}

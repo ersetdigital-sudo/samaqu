@@ -101,25 +101,25 @@ function InfoLinkButton({ label, onClick }: { label: string; onClick: () => void
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center gap-3 px-4 sm:px-5 py-3.5 sm:py-3 rounded-full transition-all duration-200 hover:bg-[rgba(181,140,74,.09)]"
+      className="w-full flex items-center gap-3 px-4 sm:px-5 py-3.5 sm:py-3 rounded-full transition-all duration-200 hover:bg-[rgba(0,0,0,.05)]"
       style={{
-        border: "1px solid rgba(181,140,74,.35)",
-        background: "rgba(181,140,74,.05)",
+        border: "1px solid rgba(0,0,0,.25)",
+        background: "rgba(0,0,0,.03)",
       }}
     >
       <span
         className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-ui font-bold"
-        style={{ background: "rgba(181,140,74,.14)", color: "var(--gold)" }}
+        style={{ background: "rgba(0,0,0,.08)", color: "#000000" }}
       >
         i
       </span>
       <span
         className="flex-1 text-left text-[13px] sm:text-sm font-ui font-medium"
-        style={{ color: "var(--gold)" }}
+        style={{ color: "#000000" }}
       >
         {label}
       </span>
-      <ChevronRight size={16} strokeWidth={1.75} className="shrink-0" style={{ color: "var(--gold)" }} />
+      <ChevronRight size={16} strokeWidth={1.75} className="shrink-0" style={{ color: "#000000" }} />
     </button>
   );
 }
@@ -130,7 +130,7 @@ function KainSwatchRow({ category, options, selected, onSelect }: { category: Ca
   if (options.length === 0) return null;
   return (
     <div>
-      <p className="text-[13px] font-ui font-medium mb-3" style={{ color: "var(--espresso)" }}>
+      <p className="text-[13px] font-ui font-medium mb-3" style={{ color: "#000000" }}>
         Jenis Kain {category}
       </p>
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
@@ -138,9 +138,9 @@ function KainSwatchRow({ category, options, selected, onSelect }: { category: Ca
           onClick={() => onSelect(null)}
           className="flex items-center gap-3 rounded-lg px-3.5 py-3 text-[13px] font-ui transition-all duration-200"
           style={{
-            background: selected === null ? "rgba(42,33,27,.06)" : "var(--cream-bright)",
-            border: `1.5px solid ${selected === null ? "var(--espresso)" : "rgba(201,183,156,.3)"}`,
-            color: "var(--coffee)",
+            background: selected === null ? "rgba(0,0,0,.05)" : "#ffffff",
+            border: `1.5px solid ${selected === null ? "#000000" : "rgba(0,0,0,.15)"}`,
+            color: "#000000",
           }}
         >
           <span className="w-6 h-6 rounded-full shrink-0" style={{ background: "linear-gradient(135deg,#141414,#CDBFB0)" }} />
@@ -152,9 +152,9 @@ function KainSwatchRow({ category, options, selected, onSelect }: { category: Ca
             onClick={() => onSelect(k)}
             className="flex items-center gap-3 rounded-lg px-3.5 py-3 text-[13px] font-ui transition-all duration-200"
             style={{
-              background: selected === k ? "rgba(42,33,27,.06)" : "var(--cream-bright)",
-              border: `1.5px solid ${selected === k ? "var(--espresso)" : "rgba(201,183,156,.3)"}`,
-              color: "var(--coffee)",
+              background: selected === k ? "rgba(0,0,0,.05)" : "#ffffff",
+              border: `1.5px solid ${selected === k ? "#000000" : "rgba(0,0,0,.15)"}`,
+              color: "#000000",
             }}
           >
             <span className="w-6 h-6 rounded-full shrink-0" style={{ background: getKainGradient(k) || "#c9b79c" }} />
@@ -171,8 +171,8 @@ const LOW_STOCK_THRESHOLD = 3;
 
 /* ── Badge Styles ── */
 const BADGE_STYLES: Record<string, { label: string; bg: string; color: string; border?: string }> = {
-  terlaris: { label: "Terlaris", bg: "var(--gold)", color: "white" },
-  rekomendasi: { label: "Rekomendasi", bg: "rgba(248,246,242,.92)", color: "var(--espresso)", border: "1px solid rgba(201,183,156,.3)" },
+  terlaris: { label: "Terlaris", bg: "#000000", color: "white" },
+  rekomendasi: { label: "Rekomendasi", bg: "#ffffff", color: "#000000", border: "1px solid rgba(0,0,0,.15)" },
   new: { label: "New", bg: "#e7ecdf", color: "#5b6b45" },
 };
 
@@ -202,17 +202,17 @@ function ProductCard({ product, index, wishlist, colorHex, totalStock }: { produ
         href={`/katalog/${product.id}`}
         className="group relative flex flex-col h-full rounded-2xl overflow-hidden cursor-pointer"
         style={{
-          background: "var(--cream-bright)",
-          border: "1px solid rgba(201,183,156,.2)",
+          background: "#ffffff",
+          border: "1px solid rgba(0,0,0,.1)",
         }}
       >
       {/* Image */}
-      <div className="relative aspect-[3/4] overflow-hidden" style={{ background: "#e8dfd1" }}>
+      <div className="relative aspect-[3/4] overflow-hidden" style={{ background: "#e5e5e5" }}>
         {/* Color gradient fallback (visible if image fails) */}
         <div
           className="absolute inset-0 transition-transform duration-700 group-hover:scale-[1.04]"
           style={{
-            background: `linear-gradient(135deg, ${c0 || "#e8dfd1"}44, ${c1 || "#d4c5a9"}44)`,
+            background: `linear-gradient(135deg, ${c0 || "#e5e5e5"}44, ${c1 || "#d4c5a9"}44)`,
           }}
         />
         {/* Actual product image */}
@@ -228,7 +228,7 @@ function ProductCard({ product, index, wishlist, colorHex, totalStock }: { produ
         />
         {/* Sold out overlay */}
         {isSoldOut && (
-          <div className="absolute inset-0 pointer-events-none" style={{ background: "rgba(42,33,27,.18)" }} />
+          <div className="absolute inset-0 pointer-events-none" style={{ background: "rgba(0,0,0,.18)" }} />
         )}
         {/* Wishlist heart button */}
         {wishlist.isLoggedIn && (
@@ -237,14 +237,14 @@ function ProductCard({ product, index, wishlist, colorHex, totalStock }: { produ
           className="absolute top-3 left-3 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
           style={{ background: "rgba(255,255,255,.85)", backdropFilter: "blur(4px)" }}
         >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill={wishlist.isWishlisted(product.id) ? "#e74c3c" : "none"} stroke={wishlist.isWishlisted(product.id) ? "#e74c3c" : "var(--espresso)"} strokeWidth="1.8"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill={wishlist.isWishlisted(product.id) ? "#e74c3c" : "none"} stroke={wishlist.isWishlisted(product.id) ? "#e74c3c" : "#000000"} strokeWidth="1.8"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
         </button>
         )}
         {/* Sold Out badge — top right */}
         {isSoldOut && (
           <span
             className="absolute top-3 right-3 px-2.5 py-1 text-[10px] tracking-[0.12em] uppercase font-ui font-semibold rounded-full z-10"
-            style={{ background: "var(--espresso)", color: "white" }}
+            style={{ background: "#000000", color: "white" }}
           >
             {t("soldOut")}
           </span>
@@ -267,23 +267,23 @@ function ProductCard({ product, index, wishlist, colorHex, totalStock }: { produ
           className="text-[14px] md:text-[16px] font-semibold leading-snug line-clamp-1"
           style={{
             fontFamily: "var(--font-cormorant), Georgia, serif",
-            color: "var(--espresso)",
+            color: "#000000",
           }}
         >
           {product.name}
         </h3>
 
         {/* Kain */}
-        <p className="mt-1 text-[11.5px] font-ui" style={{ color: "var(--gold)" }}>
+        <p className="mt-1 text-[11.5px] font-ui" style={{ color: "#000000" }}>
           {product.jenis_kain?.name ? `Kain ${product.jenis_kain.name}` : product.kain ? `Kain ${product.kain}` : product.category}
         </p>
 
         {/* Series — fixed height slot */}
         <div className="mt-1.5 min-h-[22px]">
           {product.availableSeries && product.availableSeries.length > 1 && (
-            <p className="inline-flex items-center gap-1.5 text-[10.5px] font-ui" style={{ color: "var(--stone)" }}>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full" style={{ background: "rgba(181,140,74,.08)", border: "1px solid rgba(181,140,74,.2)" }}>
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" style={{ color: "var(--gold)" }}>
+            <p className="inline-flex items-center gap-1.5 text-[10.5px] font-ui" style={{ color: "rgba(0,0,0,.55)" }}>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full" style={{ background: "rgba(0,0,0,.05)", border: "1px solid rgba(0,0,0,.15)" }}>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" style={{ color: "#000000" }}>
                   <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
                   <path d="m3.3 7 8.7 5 8.7-5" />
                   <path d="M12 22V12" />
@@ -302,15 +302,15 @@ function ProductCard({ product, index, wishlist, colorHex, totalStock }: { produ
         )}
 
         {/* Price */}
-        <p className="mt-1 text-[12.5px] font-ui" style={{ color: "var(--stone)" }}>
+        <p className="mt-1 text-[12.5px] font-ui" style={{ color: "rgba(0,0,0,.55)" }}>
           {t("starting")}{" "}
-          <span className="font-medium" style={{ color: "var(--espresso)" }}>
+          <span className="font-medium" style={{ color: "#000000" }}>
             Rp {(product.create_your_price_enabled && product.minimum_price ? product.minimum_price : product.price).toLocaleString("id-ID")}
           </span>
         </p>
 
         {/* Lihat Detail button */}
-        <span className="mt-auto pt-3 w-full rounded-lg border border-[var(--espresso)] px-3 py-2.5 text-[12.5px] text-[var(--espresso)] font-ui font-medium flex items-center justify-center gap-1.5 transition-all duration-200 group-hover:bg-[var(--espresso)] group-hover:text-white">
+        <span className="mt-auto pt-3 w-full rounded-lg border border-[#000000] px-3 py-2.5 text-[12.5px] text-[#000000] font-ui font-medium flex items-center justify-center gap-1.5 transition-all duration-200 group-hover:bg-[#000000] group-hover:text-white">
           {isSoldOut ? t("viewDetail") : t("viewDetail")} <ChevronRight size={14} strokeWidth={2} />
         </span>
       </div>
@@ -502,7 +502,7 @@ export default function KatalogPage() {
             <motion.p
               variants={headerVariants}
               className="text-[11px] sm:text-[12px] tracking-[0.32em] uppercase mb-2 sm:mb-4 font-ui font-medium"
-              style={{ color: "var(--gold)" }}
+              style={{ color: "#000000" }}
             >
               {t("eyebrow")}
             </motion.p>
@@ -511,7 +511,7 @@ export default function KatalogPage() {
               className="text-[1.5rem] sm:text-5xl lg:text-6xl font-semibold leading-[1.05] tracking-tight mb-2 sm:mb-4"
               style={{
                 fontFamily: "var(--font-cormorant), Georgia, serif",
-                color: "var(--espresso)",
+                color: "#000000",
               }}
             >
               {t("title")}
@@ -538,7 +538,7 @@ export default function KatalogPage() {
                 height="18"
                 viewBox="0 0 24 24"
                 fill="none"
-                stroke={searchQuery ? "var(--gold)" : "var(--warm-sand)"}
+                stroke={searchQuery ? "#000000" : "rgba(0,0,0,.35)"}
                 strokeWidth="1.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -560,10 +560,10 @@ export default function KatalogPage() {
               style={{
                 background: "transparent",
                 borderBottom: "1px solid rgba(216,196,168,.4)",
-                color: "var(--espresso)",
+                color: "#000000",
               }}
               onFocus={(e) => {
-                e.currentTarget.style.borderBottomColor = "var(--gold)";
+                e.currentTarget.style.borderBottomColor = "#000000";
               }}
               onBlur={(e) => {
                 e.currentTarget.style.borderBottomColor = "rgba(216,196,168,.4)";
@@ -582,9 +582,9 @@ export default function KatalogPage() {
                   onClick={() => { setCategory(cat); setVisibleCount(12); }}
                   className="relative px-4 py-2.5 text-[12px] tracking-[0.06em] font-ui font-medium rounded-full transition-all duration-300 whitespace-nowrap"
                   style={{
-                    background: category === cat ? "var(--espresso)" : "transparent",
-                    color: category === cat ? "var(--cream)" : "var(--coffee)",
-                    border: `1px solid ${category === cat ? "var(--espresso)" : "rgba(201,183,156,.3)"}`,
+                    background: category === cat ? "#000000" : "transparent",
+                    color: category === cat ? "#ffffff" : "#000000",
+                    border: `1px solid ${category === cat ? "#000000" : "rgba(0,0,0,.15)"}`,
                   }}
                 >
                   {cat}
@@ -620,16 +620,16 @@ export default function KatalogPage() {
               onClick={() => setFilterDrawerOpen(true)}
               className="relative flex items-center gap-2 px-4 py-2.5 text-[12px] font-ui rounded-full transition-all duration-200"
               style={{
-                border: `1px solid ${drawerFilterCount > 0 ? "var(--gold)" : "rgba(201,183,156,.3)"}`,
-                background: drawerFilterCount > 0 ? "rgba(181,140,74,.08)" : "transparent",
-                color: drawerFilterCount > 0 ? "var(--gold)" : "var(--coffee)",
+                border: `1px solid ${drawerFilterCount > 0 ? "#000000" : "rgba(0,0,0,.15)"}`,
+                background: drawerFilterCount > 0 ? "rgba(0,0,0,.05)" : "transparent",
+                color: drawerFilterCount > 0 ? "#000000" : "#000000",
               }}
             >
               <SlidersHorizontal size={14} strokeWidth={1.5} />
               {t("filter")}
               {drawerFilterCount > 0 && (
                 <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-[10px] font-ui font-bold"
-                  style={{ background: "var(--gold)", color: "white" }}>
+                  style={{ background: "#000000", color: "white" }}>
                   {drawerFilterCount}
                 </span>
               )}
@@ -639,13 +639,13 @@ export default function KatalogPage() {
                 value={sort}
                 onChange={(e) => setSort(e.target.value as typeof sort)}
                 className="appearance-none px-4 py-2.5 pr-9 text-[12px] font-ui rounded-full cursor-pointer transition-all duration-200"
-                style={{ border: "1px solid rgba(201,183,156,.3)", background: "transparent", color: "var(--coffee)" }}
+                style={{ border: "1px solid rgba(0,0,0,.15)", background: "transparent", color: "#000000" }}
               >
                 <option value="newest">{t("sortNew")}</option>
                 <option value="az">{t("sortAZ")}</option>
                 <option value="popular">{t("sortPop")}</option>
               </select>
-              <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--stone)" }} />
+              <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "rgba(0,0,0,.55)" }} />
             </div>
           </div>
         </div>
@@ -659,9 +659,9 @@ export default function KatalogPage() {
                 onClick={() => { setCategory(cat); setVisibleCount(12); }}
                 className="relative px-5 py-2.5 text-[13px] tracking-[0.06em] font-ui font-medium rounded-full transition-all duration-300 whitespace-nowrap"
                 style={{
-                  background: category === cat ? "var(--espresso)" : "transparent",
-                  color: category === cat ? "var(--cream)" : "var(--coffee)",
-                  border: `1px solid ${category === cat ? "var(--espresso)" : "rgba(201,183,156,.3)"}`,
+                  background: category === cat ? "#000000" : "transparent",
+                  color: category === cat ? "#ffffff" : "#000000",
+                  border: `1px solid ${category === cat ? "#000000" : "rgba(0,0,0,.15)"}`,
                 }}
               >
                 {cat}
@@ -673,16 +673,16 @@ export default function KatalogPage() {
               onClick={() => setFilterDrawerOpen(true)}
               className="relative flex items-center gap-2 px-4 py-2.5 text-[12px] font-ui rounded-full transition-all duration-200"
               style={{
-                border: `1px solid ${drawerFilterCount > 0 ? "var(--gold)" : "rgba(201,183,156,.3)"}`,
-                background: drawerFilterCount > 0 ? "rgba(181,140,74,.08)" : "transparent",
-                color: drawerFilterCount > 0 ? "var(--gold)" : "var(--coffee)",
+                border: `1px solid ${drawerFilterCount > 0 ? "#000000" : "rgba(0,0,0,.15)"}`,
+                background: drawerFilterCount > 0 ? "rgba(0,0,0,.05)" : "transparent",
+                color: drawerFilterCount > 0 ? "#000000" : "#000000",
               }}
             >
               <SlidersHorizontal size={14} strokeWidth={1.5} />
               {t("filter")}
               {drawerFilterCount > 0 && (
                 <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-[10px] font-ui font-bold"
-                  style={{ background: "var(--gold)", color: "white" }}>
+                  style={{ background: "#000000", color: "white" }}>
                   {drawerFilterCount}
                 </span>
               )}
@@ -692,13 +692,13 @@ export default function KatalogPage() {
                 value={sort}
                 onChange={(e) => setSort(e.target.value as typeof sort)}
                 className="appearance-none px-4 py-2.5 pr-9 text-[12px] font-ui rounded-full cursor-pointer transition-all duration-200"
-                style={{ border: "1px solid rgba(201,183,156,.3)", background: "transparent", color: "var(--coffee)" }}
+                style={{ border: "1px solid rgba(0,0,0,.15)", background: "transparent", color: "#000000" }}
               >
                 <option value="newest">{t("sortNew")}</option>
                 <option value="az">{t("sortAZ")}</option>
                 <option value="popular">{t("sortPop")}</option>
               </select>
-              <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--stone)" }} />
+              <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "rgba(0,0,0,.55)" }} />
             </div>
           </div>
         </div>
@@ -732,7 +732,7 @@ export default function KatalogPage() {
               <span
                 key={f!.label}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-ui rounded-full"
-                style={{ background: "var(--espresso)", color: "var(--cream)" }}
+                style={{ background: "#000000", color: "#ffffff" }}
               >
                 {f!.label}
                 <button onClick={f!.clear} className="hover:opacity-70 transition-opacity">
@@ -742,8 +742,8 @@ export default function KatalogPage() {
             ))}
             <button
               onClick={resetAll}
-              className="text-[11px] font-ui underline transition-colors hover:text-gold"
-              style={{ color: "var(--stone)" }}
+              className="text-[11px] font-ui underline transition-colors hover:text-black"
+              style={{ color: "rgba(0,0,0,.55)" }}
             >
               {t("reset")}
             </button>
@@ -756,13 +756,13 @@ export default function KatalogPage() {
         {filtered.length === 0 ? (
           /* Empty State */
           <div className="text-center py-20">
-            <p className="text-lg font-medium mb-3" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
+            <p className="text-lg font-medium mb-3" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "#000000" }}>
               {t("emptyState")}
             </p>
             <button
               onClick={resetAll}
               className="mt-2 px-6 py-2.5 text-[12px] tracking-[0.08em] uppercase font-ui font-medium rounded-full transition-all duration-200 hover:opacity-80"
-              style={{ background: "var(--espresso)", color: "var(--cream)" }}
+              style={{ background: "#000000", color: "#ffffff" }}
             >
               {t("reset")}
             </button>
@@ -787,9 +787,9 @@ export default function KatalogPage() {
                   onClick={() => setVisibleCount((v) => v + 12)}
                   className="px-8 py-3.5 text-[12px] tracking-[0.1em] uppercase font-ui font-medium rounded-full transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg"
                   style={{
-                    background: "var(--espresso)",
-                    color: "var(--cream)",
-                    boxShadow: "0 4px 16px -4px rgba(42,33,27,.2)",
+                    background: "#000000",
+                    color: "#ffffff",
+                    boxShadow: "0 4px 16px -4px rgba(0,0,0,.2)",
                   }}
                 >
                   {t("loadMore")}
