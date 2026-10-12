@@ -1,9 +1,9 @@
 import { Metadata } from "next";
 import { supabase } from "@/lib/supabase";
-import { SITE_URL, SITE_NAME, SITE_DESCRIPTION } from "@/lib/site-config";
+import { SITE_URL, SITE_NAME, SITE_DESCRIPTION, localeAlternates } from "@/lib/site-config";
 
-export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
-  const { id } = await params;
+export async function generateMetadata({ params }: { params: Promise<{ locale: string; id: string }> }): Promise<Metadata> {
+  const { locale, id } = await params;
   const { data: product } = await supabase.from("products").select("id, name, description, category, image, price, colors").eq("id", id).single();
 
   if (!product) {
@@ -20,11 +20,11 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     openGraph: {
       title: `${product.name} — ${SITE_NAME}`,
       description,
-      url: `${SITE_URL}/katalog/${product.id}`,
+      url: `${SITE_URL}/${locale}/katalog/${product.id}`,
       siteName: SITE_NAME,
       images: [{ url: ogImage, width: 800, height: 1000, alt: product.name }],
       type: "website",
-      locale: "id_ID",
+      locale: locale === "en" ? "en_US" : "id_ID",
     },
     twitter: {
       card: "summary_large_image",
@@ -32,12 +32,18 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
       description,
       images: [ogImage],
     },
-    alternates: { canonical: `${SITE_URL}/katalog/${product.id}` },
+    alternates: localeAlternates(locale, `/katalog/${product.id}`),
   };
 }
 
-export default async function ProductLayout({ children, params }: { children: React.ReactNode; params: Promise<{ id: string }> }) {
-  const { id } = await params;
+export default async function ProductLayout({
+  children,
+  params,
+}: {
+  children: React.ReactNode;
+  params: Promise<{ locale: string; id: string }>;
+}) {
+  const { locale, id } = await params;
   const { data: product } = await supabase.from("products").select("id, name, description, category, image, price, colors").eq("id", id).single();
 
   const jsonLd = product ? {
@@ -60,10 +66,11 @@ export default async function ProductLayout({ children, params }: { children: Re
         sku: product.id,
         brand: { "@type": "Brand", name: SITE_NAME },
         category: product.category,
+        inLanguage: locale,
         color: Array.isArray(product.colors) ? product.colors.join(", ") : "",
         offers: {
           "@type": "Offer",
-          url: `${SITE_URL}/katalog/${product.id}`,
+          url: `${SITE_URL}/${locale}/katalog/${product.id}`,
           priceCurrency: "IDR",
           price: product.price,
           availability: "https://schema.org/InStock",
@@ -74,8 +81,8 @@ export default async function ProductLayout({ children, params }: { children: Re
       {
         "@type": "BreadcrumbList",
         itemListElement: [
-          { "@type": "ListItem", position: 1, name: "Beranda", item: SITE_URL },
-          { "@type": "ListItem", position: 2, name: "Katalog", item: `${SITE_URL}/katalog` },
+          { "@type": "ListItem", position: 1, name: locale === "en" ? "Home" : "Beranda", item: `${SITE_URL}/${locale}` },
+          { "@type": "ListItem", position: 2, name: locale === "en" ? "Catalog" : "Katalog", item: `${SITE_URL}/${locale}/katalog` },
           { "@type": "ListItem", position: 3, name: product.name },
         ],
       },

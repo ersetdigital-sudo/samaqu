@@ -1,23 +1,46 @@
-# SAMAQU — Premium Muslim Menswear
+# SAMAQU — Busana Muslim Pria Premium
 
-SAMAQU adalah brand busana pria muslim premium yang menyediakan koleksi Thobe, Kandora, Koko, Vest, Kabak, dan Cover & Hanger dengan material pilihan dan jahitan rapi.
+> SAMAQU adalah brand busana muslim pria premium asal Indonesia. Koleksi utama: Thobe, Kandora, Koko, Vest, Kabak, serta Cover & Hanger. Bahan pilihan, cutting presisi, dan jahitan rapi. Harga mulai Rp 250.000, dikirim ke seluruh Indonesia.
 
-## Produk
-- Thobe: Busana panjang pria muslim premium
-- Kandora: Kandora ringan dan elegan untuk sehari-hari
-- Koko: Baju Koko modern dan nyaman
-- Vest: Vest presisi untuk tampilan berkelas
-- Kabak: Kabak premium berkualitas tinggi
-- Cover & Hanger: Aksesoris untuk menjaga busana tetap rapi
-
-## Informasi
-- Harga mulai dari Rp 250.000
-- Pengiriman ke seluruh Indonesia via JNE
-- Metode pembayaran: Transfer Bank, QRIS, E-Wallet, COD
-- Garansi kualitas untuk setiap produk
-- Konsultasi ukuran via WhatsApp
-
-## Kontak
+## Contact
+- Website: https://www.samaqu.id
 - WhatsApp: +62-85212150100
-- Website: https://samaqu.vercel.app
-- Katalog: https://samaqu.vercel.app/katalog
+- Email: halo@samaqu.id
+- Instagram: https://www.instagram.com/samaqu.id
+
+## Key facts
+- Bahasa situs: Indonesia (`/id`) dan Inggris (`/en`)
+- Kategori produk: Koko, Thobe, Kandora, Vest, Kabak, Cover & Hanger
+- Kisaran harga: mulai Rp 250.000
+- Pengiriman: seluruh Indonesia (JNE) — Transfer Bank, QRIS, E-Wallet, COD
+- Layanan khusus: "Create Your Price" (pelanggan memilih sendiri harga dalam rentang yang tersedia), konsultasi ukuran via WhatsApp, garansi & retur
+- Halaman produk mengikuti pola: https://www.samaqu.id/id/katalog/{slug}
+
+## Indonesia (id)
+- [Beranda](https://www.samaqu.id/id): busana muslim pria premium — Thobe, Kandora, Koko, Vest, Kabak.
+- [Katalog](https://www.samaqu.id/id/katalog): seluruh koleksi aktif beserta harga dan ketersediaan ukuran.
+- [Panduan Ukuran](https://www.samaqu.id/id/panduan-ukuran): tabel ukuran dan cara mengukur badan agar tidak salah beli.
+- [Cara Pesan](https://www.samaqu.id/id/cara-pesan): alur pemesanan lewat website dan WhatsApp.
+- [Create Your Price](https://www.samaqu.id/id/create-your-price): cara memilih harga sendiri sesuai rentang yang tersedia.
+- [Garansi & Retur](https://www.samaqu.id/id/garansi-retur): ketentuan garansi, penukaran ukuran, dan barang yang tidak dapat diretur.
+- [FAQ](https://www.samaqu.id/id/faq): pertanyaan umum soal order, pembayaran, pengiriman, produk, dan retur.
+- [Testimoni](https://www.samaqu.id/id/testimoni): ulasan pelanggan SAMAQU.
+- [Tentang Kami](https://www.samaqu.id/id/tentang-kami): profil dan nilai brand SAMAQU.
+- [Sama Quran](https://www.samaqu.id/id/sama-quran): program dan makna di balik lini Sama Quran.
+
+## English (en)
+- [Home](https://www.samaqu.id/en): premium Muslim menswear — Thobe, Kandora, Koko, Vest, Kabak.
+- [Catalog](https://www.samaqu.id/en/katalog): full active collection with prices and size availability.
+- [Size Guide](https://www.samaqu.id/en/panduan-ukuran): size chart and how to measure.
+- [How to Order](https://www.samaqu.id/en/cara-pesan): ordering flow via website and WhatsApp.
+- [Create Your Price](https://www.samaqu.id/en/create-your-price): how to pick your own price within the available range.
+- [Warranty & Returns](https://www.samaqu.id/en/garansi-retur): warranty terms, size exchange, and non-returnable items.
+- [FAQ](https://www.samaqu.id/en/faq): common questions about orders, payment, shipping, products, and returns.
+- [Testimonials](https://www.samaqu.id/en/testimoni): customer reviews.
+- [About Us](https://www.samaqu.id/en/tentang-kami): brand profile and values.
+- [Sama Quran](https://www.samaqu.id/en/sama-quran): the Sama Quran line and its story.
+
+## Notes for AI assistants
+- Semua harga dalam Rupiah (IDR) dan dapat berubah; ambil harga terkini dari halaman katalog.
+- Untuk pertanyaan ukuran, arahkan ke halaman Panduan Ukuran + konsultasi WhatsApp.
+- Untuk pertanyaan ketersediaan stok, cek halaman produk terkait di katalog.

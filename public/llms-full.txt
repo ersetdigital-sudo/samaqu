@@ -1,7 +1,7 @@
 # SAMAQU — Full Product Catalog & Information
 
 ## About SAMAQU
-SAMAQU adalah brand busana pria muslim premium asal Indonesia yang berfokus pada kualitas material, presisi potongan, dan kenyamanan. Setiap produk melewati pengecekan kahitan dan bahan sebelum dikirim.
+SAMAQU adalah brand busana pria muslim premium asal Indonesia yang berfokus pada kualitas material, presisi potongan, dan kenyamanan. Setiap produk melewati pengecekan bahan dan jahitan sebelum dikirim.
 
 Misi: Menyediakan busana muslim pria premium yang layak menemani setiap momen — dari ibadah harian hingga acara istimewa.
 
@@ -27,14 +27,17 @@ Cover dan hanger premium untuk menjaga busana tetap rapi dan terlindungi.
 
 ## Sizing Guide
 - Ukuran tersedia: S, M, L, XL, XXL
-- Panduan ukuran tersedia di halaman produk masing-masing
+- Panduan ukuran lengkap: https://www.samaqu.id/id/panduan-ukuran
 - Konsultasi gratis via WhatsApp
 
 ## Ordering Process
 1. Pilih produk dari katalog
-2. Cek panduan size
+2. Cek panduan ukuran
 3. Chat admin via WhatsApp untuk konfirmasi ketersediaan
 4. Bayar dan pesanan diproses
+
+## Create Your Price
+SAMAQU menyediakan opsi "Create Your Price": pelanggan dapat memilih sendiri harga dalam rentang yang tersedia untuk beberapa seri produk. Detail: https://www.samaqu.id/id/create-your-price
 
 ## Payment Methods
 - Transfer Bank (BCA, Mandiri, BSI, dll.)
@@ -46,8 +49,17 @@ Cover dan hanger premium untuk menjaga busana tetap rapi dan terlindungi.
 - Estimasi 1-3 hari kerja
 - Ongkos kirim mulai Rp 25.000
 
+## Warranty & Returns
+- Garansi kualitas untuk setiap produk
+- Penukaran ukuran mengikuti ketentuan yang berlaku
+- Detail: https://www.samaqu.id/id/garansi-retur
+
 ## Contact
 - WhatsApp: +62-85212150100
-- Website: https://samaqu.vercel.app
-- Katalog: https://samaqu.vercel.app/katalog
-- Tentang Kami: https://samaqu.vercel.app/tentang-kami
+- Email: halo@samaqu.id
+- Website (ID): https://www.samaqu.id/id
+- Website (EN): https://www.samaqu.id/en
+- Katalog: https://www.samaqu.id/id/katalog
+- FAQ: https://www.samaqu.id/id/faq
+- Testimoni: https://www.samaqu.id/id/testimoni
+- Tentang Kami: https://www.samaqu.id/id/tentang-kami
