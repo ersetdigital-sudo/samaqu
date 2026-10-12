@@ -30,7 +30,7 @@ const AI_AGENTS = [
   "MistralAI-User",
 ];
 
-const PRIVATE_PATHS = ["/admin", "/api/", "/checkout", "/cart", "/akun", "/open-order"];
+const PRIVATE_PATHS = ["/admin", "/ops", "/api/", "/checkout", "/cart", "/akun", "/open-order"];
 
 export default function robots(): MetadataRoute.Robots {
   return {

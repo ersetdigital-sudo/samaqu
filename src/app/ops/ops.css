@@ -1,0 +1,29 @@
+/* ── Dashboard internal SAMAQU (/ops) ──
+   Tema di-port dari app Base44: font Inter + token shadcn (HSL).
+   Semua rule di-scope ke .ops-root supaya tampilan website tidak terpengaruh. */
+
+.ops-root {
+  --background: 0 0% 100%;
+  --foreground: 0 0% 3.9%;
+  --muted-foreground: 0 0% 45.1%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 0 0% 98%;
+
+  font-family: var(--font-inter), Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  background: #f1f5f9;
+  color: hsl(var(--foreground));
+  min-height: 100vh;
+}
+
+.ops-root .bg-background { background-color: hsl(var(--background)); }
+.ops-root .text-foreground { color: hsl(var(--foreground)); }
+.ops-root .text-muted-foreground { color: hsl(var(--muted-foreground)); }
+.ops-root .text-destructive { color: hsl(var(--destructive)); }
+.ops-root .border-border { border-color: #e2e8f0; }
+.ops-root .bg-destructive { background-color: hsl(var(--destructive)); }
+
+.ops-root .no-scrollbar::-webkit-scrollbar { display: none; }
+.ops-root .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+
+/* Input tanggal/native di dalam dashboard: konsisten dengan gaya Base44 */
+.ops-root input[type="date"]::-webkit-calendar-picker-indicator { opacity: .5; }
