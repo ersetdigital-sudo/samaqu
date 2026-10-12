@@ -82,7 +82,7 @@ export default function PanduanUkuranPage() {
   }
 
   return (
-    <section className="min-h-screen" style={{ background: "var(--cream)" }}>
+    <section className="min-h-screen" style={{ background: "#F3F3F3" }}>
       {/* ═══ HERO ═══ */}
       <div className="relative overflow-hidden" style={{ background: "var(--espresso)", color: "var(--cream)" }}>
         <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "url(/hero-size.jpg)", backgroundSize: "cover", backgroundPosition: "center" }} />

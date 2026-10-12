@@ -195,7 +195,7 @@ export default function FaqPage() {
   }, [categoryCounts]);
 
   return (
-    <section className="min-h-screen" style={{ background: "var(--cream)" }}>
+    <section className="min-h-screen" style={{ background: "#F3F3F3" }}>
       {/* ═══ HERO ═══ */}
       <div className="relative overflow-hidden" style={{ background: "var(--espresso)", color: "var(--cream)" }}>
         <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full blur-3xl" style={{ background: "rgba(190,139,60,.12)" }} />
