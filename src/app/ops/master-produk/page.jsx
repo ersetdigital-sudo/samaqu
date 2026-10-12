@@ -1250,9 +1250,6 @@ export default function MasterProduk() {
                     <thead>
                       <tr className="bg-[#1e3a5f]">
                         <th className="px-4 py-3.5 text-left font-inter text-xs font-bold text-white uppercase tracking-wide border-r border-[#2d4a6f]">
-                          SKU
-                        </th>
-                        <th className="px-4 py-3.5 text-left font-inter text-xs font-bold text-white uppercase tracking-wide border-r border-[#2d4a6f]">
                           Nama Produk
                         </th>
                         <th className="px-4 py-3.5 text-center font-inter text-xs font-bold text-white uppercase tracking-wide border-r border-[#2d4a6f]">
@@ -1280,7 +1277,7 @@ export default function MasterProduk() {
                     <tbody>
                       {paginatedProducts.length === 0 ? (
                         <tr>
-                          <td colSpan="7" className="px-6 py-12 text-center font-inter text-sm text-gray-400 dark:text-slate-500">
+                          <td colSpan="6" className="px-6 py-12 text-center font-inter text-sm text-gray-400 dark:text-slate-500">
                             {filteredProducts.length === 0 ? "Belum ada produk" : "Tidak ada produk di halaman ini"}
                           </td>
                         </tr>
@@ -1292,9 +1289,6 @@ export default function MasterProduk() {
                              key={product.id} 
                              className={`${rowBg} hover:bg-blue-100/50 dark:hover:bg-slate-800 transition-colors border-b border-gray-100 dark:border-slate-800/50 ${product.product_type === 'free_gift' ? 'border-l-4 border-l-indigo-400' : ''}`}
                            >
-                              <td className="px-4 py-3.5 text-left align-middle font-inter text-sm font-semibold text-gray-900 dark:text-white border-r border-gray-100 dark:border-slate-800/50">
-                                {product.sku}
-                              </td>
                               <td className="px-4 py-3.5 text-left align-middle font-inter text-sm font-medium text-gray-700 dark:text-slate-300 border-r border-gray-100 dark:border-slate-800/50">
                                 {product.name}
                               </td>
