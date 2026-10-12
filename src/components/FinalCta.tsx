@@ -19,7 +19,7 @@ export default function FinalCta() {
   return (
     <section
       className="relative overflow-hidden py-14 sm:py-24 lg:py-32"
-      style={{ background: "#F3F3F3" }}
+      style={{ background: "#ffffff" }}
     >
       {/* Subtle dot pattern */}
       <div
