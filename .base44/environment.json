@@ -40,6 +40,24 @@
       "generatedForDevelopment": false
     },
     {
+      "name": "CHAT_CLOUDINARY_CLOUD",
+      "description": "Cloudinary cloud name for live-chat customer images (separate account). Optional: when empty, chat uploads reuse the main Cloudinary account. Images go to the 'chat' folder.",
+      "requiredAtBoot": false,
+      "generatedForDevelopment": false
+    },
+    {
+      "name": "CHAT_CLOUDINARY_API_KEY",
+      "description": "Cloudinary API key for the live-chat account. Optional (falls back to CLOUDINARY_API_KEY).",
+      "requiredAtBoot": false,
+      "generatedForDevelopment": false
+    },
+    {
+      "name": "CHAT_CLOUDINARY_API_SECRET",
+      "description": "Cloudinary API secret for the live-chat account. Optional (falls back to CLOUDINARY_API_SECRET).",
+      "requiredAtBoot": false,
+      "generatedForDevelopment": false
+    },
+    {
       "name": "RAJAONGKIR_API_KEY",
       "description": "RajaOngkir API key (rajaongkir.com / Komerce dashboard). Optional: shipping cost + destination search. Can also be stored in the DB store_settings row.",
       "requiredAtBoot": false,

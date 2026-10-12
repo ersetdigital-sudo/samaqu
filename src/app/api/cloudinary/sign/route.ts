@@ -61,10 +61,41 @@ function signParams(params: SignParams, apiSecret: string): string {
   return crypto.createHash("sha1").update(toSign + apiSecret).digest("hex");
 }
 
+// Transformasi khusus gambar chat: pelanggan tidak butuh resolusi besar, jadi cukup 1280px
+// (lebih hemat storage/kredit daripada 2400px milik produk).
+const CHAT_IMAGE_TRANSFORMATION = "c_limit,w_1280,q_auto:good";
+
+// Upload chat boleh memakai akun Cloudinary TERPISAH (isolasi storage/kredit dari produk).
+// Kalau env CHAT_CLOUDINARY_* belum diisi, jatuh ke akun utama supaya tetap jalan.
+function resolveScope(scope: "product" | "chat") {
+  if (scope === "chat") {
+    return {
+      cloudName: process.env.CHAT_CLOUDINARY_CLOUD || process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD,
+      apiKey: process.env.CHAT_CLOUDINARY_API_KEY || process.env.CLOUDINARY_API_KEY,
+      apiSecret: process.env.CHAT_CLOUDINARY_API_SECRET || process.env.CLOUDINARY_API_SECRET,
+      folder: "chat" as string | undefined,
+      chat: true,
+    };
+  }
+  return {
+    cloudName: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD,
+    apiKey: process.env.CLOUDINARY_API_KEY,
+    apiSecret: process.env.CLOUDINARY_API_SECRET,
+    folder: undefined,
+    chat: false,
+  };
+}
+
 export async function POST(request: Request) {
-  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD;
-  const apiKey = process.env.CLOUDINARY_API_KEY;
-  const apiSecret = process.env.CLOUDINARY_API_SECRET;
+  let body: { resourceType?: string; scope?: string } = {};
+  try {
+    body = await request.json();
+  } catch {
+    // Body kosong → default
+  }
+
+  const scope = body?.scope === "chat" ? "chat" : "product";
+  const { cloudName, apiKey, apiSecret, folder, chat } = resolveScope(scope);
 
   if (!cloudName || !apiKey || !apiSecret) {
     return NextResponse.json(
@@ -88,20 +119,20 @@ export async function POST(request: Request) {
   }
 
   let resourceType: "image" | "video" = "image";
-  try {
-    const body = await request.json();
-    if (body?.resourceType === "video") resourceType = "video";
-  } catch {
-    // Body kosong → default image
-  }
+  if (!chat && body?.resourceType === "video") resourceType = "video";
 
   const timestamp = Math.floor(Date.now() / 1000);
 
-  // Gambar → c_limit,w_2400,q_auto:good. Video → c_limit,w_720,q_auto (lihat catatan
-  // VIDEO_* di atas: tarif SD, bukan HD). Keduanya incoming transformation yang dibayar
-  // satu kali saat upload, lalu hasilnya dipakai berulang saat delivery.
-  const transformation = resourceType === "video" ? VIDEO_TRANSFORMATION : IMAGE_TRANSFORMATION;
+  // Produk: gambar → c_limit,w_2400,q_auto:good; video → c_limit,w_720,q_auto (lihat catatan
+  // VIDEO_* di atas: tarif SD, bukan HD). Chat: selalu gambar, c_limit,w_1280.
+  const transformation = chat
+    ? CHAT_IMAGE_TRANSFORMATION
+    : resourceType === "video"
+      ? VIDEO_TRANSFORMATION
+      : IMAGE_TRANSFORMATION;
+
   const signatureParams: SignParams = { timestamp, transformation };
+  if (folder) signatureParams.folder = folder;
   const signature = signParams(signatureParams, apiSecret);
 
   return NextResponse.json({
@@ -110,6 +141,7 @@ export async function POST(request: Request) {
     timestamp,
     transformation,
     resourceType,
+    folder,
     signature,
   });
 }

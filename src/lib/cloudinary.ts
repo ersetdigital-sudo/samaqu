@@ -72,11 +72,15 @@ interface CloudinarySignature {
   cloudName: string;
   apiKey: string;
   timestamp: number;
-  /** Selalu diisi server: gambar → w_2400, video → w_720 (tarif SD). */
+  /** Selalu diisi server: gambar → w_2400, video → w_720 (tarif SD), chat → w_1280. */
   transformation?: string;
   resourceType: "image" | "video";
+  /** Folder upload (mis. "chat"); hanya ada untuk scope chat. */
+  folder?: string;
   signature: string;
 }
+
+export type UploadScope = "product" | "chat";
 
 /* ────────────────────────────────────────────────────────────────────────────
    Validasi berkas media sebelum upload.
@@ -214,16 +218,17 @@ export async function validateMediaFile(file: File): Promise<void> {
  * Env yang dibutuhkan:
  *   NEXT_PUBLIC_CLOUDINARY_CLOUD, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET
  */
-export async function uploadToCloudinary(file: File): Promise<string> {
-  const { cloud } = getCloudinaryConfig();
+export async function uploadToCloudinary(file: File, opts: { scope?: UploadScope } = {}): Promise<string> {
+  const scope: UploadScope = opts.scope ?? "product";
   const isVideo = file.type.startsWith("video/");
   const resourceType: "image" | "video" = isVideo ? "video" : "image";
 
-  // 1) Minta signature + parameter transformation dari server
+  // 1) Minta signature + parameter transformation dari server. `scope` menentukan akun
+  //    Cloudinary: "product" (utama) atau "chat" (akun terpisah bila env CHAT_* diisi).
   const signRes = await fetch("/api/cloudinary/sign", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ resourceType }),
+    body: JSON.stringify({ resourceType, scope }),
   });
   if (!signRes.ok) {
     console.error("[uploadToCloudinary] Gagal minta signature:", signRes.status);
@@ -231,20 +236,24 @@ export async function uploadToCloudinary(file: File): Promise<string> {
   }
   const sign = (await signRes.json()) as CloudinarySignature;
 
-  // 2) Kirim file + parameter bertanda tangan langsung ke Cloudinary
+  // 2) Kirim file + parameter bertanda tangan langsung ke Cloudinary.
+  //    Pakai cloudName dari respons (bukan env) supaya akun terpisah ikut jalan.
   const formData = new FormData();
   formData.append("file", file);
   formData.append("api_key", sign.apiKey);
   formData.append("timestamp", String(sign.timestamp));
   formData.append("signature", sign.signature);
-  // Transformation selalu diisi server (gambar → w_2400, video → w_720). Guard-nya
-  // dipertahankan supaya aman kalau server suatu saat mengembalikan video tanpa
+  // Transformation selalu diisi server (gambar → w_2400, video → w_720, chat → w_1280).
+  // Guard-nya dipertahankan supaya aman kalau server suatu saat mengembalikan video tanpa
   // transformation — mengirim string kosong justru bikin Cloudinary menolak.
   if (sign.transformation) {
     formData.append("transformation", sign.transformation);
   }
+  if (sign.folder) {
+    formData.append("folder", sign.folder);
+  }
 
-  const res = await fetch(`https://api.cloudinary.com/v1_1/${cloud}/${resourceType}/upload`, {
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${sign.cloudName}/${resourceType}/upload`, {
     method: "POST",
     body: formData,
   });
