@@ -58,7 +58,15 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { refetchOnWindowFocus: false, retry: 1 } },
 });
 
-function SidebarContent({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {
+function SidebarContent({
+  pathname,
+  onNavigate,
+  stripOps,
+}: {
+  pathname: string;
+  onNavigate?: () => void;
+  stripOps?: boolean;
+}) {
   return (
     <div className="flex-1 px-3 py-3 space-y-3 no-scrollbar overflow-y-auto">
       {MENU_GROUPS.map((group, idx) => (
@@ -69,7 +77,9 @@ function SidebarContent({ pathname, onNavigate }: { pathname: string; onNavigate
           <div className="space-y-0.5">
             {group.items.map((item) => {
               const Icon = item.icon;
-              const active = pathname === item.href;
+              // Di subdomain (ops.samaqu.id) URL-nya bersih: /leads, bukan /ops/leads
+              const href = stripOps ? item.href.replace(/^\/ops/, "") || "/" : item.href;
+              const active = pathname === item.href || pathname === href;
               const cls = `w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all ${
                 active
                   ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/20"
@@ -84,7 +94,7 @@ function SidebarContent({ pathname, onNavigate }: { pathname: string; onNavigate
                   <span className="text-[9px] font-black tracking-wider opacity-70">SOON</span>
                 </div>
               ) : (
-                <Link key={item.href} href={item.href} onClick={onNavigate} className={cls}>
+                <Link key={item.href} href={href} onClick={onNavigate} className={cls}>
                   <Icon size={17} />
                   <span className="flex-1 text-left">{item.title}</span>
                 </Link>
@@ -107,6 +117,11 @@ export default function OpsShell({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [drawer, setDrawer] = useState(false);
+  const [onOpsHost, setOnOpsHost] = useState(false);
+
+  useEffect(() => {
+    setOnOpsHost(window.location.hostname === "office.samaqu.id");
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -224,7 +239,7 @@ export default function OpsShell({ children }: { children: React.ReactNode }) {
               <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Internal</p>
             </div>
           </div>
-          <SidebarContent pathname={pathname} />
+          <SidebarContent pathname={pathname} stripOps={onOpsHost} />
           <div className="p-3 border-t border-slate-200 dark:border-slate-800 shrink-0">
             <button
               onClick={handleLogout}
@@ -246,7 +261,7 @@ export default function OpsShell({ children }: { children: React.ReactNode }) {
                   <X size={18} className="text-slate-500" />
                 </button>
               </div>
-              <SidebarContent pathname={pathname} onNavigate={() => setDrawer(false)} />
+              <SidebarContent pathname={pathname} stripOps={onOpsHost} onNavigate={() => setDrawer(false)} />
               <div className="p-3 border-t border-slate-200 dark:border-slate-800">
                 <button onClick={handleLogout} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-100">
                   <LogOut size={17} /> Keluar
