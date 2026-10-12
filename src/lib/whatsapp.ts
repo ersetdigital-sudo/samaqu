@@ -23,3 +23,19 @@ export function waNumber(raw?: string | null): string {
 export function waLink(raw: string | null | undefined, message: string): string {
   return `https://wa.me/${waNumber(raw)}?text=${encodeURIComponent(message)}`;
 }
+
+/**
+ * Teks pesan standar SAMAQU untuk menagih pembayaran — dipakai tombol
+ * "Hubungi via WhatsApp" di detail pesanan untuk **semua** pesanan; hanya nama
+ * panggilan pelanggan (kata pertama dari nama) yang berubah.
+ */
+export function pesanPembayaran(nama?: string | null): string {
+  const panggilan = (nama || "").trim().split(/\s+/)[0] || "Kakak";
+  return `Halo Kak ${panggilan} 😊
+
+Pesanan Kakak di SAMAQU sudah masuk, nih! Tinggal selangkah lagi supaya pesanan bisa segera kami proses.
+
+Yuk, selesaikan pembayarannya sekarang ya, Kak. Setelah transfer, kirim bukti pembayarannya ke sini agar pesanan bisa langsung kami lanjutkan.
+
+Terima kasih!`;
+}
