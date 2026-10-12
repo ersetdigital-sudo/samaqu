@@ -30,7 +30,7 @@ export default function AkunMobileShell({ children }: { children: ReactNode }) {
       <div className="px-4 pt-4 pb-10">
         <AkunPageTransition>{children}</AkunPageTransition>
       </div>
-      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur border-t border-[#ece6da] px-2 pt-2 pb-5 shadow-[0_-6px_24px_rgba(15,61,51,.06)]">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur border-t border-[#E6E6E6] px-2 pt-2 pb-5 shadow-[0_-6px_24px_rgba(0,0,0,.06)]">
         <div className="flex items-stretch justify-around">
           {BOTTOM.map((item) => {
             const on = isActive(pathname, item);
@@ -41,13 +41,13 @@ export default function AkunMobileShell({ children }: { children: ReactNode }) {
                 prefetch={true}
                 className={`flex flex-col items-center gap-1 px-4 py-1.5 rounded-2xl transition ${on ? "bg-[#eef4f1]" : "active:bg-[#f5f1ea]"}`}
               >
-                <span className={on ? "text-[#0f3d33]" : "text-[#a3aeaa]"}>
+                <span className={on ? "text-[#000000]" : "text-[#a3aeaa]"}>
                   <svg viewBox="0 0 24 24" className="w-[22px] h-[22px]" fill="none" stroke="currentColor" strokeWidth={on ? "2" : "1.6"} strokeLinecap="round" strokeLinejoin="round">
                     <path d={item.icon} />
                   </svg>
                 </span>
-                <span className={`text-[10px] font-bold ${on ? "text-[#0f3d33]" : "text-[#a3aeaa]"}`}>{item.label}</span>
-                <span className={`w-1.5 h-1.5 rounded-full ${on ? "bg-[#0f3d33]" : ""}`} />
+                <span className={`text-[10px] font-bold ${on ? "text-[#000000]" : "text-[#a3aeaa]"}`}>{item.label}</span>
+                <span className={`w-1.5 h-1.5 rounded-full ${on ? "bg-[#000000]" : ""}`} />
               </Link>
             );
           })}

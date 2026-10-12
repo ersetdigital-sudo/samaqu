@@ -80,13 +80,13 @@ export default function AlamatPage() {
         <div className="grid gap-3 md:grid-cols-2 md:gap-5">
           {list.map((a) => (
             <article key={a.id} className="akun-card p-5 flex gap-3 relative">
-              <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0 mt-0.5" fill="none" stroke="#0f3d33" strokeWidth="1.6"><path d="M12 21s7-5.5 7-11a7 7 0 1 0-14 0c0 5.5 7 11 7 11Z" /><circle cx="12" cy="10" r="2.5" /></svg>
+              <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0 mt-0.5" fill="none" stroke="#000000" strokeWidth="1.6"><path d="M12 21s7-5.5 7-11a7 7 0 1 0-14 0c0 5.5 7 11 7 11Z" /><circle cx="12" cy="10" r="2.5" /></svg>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-extrabold text-sm md:text-base" style={{ color: "#0f3d33" }}>{a.label || "Alamat"}</span>
+                  <span className="font-extrabold text-sm md:text-base" style={{ color: "#000000" }}>{a.label || "Alamat"}</span>
                   {a.is_default && <span className="akun-pill akun-pill-selesai">Alamat Utama</span>}
                 </div>
-                <p className="text-[13px] md:text-sm text-[#6c7a75] mt-1.5 leading-relaxed">
+                <p className="text-[13px] md:text-sm text-[#777777] mt-1.5 leading-relaxed">
                   {a.recipient_name} • {a.phone}<br />
                   {a.address}{a.kecamatan ? `, ${a.kecamatan}` : ""}, {a.city}{a.province ? `, ${a.province}` : ""} {a.postal_code}
                 </p>
@@ -97,9 +97,9 @@ export default function AlamatPage() {
                 </button>
               )}
               {menuFor === a.id && (
-                <div className="absolute right-4 top-12 z-20 w-44 rounded-xl bg-white shadow-lg border border-[#eee7da] py-1.5">
-                  <Link href={to(`/akun/alamat/${a.id}`)} onClick={() => setMenuFor(null)} className="block px-4 py-2.5 text-sm font-semibold hover:bg-[#f2efe8]" style={{ color: "#3c4b46" }}>Ubah</Link>
-                  <button onClick={() => jadikanUtama(a)} className="block w-full text-left px-4 py-2.5 text-sm font-semibold hover:bg-[#f2efe8]" style={{ color: "#3c4b46" }}>Jadikan utama</button>
+                <div className="absolute right-4 top-12 z-20 w-44 rounded-xl bg-white shadow-lg border border-[#E8E8E8] py-1.5">
+                  <Link href={to(`/akun/alamat/${a.id}`)} onClick={() => setMenuFor(null)} className="block px-4 py-2.5 text-sm font-semibold hover:bg-[#f2efe8]" style={{ color: "#000000" }}>Ubah</Link>
+                  <button onClick={() => jadikanUtama(a)} className="block w-full text-left px-4 py-2.5 text-sm font-semibold hover:bg-[#f2efe8]" style={{ color: "#000000" }}>Jadikan utama</button>
                   <button onClick={() => hapus(a)} className="block w-full text-left px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50">Hapus</button>
                 </div>
               )}
@@ -109,10 +109,10 @@ export default function AlamatPage() {
       ) : (
         <div className="akun-card p-8 md:p-12 text-center md:max-w-[520px] md:mx-auto">
           <div className="mx-auto w-16 h-16 rounded-2xl grid place-items-center" style={{ background: "#e3ede9" }}>
-            <svg viewBox="0 0 24 24" className="w-8 h-8" fill="none" stroke="#0f3d33" strokeWidth="1.5"><path d="M12 21s7-5.5 7-11a7 7 0 1 0-14 0c0 5.5 7 11 7 11Z" /><circle cx="12" cy="10" r="2.5" /></svg>
+            <svg viewBox="0 0 24 24" className="w-8 h-8" fill="none" stroke="#000000" strokeWidth="1.5"><path d="M12 21s7-5.5 7-11a7 7 0 1 0-14 0c0 5.5 7 11 7 11Z" /><circle cx="12" cy="10" r="2.5" /></svg>
           </div>
-          <p className="mt-4 font-extrabold" style={{ color: "#0f3d33" }}>Belum ada alamat tersimpan</p>
-          <p className="text-sm text-[#6c7a75] mt-1">Tambah alamat untuk mempercepat proses checkout.</p>
+          <p className="mt-4 font-extrabold" style={{ color: "#000000" }}>Belum ada alamat tersimpan</p>
+          <p className="text-sm text-[#777777] mt-1">Tambah alamat untuk mempercepat proses checkout.</p>
         </div>
       )}
 

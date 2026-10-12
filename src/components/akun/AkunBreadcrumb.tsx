@@ -84,9 +84,9 @@ export default function AkunBreadcrumb({ current, className }: AkunBreadcrumbPro
     const isLast = i === mobileCrumbs.length - 1;
     return (
       <li key={`${crumb.label}-${i}`} className="flex items-center gap-1.5 min-w-0" aria-current={isLast ? "page" : undefined}>
-        {i > 0 && <span className="shrink-0" aria-hidden="true" style={{ color: "#d8c39a" }}>/</span>}
+        {i > 0 && <span className="shrink-0" aria-hidden="true" style={{ color: "#C5C5C5" }}>/</span>}
         {isLast || !crumb.href ? (
-          <span className="truncate font-semibold" style={{ color: "#0f3d33" }}>{crumb.label}</span>
+          <span className="truncate font-semibold" style={{ color: "#000000" }}>{crumb.label}</span>
         ) : (
           <Link href={crumb.href} className="truncate transition-opacity hover:opacity-70" style={{ color: "#8b9793" }}>
             {crumb.label}
@@ -106,9 +106,9 @@ export default function AkunBreadcrumb({ current, className }: AkunBreadcrumbPro
           const isLast = i === crumbs.length - 1;
           return (
             <li key={`${crumb.label}-${i}`} className="flex items-center gap-1.5 shrink-0" aria-current={isLast ? "page" : undefined}>
-              {i > 0 && <span aria-hidden="true" style={{ color: "#d8c39a" }}>/</span>}
+              {i > 0 && <span aria-hidden="true" style={{ color: "#C5C5C5" }}>/</span>}
               {isLast || !crumb.href ? (
-                <span className="font-semibold" style={{ color: "#0f3d33" }}>{crumb.label}</span>
+                <span className="font-semibold" style={{ color: "#000000" }}>{crumb.label}</span>
               ) : (
                 <Link href={crumb.href} className="transition-opacity hover:opacity-70" style={{ color: "#8b9793" }}>
                   {crumb.label}

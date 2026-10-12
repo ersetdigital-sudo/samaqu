@@ -72,22 +72,22 @@ export const RINCIAN_CSS = `
 .rp-bk{width:36px;height:36px;flex:none;border-radius:10px;border:1px solid #E6E7E8;background:#fff;display:grid;place-items:center;cursor:pointer;transition:background .2s,transform .2s}
 .rp-bk:hover{background:#F5F6F7}
 .rp-bk:active{transform:scale(.95)}
-.rp-bk:focus-visible{outline:2px solid #B4552F;outline-offset:2px}
+.rp-bk:focus-visible{outline:2px solid #666666;outline-offset:2px}
 .rp-top h1{font-size:16px;font-weight:700;letter-spacing:-.01em}
 
 /* ── Judul desktop (sidebar akun sudah punya header sendiri) ── */
 .rp-dhead{display:none}
 
 /* ── Banner status ── */
-.rp-banner{margin-top:10px;border-radius:12px;padding:16px;color:#fff;background:#B4552F;display:flex;align-items:center;gap:12px}
+.rp-banner{margin-top:10px;border-radius:12px;padding:16px;color:#fff;background:#666666;display:flex;align-items:center;gap:12px}
 .rp-banner b{display:block;font-size:17px;font-weight:800;letter-spacing:-.015em}
 .rp-banner small{display:block;font-size:12.5px;opacity:.86;margin-top:3px}
 .rp-banner .rp-bico{flex:none;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.18);display:grid;place-items:center}
-.rp-banner.t-wait{background:#B4552F}
-.rp-banner.t-process{background:#B08148}
-.rp-banner.t-ship{background:#3F6EA8}
-.rp-banner.t-done{background:#3E6B57}
-.rp-banner.t-cancel{background:#8B4A42}
+.rp-banner.t-wait{background:#666666}
+.rp-banner.t-process{background:#878787}
+.rp-banner.t-ship{background:#686868}
+.rp-banner.t-done{background:#606060}
+.rp-banner.t-cancel{background:#000000}
 
 /* ── Baris info pengiriman / alamat ── */
 .rp-line{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;line-height:1.5}
@@ -95,9 +95,9 @@ export const RINCIAN_CSS = `
 .rp-line svg{flex:none;margin-top:2px}
 .rp-ico{color:#9AA0A5}
 .rp-strong{font-weight:700}
-.rp-addr{color:#5A6067;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.rp-addr{color:#5F5F5F;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .rp-addr.is-open{display:block}
-.rp-lihat{border:0;background:none;padding:0 0 0 4px;color:#B4552F;font-size:13px;font-weight:700;cursor:pointer}
+.rp-lihat{border:0;background:none;padding:0 0 0 4px;color:#666666;font-size:13px;font-weight:700;cursor:pointer}
 
 /* ── Produk ── */
 .rp-it{display:flex;gap:12px;padding:14px 16px}
@@ -123,29 +123,29 @@ export const RINCIAN_CSS = `
 .rp-step{display:flex;gap:12px}
 .rp-rail{display:flex;flex-direction:column;align-items:center;width:20px;flex:none}
 .rp-node{width:20px;height:20px;border-radius:50%;border:2px solid #D8DBDE;background:#fff;display:grid;place-items:center;flex:none}
-.rp-step.is-done .rp-node{background:#3E6B57;border-color:#3E6B57}
+.rp-step.is-done .rp-node{background:#606060;border-color:#606060}
 .rp-step.is-done .rp-node:after{content:"";width:5px;height:9px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg) translate(-1px,-2px)}
-.rp-step.is-active .rp-node{border-color:#B4552F;box-shadow:0 0 0 4px rgba(180,85,47,.12)}
-.rp-step.is-active .rp-node:after{content:"";width:7px;height:7px;border-radius:50%;background:#B4552F}
+.rp-step.is-active .rp-node{border-color:#666666;box-shadow:0 0 0 4px rgba(102,102,102,.12)}
+.rp-step.is-active .rp-node:after{content:"";width:7px;height:7px;border-radius:50%;background:#666666}
 .rp-rail-line{flex:1;width:2px;background:#E9EBED;margin:3px 0;border-radius:2px}
 .rp-txt{padding-bottom:16px;min-width:0}
 .rp-step:last-child .rp-txt{padding-bottom:0}
 .rp-txt b{display:block;font-size:13.5px;font-weight:700}
 .rp-step.is-todo .rp-txt b{color:#A9AEB3;font-weight:600}
 .rp-txt i{display:block;font-style:normal;font-size:12px;color:#8D9297;margin-top:2px}
-.rp-step.is-active .rp-txt i{color:#B4552F;font-weight:600}
-.rp-hint{display:flex;gap:9px;align-items:flex-start;margin-top:14px;padding:11px 13px;border-radius:10px;background:#FCF0EA;color:#9A4622;font-size:12.5px;line-height:1.45;font-weight:600}
+.rp-step.is-active .rp-txt i{color:#666666;font-weight:600}
+.rp-hint{display:flex;gap:9px;align-items:flex-start;margin-top:14px;padding:11px 13px;border-radius:10px;background:#F2F2F2;color:#000000;font-size:12.5px;line-height:1.45;font-weight:600}
 .rp-hint svg{flex:none;margin-top:1px}
 
 /* ── Aksi bawah ── */
 .rp-act{position:sticky;bottom:var(--mobile-nav-h,62px);z-index:20;padding:10px 0 14px;background:linear-gradient(180deg,rgba(245,246,247,0),#F5F6F7 40%)}
-.rp-btn{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;padding:15px;border-radius:12px;background:#B4552F;color:#fff;font-size:14.5px;font-weight:700;text-decoration:none;cursor:pointer;border:0;box-shadow:0 10px 22px rgba(180,85,47,.24);transition:background .2s,transform .2s}
-.rp-btn:hover{background:#9E4A29}
+.rp-btn{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;padding:15px;border-radius:12px;background:#666666;color:#fff;font-size:14.5px;font-weight:700;text-decoration:none;cursor:pointer;border:0;box-shadow:0 10px 22px rgba(102,102,102,.24);transition:background .2s,transform .2s}
+.rp-btn:hover{background:#000000}
 .rp-btn:active{transform:scale(.99)}
-.rp-btn:focus-visible{outline:2px solid #B4552F;outline-offset:2px}
+.rp-btn:focus-visible{outline:2px solid #666666;outline-offset:2px}
 .rp-btn:disabled{opacity:.6;cursor:default}
 /* Tombol sekunder "Batalkan Pesanan": putih dengan garis & teks merah, di bawah tombol utama. */
-.rp-btn.is-danger{margin-top:10px;background:#fff;border:1px solid #E7C6C0;color:#B91C1C;box-shadow:none}
+.rp-btn.is-danger{margin-top:10px;background:#fff;border:1px solid #CDCDCD;color:#B91C1C;box-shadow:none}
 .rp-btn.is-danger:hover{background:#FDF3F1}
 .rp-err{margin-top:8px;text-align:center;font-size:12px;font-weight:600;color:#B91C1C}
 .rp-note{padding:12px 14px;border-radius:10px;background:#fff;border:1px solid #ECEDEE;color:#757575;font-size:12.5px;text-align:center}
@@ -158,35 +158,35 @@ export const RINCIAN_CSS = `
  .rp-wrap{max-width:600px}
  .rp-dhead{display:flex;align-items:center;gap:14px;margin-bottom:14px}
  .rp-dhead h1{font-size:22px;font-weight:800;letter-spacing:-.025em}
- .rp-dhead a{margin-left:auto;display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:#8A8078;text-decoration:none}
- .rp-dhead a:hover{color:#B4552F}
+ .rp-dhead a{margin-left:auto;display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:#828282;text-decoration:none}
+ .rp-dhead a:hover{color:#666666}
 
  /* satu lembar kertas, blok-blok di dalamnya dipisah garis struk */
- .rp-sheet{display:block;background:#FFFDF8;border:1px solid #EFE6D9;border-radius:16px;box-shadow:0 20px 44px rgba(42,37,33,.08);overflow:hidden}
+ .rp-sheet{display:block;background:#FFFDF8;border:1px solid #E7E7E7;border-radius:16px;box-shadow:0 20px 44px rgba(42,37,33,.08);overflow:hidden}
  .rp-banner{margin-top:0;border-radius:0;padding:18px 20px}
  .rp-banner b{font-size:18px}
  .rp-banner small{font-size:13px}
  .rp-card{margin-top:0;border:0;border-radius:0;background:none}
  .rp-sec{padding:16px 20px}
  .rp-line{font-size:14px}
- .rp-sub,.rp-var,.rp-addr,.rp-step.is-todo .rp-txt b{color:#7E746B}
+ .rp-sub,.rp-var,.rp-addr,.rp-step.is-todo .rp-txt b{color:#757575}
  .rp-it{padding:16px 20px;gap:16px}
- .rp-it + .rp-it{border-top:1px dashed #F0E9DC}
- .rp-thumb{width:88px;height:88px;border-radius:10px;background:#F7F2E9}
+ .rp-it + .rp-it{border-top:1px dashed #EAEAEA}
+ .rp-thumb{width:88px;height:88px;border-radius:10px;background:#F2F2F2}
  .rp-nm,.rp-pr{font-size:14px}
  .rp-var{font-size:13px}
- .rp-sum{padding:15px 20px;font-size:14px;border-top:1px dashed #F0E9DC;background:none}
- .rp-paysum{background:#FCF8F1;border-top:1px dashed #F0E9DC}
+ .rp-sum{padding:15px 20px;font-size:14px;border-top:1px dashed #EAEAEA;background:none}
+ .rp-paysum{background:#FCF8F1;border-top:1px dashed #EAEAEA}
  .rp-paysum .rp-row{font-size:13.5px;padding:6px 0}
- .rp-sep{border-top-color:#E7DCCB}
- .rp-node{border-color:#DDD3C4;background:#FFFDF8}
- .rp-rail-line{background:#EBE3D6}
- .rp-hint{background:#FBF0E7}
- .rp-note{background:#FCF8F1;border-color:#EFE6D9;color:#8A8078}
+ .rp-sep{border-top-color:#DDDDDD}
+ .rp-node{border-color:#D4D4D4;background:#FFFDF8}
+ .rp-rail-line{background:#E4E4E4}
+ .rp-hint{background:#F2F2F2}
+ .rp-note{background:#FCF8F1;border-color:#E7E7E7;color:#828282}
  .rp-act{position:static;padding:16px 20px 20px;background:none}
  .rp-ft{display:none}
  /* pemisah antar blok di dalam lembar struk (letakkan paling akhir agar menang) */
- .rp-sheet > * + *{border-top:1px dashed #E7DCCB}
+ .rp-sheet > * + *{border-top:1px dashed #DDDDDD}
 }
 `;
 
@@ -350,7 +350,7 @@ export default function RincianPesanan({ order }: { order: RincianOrder }) {
             </div>
             {latest ? (
               <>
-                <div className="rp-line" style={{ color: "#B4552F", fontWeight: 600 }}>
+                <div className="rp-line" style={{ color: "#666666", fontWeight: 600 }}>
                   <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7h11v9H3z" /><path d="M14 10h4l3 3v3h-7z" /><circle cx="7" cy="18" r="1.5" /><circle cx="17.5" cy="18" r="1.5" /></svg>
                   <span>{[latest.status, latest.city_name].filter(Boolean).join(" — ")}</span>
                 </div>
