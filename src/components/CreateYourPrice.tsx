@@ -28,15 +28,16 @@ export default function CreateYourPrice() {
     <section
       id="cyp"
       className="relative overflow-hidden min-h-screen flex items-center"
-      style={{ background: "var(--espresso-deep, #2a211b)", color: "var(--cream)" }}
+      style={{ background: "#000000", color: "#ffffff" }}
     >
-      {/* Hero photo background */}
+      {/* Hero photo background — dibuat hitam-putih (grayscale) */}
       <div
-        className="absolute inset-0 opacity-40"
+        className="absolute inset-0 opacity-25"
         style={{
           backgroundImage: "url(/images/c8a0800b-b9bb-4b53-bd5e-00f26a500219.png)",
           backgroundSize: "cover",
           backgroundPosition: "60% 50%",
+          filter: "grayscale(1)",
         }}
       />
 
@@ -45,7 +46,7 @@ export default function CreateYourPrice() {
         className="absolute inset-0"
         style={{
           background:
-            "linear-gradient(to right, #2a211b, rgba(42,33,27,.95) 40%, rgba(42,33,27,.70))",
+            "linear-gradient(to right, #000000, rgba(0,0,0,.95) 40%, rgba(0,0,0,.70))",
         }}
       />
 
@@ -54,13 +55,13 @@ export default function CreateYourPrice() {
         {/* Left: Copy */}
         <div>
           <div className="flex items-center gap-4 mb-6">
-            <span className="h-px w-10" style={{ background: "var(--gold)" }} />
+            <span className="h-px w-10" style={{ background: "#ffffff" }} />
             <span
               className="font-semibold font-ui"
               style={{
                 letterSpacing: "0.28em",
                 fontSize: "11px",
-                color: "var(--gold)",
+                color: "rgba(255,255,255,.7)",
               }}
             >
               {t("eyebrow").toUpperCase()}
@@ -79,39 +80,39 @@ export default function CreateYourPrice() {
 
           <ul className="mt-9 space-y-6 max-w-lg">
             <li className="flex gap-4 items-start">
-              <span className="shrink-0 grid place-items-center w-11 h-11 rounded-full" style={{ background: "#3a2f26" }}>
-                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="var(--gold-bright, #c9a063)" strokeWidth="1.6">
+              <span className="shrink-0 grid place-items-center w-11 h-11 rounded-full" style={{ background: "rgba(255,255,255,.08)" }}>
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="1.6">
                   <circle cx="9" cy="8" r="3" />
                   <path d="M3 20a6 6 0 0 1 12 0" />
                   <path d="M16 11a3 3 0 1 0-1-5.8" />
                   <path d="M18 20a5 5 0 0 0-3-4.6" />
                 </svg>
               </span>
-              <p className="text-[15px] leading-relaxed pt-2" style={{ color: "#d8cec3" }}>
+              <p className="text-[15px] leading-relaxed pt-2" style={{ color: "rgba(255,255,255,.72)" }}>
                 {t("bullet1")}
               </p>
             </li>
             <li className="flex gap-4 items-start">
-              <span className="shrink-0 grid place-items-center w-11 h-11 rounded-full" style={{ background: "#3a2f26" }}>
-                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="var(--gold-bright, #c9a063)" strokeWidth="1.6">
+              <span className="shrink-0 grid place-items-center w-11 h-11 rounded-full" style={{ background: "rgba(255,255,255,.08)" }}>
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="1.6">
                   <path d="M3 12V4h8l9 9-8 8-9-9Z" />
-                  <circle cx="7.5" cy="7.5" r="1.3" fill="var(--gold-bright, #c9a063)" stroke="none" />
+                  <circle cx="7.5" cy="7.5" r="1.3" fill="#ffffff" stroke="none" />
                 </svg>
               </span>
-              <p className="text-[15px] leading-relaxed pt-2" style={{ color: "#d8cec3" }}>
+              <p className="text-[15px] leading-relaxed pt-2" style={{ color: "rgba(255,255,255,.72)" }}>
                 {t("bullet2")}
               </p>
             </li>
             <li className="flex gap-4 items-start">
-              <span className="shrink-0 grid place-items-center w-11 h-11 rounded-full" style={{ background: "#3a2f26" }}>
-                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="var(--gold-bright, #c9a063)" strokeWidth="1.6">
+              <span className="shrink-0 grid place-items-center w-11 h-11 rounded-full" style={{ background: "rgba(255,255,255,.08)" }}>
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="1.6">
                   <path d="M4 20V10" />
                   <path d="M10 20V4" />
                   <path d="M16 20v-7" />
                   <path d="M22 20H2" />
                 </svg>
               </span>
-              <p className="text-[15px] leading-relaxed pt-2" style={{ color: "#d8cec3" }}>
+              <p className="text-[15px] leading-relaxed pt-2" style={{ color: "rgba(255,255,255,.72)" }}>
                 {t("bullet3")}
               </p>
             </li>
@@ -121,8 +122,8 @@ export default function CreateYourPrice() {
             href="/create-your-price"
             className="mt-10 inline-flex items-center gap-3 rounded-full font-bold text-[13px] tracking-wide px-8 py-4 transition-colors duration-200"
             style={{
-              background: "var(--gold-bright, #c9a063)",
-              color: "#2a211b",
+              background: "#ffffff",
+              color: "#000000",
             }}
           >
             {t("ctaLearn").toUpperCase()}
@@ -136,9 +137,9 @@ export default function CreateYourPrice() {
         <div
           className="rounded-2xl p-6 sm:p-8 backdrop-blur-sm"
           style={{
-            border: "1px solid #5a4a3a",
-            background: "rgba(30,24,19,.72)",
-            boxShadow: "0 25px 50px -12px rgba(0,0,0,.4)",
+            border: "1px solid rgba(255,255,255,.14)",
+            background: "rgba(255,255,255,.05)",
+            boxShadow: "0 25px 50px -12px rgba(0,0,0,.6)",
           }}
         >
           <div className="flex items-center justify-between gap-4">
@@ -147,14 +148,14 @@ export default function CreateYourPrice() {
               style={{
                 letterSpacing: "0.28em",
                 fontSize: "11px",
-                color: "var(--gold)",
+                color: "rgba(255,255,255,.7)",
               }}
             >
               {t("cardTitle").toUpperCase()}
             </span>
             <span
               className="rounded-full text-[11px] font-semibold tracking-wide px-4 py-1.5 font-ui"
-              style={{ background: "#4a3d31", color: "#e6dcd0" }}
+              style={{ background: "rgba(255,255,255,.12)", color: "#ffffff" }}
             >
               {t("cardBadge").toUpperCase()}
             </span>
@@ -166,7 +167,7 @@ export default function CreateYourPrice() {
           >
             {fmt(price)}
           </p>
-          <p className="mt-2 text-[14px] leading-relaxed" style={{ color: "#c4b8ab" }}>
+          <p className="mt-2 text-[14px] leading-relaxed" style={{ color: "rgba(255,255,255,.6)" }}>
             {note}
           </p>
 
@@ -183,7 +184,7 @@ export default function CreateYourPrice() {
           />
           <div
             className="mt-3 flex items-center justify-between text-[11px] tracking-wide font-ui"
-            style={{ color: "#9b8d7f" }}
+            style={{ color: "rgba(255,255,255,.45)" }}
           >
             <span>MINIMUM</span>
             <span>{fmt(maxPrice)}</span>

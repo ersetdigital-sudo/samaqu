@@ -443,7 +443,7 @@ details[open] .faq-plus {
 .cyp-slider::-webkit-slider-runnable-track {
   height: 6px;
   border-radius: 999px;
-  background: linear-gradient(to right, var(--gold-bright) var(--pct, 10%), #4a3d31 var(--pct, 10%));
+  background: linear-gradient(to right, #ffffff var(--pct, 10%), rgba(255,255,255,.18) var(--pct, 10%));
 }
 .cyp-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
@@ -451,27 +451,27 @@ details[open] .faq-plus {
   width: 22px;
   margin-top: -8px;
   border-radius: 999px;
-  background: var(--gold-bright);
-  border: 3px solid var(--espresso);
-  box-shadow: 0 0 0 1px var(--gold-bright);
+  background: #ffffff;
+  border: 3px solid #000000;
+  box-shadow: 0 0 0 1px #ffffff;
   cursor: pointer;
 }
 .cyp-slider::-moz-range-track {
   height: 6px;
   border-radius: 999px;
-  background: #4a3d31;
+  background: rgba(255,255,255,.18);
 }
 .cyp-slider::-moz-range-progress {
   height: 6px;
   border-radius: 999px;
-  background: var(--gold-bright);
+  background: #ffffff;
 }
 .cyp-slider::-moz-range-thumb {
   height: 20px;
   width: 20px;
   border-radius: 999px;
-  background: var(--gold-bright);
-  border: 3px solid var(--espresso);
+  background: #ffffff;
+  border: 3px solid #000000;
   cursor: pointer;
 }
 
