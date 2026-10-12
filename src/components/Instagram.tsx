@@ -31,7 +31,7 @@ export default function Instagram() {
   const t = useSafeTranslations("instagram");
 
   return (
-    <section className="py-14 sm:py-20" style={{ background: "var(--sand-2)" }}>
+    <section className="py-14 sm:py-20" style={{ background: "#F3F3F3" }}>
       <div className="mx-auto max-w-5xl px-5 sm:px-8">
         {/* Header */}
         <div className="text-center">
