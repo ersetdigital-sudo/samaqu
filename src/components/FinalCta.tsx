@@ -26,7 +26,7 @@ export default function FinalCta() {
         className="absolute inset-0 pointer-events-none opacity-40"
         style={{
           backgroundImage:
-            "radial-gradient(rgba(42,33,27,.08) 1px, transparent 1px)",
+            "radial-gradient(rgba(0,0,0,.06) 1px, transparent 1px)",
           backgroundSize: "20px 20px",
           maskImage:
             "radial-gradient(70% 60% at 50% 40%, black, transparent)",
@@ -51,17 +51,17 @@ export default function FinalCta() {
           >
             <span
               className="w-6 sm:w-8 h-px"
-              style={{ background: "var(--warm-sand)" }}
+              style={{ background: "rgba(0,0,0,.3)" }}
             />
             <p
               className="font-ui text-[0.72rem] sm:text-[0.74rem] font-semibold uppercase tracking-[0.32em] sm:tracking-[0.38em]"
-              style={{ color: "var(--gold)" }}
+              style={{ color: "#000000" }}
             >
               {t("eyebrow")}
             </p>
             <span
               className="w-6 sm:w-8 h-px"
-              style={{ background: "var(--warm-sand)" }}
+              style={{ background: "rgba(0,0,0,.3)" }}
             />
           </motion.div>
 
@@ -72,7 +72,7 @@ export default function FinalCta() {
             className="text-[2.2rem] sm:text-5xl md:text-6xl lg:text-[4.5rem] font-semibold leading-[1.04] tracking-[-0.01em]"
             style={{
               fontFamily: "var(--font-cormorant), Georgia, serif",
-              color: "var(--espresso)",
+              color: "#000000",
             }}
           >
             {t("title")}
@@ -83,7 +83,7 @@ export default function FinalCta() {
             variants={revealVariants}
             custom={0.24}
             className="mt-5 sm:mt-6 max-w-md mx-auto text-[0.95rem] sm:text-base leading-[1.75] font-ui"
-            style={{ color: "var(--text-secondary)" }}
+            style={{ color: "rgba(0,0,0,.6)" }}
           >
             {t("subtitle")}
           </motion.p>
@@ -93,7 +93,7 @@ export default function FinalCta() {
             variants={revealVariants}
             custom={0.3}
             className="mt-8 sm:mt-9 mx-auto h-px w-16"
-            style={{ background: "var(--warm-sand)" }}
+            style={{ background: "rgba(0,0,0,.2)" }}
           />
 
           {/* Buttons */}
@@ -107,9 +107,9 @@ export default function FinalCta() {
               onClick={() => trackWhatsAppClick("final_cta")}
               className="inline-flex items-center gap-2.5 rounded-full px-7 sm:px-9 py-3.5 sm:py-4 text-[0.82rem] sm:text-[0.9rem] font-semibold uppercase tracking-[0.1em] font-ui transition-all duration-350 hover:-translate-y-0.5 hover:scale-[1.02] hover:shadow-lg w-full sm:w-auto justify-center"
               style={{
-                background: "var(--gold)",
+                background: "#000000",
                 color: "white",
-                boxShadow: "0 8px 24px rgba(184,145,70,.25)",
+                boxShadow: "0 8px 24px rgba(0,0,0,.25)",
               }}
             >
               <svg
@@ -130,8 +130,8 @@ export default function FinalCta() {
               href="/katalog"
               className="inline-flex items-center gap-2 rounded-full px-7 sm:px-9 py-3.5 sm:py-4 text-[0.82rem] sm:text-[0.9rem] font-semibold uppercase tracking-[0.1em] font-ui border transition-all duration-350 hover:-translate-y-0.5 hover:shadow-md group w-full sm:w-auto justify-center"
               style={{
-                borderColor: "var(--clay)",
-                color: "var(--espresso)",
+                borderColor: "rgba(0,0,0,.25)",
+                color: "#000000",
               }}
             >
               <span>{t("ctaCatalog")}</span>
