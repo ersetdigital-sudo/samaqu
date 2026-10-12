@@ -156,8 +156,9 @@ export default function OrderDetailContent({
   const resi = order.awb_no || "";
   const wa = waNumber(order.customer_whatsapp);
   // Pesan chat sudah terisi (satu teks standar untuk semua pesanan) supaya admin tinggal
-  // kirim — teksnya di `pesanPembayaran`, hanya nama panggilan pelanggan yang berubah.
-  const waPesan = pesanPembayaran(order.customer_name);
+  // kirim — teksnya di `pesanPembayaran`, hanya nama panggilan pelanggan dan nomor
+  // pesanan yang berubah.
+  const waPesan = pesanPembayaran(order.customer_name, order.order_number);
   const alamat = [order.shipping_address, order.shipping_city, order.shipping_postal_code].filter(Boolean).join(", ");
 
   const [showAlamat, setShowAlamat] = useState(false);
