@@ -6,6 +6,7 @@ const intlMiddleware = createMiddleware(routing);
 
 /** Subdomain dashboard internal: office.samaqu.id/<halaman> → /ops/<halaman> */
 const OPS_HOST = "office.samaqu.id";
+const LOCALES = ["id", "en"];
 
 export default function middleware(request: NextRequest) {
   // x-pathname dipakai layout/metadata untuk menghitung canonical + hreflang
@@ -15,8 +16,15 @@ export default function middleware(request: NextRequest) {
 
   const host = (request.headers.get("host") || "").split(":")[0].toLowerCase();
   if (host === OPS_HOST) {
-    // Dashboard internal: tanpa locale, URL bersih (ops.samaqu.id/leads, /laporan, dst).
+    // Dashboard internal: tanpa locale, URL bersih (office.samaqu.id/leads, dst).
     const url = request.nextUrl.clone();
+    const firstSegment = url.pathname.split("/")[1];
+    // Kalau dibuka pakai prefix bahasa (mis. office.samaqu.id/id) arahkan ke dashboard,
+    // bukan 404 — dashboard internal memang tidak pakai locale.
+    if (LOCALES.includes(firstSegment)) {
+      url.pathname = "/";
+      return NextResponse.redirect(url);
+    }
     if (!url.pathname.startsWith("/ops")) {
       url.pathname = url.pathname === "/" ? "/ops/leads" : `/ops${url.pathname}`;
     }
