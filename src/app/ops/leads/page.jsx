@@ -102,7 +102,7 @@ export default function Leads() {
     setIsDeleting(false);
     setDeleteTarget(null);
     queryClient.invalidateQueries(['leads']);
-    toast({ title: "â Lead dihapus", variant: "success" });
+    toast({ title: "✅ Lead dihapus", variant: "success" });
   };
 
   const statCards = [

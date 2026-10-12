@@ -49,7 +49,8 @@ import ImportProductModal from "@/components/ops/ImportProductModal"; // Import 
 import { useToast } from "@/components/ops/ui/use-toast";
 import { createPageUrl } from "@/lib/ops-router";
 import { MetricCardSkeleton } from "@/components/ops/ui/skeleton";
-import { SIZES, normalizeStock, sumStock } from "@/lib/ops-variants";
+import { SIZES, normalizeStock, sumStock, stockStatus } from "@/lib/ops-variants";
+import { IconBoxes, IconPackageX, IconArrowDownToLine, IconAlertTriangle } from "@/components/ops/icons";
 
 function AnimatedCounter({ value, prefix = "", suffix = "", duration = 1200, delay = 0 }) {
   const [count, setCount] = useState(0);
@@ -260,7 +261,7 @@ function ProductDetailModal({ isOpen, onClose, product, stockIns, transactions, 
                   </div>
                 )}
 
-                {/* â Stok per Variant (Warna & Ukuran) */}
+                {/* ✅ Stok per Variant (Warna & Ukuran) */}
                 <div className="bg-white rounded-lg p-3 border border-gray-200 mb-4">
                   <h3 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
                     <Package size={16} className="text-emerald-600" />
@@ -277,7 +278,7 @@ function ProductDetailModal({ isOpen, onClose, product, stockIns, transactions, 
                           <div key={v.id} className="border border-gray-100 rounded-lg p-2.5">
                             <div className="flex justify-between items-center mb-1.5">
                               <p className="text-xs font-bold text-gray-800">
-                                {v.color}{v.series_name ? <span className="text-gray-400 font-medium"> â¢ {v.series_name}</span> : ''}
+                                {v.color}{v.series_name ? <span className="text-gray-400 font-medium"> • {v.series_name}</span> : ''}
                               </p>
                               <span className="text-[10px] font-black text-blue-600">{total} pcs</span>
                             </div>
@@ -451,7 +452,7 @@ export default function MasterProduk() {
     initialData: [],
   });
 
-  // â VARIANT: stok per warna + ukuran
+  // ✅ VARIANT: stok per warna + ukuran
   const { data: variants = [], isLoading: isLoadingVariants } = useQuery({
     queryKey: ['productVariants'],
     queryFn: () => base44.entities.ProductVariant.list(),
@@ -471,6 +472,49 @@ export default function MasterProduk() {
   });
 
   const isLoading = isLoadingProducts || isLoadingStockIns || isLoadingTransactions;
+
+  // ── Ringkasan stok untuk tab Laporan Stok (dihitung dari data yang sudah dimuat,
+  //    bukan angka statis). Satuan = unit stok, bukan jumlah produk. ──
+  const [stockFilter, setStockFilter] = useState("all"); // all | menipis | habis
+
+  const totalStockUnits = useMemo(
+    () => (variants || []).reduce((s, v) => s + sumStock(v.stock), 0),
+    [variants],
+  );
+
+  // "Menipis" memakai ambang yang sudah dipakai sistem: total 1..5 (0 = habis, lihat lib/ops-variants).
+  // Sengaja tidak memakai <= 5 agar tidak menghitung dua kali dengan card "Stok Habis".
+  const lowStockVariantCount = useMemo(
+    () => (variants || []).filter((v) => { const t = sumStock(v.stock); return t > 0 && t <= 5; }).length,
+    [variants],
+  );
+
+  const outOfStockVariantCount = useMemo(
+    () => (variants || []).filter((v) => sumStock(v.stock) === 0).length,
+    [variants],
+  );
+
+  // Barang masuk: periode default = bulan berjalan (WIB). Halaman belum punya filter
+  // periode, jadi dipakai periode default yang jelas & konsisten.
+  const incomingThisMonth = useMemo(() => {
+    const wib = new Date(Date.now() + 7 * 3600 * 1000);
+    const y = wib.getUTCFullYear();
+    const m = wib.getUTCMonth();
+    const start = `${y}-${String(m + 1).padStart(2, "0")}-01`;
+    const lastDay = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+    const end = `${y}-${String(m + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+    return (stockIns || [])
+      .filter((si) => si.date && si.date >= start && si.date <= end)
+      .reduce((s, si) => s + (Number(si.qty) || 0), 0);
+  }, [stockIns]);
+
+  const reportVariants = useMemo(() => {
+    if (stockFilter === "all") return variants || [];
+    return (variants || []).filter((v) => {
+      const t = sumStock(v.stock);
+      return stockFilter === "habis" ? t === 0 : t > 0 && t <= 5;
+    });
+  }, [variants, stockFilter]);
 
   const totalProducts = useMemo(() => products?.length || 0, [products]);
   const totalStock = useMemo(() => (products || []).reduce((sum, p) => sum + (p.stock || 0), 0), [products]);
@@ -580,7 +624,7 @@ export default function MasterProduk() {
         return (
           <div className="relative flex-shrink-0">
             <CheckCircle className="w-5 h-5 text-amber-500" />
-            <span className="absolute -top-1 -right-1 text-[10px]">â­</span>
+            <span className="absolute -top-1 -right-1 text-[10px]">⭐</span>
           </div>
         );
       }
@@ -687,7 +731,7 @@ export default function MasterProduk() {
       setProductToDelete(null);
       setDeleteType(null);
       toast({
-        title: "ðï¸ Produk berhasil dihapus",
+        title: "🗑️ Produk berhasil dihapus",
         description: "Data produk telah dihapus dari daftar",
         variant: "destructive",
       });
@@ -702,7 +746,7 @@ export default function MasterProduk() {
       setProductToDelete(null);
       setDeleteType(null);
       toast({
-        title: "ðï¸ Data barang masuk dihapus",
+        title: "🗑️ Data barang masuk dihapus",
         description: "Data barang masuk telah dihapus dari daftar",
         variant: "destructive",
       });
@@ -717,19 +761,19 @@ export default function MasterProduk() {
   const getStatusBadge = (status) => {
     if (status === 'aman') {
       return <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-green-100 text-green-700 text-[10px] font-bold rounded-full border border-green-200">
-        â Aman
+        ● Aman
       </span>;
     } else if (status === 'menipis') {
       return <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-yellow-100 text-yellow-700 text-[10px] font-bold rounded-full border border-yellow-200">
-        â Menipis
+        ● Menipis
       </span>;
     } else if (status === 'habis') {
       return <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-red-100 text-red-700 text-[10px] font-bold rounded-full border border-red-200">
-        â Habis
+        ● Habis
       </span>;
     }
     return <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 text-gray-700 text-[10px] font-bold rounded-full border border-gray-200">
-      â Unknown
+      ● Unknown
     </span>;
   };
 
@@ -828,7 +872,98 @@ export default function MasterProduk() {
                   <div className="col-span-1 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-5 animate-pulse h-24"></div>
                   <div className="col-span-2 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-5 animate-pulse h-24"></div>
                 </>
-              ) : activeTab === 'produk' || activeTab === 'stockin' || activeTab === 'report' ? (
+              ) : activeTab === 'report' ? (
+          <>
+            {/* ── Tab Laporan Stok: 4 KPI stok ── */}
+            {/* Card 1: Total Stok */}
+            <button
+              type="button"
+              onClick={() => setStockFilter('all')}
+              className="col-span-2 lg:col-span-1 text-left bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-4 md:p-5 hover:bg-white/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 active:scale-[0.99] transition-all duration-300"
+              title="Tampilkan semua varian"
+            >
+              <div className="flex flex-col h-full justify-between gap-2 md:gap-3">
+                <div className="flex items-center gap-2 text-blue-100">
+                  <IconBoxes size={18} className="shrink-0" />
+                  <p className="text-[10px] md:text-xs font-bold uppercase tracking-wider md:tracking-widest">TOTAL STOK</p>
+                </div>
+                <div>
+                  <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight">
+                    {totalStockUnits.toLocaleString('id-ID')}
+                    <span className="text-sm md:text-base font-bold text-blue-100"> unit</span>
+                  </p>
+                  <p className="text-[10px] md:text-xs text-blue-200 mt-1">Total unit tersedia</p>
+                </div>
+              </div>
+            </button>
+
+            {/* Card 2: Stok Menipis */}
+            <button
+              type="button"
+              onClick={() => setStockFilter('menipis')}
+              className="col-span-1 lg:col-span-1 text-left bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-4 md:p-5 hover:bg-white/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 active:scale-[0.99] transition-all duration-300"
+              title="Filter varian yang perlu restock"
+            >
+              <div className="flex flex-col h-full justify-between gap-2 md:gap-3">
+                <div className="flex items-center gap-2 text-blue-100">
+                  <IconAlertTriangle size={18} className="shrink-0" />
+                  <p className="text-[10px] md:text-xs font-bold uppercase tracking-wider md:tracking-widest truncate">STOK MENIPIS</p>
+                </div>
+                <div>
+                  <p className="text-xl md:text-3xl font-black text-amber-300 font-inter tracking-tight">
+                    {lowStockVariantCount.toLocaleString('id-ID')}
+                    <span className="text-xs md:text-sm font-bold text-amber-200/80"> varian</span>
+                  </p>
+                  <p className="text-[10px] md:text-xs text-blue-200 mt-1">Perlu restock</p>
+                </div>
+              </div>
+            </button>
+
+            {/* Card 3: Barang Masuk */}
+            <button
+              type="button"
+              onClick={() => setActiveTab('stockin')}
+              className="col-span-1 lg:col-span-1 text-left bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-4 md:p-5 hover:bg-white/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 active:scale-[0.99] transition-all duration-300"
+              title="Lihat data barang masuk"
+            >
+              <div className="flex flex-col h-full justify-between gap-2 md:gap-3">
+                <div className="flex items-center gap-2 text-blue-100">
+                  <IconArrowDownToLine size={18} className="shrink-0" />
+                  <p className="text-[10px] md:text-xs font-bold uppercase tracking-wider md:tracking-widest truncate">BARANG MASUK</p>
+                </div>
+                <div>
+                  <p className="text-xl md:text-3xl font-black text-emerald-300 font-inter tracking-tight">
+                    {incomingThisMonth.toLocaleString('id-ID')}
+                    <span className="text-xs md:text-sm font-bold text-emerald-200/80"> unit</span>
+                  </p>
+                  <p className="text-[10px] md:text-xs text-blue-200 mt-1">Bulan berjalan (WIB)</p>
+                </div>
+              </div>
+            </button>
+
+            {/* Card 4: Stok Habis */}
+            <button
+              type="button"
+              onClick={() => setStockFilter('habis')}
+              className="col-span-2 lg:col-span-1 text-left bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-4 md:p-5 hover:bg-white/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 active:scale-[0.99] transition-all duration-300"
+              title="Filter varian yang stoknya habis"
+            >
+              <div className="flex flex-col h-full justify-between gap-2 md:gap-3">
+                <div className="flex items-center gap-2 text-blue-100">
+                  <IconPackageX size={18} className="shrink-0" />
+                  <p className="text-[10px] md:text-xs font-bold uppercase tracking-wider md:tracking-widest">STOK HABIS</p>
+                </div>
+                <div>
+                  <p className="text-2xl md:text-3xl font-black text-red-300 font-inter tracking-tight">
+                    {outOfStockVariantCount.toLocaleString('id-ID')}
+                    <span className="text-xs md:text-sm font-bold text-red-200/80"> varian</span>
+                  </p>
+                  <p className="text-[10px] md:text-xs text-blue-200 mt-1">Tidak ada stok tersedia</p>
+                </div>
+              </div>
+            </button>
+          </>
+        ) : activeTab === 'produk' || activeTab === 'stockin' ? (
                 <>
                   {/* Card 1: Total Penjualan (Full Width Mobile) */}
                   <div className="col-span-2 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-4 md:p-5 hover:bg-white/15 transition-all duration-300">
@@ -1338,10 +1473,22 @@ export default function MasterProduk() {
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
             >
-              {/* Info count */}
-              <p className="text-sm text-gray-600 dark:text-slate-400 mb-3 font-inter">
-                Menampilkan <span className="text-blue-600 dark:text-blue-400 font-bold">{variants.length}</span> variant (warna) â¢ {products.length} produk
-              </p>
+              {/* Info count + filter aktif */}
+              <div className="flex flex-wrap items-center gap-2 mb-3">
+                <p className="text-sm text-gray-600 dark:text-slate-400 font-inter">
+                  Menampilkan <span className="text-blue-600 dark:text-blue-400 font-bold">{reportVariants.length}</span> variant (warna) • {products.length} produk
+                </p>
+                {stockFilter !== 'all' && (
+                  <button
+                    type="button"
+                    onClick={() => setStockFilter('all')}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition-colors"
+                    title="Hapus filter"
+                  >
+                    Filter: {stockFilter === 'habis' ? 'Stok habis' : 'Perlu restock'} <X size={12} />
+                  </button>
+                )}
+              </div>
 
               {/* Desktop: Tabel stok per variant & ukuran */}
               <div className="hidden md:block bg-white dark:bg-[#1a1d28] rounded-xl shadow-sm border border-gray-200 dark:border-slate-800 overflow-hidden transition-colors duration-300">
@@ -1359,14 +1506,16 @@ export default function MasterProduk() {
                       </tr>
                     </thead>
                     <tbody>
-                      {variants.length === 0 ? (
+                      {reportVariants.length === 0 ? (
                         <tr>
                           <td colSpan={3 + SIZES.length + 1} className="px-6 py-12 text-center font-inter text-sm text-gray-400 dark:text-slate-500">
-                            Belum ada variant â tambahkan produk dengan warna & ukuran dulu
+                            {stockFilter === 'all'
+                              ? 'Belum ada variant — tambahkan produk dengan warna & ukuran dulu'
+                              : 'Tidak ada varian yang cocok dengan filter ini'}
                           </td>
                         </tr>
                       ) : (
-                        variants.map((v, index) => {
+                        reportVariants.map((v, index) => {
                           const product = products.find(p => p.id === v.product_id);
                           const st = normalizeStock(v.stock);
                           const total = SIZES.reduce((s, sz) => s + st[sz], 0);
@@ -1380,7 +1529,9 @@ export default function MasterProduk() {
                                 {v.series_name || '-'}
                               </td>
                               <td className="px-4 py-3.5 text-left align-middle font-inter text-sm font-medium text-gray-700 dark:text-slate-300 border-r border-gray-100 dark:border-slate-800/50">
-                                {v.color}
+                                {v.color && String(v.color).toLowerCase() !== 'default'
+                                  ? v.color
+                                  : <span className="text-gray-400 dark:text-slate-500 italic">Belum diatur</span>}
                               </td>
                               {SIZES.map((sz) => (
                                 <td key={sz} className={`px-3 py-3.5 text-center align-middle font-inter text-sm font-semibold border-r border-gray-100 dark:border-slate-800/50 ${st[sz] === 0 ? 'text-red-500 dark:text-red-400' : 'text-gray-800 dark:text-slate-200'}`}>
@@ -1401,14 +1552,14 @@ export default function MasterProduk() {
 
               {/* Mobile: Card per variant */}
               <div className="md:hidden space-y-3">
-                {variants.length === 0 ? (
+                {reportVariants.length === 0 ? (
                   <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center">
-                    <p className="font-inter text-sm text-gray-400">
-                      Belum ada variant
-                    </p>
+                      <p className="font-inter text-sm text-gray-400">
+                        {stockFilter === 'all' ? 'Belum ada variant' : 'Tidak ada varian yang cocok dengan filter ini'}
+                      </p>
                   </div>
                 ) : (
-                  variants.map((v) => {
+                  reportVariants.map((v) => {
                     const product = products.find(p => p.id === v.product_id);
                     const st = normalizeStock(v.stock);
                     const total = SIZES.reduce((s, sz) => s + st[sz], 0);
@@ -1417,7 +1568,12 @@ export default function MasterProduk() {
                         <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-200/60">
                           <div>
                             <p className="font-inter text-sm font-semibold text-gray-900">{product?.name || v.product_name || '-'}</p>
-                            <p className="text-xs text-gray-500">{v.color}{v.series_name ? ` â¢ ${v.series_name}` : ''}</p>
+                            <p className="text-xs text-gray-500">
+                        {v.color && String(v.color).toLowerCase() !== 'default'
+                          ? v.color
+                          : <span className="italic">Belum diatur</span>}
+                        {v.series_name ? ` • ${v.series_name}` : ''}
+                      </p>
                           </div>
                           <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-black">{total} pcs</span>
                         </div>

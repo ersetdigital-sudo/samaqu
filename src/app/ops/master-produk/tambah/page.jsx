@@ -22,7 +22,7 @@ import {
   AlertCircle,
   Layers,
   Plus,
-  Gift // â FREE GIFT ICON
+  Gift // ✅ FREE GIFT ICON
 } from "lucide-react";
 import { createPageUrl } from "@/lib/ops-router";
 import { useToast } from "@/components/ops/ui/use-toast";
@@ -40,7 +40,7 @@ export default function TambahProduk() {
 
   const isEditMode = !!productToEdit; // NEW: Determine if we're in edit mode
 
-  console.log('ð TambahProduk loaded with state:', { returnTo, skuFromImport, productToEdit, isEditMode });
+  console.log('🔗 TambahProduk loaded with state:', { returnTo, skuFromImport, productToEdit, isEditMode });
 
   const [formData, setFormData] = useState({
     sku: productToEdit?.sku || skuFromImport,
@@ -48,10 +48,10 @@ export default function TambahProduk() {
     hpp: productToEdit?.hpp || 0,
     price: productToEdit?.price || 0,
     stock: productToEdit?.stock || 0,
-    product_type: productToEdit?.product_type || 'normal' // â FREE GIFT SUPPORT
+    product_type: productToEdit?.product_type || 'normal' // ✅ FREE GIFT SUPPORT
   });
 
-  // â VARIANT STOK: Warna + Nama Series + Stok per Ukuran
+  // ✅ VARIANT STOK: Warna + Nama Series + Stok per Ukuran
   const newVariantRow = () => ({ key: `${Date.now()}-${Math.random()}`, id: null, series_name: '', color: '', stock: emptyStock() });
   const [variants, setVariants] = useState([newVariantRow()]);
   const [removedVariantIds, setRemovedVariantIds] = useState([]);
@@ -147,7 +147,7 @@ export default function TambahProduk() {
   const [displayHPP, setDisplayHPP] = useState(productToEdit ? formatRupiah(productToEdit.hpp) : '');
   const [displayPrice, setDisplayPrice] = useState(productToEdit ? formatRupiah(productToEdit.price) : '');
 
-  // â Mutasi gabungan: simpan produk + variant (create/edit)
+  // ✅ Mutasi gabungan: simpan produk + variant (create/edit)
   const saveMutation = useMutation({
     mutationFn: async ({ product, variantRows, removedIds }) => {
       let productId;
@@ -198,7 +198,7 @@ export default function TambahProduk() {
       queryClient.invalidateQueries(['productVariants']);
 
       toast({
-        title: isEditMode ? "â Produk berhasil diupdate" : "â Produk berhasil ditambahkan",
+        title: isEditMode ? "✅ Produk berhasil diupdate" : "✅ Produk berhasil ditambahkan",
         description: "Stok variant warna & ukuran telah disimpan",
         variant: "success",
       });
@@ -232,7 +232,7 @@ export default function TambahProduk() {
     
     if (!formData.sku.trim()) {
       toast({
-        title: "â ï¸ Form tidak lengkap",
+        title: "â ️ Form tidak lengkap",
         description: "SKU harus diisi",
         variant: "destructive",
       });
@@ -242,7 +242,7 @@ export default function TambahProduk() {
     // Check for duplicate SKU before submitting
     if (!isEditMode && skuCheckStatus === 'duplicate') {
       toast({
-        title: "â SKU sudah digunakan",
+        title: "❌ SKU sudah digunakan",
         description: `SKU "${formData.sku}" sudah ada di database. Gunakan SKU lain.`,
         variant: "destructive",
       });
@@ -252,7 +252,7 @@ export default function TambahProduk() {
     // Wait for SKU check to complete
     if (!isEditMode && skuCheckStatus === 'checking') {
       toast({
-        title: "â³ Mohon tunggu",
+        title: "⏳ Mohon tunggu",
         description: "Sedang mengecek ketersediaan SKU...",
         variant: "default",
         duration: 2000,
@@ -262,7 +262,7 @@ export default function TambahProduk() {
 
     if (!formData.name.trim()) {
       toast({
-        title: "â ï¸ Form tidak lengkap",
+        title: "â ️ Form tidak lengkap",
         description: "Nama produk harus diisi",
         variant: "destructive",
       });
@@ -272,21 +272,21 @@ export default function TambahProduk() {
     // Validasi harga (kecuali untuk Free Gift)
     if (formData.product_type !== 'free_gift' && formData.price <= 0) {
       toast({
-        title: "â ï¸ Harga tidak valid",
+        title: "â ️ Harga tidak valid",
         description: "Harga jual harus lebih dari 0",
         variant: "destructive",
       });
       return;
     }
 
-    // â Validasi variant: minimal 1 warna terisi
+    // ✅ Validasi variant: minimal 1 warna terisi
     const variantRows = variants
       .filter((v) => v.color.trim() !== '' || v.series_name.trim() !== '')
       .map((v) => ({ ...v, stock: normalizeStock(v.stock) }));
 
     if (variantRows.length === 0) {
       toast({
-        title: "â ï¸ Variant belum diisi",
+        title: "â ️ Variant belum diisi",
         description: "Tambahkan minimal 1 warna variant",
         variant: "destructive",
       });
@@ -295,7 +295,7 @@ export default function TambahProduk() {
 
     if (variantRows.some((v) => v.color.trim() === '')) {
       toast({
-        title: "â ï¸ Form tidak lengkap",
+        title: "â ️ Form tidak lengkap",
         description: "Warna variant wajib diisi",
         variant: "destructive",
       });
@@ -313,7 +313,7 @@ export default function TambahProduk() {
       stock: totalStock,
       initial_stock: isEditMode ? productToEdit.initial_stock : totalStock, // Preserve initial_stock in edit mode
       status,
-      product_type: formData.product_type // â Include product_type
+      product_type: formData.product_type // ✅ Include product_type
     };
 
     saveMutation.mutate({ product: dataToSubmit, variantRows, removedIds: removedVariantIds });
@@ -553,7 +553,7 @@ export default function TambahProduk() {
                 </div>
               </div>
 
-              {/* â TIPE PRODUK - FREE GIFT SUPPORT */}
+              {/* ✅ TIPE PRODUK - FREE GIFT SUPPORT */}
               <div className="space-y-2">
                 <label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-slate-200">
                   Tipe Produk
@@ -682,7 +682,7 @@ export default function TambahProduk() {
                       </div>
                       <p className="text-blue-800 dark:text-blue-300 text-xs font-medium mt-2 opacity-80">
                         {formData.price > 0 && formData.hpp > 0
-                          ? `(Rp ${formatRupiah(formData.price)} - Rp ${formatRupiah(formData.hpp)}) Ã· Rp ${formatRupiah(formData.price)}`
+                          ? `(Rp ${formatRupiah(formData.price)} - Rp ${formatRupiah(formData.hpp)}) ÷ Rp ${formatRupiah(formData.price)}`
                           : 'Otomatis dihitung dari harga'}
                       </p>
                     </div>
@@ -718,7 +718,7 @@ export default function TambahProduk() {
             </div>
           </div>
 
-          {/* â Variant Stok: Warna + Ukuran */}
+          {/* ✅ Variant Stok: Warna + Ukuran */}
           <div className="bg-white dark:bg-[#1a1d28] rounded-2xl shadow-sm border border-gray-200 dark:border-slate-800 overflow-hidden transition-colors duration-300">
             <div className="bg-gradient-to-r from-green-500 to-emerald-600 px-6 py-5">
               <div className="flex items-center gap-3">
@@ -730,7 +730,7 @@ export default function TambahProduk() {
                     Stok Variant (Warna & Ukuran)
                   </h3>
                   <p className="text-white/90 text-sm font-medium">
-                    Satu baris = 1 warna. Isi stok per ukuran XS â XXL
+                    Satu baris = 1 warna. Isi stok per ukuran XS – XXL
                   </p>
                 </div>
               </div>
@@ -852,7 +852,7 @@ export default function TambahProduk() {
                         totalAll <= 5 ? 'text-yellow-600 dark:text-yellow-400' :
                         'text-green-600 dark:text-green-400'
                       } text-xl font-bold`}>
-                        {totalAll} pcs â¢ {stockStatus(totalAll) === 'habis' ? 'Habis' : stockStatus(totalAll) === 'menipis' ? 'Menipis' : 'Aman'}
+                        {totalAll} pcs • {stockStatus(totalAll) === 'habis' ? 'Habis' : stockStatus(totalAll) === 'menipis' ? 'Menipis' : 'Aman'}
                       </p>
                     </div>
                     <Layers size={28} className="text-slate-300 dark:text-slate-600" />

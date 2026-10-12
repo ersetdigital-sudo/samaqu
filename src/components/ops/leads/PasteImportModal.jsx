@@ -22,7 +22,7 @@ const splitDate = (raw) => {
   return null;
 };
 
-// Deteksi urutan tanggal dari SEMUA baris paste (10/1..10/9 â MM/DD, 1/10..30/10 â DD/MM)
+// Deteksi urutan tanggal dari SEMUA baris paste (10/1..10/9 → MM/DD, 1/10..30/10 → DD/MM)
 const detectDateOrder = (samples) => {
   if (samples.some((s) => s.b > 12)) return 'mdy';
   if (samples.some((s) => s.a > 12)) return 'dmy';
@@ -50,13 +50,13 @@ const toIso = (d, order) => {
   return `${d.y}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 };
 
-// Parse nominal: "Rp379.000", "379000", "Rp 379,000" â 379000
+// Parse nominal: "Rp379.000", "379000", "Rp 379,000" → 379000
 const parseNominal = (raw) => {
   const s = String(raw || '').replace(/[^\d]/g, '');
   return s ? parseInt(s, 10) : 0;
 };
 
-// Parse sumber: "Meta Ads", "meta ads", "IG", "WhatsApp" â enum
+// Parse sumber: "Meta Ads", "meta ads", "IG", "WhatsApp" → enum
 const parseSumber = (raw) => {
   const s = String(raw || '').trim().toLowerCase();
   if (!s) return null;
@@ -67,7 +67,7 @@ const parseSumber = (raw) => {
   return null;
 };
 
-// Parse keterangan: "Belum Closing" â belum_closing, "Closing" â closing
+// Parse keterangan: "Belum Closing" → belum_closing, "Closing" → closing
 const parseStatus = (raw) => {
   const s = String(raw || '').trim().toLowerCase();
   if (s.startsWith('belum')) return 'belum_closing';
@@ -75,7 +75,7 @@ const parseStatus = (raw) => {
   return null;
 };
 
-// Normalisasi kontak: HP â digit tanpa awalan 0/62, username â lowercase tanpa @
+// Normalisasi kontak: HP → digit tanpa awalan 0/62, username → lowercase tanpa @
 export function normalizeKontak(raw) {
   const s = String(raw || '').trim().toLowerCase().replace(/^[=@"'\s]+|[@"'\s]+$/g, '');
   if (!s) return '';
@@ -126,7 +126,7 @@ export function parsePastedRows(text, existingKeys = new Set()) {
   });
   const order = detectDateOrder(colRows.map((cols) => splitDate(cols[0])).filter(Boolean));
   colRows.forEach((cols) => {
-    // Kolom: TANGGAL, JAM, NO/IG, lalu SUMBER/KETERANGAN/NOMINAL (bisa tergeser jika ada sel kosong â dicari dengan pola)
+    // Kolom: TANGGAL, JAM, NO/IG, lalu SUMBER/KETERANGAN/NOMINAL (bisa tergeser jika ada sel kosong — dicari dengan pola)
     const tanggal = toIso(splitDate(cols[0]), order);
     const jam = cols[1] || '';
     const kontak = (cols[2] || '').trim().replace(/^[=@"'\s]+|[@"'\s]+$/g, '');
@@ -204,7 +204,7 @@ export default function PasteImportModal({ isOpen, onClose, onSuccess }) {
     }
   };
 
-  // Import per batch bertahap â anti rate limit, presisi, ada progress
+  // Import per batch bertahap — anti rate limit, presisi, ada progress
   const runImport = async (rows) => {
     if (rows.length === 0) return;
     setIsImporting(true);
@@ -288,8 +288,8 @@ export default function PasteImportModal({ isOpen, onClose, onSuccess }) {
               <div className="flex items-start gap-2.5 bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900 rounded-xl p-3">
                 <Info size={15} className="text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
                 <p className="text-xs text-blue-800 dark:text-blue-300 leading-relaxed">
-                  Copy kolom <b>TANGGAL, JAM, NO/IG, SUMBER, KETERANGAN, NOMINAL</b> dari Google Sheet (blok sel â Ctrl+C),
-                  lalu paste di bawah — atau <b>pilih file .csv</b> hasil download dari Google Sheet (File → Download → CSV). Baris header ikut di-copy juga tidak masalah â otomatis dilewati.
+                  Copy kolom <b>TANGGAL, JAM, NO/IG, SUMBER, KETERANGAN, NOMINAL</b> dari Google Sheet (blok sel → Ctrl+C),
+                  lalu paste di bawah — atau <b>pilih file .csv</b> hasil download dari Google Sheet (File → Download → CSV). Baris header ikut di-copy juga tidak masalah — otomatis dilewati.
                   Lead dengan <b>tanggal &amp; kontak yang sama</b> dengan data yang sudah ada otomatis dilewati (anti duplikat).
                 </p>
               </div>
@@ -361,7 +361,7 @@ export default function PasteImportModal({ isOpen, onClose, onSuccess }) {
               {!isImporting && failCount > 0 && (
                 <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 rounded-xl p-3">
                   <p className="text-xs font-bold text-red-700 dark:text-red-400">
-                    {failCount} lead gagal diimport â klik "Import {failCount} Leads" untuk mengulang hanya yang gagal.
+                    {failCount} lead gagal diimport — klik "Import {failCount} Leads" untuk mengulang hanya yang gagal.
                   </p>
                 </div>
               )}
@@ -372,8 +372,8 @@ export default function PasteImportModal({ isOpen, onClose, onSuccess }) {
                   <div className="px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
                     <p className="text-xs font-bold text-slate-900 dark:text-white">
                       Pratinjau: <span className="text-emerald-600 dark:text-emerald-400">{importable.length} siap import</span>
-                      {dupCount > 0 && <span className="text-amber-600 dark:text-amber-400"> Â· {dupCount} duplikat dilewati</span>}
-                      {parsed.skipped > 0 && <span className="text-red-500"> Â· {parsed.skipped} invalid dilewati</span>}
+                      {dupCount > 0 && <span className="text-amber-600 dark:text-amber-400"> · {dupCount} duplikat dilewati</span>}
+                      {parsed.skipped > 0 && <span className="text-red-500"> · {parsed.skipped} invalid dilewati</span>}
                     </p>
                     <p className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">
                       Total Nominal: {fmtRp(importable.reduce((s, r) => s + r.nominal, 0))}

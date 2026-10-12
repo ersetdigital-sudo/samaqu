@@ -70,7 +70,7 @@ export default function RekapPembelian() {
     return stockIns.filter(item => {
       if (!item.date) return false;
 
-      // â Robust Date Parsing (String Based)
+      // ✅ Robust Date Parsing (String Based)
       const rawItemDate = String(item.date || '').trim();
       const itemDateStr = rawItemDate.substring(0, 10);
 
