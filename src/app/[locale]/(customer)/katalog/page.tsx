@@ -469,7 +469,7 @@ export default function KatalogPage() {
   }
 
   return (
-    <section className="min-h-screen" style={{ background: "var(--cream)" }}>
+    <section className="min-h-screen" style={{ background: "#F3F3F3" }}>
       {/* CollectionPage JSON-LD */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
         "@context": "https://schema.org",
