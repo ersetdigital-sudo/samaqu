@@ -111,7 +111,7 @@ export default function Hero() {
     <section
       id="hero"
       className="relative w-full overflow-hidden"
-      style={{ background: "var(--espresso)", minHeight: "100dvh" }}
+      style={{ background: "#000000", minHeight: "100dvh" }}
     >
       {/* ── Video background ── */}
       <div className="absolute inset-0 overflow-hidden">
@@ -158,14 +158,14 @@ export default function Hero() {
             "linear-gradient(180deg,rgba(14,10,7,.48) 0%,rgba(14,10,7,.4) 16%,rgba(14,10,7,.58) 38%,rgba(14,10,7,.88) 64%,rgba(14,10,7,.97) 100%)",
         }}
       />
-      {/* Ambient gold glow — breathing */}
+      {/* Ambient glow — breathing */}
       <div className="hero-glow absolute pointer-events-none" aria-hidden />
       {/* Filmic grain */}
       <div className="hero-noise absolute inset-0 pointer-events-none" aria-hidden />
-      {/* Bottom gold hairline */}
+      {/* Bottom hairline */}
       <div
         className="absolute bottom-0 inset-x-0 h-px pointer-events-none z-20"
-        style={{ background: "linear-gradient(90deg,transparent,rgba(224,181,99,.55),transparent)" }}
+        style={{ background: "linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent)" }}
         aria-hidden
       />
 
@@ -186,10 +186,10 @@ export default function Hero() {
                 backdropFilter: "blur(8px)",
               }}
             >
-              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: "var(--gold)" }} />
+              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: "#ffffff" }} />
               <span
                 className="font-semibold font-ui"
-                style={{ letterSpacing: "0.26em", fontSize: "11px", color: "var(--gold)" }}
+                style={{ letterSpacing: "0.26em", fontSize: "11px", color: "#ffffff" }}
               >
                 {t("badge")}
               </span>
@@ -232,7 +232,7 @@ export default function Hero() {
             <p
               data-hero-stagger
               className="hero-enter mt-5 max-w-[46ch] text-[14px] sm:text-[15px] leading-relaxed font-ui"
-              style={{ color: "var(--sand)" }}
+              style={{ color: "rgba(255,255,255,.78)" }}
             >
               {t("desc")}
             </p>
@@ -244,7 +244,7 @@ export default function Hero() {
             >
               {/* Material Pilihan */}
               <li className="flex items-center gap-3">
-                <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="m12 3 9 5-9 5-9-5 9-5Z" />
                   <path d="m3 13 9 5 9-5" />
                 </svg>
@@ -254,7 +254,7 @@ export default function Hero() {
               </li>
               {/* Cutting Presisi */}
               <li className="flex items-center gap-3">
-                <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="6" cy="18" r="2.4" />
                   <circle cx="18" cy="18" r="2.4" />
                   <path d="M8 16 18 4M16 16 6 4" />
@@ -265,9 +265,9 @@ export default function Hero() {
               </li>
               {/* Create Your Price */}
               <li className="flex items-center gap-3">
-                <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M3 12V4h8l9 9-8 8-9-9Z" />
-                  <circle cx="7.5" cy="7.5" r="1.2" fill="var(--gold)" stroke="none" />
+                  <circle cx="7.5" cy="7.5" r="1.2" fill="#ffffff" stroke="none" />
                 </svg>
                 <span className="text-[13px] leading-tight font-ui" style={{ color: "#e3d8cb" }}>
                   {t("item3")}
@@ -277,11 +277,11 @@ export default function Hero() {
 
             {/* CTAs */}
             <div data-hero-stagger className="hero-enter mt-7 flex flex-col sm:flex-row gap-3 sm:gap-4">
-              {/* Primary — gold filled */}
+              {/* Primary — light filled */}
               <a
                 href="/katalog"
                 className="group relative inline-flex items-center justify-center gap-3 overflow-hidden rounded-full px-8 py-3.5 text-[13px] font-bold tracking-wide font-ui w-full sm:w-auto transition active:scale-[0.97]"
-                style={{ background: "var(--gold)", color: "#1c1512", boxShadow: "0 18px 44px -14px rgba(224,181,99,.5)" }}
+                style={{ background: "#ffffff", color: "#000000", boxShadow: "0 18px 44px -14px rgba(255,255,255,.28)" }}
               >
                 <span
                   className="absolute inset-0 translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]"
@@ -334,10 +334,10 @@ export default function Hero() {
               background: "rgba(12,8,6,.55)",
               backdropFilter: "blur(12px)",
               color: "var(--cream)",
-              border: "1px solid rgba(224,181,99,.35)",
+              border: "1px solid rgba(255,255,255,.35)",
             }}
           >
-            <span className="hero-pulse-dot w-1.5 h-1.5 rounded-full" style={{ background: "var(--gold)" }} />
+            <span className="hero-pulse-dot w-1.5 h-1.5 rounded-full" style={{ background: "#ffffff" }} />
             Aktifkan Suara
           </button>
         )}
@@ -345,7 +345,7 @@ export default function Hero() {
           onClick={toggleMute}
           className={`flex items-center justify-center rounded-full transition-all duration-300 hover:scale-105 ${muted ? "w-11 h-11" : "w-11 h-11"}`}
           style={{
-            background: muted ? "var(--gold)" : "rgba(12,8,6,.5)",
+            background: muted ? "#ffffff" : "rgba(12,8,6,.5)",
             backdropFilter: "blur(12px)",
             border: muted ? "none" : "1px solid rgba(248,245,241,.18)",
           }}
@@ -370,15 +370,15 @@ export default function Hero() {
       {/* ── Scroll indicator ── */}
       <div className="relative z-10 flex items-center gap-4 mx-auto w-full max-w-[1240px] px-5 sm:px-10 lg:px-16 xl:pl-24 pb-7 lg:pb-10">
         {/* Vertical track with animated dot */}
-        <div className="relative h-[44px] w-px" style={{ background: "rgba(201,160,99,.28)" }}>
-          <span className="scroll-dot absolute left-1/2 -translate-x-1/2 top-0 w-[6px] h-[6px] rounded-full" style={{ background: "var(--gold)", boxShadow: "0 0 10px rgba(224,189,132,.8)" }} />
+        <div className="relative h-[44px] w-px" style={{ background: "rgba(255,255,255,.28)" }}>
+          <span className="scroll-dot absolute left-1/2 -translate-x-1/2 top-0 w-[6px] h-[6px] rounded-full" style={{ background: "#ffffff", boxShadow: "0 0 10px rgba(255,255,255,.7)" }} />
         </div>
         {/* Label */}
-        <span className="text-[10px] sm:text-[11px] tracking-[.26em] leading-tight font-ui" style={{ color: "var(--sand)" }}>
+        <span className="text-[10px] sm:text-[11px] tracking-[.26em] leading-tight font-ui" style={{ color: "rgba(255,255,255,.7)" }}>
           {t("scroll")}
         </span>
         {/* Arrow */}
-        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
           <path d="M12 5v14M6 13l6 6 6-6" />
         </svg>
       </div>

@@ -55,11 +55,11 @@ export default function Koleksi() {
 
         <h1
           className="text-[1.65rem] sm:text-4xl md:text-5xl lg:text-[3.4rem] font-semibold leading-[1.08] tracking-tight max-w-2xl"
-          style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}
+          style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "#000000" }}
         >
           {t("titleLine1")}{" "}
           <br className="hidden sm:block" />
-          <span className="italic font-normal" style={{ color: "var(--gold)" }}>{t("titleAccent")} </span>
+          <span className="italic font-normal" style={{ color: "#000000" }}>{t("titleAccent")} </span>
           {t("titleLine2")}
         </h1>
 
@@ -71,91 +71,91 @@ export default function Koleksi() {
         <div className="mt-6 sm:mt-8 lg:mt-10 grid grid-cols-2 gap-2.5 sm:gap-4 lg:gap-5">
 
           {/* Thobe — tall (left col, spans 2 rows) */}
-          <Link href="/katalog" className="card group relative overflow-hidden rounded-[14px] sm:rounded-[22px] shadow-[0_18px_40px_-18px_rgba(42,33,27,.55)] row-span-2 min-h-[340px] sm:min-h-[460px] lg:min-h-[560px]" style={{ background: "var(--espresso)" }}>
+          <Link href="/katalog" className="card group relative overflow-hidden rounded-[14px] sm:rounded-[22px] shadow-[0_18px_40px_-18px_rgba(0,0,0,.45)] row-span-2 min-h-[340px] sm:min-h-[460px] lg:min-h-[560px]" style={{ background: "#000000" }}>
             <img src={categories[0]?.image_url} alt="Thobe" className="absolute inset-0 h-full w-full object-cover transition-transform duration-[800ms] ease-[cubic-bezier(.2,.7,.2,1)] group-hover:scale-[1.06]" />
-            <span className="absolute top-2.5 left-2.5 sm:top-4 sm:left-4 z-20 rounded-full px-2 py-0.5 sm:px-3 sm:py-1 text-[8px] sm:text-[10px] font-semibold tracking-[0.18em] uppercase text-white" style={{ background: "var(--gold)" }}>{t("bestSeller")}</span>
+            <span className="absolute top-2.5 left-2.5 sm:top-4 sm:left-4 z-20 rounded-full px-2 py-0.5 sm:px-3 sm:py-1 text-[8px] sm:text-[10px] font-semibold tracking-[0.18em] uppercase text-white" style={{ background: "#000000" }}>{t("bestSeller")}</span>
             <div className="absolute inset-0 card-shade" />
             <div className="absolute inset-x-0 bottom-0 z-10 flex items-end justify-between gap-2 sm:gap-4 p-3 sm:p-6">
               <div>
-                <h2 className="text-lg sm:text-3xl font-semibold text-[#f1e9dd]" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Thobe</h2>
-                <p className="mt-0.5 sm:mt-1 max-w-[8rem] sm:max-w-[15rem] text-[10px] sm:text-[13px] leading-snug text-[#d4c7ba] line-clamp-2">{categories[0]?.description}</p>
+                <h2 className="text-lg sm:text-3xl font-semibold text-[#ffffff]" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Thobe</h2>
+                <p className="mt-0.5 sm:mt-1 max-w-[8rem] sm:max-w-[15rem] text-[10px] sm:text-[13px] leading-snug text-[rgba(255,255,255,.72)] line-clamp-2">{categories[0]?.description}</p>
               </div>
-              <span className="shrink-0 grid h-7 w-7 sm:h-11 sm:w-11 place-items-center rounded-full border text-[#f1e9dd] transition hover:bg-[#f1e9dd] hover:text-[var(--espresso)]" style={{ borderColor: "rgba(212,199,186,.5)" }}>
+              <span className="shrink-0 grid h-7 w-7 sm:h-11 sm:w-11 place-items-center rounded-full border text-[#ffffff] transition hover:bg-[#ffffff] hover:text-[#000000]" style={{ borderColor: "rgba(255,255,255,.35)" }}>
                 <span className="text-[11px] sm:text-base">→</span>
               </span>
             </div>
           </Link>
 
           {/* Koko — wide (right col, row 1) */}
-          <Link href="/katalog" className="card group relative overflow-hidden rounded-[14px] sm:rounded-[22px] shadow-[0_18px_40px_-18px_rgba(42,33,27,.55)] min-h-[160px] sm:min-h-[220px] lg:min-h-[270px]" style={{ background: "var(--espresso)" }}>
+          <Link href="/katalog" className="card group relative overflow-hidden rounded-[14px] sm:rounded-[22px] shadow-[0_18px_40px_-18px_rgba(0,0,0,.45)] min-h-[160px] sm:min-h-[220px] lg:min-h-[270px]" style={{ background: "#000000" }}>
             <img src={categories[2]?.image_url} alt="Koko" className="absolute inset-0 h-full w-full object-cover object-[62%_35%] transition-transform duration-[800ms] ease-[cubic-bezier(.2,.7,.2,1)] group-hover:scale-[1.06]" />
             <div className="absolute inset-0 wide-shade" />
             <div className="absolute inset-0 z-10 flex items-end justify-between gap-2 sm:gap-4 p-3 sm:p-6">
               <div>
-                <h2 className="text-base sm:text-2xl font-semibold text-[#f1e9dd]" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Koko</h2>
-                <p className="mt-0.5 sm:mt-1 max-w-[7rem] sm:max-w-[13rem] text-[10px] sm:text-[13px] leading-snug text-[#d4c7ba] line-clamp-2">{categories[2]?.description}</p>
+                <h2 className="text-base sm:text-2xl font-semibold text-[#ffffff]" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Koko</h2>
+                <p className="mt-0.5 sm:mt-1 max-w-[7rem] sm:max-w-[13rem] text-[10px] sm:text-[13px] leading-snug text-[rgba(255,255,255,.72)] line-clamp-2">{categories[2]?.description}</p>
               </div>
-              <span className="shrink-0 grid h-7 w-7 sm:h-11 sm:w-11 place-items-center rounded-full border backdrop-blur-sm text-[#f1e9dd] transition hover:bg-[#f1e9dd] hover:text-[var(--espresso)]" style={{ borderColor: "rgba(212,199,186,.5)", background: "rgba(42,33,27,.3)" }}>
+              <span className="shrink-0 grid h-7 w-7 sm:h-11 sm:w-11 place-items-center rounded-full border backdrop-blur-sm text-[#ffffff] transition hover:bg-[#ffffff] hover:text-[#000000]" style={{ borderColor: "rgba(255,255,255,.35)", background: "rgba(0,0,0,.35)" }}>
                 <span className="text-[11px] sm:text-base">→</span>
               </span>
             </div>
           </Link>
 
           {/* Vest — wide (right col, row 2) */}
-          <Link href="/katalog" className="card group relative overflow-hidden rounded-[14px] sm:rounded-[22px] shadow-[0_18px_40px_-18px_rgba(42,33,27,.55)] min-h-[160px] sm:min-h-[220px] lg:min-h-[270px]" style={{ background: "var(--espresso)" }}>
+          <Link href="/katalog" className="card group relative overflow-hidden rounded-[14px] sm:rounded-[22px] shadow-[0_18px_40px_-18px_rgba(0,0,0,.45)] min-h-[160px] sm:min-h-[220px] lg:min-h-[270px]" style={{ background: "#000000" }}>
             <img src={categories[3]?.image_url} alt="Vest" className="absolute inset-0 h-full w-full object-cover object-[55%_18%] transition-transform duration-[800ms] ease-[cubic-bezier(.2,.7,.2,1)] group-hover:scale-[1.06]" />
             <div className="absolute inset-0 wide-shade" />
             <div className="absolute inset-0 z-10 flex items-end justify-between gap-2 sm:gap-4 p-3 sm:p-6">
               <div>
-                <h2 className="text-base sm:text-2xl font-semibold text-[#f1e9dd]" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Vest</h2>
-                <p className="mt-0.5 sm:mt-1 max-w-[7rem] sm:max-w-[13rem] text-[10px] sm:text-[13px] leading-snug text-[#d4c7ba] line-clamp-2">{categories[3]?.description}</p>
+                <h2 className="text-base sm:text-2xl font-semibold text-[#ffffff]" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Vest</h2>
+                <p className="mt-0.5 sm:mt-1 max-w-[7rem] sm:max-w-[13rem] text-[10px] sm:text-[13px] leading-snug text-[rgba(255,255,255,.72)] line-clamp-2">{categories[3]?.description}</p>
               </div>
-              <span className="shrink-0 grid h-7 w-7 sm:h-11 sm:w-11 place-items-center rounded-full border backdrop-blur-sm text-[#f1e9dd] transition hover:bg-[#f1e9dd] hover:text-[var(--espresso)]" style={{ borderColor: "rgba(212,199,186,.5)", background: "rgba(42,33,27,.3)" }}>
+              <span className="shrink-0 grid h-7 w-7 sm:h-11 sm:w-11 place-items-center rounded-full border backdrop-blur-sm text-[#ffffff] transition hover:bg-[#ffffff] hover:text-[#000000]" style={{ borderColor: "rgba(255,255,255,.35)", background: "rgba(0,0,0,.35)" }}>
                 <span className="text-[11px] sm:text-base">→</span>
               </span>
             </div>
           </Link>
 
           {/* Kandora — tall (left col, spans 2 rows) */}
-          <Link href="/katalog" className="card group relative overflow-hidden rounded-[14px] sm:rounded-[22px] shadow-[0_18px_40px_-18px_rgba(42,33,27,.55)] row-span-2 min-h-[340px] sm:min-h-[460px] lg:min-h-[560px]" style={{ background: "var(--espresso)" }}>
+          <Link href="/katalog" className="card group relative overflow-hidden rounded-[14px] sm:rounded-[22px] shadow-[0_18px_40px_-18px_rgba(0,0,0,.45)] row-span-2 min-h-[340px] sm:min-h-[460px] lg:min-h-[560px]" style={{ background: "#000000" }}>
             <img src={categories[1]?.image_url} alt="Kandora" className="absolute inset-0 h-full w-full object-cover transition-transform duration-[800ms] ease-[cubic-bezier(.2,.7,.2,1)] group-hover:scale-[1.06]" />
             <div className="absolute inset-0 card-shade" />
             <div className="absolute inset-x-0 bottom-0 z-10 flex items-end justify-between gap-2 sm:gap-4 p-3 sm:p-6">
               <div>
-                <h2 className="text-lg sm:text-3xl font-semibold text-[#f1e9dd]" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Kandora</h2>
-                <p className="mt-0.5 sm:mt-1 max-w-[8rem] sm:max-w-[14rem] text-[10px] sm:text-[13px] leading-snug text-[#d4c7ba] line-clamp-2">{categories[1]?.description}</p>
+                <h2 className="text-lg sm:text-3xl font-semibold text-[#ffffff]" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Kandora</h2>
+                <p className="mt-0.5 sm:mt-1 max-w-[8rem] sm:max-w-[14rem] text-[10px] sm:text-[13px] leading-snug text-[rgba(255,255,255,.72)] line-clamp-2">{categories[1]?.description}</p>
               </div>
-              <span className="shrink-0 grid h-7 w-7 sm:h-11 sm:w-11 place-items-center rounded-full border backdrop-blur-sm text-[#f1e9dd] transition hover:bg-[#f1e9dd] hover:text-[var(--espresso)]" style={{ borderColor: "rgba(212,199,186,.5)" }}>
+              <span className="shrink-0 grid h-7 w-7 sm:h-11 sm:w-11 place-items-center rounded-full border backdrop-blur-sm text-[#ffffff] transition hover:bg-[#ffffff] hover:text-[#000000]" style={{ borderColor: "rgba(255,255,255,.35)" }}>
                 <span className="text-[11px] sm:text-base">→</span>
               </span>
             </div>
           </Link>
 
           {/* Kabak — wide (right col, row 3) */}
-          <Link href="/katalog" className="card group relative overflow-hidden rounded-[14px] sm:rounded-[22px] shadow-[0_18px_40px_-18px_rgba(42,33,27,.55)] min-h-[160px] sm:min-h-[220px] lg:min-h-[270px]" style={{ background: "#0d0d0d" }}>
+          <Link href="/katalog" className="card group relative overflow-hidden rounded-[14px] sm:rounded-[22px] shadow-[0_18px_40px_-18px_rgba(0,0,0,.45)] min-h-[160px] sm:min-h-[220px] lg:min-h-[270px]" style={{ background: "#0d0d0d" }}>
             <img src={categories[4]?.image_url} alt="Kabak" className="absolute inset-0 h-full w-full object-cover object-[50%_55%] transition-transform duration-[800ms] ease-[cubic-bezier(.2,.7,.2,1)] group-hover:scale-[1.06]" />
             <div className="absolute inset-0 wide-shade" />
             <div className="absolute inset-0 z-10 flex items-end justify-between gap-2 sm:gap-4 p-3 sm:p-6">
               <div>
-                <h2 className="text-base sm:text-2xl font-semibold text-[#f1e9dd]" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Kabak</h2>
-                <p className="mt-0.5 sm:mt-1 max-w-[7rem] sm:max-w-[13rem] text-[10px] sm:text-[13px] leading-snug text-[#d4c7ba] line-clamp-2">{categories[4]?.description}</p>
+                <h2 className="text-base sm:text-2xl font-semibold text-[#ffffff]" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Kabak</h2>
+                <p className="mt-0.5 sm:mt-1 max-w-[7rem] sm:max-w-[13rem] text-[10px] sm:text-[13px] leading-snug text-[rgba(255,255,255,.72)] line-clamp-2">{categories[4]?.description}</p>
               </div>
-              <span className="shrink-0 grid h-7 w-7 sm:h-11 sm:w-11 place-items-center rounded-full border backdrop-blur-sm text-[#f1e9dd] transition hover:bg-[#f1e9dd] hover:text-[var(--espresso)]" style={{ borderColor: "rgba(212,199,186,.5)", background: "rgba(42,33,27,.3)" }}>
+              <span className="shrink-0 grid h-7 w-7 sm:h-11 sm:w-11 place-items-center rounded-full border backdrop-blur-sm text-[#ffffff] transition hover:bg-[#ffffff] hover:text-[#000000]" style={{ borderColor: "rgba(255,255,255,.35)", background: "rgba(0,0,0,.35)" }}>
                 <span className="text-[11px] sm:text-base">→</span>
               </span>
             </div>
           </Link>
 
           {/* Cover Hanger — wide (right col, row 4) */}
-          <Link href="/katalog" className="card group relative overflow-hidden rounded-[14px] sm:rounded-[22px] shadow-[0_18px_40px_-18px_rgba(42,33,27,.55)] min-h-[160px] sm:min-h-[220px] lg:min-h-[270px]" style={{ background: "var(--espresso)" }}>
+          <Link href="/katalog" className="card group relative overflow-hidden rounded-[14px] sm:rounded-[22px] shadow-[0_18px_40px_-18px_rgba(0,0,0,.45)] min-h-[160px] sm:min-h-[220px] lg:min-h-[270px]" style={{ background: "#000000" }}>
             <img src={categories[5]?.image_url} alt="Cover Hanger" className="absolute inset-0 h-full w-full object-cover object-[62%_45%] transition-transform duration-[800ms] ease-[cubic-bezier(.2,.7,.2,1)] group-hover:scale-[1.06]" />
             <div className="absolute inset-0 wide-shade" />
             <div className="absolute inset-0 z-10 flex items-end justify-between gap-2 sm:gap-4 p-3 sm:p-6">
               <div>
-                <h2 className="text-base sm:text-2xl font-semibold text-[#f1e9dd]" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Cover Hanger</h2>
-                <p className="mt-0.5 sm:mt-1 max-w-[7rem] sm:max-w-[13rem] text-[10px] sm:text-[13px] leading-snug text-[#d4c7ba] line-clamp-2">{categories[5]?.description}</p>
+                <h2 className="text-base sm:text-2xl font-semibold text-[#ffffff]" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Cover Hanger</h2>
+                <p className="mt-0.5 sm:mt-1 max-w-[7rem] sm:max-w-[13rem] text-[10px] sm:text-[13px] leading-snug text-[rgba(255,255,255,.72)] line-clamp-2">{categories[5]?.description}</p>
               </div>
-              <span className="shrink-0 grid h-7 w-7 sm:h-11 sm:w-11 place-items-center rounded-full border backdrop-blur-sm text-[#f1e9dd] transition hover:bg-[#f1e9dd] hover:text-[var(--espresso)]" style={{ borderColor: "rgba(212,199,186,.5)", background: "rgba(42,33,27,.3)" }}>
+              <span className="shrink-0 grid h-7 w-7 sm:h-11 sm:w-11 place-items-center rounded-full border backdrop-blur-sm text-[#ffffff] transition hover:bg-[#ffffff] hover:text-[#000000]" style={{ borderColor: "rgba(255,255,255,.35)", background: "rgba(0,0,0,.35)" }}>
                 <span className="text-[11px] sm:text-base">→</span>
               </span>
             </div>
@@ -167,8 +167,8 @@ export default function Koleksi() {
         <div className="mt-8 sm:mt-10 lg:mt-12 flex justify-center">
           <Link
             href="/katalog"
-            className="inline-flex items-center gap-2 sm:gap-3 rounded-full px-6 py-3 sm:px-8 sm:py-4 text-[11px] sm:text-[12px] font-semibold uppercase tracking-[0.14em] sm:tracking-[0.16em] transition hover:bg-[var(--gold)]"
-            style={{ background: "var(--espresso)", color: "#f1e9dd" }}
+            className="inline-flex items-center gap-2 sm:gap-3 rounded-full px-6 py-3 sm:px-8 sm:py-4 text-[11px] sm:text-[12px] font-semibold uppercase tracking-[0.14em] sm:tracking-[0.16em] transition hover:bg-[#000000]"
+            style={{ background: "#000000", color: "#ffffff" }}
           >
             {t("cta")} <span aria-hidden="true">→</span>
           </Link>
@@ -179,12 +179,12 @@ export default function Koleksi() {
         .card-shade { background: linear-gradient(to top, rgba(20,15,11,.92) 0%, rgba(20,15,11,.55) 38%, rgba(20,15,11,.05) 70%); }
         .wide-shade { background: linear-gradient(to top, rgba(20,15,11,.92) 0%, rgba(20,15,11,.45) 45%, rgba(20,15,11,0) 80%), linear-gradient(to right, rgba(20,15,11,.75) 0%, rgba(20,15,11,.15) 55%, rgba(20,15,11,0) 100%); }
         .card { transition: transform .45s cubic-bezier(.2,.7,.2,1), box-shadow .45s ease; }
-        .card:hover { transform: translateY(-4px); box-shadow: 0 26px 55px -22px rgba(42,33,27,.7); }
+        .card:hover { transform: translateY(-4px); box-shadow: 0 26px 55px -22px rgba(0,0,0,.55); }
         .card:hover img { transform: scale(1.06); }
         .card img { transition: transform .8s cubic-bezier(.2,.7,.2,1); }
-        .card::after { content: ""; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 1px rgba(241,233,221,.10); pointer-events: none; z-index: 20; }
+        .card::after { content: ""; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 1px rgba(255,255,255,.12); pointer-events: none; z-index: 20; }
         @media (max-width: 639px) {
-          .card:hover { transform: none; box-shadow: 0 14px 30px -14px rgba(42,33,27,.5); }
+          .card:hover { transform: none; box-shadow: 0 14px 30px -14px rgba(0,0,0,.4); }
           .card:hover img { transform: none; }
         }
       `}</style>
