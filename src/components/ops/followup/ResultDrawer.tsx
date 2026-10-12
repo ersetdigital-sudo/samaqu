@@ -10,10 +10,20 @@ import {
   MessageCircle,
   Phone,
   ShoppingCart,
+  User,
   X,
 } from "lucide-react";
 import { IconCheckCircle, IconExternalLink } from "@/components/ops/icons";
-import { OUTCOMES, LOST_REASONS, waLink, fmtWibDateTime, normalizeWaNumber } from "@/lib/ops-followup";
+import {
+  OUTCOMES,
+  LOST_REASONS,
+  waLink,
+  fmtWibDateTime,
+  normalizeWaNumber,
+  isoToWibInput,
+  wibInputToIso,
+  defaultFirstFollowup,
+} from "@/lib/ops-followup";
 import { useToast } from "@/components/ops/ui/use-toast";
 
 type Lead = {
@@ -47,30 +57,16 @@ const ACTION_LABEL: Record<string, string> = {
   created: "Lead dibuat",
 };
 
-/** Ubah input datetime-local (dianggap WIB) jadi ISO. */
-function wibInputToIso(v: string): string | null {
-  if (!v) return null;
-  const d = new Date(`${v}:00+07:00`);
-  return Number.isNaN(d.getTime()) ? null : d.toISOString();
-}
-
-/** Default saran jadwal berikutnya (SOP: besok 10.00 WIB). */
-function suggestTomorrow10(): string {
-  const wib = new Date(Date.now() + 7 * 3600 * 1000 + 86400000);
-  const y = wib.getUTCFullYear();
-  const m = String(wib.getUTCMonth() + 1).padStart(2, "0");
-  const d = String(wib.getUTCDate()).padStart(2, "0");
-  return `${y}-${m}-${d}T10:00`;
-}
-
 export default function ResultDrawer({
   open,
   lead,
+  picOptions = [],
   onClose,
   onSaved,
 }: {
   open: boolean;
   lead: Lead | null;
+  picOptions?: string[];
   onClose: () => void;
   onSaved: () => void;
 }) {
@@ -84,6 +80,8 @@ export default function ResultDrawer({
   const [error, setError] = useState("");
   const [requestId, setRequestId] = useState("");
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [pic, setPic] = useState("");
+  const [savingPic, setSavingPic] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
   // Reset form tiap kali drawer dibuka untuk lead baru
@@ -91,7 +89,8 @@ export default function ResultDrawer({
     if (!open) return;
     setOutcome("");
     setNote("");
-    setNextSchedule(suggestTomorrow10());
+    setNextSchedule(isoToWibInput(defaultFirstFollowup()));
+    setPic(lead?.pic || "");
     setLostReason("");
     setConfirmStop(false);
     setError("");
@@ -126,6 +125,38 @@ export default function ResultDrawer({
   const wa = useMemo(() => waLink(lead?.kontak), [lead?.kontak]);
   const needsSchedule = outcome === "no_reply" || outcome === "replied" || outcome === "interested" || outcome === "buy";
   const isStop = outcome === "stop";
+
+  async function savePic() {
+    if (!lead) return;
+    setSavingPic(true);
+    try {
+      const { supabase } = await import("@/lib/supabase");
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      const res = await fetch("/api/ops/followups", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({
+          action: "set_pic",
+          leadId: lead.id,
+          pic: pic.trim() || null,
+          requestId: `pic-${lead.id}-${Date.now()}`,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error || "Gagal menyimpan PIC");
+      toast({
+        title: "PIC disimpan",
+        description: pic.trim() ? `Penanggung jawab: ${pic.trim()}` : "PIC dikosongkan.",
+        variant: "success",
+      });
+      onSaved();
+    } catch (e) {
+      toast({ title: "Gagal menyimpan PIC", description: e instanceof Error ? e.message : "Coba lagi.", variant: "destructive" });
+    } finally {
+      setSavingPic(false);
+    }
+  }
 
   async function submit() {
     if (!lead) return;
@@ -237,6 +268,35 @@ export default function ResultDrawer({
 
             {/* Body */}
             <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
+              {/* PIC / penanggung jawab */}
+              <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-3.5">
+                <div className="flex items-center gap-2 mb-2">
+                  <User size={14} className="text-blue-600 dark:text-blue-400" />
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">PIC / penanggung jawab</p>
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    list="drawer-pic-options"
+                    value={pic}
+                    onChange={(e) => setPic(e.target.value)}
+                    placeholder="Pilih atau ketik nama"
+                    className="flex-1 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                  />
+                  <datalist id="drawer-pic-options">
+                    {(picOptions || []).map((p) => <option key={p} value={p} />)}
+                  </datalist>
+                  <button
+                    type="button"
+                    onClick={savePic}
+                    disabled={savingPic || pic.trim() === (lead.pic || "").trim()}
+                    className="px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40"
+                  >
+                    {savingPic ? "Menyimpan..." : "Simpan PIC"}
+                  </button>
+                </div>
+              </div>
+
               <div>
                 <p className="text-sm font-bold text-slate-900 dark:text-white mb-2.5">Apa hasil follow-up kali ini?</p>
                 <div className="grid gap-2">
@@ -249,13 +309,13 @@ export default function ResultDrawer({
                         onClick={() => { setOutcome(o.code); setConfirmStop(false); setError(""); }}
                         className={`w-full text-left px-3.5 py-3 rounded-xl border-2 text-sm font-semibold transition-all ${
                           active
-                            ? "border-[#0f3d33] bg-[#0f3d33]/[.06] text-slate-900 dark:text-white"
+                            ? "border-blue-600 bg-blue-50/60 dark:bg-blue-900/20 text-slate-900 dark:text-white"
                             : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-slate-300"
                         }`}
                         aria-pressed={active}
                       >
                         <span className="flex items-center gap-2">
-                          {active && <IconCheckCircle size={15} className="text-[#0f3d33]" />}
+                          {active && <IconCheckCircle size={15} className="text-blue-600" />}
                           {o.label}
                         </span>
                       </button>
@@ -274,7 +334,7 @@ export default function ResultDrawer({
                       <select
                         value={lostReason}
                         onChange={(e) => setLostReason(e.target.value)}
-                        className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0f3d33]/30"
+                        className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/30"
                       >
                         <option value="">Pilih alasan…</option>
                         {LOST_REASONS.map((r) => <option key={r} value={r}>{r}</option>)}
@@ -299,7 +359,7 @@ export default function ResultDrawer({
                           ? "Contoh: ingin mempertimbangkan warna dulu"
                           : "Catatan tambahan…"
                       }
-                      className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0f3d33]/30 resize-none"
+                      className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/30 resize-none"
                     />
                   </div>
 
@@ -312,7 +372,7 @@ export default function ResultDrawer({
                         type="datetime-local"
                         value={nextSchedule}
                         onChange={(e) => setNextSchedule(e.target.value)}
-                        className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0f3d33]/30"
+                        className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/30"
                       />
                       <p className="mt-1.5 text-[11px] text-slate-500">
                         Saran sistem: besok 10.00 WIB (SOP H+1). Lu bisa ubah sesuai konteks pelanggan.
@@ -400,7 +460,7 @@ export default function ResultDrawer({
               <button
                 onClick={submit}
                 disabled={saving || !outcome}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-white bg-[#0f3d33] hover:bg-[#134a3e] disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
               >
                 {saving && <Loader2 size={15} className="animate-spin" />}
                 {isStop && confirmStop ? "Ya, hentikan follow-up" : "Simpan Hasil"}

@@ -1072,7 +1072,7 @@ export default function MasterProduk() {
                 </div>
                 <div>
                   <p
-                    className="text-xl md:text-3xl font-black text-white font-inter tracking-tight truncate"
+                    className="text-lg md:text-2xl font-black text-white font-inter tracking-tight leading-tight break-words"
                     title={topSeller ? `${topSeller.name} - ${topSeller.units} unit` : undefined}
                   >
                     {topSeller ? topSeller.name : '-'}
