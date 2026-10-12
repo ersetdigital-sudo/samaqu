@@ -410,7 +410,6 @@ function DrawerNavContent({
                   }}
                   onClick={onClose}
                 >
-                  {item.Icon && <item.Icon size={22} weight="duotone" style={{ color: "var(--espresso)" }} />}
                   {item.label}
                 </a>
               </li>
@@ -428,10 +427,7 @@ function DrawerNavContent({
                   borderBottom: "1px solid rgba(201,183,156,.12)",
                 }}
               >
-                <span className="flex items-center gap-4">
-                  {item.Icon && <item.Icon size={22} weight="duotone" style={{ color: "var(--espresso)" }} />}
-                  {item.label}
-                </span>
+                <span>{item.label}</span>
                 <CaretDown
                   size={16}
                   className={`transition-transform duration-300 ${bantuanOpen ? "rotate-180" : ""}`}
@@ -460,7 +456,6 @@ function DrawerNavContent({
                         }}
                         onClick={onClose}
                       >
-                        {link.Icon && <link.Icon size={18} weight="duotone" style={{ color: "var(--espresso)" }} />}
                         {link.label}
                       </a>
                     ))}
@@ -483,7 +478,6 @@ function DrawerNavContent({
               }}
               onClick={onClose}
             >
-              {item.Icon && <item.Icon size={22} weight="duotone" style={{ color: "var(--espresso)" }} />}
               {item.label}
             </a>
           </li>
@@ -528,7 +522,6 @@ function DrawerNavContent({
           }}
           onClick={onClose}
         >
-          <User size={22} weight="duotone" style={{ color: "var(--espresso)" }} />
           {t("nav.account")}
         </a>
       </div>
