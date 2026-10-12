@@ -540,7 +540,7 @@ function DrawerNavContent({
           target="_blank"
           rel="noopener"
           className="flex items-center justify-center gap-2 w-full px-5 py-3.5 text-[11px] tracking-[0.16em] uppercase font-ui font-medium transition-all duration-300 hover:opacity-90 rounded-sm"
-          style={{ background: "var(--espresso)", color: "white" }}
+          style={{ background: "#000", color: "white" }}
           onClick={onClose}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
