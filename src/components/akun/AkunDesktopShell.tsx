@@ -53,14 +53,14 @@ export default function AkunDesktopShell({ children }: { children: ReactNode }) 
 
   if (!ready) {
     return (
-      <div className="akun-root hidden md:grid min-h-screen place-items-center" style={{ background: "#f5f1ea" }}>
+      <div className="akun-root hidden md:grid min-h-screen place-items-center" style={{ background: "#F3F3F3" }}>
         <div className="w-9 h-9 rounded-full animate-pulse" style={{ background: "#0f3d33" }} />
       </div>
     );
   }
 
   return (
-    <div className="akun-root hidden md:block min-h-screen" style={{ background: "#f5f1ea" }}>
+    <div className="akun-root hidden md:block min-h-screen" style={{ background: "#F3F3F3" }}>
       {/* ═══ DESKTOP: wireframe structure ═══ */}
       <div>
         {/* ── Sidebar (fixed left) ── */}

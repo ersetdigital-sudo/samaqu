@@ -48,7 +48,7 @@ export function AkunHeader({ title, back }: { title: string; back?: string }) {
   const router = useRouter();
   const href = back ? `/${locale}${back}` : undefined;
   return (
-    <div className="md:hidden sticky top-0 z-30 -mx-4 px-4 bg-[#f5f1ea]/90 backdrop-blur flex items-center gap-3 pt-3 pb-4 border-b border-[#eae3d6]">
+    <div className="md:hidden sticky top-0 z-30 -mx-4 px-4 bg-[#F3F3F3]/90 backdrop-blur flex items-center gap-3 pt-3 pb-4 border-b border-[#eae3d6]">
       <button
         type="button"
         onClick={() => (href ? router.push(href) : router.back())}
@@ -85,14 +85,14 @@ export default function AkunShell({ children }: { children: ReactNode }) {
 
   if (!ready) {
     return (
-      <div className="akun-root min-h-screen grid place-items-center" style={{ background: "#f5f1ea" }}>
+      <div className="akun-root min-h-screen grid place-items-center" style={{ background: "#F3F3F3" }}>
         <div className="w-9 h-9 rounded-full animate-pulse" style={{ background: "#0f3d33" }} />
       </div>
     );
   }
 
   return (
-    <div className="akun-root min-h-screen" style={{ background: "#f5f1ea" }}>
+    <div className="akun-root min-h-screen" style={{ background: "#F3F3F3" }}>
       {/* ── Desktop sidebar (fixed left) ── */}
       <aside className="hidden md:flex fixed inset-y-0 left-0 w-64 bg-white border-r border-[#e6dfd2] z-50 flex-col">
         <div className="akun-side-brand h-16 flex items-center px-5 border-b border-[#e6dfd2] shrink-0">
