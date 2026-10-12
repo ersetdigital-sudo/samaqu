@@ -10,7 +10,7 @@
 
 import { getSupabaseAdmin } from "./supabase-admin";
 
-export const DEFAULT_CHAT_BASE_URL = "https://api.mimo.mi.com/v1";
+export const DEFAULT_CHAT_BASE_URL = "https://api.xiaomimimo.com/v1";
 export const DEFAULT_CHAT_MODEL = "mimo-v2.6-flash";
 
 export interface ChatConfig {

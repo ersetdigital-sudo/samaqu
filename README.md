@@ -483,7 +483,7 @@ ADMIN_WHATSAPP_NUMBER=
 # Live Chat AI — Xiaomi MiMo (OpenAI-compatible). Bisa juga diatur dari menu admin.
 MIMO_API_KEY=
 MIMO_MODEL=mimo-v2.6-flash
-MIMO_BASE_URL=https://api.mimo.mi.com/v1
+MIMO_BASE_URL=https://api.xiaomimimo.com/v1
 
 # App
 NEXT_PUBLIC_SITE_URL=

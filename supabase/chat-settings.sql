@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS chat_settings (
   id INTEGER PRIMARY KEY DEFAULT 1,
   enabled BOOLEAN NOT NULL DEFAULT false,       -- chat tampil di website atau tidak
   api_key TEXT,                                 -- API key Xiaomi MiMo; kosong = ikut env MIMO_API_KEY
-  base_url TEXT DEFAULT 'https://api.mimo.mi.com/v1',
+  base_url TEXT DEFAULT 'https://api.xiaomimimo.com/v1',
   model TEXT DEFAULT 'mimo-v2.6-flash',
   greeting TEXT,                                -- sapaan pembuka di panel chat
   extra_instructions TEXT,                      -- knowledge/prompt tambahan yang diisi admin
