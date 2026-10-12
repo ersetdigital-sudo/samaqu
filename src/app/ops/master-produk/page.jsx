@@ -929,315 +929,225 @@ export default function MasterProduk() {
               </div>
             </div>
             {/* Metrics Grid - Custom Mobile Layout */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mt-8">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 md:gap-3 mt-5 md:mt-6">
               {isLoading ? (
                 <>
-                  <div className="col-span-2 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-5 animate-pulse h-24"></div>
-                  <div className="col-span-1 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-5 animate-pulse h-24"></div>
-                  <div className="col-span-1 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-5 animate-pulse h-24"></div>
-                  <div className="col-span-2 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-5 animate-pulse h-24"></div>
+                  <div className="col-span-2 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-3.5 py-3 h-[92px] animate-pulse"></div>
+                  <div className="col-span-1 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-3.5 py-3 h-[92px] animate-pulse"></div>
+                  <div className="col-span-1 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-3.5 py-3 h-[92px] animate-pulse"></div>
+                  <div className="col-span-2 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-3.5 py-3 h-[92px] animate-pulse"></div>
                 </>
               ) : activeTab === 'report' ? (
           <>
-            {/* ── Tab Laporan Stok: 4 KPI stok (teks putih semua biar terbaca di header biru) ── */}
-            {/* Card 1: Total Stok */}
+            {/* ── Tab Laporan Stok: 4 KPI stok ── */}
             <button
               type="button"
               onClick={() => setStockFilter('all')}
-              className="col-span-2 lg:col-span-1 text-left bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-4 md:p-5 hover:bg-white/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 active:scale-[0.99] transition-all duration-300"
+              className="col-span-2 lg:col-span-1 text-left bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-3.5 py-3 md:px-4 md:py-3.5 hover:bg-white/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 active:scale-[0.99] transition-all duration-300"
               title="Tampilkan semua varian"
             >
-              <div className="flex flex-col h-full justify-between gap-2 md:gap-3">
-                <div className="flex items-center gap-2 text-white">
-                  <IconBoxes size={18} className="shrink-0" />
-                  <p className="text-[10px] md:text-xs font-bold uppercase tracking-wider md:tracking-widest">TOTAL STOK</p>
-                </div>
-                <div>
-                  <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight">
-                    {totalStockUnits.toLocaleString('id-ID')}
-                    <span className="text-sm md:text-base font-bold text-white"> unit</span>
-                  </p>
-                  <p className="text-[10px] md:text-xs text-white mt-1">Total unit tersedia</p>
-                </div>
+              <div className="flex items-center gap-2 text-white">
+                <IconBoxes size={15} className="shrink-0 opacity-90" />
+                <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-wide leading-tight min-h-[26px] md:min-h-[15px]">Total Stok</p>
               </div>
+              <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none">
+                {totalStockUnits.toLocaleString('id-ID')}<span className="text-xs md:text-sm font-bold"> unit</span>
+              </p>
+              <p className="mt-1 text-[10px] md:text-[11px] text-white/85 leading-tight">Total unit tersedia</p>
             </button>
 
-            {/* Card 2: Stok Menipis */}
             <button
               type="button"
               onClick={() => setStockFilter('menipis')}
-              className="col-span-1 lg:col-span-1 text-left bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-4 md:p-5 hover:bg-white/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 active:scale-[0.99] transition-all duration-300"
+              className="col-span-1 lg:col-span-1 text-left bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-3.5 py-3 md:px-4 md:py-3.5 hover:bg-white/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 active:scale-[0.99] transition-all duration-300"
               title="Filter varian yang perlu restock"
             >
-              <div className="flex flex-col h-full justify-between gap-2 md:gap-3">
-                <div className="flex items-center gap-2 text-white">
-                  <IconAlertTriangle size={18} className="shrink-0" />
-                  <p className="text-[10px] md:text-xs font-bold uppercase tracking-wider md:tracking-widest truncate">STOK MENIPIS</p>
-                </div>
-                <div>
-                  <p className="text-xl md:text-3xl font-black text-white font-inter tracking-tight">
-                    {lowStockVariantCount.toLocaleString('id-ID')}
-                    <span className="text-xs md:text-sm font-bold text-white"> varian</span>
-                  </p>
-                  <p className="text-[10px] md:text-xs text-white mt-1">Perlu restock</p>
-                </div>
+              <div className="flex items-center gap-2 text-white">
+                <IconAlertTriangle size={15} className="shrink-0 opacity-90" />
+                <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-wide leading-tight min-h-[26px] md:min-h-[15px]">Stok Menipis</p>
               </div>
+              <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none">
+                {lowStockVariantCount.toLocaleString('id-ID')}<span className="text-xs md:text-sm font-bold"> varian</span>
+              </p>
+              <p className="mt-1 text-[10px] md:text-[11px] text-white/85 leading-tight">Perlu restock</p>
             </button>
 
-            {/* Card 3: Barang Masuk */}
             <button
               type="button"
               onClick={() => setActiveTab('stockin')}
-              className="col-span-1 lg:col-span-1 text-left bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-4 md:p-5 hover:bg-white/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 active:scale-[0.99] transition-all duration-300"
+              className="col-span-1 lg:col-span-1 text-left bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-3.5 py-3 md:px-4 md:py-3.5 hover:bg-white/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 active:scale-[0.99] transition-all duration-300"
               title="Lihat data barang masuk"
             >
-              <div className="flex flex-col h-full justify-between gap-2 md:gap-3">
-                <div className="flex items-center gap-2 text-white">
-                  <IconArrowDownToLine size={18} className="shrink-0" />
-                  <p className="text-[10px] md:text-xs font-bold uppercase tracking-wider md:tracking-widest truncate">BARANG MASUK</p>
-                </div>
-                <div>
-                  <p className="text-xl md:text-3xl font-black text-white font-inter tracking-tight">
-                    {stockInMonthUnits.toLocaleString('id-ID')}
-                    <span className="text-xs md:text-sm font-bold text-white"> unit</span>
-                  </p>
-                  <p className="text-[10px] md:text-xs text-white mt-1">Bulan berjalan (WIB)</p>
-                </div>
+              <div className="flex items-center gap-2 text-white">
+                <IconArrowDownToLine size={15} className="shrink-0 opacity-90" />
+                <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-wide leading-tight min-h-[26px] md:min-h-[15px]">Barang Masuk</p>
               </div>
+              <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none">
+                {stockInMonthUnits.toLocaleString('id-ID')}<span className="text-xs md:text-sm font-bold"> unit</span>
+              </p>
+              <p className="mt-1 text-[10px] md:text-[11px] text-white/85 leading-tight">Bulan berjalan (WIB)</p>
             </button>
 
-            {/* Card 4: Stok Habis */}
             <button
               type="button"
               onClick={() => setStockFilter('habis')}
-              className="col-span-2 lg:col-span-1 text-left bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-4 md:p-5 hover:bg-white/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 active:scale-[0.99] transition-all duration-300"
+              className="col-span-2 lg:col-span-1 text-left bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-3.5 py-3 md:px-4 md:py-3.5 hover:bg-white/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 active:scale-[0.99] transition-all duration-300"
               title="Filter varian yang stoknya habis"
             >
-              <div className="flex flex-col h-full justify-between gap-2 md:gap-3">
-                <div className="flex items-center gap-2 text-white">
-                  <IconPackageX size={18} className="shrink-0" />
-                  <p className="text-[10px] md:text-xs font-bold uppercase tracking-wider md:tracking-widest">STOK HABIS</p>
-                </div>
-                <div>
-                  <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight">
-                    {outOfStockVariantCount.toLocaleString('id-ID')}
-                    <span className="text-xs md:text-sm font-bold text-white"> varian</span>
-                  </p>
-                  <p className="text-[10px] md:text-xs text-white mt-1">Tidak ada stok tersedia</p>
-                </div>
+              <div className="flex items-center gap-2 text-white">
+                <IconPackageX size={15} className="shrink-0 opacity-90" />
+                <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-wide leading-tight min-h-[26px] md:min-h-[15px]">Stok Habis</p>
               </div>
+              <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none">
+                {outOfStockVariantCount.toLocaleString('id-ID')}<span className="text-xs md:text-sm font-bold"> varian</span>
+              </p>
+              <p className="mt-1 text-[10px] md:text-[11px] text-white/85 leading-tight">Tidak ada stok tersedia</p>
             </button>
           </>
         ) : activeTab === 'produk' ? (
           <>
             {/* ── Tab Daftar Produk: ringkasan katalog ── */}
-            {/* Card 1: Total Produk */}
-            <div className="col-span-2 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-4 md:p-5 hover:bg-white/15 transition-all duration-300">
-              <div className="flex flex-col h-full justify-between gap-2 md:gap-3">
-                <div className="flex items-center gap-2 text-blue-100">
-                  <Package size={18} className="shrink-0" />
-                  <p className="text-[11px] md:text-xs font-semibold md:tracking-wide">Total Produk</p>
-                </div>
-                <div>
-                  <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight">
-                    {(products || []).length.toLocaleString('id-ID')}
-                  </p>
-                  <p className="text-[10px] md:text-xs text-blue-200 mt-1">Produk terdaftar</p>
-                </div>
+            <div className="col-span-2 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-3.5 py-3 md:px-4 md:py-3.5 hover:bg-white/15 transition-all duration-300">
+              <div className="flex items-center gap-2 text-white">
+                <Package size={15} className="shrink-0 opacity-90" />
+                <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-wide leading-tight min-h-[26px] md:min-h-[15px]">Total Produk</p>
               </div>
+              <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none">
+                {(products || []).length.toLocaleString('id-ID')}
+              </p>
+              <p className="mt-1 text-[10px] md:text-[11px] text-white/85 leading-tight">Produk terdaftar</p>
             </div>
 
-            {/* Card 2: Produk Aktif */}
-            <div className="col-span-1 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-4 md:p-5 hover:bg-white/15 transition-all duration-300">
-              <div className="flex flex-col h-full justify-between gap-2 md:gap-3">
-                <div className="flex items-center gap-2 text-blue-100">
-                  <CheckCircle size={18} className="shrink-0" />
-                  <p className="text-[11px] md:text-xs font-semibold md:tracking-wide truncate">Produk Aktif</p>
-                </div>
-                <div>
-                  <p className="text-xl md:text-3xl font-black text-white font-inter tracking-tight">
-                    {activeProductCount.toLocaleString('id-ID')}
-                  </p>
-                  <p className="text-[10px] md:text-xs text-blue-200 mt-1">Status aktif</p>
-                </div>
+            <div className="col-span-1 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-3.5 py-3 md:px-4 md:py-3.5 hover:bg-white/15 transition-all duration-300">
+              <div className="flex items-center gap-2 text-white">
+                <CheckCircle size={15} className="shrink-0 opacity-90" />
+                <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-wide leading-tight min-h-[26px] md:min-h-[15px]">Produk Aktif</p>
               </div>
+              <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none">
+                {activeProductCount.toLocaleString('id-ID')}
+              </p>
+              <p className="mt-1 text-[10px] md:text-[11px] text-white/85 leading-tight">Status aktif</p>
             </div>
 
-            {/* Card 3: Total Varian */}
-            <div className="col-span-1 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-4 md:p-5 hover:bg-white/15 transition-all duration-300">
-              <div className="flex flex-col h-full justify-between gap-2 md:gap-3">
-                <div className="flex items-center gap-2 text-blue-100">
-                  <IconLayers size={18} className="shrink-0" />
-                  <p className="text-[11px] md:text-xs font-semibold md:tracking-wide truncate">Total Varian</p>
-                </div>
-                <div>
-                  <p className="text-xl md:text-3xl font-black text-white font-inter tracking-tight">
-                    {(variants || []).length.toLocaleString('id-ID')}
-                  </p>
-                  <p className="text-[10px] md:text-xs text-blue-200 mt-1">Varian unik</p>
-                </div>
+            <div className="col-span-1 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-3.5 py-3 md:px-4 md:py-3.5 hover:bg-white/15 transition-all duration-300">
+              <div className="flex items-center gap-2 text-white">
+                <IconLayers size={15} className="shrink-0 opacity-90" />
+                <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-wide leading-tight min-h-[26px] md:min-h-[15px]">Total Varian</p>
               </div>
+              <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none">
+                {(variants || []).length.toLocaleString('id-ID')}
+              </p>
+              <p className="mt-1 text-[10px] md:text-[11px] text-white/85 leading-tight">Varian unik</p>
             </div>
 
-            {/* Card 4: Produk Terlaris */}
-            <div className="col-span-2 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-4 md:p-5 hover:bg-white/15 transition-all duration-300">
-              <div className="flex flex-col h-full justify-between gap-2 md:gap-3">
-                <div className="flex items-center gap-2 text-blue-100">
-                  <TrendingUp size={18} className="shrink-0" />
-                  <p className="text-[11px] md:text-xs font-semibold md:tracking-wide">Produk Terlaris</p>
-                </div>
-                <div>
-                  <p
-                    className="text-lg md:text-2xl font-black text-white font-inter tracking-tight leading-tight break-words"
-                    title={topSeller ? `${topSeller.name} - ${topSeller.units} unit` : undefined}
-                  >
-                    {topSeller ? topSeller.name : '-'}
-                  </p>
-                  <p className="text-[10px] md:text-xs text-blue-200 mt-1">
-                    {topSeller ? `Berdasarkan unit terjual - ${topSeller.units} unit` : 'Belum ada penjualan'}
-                  </p>
-                </div>
+            <div className="col-span-2 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-3.5 py-3 md:px-4 md:py-3.5 hover:bg-white/15 transition-all duration-300">
+              <div className="flex items-center gap-2 text-white">
+                <TrendingUp size={15} className="shrink-0 opacity-90" />
+                <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-wide leading-tight min-h-[26px] md:min-h-[15px]">Produk Terlaris</p>
               </div>
+              <p
+                className="text-lg md:text-2xl font-black text-white font-inter tracking-tight leading-tight break-words"
+                title={topSeller ? `${topSeller.name} - ${topSeller.units} unit` : undefined}
+              >
+                {topSeller ? topSeller.name : '-'}
+              </p>
+              <p className="mt-1 text-[10px] md:text-[11px] text-white/85 leading-tight">
+                {topSeller ? `Terjual ${topSeller.units} unit` : 'Belum ada penjualan'}
+              </p>
             </div>
           </>
         ) : activeTab === 'stockin' ? (
                 <>
-                  {/* ── Tab Barang Masuk: ringkasan penerimaan barang dari produksi ── */}
-                  {/* Card 1: Total Barang Masuk */}
-                  <div className="col-span-2 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-4 md:p-5 hover:bg-white/15 transition-all duration-300">
-                    <div className="flex flex-col h-full justify-between gap-2 md:gap-3">
-                      <div className="flex items-center gap-2 text-blue-100">
-                        <IconArrowDownToLine size={18} className="shrink-0" />
-                        <p className="text-[11px] md:text-xs font-semibold md:tracking-wide">Total Barang Masuk</p>
-                      </div>
-                      <div>
-                        <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight">
-                          {stockInMonthUnits.toLocaleString('id-ID')}
-                          <span className="text-sm md:text-base font-bold text-blue-100"> unit</span>
-                        </p>
-                        <p className="text-[10px] md:text-xs text-blue-200 mt-1">Unit diterima bulan ini</p>
-                      </div>
+                  {/* ── Tab Barang Masuk: ringkasan penerimaan dari produksi ── */}
+                  <div className="col-span-2 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-3.5 py-3 md:px-4 md:py-3.5 hover:bg-white/15 transition-all duration-300">
+                    <div className="flex items-center gap-2 text-white">
+                      <IconArrowDownToLine size={15} className="shrink-0 opacity-90" />
+                      <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-wide leading-tight min-h-[26px] md:min-h-[15px]">Total Barang Masuk</p>
                     </div>
+                    <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none">
+                      {stockInMonthUnits.toLocaleString('id-ID')}<span className="text-xs md:text-sm font-bold"> unit</span>
+                    </p>
+                    <p className="mt-1 text-[10px] md:text-[11px] text-white/85 leading-tight">Unit diterima bulan ini</p>
                   </div>
 
-                  {/* Card 2: Masuk Hari Ini */}
-                  <div className="col-span-1 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-4 md:p-5 hover:bg-white/15 transition-all duration-300">
-                    <div className="flex flex-col h-full justify-between gap-2 md:gap-3">
-                      <div className="flex items-center gap-2 text-blue-100">
-                        <IconCalendarClock size={18} className="shrink-0" />
-                        <p className="text-[11px] md:text-xs font-semibold md:tracking-wide truncate">Masuk Hari Ini</p>
-                      </div>
-                      <div>
-                        <p className="text-xl md:text-3xl font-black text-white font-inter tracking-tight">
-                          {stockInTodayUnits.toLocaleString('id-ID')}
-                          <span className="text-xs md:text-sm font-bold text-blue-100"> unit</span>
-                        </p>
-                        <p className="text-[10px] md:text-xs text-blue-200 mt-1">Diterima hari ini (WIB)</p>
-                      </div>
+                  <div className="col-span-1 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-3.5 py-3 md:px-4 md:py-3.5 hover:bg-white/15 transition-all duration-300">
+                    <div className="flex items-center gap-2 text-white">
+                      <IconCalendarClock size={15} className="shrink-0 opacity-90" />
+                      <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-wide leading-tight min-h-[26px] md:min-h-[15px]">Masuk Hari Ini</p>
                     </div>
+                    <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none">
+                      {stockInTodayUnits.toLocaleString('id-ID')}<span className="text-xs md:text-sm font-bold"> unit</span>
+                    </p>
+                    <p className="mt-1 text-[10px] md:text-[11px] text-white/85 leading-tight">Diterima hari ini (WIB)</p>
                   </div>
 
-                  {/* Card 3: Varian Diterima */}
-                  <div className="col-span-1 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-4 md:p-5 hover:bg-white/15 transition-all duration-300">
-                    <div className="flex flex-col h-full justify-between gap-2 md:gap-3">
-                      <div className="flex items-center gap-2 text-blue-100">
-                        <IconBoxes size={18} className="shrink-0" />
-                        <p className="text-[11px] md:text-xs font-semibold md:tracking-wide truncate">Varian Diterima</p>
-                      </div>
-                      <div>
-                        <p className="text-xl md:text-3xl font-black text-white font-inter tracking-tight">
-                          {stockInMonthVariantCount.toLocaleString('id-ID')}
-                          <span className="text-xs md:text-sm font-bold text-blue-100"> varian</span>
-                        </p>
-                        <p className="text-[10px] md:text-xs text-blue-200 mt-1">SKU unik bulan ini</p>
-                      </div>
+                  <div className="col-span-1 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-3.5 py-3 md:px-4 md:py-3.5 hover:bg-white/15 transition-all duration-300">
+                    <div className="flex items-center gap-2 text-white">
+                      <IconBoxes size={15} className="shrink-0 opacity-90" />
+                      <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-wide leading-tight min-h-[26px] md:min-h-[15px]">Varian Diterima</p>
                     </div>
+                    <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none">
+                      {stockInMonthVariantCount.toLocaleString('id-ID')}<span className="text-xs md:text-sm font-bold"> varian</span>
+                    </p>
+                    <p className="mt-1 text-[10px] md:text-[11px] text-white/85 leading-tight">SKU unik bulan ini</p>
                   </div>
 
-                  {/* Card 4: Total Pencatatan */}
-                  <div className="col-span-2 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-4 md:p-5 hover:bg-white/15 transition-all duration-300">
-                    <div className="flex flex-col h-full justify-between gap-2 md:gap-3">
-                      <div className="flex items-center gap-2 text-blue-100">
-                        <ClipboardList size={18} className="shrink-0" />
-                        <p className="text-[11px] md:text-xs font-semibold md:tracking-wide">Total Pencatatan</p>
-                      </div>
-                      <div>
-                        <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight">
-                          {stockInMonthRecordCount.toLocaleString('id-ID')}
-                          <span className="text-xs md:text-sm font-bold text-blue-100"> pencatatan</span>
-                        </p>
-                        <p className="text-[10px] md:text-xs text-blue-200 mt-1">Pencatatan tersimpan bulan ini</p>
-                      </div>
+                  <div className="col-span-2 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-3.5 py-3 md:px-4 md:py-3.5 hover:bg-white/15 transition-all duration-300">
+                    <div className="flex items-center gap-2 text-white">
+                      <ClipboardList size={15} className="shrink-0 opacity-90" />
+                      <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-wide leading-tight min-h-[26px] md:min-h-[15px]">Total Pencatatan</p>
                     </div>
+                    <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none">
+                      {stockInMonthRecordCount.toLocaleString('id-ID')}<span className="text-xs md:text-sm font-bold"> pencatatan</span>
+                    </p>
+                    <p className="mt-1 text-[10px] md:text-[11px] text-white/85 leading-tight">Pencatatan bulan ini</p>
                   </div>
                 </>
               ) : (
                 <>
                   {/* ── Tab Barang Keluar: ringkasan stok yang berkurang ── */}
-                  {/* Card 1: Total Barang Keluar */}
-                  <div className="col-span-2 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-4 md:p-5 hover:bg-white/15 transition-all duration-300">
-                    <div className="flex flex-col h-full justify-between gap-2 md:gap-3">
-                      <div className="flex items-center gap-2 text-white">
-                        <Package size={18} className="shrink-0" />
-                        <p className="text-[11px] md:text-xs font-bold uppercase tracking-wider md:tracking-widest">Total Barang Keluar</p>
-                      </div>
-                      <div>
-                        <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight">
-                          {stockOutUnits.toLocaleString('id-ID')}
-                          <span className="text-sm md:text-base font-bold text-white"> unit</span>
-                        </p>
-                        <p className="text-[10px] md:text-xs text-white mt-1">Total kuantitas stok keluar</p>
-                      </div>
+                  <div className="col-span-2 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-3.5 py-3 md:px-4 md:py-3.5 hover:bg-white/15 transition-all duration-300">
+                    <div className="flex items-center gap-2 text-white">
+                      <Package size={15} className="shrink-0 opacity-90" />
+                      <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-wide leading-tight min-h-[26px] md:min-h-[15px]">Total Barang Keluar</p>
                     </div>
+                    <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none">
+                      {stockOutUnits.toLocaleString('id-ID')}<span className="text-xs md:text-sm font-bold"> unit</span>
+                    </p>
+                    <p className="mt-1 text-[10px] md:text-[11px] text-white/85 leading-tight">Total unit stok keluar</p>
                   </div>
 
-                  {/* Card 2: Total Transaksi */}
-                  <div className="col-span-1 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-4 md:p-5 hover:bg-white/15 transition-all duration-300">
-                    <div className="flex flex-col h-full justify-between gap-2 md:gap-3">
-                      <div className="flex items-center gap-2 text-white">
-                        <ClipboardList size={18} className="shrink-0" />
-                        <p className="text-[11px] md:text-xs font-bold uppercase tracking-wider md:tracking-widest truncate">Total Transaksi</p>
-                      </div>
-                      <div>
-                        <p className="text-xl md:text-3xl font-black text-white font-inter tracking-tight">
-                          {(transactions || []).length.toLocaleString('id-ID')}
-                        </p>
-                        <p className="text-[10px] md:text-xs text-white mt-1">Jumlah transaksi penjualan</p>
-                      </div>
+                  <div className="col-span-1 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-3.5 py-3 md:px-4 md:py-3.5 hover:bg-white/15 transition-all duration-300">
+                    <div className="flex items-center gap-2 text-white">
+                      <ClipboardList size={15} className="shrink-0 opacity-90" />
+                      <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-wide leading-tight min-h-[26px] md:min-h-[15px]">Total Transaksi</p>
                     </div>
+                    <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none">
+                      {(transactions || []).length.toLocaleString('id-ID')}
+                    </p>
+                    <p className="mt-1 text-[10px] md:text-[11px] text-white/85 leading-tight">Transaksi penjualan</p>
                   </div>
 
-                  {/* Card 3: Jenis Produk Keluar */}
-                  <div className="col-span-1 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-4 md:p-5 hover:bg-white/15 transition-all duration-300">
-                    <div className="flex flex-col h-full justify-between gap-2 md:gap-3">
-                      <div className="flex items-center gap-2 text-white">
-                        <IconLayers size={18} className="shrink-0" />
-                        <p className="text-[11px] md:text-xs font-bold uppercase tracking-wider md:tracking-widest truncate">Produk Terjual</p>
-                      </div>
-                      <div>
-                        <p className="text-xl md:text-3xl font-black text-white font-inter tracking-tight">
-                          {stockOutProductCount.toLocaleString('id-ID')}
-                        </p>
-                        <p className="text-[10px] md:text-xs text-white mt-1">Produk berbeda yang terjual</p>
-                      </div>
+                  <div className="col-span-1 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-3.5 py-3 md:px-4 md:py-3.5 hover:bg-white/15 transition-all duration-300">
+                    <div className="flex items-center gap-2 text-white">
+                      <IconLayers size={15} className="shrink-0 opacity-90" />
+                      <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-wide leading-tight min-h-[26px] md:min-h-[15px]">Produk Terjual</p>
                     </div>
+                    <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none">
+                      {stockOutProductCount.toLocaleString('id-ID')}
+                    </p>
+                    <p className="mt-1 text-[10px] md:text-[11px] text-white/85 leading-tight">Produk berbeda terjual</p>
                   </div>
 
-                  {/* Card 4: Keluar Hari Ini */}
-                  <div className="col-span-2 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-4 md:p-5 hover:bg-white/15 transition-all duration-300">
-                    <div className="flex flex-col h-full justify-between gap-2 md:gap-3">
-                      <div className="flex items-center gap-2 text-white">
-                        <IconCalendarClock size={18} className="shrink-0" />
-                        <p className="text-[11px] md:text-xs font-bold uppercase tracking-wider md:tracking-widest">Keluar Hari Ini</p>
-                      </div>
-                      <div>
-                        <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight">
-                          {stockOutTodayUnits.toLocaleString('id-ID')}
-                          <span className="text-xs md:text-sm font-bold text-white"> unit</span>
-                        </p>
-                        <p className="text-[10px] md:text-xs text-white mt-1">Unit keluar hari ini (WIB)</p>
-                      </div>
+                  <div className="col-span-2 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-3.5 py-3 md:px-4 md:py-3.5 hover:bg-white/15 transition-all duration-300">
+                    <div className="flex items-center gap-2 text-white">
+                      <IconCalendarClock size={15} className="shrink-0 opacity-90" />
+                      <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-wide leading-tight min-h-[26px] md:min-h-[15px]">Keluar Hari Ini</p>
                     </div>
+                    <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none">
+                      {stockOutTodayUnits.toLocaleString('id-ID')}<span className="text-xs md:text-sm font-bold"> unit</span>
+                    </p>
+                    <p className="mt-1 text-[10px] md:text-[11px] text-white/85 leading-tight">Unit keluar hari ini (WIB)</p>
                   </div>
                 </>
               )}
