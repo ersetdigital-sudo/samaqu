@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS chat_settings (
   model TEXT DEFAULT 'mimo-v2.6-flash',
   greeting TEXT,                                -- sapaan pembuka di panel chat
   extra_instructions TEXT,                      -- knowledge/prompt tambahan yang diisi admin
+  last_error_alert_at TIMESTAMPTZ,              -- terakhir kali alert error dikirim (throttle 1 jam)
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 

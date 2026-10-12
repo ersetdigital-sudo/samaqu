@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getChatConfig, isChatReady } from "@/lib/chat-config";
 import { getKnowledgeContext } from "@/lib/chat-knowledge";
+import { maybeAlertErrorSpike, ERROR_ALERT_THRESHOLD } from "@/lib/chat-alerts";
 import { CHAT_TOOLS, executeChatTool, type ChatProductCard } from "@/lib/chat-tools";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
@@ -306,6 +307,11 @@ export async function POST(req: NextRequest) {
           if (error) console.error("[CHAT] gagal menulis chat_logs:", error.message);
         } catch (e) {
           console.error("[CHAT] gagal menulis chat_logs:", e);
+        }
+
+        // Kalau error menumpuk, kabari admin (throttle 1 jam di dalam fungsinya).
+        if (errText) {
+          await maybeAlertErrorSpike(ERROR_ALERT_THRESHOLD, errText);
         }
         controller.close();
       }
