@@ -4,9 +4,26 @@
  * Harga & stok TIDAK dihafal model — setiap kali butuh, model memanggil tool ini dan
  * datanya diambil langsung dari database. Ini yang membuat jawaban akurat dan tidak
  * mengarang. Modul server-only.
+ *
+ * Tool mengembalikan dua hal: `text` (untuk dibaca model) dan `products` (opsional,
+ * data terstruktur yang dikirim ke widget untuk dirender sebagai kartu produk).
  */
 
 import { getSupabaseAdmin } from "./supabase-admin";
+
+export interface ChatProductCard {
+  id: string;
+  name: string;
+  category: string;
+  price: number;
+  cyp: boolean;
+  image: string | null;
+}
+
+export interface ChatToolResult {
+  text: string;
+  products?: ChatProductCard[];
+}
 
 export const CHAT_TOOLS = [
   {
@@ -22,7 +39,7 @@ export const CHAT_TOOLS = [
             type: "string",
             description: "Kata kunci: nama produk, kategori (thobe/kandora/koko/vest/kabak), kain, atau series. Boleh kosong.",
           },
-          kategori: { type: "string", description: "Filter kategori (opsional), mis. 'Koko'." },
+          kategori: { type: "string", description: "Filter kategori (opsional), mis. 'Thobe'." },
           max_harga: { type: "number", description: "Batas harga maksimum dalam Rupiah (opsional)." },
           warna: { type: "string", description: "Filter warna (opsional), mis. 'hitam'." },
         },
@@ -57,6 +74,19 @@ function rupiah(value: number): string {
   return `Rp ${value.toLocaleString("id-ID")}`;
 }
 
+/**
+ * Beberapa produk punya `image` berupa video Cloudinary (.mp4), yang tidak bisa dipakai
+ * di tag <img>. Ubah ke poster frame JPEG lewat transform Cloudinary (so_0 = frame awal);
+ * URL non-video dibiarkan apa adanya.
+ */
+function toThumbnail(url: string | null): string | null {
+  if (!url) return null;
+  const isVideo = /\/video\/upload\//.test(url) || /\.(mp4|webm|mov|m4v)(\?|$)/i.test(url);
+  if (!isVideo) return url;
+  if (!/res\.cloudinary\.com/.test(url)) return null;
+  return url.replace("/video/upload/", "/video/upload/so_0/").replace(/\.(mp4|webm|mov|m4v)(\?.*)?$/i, ".jpg");
+}
+
 interface VariantRow {
   product_id: string;
   color: string | null;
@@ -81,7 +111,7 @@ function summarizeStock(variants: VariantRow[]): string {
   return parts.join(" | ") || "stok tidak terkelola";
 }
 
-async function cariProduk(args: Record<string, unknown>): Promise<string> {
+async function cariProduk(args: Record<string, unknown>): Promise<ChatToolResult> {
   const admin = getSupabaseAdmin();
   const term = sanitize(args.query);
   const kategori = sanitize(args.kategori);
@@ -90,7 +120,7 @@ async function cariProduk(args: Record<string, unknown>): Promise<string> {
 
   let query = admin
     .from("products")
-    .select("id, name, category, kain, series, price, minimum_price, create_your_price_enabled, colors, jenis_kain(name, material)");
+    .select("id, name, category, kain, series, price, minimum_price, create_your_price_enabled, colors, image, jenis_kain(name, material)");
 
   if (term) query = query.or(`name.ilike.%${term}%,category.ilike.%${term}%,kain.ilike.%${term}%,series.ilike.%${term}%`);
   if (kategori) query = query.ilike("category", `%${kategori}%`);
@@ -98,7 +128,7 @@ async function cariProduk(args: Record<string, unknown>): Promise<string> {
   const { data, error } = await query.limit(30);
   if (error) {
     console.error("[CHAT-TOOL] cari_produk error:", error.message);
-    return "Gagal mengambil data produk. Arahkan pelanggan ke admin.";
+    return { text: "Gagal mengambil data produk. Arahkan pelanggan ke admin." };
   }
 
   let products = (data || []) as Array<Record<string, unknown>>;
@@ -116,7 +146,7 @@ async function cariProduk(args: Record<string, unknown>): Promise<string> {
   }
 
   if (!products.length) {
-    return "Tidak ada produk yang cocok dengan kriteria itu. Tawarkan bantuan lain atau arahkan ke admin.";
+    return { text: "Tidak ada produk yang cocok dengan kriteria itu. Tawarkan bantuan lain atau arahkan ke admin." };
   }
 
   products = products.slice(0, 8);
@@ -132,17 +162,29 @@ async function cariProduk(args: Record<string, unknown>): Promise<string> {
     byProduct.get(v.product_id)!.push(v);
   }
 
+  const cards: ChatProductCard[] = [];
   const lines = products.map((p) => {
     const jenis = p.jenis_kain as { name?: string; material?: string } | null;
     const kain = jenis?.name || (p.kain as string) || "-";
     const colors = Array.isArray(p.colors) ? (p.colors as string[]).join(", ") : "-";
-    const price = p.create_your_price_enabled
-      ? `Create Your Price, minimum ${rupiah(Number(p.minimum_price) || 0)}`
-      : rupiah(Number(p.price) || 0);
-    return `- ${p.name} [${p.category}] | kain ${kain}${jenis?.material ? ` (${jenis.material})` : ""}${p.series ? ` | series ${p.series}` : ""} | ${price} | warna: ${colors} | stok (warna → ukuran:jumlah): ${summarizeStock(byProduct.get(p.id as string) || [])}`;
+    const cyp = !!p.create_your_price_enabled;
+    const price = cyp ? Number(p.minimum_price) || 0 : Number(p.price) || 0;
+    const priceLabel = cyp ? `Create Your Price, minimum ${rupiah(price)}` : rupiah(price);
+    cards.push({
+      id: p.id as string,
+      name: p.name as string,
+      category: (p.category as string) || "-",
+      price,
+      cyp,
+      image: toThumbnail((p.image as string) || null),
+    });
+    return `- ${p.name} [${p.category}] | kain ${kain}${jenis?.material ? ` (${jenis.material})` : ""}${p.series ? ` | series ${p.series}` : ""} | ${priceLabel} | warna: ${colors} | stok (warna → ukuran:jumlah): ${summarizeStock(byProduct.get(p.id as string) || [])}`;
   });
 
-  return `Ditemukan ${products.length} produk:\n${lines.join("\n")}`;
+  return {
+    text: `Ditemukan ${products.length} produk:\n${lines.join("\n")}`,
+    products: cards,
+  };
 }
 
 const SIZE_GUIDE: Record<string, string> = {
@@ -153,7 +195,7 @@ const SIZE_GUIDE: Record<string, string> = {
   kabak: "Kabak longgar; ikuti tinggi badan seperti Thobe.",
 };
 
-function panduanUkuran(args: Record<string, unknown>): string {
+function panduanUkuran(args: Record<string, unknown>): ChatToolResult {
   const kategori = String(args.kategori || "").toLowerCase().trim();
   const lines = [
     "Panduan ukuran SAMAQU tersedia lengkap (tabel + gambar) di halaman /panduan-ukuran.",
@@ -164,11 +206,11 @@ function panduanUkuran(args: Record<string, unknown>): string {
   lines.push(
     "Tips: minta pelanggan menyebut tinggi & berat badan (dan lingkar dada bila perlu), lalu sarankan ukuran. Kalau masih ragu, arahkan konsultasi ke admin lewat WhatsApp."
   );
-  return lines.join("\n");
+  return { text: lines.join("\n") };
 }
 
-/** Jalankan tool berdasarkan nama & argumen JSON dari model. Selalu mengembalikan string. */
-export async function executeChatTool(name: string, argsJson: string): Promise<string> {
+/** Jalankan tool berdasarkan nama & argumen JSON dari model. */
+export async function executeChatTool(name: string, argsJson: string): Promise<ChatToolResult> {
   let args: Record<string, unknown> = {};
   try {
     args = argsJson ? JSON.parse(argsJson) : {};
@@ -183,10 +225,10 @@ export async function executeChatTool(name: string, argsJson: string): Promise<s
       case "panduan_ukuran":
         return panduanUkuran(args);
       default:
-        return `Tool "${name}" tidak dikenali.`;
+        return { text: `Tool "${name}" tidak dikenali.` };
     }
   } catch (e) {
     console.error("[CHAT-TOOL] gagal menjalankan", name, e);
-    return "Terjadi kesalahan saat mengambil data. Arahkan pelanggan ke admin.";
+    return { text: "Terjadi kesalahan saat mengambil data. Arahkan pelanggan ke admin." };
   }
 }

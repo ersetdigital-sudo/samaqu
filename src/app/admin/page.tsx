@@ -21,9 +21,10 @@ import OrdersView from "@/components/admin/OrdersView";
 import DashboardView from "@/components/admin/DashboardView";
 import ProductsCatalog from "@/components/admin/ProductsCatalog";
 import ProductDetailDrawer from "@/components/admin/ProductDetailDrawer";
+import ChatLogsView from "@/components/admin/ChatLogsView";
 import { ADMIN_WF_VARS } from "@/components/admin/admin-theme";
 
-type Panel = "dashboard" | "orders" | "products" | "customers" | "content" | "settings";
+type Panel = "dashboard" | "orders" | "products" | "customers" | "chats" | "content" | "settings";
 
 interface Order {
   id: string;
@@ -90,6 +91,7 @@ const navGroups: { title: string; items: NavItem[] }[] = [
       { label: "Open Order", icon: Shirt, href: "/admin/open-order" },
       { label: "Produk", icon: Package, panel: "products" },
       { label: "Pelanggan", icon: Users, panel: "customers" },
+      { label: "Live Chat", icon: MessageCircle, panel: "chats" },
     ],
   },
   {
@@ -117,6 +119,7 @@ const panelTitles: Record<Panel, { title: string; sub: string }> = {
   orders: { title: "Pesanan", sub: "Pantau dan proses seluruh pesanan pelanggan." },
   products: { title: "Produk", sub: "Kelola katalog dan stok koleksi." },
   customers: { title: "Pelanggan", sub: "Data dan riwayat belanja pelanggan." },
+  chats: { title: "Live Chat", sub: "Percakapan asisten AI di website — cari pertanyaan yang belum terjawab." },
   content: { title: "Konten Website", sub: "Atur tampilan halaman publik SAMAQU." },
   settings: { title: "Pengaturan", sub: "Konfigurasi informasi toko." },
 };
@@ -825,6 +828,9 @@ function AdminPageInner() {
 
               {/* CUSTOMERS */}
               {activePanel === "customers" && <CustomersView />}
+
+              {/* LIVE CHAT — daftar percakapan asisten AI */}
+              {activePanel === "chats" && <ChatLogsView />}
 
               {/* CONTENT */}
               {activePanel === "content" && (
