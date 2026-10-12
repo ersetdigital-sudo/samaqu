@@ -1787,22 +1787,22 @@ export default function MasterProduk() {
               {/* Table - Google Sheet Style */}
               <div className="bg-white dark:bg-[#1a1d28] rounded-xl shadow-sm border border-gray-200 dark:border-slate-800 overflow-hidden transition-colors duration-300">
                 <div className="overflow-x-auto">
-                  <table className="w-full border-collapse table-fixed min-w-[680px]">
+                  <table className="w-full border-collapse table-fixed min-w-[640px]">
                     <thead>
                     <tr className="bg-[#1e3a5f] dark:bg-[#1e3a5f]">
-                    <th className="w-[92px] px-2.5 py-2.5 text-left font-inter text-[11px] font-bold text-white uppercase tracking-wide whitespace-nowrap">
+                    <th className="w-[14%] px-2.5 py-2.5 text-left font-inter text-[11px] font-bold text-white uppercase tracking-wide whitespace-nowrap">
                     Tanggal
                     </th>
-                    <th className="w-[168px] px-2.5 py-2.5 text-left font-inter text-[11px] font-bold text-white uppercase tracking-wide whitespace-nowrap">
+                    <th className="w-[22%] px-2.5 py-2.5 text-left font-inter text-[11px] font-bold text-white uppercase tracking-wide whitespace-nowrap">
                     Order ID
                     </th>
                     <th className="px-2.5 py-2.5 text-left font-inter text-[11px] font-bold text-white uppercase tracking-wide">
                     Produk
                     </th>
-                    <th className="w-[56px] px-2.5 py-2.5 text-center font-inter text-[11px] font-bold text-white uppercase tracking-wide">
+                    <th className="w-[12%] px-2.5 py-2.5 text-center font-inter text-[11px] font-bold text-white uppercase tracking-wide">
                     Qty
                     </th>
-                    <th className="w-[118px] px-2.5 py-2.5 text-right font-inter text-[11px] font-bold text-white uppercase tracking-wide whitespace-nowrap">
+                    <th className="w-[20%] px-2.5 py-2.5 text-right font-inter text-[11px] font-bold text-white uppercase tracking-wide whitespace-nowrap">
                     Total
                     </th>
                     </tr>
