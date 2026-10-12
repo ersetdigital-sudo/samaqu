@@ -17,6 +17,7 @@ export const IconCheckCircle = pick("CheckCircle2", "CheckCircle");
 export const IconExternalLink = pick("ExternalLink", "ArrowUpRight");
 export const IconPhoneCall = pick("PhoneCall", "Phone");
 export const IconBoxes = pick("Boxes", "Package");
+export const IconLayers = pick("Layers", "Layers3", "Boxes", "Package");
 export const IconPackageX = pick("PackageX", "PackageMinus", "Package");
 export const IconArrowDownToLine = pick("ArrowDownToLine", "Download");
 export const IconAlertTriangle = pick("AlertTriangle", "TriangleAlert");
