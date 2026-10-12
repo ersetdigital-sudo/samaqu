@@ -34,7 +34,7 @@ export default function Footer() {
   const helpLinks = getHelpLinks(t);
 
   return (
-    <footer className="relative pt-12 sm:pt-20 pb-20 sm:pb-14 overflow-hidden" style={{ background: "#1a120f" }}>
+    <footer className="relative pt-12 sm:pt-20 pb-20 sm:pb-14 overflow-hidden" style={{ background: "#000" }}>
       {/* Subtle noise overlay */}
       <div
         className="absolute inset-0 pointer-events-none opacity-[0.03]"
