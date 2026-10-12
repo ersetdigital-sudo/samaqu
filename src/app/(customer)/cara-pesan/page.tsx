@@ -33,15 +33,15 @@ export default function CaraPesanPage() {
             <h1 className="text-4xl sm:text-5xl lg:text-6xl leading-[1.08] font-medium" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>
               {t("heroTitle")} <span className="italic" style={{ color: "var(--gold)" }}>{t("heroTitleAccent")}</span>
             </h1>
-            <p className="text-2xl sm:text-3xl mt-4 font-ui" style={{ color: "#d4c4b4", fontFamily: "var(--font-cormorant), Georgia, serif" }}>
+            <p className="text-2xl sm:text-3xl mt-4 font-ui" style={{ color: "rgba(255,255,255,.72)", fontFamily: "var(--font-cormorant), Georgia, serif" }}>
               {t("heroSubtitle")}
             </p>
-            <p className="mt-6 font-ui leading-relaxed max-w-xl" style={{ color: "#d4c4b4" }}>
+            <p className="mt-6 font-ui leading-relaxed max-w-xl" style={{ color: "rgba(255,255,255,.72)" }}>
               {t("heroDesc")}
             </p>
             <div className="mt-9 flex flex-col sm:flex-row gap-3">
               <a href="#website" className="text-center rounded-full px-7 py-3.5 text-sm font-medium font-ui transition-colors hover:opacity-90" style={{ background: "var(--cream)", color: "var(--espresso)" }}>{t("heroCtaWeb")}</a>
-              <a href="#whatsapp" className="text-center rounded-full px-7 py-3.5 text-sm font-ui border transition-colors hover:bg-white/10" style={{ borderColor: "rgba(241,233,221,.4)" }}>{t("heroCtaWa")}</a>
+              <a href="#whatsapp" className="text-center rounded-full px-7 py-3.5 text-sm font-ui border transition-colors hover:bg-white/10" style={{ borderColor: "rgba(255,255,255,.4)" }}>{t("heroCtaWa")}</a>
             </div>
           </div>
           <div className="relative">
@@ -54,14 +54,14 @@ export default function CaraPesanPage() {
       {/* Two options quick */}
       <div style={{ background: "var(--sand-2)" }}>
         <div className="max-w-6xl mx-auto px-5 sm:px-8 py-12 grid sm:grid-cols-2 gap-5">
-          <a href="#website" className="rounded-2xl p-6 flex items-start gap-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg bg-white" style={{ border: "1px solid rgba(42,33,27,.08)" }}>
+          <a href="#website" className="rounded-2xl p-6 flex items-start gap-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg bg-white" style={{ border: "1px solid rgba(0,0,0,.08)" }}>
             <span className="text-3xl" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--gold)" }}>01</span>
             <span>
               <span className="block font-medium font-ui" style={{ color: "var(--espresso)" }}>{t("option1Title")}</span>
               <span className="block text-sm font-ui mt-1" style={{ color: "var(--text-secondary)" }}>{t("option1Desc")}</span>
             </span>
           </a>
-          <a href="#whatsapp" className="rounded-2xl p-6 flex items-start gap-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg bg-white" style={{ border: "1px solid rgba(42,33,27,.08)" }}>
+          <a href="#whatsapp" className="rounded-2xl p-6 flex items-start gap-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg bg-white" style={{ border: "1px solid rgba(0,0,0,.08)" }}>
             <span className="text-3xl" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--gold)" }}>02</span>
             <span>
               <span className="block font-medium font-ui" style={{ color: "var(--espresso)" }}>{t("option2Title")}</span>
@@ -78,14 +78,14 @@ export default function CaraPesanPage() {
             <p className="text-xs tracking-[0.3em] uppercase font-ui mb-4" style={{ color: "var(--gold)" }}>{t("webOption")}</p>
             <h2 className="text-3xl sm:text-4xl leading-tight" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>{t("webTitle")}</h2>
             <p className="italic text-xl font-ui mt-2" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--text-secondary)" }}>{t("webSubtitle")}</p>
-            <div className="my-7 h-px" style={{ background: "linear-gradient(90deg,transparent,rgba(42,33,27,.25),transparent)" }} />
+            <div className="my-7 h-px" style={{ background: "linear-gradient(90deg,transparent,rgba(0,0,0,.25),transparent)" }} />
             <Image src="/images/141ca791-3f39-4055-9409-d945ad3205a4.png" alt="Samaqu Product" width={600} height={400} className="w-full h-56 sm:h-72 object-cover rounded-2xl" />
             <Link href="/katalog" className="mt-7 inline-flex justify-center w-full sm:w-auto rounded-full px-8 py-3.5 text-sm font-medium font-ui text-white transition-colors hover:opacity-90" style={{ background: "var(--espresso)" }}>{t("webCta")}</Link>
           </div>
           <ol className="space-y-7">
             {websiteSteps.map((step) => (
               <li key={step.num} className="relative pl-16">
-                <span className="absolute left-0 top-0 w-12 h-12 rounded-full flex items-center justify-center text-lg" style={{ background: step.accent ? "var(--gold)" : "var(--bg-tertiary, #e5d8cb)", color: step.accent ? "white" : "var(--espresso)", fontFamily: "var(--font-cormorant), Georgia, serif" }}>
+                <span className="absolute left-0 top-0 w-12 h-12 rounded-full flex items-center justify-center text-lg" style={{ background: step.accent ? "var(--gold)" : "var(--bg-tertiary, #e5e5e5)", color: step.accent ? "white" : "var(--espresso)", fontFamily: "var(--font-cormorant), Georgia, serif" }}>
                   {step.num}
                 </span>
                 <h3 className="text-lg font-medium font-ui" style={{ color: "var(--espresso)" }}>{step.title}</h3>
@@ -107,7 +107,7 @@ export default function CaraPesanPage() {
           </div>
           <div className="mt-12 grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {whatsappSteps.map((step) => (
-              <div key={step.num} className="rounded-2xl p-6 bg-white" style={{ border: "1px solid rgba(42,33,27,.08)" }}>
+              <div key={step.num} className="rounded-2xl p-6 bg-white" style={{ border: "1px solid rgba(0,0,0,.08)" }}>
                 <span className="text-2xl" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--gold)" }}>{step.num}</span>
                 <h3 className="font-medium font-ui mt-3" style={{ color: "var(--espresso)" }}>{step.title}</h3>
                 <p className="text-sm font-ui mt-2 leading-relaxed" style={{ color: "var(--text-secondary)" }}>{step.desc}</p>
@@ -133,7 +133,7 @@ export default function CaraPesanPage() {
             <p className="mt-5 font-ui leading-relaxed" style={{ color: "var(--text-secondary)" }}>{t("sizeDesc")}</p>
             <div className="mt-8 flex flex-col sm:flex-row gap-3">
               <Link href="/panduan-ukuran" className="text-center rounded-full px-7 py-3.5 text-sm font-medium font-ui text-white transition-colors hover:opacity-90" style={{ background: "var(--espresso)" }}>{t("sizeCtaGuide")}</Link>
-              <a href={getWhatsAppLink(t("waLink2"))} target="_blank" rel="noopener" className="text-center rounded-full px-7 py-3.5 text-sm font-ui border transition-colors hover:bg-[var(--bg-tertiary, #e5d8cb)]" style={{ borderColor: "rgba(42,33,27,.25)", color: "var(--espresso)" }}>{t("sizeCtaAdmin")}</a>
+              <a href={getWhatsAppLink(t("waLink2"))} target="_blank" rel="noopener" className="text-center rounded-full px-7 py-3.5 text-sm font-ui border transition-colors hover:bg-[var(--bg-tertiary, #e5e5e5)]" style={{ borderColor: "rgba(0,0,0,.25)", color: "var(--espresso)" }}>{t("sizeCtaAdmin")}</a>
             </div>
           </div>
         </div>
@@ -145,11 +145,11 @@ export default function CaraPesanPage() {
           <h2 className="text-3xl sm:text-5xl leading-tight" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>
             {t("closingTitle")} <span className="italic" style={{ color: "var(--gold)" }}>{t("closingTitleAccent")}</span>.
           </h2>
-          <p className="mt-6 font-ui leading-relaxed" style={{ color: "#d4c4b4" }}>{t("closingDesc")}</p>
+          <p className="mt-6 font-ui leading-relaxed" style={{ color: "rgba(255,255,255,.72)" }}>{t("closingDesc")}</p>
           <p className="italic text-2xl mt-6" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--gold)" }}>{t("closingTagline")}</p>
           <div className="mt-10 flex flex-col sm:flex-row gap-3 justify-center">
             <Link href="/katalog" className="rounded-full px-8 py-3.5 text-sm font-medium font-ui transition-colors hover:opacity-90" style={{ background: "var(--cream)", color: "var(--espresso)" }}>{t("closingCtaWeb")}</Link>
-            <a href={getWhatsAppLink(t("waLink3"))} target="_blank" rel="noopener" className="rounded-full px-8 py-3.5 text-sm font-ui border transition-colors hover:bg-white/10" style={{ borderColor: "rgba(241,233,221,.4)" }}>{t("closingCtaWa")}</a>
+            <a href={getWhatsAppLink(t("waLink3"))} target="_blank" rel="noopener" className="rounded-full px-8 py-3.5 text-sm font-ui border transition-colors hover:bg-white/10" style={{ borderColor: "rgba(255,255,255,.4)" }}>{t("closingCtaWa")}</a>
           </div>
         </div>
       </section>

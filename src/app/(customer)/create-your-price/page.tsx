@@ -32,10 +32,10 @@ export default function CreateYourPricePage() {
           <h1 className="mt-5 text-5xl sm:text-7xl leading-[1.05] font-light" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>
             Create Your <em className="italic" style={{ color: "var(--gold)" }}>Price</em>
           </h1>
-          <p className="mt-6 text-lg sm:text-xl font-ui" style={{ color: "#d4c4b4" }}>{t("heroSubtitle")}</p>
+          <p className="mt-6 text-lg sm:text-xl font-ui" style={{ color: "rgba(255,255,255,.72)" }}>{t("heroSubtitle")}</p>
           <div className="mt-9 flex flex-col sm:flex-row gap-3 justify-center">
             <a href="#simulasi" className="rounded-full px-7 py-3.5 text-sm font-medium font-ui text-white" style={{ background: "var(--gold)" }}>{t("heroBtn1")}</a>
-            <a href="#cerita" className="rounded-full px-7 py-3.5 text-sm font-medium font-ui border" style={{ borderColor: "rgba(241,233,221,.35)", color: "var(--cream)" }}>{t("heroBtn2")}</a>
+            <a href="#cerita" className="rounded-full px-7 py-3.5 text-sm font-medium font-ui border" style={{ borderColor: "rgba(255,255,255,.35)", color: "var(--cream)" }}>{t("heroBtn2")}</a>
           </div>
         </div>
       </div>
@@ -46,7 +46,7 @@ export default function CreateYourPricePage() {
           <h2 className="text-3xl sm:text-4xl leading-snug" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
             {t("storyTitle")}
           </h2>
-          <div className="my-8 h-px" style={{ background: "linear-gradient(90deg,transparent,rgba(42,33,27,.25),transparent)" }} />
+          <div className="my-8 h-px" style={{ background: "linear-gradient(90deg,transparent,rgba(0,0,0,.25),transparent)" }} />
           <div className="space-y-5 text-base sm:text-lg leading-relaxed font-ui" style={{ color: "var(--text-secondary)" }}>
             <p>{t("storyP1")}</p>
             <p>{t("storyP2")}</p>
@@ -96,7 +96,7 @@ export default function CreateYourPricePage() {
               { num: "02", title: t("step2Title"), desc: t("step2Desc") },
               { num: "03", title: t("step3Title"), desc: t("step3Desc") },
             ].map((step) => (
-              <div key={step.num} className="rounded-2xl p-6 bg-white transition-all duration-300 hover:-translate-y-1 hover:shadow-lg" style={{ border: "1px solid rgba(42,33,27,.1)" }}>
+              <div key={step.num} className="rounded-2xl p-6 bg-white transition-all duration-300 hover:-translate-y-1 hover:shadow-lg" style={{ border: "1px solid rgba(0,0,0,.1)" }}>
                 <div className="text-3xl" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--gold)" }}>{step.num}</div>
                 <h3 className="mt-3 font-semibold text-lg font-ui" style={{ color: "var(--espresso)" }}>{step.title}</h3>
                 <p className="mt-2 text-sm leading-relaxed font-ui" style={{ color: "var(--text-secondary)" }}>{step.desc}</p>
@@ -105,7 +105,7 @@ export default function CreateYourPricePage() {
           </div>
 
           {/* Slider simulasi */}
-          <div className="mt-12 rounded-3xl p-6 sm:p-10" style={{ background: "var(--bg-tertiary, #e5d8cb)", border: "1px solid rgba(42,33,27,.1)" }}>
+          <div className="mt-12 rounded-3xl p-6 sm:p-10" style={{ background: "var(--bg-tertiary, #e5e5e5)", border: "1px solid rgba(0,0,0,.1)" }}>
             <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 sm:gap-4">
               <div className="min-w-0">
                 <p className="text-[11px] sm:text-xs tracking-[0.2em] uppercase font-ui" style={{ color: "var(--text-muted)" }}>{t("simLabel")}</p>
@@ -118,7 +118,7 @@ export default function CreateYourPricePage() {
 
             <div className="mt-7 px-[14px]">
               <div className="flex justify-between">
-                {[0,1,2,3,4].map(i => <span key={i} className="block w-px h-2" style={{ background: "rgba(42,33,27,.2)" }} />)}
+                {[0,1,2,3,4].map(i => <span key={i} className="block w-px h-2" style={{ background: "rgba(0,0,0,.2)" }} />)}
               </div>
             </div>
 
@@ -131,7 +131,7 @@ export default function CreateYourPricePage() {
               onChange={(e) => setPrice(Number(e.target.value))}
               className="mt-2 w-full"
               style={{
-                background: `linear-gradient(90deg, var(--gold) 0%, var(--gold) ${pct}%, rgba(42,33,27,.14) ${pct}%, rgba(42,33,27,.14) 100%)`,
+                background: `linear-gradient(90deg, var(--gold) 0%, var(--gold) ${pct}%, rgba(0,0,0,.14) ${pct}%, rgba(0,0,0,.14) 100%)`,
               }}
             />
 
@@ -149,7 +149,7 @@ export default function CreateYourPricePage() {
                   style={{
                     background: price === p ? "var(--gold)" : "white",
                     color: price === p ? "white" : "var(--espresso)",
-                    border: `1px solid ${price === p ? "var(--gold)" : "rgba(42,33,27,.15)"}`,
+                    border: `1px solid ${price === p ? "var(--gold)" : "rgba(0,0,0,.15)"}`,
                   }}
                 >
                   {fmt(p)}

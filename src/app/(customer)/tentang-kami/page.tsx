@@ -54,7 +54,7 @@ export default function TentangKamiPage() {
       {/* ═══ HERO ═══ */}
       <div className="relative overflow-hidden" style={{ background: "var(--espresso)" }}>
         <img src="/images/about/f2d1d803-2825-410f-a01e-5e125e8d2208.png" alt="" className="absolute inset-0 w-full h-full object-cover opacity-40" />
-        <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(45,33,27,.8), rgba(45,33,27,.7), #2d211b)" }} />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,.8), rgba(0,0,0,.7), #2d211b)" }} />
         <div className="absolute top-24 right-8 w-40 h-40 rounded-full border opacity-20 hidden md:block" style={{ borderColor: "var(--gold)" }} />
         <div className="absolute bottom-16 left-10 w-24 h-24 rounded-full border opacity-15 hidden md:block" style={{ borderColor: "var(--gold)" }} />
 
@@ -68,7 +68,7 @@ export default function TentangKamiPage() {
                 {t("heroTitle1")} <em style={{ color: "#d4a86a" }}>{t("heroTitle2")}</em> {t("heroTitle3")}
               </motion.h1>
               <motion.div variants={headerVariants} className="mx-auto my-6 sm:my-8 h-px w-16" style={{ background: "var(--gold)" }} />
-              <motion.p variants={headerVariants} className="text-sm sm:text-base lg:text-lg leading-relaxed max-w-2xl mx-auto font-ui" style={{ color: "rgba(212,197,181,.8)" }}>
+              <motion.p variants={headerVariants} className="text-sm sm:text-base lg:text-lg leading-relaxed max-w-2xl mx-auto font-ui" style={{ color: "rgba(255,255,255,.8)" }}>
                 {t("heroDesc")}
               </motion.p>
             </motion.div>
@@ -88,10 +88,10 @@ export default function TentangKamiPage() {
             {/* Image */}
             <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true, margin: "-10%" }} transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}>
               <div className="relative">
-                <img src="/images/about/897ae4e0-8b7a-43e9-843b-3b5b27141774.png" alt="Kandora premium SAMAQU" className="w-full h-[320px] sm:h-[420px] md:h-[560px] object-cover rounded-2xl" style={{ boxShadow: "0 25px 50px -12px rgba(45,33,27,.25)" }} />
+                <img src="/images/about/897ae4e0-8b7a-43e9-843b-3b5b27141774.png" alt="Kandora premium SAMAQU" className="w-full h-[320px] sm:h-[420px] md:h-[560px] object-cover rounded-2xl" style={{ boxShadow: "0 25px 50px -12px rgba(0,0,0,.25)" }} />
                 <div className="absolute -bottom-4 -right-3 sm:-right-6 px-5 py-4 rounded-xl shadow-2xl max-w-[200px] hidden sm:block" style={{ background: "var(--espresso)", color: "var(--cream)" }}>
                   <p className="text-3xl" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "#d4a86a" }}>Est.</p>
-                  <p className="text-sm font-ui" style={{ color: "rgba(212,197,181,.8)" }}>{t("badge")}</p>
+                  <p className="text-sm font-ui" style={{ color: "rgba(255,255,255,.8)" }}>{t("badge")}</p>
                 </div>
               </div>
             </motion.div>
@@ -113,7 +113,7 @@ export default function TentangKamiPage() {
                   { title: t("value2Title"), sub: t("value2Sub") },
                   { title: t("value3Title"), sub: t("value3Sub") },
                 ].map((v, i) => (
-                  <div key={v.title} className={`text-center sm:text-left ${i === 1 ? "border-x px-2 sm:px-3" : ""}`} style={{ borderColor: "rgba(201,183,156,.2)" }}>
+                  <div key={v.title} className={`text-center sm:text-left ${i === 1 ? "border-x px-2 sm:px-3" : ""}`} style={{ borderColor: "rgba(0,0,0,.2)" }}>
                     <p className="text-base sm:text-lg" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>{v.title}</p>
                     <p className="text-[10px] sm:text-xs font-ui mt-1" style={{ color: "var(--stone)" }}>{v.sub}</p>
                   </div>
@@ -145,7 +145,7 @@ export default function TentangKamiPage() {
                   <StatNumber target={stat.value} />{stat.suffix}
                 </p>
                 <div className="mx-auto my-3 sm:my-4 h-px w-12 sm:w-16" style={{ background: "var(--gold)" }} />
-                <p className="text-[13px] sm:text-base font-ui" style={{ color: "rgba(212,197,181,.8)" }}>{stat.label}</p>
+                <p className="text-[13px] sm:text-base font-ui" style={{ color: "rgba(255,255,255,.8)" }}>{stat.label}</p>
               </motion.div>
             ))}
           </div>
@@ -172,8 +172,8 @@ export default function TentangKamiPage() {
               { icon: MessageCircle, title: t("commit4Title"), desc: t("commit4Desc") },
             ].map((item, i) => (
               <motion.div key={item.title} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: i * 0.1 }}
-                className="qcard rounded-2xl p-6 sm:p-8" style={{ background: "var(--cream)", border: "1px solid rgba(201,183,156,.2)" }}>
-                <div className="qicon inline-flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-full mb-5 sm:mb-6" style={{ border: "1px solid rgba(201,183,156,.4)", color: "var(--gold)" }}>
+                className="qcard rounded-2xl p-6 sm:p-8" style={{ background: "var(--cream)", border: "1px solid rgba(0,0,0,.2)" }}>
+                <div className="qicon inline-flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-full mb-5 sm:mb-6" style={{ border: "1px solid rgba(0,0,0,.4)", color: "var(--gold)" }}>
                   <item.icon size={22} strokeWidth={1.4} />
                 </div>
                 <h3 className="text-xl sm:text-2xl mb-2 sm:mb-3" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>{item.title}</h3>
@@ -196,7 +196,7 @@ export default function TentangKamiPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 md:grid-rows-2 gap-3 sm:gap-4 md:gap-5">
             <div className="gallery-item relative overflow-hidden rounded-xl sm:rounded-2xl md:row-span-2 col-span-2 h-52 sm:h-64 md:h-auto md:min-h-[400px]">
               <img src="/images/about/70cc4d03-6ed5-41e3-a349-9525e031af58.png" alt="Detail busana SAMAQU" className="w-full h-full object-cover transition-transform duration-700 hover:scale-105" />
-              <div className="gallery-overlay absolute inset-0 flex items-end p-4 sm:p-5" style={{ background: "linear-gradient(to top, rgba(45,33,27,.7), transparent)" }}>
+              <div className="gallery-overlay absolute inset-0 flex items-end p-4 sm:p-5" style={{ background: "linear-gradient(to top, rgba(0,0,0,.7), transparent)" }}>
                 <span className="text-base sm:text-xl" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--cream)" }}>{t("galleryOverlay")}</span>
               </div>
             </div>
@@ -208,7 +208,7 @@ export default function TentangKamiPage() {
             ].map((img, i) => (
               <div key={i} className="gallery-item relative overflow-hidden rounded-xl sm:rounded-2xl h-36 sm:h-44 md:h-auto md:min-h-[180px]">
                 <img src={img.src} alt={img.alt} className="w-full h-full object-cover transition-transform duration-700 hover:scale-105" />
-                <div className="gallery-overlay absolute inset-0" style={{ background: "rgba(45,33,27,.15)" }} />
+                <div className="gallery-overlay absolute inset-0" style={{ background: "rgba(0,0,0,.15)" }} />
               </div>
             ))}
           </div>
@@ -218,7 +218,7 @@ export default function TentangKamiPage() {
       {/* ═══ CTA ═══ */}
       <div className="relative py-20 sm:py-28 lg:py-32 overflow-hidden" style={{ background: "var(--espresso)" }}>
         <img src="/images/about/10ac37bd-e678-47b3-a673-daedffd0de5a.png" alt="" className="absolute inset-0 w-full h-full object-cover opacity-20" />
-        <div className="absolute inset-0" style={{ background: "rgba(45,33,27,.8)" }} />
+        <div className="absolute inset-0" style={{ background: "rgba(0,0,0,.8)" }} />
         <div className="absolute top-10 left-1/2 -translate-x-1/2 w-56 h-56 rounded-full border opacity-10 hidden md:block" style={{ borderColor: "var(--gold)" }} />
 
         <div className="relative max-w-3xl mx-auto px-5 sm:px-8 text-center">
@@ -227,11 +227,11 @@ export default function TentangKamiPage() {
             <h2 className="text-[1.8rem] sm:text-4xl lg:text-5xl xl:text-6xl font-semibold leading-tight mb-5 sm:mb-6" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--cream)" }}>
               {t("ctaTitle")}
             </h2>
-            <p className="text-sm sm:text-base lg:text-lg leading-relaxed max-w-xl mx-auto mb-8 sm:mb-10 font-ui" style={{ color: "rgba(212,197,181,.8)" }}>
+            <p className="text-sm sm:text-base lg:text-lg leading-relaxed max-w-xl mx-auto mb-8 sm:mb-10 font-ui" style={{ color: "rgba(255,255,255,.8)" }}>
               {t("ctaDesc")}
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
-              <a href="/katalog" className="inline-flex items-center gap-2 rounded-full px-7 sm:px-8 py-3 sm:py-3.5 text-[12px] sm:text-sm tracking-[0.08em] uppercase font-ui font-semibold transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg w-full sm:w-auto justify-center" style={{ background: "var(--gold)", color: "white", boxShadow: "0 8px 28px -8px rgba(181,140,74,.6)" }}>
+              <a href="/katalog" className="inline-flex items-center gap-2 rounded-full px-7 sm:px-8 py-3 sm:py-3.5 text-[12px] sm:text-sm tracking-[0.08em] uppercase font-ui font-semibold transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg w-full sm:w-auto justify-center" style={{ background: "var(--gold)", color: "white", boxShadow: "0 8px 28px -8px rgba(0,0,0,.6)" }}>
                 {t("ctaBtn1")}
                 <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M4 9h10M10 4l5 5-5 5" /></svg>
               </a>
@@ -246,7 +246,7 @@ export default function TentangKamiPage() {
       <style jsx global>{`
         .qcard { transition: transform .4s ease, box-shadow .4s ease, border-color .4s ease; }
         @media (hover: hover) {
-          .qcard:hover { transform: translateY(-6px); box-shadow: 0 24px 48px -28px rgba(45,33,27,.35); border-color: var(--gold); }
+          .qcard:hover { transform: translateY(-6px); box-shadow: 0 24px 48px -28px rgba(0,0,0,.35); border-color: var(--gold); }
           .qcard:hover .qicon { color: #fff; background: var(--gold); border-color: var(--gold); }
         }
         .qicon { transition: all .4s ease; }

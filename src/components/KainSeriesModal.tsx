@@ -80,7 +80,7 @@ interface KainSeriesItem {
   price?: string;
 }
 
-const ACCENT_ON_DARK = "#e0be8a";
+const ACCENT_ON_DARK = "#FFFFFF";
 
 /* ── Content: Perbedaan Jenis Kain Thobe ── */
 const KAIN: KainSeriesItem[] = [
@@ -221,7 +221,7 @@ function Slide({ item }: { item: KainSeriesItem }) {
           </p>
           <span
             className="inline-block mt-2.5 rounded-full px-3 py-1 text-[11px] font-ui"
-            style={{ background: "rgba(181,140,74,.18)", color: ACCENT_ON_DARK }}
+            style={{ background: "rgba(255,255,255,.14)", color: ACCENT_ON_DARK }}
           >
             {item.tag}
           </span>
@@ -230,7 +230,7 @@ function Slide({ item }: { item: KainSeriesItem }) {
               Harga mulai dari: {item.price}
             </p>
           )}
-          <div className="mt-3.5 h-px w-12" style={{ background: "var(--gold)" }} />
+          <div className="mt-3.5 h-px w-12" style={{ background: "#ffffff" }} />
           <div
             className="hidden md:flex mt-5 rounded-2xl p-3.5 gap-3"
             style={{ background: "rgba(255,255,255,.07)", border: "1px solid rgba(255,255,255,.1)" }}
@@ -389,7 +389,7 @@ export default function KainSeriesModal({ type, onClose, category, images }: Kai
           >
             {/* Header (desktop) */}
             <div className="hidden sm:block shrink-0 px-8 pt-5 pb-3 text-center">
-              <p className="text-[10px] tracking-[0.34em] font-ui" style={{ color: "var(--gold)" }}>SAMAQU</p>
+              <p className="text-[10px] tracking-[0.34em] font-ui" style={{ color: "#ffffff" }}>SAMAQU</p>
               <h2 className="mt-1.5 text-[20px] lg:text-[24px] font-semibold leading-tight uppercase tracking-[0.04em] font-ui">{title}</h2>
               <p className="mt-1.5 text-[12px] max-w-[54ch] mx-auto font-ui" style={{ color: "rgba(255,255,255,.6)" }}>{subtitle}</p>
             </div>
@@ -403,7 +403,7 @@ export default function KainSeriesModal({ type, onClose, category, images }: Kai
 
             {/* Header overlay (mobile) */}
             <div className="sm:hidden absolute inset-x-0 top-0 z-20 px-6 pt-6 pb-4 text-center pointer-events-none">
-              <p className="text-[10px] tracking-[0.34em] font-ui" style={{ color: "var(--gold)" }}>SAMAQU</p>
+              <p className="text-[10px] tracking-[0.34em] font-ui" style={{ color: "#ffffff" }}>SAMAQU</p>
               <h2 className="mt-2 text-[21px] font-semibold leading-[1.15] uppercase tracking-[0.04em] max-w-[16ch] mx-auto font-ui">{title}</h2>
               <p className="mt-2.5 text-[12px] leading-relaxed max-w-[30ch] mx-auto font-ui" style={{ color: "rgba(255,255,255,.6)" }}>{subtitle}</p>
             </div>
@@ -429,7 +429,7 @@ export default function KainSeriesModal({ type, onClose, category, images }: Kai
             <div className="absolute inset-x-0 bottom-[104px] sm:static sm:shrink-0 sm:py-3 z-20 flex justify-center gap-2.5">
               {items.map((_, i) => (
                 <button key={i} onClick={() => goTo(i)} aria-label={`Ke slide ${i + 1}`} className="h-2 rounded-full transition-all"
-                  style={{ width: i === index ? 18 : 8, background: i === index ? "var(--gold)" : "rgba(255,255,255,.28)" }} />
+                  style={{ width: i === index ? 18 : 8, background: i === index ? "#ffffff" : "rgba(255,255,255,.28)" }} />
               ))}
             </div>
 

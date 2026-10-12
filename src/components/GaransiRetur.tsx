@@ -16,7 +16,7 @@ function CheckIcon() {
 /* ── Warning Icon ── */
 function WarningIcon() {
   return (
-    <span className="shrink-0 w-7 h-7 rounded-full border border-gold text-gold grid place-items-center text-sm font-medium">
+    <span className="shrink-0 w-7 h-7 rounded-full border border-black text-black grid place-items-center text-sm font-medium">
       !
     </span>
   );
@@ -44,10 +44,10 @@ function GuaranteeCard({
             <CheckIcon />
           </span>
         )}
-        <h3 className="font-medium text-lg text-espresso">{title}</h3>
+        <h3 className="font-medium text-lg text-black">{title}</h3>
       </div>
-      <p className="mt-3 text-[14.5px] text-stone leading-relaxed">{desc}</p>
-      {note && <p className="mt-3 text-[13px] text-gold">{note}</p>}
+      <p className="mt-3 text-[14.5px] text-black/60 leading-relaxed">{desc}</p>
+      {note && <p className="mt-3 text-[13px] text-black">{note}</p>}
     </div>
   );
 }
@@ -55,11 +55,11 @@ function GuaranteeCard({
 /* ── Return Policy Item ── */
 function ReturnPolicyItem({ icon, desc }: { icon: React.ReactNode; desc: string }) {
   return (
-    <div className="text-center bg-white/60 rounded-2xl p-5 border border-gold/20">
-      <span className="mx-auto w-11 h-11 rounded-full bg-sand/70 text-gold grid place-items-center">
+    <div className="text-center bg-white/60 rounded-2xl p-5 border border-black/10">
+      <span className="mx-auto w-11 h-11 rounded-full bg-black/5 text-black grid place-items-center">
         {icon}
       </span>
-      <p className="mt-3 text-[13.5px] text-stone">{desc}</p>
+      <p className="mt-3 text-[13.5px] text-black/60">{desc}</p>
     </div>
   );
 }
@@ -68,8 +68,8 @@ function ReturnPolicyItem({ icon, desc }: { icon: React.ReactNode; desc: string 
 function StepItem({ num, desc }: { num: number; desc: string }) {
   return (
     <li className="flex gap-4 card rounded-2xl p-5">
-      <span className="font-display text-2xl text-gold w-8 shrink-0">{num}</span>
-      <p className="text-[15px] text-stone">{desc}</p>
+      <span className="font-display text-2xl text-black w-8 shrink-0">{num}</span>
+      <p className="text-[15px] text-black/60">{desc}</p>
     </li>
   );
 }
@@ -80,11 +80,11 @@ function NonReturnableItem({ icon, desc }: { icon: React.ReactNode; desc: string
     <div className="rounded-2xl p-5 text-center" style={{ border: "1px solid rgba(255,255,255,.12)" }}>
       <span
         className="mx-auto mb-3 w-10 h-10 rounded-full grid place-items-center"
-        style={{ border: "1px solid rgba(216,185,140,.4)", color: "#D8B98C" }}
+        style={{ border: "1px solid rgba(255,255,255,.25)", color: "#ffffff" }}
       >
         {icon}
       </span>
-      <p className="text-[13.5px]" style={{ color: "rgba(246,239,231,.75)" }}>{desc}</p>
+      <p className="text-[13.5px]" style={{ color: "rgba(255,255,255,.75)" }}>{desc}</p>
     </div>
   );
 }
@@ -240,33 +240,33 @@ export default function GaransiRetur() {
       <section className="relative overflow-hidden">
         <div className="mx-auto max-w-6xl px-5 pt-24 pb-10 md:pt-32 md:py-24 grid md:grid-cols-2 gap-10 md:gap-14 items-center">
           <div>
-            <h1 className="font-display text-4xl sm:text-5xl md:text-6xl leading-[1.05] font-semibold text-espresso">
+            <h1 className="font-display text-4xl sm:text-5xl md:text-6xl leading-[1.05] font-semibold text-black">
               {c.hero_title}
             </h1>
-            <p className="tracking-[.28em] uppercase text-[.68rem] mt-4 text-gold">{c.hero_kicker}</p>
-            <p className="mt-5 text-[15px] md:text-base text-stone leading-relaxed max-w-md">
+            <p className="tracking-[.28em] uppercase text-[.68rem] mt-4 text-black">{c.hero_kicker}</p>
+            <p className="mt-5 text-[15px] md:text-base text-black/60 leading-relaxed max-w-md">
               {c.hero_description}
             </p>
             <ul className="mt-6 space-y-3 max-w-md">
               <li className="flex gap-3 items-start">
-                <span className="mt-[7px] w-1.5 h-1.5 rounded-full bg-gold shrink-0" />
-                <span className="text-[15px] text-stone">{c.hero_bullet1}</span>
+                <span className="mt-[7px] w-1.5 h-1.5 rounded-full bg-black shrink-0" />
+                <span className="text-[15px] text-black/60">{c.hero_bullet1}</span>
               </li>
               <li className="flex gap-3 items-start">
-                <span className="mt-[7px] w-1.5 h-1.5 rounded-full bg-gold shrink-0" />
-                <span className="text-[15px] text-stone">{c.hero_bullet2}</span>
+                <span className="mt-[7px] w-1.5 h-1.5 rounded-full bg-black shrink-0" />
+                <span className="text-[15px] text-black/60">{c.hero_bullet2}</span>
               </li>
               <li className="flex gap-3 items-start">
-                <span className="mt-[7px] w-1.5 h-1.5 rounded-full bg-gold shrink-0" />
-                <span className="text-[15px] text-stone">{c.hero_bullet3}</span>
+                <span className="mt-[7px] w-1.5 h-1.5 rounded-full bg-black shrink-0" />
+                <span className="text-[15px] text-black/60">{c.hero_bullet3}</span>
               </li>
             </ul>
-            <p className="mt-6 text-[15px] text-stone leading-relaxed max-w-md">
+            <p className="mt-6 text-[15px] text-black/60 leading-relaxed max-w-md">
               {c.hero_closing}
             </p>
             <a
               href="#retur"
-              className="inline-flex mt-8 items-center gap-2 bg-espresso text-cream px-7 py-3 rounded-full text-sm tracking-wide hover:bg-coffee transition"
+              className="inline-flex mt-8 items-center gap-2 bg-black text-white px-7 py-3 rounded-full text-sm tracking-wide hover:bg-black/85 transition"
             >
               {c.hero_cta_text}
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
@@ -275,7 +275,7 @@ export default function GaransiRetur() {
             </a>
           </div>
           <div className="relative">
-            <div className="absolute -inset-4 rounded-[2rem] bg-sand/50 -z-10" />
+            <div className="absolute -inset-4 rounded-[2rem] bg-black/5 -z-10" />
             <img
               src={c.hero_image_url}
               alt="Produk SAMAQU"
@@ -288,9 +288,9 @@ export default function GaransiRetur() {
       {/* ── GARANSI ── */}
       <section className="mx-auto max-w-6xl px-5 py-12 md:py-16">
         <div>
-          <h2 className="font-display text-2xl md:text-4xl text-gold">{c.garansi_title}</h2>
+          <h2 className="font-display text-2xl md:text-4xl text-black">{c.garansi_title}</h2>
           <div className="rule mt-3" />
-          <p className="mt-4 text-[15px] text-stone max-w-2xl">{c.garansi_desc}</p>
+          <p className="mt-4 text-[15px] text-black/60 max-w-2xl">{c.garansi_desc}</p>
         </div>
         <div className="mt-8 grid gap-5 md:grid-cols-3">
           <GuaranteeCard
@@ -315,9 +315,9 @@ export default function GaransiRetur() {
       <section id="retur" className="py-12 md:py-16" style={{ background: "rgba(233,220,203,.45)" }}>
         <div className="mx-auto max-w-6xl px-5">
           <div>
-            <h2 className="font-display text-2xl md:text-4xl text-gold">{c.retur_title}</h2>
+            <h2 className="font-display text-2xl md:text-4xl text-black">{c.retur_title}</h2>
             <div className="rule mt-3" />
-            <p className="mt-4 text-[15px] text-stone max-w-2xl">{c.retur_desc}</p>
+            <p className="mt-4 text-[15px] text-black/60 max-w-2xl">{c.retur_desc}</p>
           </div>
           <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
             <ReturnPolicyItem icon={<PackageIcon />} desc={c.retur1} />
@@ -331,7 +331,7 @@ export default function GaransiRetur() {
       {/* ── CARA MENGAJUKAN ── */}
       <section className="mx-auto max-w-6xl px-5 py-12 md:py-16">
         <div>
-          <h2 className="font-display text-2xl md:text-4xl text-gold">{c.cara_title}</h2>
+          <h2 className="font-display text-2xl md:text-4xl text-black">{c.cara_title}</h2>
           <div className="rule mt-3" />
         </div>
         <ol className="mt-8 grid gap-4 md:grid-cols-2 list-none p-0">
@@ -343,11 +343,11 @@ export default function GaransiRetur() {
       </section>
 
       {/* ── TIDAK DAPAT DIRETUR ── */}
-      <section className="py-12 md:py-16" style={{ background: "#1C1A17" }}>
+      <section className="py-12 md:py-16" style={{ background: "#000000" }}>
         <div className="mx-auto max-w-6xl px-5">
           <div>
-            <h2 className="font-display text-2xl md:text-4xl" style={{ color: "#D8B98C" }}>{c.no_retur_title}</h2>
-            <p className="mt-4 text-[15px] max-w-2xl" style={{ color: "rgba(246,239,231,.65)" }}>{c.no_retur_desc}</p>
+            <h2 className="font-display text-2xl md:text-4xl" style={{ color: "#ffffff" }}>{c.no_retur_title}</h2>
+            <p className="mt-4 text-[15px] max-w-2xl" style={{ color: "rgba(255,255,255,.65)" }}>{c.no_retur_desc}</p>
           </div>
           <div className="mt-8 grid grid-cols-2 md:grid-cols-5 gap-4">
             <NonReturnableItem icon={<ShirtIcon />} desc={c.no_retur1} />
@@ -362,19 +362,19 @@ export default function GaransiRetur() {
       {/* ── BANTUAN CTA ── */}
       <section className="mx-auto max-w-6xl px-5 py-12 md:py-20 grid md:grid-cols-2 gap-10 items-center">
         <div className="order-2 md:order-1">
-          <h2 className="font-display text-2xl md:text-4xl text-gold">{c.cta_title}</h2>
+          <h2 className="font-display text-2xl md:text-4xl text-black">{c.cta_title}</h2>
           <div className="rule mt-3" />
-          <p className="mt-5 text-[15px] text-stone leading-relaxed max-w-md">
+          <p className="mt-5 text-[15px] text-black/60 leading-relaxed max-w-md">
             {c.cta_desc1}
           </p>
-          <p className="mt-4 text-[15px] text-stone leading-relaxed max-w-md">
+          <p className="mt-4 text-[15px] text-black/60 leading-relaxed max-w-md">
             {c.cta_desc2}
           </p>
           <a
             href={getWhatsAppLink("Halo Admin SAMAQU, saya ingin bertanya soal garansi atau retur.")}
             target="_blank"
             rel="noopener"
-            className="inline-flex mt-7 items-center gap-2 bg-espresso text-cream px-8 py-3.5 rounded-full text-sm tracking-[.15em] uppercase hover:bg-coffee transition"
+            className="inline-flex mt-7 items-center gap-2 bg-black text-white px-8 py-3.5 rounded-full text-sm tracking-[.15em] uppercase hover:bg-black/85 transition"
           >
             <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
               <path d="M20 3.9A10 10 0 0 0 3.5 15.6L2 22l6.6-1.7A10 10 0 1 0 20 3.9Zm-8 16.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3.9 1 1-3.8-.2-.3A8.2 8.2 0 1 1 12 20.1Zm4.5-6.1c-.2-.1-1.4-.7-1.6-.8s-.4-.1-.6.1-.6.8-.8 1-.3.2-.5 0a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.6-1.2a.6.6 0 0 0 0-.6c0-.2-.6-1.4-.8-1.9s-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3A2.9 2.9 0 0 0 6.4 10c0 1.3.9 2.5 1 2.7s1.8 3 4.5 4.1a5.1 5.1 0 0 0 3.1.5 2.6 2.6 0 0 0 1.7-1.2 2.1 2.1 0 0 0 .1-1.2c0-.1-.2-.2-.4-.3Z" />
@@ -383,7 +383,7 @@ export default function GaransiRetur() {
           </a>
         </div>
         <div className="order-1 md:order-2 relative">
-          <div className="absolute -inset-4 rounded-[2rem] bg-sand/50 -z-10" />
+          <div className="absolute -inset-4 rounded-[2rem] bg-black/5 -z-10" />
             <img
               src={c.cta_image_url}
               alt="Customer SAMAQU"

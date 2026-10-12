@@ -58,7 +58,7 @@ export default function Footer() {
 
       <div className="relative max-w-[1200px] mx-auto px-5 sm:px-8">
         {/* Multi-column grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-10 pb-8 sm:pb-10 border-b" style={{ borderColor: "rgba(201,183,156,.12)" }}>
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-10 pb-8 sm:pb-10 border-b" style={{ borderColor: "rgba(0,0,0,.12)" }}>
           {/* Column 1: Logo + Tagline */}
           <div className="col-span-2 sm:col-span-2 lg:col-span-1">
             <img

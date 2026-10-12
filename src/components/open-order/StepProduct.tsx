@@ -71,8 +71,8 @@ export default function StepProduct({
   return (
     <div>
       {/* Foto produk — galeri dari katalog (sama seperti halaman detail katalog) */}
-      <div className="relative aspect-[3/4] overflow-hidden rounded-3xl" style={{ background: "#e8dfd1" }}>
-        <div className="absolute inset-0" style={{ background: "linear-gradient(135deg,rgba(232,223,209,.6),rgba(201,183,156,.4))" }} />
+      <div className="relative aspect-[3/4] overflow-hidden rounded-3xl" style={{ background: "#e5e5e5" }}>
+        <div className="absolute inset-0" style={{ background: "linear-gradient(135deg,rgba(232,223,209,.6),rgba(0,0,0,.4))" }} />
         {currentPhoto && (
           <img
             key={currentPhoto}
@@ -106,7 +106,7 @@ export default function StepProduct({
             </button>
             <span
               className="absolute bottom-3 right-3 z-10 rounded-full px-2.5 py-1 text-[10px] tabular-nums"
-              style={{ background: "rgba(42,33,27,.55)", color: "white" }}
+              style={{ background: "rgba(0,0,0,.55)", color: "white" }}
             >
               {activePhoto + 1}/{gallery.length}
             </span>
@@ -125,7 +125,7 @@ export default function StepProduct({
               aria-label={`Foto ${i + 1}`}
               className="rounded-full transition-all duration-300"
               style={{
-                background: i === activePhoto ? "var(--gold)" : "rgba(201,183,156,.4)",
+                background: i === activePhoto ? "var(--gold)" : "rgba(0,0,0,.4)",
                 width: i === activePhoto ? 16 : 6,
                 height: 6,
               }}
@@ -209,7 +209,7 @@ export default function StepProduct({
       </div>
 
       {/* Create Your Price */}
-      <div className="mt-6 rounded-2xl p-5" style={{ background: "var(--cream-bright)", border: "1px solid rgba(201,183,156,.25)" }}>
+      <div className="mt-6 rounded-2xl p-5" style={{ background: "var(--cream-bright)", border: "1px solid rgba(0,0,0,.25)" }}>
         <p className="text-[11px] uppercase tracking-[0.12em]" style={{ color: MUTED }}>
           Harga Minimum
         </p>
@@ -219,7 +219,7 @@ export default function StepProduct({
         <p className="mt-1 text-[12px]" style={{ color: MUTED }}>
           Create Your Price — pilih harga terbaikmu untuk series {series.name}.
         </p>
-        <div className="mt-3 flex items-center gap-2 rounded-lg bg-white px-4 py-3" style={{ border: "1px solid rgba(201,183,156,.35)" }}>
+        <div className="mt-3 flex items-center gap-2 rounded-lg bg-white px-4 py-3" style={{ border: "1px solid rgba(0,0,0,.35)" }}>
           <span className="text-[13.5px] font-semibold" style={{ color: MUTED }}>
             Rp
           </span>

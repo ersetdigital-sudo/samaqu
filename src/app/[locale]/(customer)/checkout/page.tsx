@@ -651,12 +651,12 @@ function CheckoutContent() {
     }
   }
 
-  const selectStyle: React.CSSProperties = { background: "white", border: "1px solid rgba(64,50,37,.25)", color: "var(--espresso)", outline: "none" };
+  const selectStyle: React.CSSProperties = { background: "white", border: "1px solid rgba(0,0,0,.25)", color: "var(--espresso)", outline: "none" };
 
   return (
     <section className="min-h-screen" style={{ background: "var(--cream)" }}>
       {/* Header */}
-      <header style={{ borderBottom: "1px solid rgba(64,50,37,.08)" }}>
+      <header style={{ borderBottom: "1px solid rgba(0,0,0,.08)" }}>
         <div className="max-w-6xl mx-auto px-5 sm:px-8 h-16 sm:h-20 flex items-center justify-between">
           <a href="/" className="flex items-center gap-3">
             <span className="text-2xl sm:text-3xl tracking-[0.2em] font-medium" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>SAMAQU</span>
@@ -672,9 +672,9 @@ function CheckoutContent() {
       <div className="max-w-6xl mx-auto px-5 sm:px-8 pt-8 sm:pt-10 pb-2">
         <nav className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm font-ui" style={{ color: "var(--text-muted)" }}>
           <span style={{ color: orderPlaced ? "var(--text-muted)" : "var(--text-muted)" }}>Keranjang</span>
-          <span style={{ color: "rgba(64,50,37,.3)" }}>/</span>
+          <span style={{ color: "rgba(0,0,0,.3)" }}>/</span>
           <span className="font-medium" style={{ color: orderPlaced ? "var(--text-muted)" : "var(--gold)" }}>Checkout</span>
-          <span style={{ color: "rgba(64,50,37,.3)" }}>/</span>
+          <span style={{ color: "rgba(0,0,0,.3)" }}>/</span>
           <span className="font-medium" style={{ color: orderPlaced ? "var(--gold)" : "var(--text-muted)" }}>Selesai</span>
         </nav>
         <h1 className="text-3xl sm:text-4xl lg:text-5xl italic mt-3 sm:mt-4" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
@@ -698,7 +698,7 @@ function CheckoutContent() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div className="sm:col-span-2" data-field="nama">
                 <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: errors.nama ? "#e74c3c" : "var(--text-secondary)" }}>Nama Lengkap <span style={{ color: "var(--gold)" }}>*</span></label>
-                <input type="text" value={nama} onChange={(e) => { setNama(e.target.value); setErrors((p) => ({ ...p, nama: "" })); }} className="w-full rounded-lg px-4 py-3 text-sm font-ui" style={{ ...selectStyle, border: `1px solid ${errors.nama ? "#e74c3c" : "rgba(64,50,37,.25)"}` }} placeholder="Contoh: Ahmad Fauzi" />
+                <input type="text" value={nama} onChange={(e) => { setNama(e.target.value); setErrors((p) => ({ ...p, nama: "" })); }} className="w-full rounded-lg px-4 py-3 text-sm font-ui" style={{ ...selectStyle, border: `1px solid ${errors.nama ? "#e74c3c" : "rgba(0,0,0,.25)"}` }} placeholder="Contoh: Ahmad Fauzi" />
                 {errors.nama && <p className="text-[11px] font-ui mt-1" style={{ color: "#e74c3c" }}>{errors.nama}</p>}
               </div>
               <div>
@@ -707,7 +707,7 @@ function CheckoutContent() {
               </div>
               <div data-field="whatsapp">
                 <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: errors.whatsapp ? "#e74c3c" : "var(--text-secondary)" }}>Nomor WhatsApp <span style={{ color: "var(--gold)" }}>*</span></label>
-                <input type="tel" value={whatsapp} onChange={(e) => { setWhatsapp(e.target.value); setErrors((p) => ({ ...p, whatsapp: "" })); }} className="w-full rounded-lg px-4 py-3 text-sm font-ui" style={{ ...selectStyle, border: `1px solid ${errors.whatsapp ? "#e74c3c" : "rgba(64,50,37,.25)"}` }} placeholder="0812 3456 7890" />
+                <input type="tel" value={whatsapp} onChange={(e) => { setWhatsapp(e.target.value); setErrors((p) => ({ ...p, whatsapp: "" })); }} className="w-full rounded-lg px-4 py-3 text-sm font-ui" style={{ ...selectStyle, border: `1px solid ${errors.whatsapp ? "#e74c3c" : "rgba(0,0,0,.25)"}` }} placeholder="0812 3456 7890" />
                 {errors.whatsapp && <p className="text-[11px] font-ui mt-1" style={{ color: "#e74c3c" }}>{errors.whatsapp}</p>}
               </div>
             </div>
@@ -723,7 +723,7 @@ function CheckoutContent() {
             {savedAddresses.length > 0 && !showNewAddress && (
               <div className="mb-4 space-y-2">
                 {savedAddresses.map((addr) => (
-                  <label key={addr.id} className="flex items-start gap-3 rounded-xl p-3 cursor-pointer transition-all" style={{ border: `1.5px solid ${selectedAddressId === addr.id ? "var(--gold)" : "rgba(64,50,37,.15)"}`, background: selectedAddressId === addr.id ? "rgba(181,140,74,.04)" : "white" }}
+                  <label key={addr.id} className="flex items-start gap-3 rounded-xl p-3 cursor-pointer transition-all" style={{ border: `1.5px solid ${selectedAddressId === addr.id ? "var(--gold)" : "rgba(0,0,0,.15)"}`, background: selectedAddressId === addr.id ? "rgba(0,0,0,.04)" : "white" }}
                     onClick={() => handleSelectAddress(addr)}>
                     <span className="relative w-4 h-4 rounded-full border-2 flex-shrink-0 mt-0.5" style={{ borderColor: selectedAddressId === addr.id ? "var(--gold)" : "var(--text-muted)" }}>
                       {selectedAddressId === addr.id && <span className="absolute inset-[3px] rounded-full" style={{ background: "var(--gold)" }} />}
@@ -731,7 +731,7 @@ function CheckoutContent() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium" style={{ color: "var(--espresso)" }}>{addr.label}</span>
-                        {addr.is_default && <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ background: "rgba(181,140,74,.15)", color: "var(--gold)" }}>Utama</span>}
+                        {addr.is_default && <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ background: "rgba(0,0,0,.15)", color: "var(--gold)" }}>Utama</span>}
                       </div>
                       <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>{addr.recipient_name} · {addr.phone}</p>
                       <p className="text-xs" style={{ color: "var(--text-muted)" }}>{addr.address}, {addr.kecamatan ? `${addr.kecamatan}, ` : ""}{addr.city}{addr.province ? `, ${addr.province}` : ""} {addr.postal_code}</p>
@@ -751,7 +751,7 @@ function CheckoutContent() {
                 )}
                 <div className="sm:col-span-2" data-field="alamat">
                   <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: errors.alamat ? "#e74c3c" : "var(--text-secondary)" }}>Alamat Lengkap <span style={{ color: "var(--gold)" }}>*</span></label>
-                  <textarea rows={3} value={alamat} onChange={(e) => { setAlamat(e.target.value); setErrors((p) => ({ ...p, alamat: "" })); }} className="w-full rounded-lg px-4 py-3 text-sm font-ui resize-none" style={{ ...selectStyle, border: `1px solid ${errors.alamat ? "#e74c3c" : "rgba(64,50,37,.25)"}` }} placeholder="Jalan, nomor rumah, RT/RW, kelurahan" />
+                  <textarea rows={3} value={alamat} onChange={(e) => { setAlamat(e.target.value); setErrors((p) => ({ ...p, alamat: "" })); }} className="w-full rounded-lg px-4 py-3 text-sm font-ui resize-none" style={{ ...selectStyle, border: `1px solid ${errors.alamat ? "#e74c3c" : "rgba(0,0,0,.25)"}` }} placeholder="Jalan, nomor rumah, RT/RW, kelurahan" />
                   {errors.alamat && <p className="text-[11px] font-ui mt-1" style={{ color: "#e74c3c" }}>{errors.alamat}</p>}
                 </div>
                 <div data-field="kecamatan">
@@ -762,17 +762,17 @@ function CheckoutContent() {
                     lastResolvedRef.current = "";
                     setShipOptions([]);
                     setSelectedShipping(null);
-                  }} className="w-full rounded-lg px-4 py-3 text-sm font-ui" style={{ ...selectStyle, border: `1px solid ${errors.kecamatan ? "#e74c3c" : "rgba(64,50,37,.25)"}` }} placeholder="Contoh: Cengkareng" />
+                  }} className="w-full rounded-lg px-4 py-3 text-sm font-ui" style={{ ...selectStyle, border: `1px solid ${errors.kecamatan ? "#e74c3c" : "rgba(0,0,0,.25)"}` }} placeholder="Contoh: Cengkareng" />
                   {errors.kecamatan && <p className="text-[11px] font-ui mt-1" style={{ color: "#e74c3c" }}>{errors.kecamatan}</p>}
                 </div>
                 <div data-field="kota">
                   <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: errors.kota ? "#e74c3c" : "var(--text-secondary)" }}>Kota / Kabupaten <span style={{ color: "var(--gold)" }}>*</span></label>
-                  <input type="text" value={kota} onChange={(e) => { setKota(e.target.value); setErrors((p) => ({ ...p, kota: "" })); lastResolvedRef.current = ""; }} className="w-full rounded-lg px-4 py-3 text-sm font-ui" style={{ ...selectStyle, border: `1px solid ${errors.kota ? "#e74c3c" : "rgba(64,50,37,.25)"}` }} placeholder="Contoh: Jakarta Barat" />
+                  <input type="text" value={kota} onChange={(e) => { setKota(e.target.value); setErrors((p) => ({ ...p, kota: "" })); lastResolvedRef.current = ""; }} className="w-full rounded-lg px-4 py-3 text-sm font-ui" style={{ ...selectStyle, border: `1px solid ${errors.kota ? "#e74c3c" : "rgba(0,0,0,.25)"}` }} placeholder="Contoh: Jakarta Barat" />
                   {errors.kota && <p className="text-[11px] font-ui mt-1" style={{ color: "#e74c3c" }}>{errors.kota}</p>}
                 </div>
                 <div data-field="kodepos">
                   <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: errors.kodepos ? "#e74c3c" : "var(--text-secondary)" }}>Kode Pos</label>
-                  <input type="text" value={kodepos} onChange={(e) => { setKodepos(e.target.value); setErrors((p) => ({ ...p, kodepos: "" })); }} className="w-full rounded-lg px-4 py-3 text-sm font-ui" style={{ ...selectStyle, border: `1px solid ${errors.kodepos ? "#e74c3c" : "rgba(64,50,37,.25)"}` }} placeholder="40123" />
+                  <input type="text" value={kodepos} onChange={(e) => { setKodepos(e.target.value); setErrors((p) => ({ ...p, kodepos: "" })); }} className="w-full rounded-lg px-4 py-3 text-sm font-ui" style={{ ...selectStyle, border: `1px solid ${errors.kodepos ? "#e74c3c" : "rgba(0,0,0,.25)"}` }} placeholder="40123" />
                   {errors.kodepos && <p className="text-[11px] font-ui mt-1" style={{ color: "#e74c3c" }}>{errors.kodepos}</p>}
                 </div>
                 <div className="sm:col-span-2">
@@ -838,7 +838,7 @@ function CheckoutContent() {
                     <label
                       key={`${opt.courier}-${opt.service}-${i}`}
                       className="relative rounded-xl p-4 flex items-start gap-3 cursor-pointer transition-all"
-                      style={{ border: `1.5px solid ${isActive ? "var(--gold)" : "rgba(64,50,37,.25)"}`, background: isActive ? "white" : "transparent" }}
+                      style={{ border: `1.5px solid ${isActive ? "var(--gold)" : "rgba(0,0,0,.25)"}`, background: isActive ? "white" : "transparent" }}
                     >
                       <input
                         type="radio"
@@ -901,7 +901,7 @@ function CheckoutContent() {
                   <label
                     key={pm.id}
                     className="pay-option relative rounded-xl p-4 flex items-center gap-3 cursor-pointer transition-all"
-                    style={{ border: `1.5px solid ${active ? "var(--gold)" : "rgba(64,50,37,.25)"}`, background: active ? "white" : "transparent" }}
+                    style={{ border: `1.5px solid ${active ? "var(--gold)" : "rgba(0,0,0,.25)"}`, background: active ? "white" : "transparent" }}
                   >
                     <input type="radio" name="pay" value={pm.id} checked={active} onChange={() => setPayment(pm.id)} className="sr-only" />
                     <span className="relative w-4 h-4 rounded-full border-2 flex-shrink-0" style={{ borderColor: active ? "var(--gold)" : "var(--text-muted)" }}>
@@ -930,14 +930,14 @@ function CheckoutContent() {
 
         {/* Right: Order Summary */}
         <aside className="lg:sticky lg:top-8">
-          <div className="rounded-2xl p-5 sm:p-7" style={{ background: "var(--bg-secondary, #f0ebe5)", border: "1px solid rgba(64,50,37,.08)" }}>
+          <div className="rounded-2xl p-5 sm:p-7" style={{ background: "var(--bg-secondary, #f0ebe5)", border: "1px solid rgba(0,0,0,.08)" }}>
             <h2 className="text-xl sm:text-2xl italic mb-4 sm:mb-5" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Ringkasan Pesanan</h2>
 
             {isCartMode ? (
               <div className="space-y-4">
                 {items.map((item) => (
                   <div key={`${item.id}-${item.color}-${item.size}-${item.series ?? ""}`} className="flex gap-3 sm:gap-4">
-                    <div className="w-16 h-20 sm:w-20 sm:h-24 rounded-lg flex-shrink-0 overflow-hidden" style={{ background: "#e8dfd1" }}>
+                    <div className="w-16 h-20 sm:w-20 sm:h-24 rounded-lg flex-shrink-0 overflow-hidden" style={{ background: "#e5e5e5" }}>
                       <img src={cloudinaryUrl(item.image, { width: 160 })} alt={item.name} className="w-full h-full object-cover" />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -962,7 +962,7 @@ function CheckoutContent() {
               </p>
             ) : (
               <div className="flex gap-3 sm:gap-4">
-                <div className="w-16 h-20 sm:w-20 sm:h-24 rounded-lg flex-shrink-0 overflow-hidden" style={{ background: "#e8dfd1" }}>
+                <div className="w-16 h-20 sm:w-20 sm:h-24 rounded-lg flex-shrink-0 overflow-hidden" style={{ background: "#e5e5e5" }}>
                   <img src={cloudinaryUrl(product.image, { width: 160 })} alt={product.name} className="w-full h-full object-cover" />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -972,7 +972,7 @@ function CheckoutContent() {
                     Berat: {(() => { const w = product!.weight || weightMap[product!.category] || 800; return w >= 1000 ? `${(w/1000).toFixed(1)} kg` : `${w} g`; })()} / item
                   </p>
                   <div className="flex items-center justify-between mt-2 sm:mt-2.5">
-                    <div className="inline-flex items-center rounded-lg" style={{ border: "1px solid rgba(64,50,37,.25)" }}>
+                    <div className="inline-flex items-center rounded-lg" style={{ border: "1px solid rgba(0,0,0,.25)" }}>
                       <button type="button" onClick={() => setQty((q) => Math.max(1, q - 1))} className="w-7 h-7 flex items-center justify-center text-base font-ui" style={{ color: "var(--espresso)" }} aria-label="Kurangi">−</button>
                       <span className="w-8 text-center text-sm font-ui">{qty}</span>
                       <button type="button" onClick={() => setQty((q) => q + 1)} className="w-7 h-7 flex items-center justify-center text-sm font-ui" style={{ color: "var(--espresso)" }} aria-label="Tambah">+</button>
@@ -995,7 +995,7 @@ function CheckoutContent() {
             ) : (
               <>
                 <div className="flex gap-2 mt-5 sm:mt-6">
-                  <input type="text" value={promoCode} onChange={(e) => { setPromoCode(e.target.value); setPromoError(""); }} className="flex-1 rounded-lg px-3.5 py-2.5 text-sm font-ui" style={{ background: "white", border: "1px solid rgba(64,50,37,.25)", color: "var(--espresso)", outline: "none" }} placeholder="Kode promo" />
+                  <input type="text" value={promoCode} onChange={(e) => { setPromoCode(e.target.value); setPromoError(""); }} className="flex-1 rounded-lg px-3.5 py-2.5 text-sm font-ui" style={{ background: "white", border: "1px solid rgba(0,0,0,.25)", color: "var(--espresso)", outline: "none" }} placeholder="Kode promo" />
                   <button type="button" onClick={applyPromo} className="rounded-lg px-4 text-sm font-ui font-medium" style={{ background: "#e8e2da", color: "var(--espresso)" }}>Terapkan</button>
                 </div>
                 {promoError && <p className="text-[11px] mt-1.5 font-ui" style={{ color: "#e74c3c" }}>{promoError}</p>}
@@ -1003,7 +1003,7 @@ function CheckoutContent() {
             )}
 
             {/* Totals */}
-            <div className="mt-5 sm:mt-6 pt-4 sm:pt-5 space-y-2 sm:space-y-2.5 text-sm font-ui" style={{ borderTop: "1px solid rgba(64,50,37,.15)" }}>
+            <div className="mt-5 sm:mt-6 pt-4 sm:pt-5 space-y-2 sm:space-y-2.5 text-sm font-ui" style={{ borderTop: "1px solid rgba(0,0,0,.15)" }}>
               <div className="flex justify-between" style={{ color: "var(--text-secondary)" }}>
                 <span>Subtotal</span><span>Rp {subtotal.toLocaleString("id-ID")}</span>
               </div>
@@ -1015,7 +1015,7 @@ function CheckoutContent() {
                   <span>Diskon</span><span>− Rp {discount.toLocaleString("id-ID")}</span>
                 </div>
               )}
-              <div className="flex justify-between items-baseline pt-2 sm:pt-3 mt-1" style={{ borderTop: "1px solid rgba(64,50,37,.15)" }}>
+              <div className="flex justify-between items-baseline pt-2 sm:pt-3 mt-1" style={{ borderTop: "1px solid rgba(0,0,0,.15)" }}>
                 <span className="text-lg sm:text-xl italic" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Total</span>
                 <span className="text-lg sm:text-xl font-ui font-semibold" style={{ color: "var(--espresso)" }}>Rp {total.toLocaleString("id-ID")}</span>
               </div>
@@ -1046,7 +1046,7 @@ function CheckoutContent() {
       </div>
 
       {/* Footer (desktop only) */}
-      <footer className="hidden lg:block mt-8" style={{ borderTop: "1px solid rgba(64,50,37,.08)" }}>
+      <footer className="hidden lg:block mt-8" style={{ borderTop: "1px solid rgba(0,0,0,.08)" }}>
         <div className="max-w-6xl mx-auto px-5 sm:px-8 py-6 sm:py-8 text-center text-[11px] sm:text-xs font-ui" style={{ color: "var(--text-muted)" }}>
           © 2024 SAMAQU · Busana yang Layak Menemani Setiap Momen
         </div>
@@ -1057,7 +1057,7 @@ function CheckoutContent() {
 
 export default function CheckoutPage() {
   return (
-    <Suspense fallback={<section className="min-h-screen flex items-center justify-center" style={{ background: "var(--cream)" }}><div className="w-6 h-6 border-2 rounded-full animate-spin" style={{ borderColor: "rgba(201,183,156,.3)", borderTopColor: "var(--gold)" }} /></section>}>
+    <Suspense fallback={<section className="min-h-screen flex items-center justify-center" style={{ background: "var(--cream)" }}><div className="w-6 h-6 border-2 rounded-full animate-spin" style={{ borderColor: "rgba(0,0,0,.3)", borderTopColor: "var(--gold)" }} /></section>}>
       <CheckoutContent />
     </Suspense>
   );

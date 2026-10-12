@@ -85,7 +85,7 @@ function MediaDisplay({ item, poster, className, style, allMedia }: { item: Gall
             {videoPoster ? (
               <img src={videoPoster} alt="" className="w-full h-full object-cover" />
             ) : (
-              <div className="w-full h-full flex items-center justify-center" style={{ background: "#e8dfd1" }}>
+              <div className="w-full h-full flex items-center justify-center" style={{ background: "#e5e5e5" }}>
                 <Play size={32} style={{ color: "var(--gold)" }} />
               </div>
             )}
@@ -105,7 +105,7 @@ function MediaDisplay({ item, poster, className, style, allMedia }: { item: Gall
   }
 
   return (
-    <div className={`relative ${className || ""}`} style={{ background: "#e8dfd1", ...style }}>
+    <div className={`relative ${className || ""}`} style={{ background: "#e5e5e5", ...style }}>
       <img src={item.src} alt="" className="w-full h-full object-contain" loading="lazy" />
     </div>
   );
@@ -115,7 +115,7 @@ function MediaDisplay({ item, poster, className, style, allMedia }: { item: Gall
 function InfoAccordionItem({ title, children }: { title: string; children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="rounded-lg overflow-hidden" style={{ background: "rgba(64,50,37,.03)", border: "1px solid rgba(201,183,156,.15)" }}>
+    <div className="rounded-lg overflow-hidden" style={{ background: "rgba(0,0,0,.03)", border: "1px solid rgba(0,0,0,.15)" }}>
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -160,9 +160,9 @@ function RelatedProductCard({ p }: { p: Product }) {
     <a
       href={`/katalog/${p.id}`}
       className="group block rounded-2xl overflow-hidden"
-      style={{ background: "white", border: "1px solid rgba(201,183,156,.12)" }}
+      style={{ background: "white", border: "1px solid rgba(0,0,0,.12)" }}
     >
-      <div className="relative aspect-[3/4] overflow-hidden" style={{ background: "#e8dfd1" }}>
+      <div className="relative aspect-[3/4] overflow-hidden" style={{ background: "#e5e5e5" }}>
         <img
           src={p.media.find((m) => m.type === "image")?.src || p.image}
           alt={p.name}
@@ -556,7 +556,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   if (loading) {
     return (
       <section className="min-h-screen flex items-center justify-center" style={{ background: "var(--cream)" }}>
-        <div className="w-6 h-6 border-2 rounded-full animate-spin" style={{ borderColor: "rgba(201,183,156,.3)", borderTopColor: "var(--gold)" }} />
+        <div className="w-6 h-6 border-2 rounded-full animate-spin" style={{ borderColor: "rgba(0,0,0,.3)", borderTopColor: "var(--gold)" }} />
       </section>
     );
   }
@@ -616,7 +616,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         </div>
         {/* Gallery */}
         <div ref={mobileGalleryRef} className={`relative px-4 pb-1 transition-all duration-300 ${galleryHighlight ? "ring-2 ring-[var(--gold)] ring-offset-2" : ""}`}>
-          <div className="relative rounded-3xl overflow-hidden aspect-[3/4]" style={{ background: "#e8dfd1" }}>
+          <div className="relative rounded-3xl overflow-hidden aspect-[3/4]" style={{ background: "#e5e5e5" }}>
             <div
               ref={carouselRef}
               className="h-full flex overflow-x-auto snap-x snap-mandatory scrollbar-hide"
@@ -666,7 +666,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             <div className="flex justify-center gap-1.5 mt-3">
               {media.map((_, i) => (
                 <span key={i} className="rounded-full transition-all duration-300"
-                  style={{ background: i === currentSlide ? "var(--gold)" : "rgba(201,183,156,.4)", width: i === currentSlide ? "16px" : "6px", height: "6px" }} />
+                  style={{ background: i === currentSlide ? "var(--gold)" : "rgba(0,0,0,.4)", width: i === currentSlide ? "16px" : "6px", height: "6px" }} />
               ))}
             </div>
           )}
@@ -706,7 +706,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                       style={{
                         background: isActive ? "var(--espresso)" : "var(--cream-bright)",
                         color: isActive ? "var(--cream)" : "var(--coffee)",
-                        border: `1px solid ${isActive ? "var(--espresso)" : "rgba(201,183,156,.3)"}`,
+                        border: `1px solid ${isActive ? "var(--espresso)" : "rgba(0,0,0,.3)"}`,
                       }}
                     >
                       <span className="font-medium whitespace-normal break-words leading-snug">{s.series}</span>
@@ -733,8 +733,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 {product.colors.map((c) => (
                   <button key={c} onClick={() => { setSelectedColor(c); scrollToGalleryOnMobile(); }}
                     className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-ui rounded-sm transition-all duration-200"
-                    style={{ background: selectedColor === c ? "var(--espresso)" : "transparent", color: selectedColor === c ? "var(--cream)" : "var(--coffee)", border: `1px solid ${selectedColor === c ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
-                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: colorHex[c] || colorMap[c] || "#ccc", border: "1px solid rgba(42,33,27,.1)" }} />
+                    style={{ background: selectedColor === c ? "var(--espresso)" : "transparent", color: selectedColor === c ? "var(--cream)" : "var(--coffee)", border: `1px solid ${selectedColor === c ? "var(--espresso)" : "rgba(0,0,0,.3)"}` }}>
+                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: colorHex[c] || colorMap[c] || "#ccc", border: "1px solid rgba(0,0,0,.1)" }} />
                     {c}
                   </button>
                 ))}
@@ -749,7 +749,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               {availableSizes.map((s) => (
                 <button key={s} onClick={() => setSelectedSize(s)}
                   className="w-10 h-10 flex items-center justify-center text-[12px] font-ui font-medium rounded-sm transition-all duration-200"
-                  style={{ background: selectedSize === s ? "var(--espresso)" : "transparent", color: selectedSize === s ? "var(--cream)" : "var(--coffee)", border: `1px solid ${selectedSize === s ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
+                  style={{ background: selectedSize === s ? "var(--espresso)" : "transparent", color: selectedSize === s ? "var(--cream)" : "var(--coffee)", border: `1px solid ${selectedSize === s ? "var(--espresso)" : "rgba(0,0,0,.3)"}` }}>
                   {s}
                 </button>
               ))}
@@ -757,7 +757,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           </div>
 
           {/* Price card */}
-          <div className="mb-5 rounded-2xl p-5" style={{ background: "var(--cream-bright)", border: "1px solid rgba(201,183,156,.25)" }}>
+          <div className="mb-5 rounded-2xl p-5" style={{ background: "var(--cream-bright)", border: "1px solid rgba(0,0,0,.25)" }}>
             {isCYP ? (
               <div>
                 <p className="text-[10px] tracking-[0.1em] uppercase font-ui mb-1" style={{ color: "var(--stone)" }}>Harga Minimum</p>
@@ -776,7 +776,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                         style={{
                           background: isActive ? (isRecommended ? "var(--gold)" : "var(--espresso)") : "transparent",
                           color: isActive ? "white" : (isRecommended ? "var(--gold)" : "var(--coffee)"),
-                          border: `1.5px solid ${isActive ? (isRecommended ? "var(--gold)" : "var(--espresso)") : (isRecommended ? "var(--gold)" : "rgba(201,183,156,.3)")}`,
+                          border: `1.5px solid ${isActive ? (isRecommended ? "var(--gold)" : "var(--espresso)") : (isRecommended ? "var(--gold)" : "rgba(0,0,0,.3)")}`,
                         }}>
                         {isRecommended && "★ "}{qp.label} — Rp {qp.value.toLocaleString("id-ID")}
                       </button>
@@ -784,7 +784,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                   })}
                   <button onClick={handleCustomPriceToggle}
                     className="px-3 py-1.5 text-[11px] font-ui rounded-sm transition-all"
-                    style={{ background: isCustomPrice ? "var(--espresso)" : "transparent", color: isCustomPrice ? "var(--cream)" : "var(--coffee)", border: `1px solid ${isCustomPrice ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
+                    style={{ background: isCustomPrice ? "var(--espresso)" : "transparent", color: isCustomPrice ? "var(--cream)" : "var(--coffee)", border: `1px solid ${isCustomPrice ? "var(--espresso)" : "rgba(0,0,0,.3)"}` }}>
                     Pilih Harga Lainnya
                   </button>
                 </div>
@@ -794,7 +794,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                     <input type="text" value={customPriceInput} onChange={(e) => handleCustomPriceChange(e.target.value)}
                       placeholder={`Min. Rp ${minimumPrice.toLocaleString("id-ID")}`}
                       className="w-full px-3 py-2.5 text-[13px] font-ui rounded-sm outline-none"
-                      style={{ background: "transparent", border: `1px solid ${customPriceError ? "#e74c3c" : "rgba(201,183,156,.3)"}`, color: "var(--espresso)" }} />
+                      style={{ background: "transparent", border: `1px solid ${customPriceError ? "#e74c3c" : "rgba(0,0,0,.3)"}`, color: "var(--espresso)" }} />
                     {customPriceError && <p className="text-[11px] font-ui mt-1" style={{ color: "#e74c3c" }}>{customPriceError}</p>}
                   </div>
                 )}
@@ -820,11 +820,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               )}
             </div>
           </div>
-          <p className="text-[13px] leading-relaxed font-ui mb-5" style={{ color: "rgba(42,33,27,.8)" }}>
+          <p className="text-[13px] leading-relaxed font-ui mb-5" style={{ color: "rgba(0,0,0,.8)" }}>
             {getDescription(product)}
           </p>
 
-          <div className="h-px mb-5" style={{ background: "rgba(201,183,156,.2)" }} />
+          <div className="h-px mb-5" style={{ background: "rgba(0,0,0,.2)" }} />
 
           {/* Notes */}
           <div className="mb-5">
@@ -832,20 +832,20 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             <input type="text" value={notes} onChange={(e) => setNotes(e.target.value)}
               placeholder="Minta packing khusus, tambah nama, dll."
               className="w-full px-3 py-2.5 text-[13px] font-ui rounded-sm outline-none transition-all duration-200 focus:border-[var(--gold)]"
-              style={{ background: "transparent", border: "1px solid rgba(201,183,156,.3)", color: "var(--espresso)" }} />
+              style={{ background: "transparent", border: "1px solid rgba(0,0,0,.3)", color: "var(--espresso)" }} />
           </div>
 
           {/* Quantity */}
           <div className="flex items-center justify-between">
             <p className="text-[10px] tracking-[0.1em] uppercase font-ui font-medium" style={{ color: "var(--espresso)" }}>Jumlah</p>
             <div className="flex items-center gap-2.5">
-              <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="w-9 h-9 flex items-center justify-center rounded-sm transition-all duration-200 active:scale-95" style={{ border: "1px solid rgba(201,183,156,.3)", color: "var(--espresso)" }} aria-label="Kurangi jumlah">
+              <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="w-9 h-9 flex items-center justify-center rounded-sm transition-all duration-200 active:scale-95" style={{ border: "1px solid rgba(0,0,0,.3)", color: "var(--espresso)" }} aria-label="Kurangi jumlah">
                 <Minus size={14} />
               </button>
               <span className="w-7 text-center text-sm font-ui font-medium" style={{ color: "var(--espresso)" }}>{qty}</span>
               <button onClick={() => setQty((q) => q + 1)} disabled={stock !== null && qty >= stock}
                 className="w-9 h-9 flex items-center justify-center rounded-sm transition-all duration-200 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
-                style={{ border: "1px solid rgba(201,183,156,.3)", color: "var(--espresso)" }} aria-label="Tambah jumlah">
+                style={{ border: "1px solid rgba(0,0,0,.3)", color: "var(--espresso)" }} aria-label="Tambah jumlah">
                 <Plus size={14} />
               </button>
             </div>
@@ -865,7 +865,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           MOBILE STICKY BOTTOM BAR
       ═══════════════════════════════════════ */}
       <div className="md:hidden fixed bottom-0 inset-x-0 z-40"
-        style={{ background: "var(--cream)", borderTop: "1px solid rgba(201,183,156,.18)", boxShadow: "0 -6px 24px -6px rgba(42,33,27,.1)" }}>
+        style={{ background: "var(--cream)", borderTop: "1px solid rgba(0,0,0,.18)", boxShadow: "0 -6px 24px -6px rgba(0,0,0,.1)" }}>
         <div className="px-4 pt-3 pb-4">
           {/* Price row */}
           <div className="flex items-end justify-between mb-3">
@@ -909,7 +909,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         <div className="grid grid-cols-2 gap-10 lg:gap-14">
           {/* Gallery */}
           <div className="lg:sticky lg:top-24">
-            <div className="relative w-full aspect-[3/4] rounded-3xl overflow-hidden cursor-zoom-in" style={{ background: "#e8dfd1" }} onClick={() => { setZoomIndex(activeIndex); setZoomOpen(true); }}>
+            <div className="relative w-full aspect-[3/4] rounded-3xl overflow-hidden cursor-zoom-in" style={{ background: "#e5e5e5" }} onClick={() => { setZoomIndex(activeIndex); setZoomOpen(true); }}>
               <AnimatePresence mode="wait">
                 <motion.div key={activeIndex} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }} className="absolute inset-0">
                   <MediaDisplay item={activeMedia} poster={activeMedia.poster || product.image} allMedia={galleryMedia} className="w-full h-full" />
@@ -951,7 +951,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               <div className="flex justify-center gap-1.5 mt-3">
                 {media.map((_, i) => (
                   <span key={i} className="rounded-full transition-all duration-300"
-                    style={{ background: i === activeIndex ? "var(--gold)" : "rgba(201,183,156,.4)", width: i === activeIndex ? "16px" : "6px", height: "6px" }} />
+                    style={{ background: i === activeIndex ? "var(--gold)" : "rgba(0,0,0,.4)", width: i === activeIndex ? "16px" : "6px", height: "6px" }} />
                 ))}
               </div>
             )}
@@ -961,7 +961,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 {thumbnails.map(({ item, index }) => (
                   <button key={index} onClick={() => setActiveIndex(index)}
                     className="relative aspect-square rounded-lg overflow-hidden transition-all duration-200"
-                    style={{ boxShadow: activeIndex === index ? "0 0 0 2px var(--espresso)" : "0 0 0 1px rgba(201,183,156,.3)" }}
+                    style={{ boxShadow: activeIndex === index ? "0 0 0 2px var(--espresso)" : "0 0 0 1px rgba(0,0,0,.3)" }}
                     aria-label={`${item.type === "video" ? "Video" : "Foto"} ${index + 1}`}>
                     {item.type === "video" ? (
                       <>
@@ -1005,7 +1005,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                       return (
                         <button key={s.id} onClick={() => handleSeriesSelect(s.id)}
                           className="px-4 py-2 rounded-lg text-[12.5px] transition"
-                          style={{ background: isActive ? "var(--espresso)" : "var(--cream-bright)", color: isActive ? "var(--cream)" : "var(--coffee)", border: `1px solid ${isActive ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
+                          style={{ background: isActive ? "var(--espresso)" : "var(--cream-bright)", color: isActive ? "var(--cream)" : "var(--coffee)", border: `1px solid ${isActive ? "var(--espresso)" : "rgba(0,0,0,.3)"}` }}>
                           <span className="font-medium">{s.series}</span>
                           <span className="ml-1.5" style={{ color: isActive ? "rgba(248,245,241,.75)" : "var(--gold)" }}>
                             {s.create_your_price_enabled && s.minimum_price
@@ -1019,7 +1019,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                     return (
                       <button key={s.id} onClick={() => handleSeriesSelect(s.id)}
                         className="px-4 py-2 rounded-lg text-[12.5px] transition cursor-pointer"
-                        style={{ background: isActive ? "var(--espresso)" : "var(--cream-bright)", color: isActive ? "var(--cream)" : "var(--coffee)", border: `1px solid ${isActive ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
+                        style={{ background: isActive ? "var(--espresso)" : "var(--cream-bright)", color: isActive ? "var(--cream)" : "var(--coffee)", border: `1px solid ${isActive ? "var(--espresso)" : "rgba(0,0,0,.3)"}` }}>
                         <span className="font-medium">{s.series}</span>
                         <span className="ml-1.5" style={{ color: isActive ? "rgba(248,245,241,.75)" : "var(--gold)" }}>
                           {s.create_your_price_enabled && s.minimum_price
@@ -1043,8 +1043,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                   {product.colors.map((c) => (
                     <button key={c} onClick={() => setSelectedColor(c)}
                       className="flex items-center gap-2 px-3 py-2 text-[12px] font-ui rounded-sm transition-all duration-200"
-                      style={{ background: selectedColor === c ? "var(--espresso)" : "transparent", color: selectedColor === c ? "var(--cream)" : "var(--coffee)", border: `1px solid ${selectedColor === c ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
-                      <span className="w-3 h-3 rounded-full shrink-0" style={{ background: colorHex[c] || colorMap[c] || "#ccc", border: "1px solid rgba(42,33,27,.1)" }} />
+                      style={{ background: selectedColor === c ? "var(--espresso)" : "transparent", color: selectedColor === c ? "var(--cream)" : "var(--coffee)", border: `1px solid ${selectedColor === c ? "var(--espresso)" : "rgba(0,0,0,.3)"}` }}>
+                      <span className="w-3 h-3 rounded-full shrink-0" style={{ background: colorHex[c] || colorMap[c] || "#ccc", border: "1px solid rgba(0,0,0,.1)" }} />
                       {c}
                     </button>
                   ))}
@@ -1058,14 +1058,14 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 {availableSizes.map((s) => (
                   <button key={s} onClick={() => setSelectedSize(s)}
                     className="px-4 py-2 rounded-lg text-[12.5px] transition"
-                    style={{ background: selectedSize === s ? "var(--espresso)" : "var(--cream-bright)", color: selectedSize === s ? "var(--cream)" : "var(--coffee)", border: `1px solid ${selectedSize === s ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
+                    style={{ background: selectedSize === s ? "var(--espresso)" : "var(--cream-bright)", color: selectedSize === s ? "var(--cream)" : "var(--coffee)", border: `1px solid ${selectedSize === s ? "var(--espresso)" : "rgba(0,0,0,.3)"}` }}>
                     {s}
                   </button>
                 ))}
               </div>
             </div>
             {/* Price card */}
-            <div className="mb-8 rounded-2xl p-6" style={{ background: "var(--cream-bright)", border: "1px solid rgba(201,183,156,.25)" }}>
+            <div className="mb-8 rounded-2xl p-6" style={{ background: "var(--cream-bright)", border: "1px solid rgba(0,0,0,.25)" }}>
               {isCYP ? (
                 <div>
                   <p className="text-[11px] tracking-[0.1em] uppercase font-ui mb-1" style={{ color: "var(--stone)" }}>Harga Minimum</p>
@@ -1084,7 +1084,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                           style={{
                             background: isActive ? (isRecommended ? "var(--gold)" : "var(--espresso)") : "transparent",
                             color: isActive ? "white" : (isRecommended ? "var(--gold)" : "var(--coffee)"),
-                            border: `1.5px solid ${isActive ? (isRecommended ? "var(--gold)" : "var(--espresso)") : (isRecommended ? "var(--gold)" : "rgba(201,183,156,.3)")}`,
+                            border: `1.5px solid ${isActive ? (isRecommended ? "var(--gold)" : "var(--espresso)") : (isRecommended ? "var(--gold)" : "rgba(0,0,0,.3)")}`,
                           }}>
                           {isRecommended && "★ "}{qp.label} — Rp {qp.value.toLocaleString("id-ID")}
                         </button>
@@ -1092,7 +1092,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                     })}
                     <button onClick={handleCustomPriceToggle}
                       className="px-4 py-2 text-[12px] font-ui rounded-sm transition-all"
-                      style={{ background: isCustomPrice ? "var(--espresso)" : "transparent", color: isCustomPrice ? "var(--cream)" : "var(--coffee)", border: `1px solid ${isCustomPrice ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
+                      style={{ background: isCustomPrice ? "var(--espresso)" : "transparent", color: isCustomPrice ? "var(--cream)" : "var(--coffee)", border: `1px solid ${isCustomPrice ? "var(--espresso)" : "rgba(0,0,0,.3)"}` }}>
                       Pilih Harga Lainnya
                     </button>
                   </div>
@@ -1102,7 +1102,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                       <input type="text" value={customPriceInput} onChange={(e) => handleCustomPriceChange(e.target.value)}
                         placeholder={`Min. Rp ${minimumPrice.toLocaleString("id-ID")}`}
                         className="w-full px-3 py-2.5 text-[14px] font-ui rounded-sm outline-none"
-                        style={{ background: "transparent", border: `1px solid ${customPriceError ? "#e74c3c" : "rgba(201,183,156,.3)"}`, color: "var(--espresso)" }} />
+                        style={{ background: "transparent", border: `1px solid ${customPriceError ? "#e74c3c" : "rgba(0,0,0,.3)"}`, color: "var(--espresso)" }} />
                       {customPriceError && <p className="text-[11px] font-ui mt-1" style={{ color: "#e74c3c" }}>{customPriceError}</p>}
                     </div>
                   )}
@@ -1128,25 +1128,25 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 )}
               </div>
             </div>
-            <p className="text-sm sm:text-[15px] leading-relaxed font-ui mb-8" style={{ color: "rgba(42,33,27,.8)" }}>
+            <p className="text-sm sm:text-[15px] leading-relaxed font-ui mb-8" style={{ color: "rgba(0,0,0,.8)" }}>
               {getDescription(product)}
             </p>
-            <div className="h-px mb-7" style={{ background: "rgba(201,183,156,.2)" }} />
+            <div className="h-px mb-7" style={{ background: "rgba(0,0,0,.2)" }} />
 
             <div className="mb-7">
               <p className="text-[11px] sm:text-[12px] tracking-[0.12em] uppercase font-ui font-medium mb-3" style={{ color: "var(--espresso)" }}>Catatan (Opsional)</p>
               <input type="text" value={notes} onChange={(e) => setNotes(e.target.value)}
                 placeholder="Misal: minta packing khusus, tambah nama, dll."
                 className="w-full px-4 py-3 text-sm font-ui rounded-sm outline-none transition-all duration-200 focus:border-[var(--gold)]"
-                style={{ background: "transparent", border: "1px solid rgba(201,183,156,.3)", color: "var(--espresso)" }} />
+                style={{ background: "transparent", border: "1px solid rgba(0,0,0,.3)", color: "var(--espresso)" }} />
             </div>
 
             <div className="flex items-center justify-between mb-8">
               <p className="text-[11px] sm:text-[12px] tracking-[0.12em] uppercase font-ui font-medium" style={{ color: "var(--espresso)" }}>Jumlah</p>
               <div className="flex items-center gap-3">
-                <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="w-9 h-9 flex items-center justify-center rounded-sm transition-all duration-200 hover:scale-105" style={{ border: "1px solid rgba(201,183,156,.3)", color: "var(--espresso)" }} aria-label="Kurangi jumlah"><Minus size={14} /></button>
+                <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="w-9 h-9 flex items-center justify-center rounded-sm transition-all duration-200 hover:scale-105" style={{ border: "1px solid rgba(0,0,0,.3)", color: "var(--espresso)" }} aria-label="Kurangi jumlah"><Minus size={14} /></button>
                 <span className="w-8 text-center text-sm font-ui font-medium" style={{ color: "var(--espresso)" }}>{qty}</span>
-                <button onClick={() => setQty((q) => q + 1)} disabled={stock !== null && qty >= stock} className="w-9 h-9 flex items-center justify-center rounded-sm transition-all duration-200 hover:scale-105 disabled:opacity-40 disabled:cursor-not-allowed" style={{ border: "1px solid rgba(201,183,156,.3)", color: "var(--espresso)" }} aria-label="Tambah jumlah"><Plus size={14} /></button>
+                <button onClick={() => setQty((q) => q + 1)} disabled={stock !== null && qty >= stock} className="w-9 h-9 flex items-center justify-center rounded-sm transition-all duration-200 hover:scale-105 disabled:opacity-40 disabled:cursor-not-allowed" style={{ border: "1px solid rgba(0,0,0,.3)", color: "var(--espresso)" }} aria-label="Tambah jumlah"><Plus size={14} /></button>
               </div>
             </div>
 
@@ -1159,7 +1159,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               </button>
               <button onClick={handleBuyNow} disabled={stockExceeded || isOutOfStock}
                 className="flex-1 flex items-center justify-center gap-2.5 py-4 rounded-sm text-[12px] tracking-[0.08em] uppercase font-ui font-semibold transition-all duration-300 hover:scale-[1.01] hover:shadow-lg disabled:opacity-40"
-                style={{ background: "var(--espresso)", color: "white", boxShadow: "0 8px 28px -8px rgba(45,33,27,.35)" }}>
+                style={{ background: "var(--espresso)", color: "white", boxShadow: "0 8px 28px -8px rgba(0,0,0,.35)" }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" /></svg>
                 <span>{isOutOfStock ? "Stok Habis" : "Pesan via WA"}</span>
               </button>
@@ -1178,7 +1178,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       ══════════════════════════════════════════ */}
       {relatedProducts.length > 0 && (
         <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 pb-40 md:pb-20">
-          <div className="flex items-end justify-between border-t pt-6" style={{ borderColor: "rgba(201,183,156,.2)" }}>
+          <div className="flex items-end justify-between border-t pt-6" style={{ borderColor: "rgba(0,0,0,.2)" }}>
             <h2 className="text-[1.4rem] sm:text-[1.7rem] font-semibold" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
               Produk lain dari kain ini
             </h2>

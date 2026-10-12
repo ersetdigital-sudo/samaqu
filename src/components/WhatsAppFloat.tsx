@@ -16,7 +16,7 @@ export default function WhatsAppFloat() {
       style={{
         background: "var(--espresso)",
         border: "1px solid rgba(184,145,70,.3)",
-        boxShadow: "0 8px 24px -8px rgba(45,33,27,.3)",
+        boxShadow: "0 8px 24px -8px rgba(0,0,0,.3)",
       }}
     >
       <MessageCircle

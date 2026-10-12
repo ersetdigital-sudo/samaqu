@@ -77,7 +77,7 @@ export default function FilterDrawer({ open, onClose, initial, onApply, activeCo
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
             className="fixed inset-0 z-[9990]"
-            style={{ background: "rgba(42,33,27,.35)", backdropFilter: "blur(2px)" }}
+            style={{ background: "rgba(0,0,0,.35)", backdropFilter: "blur(2px)" }}
             onClick={onClose}
           />
 
@@ -88,20 +88,20 @@ export default function FilterDrawer({ open, onClose, initial, onApply, activeCo
             exit={{ x: "100%" }}
             transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
             className="fixed top-0 right-0 bottom-0 z-[9991] w-full max-w-[380px] flex flex-col"
-            style={{ background: "var(--cream)", boxShadow: "-8px 0 40px -12px rgba(42,33,27,.18)" }}>
+            style={{ background: "var(--cream)", boxShadow: "-8px 0 40px -12px rgba(0,0,0,.18)" }}>
 
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 shrink-0"
-              style={{ borderBottom: "1px solid rgba(201,183,156,.15)" }}>
+              style={{ borderBottom: "1px solid rgba(0,0,0,.15)" }}>
               <div className="flex items-center gap-2.5">
-                <SlidersHorizontal size={17} style={{ color: "var(--gold)" }} />
+                <SlidersHorizontal size={17} style={{ color: "#000000" }} />
                 <h2 className="text-[15px] font-ui font-semibold" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
                   Filter Produk
                 </h2>
               </div>
               <button onClick={onClose}
                 className="w-8 h-8 rounded-full flex items-center justify-center transition-all hover:scale-110"
-                style={{ border: "1px solid rgba(201,183,156,.25)" }}
+                style={{ border: "1px solid rgba(0,0,0,.25)" }}
                 aria-label="Tutup filter">
                 <X size={16} style={{ color: "var(--espresso)" }} />
               </button>
@@ -120,7 +120,7 @@ export default function FilterDrawer({ open, onClose, initial, onApply, activeCo
                         style={{
                           background: active ? "var(--espresso)" : "rgba(255,255,255,.5)",
                           color: active ? "var(--cream)" : "var(--coffee)",
-                          border: `1.5px solid ${active ? "var(--espresso)" : "rgba(201,183,156,.25)"}`,
+                          border: `1.5px solid ${active ? "var(--espresso)" : "rgba(0,0,0,.25)"}`,
                         }}>
                         {s}
                       </button>
@@ -140,10 +140,10 @@ export default function FilterDrawer({ open, onClose, initial, onApply, activeCo
                         style={{
                           background: active ? "var(--espresso)" : "rgba(255,255,255,.5)",
                           color: active ? "var(--cream)" : "var(--coffee)",
-                          border: `1.5px solid ${active ? "var(--espresso)" : "rgba(201,183,156,.25)"}`,
+                          border: `1.5px solid ${active ? "var(--espresso)" : "rgba(0,0,0,.25)"}`,
                         }}>
                         <span className="w-4 h-4 rounded-full shrink-0 relative"
-                          style={{ background: colorMap[c] || "#ccc", border: "1px solid rgba(42,33,27,.1)" }}>
+                          style={{ background: colorMap[c] || "#ccc", border: "1px solid rgba(0,0,0,.1)" }}>
                           {active && (
                             <span className="absolute inset-0 flex items-center justify-center">
                               <Check size={10} strokeWidth={3} style={{ color: colorMap[c] === "#f5f0e8" || colorMap[c] === "#f8f8f8" ? "var(--espresso)" : "white" }} />
@@ -166,12 +166,12 @@ export default function FilterDrawer({ open, onClose, initial, onApply, activeCo
                       <button key={r.id} onClick={() => setPriceRange(active ? null : r.id)}
                         className="flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all duration-200"
                         style={{
-                          background: active ? "rgba(181,140,74,.08)" : "rgba(255,255,255,.5)",
-                          border: `1.5px solid ${active ? "var(--gold)" : "rgba(201,183,156,.2)"}`,
+                          background: active ? "rgba(0,0,0,.08)" : "rgba(255,255,255,.5)",
+                          border: `1.5px solid ${active ? "#000000" : "rgba(0,0,0,.2)"}`,
                         }}>
                         <div className="w-4 h-4 rounded-full shrink-0 flex items-center justify-center"
-                          style={{ border: `2px solid ${active ? "var(--gold)" : "rgba(201,183,156,.4)"}` }}>
-                          {active && <div className="w-2 h-2 rounded-full" style={{ background: "var(--gold)" }} />}
+                          style={{ border: `2px solid ${active ? "#000000" : "rgba(0,0,0,.4)"}` }}>
+                          {active && <div className="w-2 h-2 rounded-full" style={{ background: "#000000" }} />}
                         </div>
                         <span className="text-[12px] font-ui" style={{ color: active ? "var(--espresso)" : "var(--coffee)" }}>
                           {r.label}
@@ -184,15 +184,15 @@ export default function FilterDrawer({ open, onClose, initial, onApply, activeCo
             </div>
 
             {/* Footer */}
-            <div className="px-5 py-4 shrink-0 flex gap-3" style={{ borderTop: "1px solid rgba(201,183,156,.12)" }}>
+            <div className="px-5 py-4 shrink-0 flex gap-3" style={{ borderTop: "1px solid rgba(0,0,0,.12)" }}>
               <button onClick={resetLocal}
                 className="px-5 py-3 rounded-xl text-[12px] font-ui font-semibold transition-all duration-200 hover:scale-[1.02]"
-                style={{ border: "1.5px solid rgba(201,183,156,.3)", color: "var(--coffee)", background: "transparent" }}>
+                style={{ border: "1.5px solid rgba(0,0,0,.3)", color: "var(--coffee)", background: "transparent" }}>
                 Reset
               </button>
               <button onClick={apply}
                 className="flex-1 py-3 rounded-xl text-[12px] tracking-[0.06em] uppercase font-ui font-semibold transition-all duration-200 active:scale-[0.98]"
-                style={{ background: "var(--gold)", color: "white", boxShadow: "0 4px 16px -4px rgba(184,145,74,.4)" }}>
+                style={{ background: "#000000", color: "white", boxShadow: "0 4px 16px -4px rgba(0,0,0,.4)" }}>
                 Terapkan{localCount > 0 ? ` (${localCount})` : ""}
               </button>
             </div>

@@ -82,7 +82,7 @@ export const colorMap: Record<string, string> = {
 /* ── Helper: generate product image placeholder color ── */
 function ph(category: Category): string {
   const map: Record<Category, string> = {
-    Thobe: "#e8dfd1",
+    Thobe: "#e5e5e5",
     Kandora: "#d8cfc0",
     Koko: "#c8bfb0",
     Vest: "#b8afa0",

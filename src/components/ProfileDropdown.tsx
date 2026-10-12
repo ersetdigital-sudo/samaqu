@@ -47,13 +47,13 @@ export default function ProfileDropdown() {
       <DropdownMenuTrigger asChild>
         <button
           className="w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105"
-          style={{ background: "rgba(42,33,27,.08)", color: "var(--espresso)" }}
+          style={{ background: "rgba(0,0,0,.08)", color: "var(--espresso)" }}
           aria-label="Akun saya">
           <User size={18} strokeWidth={2} />
         </button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" className="w-56 p-2" style={{ borderRadius: "1rem", border: "1px solid rgba(64,50,37,.1)", background: "white", boxShadow: "0 16px 40px -12px rgba(42,33,27,.2)" }}>
+      <DropdownMenuContent align="end" className="w-56 p-2" style={{ borderRadius: "1rem", border: "1px solid rgba(0,0,0,.1)", background: "white", boxShadow: "0 16px 40px -12px rgba(0,0,0,.2)" }}>
         {customer ? (
           !isDashboard ? (
             <>

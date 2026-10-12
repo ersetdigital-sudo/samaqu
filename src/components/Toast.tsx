@@ -37,9 +37,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               exit={{ opacity: 0, y: -8, scale: 0.95 }}
               transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
               className="flex items-center gap-2 px-4 py-2.5 rounded-full shadow-lg pointer-events-auto"
-              style={{ background: "var(--espresso)", color: "white", boxShadow: "0 8px 30px -8px rgba(42,33,27,.35)" }}>
-              <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: "var(--gold)" }}>
-                <Check size={12} strokeWidth={3} color="white" />
+              style={{ background: "#000000", color: "white", boxShadow: "0 8px 30px -8px rgba(0,0,0,.35)" }}>
+              <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: "#ffffff" }}>
+                <Check size={12} strokeWidth={3} color="#000000" />
               </div>
               <span className="text-[12px] font-ui font-medium whitespace-nowrap">{msg}</span>
             </motion.div>

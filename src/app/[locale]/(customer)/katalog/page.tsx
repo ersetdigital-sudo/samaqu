@@ -559,14 +559,14 @@ export default function KatalogPage() {
               className="w-full pl-9 pr-4 py-3 text-[14px] font-ui outline-none transition-all duration-200"
               style={{
                 background: "transparent",
-                borderBottom: "1px solid rgba(216,196,168,.4)",
+                borderBottom: "1px solid rgba(0,0,0,.4)",
                 color: "#000000",
               }}
               onFocus={(e) => {
                 e.currentTarget.style.borderBottomColor = "#000000";
               }}
               onBlur={(e) => {
-                e.currentTarget.style.borderBottomColor = "rgba(216,196,168,.4)";
+                e.currentTarget.style.borderBottomColor = "rgba(0,0,0,.4)";
               }}
             />
           </div>
@@ -651,7 +651,7 @@ export default function KatalogPage() {
         </div>
 
         {/* Row 2 (desktop): Category chips left + Filter/Sort right — single line */}
-        <div className="hidden lg:flex items-center justify-between py-5 border-b" style={{ borderColor: "rgba(216,196,168,.2)" }}>
+        <div className="hidden lg:flex items-center justify-between py-5 border-b" style={{ borderColor: "rgba(0,0,0,.2)" }}>
           <div className="flex items-center gap-3">
             {(["Semua", ...allCategories] as const).map((cat) => (
               <button

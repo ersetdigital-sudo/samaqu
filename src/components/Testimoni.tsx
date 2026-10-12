@@ -61,8 +61,8 @@ function StarRating() {
           width="15"
           height="15"
           viewBox="0 0 24 24"
-          fill="var(--gold)"
-          stroke="var(--gold)"
+          fill="#000000"
+          stroke="#000000"
           strokeWidth="1.5"
         >
           <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
@@ -84,7 +84,7 @@ function TestimonialCard({ t }: { t: (typeof reviews)[number] }) {
       {/* Gold accent bar */}
       <span
         className="absolute top-0 left-6 sm:left-8 w-8 h-[2px] transition-all duration-500 group-hover:w-12"
-        style={{ background: "var(--gold)" }}
+        style={{ background: "#000000" }}
       />
 
       <div>
@@ -100,7 +100,7 @@ function TestimonialCard({ t }: { t: (typeof reviews)[number] }) {
       {/* Divider */}
       <div
         className="my-6 h-px"
-        style={{ background: "rgba(201,183,156,.2)" }}
+        style={{ background: "rgba(0,0,0,.2)" }}
       />
 
       {/* Author */}
@@ -111,7 +111,7 @@ function TestimonialCard({ t }: { t: (typeof reviews)[number] }) {
             fontFamily: "var(--font-cormorant), Georgia, serif",
             background: "var(--sand-2)",
             color: "var(--espresso)",
-            border: "1px solid rgba(201,183,156,.3)",
+            border: "1px solid rgba(0,0,0,.3)",
           }}
         >
           {t.initial}
@@ -155,7 +155,7 @@ export default function Testimoni() {
           <motion.p
             variants={headerVariants}
             className="text-[11px] sm:text-[12px] tracking-[0.32em] uppercase mb-4 font-ui"
-            style={{ color: "var(--gold)" }}
+            style={{ color: "#000000" }}
           >
             {t("eyebrow")}
           </motion.p>

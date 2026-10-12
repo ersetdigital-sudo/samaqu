@@ -28,7 +28,7 @@ export default function PresetColorPicker({ existing, onAdd }: PresetColorPicker
   const presets = Object.entries(colorMap).filter(([name]) => !usedKeys.has(name.toLowerCase()));
 
   return (
-    <div className="w-full rounded-xl p-3" style={{ border: "1px dashed rgba(181,140,74,.4)", background: "rgba(255,255,255,.4)" }}>
+    <div className="w-full rounded-xl p-3" style={{ border: "1px dashed rgba(0,0,0,.4)", background: "rgba(255,255,255,.4)" }}>
       <p className="text-[11px] font-medium mb-2" style={{ color: "var(--text-muted)" }}>
         Pilih warna yang tersedia
       </p>
@@ -37,8 +37,8 @@ export default function PresetColorPicker({ existing, onAdd }: PresetColorPicker
           {presets.map(([name, hex]) => (
             <button key={name} type="button" onClick={() => onAdd(name, hex)}
               className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all hover:scale-105"
-              style={{ border: "1px solid rgba(201,183,156,.35)", color: "var(--coffee)", background: "rgba(255,255,255,.7)" }}>
-              <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: hex, border: "1px solid rgba(42,33,27,.1)" }} />
+              style={{ border: "1px solid rgba(0,0,0,.35)", color: "var(--coffee)", background: "rgba(255,255,255,.7)" }}>
+              <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: hex, border: "1px solid rgba(0,0,0,.1)" }} />
               {name}
             </button>
           ))}

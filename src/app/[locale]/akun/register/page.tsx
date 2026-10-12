@@ -40,25 +40,25 @@ export default function RegisterPage() {
       <div className="hidden lg:flex lg:w-[55%] relative overflow-hidden" style={{ background: "var(--espresso)" }}>
         <div className="absolute inset-0" style={{
           clipPath: "polygon(0 0, 100% 0, 88% 100%, 0 100%)",
-          background: "linear-gradient(135deg, rgba(181,140,74,.15) 0%, rgba(45,33,27,.95) 50%, rgba(45,33,27,1) 100%)",
+          background: "linear-gradient(135deg, rgba(0,0,0,.15) 0%, rgba(0,0,0,.95) 50%, rgba(0,0,0,1) 100%)",
         }} />
         <div className="absolute inset-0 opacity-20" style={{
-          background: "radial-gradient(circle at 30% 40%, rgba(181,140,74,.4) 0%, transparent 50%), radial-gradient(circle at 70% 80%, rgba(157,122,58,.3) 0%, transparent 40%)",
+          background: "radial-gradient(circle at 30% 40%, rgba(0,0,0,.4) 0%, transparent 50%), radial-gradient(circle at 70% 80%, rgba(157,122,58,.3) 0%, transparent 40%)",
         }} />
         <div className="relative z-10 flex flex-col justify-between p-12 lg:p-16 w-full">
           <div>
             <span className="text-3xl tracking-[0.2em] font-medium" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--cream)" }}>SAMAQU</span>
-            <p className="text-[11px] tracking-[0.28em] uppercase mt-2" style={{ color: "rgba(212,197,181,.6)" }}>Customer Account</p>
+            <p className="text-[11px] tracking-[0.28em] uppercase mt-2" style={{ color: "rgba(255,255,255,.6)" }}>Customer Account</p>
           </div>
           <div className="max-w-md">
             <h1 className="text-4xl lg:text-5xl font-medium leading-tight mb-4" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--cream)" }}>
               Bergabung<br />dengan <em style={{ color: "#d4a86a" }}>SAMAQU</em>
             </h1>
-            <p className="text-sm leading-relaxed" style={{ color: "rgba(212,197,181,.7)" }}>
+            <p className="text-sm leading-relaxed" style={{ color: "rgba(255,255,255,.7)" }}>
               Buat akun untuk menyimpan ukuran, melacak pesanan, dan mendapatkan rekomendasi koleksi personal dari SAMAQU.
             </p>
           </div>
-          <p className="text-xs" style={{ color: "rgba(212,197,181,.4)" }}>© 2026 SAMAQU. Semua hak cipta dilindungi.</p>
+          <p className="text-xs" style={{ color: "rgba(255,255,255,.4)" }}>© 2026 SAMAQU. Semua hak cipta dilindungi.</p>
         </div>
       </div>
 
@@ -87,7 +87,7 @@ export default function RegisterPage() {
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Ahmad Rasyid"
                   className="w-full rounded-xl pl-10 pr-4 py-3.5 text-sm outline-none transition-all focus:ring-2"
-                  style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)", "--tw-ring-color": "var(--gold)" } as React.CSSProperties}
+                  style={{ border: "1px solid rgba(0,0,0,.15)", background: "white", color: "var(--espresso)", "--tw-ring-color": "var(--gold)" } as React.CSSProperties}
                   required
                 />
               </div>
@@ -102,7 +102,7 @@ export default function RegisterPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="nama@email.com"
                   className="w-full rounded-xl pl-10 pr-4 py-3.5 text-sm outline-none transition-all focus:ring-2"
-                  style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)", "--tw-ring-color": "var(--gold)" } as React.CSSProperties}
+                  style={{ border: "1px solid rgba(0,0,0,.15)", background: "white", color: "var(--espresso)", "--tw-ring-color": "var(--gold)" } as React.CSSProperties}
                   required
                 />
               </div>
@@ -117,7 +117,7 @@ export default function RegisterPage() {
                   onChange={(e) => setWhatsapp(e.target.value)}
                   placeholder="0812xxxx"
                   className="w-full rounded-xl pl-10 pr-4 py-3.5 text-sm outline-none transition-all focus:ring-2"
-                  style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)", "--tw-ring-color": "var(--gold)" } as React.CSSProperties}
+                  style={{ border: "1px solid rgba(0,0,0,.15)", background: "white", color: "var(--espresso)", "--tw-ring-color": "var(--gold)" } as React.CSSProperties}
                 />
               </div>
             </div>
@@ -131,7 +131,7 @@ export default function RegisterPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Minimal 6 karakter"
                   className="w-full rounded-xl pl-10 pr-4 py-3.5 text-sm outline-none transition-all focus:ring-2"
-                  style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)", "--tw-ring-color": "var(--gold)" } as React.CSSProperties}
+                  style={{ border: "1px solid rgba(0,0,0,.15)", background: "white", color: "var(--espresso)", "--tw-ring-color": "var(--gold)" } as React.CSSProperties}
                   required
                   minLength={6}
                 />
@@ -140,7 +140,7 @@ export default function RegisterPage() {
             {error && (
               <p className="text-[13px]" style={{ color: "#e74c3c" }}>{error}</p>
             )}
-            <button type="submit" disabled={loading} className="w-full py-3.5 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90 active:scale-[0.98]" style={{ background: "var(--espresso)", boxShadow: "0 4px 14px -4px rgba(45,33,27,.4)" }}>
+            <button type="submit" disabled={loading} className="w-full py-3.5 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90 active:scale-[0.98]" style={{ background: "var(--espresso)", boxShadow: "0 4px 14px -4px rgba(0,0,0,.4)" }}>
               {loading ? <Loader2 size={16} className="animate-spin inline mr-2" /> : null}
               Buat Akun
             </button>

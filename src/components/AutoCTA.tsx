@@ -150,7 +150,7 @@ export default function AutoCTA() {
             style={{
               background: "#000",
               border: "1px solid #000",
-              boxShadow: "0 8px 24px -6px rgba(42,33,27,.35)",
+              boxShadow: "0 8px 24px -6px rgba(0,0,0,.35)",
             }}
             aria-label={t("ariaLabel")}
           >

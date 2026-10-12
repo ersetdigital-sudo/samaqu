@@ -42,11 +42,11 @@ export default function CartPage() {
   return (
     <section className="min-h-screen" style={{ background: "var(--cream)" }}>
       {/* Header */}
-      <div className="sticky top-0 z-40" style={{ background: "rgba(248,245,241,.92)", backdropFilter: "blur(12px)", borderBottom: "1px solid rgba(201,183,156,.15)" }}>
+      <div className="sticky top-0 z-40" style={{ background: "rgba(248,245,241,.92)", backdropFilter: "blur(12px)", borderBottom: "1px solid rgba(0,0,0,.15)" }}>
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
           <button onClick={() => router.back()}
             className="w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105 shrink-0"
-            style={{ border: "1px solid rgba(201,183,156,.25)" }}
+            style={{ border: "1px solid rgba(0,0,0,.25)" }}
             aria-label="Kembali">
             <ArrowLeft size={16} style={{ color: "var(--espresso)" }} />
           </button>
@@ -63,7 +63,7 @@ export default function CartPage() {
         {items.length === 0 ? (
           /* Empty state */
           <div className="text-center py-20">
-            <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ background: "rgba(181,140,74,.08)" }}>
+            <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ background: "rgba(0,0,0,.08)" }}>
               <ShoppingBag size={28} style={{ color: "var(--clay)" }} />
             </div>
             <p className="text-[15px] font-ui font-medium mb-2" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
@@ -92,10 +92,10 @@ export default function CartPage() {
                     exit={{ opacity: 0, x: -60 }}
                     transition={{ duration: 0.25 }}
                     className="p-3 rounded-xl"
-                    style={{ background: "rgba(255,255,255,.65)", border: "1px solid rgba(201,183,156,.15)", boxShadow: "0 1px 3px rgba(42,33,27,.04)" }}>
+                    style={{ background: "rgba(255,255,255,.65)", border: "1px solid rgba(0,0,0,.15)", boxShadow: "0 1px 3px rgba(0,0,0,.04)" }}>
                     <div className="flex gap-3">
                       {/* Image */}
-                      <div className="w-[72px] h-[72px] rounded-xl overflow-hidden shrink-0" style={{ background: "#e8dfd1" }}>
+                      <div className="w-[72px] h-[72px] rounded-xl overflow-hidden shrink-0" style={{ background: "#e5e5e5" }}>
                         <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
                       </div>
                       {/* Details */}
@@ -124,7 +124,7 @@ export default function CartPage() {
                           {((item.kain || item.series) && item.color !== "-" && item.color !== "default") && <span className="text-[10px]" style={{ color: "var(--clay)" }}>·</span>}
                           {item.color !== "-" && item.color !== "default" && (
                             <span className="flex items-center gap-1 text-[11px] font-ui" style={{ color: "var(--coffee)" }}>
-                              <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: colorMap[item.color] || "#ccc", border: "1px solid rgba(42,33,27,.1)" }} />
+                              <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: colorMap[item.color] || "#ccc", border: "1px solid rgba(0,0,0,.1)" }} />
                               {item.color}
                             </span>
                           )}
@@ -142,7 +142,7 @@ export default function CartPage() {
                         {/* Qty + subtotal */}
                         <div className="flex items-center justify-between mt-2">
                           <div className="inline-flex items-center gap-0 rounded-full"
-                            style={{ background: "var(--cream)", border: "1px solid rgba(201,183,156,.2)", padding: "2px 4px" }}>
+                            style={{ background: "var(--cream)", border: "1px solid rgba(0,0,0,.2)", padding: "2px 4px" }}>
                             <button onClick={() => updateQty(i, item.qty - 1)}
                               className="w-7 h-7 rounded-full flex items-center justify-center transition-all active:scale-90"
                               style={{ color: "var(--espresso)" }}>
@@ -170,11 +170,11 @@ export default function CartPage() {
 
             {/* Promo Code */}
             <div className="p-4 rounded-xl mb-5"
-              style={{ background: "rgba(255,255,255,.65)", border: "1px solid rgba(201,183,156,.15)" }}>
+              style={{ background: "rgba(255,255,255,.65)", border: "1px solid rgba(0,0,0,.15)" }}>
               {promoApplied ? (
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "rgba(181,140,74,.1)" }}>
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "rgba(0,0,0,.1)" }}>
                       <Tag size={16} style={{ color: "var(--gold)" }} />
                     </div>
                     <div>
@@ -184,14 +184,14 @@ export default function CartPage() {
                   </div>
                   <button onClick={removePromo}
                     className="text-[12px] font-ui font-medium px-3 py-1.5 rounded-full transition-all hover:scale-105"
-                    style={{ color: "var(--gold)", border: "1px solid rgba(181,140,74,.3)" }}>
+                    style={{ color: "var(--gold)", border: "1px solid rgba(0,0,0,.3)" }}>
                     Hapus
                   </button>
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
                   <div className="flex-1 flex items-center gap-2 px-3 py-2.5 rounded-lg"
-                    style={{ border: `1px solid ${promoError ? "#e74c3c" : "rgba(201,183,156,.25)"}`, background: "rgba(248,245,241,.5)" }}>
+                    style={{ border: `1px solid ${promoError ? "#e74c3c" : "rgba(0,0,0,.25)"}`, background: "rgba(248,245,241,.5)" }}>
                     <Tag size={15} style={{ color: "var(--clay)" }} />
                     <input type="text" value={promoCode} onChange={(e) => { setPromoCode(e.target.value); setPromoError(""); }}
                       placeholder="Masukkan kode promo"
@@ -212,7 +212,7 @@ export default function CartPage() {
 
             {/* Order Summary */}
             <div className="rounded-xl p-4 sm:p-5"
-              style={{ background: "rgba(255,255,255,.5)", border: "1px solid rgba(201,183,156,.12)" }}>
+              style={{ background: "rgba(255,255,255,.5)", border: "1px solid rgba(0,0,0,.12)" }}>
               <div className="space-y-2.5">
                 <SummaryLine label="Subtotal" value={`Rp ${subtotal.toLocaleString("id-ID")}`} />
                 {promoApplied && (
@@ -220,7 +220,7 @@ export default function CartPage() {
                 )}
                 <SummaryLine label="Pengiriman" value="Dihitung saat checkout" />
               </div>
-              <div className="h-px my-3.5" style={{ background: "rgba(201,183,156,.2)" }} />
+              <div className="h-px my-3.5" style={{ background: "rgba(0,0,0,.2)" }} />
               <div className="flex justify-between items-end">
                 <span className="text-[11px] font-ui" style={{ color: "var(--stone)" }}>Total Pembayaran</span>
                 <span className="text-[18px] sm:text-[20px] font-ui font-semibold" style={{ color: "var(--gold)" }}>
@@ -237,7 +237,7 @@ export default function CartPage() {
         <div className="fixed bottom-0 inset-x-0 z-40 px-4 pb-4 pt-3" style={{ background: "linear-gradient(to top, var(--cream) 70%, transparent)" }}>
           <button onClick={checkoutAll}
             className="w-full py-3.5 rounded-xl text-[12px] tracking-[0.08em] uppercase font-ui font-semibold transition-all duration-300 active:scale-[0.98]"
-            style={{ background: "var(--gold)", color: "white", boxShadow: "0 6px 20px -6px rgba(184,145,74,.4)" }}>
+            style={{ background: "var(--gold)", color: "white", boxShadow: "0 6px 20px -6px rgba(0,0,0,.4)" }}>
             Checkout — Rp {total.toLocaleString("id-ID")}
           </button>
         </div>
@@ -279,7 +279,7 @@ function CartCYPPrice({ item, index, updatePrice }: { item: { price: number; cus
             style={{ background: "white", border: `1px solid ${error ? "#e74c3c" : "var(--gold)"}`, color: "var(--espresso)" }}
             autoFocus onKeyDown={(e) => e.key === "Enter" && handleSave()} />
           <button onClick={handleSave} className="text-[10px] font-ui font-semibold px-2 py-1 rounded" style={{ background: "var(--gold)", color: "white" }}>OK</button>
-          <button onClick={() => setEditing(false)} className="text-[10px] font-ui px-2 py-1 rounded" style={{ border: "1px solid rgba(201,183,156,.3)" }}>Batal</button>
+          <button onClick={() => setEditing(false)} className="text-[10px] font-ui px-2 py-1 rounded" style={{ border: "1px solid rgba(0,0,0,.3)" }}>Batal</button>
         </div>
         {error && <p className="text-[10px] font-ui mt-0.5" style={{ color: "#e74c3c" }}>{error}</p>}
       </div>

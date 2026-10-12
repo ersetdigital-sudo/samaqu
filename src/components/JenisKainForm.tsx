@@ -41,7 +41,7 @@ export default function JenisKainForm({ initialData, onSave, onCancel }: JenisKa
   }
 
   return (
-    <div className="p-4 rounded-xl space-y-3" style={{ border: "1px solid rgba(181,140,74,.3)", background: "rgba(181,140,74,.04)" }}>
+    <div className="p-4 rounded-xl space-y-3" style={{ border: "1px solid rgba(0,0,0,.3)", background: "rgba(0,0,0,.04)" }}>
       <div className="flex items-center justify-between mb-1">
         <p className="text-sm font-semibold" style={{ color: "var(--espresso)" }}>{initialData ? "Edit Jenis Kain" : "Tambah Jenis Kain Baru"}</p>
         <button onClick={onCancel} className="p-1 rounded hover:bg-red-50"><X size={16} style={{ color: "#e74c3c" }} /></button>
@@ -49,11 +49,11 @@ export default function JenisKainForm({ initialData, onSave, onCancel }: JenisKa
 
       <div>
         <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-muted)" }}>Nama Kain <span style={{ color: "var(--gold)" }}>*</span></label>
-        <input value={name} onChange={(e) => setName(e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid rgba(64,50,37,.15)", background: "white", color: "var(--espresso)" }} placeholder="Contoh: B-01, B-02, A-02" onKeyDown={(e) => e.key === "Enter" && handleSubmit()} />
+        <input value={name} onChange={(e) => setName(e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid rgba(0,0,0,.15)", background: "white", color: "var(--espresso)" }} placeholder="Contoh: B-01, B-02, A-02" onKeyDown={(e) => e.key === "Enter" && handleSubmit()} />
       </div>
 
       <div className="flex gap-3 pt-1">
-        <button onClick={onCancel} className="flex-1 py-2 rounded-lg text-sm font-medium" style={{ border: "1px solid rgba(64,50,37,.15)" }}>Batal</button>
+        <button onClick={onCancel} className="flex-1 py-2 rounded-lg text-sm font-medium" style={{ border: "1px solid rgba(0,0,0,.15)" }}>Batal</button>
         <button onClick={handleSubmit} disabled={saving} className="flex-1 py-2 rounded-lg text-sm font-semibold text-white" style={{ background: "var(--gold)" }}>
           {saving ? <><Loader2 size={14} className="animate-spin inline mr-1" /> Menyimpan...</> : "Simpan"}
         </button>

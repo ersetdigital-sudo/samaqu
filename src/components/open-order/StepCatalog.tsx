@@ -78,14 +78,14 @@ export default function StepCatalog({
             key={variant.key}
             type="button"
             onClick={() => onOpen(variant.product, variant.color)}
-            className="group flex h-full flex-col overflow-hidden rounded-2xl text-left transition-shadow duration-300 hover:shadow-[0_10px_30px_-18px_rgba(42,33,27,.45)]"
-            style={{ background: "var(--cream-bright)", border: "1px solid rgba(201,183,156,.2)" }}
+            className="group flex h-full flex-col overflow-hidden rounded-2xl text-left transition-shadow duration-300 hover:shadow-[0_10px_30px_-18px_rgba(0,0,0,.45)]"
+            style={{ background: "var(--cream-bright)", border: "1px solid rgba(0,0,0,.2)" }}
           >
-            <div className="relative aspect-[3/4] overflow-hidden" style={{ background: "#e8dfd1" }}>
+            <div className="relative aspect-[3/4] overflow-hidden" style={{ background: "#e5e5e5" }}>
               {/* Gradient kain (terlihat kalau foto gagal dimuat) */}
               <div
                 className="absolute inset-0 transition-transform duration-700 group-hover:scale-[1.04]"
-                style={{ background: "linear-gradient(135deg,rgba(232,223,209,.6),rgba(201,183,156,.4))" }}
+                style={{ background: "linear-gradient(135deg,rgba(232,223,209,.6),rgba(0,0,0,.4))" }}
               />
               {variant.image && (
                 <img
@@ -100,7 +100,7 @@ export default function StepCatalog({
               )}
               <span
                 className="absolute left-3 top-3 rounded-full px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.12em]"
-                style={{ background: "rgba(248,246,242,.92)", color: "var(--gold)", border: "1px solid rgba(181,140,74,.35)" }}
+                style={{ background: "rgba(248,246,242,.92)", color: "var(--gold)", border: "1px solid rgba(0,0,0,.35)" }}
               >
                 {variant.product.kain}
               </span>

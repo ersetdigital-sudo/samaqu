@@ -28,7 +28,7 @@ export default function AuthHeader({ title }: { title: string }) {
         type="button"
         onClick={goBack}
         aria-label="Kembali"
-        className="w-10 h-10 -ml-1 grid place-items-center rounded-2xl bg-white shadow-[0_2px_8px_rgba(45,33,27,.12)] active:scale-95 transition"
+        className="w-10 h-10 -ml-1 grid place-items-center rounded-2xl bg-white shadow-[0_2px_8px_rgba(0,0,0,.12)] active:scale-95 transition"
         style={{ color: "var(--espresso)" }}
       >
         <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

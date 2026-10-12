@@ -87,8 +87,8 @@ export default function FloatingWhatsApp() {
             transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
             className="absolute bottom-16 right-0 w-[90vw] sm:w-[360px] rounded-lg overflow-hidden"
             style={{
-              border: "1px solid rgba(216,196,168,.3)",
-              boxShadow: "0 25px 60px -15px rgba(42,33,27,.25)",
+              border: "1px solid rgba(0,0,0,.3)",
+              boxShadow: "0 25px 60px -15px rgba(0,0,0,.25)",
             }}
             role="dialog"
             aria-label="Pilih admin WhatsApp"
@@ -147,7 +147,7 @@ export default function FloatingWhatsApp() {
                   style={{
                     borderBottom:
                       i < agents.length - 1
-                        ? "1px solid rgba(201,183,156,.12)"
+                        ? "1px solid rgba(0,0,0,.12)"
                         : "none",
                   }}
                   onMouseEnter={(e) => {
@@ -166,7 +166,7 @@ export default function FloatingWhatsApp() {
                     className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium shrink-0"
                     style={{
                       background: "var(--sand-2)",
-                      border: "1px solid rgba(201,183,156,.25)",
+                      border: "1px solid rgba(0,0,0,.25)",
                       fontFamily: "var(--font-cormorant), Georgia, serif",
                       color: "var(--espresso)",
                     }}
@@ -208,7 +208,7 @@ export default function FloatingWhatsApp() {
         style={{
           background: "var(--espresso)",
           border: "1px solid var(--gold)",
-          boxShadow: "0 8px 24px -6px rgba(42,33,27,.35)",
+          boxShadow: "0 8px 24px -6px rgba(0,0,0,.35)",
         }}
         aria-haspopup="true"
         aria-expanded={isOpen}
