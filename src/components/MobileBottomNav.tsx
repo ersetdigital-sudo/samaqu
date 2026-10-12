@@ -12,13 +12,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { House, SquaresFour, Package, TShirt, User } from "@phosphor-icons/react";
+import type { ComponentType } from "react";
+import { SquaresFour, Package, TShirt, User } from "@phosphor-icons/react";
+import HouseIcon from "@/components/icons/HouseIcon";
 import { useSafeLocale } from "@/lib/safe-i18n";
 
 type NavItem = {
   href: string;
   label: string;
-  Icon: typeof House;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  Icon: ComponentType<any>;
   match: (path: string) => boolean;
 };
 
@@ -28,7 +31,7 @@ function barePath(pathname: string | null): string {
 }
 
 const ITEMS: NavItem[] = [
-  { href: "/", label: "Beranda", Icon: House, match: (p) => p === "/" },
+  { href: "/", label: "Beranda", Icon: HouseIcon, match: (p) => p === "/" },
   { href: "/katalog", label: "Kategori", Icon: SquaresFour, match: (p) => p.startsWith("/katalog") },
   { href: "/open-order", label: "Open Order", Icon: TShirt, match: (p) => p.startsWith("/open-order") },
   { href: "/akun/pesanan", label: "Pesanan", Icon: Package, match: (p) => p.startsWith("/akun/pesanan") },
