@@ -119,7 +119,7 @@
     },
     {
       "name": "MIMO_BASE_URL",
-      "description": "MiMo OpenAI-compatible base URL. Optional, default https://api.mimo.mi.com/v1.",
+      "description": "MiMo OpenAI-compatible base URL. Optional, default https://api.xiaomimimo.com/v1.",
       "requiredAtBoot": false,
       "generatedForDevelopment": false
     }
