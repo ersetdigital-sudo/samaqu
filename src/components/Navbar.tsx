@@ -13,11 +13,11 @@ import {
   ListChecks,
   Question,
   ChatCircle as MessageCircle,
-  House,
   User,
   CaretDown,
   Bag,
 } from "@phosphor-icons/react";
+import HouseIcon from "@/components/icons/HouseIcon";
 import ProfileDropdown from "@/components/ProfileDropdown";
 import { useCart } from "@/lib/cart-context";
 import CartDrawer from "@/components/CartDrawer";
@@ -57,7 +57,7 @@ type NavItem = { label: string; href: string; hasDropdown?: false; Icon?: IconCo
 
 function getNavItems(t: (key: string) => string): NavItem[] {
   return [
-    { label: t("nav.home"), href: "/", Icon: House },
+    { label: t("nav.home"), href: "/", Icon: HouseIcon },
     { label: t("nav.katalog"), href: "/katalog", Icon: Storefront },
     { label: t("nav.testimoni"), href: "/testimoni", Icon: MessageCircle },
     { label: t("nav.sama_quran"), href: "/sama-quran", Icon: BookOpen },
