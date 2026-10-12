@@ -43,7 +43,7 @@ export default function Garansi() {
   ];
 
   return (
-    <section className="relative overflow-hidden" style={{ background: "var(--bg-primary)" }}>
+    <section className="relative overflow-hidden" style={{ background: "#F3F3F3" }}>
       {/* Swirl decorative background */}
       <div className="swirl absolute inset-0 pointer-events-none">
         <svg viewBox="0 0 1200 500" preserveAspectRatio="none" fill="none" stroke="rgba(181,140,74,.35)" strokeWidth="1" className="absolute inset-0 w-full h-full opacity-35">
