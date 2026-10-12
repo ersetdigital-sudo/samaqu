@@ -12,13 +12,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, LayoutGrid, Package, Shirt, User } from "lucide-react";
+import { House, SquaresFour, Package, TShirt, User } from "@phosphor-icons/react";
 import { useSafeLocale } from "@/lib/safe-i18n";
 
 type NavItem = {
   href: string;
   label: string;
-  Icon: typeof Home;
+  Icon: typeof House;
   match: (path: string) => boolean;
 };
 
@@ -28,9 +28,9 @@ function barePath(pathname: string | null): string {
 }
 
 const ITEMS: NavItem[] = [
-  { href: "/", label: "Beranda", Icon: Home, match: (p) => p === "/" },
-  { href: "/katalog", label: "Kategori", Icon: LayoutGrid, match: (p) => p.startsWith("/katalog") },
-  { href: "/open-order", label: "Open Order", Icon: Shirt, match: (p) => p.startsWith("/open-order") },
+  { href: "/", label: "Beranda", Icon: House, match: (p) => p === "/" },
+  { href: "/katalog", label: "Kategori", Icon: SquaresFour, match: (p) => p.startsWith("/katalog") },
+  { href: "/open-order", label: "Open Order", Icon: TShirt, match: (p) => p.startsWith("/open-order") },
   { href: "/akun/pesanan", label: "Pesanan", Icon: Package, match: (p) => p.startsWith("/akun/pesanan") },
   {
     href: "/akun",
@@ -69,7 +69,7 @@ export default function MobileBottomNav() {
               className="flex flex-1 flex-col items-center justify-center gap-0.5 rounded-xl transition-colors duration-200"
               style={{ color: active ? "var(--espresso)" : "var(--text-muted)" }}
             >
-              <Icon size={21} strokeWidth={active ? 2 : 1.6} style={{ color: active ? "var(--gold)" : undefined }} />
+              <Icon size={21} weight={active ? "bold" : "regular"} style={{ color: active ? "var(--gold)" : undefined }} />
               <span className="text-[10px] font-medium tracking-[0.02em]">{label}</span>
               <span
                 className="h-1 w-1 rounded-full"

@@ -18,4 +18,6 @@ declare module "@phosphor-icons/react" {
   export const User: FC<IconProps>;
   export const CaretDown: FC<IconProps>;
   export const Bag: FC<IconProps>;
+  export const SquaresFour: FC<IconProps>;
+  export const TShirt: FC<IconProps>;
 }

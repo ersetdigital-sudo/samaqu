@@ -308,7 +308,7 @@ export default function OpenOrderWizard() {
     return (
       <section
         className="grid min-h-screen place-items-center px-5"
-        style={{ background: "var(--cream)", color: INK, fontFamily: "var(--font-inter), system-ui, sans-serif" }}
+        style={{ background: "#F3F3F3", color: INK, fontFamily: "var(--font-inter), system-ui, sans-serif" }}
       >
         <div className="w-full max-w-md text-center">
           <p className="text-[11px] font-medium uppercase tracking-[0.28em]" style={{ color: "var(--gold)" }}>
@@ -366,7 +366,7 @@ export default function OpenOrderWizard() {
   }
 
   return (
-    <section className="min-h-screen" style={{ background: "var(--cream)", color: INK, fontFamily: "var(--font-inter), system-ui, sans-serif" }}>
+    <section className="min-h-screen" style={{ background: "#F3F3F3", color: INK, fontFamily: "var(--font-inter), system-ui, sans-serif" }}>
       {/* Header + progres langkah */}
       <header
         className="sticky top-0 z-30"
