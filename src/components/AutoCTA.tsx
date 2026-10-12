@@ -148,15 +148,15 @@ export default function AutoCTA() {
             onClick={() => trackWhatsAppClick("auto_cta")}
             className="relative flex items-center justify-center w-14 h-14 rounded-full transition-transform duration-300 hover:scale-105"
             style={{
-              background: "var(--espresso)",
-              border: "1px solid var(--gold)",
+              background: "#000",
+              border: "1px solid #000",
               boxShadow: "0 8px 24px -6px rgba(42,33,27,.35)",
             }}
             aria-label={t("ariaLabel")}
           >
             <span
               className="absolute inset-0 rounded-full animate-ping"
-              style={{ background: "var(--gold)", opacity: 0.2, animationDuration: "2.5s" }}
+              style={{ background: "#000", opacity: 0.2, animationDuration: "2.5s" }}
             />
             <WhatsAppIcon />
           </a>

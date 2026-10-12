@@ -286,7 +286,7 @@ export default function ChatWidget() {
         onClick={() => setOpen(true)}
         aria-label={t("open")}
         className="fixed right-4 sm:right-6 bottom-[calc(var(--mobile-nav-h)+5.5rem)] z-[95] w-14 h-14 rounded-full flex items-center justify-center text-white shadow-lg transition-transform hover:scale-105"
-        style={{ background: "var(--gold, #b08d57)" }}
+        style={{ background: "#000" }}
       >
         <RobotIcon size={26} />
       </button>
@@ -298,7 +298,7 @@ export default function ChatWidget() {
       className="fixed z-[96] inset-0 sm:inset-auto sm:right-6 sm:left-auto sm:bottom-[calc(var(--mobile-nav-h)+1.5rem)] sm:w-[380px] sm:h-[min(560px,calc(100vh-6rem))] flex flex-col sm:rounded-2xl overflow-hidden shadow-2xl"
       style={{ background: "var(--bg, #fff)", border: "1px solid #e4e4e7" }}
     >
-      <div className="flex items-center justify-between px-4 py-3 text-white shrink-0" style={{ background: "var(--espresso, #2b2118)" }}>
+      <div className="flex items-center justify-between px-4 py-3 text-white shrink-0" style={{ background: "#000" }}>
         <div className="flex items-center gap-2.5 min-w-0">
           <span className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "rgba(255,255,255,.15)" }}>
             <RobotIcon size={18} />
@@ -325,7 +325,7 @@ export default function ChatWidget() {
               }`}
               style={
                 m.role === "user"
-                  ? { background: "var(--gold, #b08d57)" }
+                  ? { background: "#000" }
                   : { background: "#fff", color: "var(--fg, #18181b)", border: "1px solid #ececec" }
               }
             >
@@ -364,7 +364,7 @@ export default function ChatWidget() {
                       <a
                         href={`/${locale}/katalog/${p.id}`}
                         className="text-[11px] font-semibold px-2.5 py-1 rounded-lg"
-                        style={{ background: "var(--gold, #b08d57)", color: "#fff" }}
+                        style={{ background: "#000", color: "#fff" }}
                       >
                         {t("view")}
                       </a>
@@ -489,7 +489,7 @@ export default function ChatWidget() {
             disabled={loading || uploading || (!input.trim() && !imageUrl)}
             aria-label={t("send")}
             className="w-9 h-9 rounded-xl flex items-center justify-center text-white disabled:opacity-40"
-            style={{ background: "var(--gold, #b08d57)" }}
+            style={{ background: "#000" }}
           >
             <Send size={16} />
           </button>
