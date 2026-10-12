@@ -113,40 +113,36 @@ function AnimatedCounter({ value, prefix = "", suffix = "", duration = 1200, del
   );
 }
 
-function ProductDetailModal({ isOpen, onClose, product, stockIns, transactions, variants = [] }) {
-  useEffect(() => {
-    const handleEsc = (e) => {
-      if (e.key === 'Escape' && isOpen) {
-        onClose();
-      }
-    };
-    
-    if (isOpen) {
-      window.addEventListener('keydown', handleEsc);
-      document.body.style.overflow = 'hidden';
-    }
-    
-    return () => {
-      window.removeEventListener('keydown', handleEsc);
-      document.body.style.overflow = 'unset';
-    };
-  }, [isOpen, onClose]);
-
+function ProductDetailModal({ isOpen, onClose, product, stockIns = [], transactions = [], variants = [] }) {
   if (!isOpen || !product) return null;
 
-  const productStockIns = stockIns.filter(si => si.product_id === product.id);
-  const productTransactions = transactions.filter(t => t.product_id === product.id);
-  
-  const totalStockIn = productStockIns.reduce((sum, si) => sum + (si.qty || 0), 0);
-  const totalStockOut = productTransactions.reduce((sum, t) => sum + (t.qty || 0), 0);
-  const totalRevenue = productTransactions.reduce((sum, t) => sum + (t.total || 0), 0);
-  const totalProfit = productTransactions.reduce((sum, t) => {
-    const profit = (t.total || 0) - ((t.hpp || 0) * (t.qty || 0));
-    return sum + profit;
-  }, 0);
+  const pv = (variants || []).filter((v) => v.product_id === product.id);
+  const totalStock = pv.reduce((s, v) => s + sumStock(v.stock), 0);
+  const status = stockStatus(totalStock);
+  const statusStyle = {
+    habis: "bg-red-100 text-red-700 border-red-200",
+    menipis: "bg-amber-100 text-amber-700 border-amber-200",
+    aman: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  }[status];
+  const statusLabel = { habis: "Habis", menipis: "Menipis", aman: "Aman" }[status];
 
-  const latestStockIns = productStockIns.slice(0, 5);
-  const latestTransactions = productTransactions.slice(0, 5);
+  const productStockIns = (stockIns || []).filter((si) => si.product_id === product.id);
+  const productTransactions = (transactions || []).filter((t) => t.product_id === product.id);
+  const validTransactions = productTransactions.filter((t) => String(t.status || "") !== "return");
+  const totalIn = productStockIns.reduce((s, si) => s + (Number(si.qty) || 0), 0);
+  const totalOut = validTransactions.reduce((s, t) => s + (Number(t.qty) || 0), 0);
+  const revenue = validTransactions.reduce((s, t) => s + (Number(t.total) || 0), 0);
+  const hpp = Number(product.hpp) || 0;
+  const price = Number(product.price) || 0;
+  const margin = price > 0 ? Math.round(((price - hpp) / price) * 100) : 0;
+  const stockValue = totalStock * hpp;
+
+  const Info = ({ label, value, tone = "" }) => (
+    <div className="rounded-xl border border-slate-200 dark:border-slate-800 px-3 py-2.5">
+      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">{label}</p>
+      <p className={`mt-0.5 text-[15px] font-bold leading-tight ${tone || "text-slate-900 dark:text-white"}`}>{value}</p>
+    </div>
+  );
 
   return (
     <AnimatePresence>
@@ -156,292 +152,207 @@ function ProductDetailModal({ isOpen, onClose, product, stockIns, transactions, 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9998]"
+            className="fixed inset-0 bg-black/45 z-[9998]"
             onClick={onClose}
           />
-
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 md:p-4">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.96, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.96, y: 10 }}
-              transition={{ duration: 0.2 }}
-              className="bg-white w-full max-w-4xl max-h-[85vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="bg-gradient-to-r from-indigo-600 to-purple-500 px-4 py-4 flex-shrink-0">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-11 h-11 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm flex-shrink-0">
-                      <Package size={22} className="text-white" />
-                    </div>
-                    <div className="min-w-0">
-                      <h2 className="text-lg font-bold text-white truncate">{product.name}</h2>
-                      <p className="text-xs text-white/90 font-mono">SKU: {product.sku}</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={onClose}
-                    className="w-9 h-9 bg-white/20 hover:bg-white/30 rounded-lg flex items-center justify-center transition-colors flex-shrink-0"
-                  >
-                    <X size={18} className="text-white" />
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
-                  {/* Stok Awal */}
-                  <div className="bg-indigo-50 rounded-xl p-3 border border-indigo-100 relative overflow-hidden group hover:shadow-sm transition-all">
-                    <div className="absolute top-0 right-0 w-12 h-12 bg-indigo-100 rounded-full blur-xl opacity-50 -mr-4 -mt-4"></div>
-                    <div className="flex items-center gap-2 mb-2 relative z-10">
-                      <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-                        <Warehouse size={14} className="text-white" />
-                      </div>
-                      <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">Stok Awal</p>
-                    </div>
-                    <p className="text-xl font-black text-indigo-900 tracking-tight relative z-10">{product.initial_stock || 0}</p>
-                    <p className="text-[10px] text-indigo-400 font-medium mt-0.5">Unit pertama</p>
-                  </div>
-
-                  {/* Stok Saat Ini */}
-                  <div className="bg-blue-50 rounded-xl p-3 border border-blue-100 relative overflow-hidden group hover:shadow-sm transition-all">
-                    <div className="absolute top-0 right-0 w-12 h-12 bg-blue-100 rounded-full blur-xl opacity-50 -mr-4 -mt-4"></div>
-                    <div className="flex items-center gap-2 mb-2 relative z-10">
-                      <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-                        <Box size={14} className="text-white" />
-                      </div>
-                      <p className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">Sisa Stok</p>
-                    </div>
-                    <p className="text-xl font-black text-blue-900 tracking-tight relative z-10">{product.stock}</p>
-                    <p className="text-[10px] text-blue-400 font-medium mt-0.5">Unit tersedia</p>
-                  </div>
-
-                  {/* Harga Jual / Tipe */}
-                  <div className={`${product.product_type === 'free_gift' ? 'bg-pink-50 border-pink-100' : 'bg-green-50 border-green-100'} rounded-xl p-3 border relative overflow-hidden group hover:shadow-sm transition-all`}>
-                    <div className={`absolute top-0 right-0 w-12 h-12 ${product.product_type === 'free_gift' ? 'bg-pink-100' : 'bg-green-100'} rounded-full blur-xl opacity-50 -mr-4 -mt-4`}></div>
-                    <div className="flex items-center gap-2 mb-2 relative z-10">
-                      <div className={`w-8 h-8 ${product.product_type === 'free_gift' ? 'bg-pink-500' : 'bg-green-500'} rounded-lg flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform`}>
-                        {product.product_type === 'free_gift' ? <Gift size={14} className="text-white" /> : <DollarSign size={14} className="text-white" />}
-                      </div>
-                      <p className={`text-[10px] font-bold ${product.product_type === 'free_gift' ? 'text-pink-600' : 'text-green-600'} uppercase tracking-wider`}>
-                        {product.product_type === 'free_gift' ? 'Tipe' : 'Harga Jual'}
-                      </p>
-                    </div>
-                    <p className={`text-sm font-black ${product.product_type === 'free_gift' ? 'text-pink-900' : 'text-green-900'} tracking-tight relative z-10`}>
-                      {product.product_type === 'free_gift' ? 'Free Gift' : `Rp ${product.price.toLocaleString('id-ID')}`}
-                    </p>
-                    <p className={`text-[10px] ${product.product_type === 'free_gift' ? 'text-pink-400' : 'text-green-400'} font-medium mt-0.5`}>
-                      {product.product_type === 'free_gift' ? 'Non-komersial' : 'Per unit'}
-                    </p>
-                  </div>
-
-                  {/* HPP */}
-                  <div className="bg-orange-50 rounded-xl p-3 border border-orange-100 relative overflow-hidden group hover:shadow-sm transition-all">
-                    <div className="absolute top-0 right-0 w-12 h-12 bg-orange-100 rounded-full blur-xl opacity-50 -mr-4 -mt-4"></div>
-                    <div className="flex items-center gap-2 mb-2 relative z-10">
-                      <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-                        <DollarSign size={14} className="text-white" />
-                      </div>
-                      <p className="text-[10px] font-bold text-orange-600 uppercase tracking-wider">HPP</p>
-                    </div>
-                    <p className="text-sm font-black text-orange-900 tracking-tight relative z-10">Rp {product.hpp.toLocaleString('id-ID')}</p>
-                    <p className="text-[10px] text-orange-400 font-medium mt-0.5">Modal unit</p>
-                  </div>
-
-                  {/* Margin */}
-                  <div className="bg-purple-50 rounded-xl p-3 border border-purple-100 relative overflow-hidden group hover:shadow-sm transition-all">
-                    <div className="absolute top-0 right-0 w-12 h-12 bg-purple-100 rounded-full blur-xl opacity-50 -mr-4 -mt-4"></div>
-                    <div className="flex items-center gap-2 mb-2 relative z-10">
-                      <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-                        <Percent size={14} className="text-white" />
-                      </div>
-                      <p className="text-[10px] font-bold text-purple-600 uppercase tracking-wider">Margin</p>
-                    </div>
-                    <p className="text-xl font-black text-purple-900 tracking-tight relative z-10">
-                      {product.product_type === 'free_gift' 
-                        ? '-' 
-                        : (product.price > 0 ? (((product.price - product.hpp) / product.price) * 100).toFixed(1) + '%' : '0%')
-                      }
-                    </p>
-                    <p className="text-[10px] text-purple-400 font-medium mt-0.5">Profitabilitas</p>
-                  </div>
-                </div>
-
-                {product.description && (
-                  <div className="bg-white rounded-lg p-3 border border-gray-200 mb-4">
-                    <div className="flex items-center gap-1.5 mb-2">
-                      <FileText size={16} className="text-gray-600" />
-                      <h3 className="text-sm font-bold text-gray-800">Deskripsi</h3>
-                    </div>
-                    <p className="text-xs text-gray-600 leading-relaxed">{product.description}</p>
-                  </div>
-                )}
-
-                {/* ✅ Stok per Variant (Warna & Ukuran) */}
-                <div className="bg-white rounded-lg p-3 border border-gray-200 mb-4">
-                  <h3 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
-                    <Package size={16} className="text-emerald-600" />
-                    Stok per Variant (Warna & Ukuran)
-                  </h3>
-                  {variants.filter(v => v.product_id === product.id).length === 0 ? (
-                    <p className="text-xs text-gray-500 text-center py-3">Belum ada variant</p>
+          <motion.aside
+            initial={{ x: 60, opacity: 0.5 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: 60, opacity: 0 }}
+            transition={{ type: "spring", damping: 30, stiffness: 320 }}
+            className="fixed right-0 top-0 bottom-0 w-full sm:w-[540px] bg-white dark:bg-[#141821] z-[9999] shadow-2xl flex flex-col"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Detail produk"
+          >
+            {/* ── Header ── */}
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-4 shrink-0">
+              <div className="flex items-start gap-3">
+                <div className="w-14 h-14 rounded-xl bg-white/15 border border-white/20 overflow-hidden flex items-center justify-center shrink-0">
+                  {product.image ? (
+                    <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
                   ) : (
-                    <div className="space-y-2">
-                      {variants.filter(v => v.product_id === product.id).map((v) => {
-                        const st = normalizeStock(v.stock);
-                        const total = SIZES.reduce((s, sz) => s + st[sz], 0);
-                        return (
-                          <div key={v.id} className="border border-gray-100 rounded-lg p-2.5">
-                            <div className="flex justify-between items-center mb-1.5">
-                              <p className="text-xs font-bold text-gray-800">
-                                {v.color}{v.series_name ? <span className="text-gray-400 font-medium"> • {v.series_name}</span> : ''}
-                              </p>
-                              <span className="text-[10px] font-black text-blue-600">{total} pcs</span>
-                            </div>
-                            <div className="grid grid-cols-6 gap-1">
-                              {SIZES.map((sz) => (
-                                <div key={sz} className={`text-center rounded-md py-1 border ${st[sz] === 0 ? 'bg-red-50 border-red-100' : 'bg-gray-50 border-gray-100'}`}>
-                                  <p className="text-[8px] font-bold text-gray-400 uppercase">{sz}</p>
-                                  <p className={`text-[11px] font-black ${st[sz] === 0 ? 'text-red-500' : 'text-gray-700'}`}>{st[sz]}</p>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
+                    <Package size={24} className="text-white" />
                   )}
                 </div>
-
-                <div className="grid md:grid-cols-2 gap-4 mb-4">
-                  <div className="bg-white rounded-lg p-3 border border-gray-200">
-                    <h3 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
-                      <TrendingUp size={16} className="text-green-600" />
-                      Statistik Penjualan
-                    </h3>
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs text-gray-600">Total Terjual:</span>
-                        <span className="text-sm font-bold text-gray-900">{totalStockOut} unit</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs text-gray-600">Total Revenue:</span>
-                        <span className="text-sm font-bold text-green-600">Rp {totalRevenue.toLocaleString('id-ID')}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs text-gray-600">{product.product_type === 'free_gift' ? 'Total Biaya Promo:' : 'Total Profit:'}</span>
-                        <span className={`text-sm font-bold ${product.product_type === 'free_gift' ? 'text-orange-600' : 'text-blue-600'}`}>
-                          {product.product_type === 'free_gift' 
-                            ? `Rp ${Math.abs(totalProfit).toLocaleString('id-ID')}`
-                            : `Rp ${totalProfit.toLocaleString('id-ID')}`
-                          }
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-white rounded-lg p-3 border border-gray-200">
-                    <h3 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
-                      <Box size={16} className="text-blue-600" />
-                      Statistik Stok Masuk
-                    </h3>
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs text-gray-600">Total Masuk:</span>
-                        <span className="text-sm font-bold text-gray-900">{totalStockIn} unit</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs text-gray-600">Sisa Stok:</span>
-                        <span className="text-sm font-bold text-blue-600">{product.stock} unit</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs text-gray-600">Total Transaksi:</span>
-                        <span className="text-sm font-bold text-purple-600">{productStockIns.length}x</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="bg-white rounded-lg p-3 border border-gray-200">
-                    <h3 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
-                      <Calendar size={16} className="text-indigo-600" />
-                      Riwayat Barang Masuk
-                    </h3>
-                    {latestStockIns.length > 0 ? (
-                      <div className="space-y-2">
-                        {latestStockIns.map((si) => (
-                          <div key={si.id} className="bg-indigo-50 rounded-lg p-2 border border-indigo-100">
-                            <div className="flex justify-between items-start mb-1">
-                              <span className="text-xs font-bold text-indigo-900">{si.qty} unit</span>
-                              <span className="text-[10px] text-indigo-600">{format(new Date(si.date), 'dd MMM yyyy')}</span>
-                            </div>
-                            {si.notes && (
-                              <p className="text-[10px] text-indigo-700 truncate">{si.notes}</p>
-                            )}
-                          </div>
-                        ))}
-                        {productStockIns.length > 5 && (
-                          <p className="text-[10px] text-gray-500 text-center pt-1">
-                            +{productStockIns.length - 5} transaksi lainnya
-                          </p>
-                        )}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-gray-500 text-center py-4">Belum ada data stok masuk</p>
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-lg font-extrabold text-white leading-tight">{product.name}</h2>
+                  <p className="text-[11px] text-white/80 font-mono mt-0.5">{product.sku}</p>
+                  <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                    <span className={`px-2 py-0.5 rounded-lg text-[11px] font-bold border ${statusStyle}`}>{statusLabel}</span>
+                    {product.product_type === "free_gift" && (
+                      <span className="px-2 py-0.5 rounded-lg text-[11px] font-bold bg-pink-100 text-pink-600 border border-pink-200">Free Gift</span>
                     )}
-                  </div>
-
-                  <div className="bg-white rounded-lg p-3 border border-gray-200">
-                    <h3 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
-                      <Calendar size={16} className="text-green-600" />
-                      Riwayat Penjualan
-                    </h3>
-                    {latestTransactions.length > 0 ? (
-                      <div className="space-y-2">
-                        {latestTransactions.map((t) => (
-                          <div key={t.id} className="bg-green-50 rounded-lg p-2 border border-green-100">
-                            <div className="flex justify-between items-start mb-1">
-                              <span className="text-xs font-bold text-green-900">{t.qty} unit</span>
-                              <span className="text-[10px] text-green-600">{format(new Date(t.date), 'dd MMM yyyy')}</span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-[10px] text-green-700">{t.order_id}</span>
-                              <span className="text-xs font-bold text-green-900">Rp {t.total.toLocaleString('id-ID')}</span>
-                            </div>
-                          </div>
-                        ))}
-                        {productTransactions.length > 5 && (
-                          <p className="text-[10px] text-gray-500 text-center pt-1">
-                            +{productTransactions.length - 5} transaksi lainnya
-                          </p>
-                        )}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-gray-500 text-center py-4">Belum ada transaksi penjualan</p>
+                    {product.category && (
+                      <span className="px-2 py-0.5 rounded-lg text-[11px] font-bold bg-white/15 text-white border border-white/20">{product.category}</span>
+                    )}
+                    {product.series && (
+                      <span className="px-2 py-0.5 rounded-lg text-[11px] font-bold bg-white/15 text-white border border-white/20">{product.series}</span>
                     )}
                   </div>
                 </div>
-              </div>
-
-              <div className="flex-shrink-0 px-6 py-4 bg-white border-t border-gray-200">
-                <button
-                  onClick={onClose}
-                  className="w-full px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all"
-                >
-                  Tutup
+                <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/15 shrink-0" aria-label="Tutup">
+                  <X size={18} className="text-white" />
                 </button>
               </div>
-            </motion.div>
-          </div>
+            </div>
+
+            {/* ── Body ── */}
+            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-6">
+              {/* Ringkasan */}
+              <section>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">Ringkasan</p>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <Info label="Total Stok" value={`${totalStock.toLocaleString("id-ID")} unit`} />
+                  <Info label="Stok Awal" value={`${(product.initial_stock || 0).toLocaleString("id-ID")} unit`} />
+                  <Info label="HPP / unit" value={`Rp ${hpp.toLocaleString("id-ID")}`} />
+                  <Info label="Harga Jual" value={`Rp ${price.toLocaleString("id-ID")}`} />
+                  <Info
+                    label="Margin"
+                    value={`${margin}%`}
+                    tone={margin > 0 ? "text-emerald-600" : margin < 0 ? "text-red-600" : ""}
+                  />
+                  <Info label="Nilai Stok (HPP)" value={`Rp ${stockValue.toLocaleString("id-ID")}`} />
+                </div>
+                {(product.kain || product.weight || product.created_at) && (
+                  <div className="mt-2.5 grid grid-cols-2 gap-2.5">
+                    {product.kain && <Info label="Kain" value={product.kain} />}
+                    {product.weight ? <Info label="Berat" value={`${product.weight} gram`} /> : null}
+                    {product.created_at && (
+                      <Info label="Dibuat" value={format(new Date(product.created_at), "dd MMM yyyy")} />
+                    )}
+                  </div>
+                )}
+              </section>
+
+              {/* Stok per varian */}
+              <section>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+                  Stok per Varian ({pv.length})
+                </p>
+                {pv.length === 0 ? (
+                  <p className="text-sm text-slate-500">Belum ada varian untuk produk ini.</p>
+                ) : (
+                  <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse">
+                        <thead>
+                          <tr className="bg-slate-50 dark:bg-slate-900/60">
+                            <th className="px-3 py-2 text-left text-[10px] font-bold uppercase text-slate-500">Warna</th>
+                            {SIZES.map((s) => (
+                              <th key={s} className="px-2 py-2 text-center text-[10px] font-bold uppercase text-slate-500">{s}</th>
+                            ))}
+                            <th className="px-3 py-2 text-center text-[10px] font-bold uppercase text-slate-500">Total</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {pv.map((v) => {
+                            const st = normalizeStock(v.stock);
+                            const total = SIZES.reduce((s, sz) => s + st[sz], 0);
+                            return (
+                              <tr key={v.id} className="border-t border-slate-100 dark:border-slate-800">
+                                <td className="px-3 py-2 text-[13px] font-semibold text-slate-900 dark:text-white whitespace-nowrap">
+                                  {v.color && String(v.color).toLowerCase() !== "default" ? v.color : <span className="italic text-slate-400">Belum diatur</span>}
+                                  {v.series_name ? <span className="block text-[10px] text-slate-400 font-medium">{v.series_name}</span> : null}
+                                </td>
+                                {SIZES.map((sz) => (
+                                  <td key={sz} className={`px-2 py-2 text-center text-[13px] font-semibold ${st[sz] === 0 ? "text-red-400" : "text-slate-700 dark:text-slate-200"}`}>{st[sz]}</td>
+                                ))}
+                                <td className="px-3 py-2 text-center text-[13px] font-black text-blue-600 dark:text-blue-400">{total}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </section>
+
+              {/* Mutasi stok */}
+              <section>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">Mutasi Stok</p>
+                <div className="grid grid-cols-3 gap-2.5">
+                  <Info label="Masuk" value={`+${totalIn.toLocaleString("id-ID")}`} tone="text-emerald-600" />
+                  <Info label="Keluar" value={`-${totalOut.toLocaleString("id-ID")}`} tone="text-red-600" />
+                  <Info label="Pencatatan Masuk" value={`${productStockIns.length}x`} />
+                </div>
+              </section>
+
+              {/* Riwayat barang masuk */}
+              <section>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">Riwayat Barang Masuk (5 terakhir)</p>
+                {productStockIns.length === 0 ? (
+                  <p className="text-sm text-slate-500">Belum ada pencatatan barang masuk.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {productStockIns.slice(0, 5).map((si) => (
+                      <div key={si.id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 dark:border-slate-800 px-3 py-2">
+                        <div className="min-w-0">
+                          <p className="text-[13px] font-semibold text-slate-900 dark:text-white">{format(new Date(si.date), "dd MMM yyyy")}</p>
+                          <p className="text-[11px] text-slate-500 truncate">
+                            {[si.variant_color, si.variant_size].filter(Boolean).join(" / ") || si.notes || "-"}
+                          </p>
+                        </div>
+                        <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 text-[13px] font-bold whitespace-nowrap">
+                          +{si.qty}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+
+              {/* Riwayat penjualan */}
+              <section>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">Riwayat Penjualan (5 terakhir)</p>
+                {validTransactions.length === 0 ? (
+                  <p className="text-sm text-slate-500">Belum ada penjualan produk ini.</p>
+                ) : (
+                  <>
+                    <div className="space-y-2">
+                      {validTransactions.slice(-5).reverse().map((t) => (
+                        <div key={t.id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 dark:border-slate-800 px-3 py-2">
+                          <div className="min-w-0">
+                            <p className="text-[13px] font-semibold text-slate-900 dark:text-white">{format(new Date(t.date), "dd MMM yyyy")}</p>
+                            <p className="text-[11px] text-slate-500 truncate">
+                              {t.order_id || "-"} · {[t.variant_color, t.variant_size].filter(Boolean).join(" / ") || "-"}
+                            </p>
+                          </div>
+                          <div className="text-right whitespace-nowrap">
+                            <p className="text-[13px] font-bold text-slate-900 dark:text-white">-{t.qty}</p>
+                            <p className="text-[11px] text-emerald-600">Rp {Number(t.total || 0).toLocaleString("id-ID")}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-2.5 grid grid-cols-2 gap-2.5">
+                      <Info label="Total Omset" value={`Rp ${revenue.toLocaleString("id-ID")}`} />
+                      <Info label="Estimasi Laba" value={`Rp ${(revenue - hpp * totalOut).toLocaleString("id-ID")}`} tone="text-emerald-600" />
+                    </div>
+                  </>
+                )}
+              </section>
+            </div>
+
+            {/* ── Footer ── */}
+            <div className="px-5 py-3.5 border-t border-slate-200 dark:border-slate-800 shrink-0 flex items-center justify-between gap-2">
+              <p className="text-[11px] text-slate-400">
+                {pv.length} varian · {statusLabel}
+              </p>
+              <button
+                onClick={onClose}
+                className="px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 transition-all"
+              >
+                Tutup
+              </button>
+            </div>
+          </motion.aside>
         </>
       )}
     </AnimatePresence>
   );
 }
-
-
 export default function MasterProduk() {
   const navigate = useNavigate();
   const { toast } = useToast();
