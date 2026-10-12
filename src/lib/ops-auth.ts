@@ -26,13 +26,12 @@ export async function isOpsAdmin(req: NextRequest): Promise<boolean> {
   try {
     const admin = getSupabaseAdmin();
     const { data: { user }, error } = await admin.auth.getUser(token);
-    if (error || !user) {
-      adminCache.set(token, { ok: false, email: "", exp: Date.now() + ADMIN_TTL_MS });
-      return false;
-    }
+    if (error || !user) return false;
     const { data } = await admin.from("admins").select("user_id").eq("user_id", user.id).maybeSingle();
     const ok = !!data;
-    adminCache.set(token, { ok, email: user.email || "", exp: Date.now() + ADMIN_TTL_MS });
+    // Hanya hasil positif yang di-cache, supaya error sesaat tidak bikin
+    // admin terkunci 5 menit.
+    if (ok) adminCache.set(token, { ok, email: user.email || "", exp: Date.now() + ADMIN_TTL_MS });
     return ok;
   } catch (e) {
     console.error("[OPS] Verifikasi admin gagal:", e);
