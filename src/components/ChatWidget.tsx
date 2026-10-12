@@ -1,9 +1,10 @@
 "use client";
 
 import { Fragment, useEffect, useRef, useState } from "react";
-import { X, Send, Loader2 } from "lucide-react";
+import { X, Send, Loader2, Image as ImageIcon } from "lucide-react";
 import { useSafeTranslations, useSafeLocale } from "@/lib/safe-i18n";
 import { waNumber } from "@/lib/whatsapp";
+import { uploadToCloudinary, validateMediaFile } from "@/lib/cloudinary";
 import type { ChatProductCard } from "@/lib/chat-tools";
 
 /** Ikon robot untuk bubble chat AI (SVG inline, aman dari perubahan ikon library). */
@@ -43,6 +44,7 @@ interface Msg {
   role: "user" | "assistant";
   content: string;
   products?: ChatProductCard[];
+  images?: string[];
 }
 
 /** Tebal `**text**` → <strong>. Tanpa HTML mentah (aman dari injeksi). */
@@ -90,9 +92,27 @@ export default function ChatWidget() {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
   const startedRef = useRef(false);
   const sessionIdRef = useRef("");
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  async function handleImageFile(file: File | null | undefined) {
+    if (!file) return;
+    setUploading(true);
+    try {
+      await validateMediaFile(file);
+      const url = await uploadToCloudinary(file);
+      setImageUrl(url);
+    } catch (e) {
+      console.error("[CHAT] Gagal mengunggah gambar:", e);
+      setMessages((m) => [...m, { role: "assistant", content: t("imageError") }]);
+    } finally {
+      setUploading(false);
+    }
+  }
 
   // ID sesi anonim (localStorage) supaya log percakapan bisa dikelompokkan per pengunjung.
   useEffect(() => {
@@ -142,14 +162,19 @@ export default function ChatWidget() {
 
   async function send() {
     const text = input.trim();
-    if (!text || loading) return;
+    if ((!text && !imageUrl) || loading || uploading) return;
 
-    const history: Msg[] = [...messages, { role: "user", content: text }];
+    const sentImage = imageUrl || undefined;
+    const history: Msg[] = [
+      ...messages,
+      { role: "user", content: text, images: sentImage ? [sentImage] : undefined },
+    ];
     let cards: ChatProductCard[] = [];
     // Pesan asisten kosong yang diisi bertahap dari stream.
     const render = (content: string) => setMessages([...history, { role: "assistant", content, products: cards }]);
     setMessages([...history, { role: "assistant", content: "" }]);
     setInput("");
+    setImageUrl(null);
     setLoading(true);
 
     try {
@@ -264,7 +289,16 @@ export default function ChatWidget() {
                   : { background: "#fff", color: "var(--fg, #18181b)", border: "1px solid #ececec" }
               }
             >
-              {m.role === "user" ? m.content : renderRichText(m.content)}
+              {m.role === "user" ? (
+                <>
+                  {m.images?.map((u) => (
+                    <img key={u} src={u} alt="" className="block rounded-lg max-h-48 w-auto mb-1.5" />
+                  ))}
+                  {m.content}
+                </>
+              ) : (
+                renderRichText(m.content)
+              )}
             </div>
             {m.products && m.products.length > 0 && (
               <div className="w-full space-y-1.5">
@@ -321,25 +355,66 @@ export default function ChatWidget() {
           e.preventDefault();
           send();
         }}
-        className="shrink-0 flex items-center gap-2 p-2 border-t"
+        className="shrink-0 border-t"
         style={{ borderColor: "#ececec", background: "#fff" }}
       >
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder={t("placeholder")}
-          className="flex-1 rounded-xl px-3 py-2 text-sm outline-none"
-          style={{ border: "1px solid #e4e4e7", background: "#fff", color: "var(--fg, #18181b)" }}
-        />
-        <button
-          type="submit"
-          disabled={loading || !input.trim()}
-          aria-label={t("send")}
-          className="w-9 h-9 rounded-xl flex items-center justify-center text-white disabled:opacity-40"
-          style={{ background: "var(--gold, #b08d57)" }}
-        >
-          <Send size={16} />
-        </button>
+        {imageUrl && (
+          <div className="px-2 pt-2">
+            <div className="relative inline-block">
+              <img src={imageUrl} alt="" className="w-14 h-14 rounded-lg object-cover" style={{ border: "1px solid #e4e4e7" }} />
+              <button
+                type="button"
+                onClick={() => setImageUrl(null)}
+                aria-label={t("removeImage")}
+                className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center text-white"
+                style={{ background: "rgba(0,0,0,.7)" }}
+              >
+                <X size={12} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="flex items-center gap-2 p-2">
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              e.target.value = "";
+              handleImageFile(f);
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            disabled={uploading || loading}
+            aria-label={t("attach")}
+            className="w-9 h-9 rounded-xl flex items-center justify-center disabled:opacity-40"
+            style={{ border: "1px solid #e4e4e7", color: "var(--fg2, #52525b)" }}
+          >
+            {uploading ? <Loader2 size={16} className="animate-spin" /> : <ImageIcon size={16} />}
+          </button>
+
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder={t("placeholder")}
+            className="flex-1 rounded-xl px-3 py-2 text-sm outline-none"
+            style={{ border: "1px solid #e4e4e7", background: "#fff", color: "var(--fg, #18181b)" }}
+          />
+          <button
+            type="submit"
+            disabled={loading || uploading || (!input.trim() && !imageUrl)}
+            aria-label={t("send")}
+            className="w-9 h-9 rounded-xl flex items-center justify-center text-white disabled:opacity-40"
+            style={{ background: "var(--gold, #b08d57)" }}
+          >
+            <Send size={16} />
+          </button>
+        </div>
       </form>
     </div>
   );

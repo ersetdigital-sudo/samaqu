@@ -705,6 +705,9 @@
     "open": "Open chat",
     "handoff": "Continue on WhatsApp with admin",
     "handoffMessage": "Hi SAMAQU admin, I need help with a product.",
-    "error": "Sorry, something went wrong. Please try again \ud83d\ude4f"
+    "error": "Sorry, something went wrong. Please try again \ud83d\ude4f",
+    "attach": "Attach image",
+    "removeImage": "Remove image",
+    "imageError": "Sorry, the image failed to upload. Please try again \ud83d\ude4f"
   }
 }
