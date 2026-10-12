@@ -65,6 +65,11 @@ const queryClient = new QueryClient({
       // (pakai cache, tidak fetch ulang), sedangkan simpan/edit tetap invalidate.
       staleTime: 60 * 1000,
       gcTime: 10 * 60 * 1000,
+      // PENTING: halaman-halaman /ops memakai `initialData: []`. Tanpa baris ini,
+      // array kosong itu dianggap data segar 60 detik sehingga query tidak jalan
+      // dan tabel tampil kosong. Dengan updatedAt = 0, data awal dianggap basi →
+      // query tetap jalan, sementara cache asli tetap dipakai saat pindah menu.
+      initialDataUpdatedAt: 0,
     },
   },
 });
