@@ -47,6 +47,10 @@ interface Msg {
   images?: string[];
 }
 
+// Tombol "Lanjut chat ke WhatsApp admin" di panel chat — dimatikan dulu atas permintaan
+// pemilik. Ubah ke true untuk menampilkannya lagi (logikanya masih utuh di bawah).
+const SHOW_WHATSAPP_HANDOFF = false;
+
 /** Tebal `**text**` → <strong>. Tanpa HTML mentah (aman dari injeksi). */
 function renderInline(text: string, keyBase: string) {
   return text.split(/(\*\*[^*\n]+\*\*)/g).filter(Boolean).map((part, i) =>
@@ -338,7 +342,7 @@ export default function ChatWidget() {
         )}
       </div>
 
-      {waHref && (
+      {SHOW_WHATSAPP_HANDOFF && waHref && (
         <a
           href={waHref}
           target="_blank"
