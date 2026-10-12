@@ -51,6 +51,14 @@ interface Msg {
 // pemilik. Ubah ke true untuk menampilkannya lagi (logikanya masih utuh di bawah).
 const SHOW_WHATSAPP_HANDOFF = false;
 
+/** Kunci localStorage riwayat chat (biar percakapan awet saat refresh). */
+const HISTORY_KEY = "samaqu_chat_history";
+/** Batas pesan yang disimpan/ditampilkan dari riwayat. */
+const HISTORY_MAX = 30;
+
+/** Empat pertanyaan cepat yang muncul di awal percakapan (ala marketplace). */
+const SUGGESTION_KEYS = ["suggestStock", "suggestSize", "suggestOrder", "suggestPay"] as const;
+
 /** Tebal `**text**` → <strong>. Tanpa HTML mentah (aman dari injeksi). */
 function renderInline(text: string, keyBase: string) {
   return text.split(/(\*\*[^*\n]+\*\*)/g).filter(Boolean).map((part, i) =>
@@ -164,8 +172,33 @@ export default function ChatWidget() {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, loading, open]);
 
-  async function send() {
-    const text = input.trim();
+  // Riwayat awet (localStorage) — seperti chat marketplace, percakapan tidak hilang saat refresh.
+  useEffect(() => {
+    if (!ready) return;
+    try {
+      const raw = localStorage.getItem(HISTORY_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw) as Msg[];
+      if (Array.isArray(saved) && saved.length) {
+        setMessages(saved.slice(-HISTORY_MAX));
+        startedRef.current = true;
+      }
+    } catch {
+      // riwayat rusak → mulai dari awal
+    }
+  }, [ready]);
+
+  useEffect(() => {
+    if (!ready) return;
+    try {
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(messages.slice(-HISTORY_MAX)));
+    } catch {
+      // storage penuh / mode privat → abaikan
+    }
+  }, [messages, ready]);
+
+  async function send(textOverride?: string) {
+    const text = (textOverride ?? input).trim();
     if ((!text && !imageUrl) || loading || uploading) return;
 
     const sentImage = imageUrl || undefined;
@@ -262,7 +295,7 @@ export default function ChatWidget() {
 
   return (
     <div
-      className="fixed z-[96] right-4 sm:right-6 left-4 sm:left-auto bottom-[calc(var(--mobile-nav-h)+1.5rem)] sm:w-[380px] h-[70vh] sm:h-[560px] max-h-[calc(100vh-6rem)] flex flex-col rounded-2xl overflow-hidden shadow-2xl"
+      className="fixed z-[96] inset-0 sm:inset-auto sm:right-6 sm:left-auto sm:bottom-[calc(var(--mobile-nav-h)+1.5rem)] sm:w-[380px] sm:h-[min(560px,calc(100vh-6rem))] flex flex-col sm:rounded-2xl overflow-hidden shadow-2xl"
       style={{ background: "var(--bg, #fff)", border: "1px solid #e4e4e7" }}
     >
       <div className="flex items-center justify-between px-4 py-3 text-white shrink-0" style={{ background: "var(--espresso, #2b2118)" }}>
@@ -272,7 +305,10 @@ export default function ChatWidget() {
           </span>
           <div className="min-w-0">
             <p className="text-sm font-semibold truncate">{t("title")}</p>
-            <p className="text-[11px] opacity-80 truncate">{t("subtitle")}</p>
+            <p className="text-[11px] opacity-80 truncate flex items-center gap-1.5">
+              <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: "#4ade80" }} />
+              {t("online")}
+            </p>
           </div>
         </div>
         <button onClick={() => setOpen(false)} aria-label={t("close")} className="p-1 opacity-80 hover:opacity-100">
@@ -307,9 +343,8 @@ export default function ChatWidget() {
             {m.products && m.products.length > 0 && (
               <div className="w-full space-y-1.5">
                 {m.products.map((p) => (
-                  <a
+                  <div
                     key={p.id}
-                    href={`/${locale}/katalog/${p.id}`}
                     className="flex items-center gap-2.5 rounded-xl p-2"
                     style={{ background: "#fff", border: "1px solid #ececec" }}
                   >
@@ -318,16 +353,31 @@ export default function ChatWidget() {
                     ) : (
                       <span className="w-11 h-11 rounded-lg shrink-0" style={{ background: "var(--sub, #fafafa)" }} />
                     )}
-                    <span className="min-w-0">
-                      <span className="block text-xs font-semibold truncate" style={{ color: "var(--fg, #18181b)" }}>
-                        {p.name}
-                      </span>
-                      <span className="block text-[11px] font-medium" style={{ color: "var(--gold, #b08d57)" }}>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-semibold truncate" style={{ color: "var(--fg, #18181b)" }}>{p.name}</p>
+                      <p className="text-[11px] font-medium" style={{ color: "var(--gold, #b08d57)" }}>
                         {p.cyp ? `Mulai Rp ${p.price.toLocaleString("id-ID")}` : `Rp ${p.price.toLocaleString("id-ID")}`}
                         <span style={{ color: "var(--fg3, #a1a1aa)" }}>{" · "}{p.category}</span>
-                      </span>
-                    </span>
-                  </a>
+                      </p>
+                    </div>
+                    <div className="shrink-0 flex flex-col items-end gap-1">
+                      <a
+                        href={`/${locale}/katalog/${p.id}`}
+                        className="text-[11px] font-semibold px-2.5 py-1 rounded-lg"
+                        style={{ background: "var(--gold, #b08d57)", color: "#fff" }}
+                      >
+                        {t("view")}
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => send(`${t("askProductMsg")} ${p.name}`)}
+                        className="text-[11px] font-medium px-2 py-0.5"
+                        style={{ color: "var(--fg3, #a1a1aa)" }}
+                      >
+                        {t("askProduct")}
+                      </button>
+                    </div>
+                  </div>
                 ))}
               </div>
             )}
@@ -335,12 +385,37 @@ export default function ChatWidget() {
         ))}
         {loading && !messages[messages.length - 1]?.content && (
           <div className="flex justify-start">
-            <div className="rounded-2xl px-3 py-2 text-sm" style={{ background: "#fff", border: "1px solid #ececec" }}>
-              <Loader2 size={16} className="animate-spin" />
+            <div
+              className="rounded-2xl px-3 py-2 text-xs flex items-center gap-1.5"
+              style={{ background: "#fff", border: "1px solid #ececec", color: "var(--fg3, #a1a1aa)" }}
+            >
+              {t("typing")}
+              <span className="inline-flex items-center gap-0.5">
+                <span className="w-1 h-1 rounded-full animate-bounce" style={{ background: "currentColor", animationDelay: "0ms" }} />
+                <span className="w-1 h-1 rounded-full animate-bounce" style={{ background: "currentColor", animationDelay: "150ms" }} />
+                <span className="w-1 h-1 rounded-full animate-bounce" style={{ background: "currentColor", animationDelay: "300ms" }} />
+              </span>
             </div>
           </div>
         )}
       </div>
+
+      {/* Chip pertanyaan cepat — muncul di awal percakapan (ala marketplace). */}
+      {!messages.some((m) => m.role === "user") && (
+        <div className="shrink-0 flex gap-2 overflow-x-auto px-3 py-2 border-t" style={{ borderColor: "#ececec", background: "#fff" }}>
+          {SUGGESTION_KEYS.map((k) => (
+            <button
+              key={k}
+              type="button"
+              onClick={() => send(t(k))}
+              className="whitespace-nowrap text-xs font-medium px-3 py-1.5 rounded-full"
+              style={{ border: "1px solid #e4e4e7", color: "var(--fg2, #52525b)", background: "#fff" }}
+            >
+              {t(k)}
+            </button>
+          ))}
+        </div>
+      )}
 
       {SHOW_WHATSAPP_HANDOFF && waHref && (
         <a
