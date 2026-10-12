@@ -46,12 +46,12 @@ export default function Footer() {
         aria-hidden="true"
       />
 
-      {/* Gold accent border top */}
+      {/* Aksen garis atas */}
       <div
         className="absolute top-0 inset-x-0 h-px"
         style={{
           background:
-            "linear-gradient(90deg, transparent 5%, rgba(184,145,70,.25) 30%, rgba(184,145,70,.35) 50%, rgba(184,145,70,.25) 70%, transparent 95%)",
+            "linear-gradient(90deg, transparent 5%, rgba(255,255,255,.18) 30%, rgba(255,255,255,.3) 50%, rgba(255,255,255,.18) 70%, transparent 95%)",
         }}
         aria-hidden="true"
       />
@@ -69,7 +69,7 @@ export default function Footer() {
             />
             <p
               className="text-xs sm:text-sm max-w-xs leading-[1.75] font-ui"
-              style={{ color: "var(--sand)" }}
+              style={{ color: "rgba(255,255,255,.75)" }}
             >
               {t("footer.tagline")}
             </p>
@@ -77,7 +77,7 @@ export default function Footer() {
 
           {/* Column 2: Navigasi */}
           <div>
-            <p className="text-[11px] tracking-[0.22em] uppercase font-ui font-semibold mb-3 sm:mb-4" style={{ color: "var(--gold)" }}>
+            <p className="text-[11px] tracking-[0.22em] uppercase font-ui font-semibold mb-3 sm:mb-4" style={{ color: "#ffffff" }}>
               {t("footer.nav")}
             </p>
             <nav aria-label="Navigasi footer" className="flex flex-col gap-2 sm:gap-2.5">
@@ -87,7 +87,7 @@ export default function Footer() {
                   href={link.href}
                   target={link.external ? "_blank" : undefined}
                   rel={link.external ? "noopener" : undefined}
-                  className="text-[12px] sm:text-[13px] tracking-[0.12em] uppercase font-ui transition-colors duration-300 hover:text-gold"
+                  className="text-[12px] sm:text-[13px] tracking-[0.12em] uppercase font-ui transition-colors duration-300 hover:text-white"
                   style={{ color: "rgba(248,246,242,.7)" }}
                 >
                   {link.label}
@@ -98,7 +98,7 @@ export default function Footer() {
 
           {/* Column 3: Bantuan */}
           <div>
-            <p className="text-[11px] tracking-[0.22em] uppercase font-ui font-semibold mb-3 sm:mb-4" style={{ color: "var(--gold)" }}>
+            <p className="text-[11px] tracking-[0.22em] uppercase font-ui font-semibold mb-3 sm:mb-4" style={{ color: "#ffffff" }}>
               {t("footer.help")}
             </p>
             <nav aria-label="Bantuan footer" className="flex flex-col gap-2 sm:gap-2.5">
@@ -106,7 +106,7 @@ export default function Footer() {
                 <a
                   key={link.href}
                   href={link.href}
-                  className="text-[12px] sm:text-[13px] tracking-[0.12em] uppercase font-ui transition-colors duration-300 hover:text-gold"
+                  className="text-[12px] sm:text-[13px] tracking-[0.12em] uppercase font-ui transition-colors duration-300 hover:text-white"
                   style={{ color: "rgba(248,246,242,.7)" }}
                 >
                   {link.label}
@@ -117,7 +117,7 @@ export default function Footer() {
 
           {/* Column 4: Terhubung */}
           <div>
-            <p className="text-[11px] tracking-[0.22em] uppercase font-ui font-semibold mb-3 sm:mb-4" style={{ color: "var(--gold)" }}>
+            <p className="text-[11px] tracking-[0.22em] uppercase font-ui font-semibold mb-3 sm:mb-4" style={{ color: "#ffffff" }}>
               {t("footer.connected")}
             </p>
             <div className="flex items-center gap-3">
@@ -127,7 +127,7 @@ export default function Footer() {
                   target="_blank"
                   rel="noopener"
                   aria-label="Instagram"
-                  className="flex items-center justify-center w-10 h-10 rounded-full transition-colors duration-300 hover:text-gold"
+                  className="flex items-center justify-center w-10 h-10 rounded-full transition-colors duration-300 hover:text-white"
                   style={{ color: "rgba(248,246,242,.7)" }}
                 >
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -142,7 +142,7 @@ export default function Footer() {
                 target="_blank"
                 rel="noopener"
                 aria-label="WhatsApp Admin SAMAQU"
-                className="flex items-center justify-center w-10 h-10 rounded-full transition-colors duration-300 hover:text-gold"
+                className="flex items-center justify-center w-10 h-10 rounded-full transition-colors duration-300 hover:text-white"
                 style={{ color: "rgba(248,246,242,.7)" }}
               >
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -157,7 +157,7 @@ export default function Footer() {
         {/* Copyright */}
         <div
           className="pt-5 sm:pt-8 text-[11px] sm:text-xs font-ui text-center"
-          style={{ color: "rgba(216,196,168,.5)" }}
+          style={{ color: "rgba(255,255,255,.45)" }}
         >
           <p>{t("footer.copyright")}</p>
         </div>
