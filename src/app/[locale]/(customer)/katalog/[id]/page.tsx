@@ -86,8 +86,8 @@ function MediaDisplay({ item, poster, className, style, allMedia }: { item: Gall
             {videoPoster ? (
               <img src={cloudinaryUrl(videoPoster, { width: 1200 })} alt="" className="w-full h-full object-cover" />
             ) : (
-              <div className="w-full h-full flex items-center justify-center" style={{ background: "#e8dfd1" }}>
-                <Play size={32} style={{ color: "var(--gold)" }} />
+              <div className="w-full h-full flex items-center justify-center" style={{ background: "#e5e5e5" }}>
+                <Play size={32} style={{ color: "#000000" }} />
               </div>
             )}
             <button
@@ -95,8 +95,8 @@ function MediaDisplay({ item, poster, className, style, allMedia }: { item: Gall
               className="absolute inset-0 flex items-center justify-center z-10 cursor-pointer"
               style={{ background: "rgba(0,0,0,.08)" }}
             >
-              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center transition-transform hover:scale-110" style={{ background: "rgba(184,145,70,.85)", backdropFilter: "blur(8px)" }}>
-                <Play size={24} fill="white" stroke="none" className="ml-1" />
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center transition-transform hover:scale-110" style={{ background: "#ffffff", backdropFilter: "blur(8px)" }}>
+                <Play size={24} fill="#000000" stroke="none" className="ml-1" />
               </div>
             </button>
           </>
@@ -106,7 +106,7 @@ function MediaDisplay({ item, poster, className, style, allMedia }: { item: Gall
   }
 
   return (
-    <div className={`relative ${className || ""}`} style={{ background: "#e8dfd1", ...style }}>
+    <div className={`relative ${className || ""}`} style={{ background: "#e5e5e5", ...style }}>
       <img src={cloudinaryUrl(item.src, { width: 1200 })} alt="" className="w-full h-full object-contain" loading="lazy" />
     </div>
   );
@@ -116,23 +116,23 @@ function MediaDisplay({ item, poster, className, style, allMedia }: { item: Gall
 function InfoAccordionItem({ title, children }: { title: string; children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="rounded-lg overflow-hidden" style={{ background: "rgba(64,50,37,.03)", border: "1px solid rgba(201,183,156,.15)" }}>
+    <div className="rounded-lg overflow-hidden" style={{ background: "rgba(0,0,0,.03)", border: "1px solid rgba(0,0,0,.08)" }}>
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         className="w-full flex items-center justify-between gap-3 px-4 py-3.5 text-left"
       >
-        <span className="text-[13px] font-medium font-ui" style={{ color: "var(--espresso)" }}>{title}</span>
+        <span className="text-[13px] font-medium font-ui" style={{ color: "#000000" }}>{title}</span>
         <ChevronDown
           size={16}
           strokeWidth={1.5}
           className="shrink-0 transition-transform duration-300"
-          style={{ color: "var(--stone)", transform: open ? "rotate(180deg)" : "none" }}
+          style={{ color: "rgba(0,0,0,.55)", transform: open ? "rotate(180deg)" : "none" }}
         />
       </button>
       {open && (
         <div className="px-4 pb-3.5">
-          <p className="text-[12.5px] leading-relaxed font-ui" style={{ color: "var(--stone)" }}>{children}</p>
+          <p className="text-[12.5px] leading-relaxed font-ui" style={{ color: "rgba(0,0,0,.55)" }}>{children}</p>
         </div>
       )}
     </div>
@@ -161,9 +161,9 @@ function RelatedProductCard({ p }: { p: Product }) {
     <a
       href={`/katalog/${p.id}`}
       className="group block rounded-2xl overflow-hidden"
-      style={{ background: "white", border: "1px solid rgba(201,183,156,.12)" }}
+      style={{ background: "white", border: "1px solid rgba(0,0,0,.06)" }}
     >
-      <div className="relative aspect-[3/4] overflow-hidden" style={{ background: "#e8dfd1" }}>
+      <div className="relative aspect-[3/4] overflow-hidden" style={{ background: "#e5e5e5" }}>
         <img
           src={cloudinaryUrl(p.media.find((m) => m.type === "image")?.src || p.image, { width: 500 })}
           alt={p.name}
@@ -178,12 +178,12 @@ function RelatedProductCard({ p }: { p: Product }) {
         )}
       </div>
       <div className="p-3.5">
-        <h3 className="text-[14px] font-semibold font-ui line-clamp-1" style={{ color: "var(--espresso)" }}>{p.name}</h3>
+        <h3 className="text-[14px] font-semibold font-ui line-clamp-1" style={{ color: "#000000" }}>{p.name}</h3>
         {p.kain && (
-          <p className="mt-1 text-[11.5px] font-ui" style={{ color: "var(--gold)" }}>Kain {p.kain}</p>
+          <p className="mt-1 text-[11.5px] font-ui" style={{ color: "#000000" }}>Kain {p.kain}</p>
         )}
-        <p className="mt-1.5 text-[12.5px] font-ui" style={{ color: "var(--stone)" }}>
-          Mulai <span style={{ color: "var(--espresso)", fontWeight: 500 }}>Rp {p.price.toLocaleString("id-ID")}</span>
+        <p className="mt-1.5 text-[12.5px] font-ui" style={{ color: "rgba(0,0,0,.55)" }}>
+          Mulai <span style={{ color: "#000000", fontWeight: 500 }}>Rp {p.price.toLocaleString("id-ID")}</span>
         </p>
       </div>
     </a>
@@ -557,7 +557,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   if (loading) {
     return (
       <section className="min-h-screen flex items-center justify-center" style={{ background: "#F3F3F3" }}>
-        <div className="w-6 h-6 border-2 rounded-full animate-spin" style={{ borderColor: "rgba(201,183,156,.3)", borderTopColor: "var(--gold)" }} />
+        <div className="w-6 h-6 border-2 rounded-full animate-spin" style={{ borderColor: "rgba(0,0,0,.15)", borderTopColor: "#000000" }} />
       </section>
     );
   }
@@ -566,10 +566,10 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     return (
       <section className="min-h-screen flex items-center justify-center" style={{ background: "#F3F3F3" }}>
         <div className="text-center px-6">
-          <p className="text-lg font-medium mb-4" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
+          <p className="text-lg font-medium mb-4" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "#000000" }}>
             Produk tidak ditemukan
           </p>
-          <a href="/katalog" className="text-sm font-ui underline" style={{ color: "var(--gold)" }}>
+          <a href="/katalog" className="text-sm font-ui underline" style={{ color: "#000000" }}>
             Kembali ke Katalog
           </a>
         </div>
@@ -616,8 +616,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           <Breadcrumb extra={[{ label: product.name }]} />
         </div>
         {/* Gallery */}
-        <div ref={mobileGalleryRef} className={`relative px-4 pb-1 transition-all duration-300 ${galleryHighlight ? "ring-2 ring-[var(--gold)] ring-offset-2" : ""}`}>
-          <div className="relative rounded-3xl overflow-hidden aspect-[3/4]" style={{ background: "#e8dfd1" }}>
+        <div ref={mobileGalleryRef} className={`relative px-4 pb-1 transition-all duration-300 ${galleryHighlight ? "ring-2 ring-[#000000] ring-offset-2" : ""}`}>
+          <div className="relative rounded-3xl overflow-hidden aspect-[3/4]" style={{ background: "#e5e5e5" }}>
             <div
               ref={carouselRef}
               className="h-full flex overflow-x-auto snap-x snap-mandatory scrollbar-hide"
@@ -632,7 +632,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                   <MediaDisplay item={item} poster={item.poster || product.image} allMedia={galleryMedia} className="absolute inset-0" />
                   {product.tag && i === 0 && (
                     <span className="absolute top-4 left-4 px-2.5 py-1 text-[10px] tracking-[0.12em] uppercase font-ui font-medium rounded-sm z-10"
-                      style={{ border: "1px solid var(--gold)", color: "var(--gold)", background: "rgba(248,246,242,.9)" }}>
+                      style={{ border: "1px solid #000000", color: "#000000", background: "#ffffff" }}>
                       {product.tag}
                     </span>
                   )}
@@ -648,16 +648,16 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             {/* Wishlist button - mobile */}
             {isLoggedIn && product && (
               <button onClick={async () => { const added = await toggleWishlist(displayId); toast.show(added ? "Ditambahkan ke wishlist" : "Dihapus dari wishlist"); }} className="absolute top-4 right-4 z-20 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110" style={{ background: "rgba(255,255,255,.9)", backdropFilter: "blur(8px)", boxShadow: "0 2px 8px rgba(0,0,0,.1)" }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill={isWishlisted(displayId) ? "#e74c3c" : "none"} stroke={isWishlisted(displayId) ? "#e74c3c" : "var(--espresso)"} strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill={isWishlisted(displayId) ? "#e74c3c" : "none"} stroke={isWishlisted(displayId) ? "#e74c3c" : "#000000"} strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
               </button>
             )}
             {media.length > 1 && (
               <>
                 <button onClick={() => goToSlide(currentSlide - 1)} aria-label="Sebelumnya" className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 z-10" style={{ background: "rgba(255,255,255,.85)" }}>
-                  <ChevronLeft size={16} style={{ color: "var(--espresso)" }} />
+                  <ChevronLeft size={16} style={{ color: "#000000" }} />
                 </button>
                 <button onClick={() => goToSlide(currentSlide + 1)} aria-label="Berikutnya" className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 z-10" style={{ background: "rgba(255,255,255,.85)" }}>
-                  <ChevronRight size={16} style={{ color: "var(--espresso)" }} />
+                  <ChevronRight size={16} style={{ color: "#000000" }} />
                 </button>
               </>
             )}
@@ -667,7 +667,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             <div className="flex justify-center gap-1.5 mt-3">
               {media.map((_, i) => (
                 <span key={i} className="rounded-full transition-all duration-300"
-                  style={{ background: i === currentSlide ? "var(--gold)" : "rgba(201,183,156,.4)", width: i === currentSlide ? "16px" : "6px", height: "6px" }} />
+                  style={{ background: i === currentSlide ? "#000000" : "rgba(0,0,0,.25)", width: i === currentSlide ? "16px" : "6px", height: "6px" }} />
               ))}
             </div>
           )}
@@ -675,25 +675,25 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
         {/* Info */}
         <div className="relative mt-5 px-5 pb-6">
-          <p className="text-[10px] tracking-[0.28em] uppercase font-ui mb-2" style={{ color: "var(--gold)" }}>
+          <p className="text-[10px] tracking-[0.28em] uppercase font-ui mb-2" style={{ color: "#000000" }}>
             Detail Produk
           </p>
           <h1 className="text-[1.5rem] sm:text-[1.8rem] font-semibold leading-tight mb-1.5"
-            style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
-              {product.name}{product.category === "Koko" ? (selectedColor && selectedColor !== "default" ? <span style={{ color: "var(--gold)" }}> - {selectedColor}</span> : null) : product.jenis_kain?.name ? <span style={{ color: "var(--gold)" }}> — Kain {product.jenis_kain.name}</span> : product.kain ? <span style={{ color: "var(--gold)" }}> — Kain {product.kain}</span> : product.series ? <span style={{ color: "var(--gold)" }}> — {product.series}</span> : selectedColor && selectedColor !== "default" ? <span style={{ color: "var(--gold)" }}> — {selectedColor}</span> : null}
+            style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "#000000" }}>
+              {product.name}{product.category === "Koko" ? (selectedColor && selectedColor !== "default" ? <span style={{ color: "#000000" }}> - {selectedColor}</span> : null) : product.jenis_kain?.name ? <span style={{ color: "#000000" }}> — Kain {product.jenis_kain.name}</span> : product.kain ? <span style={{ color: "#000000" }}> — Kain {product.kain}</span> : product.series ? <span style={{ color: "#000000" }}> — {product.series}</span> : selectedColor && selectedColor !== "default" ? <span style={{ color: "#000000" }}> — {selectedColor}</span> : null}
           </h1>
-          <p className="text-[13px] font-ui mb-5" style={{ color: "var(--stone)" }}>
-            {product.category !== "Koko" && product.jenis_kain?.name && <span>Jenis kain <span style={{ color: "var(--gold)" }}>{product.jenis_kain.name}</span></span>}
-            {product.category !== "Koko" && !product.jenis_kain?.name && product.kain && <span>Jenis kain <span style={{ color: "var(--gold)" }}>{product.kain}</span></span>}
+          <p className="text-[13px] font-ui mb-5" style={{ color: "rgba(0,0,0,.55)" }}>
+            {product.category !== "Koko" && product.jenis_kain?.name && <span>Jenis kain <span style={{ color: "#000000" }}>{product.jenis_kain.name}</span></span>}
+            {product.category !== "Koko" && !product.jenis_kain?.name && product.kain && <span>Jenis kain <span style={{ color: "#000000" }}>{product.kain}</span></span>}
             {product.category !== "Koko" && (product.jenis_kain?.name || product.kain) && " · "}
-            <span style={{ color: "var(--gold)" }}>{product.category}</span>
+            <span style={{ color: "#000000" }}>{product.category}</span>
             {product.weight ? <span>{` · ${product.weight >= 1000 ? (product.weight / 1000).toFixed(1) + " kg" : product.weight + " g"}`}</span> : " · ready stock"}
           </p>
 
           {/* Series Selector — selalu tampilkan untuk Thobe */}
           {(availableSeries.length > 1 || isThobe) && (
             <div className="mb-5">
-              <p className="text-[10px] tracking-[0.1em] uppercase font-ui font-medium mb-2.5" style={{ color: "var(--espresso)" }}>
+              <p className="text-[10px] tracking-[0.1em] uppercase font-ui font-medium mb-2.5" style={{ color: "#000000" }}>
                 Pilih Series
               </p>
               <div className="grid grid-cols-2 gap-2 md:flex md:flex-wrap md:gap-2.5">
@@ -705,13 +705,13 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                       onClick={() => handleSeriesSelect(s.id)}
                       className="flex flex-col items-start gap-1 px-3 py-2.5 md:inline-flex md:flex-row md:items-center md:justify-between md:gap-1.5 md:px-3.5 md:py-2 rounded-lg text-[11px] md:text-[12px] font-ui transition-all duration-200 cursor-pointer"
                       style={{
-                        background: isActive ? "var(--espresso)" : "var(--cream-bright)",
-                        color: isActive ? "var(--cream)" : "var(--coffee)",
-                        border: `1px solid ${isActive ? "var(--espresso)" : "rgba(201,183,156,.3)"}`,
+                        background: isActive ? "#000000" : "#ffffff",
+                        color: isActive ? "#ffffff" : "#000000",
+                        border: `1px solid ${isActive ? "#000000" : "rgba(0,0,0,.15)"}`,
                       }}
                     >
                       <span className="font-medium whitespace-normal break-words leading-snug">{s.series}</span>
-                      <span className="text-[10px] md:text-[11px] shrink-0" style={{ color: isActive ? "rgba(248,245,241,.75)" : "var(--gold)" }}>
+                      <span className="text-[10px] md:text-[11px] shrink-0" style={{ color: isActive ? "rgba(255,255,255,.75)" : "#000000" }}>
                         {s.create_your_price_enabled && s.minimum_price
                           ? `mulai dari Rp ${s.minimum_price.toLocaleString("id-ID")}`
                           : `mulai dari Rp ${s.price.toLocaleString("id-ID")}`
@@ -727,15 +727,15 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           {/* Colors — TAMPIL DI ATAS Pilih Ukuran (khusus produk dengan varian warna) */}
           {product.category !== "Thobe" && product.colors.length > 0 && !(product.colors.length === 1 && product.colors[0] === "default") && (
             <div className="mb-5">
-              <p className="text-[10px] tracking-[0.1em] uppercase font-ui font-medium mb-2.5" style={{ color: "var(--espresso)" }}>
+              <p className="text-[10px] tracking-[0.1em] uppercase font-ui font-medium mb-2.5" style={{ color: "#000000" }}>
                 Pilih Warna
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {product.colors.map((c) => (
                   <button key={c} onClick={() => { setSelectedColor(c); scrollToGalleryOnMobile(); }}
                     className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-ui rounded-sm transition-all duration-200"
-                    style={{ background: selectedColor === c ? "var(--espresso)" : "transparent", color: selectedColor === c ? "var(--cream)" : "var(--coffee)", border: `1px solid ${selectedColor === c ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
-                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: colorHex[c] || colorMap[c] || "#ccc", border: "1px solid rgba(42,33,27,.1)" }} />
+                    style={{ background: selectedColor === c ? "#000000" : "transparent", color: selectedColor === c ? "#ffffff" : "#000000", border: `1px solid ${selectedColor === c ? "#000000" : "rgba(0,0,0,.15)"}` }}>
+                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: colorHex[c] || colorMap[c] || "#ccc", border: "1px solid rgba(0,0,0,.1)" }} />
                     {c}
                   </button>
                 ))}
@@ -745,12 +745,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
           {/* Sizes */}
           <div className="mb-5">
-            <p className="text-[10px] tracking-[0.1em] uppercase font-ui font-medium mb-2.5" style={{ color: "var(--espresso)" }}>Pilih Ukuran</p>
+            <p className="text-[10px] tracking-[0.1em] uppercase font-ui font-medium mb-2.5" style={{ color: "#000000" }}>Pilih Ukuran</p>
             <div className="flex gap-1.5">
               {availableSizes.map((s) => (
                 <button key={s} onClick={() => setSelectedSize(s)}
                   className="w-10 h-10 flex items-center justify-center text-[12px] font-ui font-medium rounded-sm transition-all duration-200"
-                  style={{ background: selectedSize === s ? "var(--espresso)" : "transparent", color: selectedSize === s ? "var(--cream)" : "var(--coffee)", border: `1px solid ${selectedSize === s ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
+                  style={{ background: selectedSize === s ? "#000000" : "transparent", color: selectedSize === s ? "#ffffff" : "#000000", border: `1px solid ${selectedSize === s ? "#000000" : "rgba(0,0,0,.15)"}` }}>
                   {s}
                 </button>
               ))}
@@ -758,14 +758,14 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           </div>
 
           {/* Price card */}
-          <div className="mb-5 rounded-2xl p-5" style={{ background: "var(--cream-bright)", border: "1px solid rgba(201,183,156,.25)" }}>
+          <div className="mb-5 rounded-2xl p-5" style={{ background: "#ffffff", border: "1px solid rgba(0,0,0,.12)" }}>
             {isCYP ? (
               <div>
-                <p className="text-[10px] tracking-[0.1em] uppercase font-ui mb-1" style={{ color: "var(--stone)" }}>Harga Minimum</p>
-                <p className="text-[1.3rem] font-ui font-semibold mb-1" style={{ color: "var(--gold)" }}>
+                <p className="text-[10px] tracking-[0.1em] uppercase font-ui mb-1" style={{ color: "rgba(0,0,0,.55)" }}>Harga Minimum</p>
+                <p className="text-[1.3rem] font-ui font-semibold mb-1" style={{ color: "#000000" }}>
                   Rp {minimumPrice.toLocaleString("id-ID")}
                 </p>
-                <p className="text-[11px] font-ui mb-3" style={{ color: "var(--stone)" }}>Pilih harga terbaikmu</p>
+                <p className="text-[11px] font-ui mb-3" style={{ color: "rgba(0,0,0,.55)" }}>Pilih harga terbaikmu</p>
                 {/* Quick select buttons */}
                 <div className="flex flex-wrap gap-1.5 mb-2">
                   {quickPrices.map((qp) => {
@@ -775,9 +775,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                       <button key={qp.value} onClick={() => handleQuickPrice(qp.value)}
                         className="px-3 py-1.5 text-[11px] font-ui rounded-sm transition-all"
                         style={{
-                          background: isActive ? (isRecommended ? "var(--gold)" : "var(--espresso)") : "transparent",
-                          color: isActive ? "white" : (isRecommended ? "var(--gold)" : "var(--coffee)"),
-                          border: `1.5px solid ${isActive ? (isRecommended ? "var(--gold)" : "var(--espresso)") : (isRecommended ? "var(--gold)" : "rgba(201,183,156,.3)")}`,
+                          background: isActive ? (isRecommended ? "#000000" : "#000000") : "transparent",
+                          color: isActive ? "white" : (isRecommended ? "#000000" : "#000000"),
+                          border: `1.5px solid ${isActive ? (isRecommended ? "#000000" : "#000000") : (isRecommended ? "#000000" : "rgba(0,0,0,.15)")}`,
                         }}>
                         {isRecommended && "★ "}{qp.label} — Rp {qp.value.toLocaleString("id-ID")}
                       </button>
@@ -785,7 +785,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                   })}
                   <button onClick={handleCustomPriceToggle}
                     className="px-3 py-1.5 text-[11px] font-ui rounded-sm transition-all"
-                    style={{ background: isCustomPrice ? "var(--espresso)" : "transparent", color: isCustomPrice ? "var(--cream)" : "var(--coffee)", border: `1px solid ${isCustomPrice ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
+                    style={{ background: isCustomPrice ? "#000000" : "transparent", color: isCustomPrice ? "#ffffff" : "#000000", border: `1px solid ${isCustomPrice ? "#000000" : "rgba(0,0,0,.15)"}` }}>
                     Pilih Harga Lainnya
                   </button>
                 </div>
@@ -795,18 +795,18 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                     <input type="text" value={customPriceInput} onChange={(e) => handleCustomPriceChange(e.target.value)}
                       placeholder={`Min. Rp ${minimumPrice.toLocaleString("id-ID")}`}
                       className="w-full px-3 py-2.5 text-[13px] font-ui rounded-sm outline-none"
-                      style={{ background: "transparent", border: `1px solid ${customPriceError ? "#e74c3c" : "rgba(201,183,156,.3)"}`, color: "var(--espresso)" }} />
+                      style={{ background: "transparent", border: `1px solid ${customPriceError ? "#e74c3c" : "rgba(0,0,0,.15)"}`, color: "#000000" }} />
                     {customPriceError && <p className="text-[11px] font-ui mt-1" style={{ color: "#e74c3c" }}>{customPriceError}</p>}
                   </div>
                 )}
-                <p className="text-[10px] font-ui mt-3" style={{ color: "var(--stone)" }}>
+                <p className="text-[10px] font-ui mt-3" style={{ color: "rgba(0,0,0,.55)" }}>
                   {cypMicrocopy}
                 </p>
               </div>
             ) : (
               <div>
-                <p className="text-[10px] tracking-[0.1em] uppercase font-ui mb-1" style={{ color: "var(--stone)" }}>Harga</p>
-                <p className="text-[1.3rem] font-ui font-semibold mb-1" style={{ color: "var(--gold)" }}>
+                <p className="text-[10px] tracking-[0.1em] uppercase font-ui mb-1" style={{ color: "rgba(0,0,0,.55)" }}>Harga</p>
+                <p className="text-[1.3rem] font-ui font-semibold mb-1" style={{ color: "#000000" }}>
                   Rp {currentPrice.toLocaleString("id-ID")}
                 </p>
               </div>
@@ -821,32 +821,32 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               )}
             </div>
           </div>
-          <p className="text-[13px] leading-relaxed font-ui mb-5" style={{ color: "rgba(42,33,27,.8)" }}>
+          <p className="text-[13px] leading-relaxed font-ui mb-5" style={{ color: "rgba(0,0,0,.75)" }}>
             {getDescription(product)}
           </p>
 
-          <div className="h-px mb-5" style={{ background: "rgba(201,183,156,.2)" }} />
+          <div className="h-px mb-5" style={{ background: "rgba(0,0,0,.1)" }} />
 
           {/* Notes */}
           <div className="mb-5">
-            <p className="text-[10px] tracking-[0.1em] uppercase font-ui font-medium mb-2.5" style={{ color: "var(--espresso)" }}>Catatan (Opsional)</p>
+            <p className="text-[10px] tracking-[0.1em] uppercase font-ui font-medium mb-2.5" style={{ color: "#000000" }}>Catatan (Opsional)</p>
             <input type="text" value={notes} onChange={(e) => setNotes(e.target.value)}
               placeholder="Minta packing khusus, tambah nama, dll."
-              className="w-full px-3 py-2.5 text-[13px] font-ui rounded-sm outline-none transition-all duration-200 focus:border-[var(--gold)]"
-              style={{ background: "transparent", border: "1px solid rgba(201,183,156,.3)", color: "var(--espresso)" }} />
+              className="w-full px-3 py-2.5 text-[13px] font-ui rounded-sm outline-none transition-all duration-200 focus:border-[#000000]"
+              style={{ background: "transparent", border: "1px solid rgba(0,0,0,.15)", color: "#000000" }} />
           </div>
 
           {/* Quantity */}
           <div className="flex items-center justify-between">
-            <p className="text-[10px] tracking-[0.1em] uppercase font-ui font-medium" style={{ color: "var(--espresso)" }}>Jumlah</p>
+            <p className="text-[10px] tracking-[0.1em] uppercase font-ui font-medium" style={{ color: "#000000" }}>Jumlah</p>
             <div className="flex items-center gap-2.5">
-              <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="w-9 h-9 flex items-center justify-center rounded-sm transition-all duration-200 active:scale-95" style={{ border: "1px solid rgba(201,183,156,.3)", color: "var(--espresso)" }} aria-label="Kurangi jumlah">
+              <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="w-9 h-9 flex items-center justify-center rounded-sm transition-all duration-200 active:scale-95" style={{ border: "1px solid rgba(0,0,0,.15)", color: "#000000" }} aria-label="Kurangi jumlah">
                 <Minus size={14} />
               </button>
-              <span className="w-7 text-center text-sm font-ui font-medium" style={{ color: "var(--espresso)" }}>{qty}</span>
+              <span className="w-7 text-center text-sm font-ui font-medium" style={{ color: "#000000" }}>{qty}</span>
               <button onClick={() => setQty((q) => q + 1)} disabled={stock !== null && qty >= stock}
                 className="w-9 h-9 flex items-center justify-center rounded-sm transition-all duration-200 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
-                style={{ border: "1px solid rgba(201,183,156,.3)", color: "var(--espresso)" }} aria-label="Tambah jumlah">
+                style={{ border: "1px solid rgba(0,0,0,.15)", color: "#000000" }} aria-label="Tambah jumlah">
                 <Plus size={14} />
               </button>
             </div>
@@ -866,18 +866,18 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           MOBILE STICKY BOTTOM BAR
       ═══════════════════════════════════════ */}
       <div className="md:hidden fixed bottom-[var(--mobile-nav-h)] inset-x-0 z-40"
-        style={{ background: "var(--cream)", borderTop: "1px solid rgba(201,183,156,.18)", boxShadow: "0 -6px 24px -6px rgba(42,33,27,.1)" }}>
+        style={{ background: "#ffffff", borderTop: "1px solid rgba(0,0,0,.08)", boxShadow: "0 -6px 24px -6px rgba(0,0,0,.08)" }}>
         <div className="px-4 pt-3 pb-4">
           {/* Price row */}
           <div className="flex items-end justify-between mb-3">
             <div>
-              <p className="text-[10px] font-ui tracking-wide uppercase" style={{ color: "var(--stone)" }}>Total</p>
+              <p className="text-[10px] font-ui tracking-wide uppercase" style={{ color: "rgba(0,0,0,.55)" }}>Total</p>
               <p className="text-[1.4rem] font-ui font-semibold leading-tight"
-                style={{ color: "var(--gold)" }}>
+                style={{ color: "#000000" }}>
                 Rp {(effectivePrice * qty).toLocaleString("id-ID")}
               </p>
             </div>
-            <p className="text-[10px] font-ui" style={{ color: "var(--stone)" }}>
+            <p className="text-[10px] font-ui" style={{ color: "rgba(0,0,0,.55)" }}>
               {selectedSize}{selectedColor !== "-" && ` / ${selectedColor}`}
               {qty > 1 && ` × ${qty}`}
             </p>
@@ -886,13 +886,13 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           <div className="flex gap-2">
             <button onClick={handleAddToCart} disabled={(isCYP && !isPriceValid) || stockExceeded || isOutOfStock}
               className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[11px] tracking-[0.06em] uppercase font-ui font-semibold transition-all duration-300 active:scale-[0.98] disabled:opacity-40"
-              style={{ background: "transparent", color: "var(--gold)", border: "1.5px solid var(--gold)" }}>
+              style={{ background: "transparent", color: "#000000", border: "1.5px solid #000000" }}>
               <ShoppingCart size={15} strokeWidth={1.5} />
               <span>{isOutOfStock ? "Stok Habis" : "Keranjang"}</span>
             </button>
             <button onClick={handleBuyNow} disabled={stockExceeded || isOutOfStock}
               className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[11px] tracking-[0.06em] uppercase font-ui font-semibold transition-all duration-300 active:scale-[0.98] disabled:opacity-40"
-              style={{ background: "var(--espresso)", color: "white" }}>
+              style={{ background: "#000000", color: "white" }}>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" /></svg>
               <span>{isOutOfStock ? "Stok Habis" : "Pesan via WA"}</span>
             </button>
@@ -910,7 +910,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         <div className="grid grid-cols-2 gap-10 lg:gap-14">
           {/* Gallery */}
           <div className="lg:sticky lg:top-24">
-            <div className="relative w-full aspect-[3/4] rounded-3xl overflow-hidden cursor-zoom-in" style={{ background: "#e8dfd1" }} onClick={() => { setZoomIndex(activeIndex); setZoomOpen(true); }}>
+            <div className="relative w-full aspect-[3/4] rounded-3xl overflow-hidden cursor-zoom-in" style={{ background: "#e5e5e5" }} onClick={() => { setZoomIndex(activeIndex); setZoomOpen(true); }}>
               <AnimatePresence mode="wait">
                 <motion.div key={activeIndex} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }} className="absolute inset-0">
                   <MediaDisplay item={activeMedia} poster={activeMedia.poster || product.image} allMedia={galleryMedia} className="w-full h-full" />
@@ -919,12 +919,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               {/* Wishlist button - desktop */}
               {isLoggedIn && (
               <button onClick={(e) => { e.stopPropagation(); toggleWishlist(displayId).then((added) => toast.show(added ? "Ditambahkan ke wishlist" : "Dihapus dari wishlist")); }} className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110" style={{ background: "rgba(255,255,255,.9)", backdropFilter: "blur(8px)", boxShadow: "0 2px 8px rgba(0,0,0,.1)" }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill={isWishlisted(displayId) ? "#e74c3c" : "none"} stroke={isWishlisted(displayId) ? "#e74c3c" : "var(--espresso)"} strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill={isWishlisted(displayId) ? "#e74c3c" : "none"} stroke={isWishlisted(displayId) ? "#e74c3c" : "#000000"} strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
               </button>
               )}
               {product.tag && (
                 <span className="absolute top-4 left-4 px-3 py-1.5 text-[10px] tracking-[0.12em] uppercase font-ui font-medium rounded-sm z-10"
-                  style={{ border: "1px solid var(--gold)", color: "var(--gold)", background: "rgba(248,246,242,.9)" }}>
+                  style={{ border: "1px solid #000000", color: "#000000", background: "#ffffff" }}>
                   {product.tag}
                 </span>
               )}
@@ -936,13 +936,13 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 <>
                   <button onClick={() => setActiveIndex((i) => (i - 1 + media.length) % media.length)}
                     className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105 z-10"
-                    style={{ background: "rgba(248,246,242,.85)", backdropFilter: "blur(6px)" }} aria-label="Sebelumnya">
-                    <ChevronLeft size={18} style={{ color: "var(--espresso)" }} />
+                    style={{ background: "rgba(255,255,255,.85)", backdropFilter: "blur(6px)" }} aria-label="Sebelumnya">
+                    <ChevronLeft size={18} style={{ color: "#000000" }} />
                   </button>
                   <button onClick={() => setActiveIndex((i) => (i + 1) % media.length)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105 z-10"
-                    style={{ background: "rgba(248,246,242,.85)", backdropFilter: "blur(6px)" }} aria-label="Berikutnya">
-                    <ChevronRight size={18} style={{ color: "var(--espresso)" }} />
+                    style={{ background: "rgba(255,255,255,.85)", backdropFilter: "blur(6px)" }} aria-label="Berikutnya">
+                    <ChevronRight size={18} style={{ color: "#000000" }} />
                   </button>
                 </>
               )}
@@ -952,7 +952,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               <div className="flex justify-center gap-1.5 mt-3">
                 {media.map((_, i) => (
                   <span key={i} className="rounded-full transition-all duration-300"
-                    style={{ background: i === activeIndex ? "var(--gold)" : "rgba(201,183,156,.4)", width: i === activeIndex ? "16px" : "6px", height: "6px" }} />
+                    style={{ background: i === activeIndex ? "#000000" : "rgba(0,0,0,.25)", width: i === activeIndex ? "16px" : "6px", height: "6px" }} />
                 ))}
               </div>
             )}
@@ -962,12 +962,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 {thumbnails.map(({ item, index }) => (
                   <button key={index} onClick={() => setActiveIndex(index)}
                     className="relative aspect-square rounded-lg overflow-hidden transition-all duration-200"
-                    style={{ boxShadow: activeIndex === index ? "0 0 0 2px var(--espresso)" : "0 0 0 1px rgba(201,183,156,.3)" }}
+                    style={{ boxShadow: activeIndex === index ? "0 0 0 2px #000000" : "0 0 0 1px rgba(0,0,0,.15)" }}
                     aria-label={`${item.type === "video" ? "Video" : "Foto"} ${index + 1}`}>
                     {item.type === "video" ? (
                       <>
                         <div className="w-full h-full flex items-center justify-center" style={{ background: "rgba(232,223,209,.7)" }}>
-                          <Play size={14} fill="var(--gold)" stroke="none" />
+                          <Play size={14} fill="#000000" stroke="none" />
                         </div>
                       </>
                     ) : (
@@ -981,18 +981,18 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
           {/* Info */}
           <motion.div className="sticky top-24 h-fit" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}>
-            <p className="text-[11px] tracking-[0.28em] uppercase font-ui mb-3" style={{ color: "var(--gold)" }}>
+            <p className="text-[11px] tracking-[0.28em] uppercase font-ui mb-3" style={{ color: "#000000" }}>
               Detail Produk
             </p>
             <h1 className="text-[2rem] sm:text-[2.5rem] lg:text-[2.8rem] font-semibold leading-tight mb-2"
-              style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
-            {product.name}{product.category === "Koko" ? (selectedColor && selectedColor !== "default" ? <span style={{ color: "var(--gold)" }}> - {selectedColor}</span> : null) : product.jenis_kain?.name ? <span style={{ color: "var(--gold)" }}> — Kain {product.jenis_kain.name}</span> : product.kain ? <span style={{ color: "var(--gold)" }}> — Kain {product.kain}</span> : product.series ? <span style={{ color: "var(--gold)" }}> — {product.series}</span> : selectedColor && selectedColor !== "default" ? <span style={{ color: "var(--gold)" }}> — {selectedColor}</span> : null}
+              style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "#000000" }}>
+            {product.name}{product.category === "Koko" ? (selectedColor && selectedColor !== "default" ? <span style={{ color: "#000000" }}> - {selectedColor}</span> : null) : product.jenis_kain?.name ? <span style={{ color: "#000000" }}> — Kain {product.jenis_kain.name}</span> : product.kain ? <span style={{ color: "#000000" }}> — Kain {product.kain}</span> : product.series ? <span style={{ color: "#000000" }}> — {product.series}</span> : selectedColor && selectedColor !== "default" ? <span style={{ color: "#000000" }}> — {selectedColor}</span> : null}
             </h1>
-            <p className="text-[13px] font-ui mb-6" style={{ color: "var(--stone)" }}>
-              {product.category !== "Koko" && product.jenis_kain?.name && <span>Jenis kain <span style={{ color: "var(--gold)" }}>{product.jenis_kain.name}</span></span>}
-              {product.category !== "Koko" && !product.jenis_kain?.name && product.kain && <span>Jenis kain <span style={{ color: "var(--gold)" }}>{product.kain}</span></span>}
+            <p className="text-[13px] font-ui mb-6" style={{ color: "rgba(0,0,0,.55)" }}>
+              {product.category !== "Koko" && product.jenis_kain?.name && <span>Jenis kain <span style={{ color: "#000000" }}>{product.jenis_kain.name}</span></span>}
+              {product.category !== "Koko" && !product.jenis_kain?.name && product.kain && <span>Jenis kain <span style={{ color: "#000000" }}>{product.kain}</span></span>}
               {product.category !== "Koko" && (product.jenis_kain?.name || product.kain) && " · "}
-              <span style={{ color: "var(--gold)" }}>{product.category}</span>
+              <span style={{ color: "#000000" }}>{product.category}</span>
               {product.weight ? <span>{` · ${product.weight >= 1000 ? (product.weight / 1000).toFixed(1) + " kg" : product.weight + " g"}`}</span> : " · ready stock"}
             </p>
             {/* Series Selector — desktop */}
@@ -1006,9 +1006,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                       return (
                         <button key={s.id} onClick={() => handleSeriesSelect(s.id)}
                           className="px-4 py-2 rounded-lg text-[12.5px] transition"
-                          style={{ background: isActive ? "var(--espresso)" : "var(--cream-bright)", color: isActive ? "var(--cream)" : "var(--coffee)", border: `1px solid ${isActive ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
+                          style={{ background: isActive ? "#000000" : "#ffffff", color: isActive ? "#ffffff" : "#000000", border: `1px solid ${isActive ? "#000000" : "rgba(0,0,0,.15)"}` }}>
                           <span className="font-medium">{s.series}</span>
-                          <span className="ml-1.5" style={{ color: isActive ? "rgba(248,245,241,.75)" : "var(--gold)" }}>
+                          <span className="ml-1.5" style={{ color: isActive ? "rgba(255,255,255,.75)" : "#000000" }}>
                             {s.create_your_price_enabled && s.minimum_price
                               ? `mulai dari Rp ${s.minimum_price.toLocaleString("id-ID")}`
                               : `mulai dari Rp ${s.price.toLocaleString("id-ID")}`
@@ -1020,9 +1020,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                     return (
                       <button key={s.id} onClick={() => handleSeriesSelect(s.id)}
                         className="px-4 py-2 rounded-lg text-[12.5px] transition cursor-pointer"
-                        style={{ background: isActive ? "var(--espresso)" : "var(--cream-bright)", color: isActive ? "var(--cream)" : "var(--coffee)", border: `1px solid ${isActive ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
+                        style={{ background: isActive ? "#000000" : "#ffffff", color: isActive ? "#ffffff" : "#000000", border: `1px solid ${isActive ? "#000000" : "rgba(0,0,0,.15)"}` }}>
                         <span className="font-medium">{s.series}</span>
-                        <span className="ml-1.5" style={{ color: isActive ? "rgba(248,245,241,.75)" : "var(--gold)" }}>
+                        <span className="ml-1.5" style={{ color: isActive ? "rgba(255,255,255,.75)" : "#000000" }}>
                           {s.create_your_price_enabled && s.minimum_price
                             ? `mulai dari Rp ${s.minimum_price.toLocaleString("id-ID")}`
                             : `mulai dari Rp ${s.price.toLocaleString("id-ID")}`
@@ -1037,15 +1037,15 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             {/* Colors — TAMPIL DI ATAS Pilih Ukuran (khusus produk dengan varian warna) */}
             {product.category !== "Thobe" && product.colors.length > 0 && !(product.colors.length === 1 && product.colors[0] === "default") && (
               <div className="mb-6">
-                <p className="text-[11px] sm:text-[12px] tracking-[0.12em] uppercase font-ui font-medium mb-3" style={{ color: "var(--espresso)" }}>
+                <p className="text-[11px] sm:text-[12px] tracking-[0.12em] uppercase font-ui font-medium mb-3" style={{ color: "#000000" }}>
                   Pilih Warna
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {product.colors.map((c) => (
                     <button key={c} onClick={() => setSelectedColor(c)}
                       className="flex items-center gap-2 px-3 py-2 text-[12px] font-ui rounded-sm transition-all duration-200"
-                      style={{ background: selectedColor === c ? "var(--espresso)" : "transparent", color: selectedColor === c ? "var(--cream)" : "var(--coffee)", border: `1px solid ${selectedColor === c ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
-                      <span className="w-3 h-3 rounded-full shrink-0" style={{ background: colorHex[c] || colorMap[c] || "#ccc", border: "1px solid rgba(42,33,27,.1)" }} />
+                      style={{ background: selectedColor === c ? "#000000" : "transparent", color: selectedColor === c ? "#ffffff" : "#000000", border: `1px solid ${selectedColor === c ? "#000000" : "rgba(0,0,0,.15)"}` }}>
+                      <span className="w-3 h-3 rounded-full shrink-0" style={{ background: colorHex[c] || colorMap[c] || "#ccc", border: "1px solid rgba(0,0,0,.1)" }} />
                       {c}
                     </button>
                   ))}
@@ -1059,21 +1059,21 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 {availableSizes.map((s) => (
                   <button key={s} onClick={() => setSelectedSize(s)}
                     className="px-4 py-2 rounded-lg text-[12.5px] transition"
-                    style={{ background: selectedSize === s ? "var(--espresso)" : "var(--cream-bright)", color: selectedSize === s ? "var(--cream)" : "var(--coffee)", border: `1px solid ${selectedSize === s ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
+                    style={{ background: selectedSize === s ? "#000000" : "#ffffff", color: selectedSize === s ? "#ffffff" : "#000000", border: `1px solid ${selectedSize === s ? "#000000" : "rgba(0,0,0,.15)"}` }}>
                     {s}
                   </button>
                 ))}
               </div>
             </div>
             {/* Price card */}
-            <div className="mb-8 rounded-2xl p-6" style={{ background: "var(--cream-bright)", border: "1px solid rgba(201,183,156,.25)" }}>
+            <div className="mb-8 rounded-2xl p-6" style={{ background: "#ffffff", border: "1px solid rgba(0,0,0,.12)" }}>
               {isCYP ? (
                 <div>
-                  <p className="text-[11px] tracking-[0.1em] uppercase font-ui mb-1" style={{ color: "var(--stone)" }}>Harga Minimum</p>
-                  <p className="text-[20px] sm:text-[22px] font-ui font-semibold mb-1" style={{ color: "var(--gold)" }}>
+                  <p className="text-[11px] tracking-[0.1em] uppercase font-ui mb-1" style={{ color: "rgba(0,0,0,.55)" }}>Harga Minimum</p>
+                  <p className="text-[20px] sm:text-[22px] font-ui font-semibold mb-1" style={{ color: "#000000" }}>
                     Rp {minimumPrice.toLocaleString("id-ID")}
                   </p>
-                  <p className="text-[12px] font-ui mb-3" style={{ color: "var(--stone)" }}>Pilih harga terbaikmu</p>
+                  <p className="text-[12px] font-ui mb-3" style={{ color: "rgba(0,0,0,.55)" }}>Pilih harga terbaikmu</p>
                   {/* Quick select buttons */}
                   <div className="flex flex-wrap gap-2 mb-2">
                     {quickPrices.map((qp) => {
@@ -1083,9 +1083,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                         <button key={qp.value} onClick={() => handleQuickPrice(qp.value)}
                           className="px-4 py-2 text-[12px] font-ui rounded-sm transition-all"
                           style={{
-                            background: isActive ? (isRecommended ? "var(--gold)" : "var(--espresso)") : "transparent",
-                            color: isActive ? "white" : (isRecommended ? "var(--gold)" : "var(--coffee)"),
-                            border: `1.5px solid ${isActive ? (isRecommended ? "var(--gold)" : "var(--espresso)") : (isRecommended ? "var(--gold)" : "rgba(201,183,156,.3)")}`,
+                            background: isActive ? (isRecommended ? "#000000" : "#000000") : "transparent",
+                            color: isActive ? "white" : (isRecommended ? "#000000" : "#000000"),
+                            border: `1.5px solid ${isActive ? (isRecommended ? "#000000" : "#000000") : (isRecommended ? "#000000" : "rgba(0,0,0,.15)")}`,
                           }}>
                           {isRecommended && "★ "}{qp.label} — Rp {qp.value.toLocaleString("id-ID")}
                         </button>
@@ -1093,7 +1093,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                     })}
                     <button onClick={handleCustomPriceToggle}
                       className="px-4 py-2 text-[12px] font-ui rounded-sm transition-all"
-                      style={{ background: isCustomPrice ? "var(--espresso)" : "transparent", color: isCustomPrice ? "var(--cream)" : "var(--coffee)", border: `1px solid ${isCustomPrice ? "var(--espresso)" : "rgba(201,183,156,.3)"}` }}>
+                      style={{ background: isCustomPrice ? "#000000" : "transparent", color: isCustomPrice ? "#ffffff" : "#000000", border: `1px solid ${isCustomPrice ? "#000000" : "rgba(0,0,0,.15)"}` }}>
                       Pilih Harga Lainnya
                     </button>
                   </div>
@@ -1103,18 +1103,18 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                       <input type="text" value={customPriceInput} onChange={(e) => handleCustomPriceChange(e.target.value)}
                         placeholder={`Min. Rp ${minimumPrice.toLocaleString("id-ID")}`}
                         className="w-full px-3 py-2.5 text-[14px] font-ui rounded-sm outline-none"
-                        style={{ background: "transparent", border: `1px solid ${customPriceError ? "#e74c3c" : "rgba(201,183,156,.3)"}`, color: "var(--espresso)" }} />
+                        style={{ background: "transparent", border: `1px solid ${customPriceError ? "#e74c3c" : "rgba(0,0,0,.15)"}`, color: "#000000" }} />
                       {customPriceError && <p className="text-[11px] font-ui mt-1" style={{ color: "#e74c3c" }}>{customPriceError}</p>}
                     </div>
                   )}
-                  <p className="text-[11px] font-ui mt-3" style={{ color: "var(--stone)" }}>
+                  <p className="text-[11px] font-ui mt-3" style={{ color: "rgba(0,0,0,.55)" }}>
                     {cypMicrocopy}
                   </p>
                 </div>
               ) : (
                 <div>
-                  <p className="text-[11px] tracking-[0.1em] uppercase font-ui mb-1" style={{ color: "var(--stone)" }}>Harga</p>
-                  <p className="text-[20px] sm:text-[22px] font-ui font-semibold mb-1" style={{ color: "var(--gold)" }}>
+                  <p className="text-[11px] tracking-[0.1em] uppercase font-ui mb-1" style={{ color: "rgba(0,0,0,.55)" }}>Harga</p>
+                  <p className="text-[20px] sm:text-[22px] font-ui font-semibold mb-1" style={{ color: "#000000" }}>
                     Rp {currentPrice.toLocaleString("id-ID")}
                   </p>
                 </div>
@@ -1129,38 +1129,38 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 )}
               </div>
             </div>
-            <p className="text-sm sm:text-[15px] leading-relaxed font-ui mb-8" style={{ color: "rgba(42,33,27,.8)" }}>
+            <p className="text-sm sm:text-[15px] leading-relaxed font-ui mb-8" style={{ color: "rgba(0,0,0,.75)" }}>
               {getDescription(product)}
             </p>
-            <div className="h-px mb-7" style={{ background: "rgba(201,183,156,.2)" }} />
+            <div className="h-px mb-7" style={{ background: "rgba(0,0,0,.1)" }} />
 
             <div className="mb-7">
-              <p className="text-[11px] sm:text-[12px] tracking-[0.12em] uppercase font-ui font-medium mb-3" style={{ color: "var(--espresso)" }}>Catatan (Opsional)</p>
+              <p className="text-[11px] sm:text-[12px] tracking-[0.12em] uppercase font-ui font-medium mb-3" style={{ color: "#000000" }}>Catatan (Opsional)</p>
               <input type="text" value={notes} onChange={(e) => setNotes(e.target.value)}
                 placeholder="Misal: minta packing khusus, tambah nama, dll."
-                className="w-full px-4 py-3 text-sm font-ui rounded-sm outline-none transition-all duration-200 focus:border-[var(--gold)]"
-                style={{ background: "transparent", border: "1px solid rgba(201,183,156,.3)", color: "var(--espresso)" }} />
+                className="w-full px-4 py-3 text-sm font-ui rounded-sm outline-none transition-all duration-200 focus:border-[#000000]"
+                style={{ background: "transparent", border: "1px solid rgba(0,0,0,.15)", color: "#000000" }} />
             </div>
 
             <div className="flex items-center justify-between mb-8">
-              <p className="text-[11px] sm:text-[12px] tracking-[0.12em] uppercase font-ui font-medium" style={{ color: "var(--espresso)" }}>Jumlah</p>
+              <p className="text-[11px] sm:text-[12px] tracking-[0.12em] uppercase font-ui font-medium" style={{ color: "#000000" }}>Jumlah</p>
               <div className="flex items-center gap-3">
-                <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="w-9 h-9 flex items-center justify-center rounded-sm transition-all duration-200 hover:scale-105" style={{ border: "1px solid rgba(201,183,156,.3)", color: "var(--espresso)" }} aria-label="Kurangi jumlah"><Minus size={14} /></button>
-                <span className="w-8 text-center text-sm font-ui font-medium" style={{ color: "var(--espresso)" }}>{qty}</span>
-                <button onClick={() => setQty((q) => q + 1)} disabled={stock !== null && qty >= stock} className="w-9 h-9 flex items-center justify-center rounded-sm transition-all duration-200 hover:scale-105 disabled:opacity-40 disabled:cursor-not-allowed" style={{ border: "1px solid rgba(201,183,156,.3)", color: "var(--espresso)" }} aria-label="Tambah jumlah"><Plus size={14} /></button>
+                <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="w-9 h-9 flex items-center justify-center rounded-sm transition-all duration-200 hover:scale-105" style={{ border: "1px solid rgba(0,0,0,.15)", color: "#000000" }} aria-label="Kurangi jumlah"><Minus size={14} /></button>
+                <span className="w-8 text-center text-sm font-ui font-medium" style={{ color: "#000000" }}>{qty}</span>
+                <button onClick={() => setQty((q) => q + 1)} disabled={stock !== null && qty >= stock} className="w-9 h-9 flex items-center justify-center rounded-sm transition-all duration-200 hover:scale-105 disabled:opacity-40 disabled:cursor-not-allowed" style={{ border: "1px solid rgba(0,0,0,.15)", color: "#000000" }} aria-label="Tambah jumlah"><Plus size={14} /></button>
               </div>
             </div>
 
             <div className="flex gap-3">
               <button onClick={handleAddToCart} disabled={(isCYP && !isPriceValid) || stockExceeded || isOutOfStock}
                 className="flex-1 flex items-center justify-center gap-2.5 py-4 rounded-sm text-[12px] tracking-[0.08em] uppercase font-ui font-semibold transition-all duration-300 hover:scale-[1.01] disabled:opacity-40"
-                style={{ background: "transparent", color: "var(--gold)", border: "1.5px solid var(--gold)" }}>
+                style={{ background: "transparent", color: "#000000", border: "1.5px solid #000000" }}>
                 <ShoppingCart size={16} strokeWidth={1.5} />
                 <span>{isOutOfStock ? "Stok Habis" : "Keranjang"}</span>
               </button>
               <button onClick={handleBuyNow} disabled={stockExceeded || isOutOfStock}
                 className="flex-1 flex items-center justify-center gap-2.5 py-4 rounded-sm text-[12px] tracking-[0.08em] uppercase font-ui font-semibold transition-all duration-300 hover:scale-[1.01] hover:shadow-lg disabled:opacity-40"
-                style={{ background: "var(--espresso)", color: "white", boxShadow: "0 8px 28px -8px rgba(45,33,27,.35)" }}>
+                style={{ background: "#000000", color: "white", boxShadow: "0 8px 28px -8px rgba(45,33,27,.35)" }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" /></svg>
                 <span>{isOutOfStock ? "Stok Habis" : "Pesan via WA"}</span>
               </button>
@@ -1179,11 +1179,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       ══════════════════════════════════════════ */}
       {relatedProducts.length > 0 && (
         <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 pb-40 md:pb-20">
-          <div className="flex items-end justify-between border-t pt-6" style={{ borderColor: "rgba(201,183,156,.2)" }}>
-            <h2 className="text-[1.4rem] sm:text-[1.7rem] font-semibold" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
+          <div className="flex items-end justify-between border-t pt-6" style={{ borderColor: "rgba(0,0,0,.1)" }}>
+            <h2 className="text-[1.4rem] sm:text-[1.7rem] font-semibold" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "#000000" }}>
               Produk lain dari kain ini
             </h2>
-            <a href="/katalog" className="text-[12.5px] font-ui font-medium shrink-0" style={{ color: "var(--gold)" }}>
+            <a href="/katalog" className="text-[12.5px] font-ui font-medium shrink-0" style={{ color: "#000000" }}>
               Lihat semua &rsaquo;
             </a>
           </div>
