@@ -204,10 +204,7 @@ export default function CaraPemesanan() {
     <section
       id="cara-pesan"
       className="relative px-5 sm:px-6 py-10 sm:py-16 lg:py-20 overflow-hidden"
-      style={{
-        background:
-          "radial-gradient(circle at 12% 0%, rgba(216,196,168,.16), transparent 42%), radial-gradient(circle at 88% 100%, rgba(184,145,70,.09), transparent 42%), var(--bg-primary)",
-      }}
+      style={{ background: "#F3F3F3" }}
       aria-labelledby="cara-pesan-title"
     >
       {/* Ambient gold hairline at top */}
