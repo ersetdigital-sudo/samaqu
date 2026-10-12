@@ -276,7 +276,7 @@ export default function LaporanLeads() {
       {/* Tabel Rekap per Tanggal */}
       <div className="bg-white dark:bg-[#1a1d28] rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
         <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 bg-gradient-to-r from-blue-600 to-indigo-600">
-          <h2 className="font-heading font-bold text-white">Data Rekap Leads Closing â {MONTHS[month]} {year}</h2>
+          <h2 className="font-heading font-bold text-white">Data Rekap Leads Closing — {MONTHS[month]} {year}</h2>
         </div>
         {isLoading ? (
           <div className="p-12 flex items-center justify-center">

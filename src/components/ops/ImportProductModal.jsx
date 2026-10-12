@@ -115,7 +115,7 @@ export default function ImportProductModal({ isOpen, onClose }) {
     onSuccess: () => {
       queryClient.invalidateQueries(['products']);
       toast({
-        title: "â Import Berhasil",
+        title: "✅ Import Berhasil",
         description: `${previewData.length} produk berhasil diimport`,
         variant: "success"
       });
@@ -124,7 +124,7 @@ export default function ImportProductModal({ isOpen, onClose }) {
     onError: (error) => {
       console.error("Import error:", error);
       toast({
-        title: "â Import Gagal",
+        title: "❌ Import Gagal",
         description: "Terjadi kesalahan saat mengimport data. Pastikan format sesuai.",
         variant: "destructive"
       });
@@ -227,7 +227,7 @@ export default function ImportProductModal({ isOpen, onClose }) {
                     </div>
                     <div>
                       <p className="font-bold text-gray-900 text-sm">{file.name}</p>
-                      <p className="text-gray-500 text-xs">{(file.size / 1024).toFixed(2)} KB â¢ {previewData.length} Baris Data</p>
+                      <p className="text-gray-500 text-xs">{(file.size / 1024).toFixed(2)} KB • {previewData.length} Baris Data</p>
                     </div>
                   </div>
                   <button 

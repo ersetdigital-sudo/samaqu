@@ -51,7 +51,7 @@ export default function LeadFormModal({ isOpen, onClose, initialData = null, def
     onSuccess: () => {
       queryClient.invalidateQueries(['leads']);
       toast({
-        title: isEdit ? "â Lead berhasil diupdate" : "â Lead berhasil ditambahkan",
+        title: isEdit ? "✅ Lead berhasil diupdate" : "✅ Lead berhasil ditambahkan",
         variant: "success",
       });
       onClose();

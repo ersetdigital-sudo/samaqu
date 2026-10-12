@@ -34,7 +34,7 @@ export default function TambahBarangMasuk() {
     initialData: [],
   });
 
-  // â VARIANT: stok per warna + ukuran
+  // ✅ VARIANT: stok per warna + ukuran
   const { data: allVariants = [] } = useQuery({
     queryKey: ['productVariants'],
     queryFn: () => base44.entities.ProductVariant.list(),
@@ -99,7 +99,7 @@ export default function TambahBarangMasuk() {
         source: "manual"
       });
 
-      // â Tambah stok variant per ukuran
+      // ✅ Tambah stok variant per ukuran
       if (data.variant_id) {
         const variant = allVariants.find(v => v.id === data.variant_id);
         if (variant) {
@@ -125,7 +125,7 @@ export default function TambahBarangMasuk() {
       queryClient.invalidateQueries(['products']);
       queryClient.invalidateQueries(['productVariants']);
       toast({
-        title: "â Barang masuk berhasil ditambahkan",
+        title: "✅ Barang masuk berhasil ditambahkan",
         description: "Stok produk dan HPP telah diperbarui",
         variant: "success",
       });
@@ -133,7 +133,7 @@ export default function TambahBarangMasuk() {
     },
     onError: (error) => {
       toast({
-        title: "â Gagal menambahkan barang masuk",
+        title: "❌ Gagal menambahkan barang masuk",
         description: error.message || "Terjadi kesalahan saat menyimpan data.",
         variant: "destructive",
       });
@@ -163,7 +163,7 @@ export default function TambahBarangMasuk() {
     
     if (!formData.product_id) {
       toast({
-        title: "â ï¸ Form tidak lengkap",
+        title: "â ️ Form tidak lengkap",
         description: "Pilih produk terlebih dahulu",
         variant: "destructive",
       });
@@ -172,7 +172,7 @@ export default function TambahBarangMasuk() {
 
     if (!formData.variant_id || !formData.size) {
       toast({
-        title: "â ï¸ Form tidak lengkap",
+        title: "â ️ Form tidak lengkap",
         description: "Pilih warna dan ukuran variant",
         variant: "destructive",
       });
@@ -183,7 +183,7 @@ export default function TambahBarangMasuk() {
     
     if (!qty || qty <= 0) {
       toast({
-        title: "â ï¸ Jumlah tidak valid",
+        title: "â ️ Jumlah tidak valid",
         description: "Jumlah harus lebih dari 0",
         variant: "destructive",
       });
@@ -192,7 +192,7 @@ export default function TambahBarangMasuk() {
 
     if (formData.total_price <= 0) {
       toast({
-        title: "â ï¸ Harga tidak valid",
+        title: "â ️ Harga tidak valid",
         description: "Total harga beli harus lebih dari 0",
         variant: "destructive",
       });
@@ -343,7 +343,7 @@ export default function TambahBarangMasuk() {
                 </div>
               </div>
 
-              {/* â Variant: Warna + Ukuran */}
+              {/* ✅ Variant: Warna + Ukuran */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label className="block font-inter tracking-label" style={{ fontSize: '13px', fontWeight: 700, color: '#1E293B', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
@@ -385,7 +385,7 @@ export default function TambahBarangMasuk() {
                       const available = normalizeStock(selectedVariant?.stock)[size] || 0;
                       return (
                         <option key={size} value={size}>
-                          {size} â stok {available} pcs
+                          {size} — stok {available} pcs
                         </option>
                       );
                     })}
@@ -437,8 +437,8 @@ export default function TambahBarangMasuk() {
                 </div>
                 <p className="font-inter" style={{ fontSize: '13px', fontWeight: 600, color: '#1E40AF', marginTop: '8px', letterSpacing: '0.01em' }}>
                   {qtyForCalculation > 0 && formData.total_price > 0 
-                    ? `Rp ${formatRupiah(formData.total_price)} Ã· ${qtyForCalculation} unit`
-                    : 'Hitung otomatis dari total harga Ã· jumlah'}
+                    ? `Rp ${formatRupiah(formData.total_price)} ÷ ${qtyForCalculation} unit`
+                    : 'Hitung otomatis dari total harga ÷ jumlah'}
                 </p>
               </div>
 
