@@ -48,7 +48,7 @@ export default function RegisterPage() {
           </div>
           <div className="max-w-md">
             <h1 className="text-4xl lg:text-5xl font-medium leading-tight mb-4" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--cream)" }}>
-              Bergabung<br />dengan <em style={{ color: "#d4a86a" }}>SAMAQU</em>
+              Bergabung<br />dengan <em style={{ color: "#ADADAD" }}>SAMAQU</em>
             </h1>
             <p className="text-sm leading-relaxed" style={{ color: "rgba(255,255,255,.7)" }}>
               Buat akun untuk menyimpan ukuran, melacak pesanan, dan mendapatkan rekomendasi koleksi personal dari SAMAQU.
