@@ -257,24 +257,27 @@ export async function POST(req: NextRequest) {
         console.error("[CHAT] Permintaan gagal:", error);
         send({ error: ERROR_REPLY });
       } finally {
-        controller.close();
-        // Log percakapan (fire-and-forget) — kegagalan log tidak memengaruhi pelanggan.
+        // Simpan log DULU (di-await) baru tutup stream. Fire-and-forget TIDAK aman di
+        // serverless (Vercel): fungsi bisa dimatikan begitu respons selesai sehingga log hilang.
         if (answer) {
           const escalated = toolsUsed.includes("hubungi_admin") || /whatsapp|admin/i.test(answer);
-          getSupabaseAdmin()
-            .from("chat_logs")
-            .insert({
-              session_id: sessionId,
-              locale,
-              question,
-              answer,
-              tools_used: toolsUsed,
-              escalated,
-            })
-            .then(({ error }) => {
-              if (error) console.error("[CHAT] gagal menulis chat_logs:", error.message);
-            });
+          try {
+            const { error } = await getSupabaseAdmin()
+              .from("chat_logs")
+              .insert({
+                session_id: sessionId,
+                locale,
+                question,
+                answer,
+                tools_used: toolsUsed,
+                escalated,
+              });
+            if (error) console.error("[CHAT] gagal menulis chat_logs:", error.message);
+          } catch (e) {
+            console.error("[CHAT] gagal menulis chat_logs:", e);
+          }
         }
+        controller.close();
       }
     },
   });
