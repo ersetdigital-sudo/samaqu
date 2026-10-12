@@ -708,6 +708,15 @@
     "error": "Sorry, something went wrong. Please try again \ud83d\ude4f",
     "attach": "Attach image",
     "removeImage": "Remove image",
-    "imageError": "Sorry, the image failed to upload. Please try again \ud83d\ude4f"
+    "imageError": "Sorry, the image failed to upload. Please try again \ud83d\ude4f",
+    "typing": "Samaqu Assistant is typing",
+    "online": "Online \u00b7 usually replies fast",
+    "view": "View",
+    "askProduct": "Ask",
+    "askProductMsg": "Ask about",
+    "suggestStock": "Check stock",
+    "suggestSize": "Size recommendation",
+    "suggestOrder": "How to order",
+    "suggestPay": "Payment methods"
   }
 }

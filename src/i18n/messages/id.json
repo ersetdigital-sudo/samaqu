@@ -708,6 +708,15 @@
     "error": "Maaf, ada kendala teknis. Coba lagi ya \ud83d\ude4f",
     "attach": "Lampirkan gambar",
     "removeImage": "Hapus gambar",
-    "imageError": "Maaf, gambar gagal diunggah. Coba lagi ya \ud83d\ude4f"
+    "imageError": "Maaf, gambar gagal diunggah. Coba lagi ya \ud83d\ude4f",
+    "typing": "Samaqu Assistant sedang mengetik",
+    "online": "Online \u00b7 biasanya balas cepat",
+    "view": "Lihat",
+    "askProduct": "Tanya",
+    "askProductMsg": "Tanya soal",
+    "suggestStock": "Cek stok",
+    "suggestSize": "Rekomendasi ukuran",
+    "suggestOrder": "Cara pesan",
+    "suggestPay": "Metode pembayaran"
   }
 }
