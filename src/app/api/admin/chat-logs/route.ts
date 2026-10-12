@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { clearKnowledgeCache } from "@/lib/chat-knowledge";
 
 // Log percakapan live chat untuk dashboard admin.
 //
@@ -43,4 +44,58 @@ export async function GET(req: NextRequest) {
   }
 
   return NextResponse.json({ logs: data || [] });
+}
+
+/**
+ * Ubah satu percakapan menjadi entri FAQ (tabel `faq_items`) supaya asisten "belajar":
+ * FAQ otomatis ikut masuk ke knowledge base. Admin tetap bisa menyuntingnya nanti.
+ */
+export async function POST(req: NextRequest) {
+  if (!(await isAdmin(req))) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const body = await req.json().catch(() => ({}));
+  if (body.action !== "toFaq" || typeof body.id !== "string") {
+    return NextResponse.json({ error: "Permintaan tidak valid" }, { status: 400 });
+  }
+
+  const admin = getSupabaseAdmin();
+
+  const { data: log } = await admin
+    .from("chat_logs")
+    .select("question, answer")
+    .eq("id", body.id)
+    .maybeSingle();
+
+  const question = (log?.question as string) || "";
+  const answer = (log?.answer as string) || "";
+  if (!question.trim() || !answer.trim()) {
+    return NextResponse.json({ error: "Percakapan ini tidak punya pertanyaan/jawaban lengkap" }, { status: 400 });
+  }
+
+  const { data: last } = await admin
+    .from("faq_items")
+    .select("display_order")
+    .order("display_order", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const nextOrder = ((last?.display_order as number) || 0) + 1;
+
+  const { error } = await admin.from("faq_items").insert({
+    question,
+    answer,
+    category: "Lainnya",
+    type: "full",
+    display_order: nextOrder,
+    is_active: true,
+  });
+
+  if (error) {
+    console.error("[ADMIN] Gagal menambah FAQ dari log:", error.message);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  clearKnowledgeCache(); // knowledge base berikutnya memuat FAQ baru ini
+  return NextResponse.json({ ok: true });
 }

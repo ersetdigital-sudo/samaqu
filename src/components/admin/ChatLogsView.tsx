@@ -37,7 +37,31 @@ export default function ChatLogsView() {
   const [loading, setLoading] = useState(true);
   const [onlyEscalated, setOnlyEscalated] = useState(false);
   const [query, setQuery] = useState("");
+  const [addingId, setAddingId] = useState<string | null>(null);
   const toast = useToast();
+
+  async function addToFaq(id: string) {
+    setAddingId(id);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch("/api/admin/chat-logs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token || ""}` },
+        body: JSON.stringify({ action: "toFaq", id }),
+      });
+      const json = await res.json();
+      if (!res.ok || json.error) {
+        toast.showToast("error", json.error || "Gagal menambah FAQ");
+        return;
+      }
+      toast.showToast("success", "Ditambahkan ke FAQ — asisten akan memakainya");
+    } catch (e) {
+      console.error("[ADMIN] Gagal menambah FAQ:", e);
+      toast.showToast("error", "Gagal menambah FAQ");
+    } finally {
+      setAddingId(null);
+    }
+  }
 
   async function load() {
     setLoading(true);
@@ -135,6 +159,20 @@ export default function ChatLogsView() {
               <p className="text-sm whitespace-pre-wrap break-words" style={{ color: "var(--fg2)" }}>
                 {log.answer || "(tidak ada jawaban)"}
               </p>
+
+              {log.question && log.answer && (
+                <div className="pt-1">
+                  <button
+                    onClick={() => addToFaq(log.id)}
+                    disabled={addingId === log.id}
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg disabled:opacity-50"
+                    style={{ border: "1px solid var(--bd)", color: "var(--fg)" }}
+                  >
+                    {addingId === log.id && <Loader2 size={12} className="animate-spin" />}
+                    Tambah ke FAQ
+                  </button>
+                </div>
+              )}
             </article>
           ))}
         </div>
