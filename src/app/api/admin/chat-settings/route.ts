@@ -116,6 +116,7 @@ export async function POST(req: NextRequest) {
           ],
           temperature: 0.4,
           max_tokens: 800,
+          chat_template_kwargs: { enable_thinking: false },
         }),
         signal: AbortSignal.timeout(30000),
       });

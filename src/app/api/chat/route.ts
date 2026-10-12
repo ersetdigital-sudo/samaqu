@@ -206,6 +206,9 @@ export async function POST(req: NextRequest) {
               tools: CHAT_TOOLS,
               tool_choice: "auto",
               stream: true,
+              // Matikan "thinking mode" — tanpa ini MiMo menulis penalaran dulu (tak terlihat
+              // pelanggan) sehingga balasan terasa lama. Paramnya harus di dalam chat_template_kwargs.
+              chat_template_kwargs: { enable_thinking: false },
             }),
             signal: AbortSignal.timeout(60000),
           });
