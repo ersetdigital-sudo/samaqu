@@ -1,9 +1,34 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { MessageCircle, X, Send, Loader2 } from "lucide-react";
+import { X, Send, Loader2 } from "lucide-react";
 import { useSafeTranslations } from "@/lib/safe-i18n";
 import { waNumber } from "@/lib/whatsapp";
+
+/** Ikon robot untuk bubble chat AI (SVG inline, aman dari perubahan ikon library). */
+function RobotIcon({ size = 24 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M12 6.5V4" />
+      <circle cx="12" cy="3" r="1.1" fill="currentColor" stroke="none" />
+      <rect x="4" y="6.5" width="16" height="11.5" rx="3.2" />
+      <circle cx="9" cy="12" r="1.4" fill="currentColor" stroke="none" />
+      <circle cx="15" cy="12" r="1.4" fill="currentColor" stroke="none" />
+      <path d="M9.5 15.6h5" />
+      <path d="M4 11.5H2.4M20 11.5h1.6" />
+    </svg>
+  );
+}
 
 /**
  * Widget live chat AI di storefront. Nonaktif (render null) sampai `/api/chat`
@@ -98,7 +123,7 @@ export default function ChatWidget() {
         className="fixed right-4 sm:right-6 bottom-[calc(var(--mobile-nav-h)+5.5rem)] z-[95] w-14 h-14 rounded-full flex items-center justify-center text-white shadow-lg transition-transform hover:scale-105"
         style={{ background: "var(--gold, #b08d57)" }}
       >
-        <MessageCircle size={24} />
+        <RobotIcon size={26} />
       </button>
     );
   }
@@ -109,9 +134,14 @@ export default function ChatWidget() {
       style={{ background: "var(--bg, #fff)", border: "1px solid #e4e4e7" }}
     >
       <div className="flex items-center justify-between px-4 py-3 text-white shrink-0" style={{ background: "var(--espresso, #2b2118)" }}>
-        <div className="min-w-0">
-          <p className="text-sm font-semibold truncate">{t("title")}</p>
-          <p className="text-[11px] opacity-80 truncate">{t("subtitle")}</p>
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "rgba(255,255,255,.15)" }}>
+            <RobotIcon size={18} />
+          </span>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold truncate">{t("title")}</p>
+            <p className="text-[11px] opacity-80 truncate">{t("subtitle")}</p>
+          </div>
         </div>
         <button onClick={() => setOpen(false)} aria-label={t("close")} className="p-1 opacity-80 hover:opacity-100">
           <X size={18} />
