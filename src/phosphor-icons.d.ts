@@ -14,4 +14,8 @@ declare module "@phosphor-icons/react" {
   export const ListChecks: FC<IconProps>;
   export const Question: FC<IconProps>;
   export const WhatsappLogo: FC<IconProps>;
+  export const House: FC<IconProps>;
+  export const User: FC<IconProps>;
+  export const CaretDown: FC<IconProps>;
+  export const Bag: FC<IconProps>;
 }

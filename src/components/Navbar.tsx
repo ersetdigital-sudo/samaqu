@@ -5,9 +5,19 @@ import { usePathname, useRouter } from "next/navigation";
 import { useSafeLocale, useSafeTranslations } from "@/lib/safe-i18n";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, ShoppingBag, Home, User } from "lucide-react";
 import { MobileDrawer, MobileDrawerCtx } from "@/components/ui/drawer";
-import { Storefront, BookOpen, Ruler, ListChecks, Question, ChatCircle as MessageCircle } from "@phosphor-icons/react";
+import {
+  Storefront,
+  BookOpen,
+  Ruler,
+  ListChecks,
+  Question,
+  ChatCircle as MessageCircle,
+  House,
+  User,
+  CaretDown,
+  Bag,
+} from "@phosphor-icons/react";
 import ProfileDropdown from "@/components/ProfileDropdown";
 import { useCart } from "@/lib/cart-context";
 import CartDrawer from "@/components/CartDrawer";
@@ -47,7 +57,7 @@ type NavItem = { label: string; href: string; hasDropdown?: false; Icon?: IconCo
 
 function getNavItems(t: (key: string) => string): NavItem[] {
   return [
-    { label: t("nav.home"), href: "/", Icon: Home },
+    { label: t("nav.home"), href: "/", Icon: House },
     { label: t("nav.katalog"), href: "/katalog", Icon: Storefront },
     { label: t("nav.testimoni"), href: "/testimoni", Icon: MessageCircle },
     { label: t("nav.sama_quran"), href: "/sama-quran", Icon: BookOpen },
@@ -220,7 +230,7 @@ export default function Navbar() {
                         style={{ color: "inherit" }}
                       >
                         {item.label}
-                        <ChevronDown
+                        <CaretDown
                           className={`h-3.5 w-3.5 transition-transform duration-300 ${
                             openDropdown ? "rotate-180" : ""
                           }`}
@@ -303,7 +313,7 @@ export default function Navbar() {
                   style={{ color: ctaColor, ...iconChipStyle }}
                   aria-label="Akun saya"
                 >
-                  <User size={20} strokeWidth={1.5} />
+                  <User size={20} />
                 </Link>
 
                 {/* Profile — desktop only */}
@@ -317,7 +327,7 @@ export default function Navbar() {
                   style={{ color: ctaColor, ...iconChipStyle }}
                   aria-label="Keranjang belanja"
                 >
-                  <ShoppingBag size={20} strokeWidth={1.5} />
+                  <Bag size={20} />
                   <CartBadge />
                 </button>
                 <button
@@ -420,7 +430,7 @@ function DrawerNavContent({
                   {item.Icon && <item.Icon size={22} weight="duotone" style={{ color: "var(--espresso)" }} />}
                   {item.label}
                 </span>
-                <ChevronDown
+                <CaretDown
                   size={16}
                   className={`transition-transform duration-300 ${bantuanOpen ? "rotate-180" : ""}`}
                   style={{ color: "var(--espresso)" }}
@@ -516,7 +526,7 @@ function DrawerNavContent({
           }}
           onClick={onClose}
         >
-          <User size={22} strokeWidth={1.6} style={{ color: "var(--espresso)" }} />
+          <User size={22} weight="duotone" style={{ color: "var(--espresso)" }} />
           {t("nav.account")}
         </a>
       </div>
