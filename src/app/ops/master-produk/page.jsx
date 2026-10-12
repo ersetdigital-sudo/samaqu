@@ -923,7 +923,7 @@ export default function MasterProduk() {
                 </>
               ) : activeTab === 'report' ? (
           <>
-            {/* ── Tab Laporan Stok: 4 KPI stok ── */}
+            {/* ── Tab Laporan Stok: 4 KPI stok (teks putih semua biar terbaca di header biru) ── */}
             {/* Card 1: Total Stok */}
             <button
               type="button"
@@ -932,16 +932,16 @@ export default function MasterProduk() {
               title="Tampilkan semua varian"
             >
               <div className="flex flex-col h-full justify-between gap-2 md:gap-3">
-                <div className="flex items-center gap-2 text-blue-100">
+                <div className="flex items-center gap-2 text-white">
                   <IconBoxes size={18} className="shrink-0" />
                   <p className="text-[10px] md:text-xs font-bold uppercase tracking-wider md:tracking-widest">TOTAL STOK</p>
                 </div>
                 <div>
                   <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight">
                     {totalStockUnits.toLocaleString('id-ID')}
-                    <span className="text-sm md:text-base font-bold text-blue-100"> unit</span>
+                    <span className="text-sm md:text-base font-bold text-white"> unit</span>
                   </p>
-                  <p className="text-[10px] md:text-xs text-blue-200 mt-1">Total unit tersedia</p>
+                  <p className="text-[10px] md:text-xs text-white mt-1">Total unit tersedia</p>
                 </div>
               </div>
             </button>
@@ -954,16 +954,16 @@ export default function MasterProduk() {
               title="Filter varian yang perlu restock"
             >
               <div className="flex flex-col h-full justify-between gap-2 md:gap-3">
-                <div className="flex items-center gap-2 text-blue-100">
+                <div className="flex items-center gap-2 text-white">
                   <IconAlertTriangle size={18} className="shrink-0" />
                   <p className="text-[10px] md:text-xs font-bold uppercase tracking-wider md:tracking-widest truncate">STOK MENIPIS</p>
                 </div>
                 <div>
-                  <p className="text-xl md:text-3xl font-black text-amber-300 font-inter tracking-tight">
+                  <p className="text-xl md:text-3xl font-black text-white font-inter tracking-tight">
                     {lowStockVariantCount.toLocaleString('id-ID')}
-                    <span className="text-xs md:text-sm font-bold text-amber-200/80"> varian</span>
+                    <span className="text-xs md:text-sm font-bold text-white"> varian</span>
                   </p>
-                  <p className="text-[10px] md:text-xs text-blue-200 mt-1">Perlu restock</p>
+                  <p className="text-[10px] md:text-xs text-white mt-1">Perlu restock</p>
                 </div>
               </div>
             </button>
@@ -976,16 +976,16 @@ export default function MasterProduk() {
               title="Lihat data barang masuk"
             >
               <div className="flex flex-col h-full justify-between gap-2 md:gap-3">
-                <div className="flex items-center gap-2 text-blue-100">
+                <div className="flex items-center gap-2 text-white">
                   <IconArrowDownToLine size={18} className="shrink-0" />
                   <p className="text-[10px] md:text-xs font-bold uppercase tracking-wider md:tracking-widest truncate">BARANG MASUK</p>
                 </div>
                 <div>
-                  <p className="text-xl md:text-3xl font-black text-emerald-300 font-inter tracking-tight">
+                  <p className="text-xl md:text-3xl font-black text-white font-inter tracking-tight">
                     {stockInMonthUnits.toLocaleString('id-ID')}
-                    <span className="text-xs md:text-sm font-bold text-emerald-200/80"> unit</span>
+                    <span className="text-xs md:text-sm font-bold text-white"> unit</span>
                   </p>
-                  <p className="text-[10px] md:text-xs text-blue-200 mt-1">Bulan berjalan (WIB)</p>
+                  <p className="text-[10px] md:text-xs text-white mt-1">Bulan berjalan (WIB)</p>
                 </div>
               </div>
             </button>
@@ -998,16 +998,16 @@ export default function MasterProduk() {
               title="Filter varian yang stoknya habis"
             >
               <div className="flex flex-col h-full justify-between gap-2 md:gap-3">
-                <div className="flex items-center gap-2 text-blue-100">
+                <div className="flex items-center gap-2 text-white">
                   <IconPackageX size={18} className="shrink-0" />
                   <p className="text-[10px] md:text-xs font-bold uppercase tracking-wider md:tracking-widest">STOK HABIS</p>
                 </div>
                 <div>
-                  <p className="text-2xl md:text-3xl font-black text-red-300 font-inter tracking-tight">
+                  <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight">
                     {outOfStockVariantCount.toLocaleString('id-ID')}
-                    <span className="text-xs md:text-sm font-bold text-red-200/80"> varian</span>
+                    <span className="text-xs md:text-sm font-bold text-white"> varian</span>
                   </p>
-                  <p className="text-[10px] md:text-xs text-blue-200 mt-1">Tidak ada stok tersedia</p>
+                  <p className="text-[10px] md:text-xs text-white mt-1">Tidak ada stok tersedia</p>
                 </div>
               </div>
             </button>
@@ -1229,7 +1229,7 @@ export default function MasterProduk() {
               onClick={() => setActiveTab('produk')}
               className={`flex items-center justify-center gap-2 px-2 md:px-6 py-3 rounded-lg transition-all ${
                 activeTab === 'produk'
-                  ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-md font-semibold'
+                  ? 'bg-blue-600 text-white shadow-md font-semibold'
                   : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100/50 dark:hover:bg-slate-700/50 font-medium'
               }`}
               style={{ fontSize: '13px', letterSpacing: '0.01em' }}
@@ -1241,7 +1241,7 @@ export default function MasterProduk() {
               onClick={() => setActiveTab('report')}
               className={`flex items-center justify-center gap-2 px-2 md:px-6 py-3 rounded-lg transition-all ${
                 activeTab === 'report'
-                  ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-md font-semibold'
+                  ? 'bg-blue-600 text-white shadow-md font-semibold'
                   : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100/50 dark:hover:bg-slate-700/50 font-medium'
               }`}
               style={{ fontSize: '13px', letterSpacing: '0.01em' }}
@@ -1253,7 +1253,7 @@ export default function MasterProduk() {
               onClick={() => setActiveTab('stockin')}
               className={`flex items-center justify-center gap-2 px-2 md:px-6 py-3 rounded-lg transition-all ${
                 activeTab === 'stockin'
-                  ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-md font-semibold'
+                  ? 'bg-blue-600 text-white shadow-md font-semibold'
                   : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100/50 dark:hover:bg-slate-700/50 font-medium'
               }`}
               style={{ fontSize: '13px', letterSpacing: '0.01em' }}
@@ -1265,7 +1265,7 @@ export default function MasterProduk() {
               onClick={() => setActiveTab('stockout')}
               className={`flex items-center justify-center gap-2 px-2 md:px-6 py-3 rounded-lg transition-all ${
                 activeTab === 'stockout'
-                  ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-md font-semibold'
+                  ? 'bg-blue-600 text-white shadow-md font-semibold'
                   : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100/50 dark:hover:bg-slate-700/50 font-medium'
               }`}
               style={{ fontSize: '13px', letterSpacing: '0.01em' }}
