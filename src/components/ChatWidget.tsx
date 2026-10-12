@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { X, Send, Loader2 } from "lucide-react";
-import { useSafeTranslations } from "@/lib/safe-i18n";
+import { useSafeTranslations, useSafeLocale } from "@/lib/safe-i18n";
 import { waNumber } from "@/lib/whatsapp";
 
 /** Ikon robot untuk bubble chat AI (SVG inline, aman dari perubahan ikon library). */
@@ -45,6 +45,7 @@ interface Msg {
 
 export default function ChatWidget() {
   const t = useSafeTranslations("chat");
+  const locale = useSafeLocale();
   const [ready, setReady] = useState(false);
   const [open, setOpen] = useState(false);
   const [greeting, setGreeting] = useState("");
@@ -54,6 +55,24 @@ export default function ChatWidget() {
   const [loading, setLoading] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
   const startedRef = useRef(false);
+  const sessionIdRef = useRef("");
+
+  // ID sesi anonim (localStorage) supaya log percakapan bisa dikelompokkan per pengunjung.
+  useEffect(() => {
+    try {
+      let sid = localStorage.getItem("samaqu_chat_sid");
+      if (!sid) {
+        sid =
+          typeof crypto !== "undefined" && crypto.randomUUID
+            ? crypto.randomUUID()
+            : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        localStorage.setItem("samaqu_chat_sid", sid);
+      }
+      sessionIdRef.current = sid;
+    } catch {
+      sessionIdRef.current = "";
+    }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -88,8 +107,10 @@ export default function ChatWidget() {
     const text = input.trim();
     if (!text || loading) return;
 
-    const next: Msg[] = [...messages, { role: "user", content: text }];
-    setMessages(next);
+    const history: Msg[] = [...messages, { role: "user", content: text }];
+    // Pesan asisten kosong yang diisi bertahap dari stream.
+    const render = (content: string) => setMessages([...history, { role: "assistant", content }]);
+    setMessages([...history, { role: "assistant", content: "" }]);
     setInput("");
     setLoading(true);
 
@@ -97,13 +118,51 @@ export default function ChatWidget() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: next }),
+        body: JSON.stringify({ messages: history, sessionId: sessionIdRef.current, locale }),
       });
-      const json = await res.json().catch(() => ({}));
-      const reply = json.reply || json.error || t("error");
-      setMessages((m) => [...m, { role: "assistant", content: reply }]);
+
+      if (!res.ok || !res.body) {
+        const json = await res.json().catch(() => ({}));
+        render(json.error || t("error"));
+        return;
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let acc = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed.startsWith("data:")) continue;
+          const payload = trimmed.slice(5).trim();
+          if (!payload) continue;
+
+          let evt: { delta?: string; reset?: boolean; error?: string; done?: boolean };
+          try {
+            evt = JSON.parse(payload);
+          } catch {
+            continue;
+          }
+
+          if (evt.reset) acc = "";
+          else if (typeof evt.delta === "string") acc += evt.delta;
+          else if (evt.error) acc = acc || evt.error;
+
+          render(acc);
+        }
+      }
+
+      if (!acc) render(t("error"));
     } catch {
-      setMessages((m) => [...m, { role: "assistant", content: t("error") }]);
+      render(t("error"));
     } finally {
       setLoading(false);
     }
@@ -111,8 +170,13 @@ export default function ChatWidget() {
 
   if (!ready) return null;
 
+  // Handoff WhatsApp membawa konteks: pertanyaan terakhir pelanggan ikut disertakan.
+  const lastUserMessage = [...messages].reverse().find((m) => m.role === "user")?.content;
+  const handoffText = lastUserMessage
+    ? `${t("handoffMessage")}\n\nPertanyaan saya: "${lastUserMessage}"`
+    : t("handoffMessage");
   const waHref = whatsapp
-    ? `https://wa.me/${waNumber(whatsapp)}?text=${encodeURIComponent(t("handoffMessage"))}`
+    ? `https://wa.me/${waNumber(whatsapp)}?text=${encodeURIComponent(handoffText)}`
     : "";
 
   if (!open) {
@@ -165,7 +229,7 @@ export default function ChatWidget() {
             </div>
           </div>
         ))}
-        {loading && (
+        {loading && !messages[messages.length - 1]?.content && (
           <div className="flex justify-start">
             <div className="rounded-2xl px-3 py-2 text-sm" style={{ background: "#fff", border: "1px solid #ececec" }}>
               <Loader2 size={16} className="animate-spin" />
