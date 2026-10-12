@@ -705,6 +705,9 @@
     "open": "Buka chat",
     "handoff": "Lanjut chat ke WhatsApp admin",
     "handoffMessage": "Halo admin SAMAQU, saya mau dibantu soal produk.",
-    "error": "Maaf, ada kendala teknis. Coba lagi ya \ud83d\ude4f"
+    "error": "Maaf, ada kendala teknis. Coba lagi ya \ud83d\ude4f",
+    "attach": "Lampirkan gambar",
+    "removeImage": "Hapus gambar",
+    "imageError": "Maaf, gambar gagal diunggah. Coba lagi ya \ud83d\ude4f"
   }
 }
