@@ -93,9 +93,9 @@ export default function AkunPanduanUkuranPage() {
               onClick={() => setActiveTab(tab.value)}
               className="px-4 py-2 text-[12px] font-medium rounded-full whitespace-nowrap transition-all duration-200"
               style={{
-                background: activeTab === tab.value ? "#0f3d33" : "transparent",
-                color: activeTab === tab.value ? "#fff" : "#6c7a75",
-                border: `1px solid ${activeTab === tab.value ? "#0f3d33" : "#e6dfd2"}`,
+                background: activeTab === tab.value ? "#000000" : "transparent",
+                color: activeTab === tab.value ? "#fff" : "#777777",
+                border: `1px solid ${activeTab === tab.value ? "#000000" : "#E0E0E0"}`,
                 opacity: !hasTabImage && !isSemua ? 0.5 : 1,
               }}
             >
@@ -109,16 +109,16 @@ export default function AkunPanduanUkuranPage() {
       <AnimatePresence mode="wait">
         {loading ? (
           <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center py-20">
-            <Loader2 size={24} className="animate-spin mx-auto mb-3" style={{ color: "#0f3d33" }} />
-            <p className="text-sm" style={{ color: "#6c7a75" }}>{t("loading")}</p>
+            <Loader2 size={24} className="animate-spin mx-auto mb-3" style={{ color: "#000000" }} />
+            <p className="text-sm" style={{ color: "#777777" }}>{t("loading")}</p>
           </motion.div>
         ) : filteredGuides.length === 0 ? (
           <motion.div key="empty" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="text-center py-20 akun-card">
             <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: "#e3ede9" }}>
-              <Ruler size={28} strokeWidth={1.4} style={{ color: "#0f3d33" }} />
+              <Ruler size={28} strokeWidth={1.4} style={{ color: "#000000" }} />
             </div>
-            <p className="text-sm font-semibold mb-1" style={{ color: "#0f3d33" }}>{t("emptyTitle")}</p>
-            <p className="text-xs" style={{ color: "#6c7a75" }}>{t("emptyDesc")}</p>
+            <p className="text-sm font-semibold mb-1" style={{ color: "#000000" }}>{t("emptyTitle")}</p>
+            <p className="text-xs" style={{ color: "#777777" }}>{t("emptyDesc")}</p>
           </motion.div>
         ) : (
           <motion.div key={activeTab} variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -136,24 +136,24 @@ export default function AkunPanduanUkuranPage() {
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     loading="lazy"
                   />
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ background: "rgba(15,61,51,.3)" }}>
-                    <div className="w-11 h-11 rounded-full flex items-center justify-center" style={{ background: "#d8c39a", boxShadow: "0 4px 16px rgba(216,195,154,.5)" }}>
-                      <Eye size={18} color="#4a3a1c" strokeWidth={1.8} />
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ background: "rgba(0,0,0,.3)" }}>
+                    <div className="w-11 h-11 rounded-full flex items-center justify-center" style={{ background: "#C5C5C5", boxShadow: "0 4px 16px rgba(197,197,197,.5)" }}>
+                      <Eye size={18} color="#000000" strokeWidth={1.8} />
                     </div>
                   </div>
                 </div>
                 <div className="p-4 flex flex-col flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <Ruler size={14} strokeWidth={1.8} style={{ color: "#0f3d33" }} />
-                    <p className="text-[13px] font-semibold" style={{ color: "#0f3d33" }}>{guide.category}</p>
+                    <Ruler size={14} strokeWidth={1.8} style={{ color: "#000000" }} />
+                    <p className="text-[13px] font-semibold" style={{ color: "#000000" }}>{guide.category}</p>
                   </div>
-                  <p className="text-[11px] mb-3 flex-1" style={{ color: "#6c7a75" }}>
+                  <p className="text-[11px] mb-3 flex-1" style={{ color: "#777777" }}>
                     {t(CATEGORY_DESC_KEYS[guide.category] || "descDefault")}
                   </p>
                   <button
                     onClick={() => setLightboxGuide(guide)}
                     className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-[12px] font-semibold transition-all duration-200 cursor-pointer"
-                    style={{ background: "#0f3d33", color: "#fff" }}
+                    style={{ background: "#000000", color: "#fff" }}
                   >
                     <Eye size={14} strokeWidth={1.8} /> {t("viewDetail")}
                   </button>
@@ -167,7 +167,7 @@ export default function AkunPanduanUkuranPage() {
       {/* CTA */}
       {!loading && (
         <div className="text-center mt-8">
-          <p className="text-sm mb-3" style={{ color: "#6c7a75" }}>
+          <p className="text-sm mb-3" style={{ color: "#777777" }}>
             {t("stillUnsure")}
           </p>
           <a
@@ -175,7 +175,7 @@ export default function AkunPanduanUkuranPage() {
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 rounded-full px-6 py-3 text-[12px] tracking-[0.12em] uppercase font-semibold transition hover:opacity-90"
-            style={{ background: "#d8c39a", color: "#4a3a1c" }}
+            style={{ background: "#C5C5C5", color: "#000000" }}
           >
             <MessageCircle size={16} strokeWidth={1.5} /> {t("consultWA")}
           </a>

@@ -43,7 +43,7 @@ export default function RegisterPage() {
           background: "linear-gradient(135deg, rgba(0,0,0,.15) 0%, rgba(0,0,0,.95) 50%, rgba(0,0,0,1) 100%)",
         }} />
         <div className="absolute inset-0 opacity-20" style={{
-          background: "radial-gradient(circle at 30% 40%, rgba(0,0,0,.4) 0%, transparent 50%), radial-gradient(circle at 70% 80%, rgba(157,122,58,.3) 0%, transparent 40%)",
+          background: "radial-gradient(circle at 30% 40%, rgba(0,0,0,.4) 0%, transparent 50%), radial-gradient(circle at 70% 80%, rgba(125,125,125,.3) 0%, transparent 40%)",
         }} />
         <div className="relative z-10 flex flex-col justify-between p-12 lg:p-16 w-full">
           <div>
@@ -52,7 +52,7 @@ export default function RegisterPage() {
           </div>
           <div className="max-w-md">
             <h1 className="text-4xl lg:text-5xl font-medium leading-tight mb-4" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--cream)" }}>
-              Bergabung<br />dengan <em style={{ color: "#d4a86a" }}>SAMAQU</em>
+              Bergabung<br />dengan <em style={{ color: "#ADADAD" }}>SAMAQU</em>
             </h1>
             <p className="text-sm leading-relaxed" style={{ color: "rgba(255,255,255,.7)" }}>
               Buat akun untuk menyimpan ukuran, melacak pesanan, dan mendapatkan rekomendasi koleksi personal dari SAMAQU.

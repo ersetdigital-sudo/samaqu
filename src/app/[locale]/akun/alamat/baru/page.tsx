@@ -95,7 +95,7 @@ export default function AlamatBaruPage() {
         ) : (
           <>
             <div>
-              <span className="block text-xs md:text-sm font-bold text-[#6c7a75] mb-2">Label Alamat</span>
+              <span className="block text-xs md:text-sm font-bold text-[#777777] mb-2">Label Alamat</span>
               <div className="flex gap-2">
                 {["Rumah", "Kantor", "Lainnya"].map((l) => {
                   const on = form.label === l;
@@ -103,8 +103,8 @@ export default function AlamatBaruPage() {
                     <button
                       key={l}
                       onClick={() => set("label", l)}
-                      className={`px-4 py-2.5 rounded-full text-[13px] ${on ? "font-extrabold text-white" : "font-bold bg-white text-[#3c4b46] border border-[#dfd8ca]"}`}
-                      style={on ? { background: "#0f3d33" } : undefined}
+                      className={`px-4 py-2.5 rounded-full text-[13px] ${on ? "font-extrabold text-white" : "font-bold bg-white text-[#000000] border border-[#D8D8D8]"}`}
+                      style={on ? { background: "#000000" } : undefined}
                     >
                       {l}
                     </button>
@@ -115,64 +115,64 @@ export default function AlamatBaruPage() {
 
             <div className="space-y-4 md:space-y-5 mt-5">
               <label className="block">
-                <span className="block text-xs md:text-sm font-bold text-[#6c7a75] mb-1.5">Nama Penerima</span>
+                <span className="block text-xs md:text-sm font-bold text-[#777777] mb-1.5">Nama Penerima</span>
                 <input value={form.recipient_name} onChange={(e) => set("recipient_name", e.target.value)} placeholder="Nama lengkap penerima"
-                  className="w-full rounded-2xl border bg-white px-4 py-3.5 text-sm md:text-base font-semibold outline-none focus:border-[#0f3d33]"
-                  style={{ borderColor: errors.recipient_name ? "#e74c3c" : "#dfd8ca", color: "#0f3d33" }} />
+                  className="w-full rounded-2xl border bg-white px-4 py-3.5 text-sm md:text-base font-semibold outline-none focus:border-[#000000]"
+                  style={{ borderColor: errors.recipient_name ? "#e74c3c" : "#D8D8D8", color: "#000000" }} />
                 {errors.recipient_name && <span className="block text-[11px] text-red-600 mt-1.5">{errors.recipient_name}</span>}
               </label>
 
               <label className="block">
-                <span className="block text-xs md:text-sm font-bold text-[#6c7a75] mb-1.5">Nomor HP</span>
-                <div className="flex items-center rounded-2xl border border-[#dfd8ca] bg-white overflow-hidden focus-within:border-[#0f3d33]">
-                  <span className="px-4 py-3.5 text-sm md:text-base font-bold text-[#6c7a75] border-r border-[#eee7da]">+62</span>
+                <span className="block text-xs md:text-sm font-bold text-[#777777] mb-1.5">Nomor HP</span>
+                <div className="flex items-center rounded-2xl border border-[#D8D8D8] bg-white overflow-hidden focus-within:border-[#000000]">
+                  <span className="px-4 py-3.5 text-sm md:text-base font-bold text-[#777777] border-r border-[#E8E8E8]">+62</span>
                   <input type="tel" value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="812 3344 9087"
-                    className="flex-1 px-4 py-3.5 text-sm md:text-base font-semibold outline-none" style={{ color: "#0f3d33" }} />
+                    className="flex-1 px-4 py-3.5 text-sm md:text-base font-semibold outline-none" style={{ color: "#000000" }} />
                 </div>
                 {errors.phone && <span className="block text-[11px] text-red-600 mt-1.5">{errors.phone}</span>}
               </label>
 
               <div className="grid grid-cols-2 gap-3">
                 <label className="block">
-                  <span className="block text-xs md:text-sm font-bold text-[#6c7a75] mb-1.5">Provinsi</span>
+                  <span className="block text-xs md:text-sm font-bold text-[#777777] mb-1.5">Provinsi</span>
                   <select value={form.province} onChange={(e) => set("province", e.target.value)}
-                    className="w-full rounded-2xl border bg-white px-3.5 py-3.5 text-sm font-semibold outline-none focus:border-[#0f3d33]"
-                    style={{ borderColor: errors.province ? "#e74c3c" : "#dfd8ca", color: "#0f3d33" }}>
+                    className="w-full rounded-2xl border bg-white px-3.5 py-3.5 text-sm font-semibold outline-none focus:border-[#000000]"
+                    style={{ borderColor: errors.province ? "#e74c3c" : "#D8D8D8", color: "#000000" }}>
                     <option value="">Pilih provinsi</option>
                     {PROVINCES.map((p) => <option key={p} value={p}>{p}</option>)}
                   </select>
                 </label>
                 <label className="block">
-                  <span className="block text-xs md:text-sm font-bold text-[#6c7a75] mb-1.5">Kota / Kabupaten</span>
+                  <span className="block text-xs md:text-sm font-bold text-[#777777] mb-1.5">Kota / Kabupaten</span>
                   <input value={form.city} onChange={(e) => set("city", e.target.value)} placeholder="Sleman"
-                    className="w-full rounded-2xl border bg-white px-4 py-3.5 text-sm font-semibold outline-none focus:border-[#0f3d33]"
-                    style={{ borderColor: errors.city ? "#e74c3c" : "#dfd8ca", color: "#0f3d33" }} />
+                    className="w-full rounded-2xl border bg-white px-4 py-3.5 text-sm font-semibold outline-none focus:border-[#000000]"
+                    style={{ borderColor: errors.city ? "#e74c3c" : "#D8D8D8", color: "#000000" }} />
                 </label>
                 <label className="block">
-                  <span className="block text-xs md:text-sm font-bold text-[#6c7a75] mb-1.5">Kecamatan</span>
+                  <span className="block text-xs md:text-sm font-bold text-[#777777] mb-1.5">Kecamatan</span>
                   <input value={form.kecamatan} onChange={(e) => set("kecamatan", e.target.value)} placeholder="Ngaglik"
-                    className="w-full rounded-2xl border border-[#dfd8ca] bg-white px-4 py-3.5 text-sm font-semibold outline-none focus:border-[#0f3d33]" style={{ color: "#0f3d33" }} />
+                    className="w-full rounded-2xl border border-[#D8D8D8] bg-white px-4 py-3.5 text-sm font-semibold outline-none focus:border-[#000000]" style={{ color: "#000000" }} />
                 </label>
                 <label className="block">
-                  <span className="block text-xs md:text-sm font-bold text-[#6c7a75] mb-1.5">Kode Pos</span>
+                  <span className="block text-xs md:text-sm font-bold text-[#777777] mb-1.5">Kode Pos</span>
                   <input inputMode="numeric" value={form.postal_code} onChange={(e) => set("postal_code", e.target.value)} placeholder="55581"
-                    className="w-full rounded-2xl border bg-white px-4 py-3.5 text-sm font-semibold outline-none focus:border-[#0f3d33]"
-                    style={{ borderColor: errors.postal_code ? "#e74c3c" : "#dfd8ca", color: "#0f3d33" }} />
+                    className="w-full rounded-2xl border bg-white px-4 py-3.5 text-sm font-semibold outline-none focus:border-[#000000]"
+                    style={{ borderColor: errors.postal_code ? "#e74c3c" : "#D8D8D8", color: "#000000" }} />
                 </label>
               </div>
 
               <label className="block">
-                <span className="block text-xs md:text-sm font-bold text-[#6c7a75] mb-1.5">Alamat Lengkap</span>
+                <span className="block text-xs md:text-sm font-bold text-[#777777] mb-1.5">Alamat Lengkap</span>
                 <textarea rows={3} value={form.address} onChange={(e) => set("address", e.target.value)} placeholder="Nama jalan, nomor rumah, RT/RW, patokan"
-                  className="w-full rounded-2xl border bg-white px-4 py-3.5 text-sm md:text-base font-semibold outline-none focus:border-[#0f3d33] resize-none"
-                  style={{ borderColor: errors.address ? "#e74c3c" : "#dfd8ca", color: "#0f3d33" }} />
+                  className="w-full rounded-2xl border bg-white px-4 py-3.5 text-sm md:text-base font-semibold outline-none focus:border-[#000000] resize-none"
+                  style={{ borderColor: errors.address ? "#e74c3c" : "#D8D8D8", color: "#000000" }} />
                 {errors.address && <span className="block text-[11px] text-red-600 mt-1.5">{errors.address}</span>}
               </label>
 
-              <div className="flex items-center gap-3 rounded-2xl bg-white border border-[#eee7da] px-4 py-3.5 md:bg-[#faf8f4]">
+              <div className="flex items-center gap-3 rounded-2xl bg-white border border-[#E8E8E8] px-4 py-3.5 md:bg-[#faf8f4]">
                 <span className="min-w-0 flex-1">
-                  <span className="block font-bold text-sm" style={{ color: "#0f3d33" }}>Jadikan Alamat Utama</span>
-                  <span className="block text-[11px] md:text-xs text-[#6c7a75] mt-0.5">Dipakai otomatis saat checkout.</span>
+                  <span className="block font-bold text-sm" style={{ color: "#000000" }}>Jadikan Alamat Utama</span>
+                  <span className="block text-[11px] md:text-xs text-[#777777] mt-0.5">Dipakai otomatis saat checkout.</span>
                 </span>
                 <button
                   type="button"
@@ -180,7 +180,7 @@ export default function AlamatBaruPage() {
                   aria-checked={form.is_default}
                   onClick={() => set("is_default", !form.is_default)}
                   className="relative w-12 h-7 shrink-0 rounded-full transition"
-                  style={{ background: form.is_default ? "#0f3d33" : "#dfd8ca" }}
+                  style={{ background: form.is_default ? "#000000" : "#D8D8D8" }}
                 >
                   <span className="absolute top-1 left-1 w-5 h-5 rounded-full bg-white shadow transition-transform" style={{ transform: form.is_default ? "translateX(20px)" : "none" }} />
                 </button>

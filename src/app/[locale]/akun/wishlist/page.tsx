@@ -77,21 +77,21 @@ export default function WishlistPage() {
                 {thumbs[p.id] ? (
                   <img src={thumbs[p.id]} alt={p.name} className="w-full h-full object-cover" />
                 ) : (
-                  <svg viewBox="0 0 24 24" className="w-9 h-9 md:w-14 md:h-14" fill="none" stroke="#0f3d33" strokeWidth="1.1"><path d="M9 3h6l3 3-2 2v13H8V8L6 6z" /></svg>
+                  <svg viewBox="0 0 24 24" className="w-9 h-9 md:w-14 md:h-14" fill="none" stroke="#000000" strokeWidth="1.1"><path d="M9 3h6l3 3-2 2v13H8V8L6 6z" /></svg>
                 )}
               </Link>
               <button onClick={() => hapus(p.id)} className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 grid place-items-center shadow" aria-label="Hapus dari wishlist">
-                <svg viewBox="0 0 24 24" className="w-4 h-4" fill="#0f3d33"><path d="M12 20s-7-4.35-7-9a4 4 0 0 1 7-2.65A4 4 0 0 1 19 11c0 4.65-7 9-7 9Z" /></svg>
+                <svg viewBox="0 0 24 24" className="w-4 h-4" fill="#000000"><path d="M12 20s-7-4.35-7-9a4 4 0 0 1 7-2.65A4 4 0 0 1 19 11c0 4.65-7 9-7 9Z" /></svg>
               </button>
               <div className="min-w-0 flex-1 md:mt-3">
                 <Link href={to(`/katalog/${p.id}`)}>
-                  <p className="font-bold text-sm md:text-base leading-snug" style={{ color: "#0f3d33" }}>{p.name}</p>
+                  <p className="font-bold text-sm md:text-base leading-snug" style={{ color: "#000000" }}>{p.name}</p>
                 </Link>
-                <p className="text-[12px] md:text-sm text-[#6c7a75]">{p.category}</p>
-                <p className="font-extrabold mt-1 md:mt-2" style={{ color: "#0f3d33" }}>{priceOf(p)}</p>
+                <p className="text-[12px] md:text-sm text-[#777777]">{p.category}</p>
+                <p className="font-extrabold mt-1 md:mt-2" style={{ color: "#000000" }}>{priceOf(p)}</p>
                 <div className="flex items-center gap-2 mt-2.5">
                   <Link href={to(`/katalog/${p.id}`)} className="akun-btn-gold flex-1 py-2.5 rounded-full text-xs font-extrabold text-center">Pilih Opsi</Link>
-                  <button onClick={() => hapus(p.id)} className="w-9 h-9 grid place-items-center rounded-full border border-[#e5ded1] text-[#9aa5a1]" aria-label="Hapus">
+                  <button onClick={() => hapus(p.id)} className="w-9 h-9 grid place-items-center rounded-full border border-[#DFDFDF] text-[#9aa5a1]" aria-label="Hapus">
                     <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13" /></svg>
                   </button>
                 </div>
@@ -102,10 +102,10 @@ export default function WishlistPage() {
       ) : (
         <div className="akun-card p-8 md:p-12 text-center md:max-w-[520px] md:mx-auto">
           <div className="mx-auto w-20 h-20 rounded-2xl grid place-items-center" style={{ background: "#e3ede9" }}>
-            <svg viewBox="0 0 24 24" className="w-10 h-10" fill="none" stroke="#0f3d33" strokeWidth="1.5"><path d="M12 20s-7-4.35-7-9a4 4 0 0 1 7-2.65A4 4 0 0 1 19 11c0 4.65-7 9-7 9Z" /></svg>
+            <svg viewBox="0 0 24 24" className="w-10 h-10" fill="none" stroke="#000000" strokeWidth="1.5"><path d="M12 20s-7-4.35-7-9a4 4 0 0 1 7-2.65A4 4 0 0 1 19 11c0 4.65-7 9-7 9Z" /></svg>
           </div>
-          <p className="mt-5 text-lg font-extrabold" style={{ color: "#0f3d33" }}>Wishlist kamu masih kosong</p>
-          <p className="text-sm text-[#6c7a75] mt-1">Tandai koleksi favoritmu biar gampang dicari lagi.</p>
+          <p className="mt-5 text-lg font-extrabold" style={{ color: "#000000" }}>Wishlist kamu masih kosong</p>
+          <p className="text-sm text-[#777777] mt-1">Tandai koleksi favoritmu biar gampang dicari lagi.</p>
           <Link href={to("/katalog")} className="akun-btn-gold mt-6 inline-block w-full md:w-auto md:px-10 py-3.5 rounded-full font-extrabold text-sm tracking-wide text-center">LIHAT KOLEKSI</Link>
         </div>
       )}

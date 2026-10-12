@@ -16,8 +16,8 @@ const KOSONG: Profil = { name: "", whatsapp: "", dd: "", mm: "", yyyy: "" };
 function Baris({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
     <div>
-      <span className="block text-xs md:text-sm font-bold text-[#6c7a75] mb-1">{label}</span>
-      <p className="text-sm md:text-base font-semibold" style={{ color: value ? "#0f3d33" : "#9aa5a1" }}>
+      <span className="block text-xs md:text-sm font-bold text-[#777777] mb-1">{label}</span>
+      <p className="text-sm md:text-base font-semibold" style={{ color: value ? "#000000" : "#9aa5a1" }}>
         {value || "Belum diisi"}
       </p>
       {hint && <span className="block text-[11px] text-[#9aa5a1] mt-1">{hint}</span>}
@@ -115,8 +115,8 @@ export default function ProfilPage() {
     ? `${Number(saved.dd)} ${BULAN[Number(saved.mm) - 1]} ${saved.yyyy}`
     : "";
 
-  const inputClass = "w-full rounded-2xl border border-[#dfd8ca] bg-white px-4 py-3.5 text-sm md:text-base font-semibold outline-none focus:border-[#0f3d33]";
-  const selectClass = "rounded-2xl border border-[#dfd8ca] bg-white px-3 py-3.5 text-sm font-semibold outline-none";
+  const inputClass = "w-full rounded-2xl border border-[#D8D8D8] bg-white px-4 py-3.5 text-sm md:text-base font-semibold outline-none focus:border-[#000000]";
+  const selectClass = "rounded-2xl border border-[#D8D8D8] bg-white px-3 py-3.5 text-sm font-semibold outline-none";
 
   return (
     <>
@@ -130,52 +130,52 @@ export default function ProfilPage() {
             {editing ? (
               <>
                 <label className="block">
-                  <span className="block text-xs md:text-sm font-bold text-[#6c7a75] mb-1.5">Nama Lengkap</span>
+                  <span className="block text-xs md:text-sm font-bold text-[#777777] mb-1.5">Nama Lengkap</span>
                   <input
                     type="text"
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
                     className={inputClass}
-                    style={{ color: "#0f3d33" }}
+                    style={{ color: "#000000" }}
                   />
                   {errors.name && <span className="block text-[11px] text-red-600 mt-1.5">{errors.name}</span>}
                 </label>
 
                 <label className="block">
-                  <span className="block text-xs md:text-sm font-bold text-[#6c7a75] mb-1.5">Email</span>
+                  <span className="block text-xs md:text-sm font-bold text-[#777777] mb-1.5">Email</span>
                   <input
                     type="text"
                     value={email}
                     readOnly
-                    className="w-full rounded-2xl border border-[#e5e0d6] bg-[#f2efe8] px-4 py-3.5 text-sm md:text-base font-semibold text-[#9aa5a1] cursor-not-allowed"
+                    className="w-full rounded-2xl border border-[#E0E0E0] bg-[#f2efe8] px-4 py-3.5 text-sm md:text-base font-semibold text-[#9aa5a1] cursor-not-allowed"
                   />
                   <span className="block text-[11px] text-[#9aa5a1] mt-1.5">Email tidak dapat diubah.</span>
                 </label>
 
                 <label className="block">
-                  <span className="block text-xs md:text-sm font-bold text-[#6c7a75] mb-1.5">Nomor HP / WhatsApp</span>
+                  <span className="block text-xs md:text-sm font-bold text-[#777777] mb-1.5">Nomor HP / WhatsApp</span>
                   <input
                     type="tel"
                     value={form.whatsapp}
                     onChange={(e) => setForm({ ...form, whatsapp: e.target.value })}
                     placeholder="0812xxxxxxx"
                     className={inputClass}
-                    style={{ color: "#0f3d33" }}
+                    style={{ color: "#000000" }}
                   />
                 </label>
 
                 <div>
-                  <span className="block text-xs md:text-sm font-bold text-[#6c7a75] mb-1.5">Tanggal Lahir</span>
+                  <span className="block text-xs md:text-sm font-bold text-[#777777] mb-1.5">Tanggal Lahir</span>
                   <div className="grid grid-cols-3 gap-2 md:gap-3">
-                    <select value={form.dd} onChange={(e) => setForm({ ...form, dd: e.target.value })} className={selectClass} style={{ color: "#0f3d33" }}>
+                    <select value={form.dd} onChange={(e) => setForm({ ...form, dd: e.target.value })} className={selectClass} style={{ color: "#000000" }}>
                       <option value="">Tgl</option>
                       {days.map((d) => <option key={d} value={d}>{d}</option>)}
                     </select>
-                    <select value={form.mm} onChange={(e) => setForm({ ...form, mm: e.target.value })} className={selectClass} style={{ color: "#0f3d33" }}>
+                    <select value={form.mm} onChange={(e) => setForm({ ...form, mm: e.target.value })} className={selectClass} style={{ color: "#000000" }}>
                       <option value="">Bulan</option>
                       {BULAN.map((b, i) => <option key={b} value={i + 1}>{b}</option>)}
                     </select>
-                    <select value={form.yyyy} onChange={(e) => setForm({ ...form, yyyy: e.target.value })} className={selectClass} style={{ color: "#0f3d33" }}>
+                    <select value={form.yyyy} onChange={(e) => setForm({ ...form, yyyy: e.target.value })} className={selectClass} style={{ color: "#000000" }}>
                       <option value="">Tahun</option>
                       {years.map((y) => <option key={y} value={y}>{y}</option>)}
                     </select>
@@ -206,8 +206,8 @@ export default function ProfilPage() {
               <button
                 onClick={batal}
                 disabled={saving}
-                className="flex-1 min-w-[100px] py-4 rounded-full font-extrabold text-sm md:text-base border border-[#dfd8ca] bg-white transition active:scale-[.99] disabled:opacity-50"
-                style={{ color: "#0f3d33" }}
+                className="flex-1 min-w-[100px] py-4 rounded-full font-extrabold text-sm md:text-base border border-[#D8D8D8] bg-white transition active:scale-[.99] disabled:opacity-50"
+                style={{ color: "#000000" }}
               >
                 Batal
               </button>
@@ -215,8 +215,8 @@ export default function ProfilPage() {
           ) : (
             <button
               onClick={() => setEditing(true)}
-              className="mt-7 w-full py-4 rounded-full font-extrabold text-sm md:text-base border border-[#dfd8ca] bg-white inline-flex items-center justify-center gap-2 transition active:scale-[.99]"
-              style={{ color: "#0f3d33" }}
+              className="mt-7 w-full py-4 rounded-full font-extrabold text-sm md:text-base border border-[#D8D8D8] bg-white inline-flex items-center justify-center gap-2 transition active:scale-[.99]"
+              style={{ color: "#000000" }}
             >
               <Edit size={15} strokeWidth={2} />
               Edit
@@ -226,7 +226,7 @@ export default function ProfilPage() {
       )}
 
       {toast && (
-        <div className="fixed left-1/2 -translate-x-1/2 bottom-24 md:bottom-8 z-50 rounded-full px-5 py-3 text-sm font-bold text-white shadow-lg" style={{ background: "#0f3d33" }}>
+        <div className="fixed left-1/2 -translate-x-1/2 bottom-24 md:bottom-8 z-50 rounded-full px-5 py-3 text-sm font-bold text-white shadow-lg" style={{ background: "#000000" }}>
           {toast}
         </div>
       )}

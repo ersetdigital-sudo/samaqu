@@ -168,7 +168,7 @@ export default function LacakPage() {
               </div>
 
               {payload?.detail?.receiver?.city ? (
-                <p style={{ fontSize: 12.5, color: "#6b665a", marginTop: 12 }}>
+                <p style={{ fontSize: 12.5, color: "#666666", marginTop: 12 }}>
                   Tujuan: {payload.detail.receiver.city}
                   {payload.detail.weight ? ` • ${payload.detail.weight} kg` : ""}
                 </p>
@@ -185,8 +185,8 @@ export default function LacakPage() {
                   <div key={i} className="sk-step">
                     <div className="sk-rail"><span className="sk-node" /></div>
                     <div className="sk-txt" style={{ width: "100%" }}>
-                      <span style={{ display: "block", height: 13, borderRadius: 7, background: "#f2ecdd" }} />
-                      <span style={{ display: "block", height: 11, width: "45%", borderRadius: 7, background: "#f2ecdd", marginTop: 8 }} />
+                      <span style={{ display: "block", height: 13, borderRadius: 7, background: "#ECECEC" }} />
+                      <span style={{ display: "block", height: 11, width: "45%", borderRadius: 7, background: "#ECECEC", marginTop: 8 }} />
                     </div>
                   </div>
                 ))}

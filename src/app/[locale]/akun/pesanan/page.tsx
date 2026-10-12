@@ -67,9 +67,9 @@ export default function PesananPage() {
             key={t.key}
             onClick={() => setTab(t.key)}
             className={`pb-3 whitespace-nowrap border-b-2 transition-colors ${
-              tab === t.key ? "font-extrabold border-[#0f3d33]" : "font-semibold text-[#8b9793] border-transparent"
+              tab === t.key ? "font-extrabold border-[#000000]" : "font-semibold text-[#8b9793] border-transparent"
             }`}
-            style={tab === t.key ? { color: "#0f3d33" } : undefined}
+            style={tab === t.key ? { color: "#000000" } : undefined}
           >
             {t.label}
           </button>
@@ -77,46 +77,114 @@ export default function PesananPage() {
       </div>
 
       {loading ? (
-        <div className="grid gap-3 md:grid-cols-2 md:gap-5">
-          {[0, 1].map((i) => <div key={i} className="akun-card h-36 animate-pulse" />)}
-        </div>
+        <>
+          {/* Mobile: skeleton kartu (tampilan lama) */}
+          <div className="grid gap-3 md:hidden">
+            {[0, 1].map((i) => <div key={i} className="akun-card h-36 animate-pulse" />)}
+          </div>
+          {/* Desktop: skeleton tabel */}
+          <div className="hidden md:block akun-card overflow-hidden">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="h-[72px] animate-pulse border-b border-[#f0f0f0] last:border-0" />
+            ))}
+          </div>
+        </>
       ) : filtered.length > 0 ? (
-        <div className="grid gap-3 md:grid-cols-2 md:gap-5">
-          {filtered.map((o) => {
-            const item = o.order_items?.[0];
-            const sc = statusInfo(o.status);
-            return (
-              <Link key={o.id} href={to(`/akun/pesanan/${o.order_number}`)} className="akun-card block p-4 md:p-5 transition hover:shadow-lg active:scale-[.99]">
-                <div className="flex items-center justify-between text-[11px] md:text-xs text-[#7c8b85] font-semibold">
-                  <span>#{o.order_number}</span><span>{tglID(o.created_at)}</span>
-                </div>
-                <div className="flex gap-3 md:gap-4 mt-3">
-                  <div className="akun-thumb w-16 h-16 md:w-24 md:h-24 shrink-0 overflow-hidden">
-                    {item?.product_image ? (
-                      <img src={item.product_image} alt={item.product_name} className="w-full h-full object-cover" />
-                    ) : (
-                      <svg viewBox="0 0 24 24" className="w-8 h-8 md:w-11 md:h-11" fill="none" stroke="#0f3d33" strokeWidth="1.2"><path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z" /><path d="M3 8.5v7L12 20l9-4.5v-7" /></svg>
-                    )}
+        <>
+          {/* ═══ DESKTOP: TABEL ═══ */}
+          <div className="hidden md:block akun-card overflow-hidden">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-[#e6dfd2] text-[11px] uppercase tracking-[0.12em] text-[#8a8a8a]">
+                  <th className="px-5 py-3.5 font-bold">No. Pesanan</th>
+                  <th className="px-5 py-3.5 font-bold">Produk</th>
+                  <th className="px-5 py-3.5 font-bold">Tanggal</th>
+                  <th className="px-5 py-3.5 font-bold text-right">Total</th>
+                  <th className="px-5 py-3.5 font-bold">Status</th>
+                  <th className="px-5 py-3.5" />
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((o) => {
+                  const item = o.order_items?.[0];
+                  const sc = statusInfo(o.status);
+                  const href = to(`/akun/pesanan/${o.order_number}`);
+                  return (
+                    <tr key={o.id} className="border-b border-[#f0f0f0] last:border-0 transition-colors hover:bg-[#fafafa]">
+                      <td className="px-5 py-4 align-middle whitespace-nowrap">
+                        <Link href={href} className="font-bold text-sm hover:underline" style={{ color: "#000000" }}>
+                          #{o.order_number}
+                        </Link>
+                      </td>
+                      <td className="px-5 py-4 align-middle">
+                        <div className="flex items-center gap-3">
+                          <div className="akun-thumb w-11 h-11 shrink-0 overflow-hidden">
+                            {item?.product_image ? (
+                              <img src={item.product_image} alt={item.product_name} className="w-full h-full object-cover" />
+                            ) : (
+                              <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="#000000" strokeWidth="1.2"><path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z" /><path d="M3 8.5v7L12 20l9-4.5v-7" /></svg>
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-semibold text-sm truncate" style={{ color: "#000000" }}>{item?.product_name || "Produk"}</p>
+                            <p className="text-xs text-[#6c7a75] mt-0.5">{o.order_items?.length || 0} item</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-5 py-4 align-middle text-sm text-[#6c7a75] whitespace-nowrap">{tglID(o.created_at)}</td>
+                      <td className="px-5 py-4 align-middle text-sm font-bold text-right whitespace-nowrap" style={{ color: "#000000" }}>{rupiah(o.total)}</td>
+                      <td className="px-5 py-4 align-middle"><span className={sc.pill}>{sc.label}</span></td>
+                      <td className="px-5 py-4 align-middle text-right whitespace-nowrap">
+                        <Link href={href} className="inline-flex items-center gap-1 text-[12px] font-bold hover:underline" style={{ color: "#000000" }}>
+                          Detail
+                          <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2"><path d="m9 6 6 6-6 6" /></svg>
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* ═══ MOBILE: KARTU (tampilan lama, tidak diubah) ═══ */}
+          <div className="grid gap-3 md:hidden">
+            {filtered.map((o) => {
+              const item = o.order_items?.[0];
+              const sc = statusInfo(o.status);
+              return (
+                <Link key={o.id} href={to(`/akun/pesanan/${o.order_number}`)} className="akun-card block p-4 transition hover:shadow-lg active:scale-[.99]">
+                  <div className="flex items-center justify-between text-[11px] text-[#7c8b85] font-semibold">
+                    <span>#{o.order_number}</span><span>{tglID(o.created_at)}</span>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-bold text-sm md:text-base truncate" style={{ color: "#0f3d33" }}>{item?.product_name || "Produk"}</p>
-                    <p className="text-[12px] md:text-sm text-[#6c7a75] mt-0.5">{o.order_items?.length || 0} item • {rupiah(o.total)}</p>
-                    <div className="mt-2 flex items-center justify-between">
-                      <span className={sc.pill}>{sc.label}</span>
-                      <svg viewBox="0 0 24 24" className="w-4 h-4 text-[#9aa5a1]" fill="none" stroke="currentColor" strokeWidth="2"><path d="m9 6 6 6-6 6" /></svg>
+                  <div className="flex gap-3 mt-3">
+                    <div className="akun-thumb w-16 h-16 shrink-0 overflow-hidden">
+                      {item?.product_image ? (
+                        <img src={item.product_image} alt={item.product_name} className="w-full h-full object-cover" />
+                      ) : (
+                        <svg viewBox="0 0 24 24" className="w-8 h-8" fill="none" stroke="#000000" strokeWidth="1.2"><path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z" /><path d="M3 8.5v7L12 20l9-4.5v-7" /></svg>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-bold text-sm truncate" style={{ color: "#000000" }}>{item?.product_name || "Produk"}</p>
+                      <p className="text-[12px] text-[#6c7a75] mt-0.5">{o.order_items?.length || 0} item • {rupiah(o.total)}</p>
+                      <div className="mt-2 flex items-center justify-between">
+                        <span className={sc.pill}>{sc.label}</span>
+                        <svg viewBox="0 0 24 24" className="w-4 h-4 text-[#9aa5a1]" fill="none" stroke="currentColor" strokeWidth="2"><path d="m9 6 6 6-6 6" /></svg>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
+                </Link>
+              );
+            })}
+          </div>
+        </>
       ) : (
         <div className="akun-card p-8 md:p-12 text-center md:max-w-[520px] md:mx-auto">
           <div className="mx-auto w-16 h-16 rounded-2xl grid place-items-center" style={{ background: "#e3ede9" }}>
-            <svg viewBox="0 0 24 24" className="w-8 h-8" fill="none" stroke="#0f3d33" strokeWidth="1.5"><path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z" /><path d="M3 8.5v7L12 20l9-4.5v-7" /></svg>
+            <svg viewBox="0 0 24 24" className="w-8 h-8" fill="none" stroke="#000000" strokeWidth="1.5"><path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z" /><path d="M3 8.5v7L12 20l9-4.5v-7" /></svg>
           </div>
-          <p className="mt-4 font-extrabold" style={{ color: "#0f3d33" }}>Belum ada pesanan di tab ini</p>
+          <p className="mt-4 font-extrabold" style={{ color: "#000000" }}>Belum ada pesanan di tab ini</p>
           <p className="text-sm text-[#6c7a75] mt-1">Coba pilih filter lain ya.</p>
         </div>
       )}
