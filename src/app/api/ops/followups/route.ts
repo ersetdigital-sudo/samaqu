@@ -45,7 +45,11 @@ export async function GET(req: NextRequest) {
   const { startIso, endIso } = jakartaDayBounds();
 
   // ── Ringkasan tugas (dihitung dari database, bukan angka statis) ──
-  const [overdueQ, todayQ, noReplyQ] = await Promise.all([
+  //   noReply     : lead aktif yang belum membalas (status, boleh punya jadwal)
+  //   unscheduled : lead aktif yang belum punya jadwal → antrean "Perlu Dijadwalkan"
+  //   today/overdue: tugas terjadwal yang jatuh tempo hari ini / sudah lewat (batas hari WIB)
+  const nonTerminalOutcome = "outcome.is.null,outcome.eq.no_reply,outcome.eq.replied,outcome.eq.interested";
+  const [overdueQ, todayQ, noReplyQ, unscheduledQ] = await Promise.all([
     admin
       .from("leads")
       .select("id", { count: "exact", head: true })
@@ -66,12 +70,20 @@ export async function GET(req: NextRequest) {
       .eq("do_not_contact", false)
       .in("followup_status", ["baru", "dijadwalkan"])
       .or("outcome.is.null,outcome.eq.no_reply"),
+    admin
+      .from("leads")
+      .select("id", { count: "exact", head: true })
+      .eq("do_not_contact", false)
+      .in("followup_status", ["baru", "dijadwalkan"])
+      .is("next_followup_at", null)
+      .or(nonTerminalOutcome),
   ]);
 
   const stats = {
     overdue: overdueQ.count || 0,
     today: todayQ.count || 0,
     noReply: noReplyQ.count || 0,
+    unscheduled: unscheduledQ.count || 0,
   };
 
   // ── Opsi filter (PIC & sumber) dari data yang ada ──
@@ -145,15 +157,16 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ view, items, stats, options: { pics, sumbers } });
   }
 
-  // ── Belum membalas / belum dijadwalkan (pintu masuk untuk menjadwalkan) ──
+  // ── Belum punya jadwal (antrean utama supaya lead tidak "menggantung") ──
   if (view === "unscheduled") {
     let q = admin
       .from("leads")
       .select("*")
       .eq("do_not_contact", false)
       .in("followup_status", ["baru", "dijadwalkan"])
-      .or("outcome.is.null,outcome.eq.no_reply")
-      .order("created_at", { ascending: false })
+      .is("next_followup_at", null)
+      .or(nonTerminalOutcome)
+      .order("created_at", { ascending: true })
       .limit(limit);
     if (search) q = q.ilike("kontak", `%${search}%`);
     if (pic) q = q.eq("pic", pic);
@@ -316,8 +329,9 @@ export async function POST(req: NextRequest) {
         patch.followup_status = nextSchedule ? "dijadwalkan" : "baru";
         patch.next_followup_at = nextSchedule;
       } else if (outcome === "buy") {
-        patch.followup_status = nextSchedule ? "dijadwalkan" : "selesai";
-        patch.next_followup_at = nextSchedule;
+        // Lead yang sudah membeli tidak boleh jadi tugas aktif lagi (brief: hindari tugas palsu).
+        patch.followup_status = "selesai";
+        patch.next_followup_at = null;
       } else if (outcome === "not_interested") {
         if (!lostReason) return NextResponse.json({ error: "Alasan tidak berminat wajib diisi" }, { status: 400 });
         patch.followup_status = "lost";
