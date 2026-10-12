@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { isPaymentMethodId, legacyPaymentType } from "@/lib/payment-methods";
+import { notifyAdminNewOrder } from "@/lib/fonnte";
 
 function generateOrderNumber(): string {
   const d = new Date();
@@ -269,6 +270,26 @@ export async function POST(request: NextRequest) {
 
     // Resi J&T tidak lagi dibuat di sini: pembuatan resi dipicu admin lewat "Atur Pesanan"
     // (PATCH /api/admin/orders action=createJnt) setelah pembayaran diverifikasi.
+
+    // Notifikasi WhatsApp ke admin via Fonnte (aktif kalau FONNTE_TOKEN diisi). Di-await
+    // supaya tetap terkirim di runtime serverless, tapi kegagalannya ditelan di dalam modul
+    // fonnte sehingga tidak pernah menggagalkan pesanan yang sudah tersimpan.
+    await notifyAdminNewOrder({
+      orderNumber,
+      customerName: customer.name,
+      customerWhatsapp: customer.whatsapp,
+      total,
+      paymentType,
+      items: validatedItems.map((item) => ({
+        name: item.name,
+        color: item.color,
+        size: item.size,
+        quantity: item.quantity,
+        price: item.price,
+      })),
+      shippingCity: [shipping.district, shipping.city].filter(Boolean).join(", "),
+      notes: shipping.notes || null,
+    });
 
     console.log("[ORDERS] === ORDER SUCCESS ===", orderNumber);
     return NextResponse.json({
