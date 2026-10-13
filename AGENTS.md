@@ -980,8 +980,11 @@ J&T **pemindaian pertama** → `Dikirim` → paket diterima (J&T `status_code` 2
   lib di-compile dari sumber nyata): resi tanpa scan → tetap `menunggu_pickup`; scan pertama →
   `dikirim` + event tersimpan; API gagal → tak berubah; riwayat sama berulang → idempoten
   (event_key unik diverifikasi di DB: 2 insert identik = 1 baris); sudah `dikirim` + respons lama →
-  tak mundur; `200` → `selesai`; `dibatalkan` → tak disentuh. "Pembuatan resi sukses" tetap perlu
-  kredensial J&T Order API production yang valid (lihat catatan blocker di atas).
+  tak mundur; `200` → `selesai`; `dibatalkan` → tak disentuh. **Produksi (2026-10-13)**: dengan
+  kredensial production terbaru, create order ✅ (resi `JO0329847318`), tariff ✅ (Rp68.000),
+  track ✅, cancel/void ✅ — semua diuji langsung ke endpoint production. Catatan penting: resi
+  baru **langsung** punya entri tracking `status_code 101 = "Manifes"` (otomatis saat order dibuat),
+  jadi kode itu dikecualikan (`JNT_NON_SHIPPING_CODES`) supaya tidak salah menandai "Dikirim".
 
 ## Lacak paket di drawer pesanan & status selesai otomatis
 
@@ -1154,9 +1157,9 @@ diketik (jatah panggilan preview habis; `navigate('/id/checkout')` di preview ba
 `navigation_failed` — route tidak merender lewat SPA nav, jadi checkout harus dibuka dengan
 kunjungan halaman penuh lalu diuji manual).
 
-- **Temuan kredensial (belum bisa saya perbaiki, perlu pemilik)**: panggilan void ke J&T production
-  (`api.jet.co.id/.../order/cancel`) dijawab `detail[0].reason: "Username atau Api Key salah"`
-  sementara kredensial yang sama dipakai untuk tariff/track (`partner-track`) berhasil. Artinya
-  kredensial **order API** (`JNT_ORDER_USERNAME` / `JNT_ORDER_API_KEY` / `JNT_ORDER_KEY`) belum
-  diterima endpoint ecommerce production — sampai dibetulkan, pembatalan pesanan beresi akan
-  ditolak 400 dan "Atur Pesanan" (createJnt) juga akan gagal.
+- **Kredensial production SUDAH BERES (2026-10-13)**: pemilik mengirim kredensial production
+  (`WITHSAMAQU-DPK01C`) dan semuanya diverifikasi langsung ke endpoint production — **create order
+  ✅** (resi `JO0329847318`), **tariff ✅** (Rp68.000), **track ✅**, **cancel/void ✅**. Diisi di
+  `.env.local` (gitignored) + env Vercel; pemilik akan merotasi. Temuan penting: entri tracking
+  pertama resi baru adalah `status_code 101 = "Manifes"` (otomatis saat order dibuat) → dikecualikan
+  dari pemicu "Dikirim" (lihat bagian "Status pesanan vs status pengiriman").

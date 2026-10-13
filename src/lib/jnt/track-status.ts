@@ -13,15 +13,30 @@ export function isDelivered(data: { history?: TrackHistoryItem[] | null } | null
 }
 
 /**
- * Paket dianggap **sudah dikirim** (sudah diserahkan ke J&T / mengalami pemindaian pertama)
- * bila J&T sudah memuat minimal satu entri riwayat.
+ * Kode tracking J&T yang **bukan** bukti paket bergerak — artefak saat resi dibuat.
  *
- * Kita TIDAK menafsirkan arti kode yang tak dikenal — cukup tahu J&T sudah memindai paket
- * (lihat catatan di `isDelivered` soal kode 100). Selama riwayat masih kosong, status tetap
- * "Menunggu Pickup"; respons tanpa kode/isi hanya disimpan mentah untuk pemeriksaan.
+ * `101` = "Manifes": J&T mencatatnya otomatis begitu resi terbit. Terbukti saat uji produksi
+ * (2026-10-13): resi baru dibuat langsung punya satu entri "Manifes" di detik yang sama —
+ * jadi kode ini TIDAK boleh mengubah status ke "Dikirim" (kalau tidak, resi terbit = langsung
+ * tampak dikirim, persis bug yang diperbaiki).
+ *
+ * Tambahkan kode lain di sini kalau nanti terbukti juga artefak (bukan pemindaian nyata).
+ */
+export const JNT_NON_SHIPPING_CODES: ReadonlySet<number> = new Set([101]);
+
+/**
+ * Paket dianggap **sudah dikirim** (diserahkan ke J&T / dipindai kurir) bila J&T memuat minimal
+ * satu entri riwayat yang BUKAN artefak pembuatan resi (lihat `JNT_NON_SHIPPING_CODES`).
+ *
+ * Kita tidak menafsirkan arti kode yang tak dikenal — cukup tahu J&T sudah memindai paket
+ * setelah manifest. Kalau riwayat kosong atau cuma berisi manifest, status tetap "Menunggu Pickup".
  */
 export function isShipped(data: { history?: TrackHistoryItem[] | null } | null | undefined): boolean {
-  return !!data?.history?.some((h) => h && (h.status_code != null || !!h.status || !!h.date_time));
+  return !!data?.history?.some((h) => {
+    if (!h) return false;
+    if (typeof h.status_code === "number" && JNT_NON_SHIPPING_CODES.has(h.status_code)) return false;
+    return h.status_code != null || !!h.status || !!h.date_time;
+  });
 }
 
 /** Urutan tahap pengiriman (maju-saja). `null` = belum diatur. */
