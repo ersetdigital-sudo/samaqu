@@ -168,12 +168,8 @@ function ProductDetailModal({ isOpen, onClose, product, stockIns = [], transacti
             {/* ── Header ── */}
             <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-4 shrink-0">
               <div className="flex items-start gap-3">
-                <div className="w-14 h-14 rounded-xl bg-white/15 border border-white/20 overflow-hidden flex items-center justify-center shrink-0">
-                  {product.image ? (
-                    <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <Package size={24} className="text-white" />
-                  )}
+                <div className="w-14 h-14 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0">
+                  <Package size={24} className="text-white" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <h2 className="text-lg font-extrabold text-white leading-tight">{product.name}</h2>
@@ -214,15 +210,15 @@ function ProductDetailModal({ isOpen, onClose, product, stockIns = [], transacti
                   />
                   <Info label="Nilai Stok (HPP)" value={`Rp ${stockValue.toLocaleString("id-ID")}`} />
                 </div>
-                {(product.kain || product.weight || product.created_at) && (
-                  <div className="mt-2.5 grid grid-cols-2 gap-2.5">
-                    {product.kain && <Info label="Kain" value={product.kain} />}
-                    {product.weight ? <Info label="Berat" value={`${product.weight} gram`} /> : null}
-                    {product.created_at && (
-                      <Info label="Dibuat" value={format(new Date(product.created_at), "dd MMM yyyy")} />
-                    )}
-                  </div>
-                )}
+                <div className="mt-2.5 grid grid-cols-2 gap-2.5">
+                  <Info label="Kategori" value={product.category || "-"} />
+                  <Info label="Series" value={product.series || "Belum diatur"} />
+                  <Info label="Kain" value={product.kain || "-"} />
+                  {product.weight ? <Info label="Berat" value={`${product.weight} gram`} /> : null}
+                  {product.created_at ? (
+                    <Info label="Dibuat" value={format(new Date(product.created_at), "dd MMM yyyy")} />
+                  ) : null}
+                </div>
               </section>
 
               {/* Stok per varian */}
