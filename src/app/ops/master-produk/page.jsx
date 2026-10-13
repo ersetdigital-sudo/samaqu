@@ -923,10 +923,10 @@ export default function MasterProduk() {
                 <Package size={15} className="shrink-0 opacity-90" />
                 <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-wide leading-tight min-h-[26px] md:min-h-[15px]">Total Produk</p>
               </div>
-              <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none">
+              <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none mt-2">
                 {(products || []).length.toLocaleString('id-ID')}
               </p>
-              <p className="mt-1 text-[10px] md:text-[11px] text-white/85 leading-tight">Produk terdaftar</p>
+              <p className="mt-1.5 text-[10px] md:text-[11px] text-white/85 leading-tight">Produk terdaftar</p>
             </div>
 
             <div className="col-span-1 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-3.5 py-3 md:px-4 md:py-3.5 hover:bg-white/15 transition-all duration-300">
@@ -934,10 +934,10 @@ export default function MasterProduk() {
                 <CheckCircle size={15} className="shrink-0 opacity-90" />
                 <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-wide leading-tight min-h-[26px] md:min-h-[15px]">Produk Aktif</p>
               </div>
-              <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none">
+              <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none mt-2">
                 {activeProductCount.toLocaleString('id-ID')}
               </p>
-              <p className="mt-1 text-[10px] md:text-[11px] text-white/85 leading-tight">Status aktif</p>
+              <p className="mt-1.5 text-[10px] md:text-[11px] text-white/85 leading-tight">Status aktif</p>
             </div>
 
             <div className="col-span-1 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-3.5 py-3 md:px-4 md:py-3.5 hover:bg-white/15 transition-all duration-300">
@@ -945,10 +945,10 @@ export default function MasterProduk() {
                 <IconLayers size={15} className="shrink-0 opacity-90" />
                 <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-wide leading-tight min-h-[26px] md:min-h-[15px]">Total Varian</p>
               </div>
-              <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none">
+              <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none mt-2">
                 {(variants || []).length.toLocaleString('id-ID')}
               </p>
-              <p className="mt-1 text-[10px] md:text-[11px] text-white/85 leading-tight">Varian unik</p>
+              <p className="mt-1.5 text-[10px] md:text-[11px] text-white/85 leading-tight">Varian unik</p>
             </div>
 
             <div className="col-span-2 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-3.5 py-3 md:px-4 md:py-3.5 hover:bg-white/15 transition-all duration-300">
@@ -957,12 +957,12 @@ export default function MasterProduk() {
                 <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-wide leading-tight min-h-[26px] md:min-h-[15px]">Produk Terlaris</p>
               </div>
               <p
-                className="text-lg md:text-2xl font-black text-white font-inter tracking-tight leading-tight break-words"
+                className="text-lg md:text-2xl font-black text-white font-inter tracking-tight leading-tight break-words mt-2"
                 title={topSeller ? `${topSeller.name} - ${topSeller.units} unit` : undefined}
               >
                 {topSeller ? topSeller.name : '-'}
               </p>
-              <p className="mt-1 text-[10px] md:text-[11px] text-white/85 leading-tight">
+              <p className="mt-1.5 text-[10px] md:text-[11px] text-white/85 leading-tight">
                 {topSeller ? `Terjual ${topSeller.units} unit` : 'Belum ada penjualan'}
               </p>
             </div>
