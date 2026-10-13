@@ -26,7 +26,7 @@ export default function middleware(request: NextRequest) {
       return NextResponse.redirect(url);
     }
     if (!url.pathname.startsWith("/ops")) {
-      url.pathname = url.pathname === "/" ? "/ops/leads" : `/ops${url.pathname}`;
+      url.pathname = url.pathname === "/" ? "/ops" : `/ops${url.pathname}`;
     }
     return NextResponse.rewrite(url, { request: { headers } });
   }
