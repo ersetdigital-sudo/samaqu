@@ -2,45 +2,21 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useSafeTranslations } from "@/lib/safe-i18n";
-import { supabase } from "@/lib/supabase";
 import { getWhatsAppLink } from "@/lib/store-settings";
 import { trackWhatsAppClick } from "@/lib/meta-pixel";
 
 /* ── Video sources ── */
-const HERO_VIDEO = "/video/Thobe%20Gabungan%20Imron%20dan%20Jiharkah%20Deep%20maroon%20B-02%20Ambience.mp4";
+const HERO_VIDEO = "https://res.cloudinary.com/kq5d3al5/video/upload/v1791866370/KONTEN_VIDEO_WEBSITE.mp4";
 
-/* ── Default values (match database defaults) ── */
-const DEFAULTS = {
-  title_line1_color: "#f8f5f1",
-  title_line2_color: "#e0b563",
-};
+/** Semua teks hero hitam (video sudah final, terang) — lihat permintaan pemilik. */
+const HERO_TEXT = "#000000";
 
 export default function Hero() {
   const t = useSafeTranslations("hero");
   const videoRef = useRef<HTMLVideoElement>(null);
   const [muted, setMuted] = useState(true);
   const [showUnmuteHint, setShowUnmuteHint] = useState(true);
-  const [heroData, setHeroData] = useState(DEFAULTS);
   const hasInteracted = useRef(false);
-
-  // Fetch hero content from Supabase — only for visual settings (colors)
-  useEffect(() => {
-    async function fetchHero() {
-      try {
-        const { data } = await supabase.from("hero_content").select("*").eq("id", 1).single();
-        if (data && data.is_active) {
-          setHeroData((prev) => ({
-            ...prev,
-            title_line1_color: data.title_line1_color || DEFAULTS.title_line1_color,
-            title_line2_color: data.title_line2_color || DEFAULTS.title_line2_color,
-          }));
-        }
-      } catch {
-        // Silent fail - use defaults
-      }
-    }
-    fetchHero();
-  }, []);
 
   // Start video playback (always muted first for autoplay policy)
   useEffect(() => {
@@ -113,7 +89,9 @@ export default function Hero() {
       className="relative w-full overflow-hidden"
       style={{ background: "#000000", minHeight: "100dvh" }}
     >
-      {/* ── Video background ── */}
+      {/* ── Video background ──
+          Tanpa layer apa pun di atas video (tint, scrim, glow, noise) — video sudah
+          final dari editor, jadi ditampilkan apa adanya. */}
       <div className="absolute inset-0 overflow-hidden">
         <video
           ref={videoRef}
@@ -126,50 +104,7 @@ export default function Hero() {
         >
           <source src={HERO_VIDEO} type="video/mp4" />
         </video>
-        {/* Cool gray tint (#A0A1AC) — menyelaraskan video ke tone monokrom & menjaga kontras teks */}
-        <div className="absolute inset-0 pointer-events-none" style={{ background: "rgba(160,161,172,.4)" }} />
       </div>
-
-      {/* ── Cinematic overlays ── */}
-      {/* Desktop: angled editorial gradient */}
-      <div
-        className="hidden md:block absolute inset-0 pointer-events-none"
-        style={{
-          background:
-            "linear-gradient(98deg,rgba(16,11,8,.82) 0%,rgba(16,11,8,.62) 34%,rgba(16,11,8,.3) 56%,rgba(16,11,8,.05) 76%,transparent 92%)",
-        }}
-      />
-      <div
-        className="hidden md:block absolute inset-0 pointer-events-none"
-        style={{
-          background:
-            "linear-gradient(0deg,rgba(16,11,8,.78) 0%,rgba(16,11,8,.3) 30%,transparent 52%)",
-        }}
-      />
-      <div
-        className="hidden lg:block absolute inset-x-0 top-0 h-[220px] pointer-events-none"
-        style={{
-          background: "linear-gradient(180deg,rgba(16,11,8,.5) 0%,rgba(16,11,8,.2) 46%,transparent 100%)",
-        }}
-      />
-      {/* Mobile: deep cinematic scrim — content anchors bottom, type stays readable over bright frames */}
-      <div
-        className="md:hidden absolute inset-0 pointer-events-none"
-        style={{
-          background:
-            "linear-gradient(180deg,rgba(14,10,7,.48) 0%,rgba(14,10,7,.4) 16%,rgba(14,10,7,.58) 38%,rgba(14,10,7,.88) 64%,rgba(14,10,7,.97) 100%)",
-        }}
-      />
-      {/* Ambient glow — breathing */}
-      <div className="hero-glow absolute pointer-events-none" aria-hidden />
-      {/* Filmic grain */}
-      <div className="hero-noise absolute inset-0 pointer-events-none" aria-hidden />
-      {/* Bottom hairline */}
-      <div
-        className="absolute bottom-0 inset-x-0 h-px pointer-events-none z-20"
-        style={{ background: "linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent)" }}
-        aria-hidden
-      />
 
       {/* ── Content ── */}
       <div className="relative z-10 h-full">
@@ -183,15 +118,15 @@ export default function Hero() {
               data-hero-stagger
               className="hero-enter inline-flex items-center gap-3 rounded-full px-4 py-2"
               style={{
-                background: "rgba(0,0,0,.35)",
-                boxShadow: "inset 0 0 0 1px rgba(255,255,255,.1)",
+                background: "rgba(255,255,255,.75)",
+                boxShadow: "inset 0 0 0 1px rgba(0,0,0,.12)",
                 backdropFilter: "blur(8px)",
               }}
             >
-              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: "#ffffff" }} />
+              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: HERO_TEXT }} />
               <span
                 className="font-semibold font-ui"
-                style={{ letterSpacing: "0.26em", fontSize: "11px", color: "#ffffff" }}
+                style={{ letterSpacing: "0.26em", fontSize: "11px", color: HERO_TEXT }}
               >
                 {t("badge")}
               </span>
@@ -205,13 +140,13 @@ export default function Hero() {
                 fontFamily: "var(--font-cormorant), Georgia, serif",
                 fontSize: "clamp(40px, 10vw, 62px)",
                 lineHeight: 1.06,
-                color: heroData.title_line1_color,
+                color: HERO_TEXT,
               }}
             >
               {t("title1")}
               <span
                 className="block italic font-normal mt-1"
-                style={{ color: heroData.title_line2_color }}
+                style={{ color: HERO_TEXT }}
               >
                 {t("title2")}
               </span>
@@ -224,7 +159,7 @@ export default function Hero() {
               style={{
                 fontFamily: "var(--font-cormorant), Georgia, serif",
                 fontSize: "clamp(19px, 3vw, 22px)",
-                color: "#e8ddcf",
+                color: HERO_TEXT,
               }}
             >
               {t("subtitle")}
@@ -234,7 +169,7 @@ export default function Hero() {
             <p
               data-hero-stagger
               className="hero-enter mt-5 max-w-[46ch] text-[14px] sm:text-[15px] leading-relaxed font-ui"
-              style={{ color: "rgba(255,255,255,.78)" }}
+              style={{ color: HERO_TEXT }}
             >
               {t("desc")}
             </p>
@@ -246,32 +181,32 @@ export default function Hero() {
             >
               {/* Material Pilihan */}
               <li className="flex items-center gap-3">
-                <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke={HERO_TEXT} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="m12 3 9 5-9 5-9-5 9-5Z" />
                   <path d="m3 13 9 5 9-5" />
                 </svg>
-                <span className="text-[13px] leading-tight font-ui" style={{ color: "#e3d8cb" }}>
+                <span className="text-[13px] leading-tight font-ui" style={{ color: HERO_TEXT }}>
                   {t("item1")}
                 </span>
               </li>
               {/* Cutting Presisi */}
               <li className="flex items-center gap-3">
-                <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke={HERO_TEXT} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="6" cy="18" r="2.4" />
                   <circle cx="18" cy="18" r="2.4" />
                   <path d="M8 16 18 4M16 16 6 4" />
                 </svg>
-                <span className="text-[13px] leading-tight font-ui" style={{ color: "#e3d8cb" }}>
+                <span className="text-[13px] leading-tight font-ui" style={{ color: HERO_TEXT }}>
                   {t("item2")}
                 </span>
               </li>
               {/* Create Your Price */}
               <li className="flex items-center gap-3">
-                <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke={HERO_TEXT} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M3 12V4h8l9 9-8 8-9-9Z" />
-                  <circle cx="7.5" cy="7.5" r="1.2" fill="#ffffff" stroke="none" />
+                  <circle cx="7.5" cy="7.5" r="1.2" fill={HERO_TEXT} stroke="none" />
                 </svg>
-                <span className="text-[13px] leading-tight font-ui" style={{ color: "#e3d8cb" }}>
+                <span className="text-[13px] leading-tight font-ui" style={{ color: HERO_TEXT }}>
                   {t("item3")}
                 </span>
               </li>
@@ -312,8 +247,8 @@ export default function Hero() {
                 onClick={() => trackWhatsAppClick("hero")}
                 className="group inline-flex items-center justify-center gap-3 rounded-full px-8 py-3.5 text-[13px] font-semibold tracking-wide font-ui w-full sm:w-auto transition active:scale-[0.97]"
                 style={{
-                  color: "white",
-                  boxShadow: "inset 0 0 0 1px rgba(255,255,255,.35)",
+                  color: HERO_TEXT,
+                  boxShadow: "inset 0 0 0 1px rgba(0,0,0,.35)",
                 }}
               >
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
@@ -333,13 +268,13 @@ export default function Hero() {
             onClick={toggleMute}
             className="hero-enter flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-full text-[10px] tracking-[0.14em] uppercase font-ui font-medium transition-all duration-300 hover:scale-[1.04]"
             style={{
-              background: "rgba(12,8,6,.55)",
+              background: "rgba(255,255,255,.75)",
               backdropFilter: "blur(12px)",
-              color: "var(--cream)",
-              border: "1px solid rgba(255,255,255,.35)",
+              color: HERO_TEXT,
+              border: "1px solid rgba(0,0,0,.15)",
             }}
           >
-            <span className="hero-pulse-dot w-1.5 h-1.5 rounded-full" style={{ background: "#ffffff" }} />
+            <span className="hero-pulse-dot w-1.5 h-1.5 rounded-full" style={{ background: HERO_TEXT }} />
             Aktifkan Suara
           </button>
         )}
@@ -347,9 +282,9 @@ export default function Hero() {
           onClick={toggleMute}
           className={`flex items-center justify-center rounded-full transition-all duration-300 hover:scale-105 ${muted ? "w-11 h-11" : "w-11 h-11"}`}
           style={{
-            background: muted ? "#ffffff" : "rgba(12,8,6,.5)",
+            background: muted ? "#ffffff" : "rgba(255,255,255,.75)",
             backdropFilter: "blur(12px)",
-            border: muted ? "none" : "1px solid rgba(248,245,241,.18)",
+            border: muted ? "none" : "1px solid rgba(0,0,0,.12)",
           }}
           aria-label={muted ? t("unmute") : t("muteLabel")}
         >
@@ -360,7 +295,7 @@ export default function Hero() {
               <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
             </svg>
           ) : (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(248,245,241,.85)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={HERO_TEXT} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
               <path d="M11 5L6 9H2v6h4l5 4V5z" />
               <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
               <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
@@ -372,15 +307,15 @@ export default function Hero() {
       {/* ── Scroll indicator ── */}
       <div className="relative z-10 flex items-center gap-4 mx-auto w-full max-w-[1240px] px-5 sm:px-10 lg:px-16 xl:pl-24 pb-7 lg:pb-10">
         {/* Vertical track with animated dot */}
-        <div className="relative h-[44px] w-px" style={{ background: "rgba(255,255,255,.28)" }}>
-          <span className="scroll-dot absolute left-1/2 -translate-x-1/2 top-0 w-[6px] h-[6px] rounded-full" style={{ background: "#ffffff", boxShadow: "0 0 10px rgba(255,255,255,.7)" }} />
+        <div className="relative h-[44px] w-px" style={{ background: "rgba(0,0,0,.28)" }}>
+          <span className="scroll-dot absolute left-1/2 -translate-x-1/2 top-0 w-[6px] h-[6px] rounded-full" style={{ background: HERO_TEXT, boxShadow: "0 0 10px rgba(0,0,0,.4)" }} />
         </div>
         {/* Label */}
-        <span className="text-[10px] sm:text-[11px] tracking-[.26em] leading-tight font-ui" style={{ color: "rgba(255,255,255,.7)" }}>
+        <span className="text-[10px] sm:text-[11px] tracking-[.26em] leading-tight font-ui" style={{ color: "rgba(0,0,0,.65)" }}>
           {t("scroll")}
         </span>
         {/* Arrow */}
-        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke={HERO_TEXT} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
           <path d="M12 5v14M6 13l6 6 6-6" />
         </svg>
       </div>
