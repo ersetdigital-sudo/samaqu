@@ -25,11 +25,15 @@ function barePathname(pathname: string | null): string {
 export default function CustomerLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const hideNavbar = NAVBAR_HIDDEN_SUFFIXES.some((suffix) => pathname?.endsWith(suffix));
+  const isProductDetail = PRODUCT_DETAIL_RE.test(barePathname(pathname));
   // Detail produk: sembunyikan navbar atas hanya di mobile; desktop tetap.
-  const hideNavbarOnMobile = !hideNavbar && PRODUCT_DETAIL_RE.test(barePathname(pathname));
+  const hideNavbarOnMobile = !hideNavbar && isProductDetail;
 
   return (
-    <>
+    // Detail produk (mobile) punya bar aksi sendiri di dasar layar: lewat class `pd-mobile`,
+    // nav bawah disembunyikan, --mobile-nav-h di-nol-kan, dan tombol chat diangkat tepat di atas
+    // bar harga (lihat globals.css). Semua hanya berlaku < md, jadi tablet & desktop tak berubah.
+    <div className={isProductDetail ? "pd-mobile" : undefined}>
       {!hideNavbar && (
         // `hidden md:block` → hilang < md (mobile), tampil ≥ md (desktop, tak diubah).
         <div className={hideNavbarOnMobile ? "hidden md:block" : undefined}>
@@ -40,6 +44,6 @@ export default function CustomerLayout({ children }: { children: ReactNode }) {
       <div style={{ paddingBottom: "var(--mobile-nav-h)" }}>{children}</div>
       <MobileBottomNav />
       {!hideNavbar && <ChatWidget />}
-    </>
+    </div>
   );
 }

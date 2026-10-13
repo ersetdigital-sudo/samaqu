@@ -381,8 +381,12 @@ export default function ChatWidget() {
 
   if (!open) {
     return (
-      // Anchor FAB tidak diubah: right-4 sm:right-6, offset --mobile-nav-h, z-[95].
-      <div className="fixed right-4 sm:right-6 bottom-[calc(var(--mobile-nav-h)+5.75rem)] z-[95]">
+      // Offset vertikal lewat --fab-bottom (default: di atas nav bawah). Di halaman detail
+      // produk, layout mengesetnya agar FAB naik tepat di atas bar harga.
+      <div
+        className="fixed right-4 sm:right-6 z-[95]"
+        style={{ bottom: "var(--fab-bottom, calc(var(--mobile-nav-h) + 5.75rem))" }}
+      >
         {/* Bubble teks (kartu putih ala WhatsApp) di samping kiri tombol — bisa ditutup.
             Hanya tampil setelah pemicu (5 detik / 30% scroll) dan tidak di-dismiss. */}
         {!fabDismissed && fabBubbleVisible && (

@@ -859,16 +859,16 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           </div>
 
           {/* Bottom spacer for sticky bar */}
-          <div className="h-32" />
+          <div style={{ height: "calc(var(--action-bar-h) + 1.5rem)" }} />
         </div>
       </div>
 
       {/* ═══════════════════════════════════════
           MOBILE STICKY BOTTOM BAR
       ═══════════════════════════════════════ */}
-      <div className="md:hidden fixed bottom-[var(--mobile-nav-h)] inset-x-0 z-40"
+      <div className="md:hidden fixed bottom-0 inset-x-0 z-40"
         style={{ background: "#ffffff", borderTop: "1px solid rgba(0,0,0,.08)", boxShadow: "0 -6px 24px -6px rgba(0,0,0,.08)" }}>
-        <div className="px-4 pt-3 pb-4">
+        <div className="px-4 pt-3" style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom))" }}>
           {/* Price row */}
           <div className="flex items-end justify-between mb-3">
             <div>
@@ -1179,7 +1179,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           PRODUK LAIN DARI KAIN INI
       ══════════════════════════════════════════ */}
       {relatedProducts.length > 0 && (
-        <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 pb-40 md:pb-20">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 pb-[calc(var(--action-bar-h)+1.5rem)] md:pb-20">
           <div className="flex items-end justify-between border-t pt-6" style={{ borderColor: "rgba(0,0,0,.1)" }}>
             <h2 className="text-[1.4rem] sm:text-[1.7rem] font-semibold" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "#000000" }}>
               Produk lain dari kain ini

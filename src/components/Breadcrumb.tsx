@@ -2,11 +2,14 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import HouseIcon from "@/components/icons/HouseIcon";
 
 interface BreadcrumbItem {
   label: string;
   href?: string;
 }
+
+const LOCALES = ["id", "en"];
 
 const labelMap: Record<string, string> = {
   katalog: "Katalog",
@@ -35,14 +38,21 @@ export default function Breadcrumb({ extra, items, className }: BreadcrumbProps)
   if (items) {
     crumbs = items;
   } else {
-    const segments = pathname.split("/").filter(Boolean);
-    crumbs = [{ label: "Home", href: "/" }];
+    // Path dari next/navigation masih membawa prefix locale (/id, /en) — jangan
+    // dijadikan crumb, kalau tidak "Id" ikut muncul dan merusak breadcrumb.
+    const all = pathname.split("/").filter(Boolean);
+    const hasLocale = LOCALES.includes(all[0]);
+    const localePrefix = hasLocale ? `/${all[0]}` : "";
+    const segs = hasLocale ? all.slice(1) : all;
 
-    const segCount = extra?.length ? segments.length - 1 : segments.length;
-    let path = "";
+    crumbs = [{ label: "Beranda", href: localePrefix || "/" }];
+
+    // Item terakhir (nama produk) dikirim lewat `extra`, jadi tidak dihitung dari path.
+    const segCount = extra?.length ? segs.length - 1 : segs.length;
+    let path = localePrefix;
     for (let i = 0; i < segCount; i++) {
-      path += `/${segments[i]}`;
-      crumbs.push({ label: segmentToLabel(segments[i]), href: path });
+      path += `/${segs[i]}`;
+      crumbs.push({ label: segmentToLabel(segs[i]), href: path });
     }
 
     if (extra) {
@@ -50,41 +60,67 @@ export default function Breadcrumb({ extra, items, className }: BreadcrumbProps)
     }
   }
 
-  const isLong = crumbs.length > 3;
-  const mobileCrumbs = isLong ? [crumbs[0], ...crumbs.slice(-2)] : crumbs;
-  const desktopCrumbs = crumbs;
-
   return (
     <nav aria-label="Breadcrumb" className={className}>
-      {/* Mobile */}
-      <ol className="flex sm:hidden items-center text-xs font-ui flex-nowrap overflow-hidden" style={{ color: "var(--stone)", gap: "0.375rem" }}>
-        {mobileCrumbs.map((crumb, i) => {
-          const isLast = i === mobileCrumbs.length - 1;
+      {/* Mobile — satu baris: Beranda & item tengah tetap penuh, hanya item terakhir
+          yang boleh terpotong (ellipsis) dan menyerap sisa lebar. Di bawah 360px
+          "Beranda" diganti ikon rumah supaya tetap muat tanpa scroll horizontal. */}
+      <ol
+        className="flex sm:hidden items-center text-[13px] font-ui flex-nowrap overflow-hidden"
+        style={{ color: "var(--stone)", gap: "0.4rem" }}
+      >
+        {crumbs.map((crumb, i) => {
+          const isLast = i === crumbs.length - 1;
+          const isHome = i === 0;
           return (
-            <li key={i} className="flex items-center shrink-0" style={{ gap: "0.375rem" }}>
-              {i > 0 && <span style={{ color: "rgba(0,0,0,.5)" }}>/</span>}
-              {i === 0 && isLong ? (
-                <span className="truncate max-w-[2rem]" style={{ color: "var(--stone)" }}>…</span>
-              ) : crumb.href ? (
-                <Link href={crumb.href} className="truncate transition-colors duration-200 hover:opacity-80" style={{ color: "var(--stone)", maxWidth: "7rem" }}>
-                  {crumb.label}
+            <li
+              key={i}
+              className={`flex items-center min-w-0 ${isLast ? "flex-1" : "shrink-0"}`}
+              style={{ gap: "0.4rem" }}
+            >
+              {i > 0 && (
+                <span aria-hidden style={{ color: "rgba(0,0,0,.4)" }}>
+                  /
+                </span>
+              )}
+              {!isLast && crumb.href ? (
+                <Link
+                  href={crumb.href}
+                  className="inline-flex items-center min-h-11 transition-opacity duration-200 hover:opacity-70"
+                  style={{ color: "var(--stone)" }}
+                >
+                  {isHome ? (
+                    <>
+                      <span className="inline-flex min-[360px]:hidden">
+                        <HouseIcon size={17} />
+                      </span>
+                      <span className="hidden min-[360px]:inline">Beranda</span>
+                    </>
+                  ) : (
+                    crumb.label
+                  )}
                 </Link>
               ) : (
-                <span className="truncate font-medium" style={{ color: "var(--espresso)", maxWidth: "10rem" }}>{crumb.label}</span>
+                <span
+                  className="min-w-0 truncate font-medium"
+                  style={{ color: "var(--espresso)" }}
+                >
+                  {crumb.label}
+                </span>
               )}
             </li>
           );
         })}
       </ol>
 
-      {/* Desktop */}
+      {/* Desktop — jangan diubah */}
       <ol className="hidden sm:flex items-center text-sm font-ui flex-wrap" style={{ color: "var(--stone)", gap: "0.375rem" }}>
-        {desktopCrumbs.map((crumb, i) => {
-          const isLast = i === desktopCrumbs.length - 1;
+        {crumbs.map((crumb, i) => {
+          const isLast = i === crumbs.length - 1;
           return (
             <li key={i} className="flex items-center" style={{ gap: "0.375rem" }}>
               {i > 0 && <span style={{ color: "rgba(0,0,0,.5)" }}>/</span>}
-              {crumb.href ? (
+              {crumb.href && !isLast ? (
                 <Link href={crumb.href} className="transition-colors duration-200 hover:opacity-80 whitespace-nowrap" style={{ color: "var(--stone)" }}>
                   {crumb.label}
                 </Link>
