@@ -661,8 +661,8 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
             category,
             description: description || null,
             price: blockPrice,
-            minimum_price: block.cypEnabled ? parseInt(block.minimumPrice) : null,
-            recommended_price: block.cypEnabled && block.recommendedPrice ? parseInt(block.recommendedPrice) : null,
+            minimum_price: block.minimumPrice ? parseInt(block.minimumPrice) : null,
+            recommended_price: block.recommendedPrice ? parseInt(block.recommendedPrice) : null,
             create_your_price_enabled: block.cypEnabled,
             cyp_microcopy_override: block.useCustomCypMicrocopy && block.cypMicrocopyOverride.trim() ? block.cypMicrocopyOverride.trim() : null,
             weight: weight ? parseInt(weight) : null,
@@ -713,8 +713,8 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
         // ── Non-Thobe: existing single-product logic ──
         await supabase.from("products").upsert({
           id: slug, name, category, description: description || null, price: cypEnabled ? (parseInt(basePrice) || parseInt(minimumPrice) || 0) : parseInt(basePrice),
-          minimum_price: cypEnabled ? parseInt(minimumPrice) : null,
-          recommended_price: cypEnabled && recommendedPrice ? parseInt(recommendedPrice) : null,
+          minimum_price: minimumPrice ? parseInt(minimumPrice) : null,
+          recommended_price: recommendedPrice ? parseInt(recommendedPrice) : null,
           create_your_price_enabled: cypEnabled,
           cyp_microcopy_override: useCustomCypMicrocopy && cypMicrocopyOverride.trim() ? cypMicrocopyOverride.trim() : null,
           weight: weight ? parseInt(weight) : null,
