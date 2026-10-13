@@ -16,6 +16,7 @@ const PAGE_ROUTES: Record<string, string> = {
   AnalisisRetur: "/ops/analisis-retur",
   Leads: "/ops/leads",
   LaporanLeads: "/ops/leads/laporan",
+  Pelanggan: "/ops/pelanggan",
   MasterProduk: "/ops/master-produk",
   TambahProduk: "/ops/master-produk/tambah",
   RekapPembelian: "/ops/rekap-pembelian",

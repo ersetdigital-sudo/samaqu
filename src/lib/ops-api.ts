@@ -32,6 +32,7 @@ const PRODUCTS = "/api/ops/products";
 const VARIANTS = "/api/ops/product-variants";
 const STOCK_IN = "/api/ops/stock-in";
 const TRANSACTIONS = "/api/ops/transactions";
+const CUSTOMERS = "/api/ops/customers";
 
 /** Base44 memakai sort "-created_date" (desc). Kita terjemahkan ke parameter API. */
 function sortParam(sort?: string) {
@@ -130,6 +131,13 @@ export const base44 = {
       async list(sort?: string, opts: any = {}) {
         const params = new URLSearchParams({ sort: sortParam(sort), limit: String(opts?.limit ?? 2000) });
         const json = await call<{ items: any[] }>("GET", `${TRANSACTIONS}?${params.toString()}`);
+        return json.items ?? [];
+      },
+    },
+
+    Customer: {
+      async list() {
+        const json = await call<{ items: any[] }>("GET", CUSTOMERS);
         return json.items ?? [];
       },
     },
