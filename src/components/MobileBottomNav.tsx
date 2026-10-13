@@ -32,7 +32,7 @@ function barePath(pathname: string | null): string {
 
 const ITEMS: NavItem[] = [
   { href: "/", label: "Beranda", Icon: HouseIcon, match: (p) => p === "/" },
-  { href: "/katalog", label: "Kategori", Icon: SquaresFour, match: (p) => p.startsWith("/katalog") },
+  { href: "/katalog", label: "Katalog", Icon: SquaresFour, match: (p) => p.startsWith("/katalog") },
   { href: "/open-order", label: "Open Order", Icon: TShirt, match: (p) => p.startsWith("/open-order") },
   { href: "/akun/pesanan", label: "Pesanan", Icon: Package, match: (p) => p.startsWith("/akun/pesanan") },
   {
