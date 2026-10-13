@@ -49,6 +49,10 @@ pdf-preview/
 *.pdf
 .mimocode/
 
+# catatan akses/token lokal — JANGAN pernah di-commit
+.agent-secrets.local.md
+agent-secrets*.md
+
 .commandcode/
 dev-server.log
 template jnt terbaru.xlsx

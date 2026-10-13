@@ -258,9 +258,9 @@ export default function OpsShell({ children }: { children: React.ReactNode }) {
       <div className="ops-root flex min-h-screen">
         {/* Sidebar desktop */}
         <aside className="hidden lg:flex flex-col w-[248px] shrink-0 bg-white dark:bg-[#141821] border-r border-slate-200 dark:border-slate-800 sticky top-0 h-screen">
-          <div className="flex flex-col justify-center gap-0.5 px-5 h-[68px] border-b border-slate-200 dark:border-slate-800 shrink-0">
-            <img src="/logo.svg" alt="SAMAQU" className="h-6 w-auto object-contain" />
-            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Internal</p>
+          <div className="flex flex-col items-center justify-center gap-1 px-5 h-[68px] border-b border-slate-200 dark:border-slate-800 shrink-0">
+            <img src="/logo.svg" alt="SAMAQU" className="h-8 w-auto object-contain" />
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 text-center">Internal</p>
           </div>
           <SidebarContent pathname={pathname} stripOps={onOpsHost} />
           <div className="p-3 border-t border-slate-200 dark:border-slate-800 shrink-0">
@@ -279,8 +279,8 @@ export default function OpsShell({ children }: { children: React.ReactNode }) {
             <div className="absolute inset-0 bg-black/50" onClick={() => setDrawer(false)} />
             <div className="absolute left-0 top-0 bottom-0 w-[270px] bg-white dark:bg-[#141821] flex flex-col">
               <div className="flex items-center justify-between px-5 h-[68px] border-b border-slate-200 dark:border-slate-800">
-                <div className="flex flex-col justify-center gap-0.5">
-                  <img src="/logo.svg" alt="SAMAQU" className="h-6 w-auto object-contain" />
+                <div className="flex flex-col items-center justify-center gap-1">
+                  <img src="/logo.svg" alt="SAMAQU" className="h-8 w-auto object-contain" />
                   <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Internal</span>
                 </div>
                 <button onClick={() => setDrawer(false)} className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">
