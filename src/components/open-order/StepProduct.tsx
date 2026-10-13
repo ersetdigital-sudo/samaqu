@@ -1,47 +1,52 @@
 "use client";
 
 /**
- * Langkah 2 — detail produk: warna, ukuran, series, jumlah, dan Create Your Price.
- * Tata letak & gaya mengikuti halaman detail produk di katalog (serif espresso + aksen gold).
- * Harga yang diisi customer tidak boleh di bawah harga series terpilih (validasi diulang di server).
+ * Langkah 2 — detail produk: warna, ukuran, series (kalau ada), jumlah, dan Create Your Price.
+ *
+ * Generik untuk semua kategori: series cuma muncul kalau produknya memang punya series, kartu
+ * Create Your Price cuma muncul kalau produknya mengaktifkannya, dan daftar ukuran diambil dari
+ * varian produk (bukan daftar statis) supaya cocok dengan stok yang dipotong di server.
  */
 
 import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cloudinaryUrl } from "@/lib/cloudinary";
-import type { Product } from "@/lib/katalog-data";
 import { money, openOrderGallery } from "@/lib/open-order-catalog";
 import { OPEN_ORDER_SIZES } from "@/lib/open-order-config";
-import { findOpenOrderProduct, type OpenOrderProduct } from "@/lib/open-order-offering";
+import { findOpenOrderProduct, openOrderColorLabel, openOrderVariantFor, type OpenOrderProduct } from "@/lib/open-order-offering";
 import type { ProductDraft } from "./types";
 import { Chip, Counter, DANGER, INK, MUTED, PrimaryButton, SectionLabel } from "./ui";
 
 export default function StepProduct({
   draft,
   products,
-  catalog,
   onChange,
   onAdd,
 }: {
   draft: ProductDraft;
   products: OpenOrderProduct[];
-  catalog: Product[];
   onChange: (patch: Partial<ProductDraft>) => void;
   onAdd: (line: ProductDraft) => void;
 }) {
   const product = findOpenOrderProduct(products, draft.productId);
-  const series = product?.series.find((s) => s.name === draft.series) ?? product?.series[0];
+  const series = product?.series.find((option) => option.name === draft.series) ?? null;
+  const variant = product ? openOrderVariantFor(product, draft.color, series?.name ?? null) : undefined;
+  // Ukuran dari varian warna/series terpilih; daftar statis cuma cadangan (data varian kosong).
+  const sizes = variant && variant.sizes.length > 0 ? variant.sizes : [...OPEN_ORDER_SIZES];
+  const cypEnabled = product?.cypEnabled ?? false;
+  const minimum = series?.price ?? product?.minimumPrice ?? 0;
+
   const [price, setPrice] = useState(draft.price);
   const [photo, setPhoto] = useState(0);
 
-  // Harga default mengikuti series yang dipilih.
+  // Harga default mengikuti series yang dipilih (atau harga produk kalau tanpa series).
   useEffect(() => {
     setPrice(draft.price);
   }, [draft.price]);
 
   // Foto galeri datang dari baris katalog untuk warna + series terpilih — foto yang sama
   // persis dengan halaman detail katalog (bukan cuma satu thumbnail).
-  const gallery = product && series ? openOrderGallery(product, draft.color, series.name, catalog) : [];
+  const gallery = product ? openOrderGallery(product, draft.color, series?.name ?? null) : [];
   const activePhoto = Math.min(photo, Math.max(gallery.length - 1, 0));
   const currentPhoto = gallery[activePhoto] ?? "";
 
@@ -50,10 +55,17 @@ export default function StepProduct({
     setPhoto(0);
   }, [draft.productId, draft.color, series?.name]);
 
-  if (!product || !series) return null;
+  // Warna/series berganti bisa mengubah daftar ukuran — pastikan ukuran terpilih tetap valid.
+  useEffect(() => {
+    if (sizes.includes(draft.size)) return;
+    onChange({ size: sizes.includes("M") ? "M" : sizes[0] ?? "" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft.productId, draft.color, series?.name, sizes.join("|")]);
 
-  const minimum = series.price;
-  const priceTooLow = price < minimum;
+  if (!product) return null;
+
+  const colorLabel = openOrderColorLabel(product, draft.color);
+  const priceTooLow = cypEnabled && price < minimum;
   const lineTotal = (priceTooLow ? minimum : price) * draft.quantity;
 
   function handlePriceInput(raw: string) {
@@ -65,7 +77,7 @@ export default function StepProduct({
 
   function handleAdd() {
     if (priceTooLow) return;
-    onAdd({ ...draft, price });
+    onAdd({ ...draft, price: cypEnabled ? price : minimum, series: series?.name ?? "" });
   }
 
   return (
@@ -77,7 +89,7 @@ export default function StepProduct({
           <img
             key={currentPhoto}
             src={cloudinaryUrl(currentPhoto, { width: 1200 })}
-            alt={`${product.name} ${draft.color} — ${series.name}`}
+            alt={`${product.name} ${colorLabel}${series ? ` — ${series.name}` : ""}`}
             className="absolute inset-0 h-full w-full object-contain"
             onError={(e) => {
               (e.target as HTMLImageElement).style.display = "none";
@@ -143,10 +155,16 @@ export default function StepProduct({
           className="mt-2 text-[1.6rem] font-semibold leading-tight sm:text-[1.9rem]"
           style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}
         >
-          {product.name} <span style={{ color: "var(--gold)" }}>— {draft.color}</span>
+          {product.name} {colorLabel && <span style={{ color: "var(--gold)" }}>— {colorLabel}</span>}
         </h2>
         <p className="mt-1.5 text-[13px]" style={{ color: MUTED }}>
-          Jenis kain <span style={{ color: "var(--gold)" }}>{product.kain}</span>
+          {product.kain ? (
+            <>
+              Jenis kain <span style={{ color: "var(--gold)" }}>{product.kain}</span>
+            </>
+          ) : (
+            product.category
+          )}
           {product.weight
             ? ` · ${product.weight >= 1000 ? (product.weight / 1000).toFixed(1) + " kg" : product.weight + " g"}`
             : ""}
@@ -154,22 +172,24 @@ export default function StepProduct({
       </div>
 
       {/* Warna */}
-      <div className="mt-7">
-        <SectionLabel>Pilih Warna</SectionLabel>
-        <div className="mt-2.5 flex flex-wrap gap-2">
-          {product.colors.map((color) => (
-            <Chip key={color} shape="square" active={color === draft.color} onClick={() => onChange({ color })}>
-              {color}
-            </Chip>
-          ))}
+      {product.colors.length > 0 && (
+        <div className="mt-7">
+          <SectionLabel>Pilih Warna</SectionLabel>
+          <div className="mt-2.5 flex flex-wrap gap-2">
+            {product.colors.map((color) => (
+              <Chip key={color} shape="square" active={color === draft.color} onClick={() => onChange({ color })}>
+                {openOrderColorLabel(product, color)}
+              </Chip>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Ukuran */}
       <div className="mt-6">
         <SectionLabel>Pilih Ukuran</SectionLabel>
         <div className="mt-2.5 flex flex-wrap gap-2">
-          {OPEN_ORDER_SIZES.map((size) => (
+          {sizes.map((size) => (
             <Chip key={size} shape="square" active={size === draft.size} onClick={() => onChange({ size })}>
               {size}
             </Chip>
@@ -177,28 +197,30 @@ export default function StepProduct({
         </div>
       </div>
 
-      {/* Series */}
-      <div className="mt-6">
-        <SectionLabel>Pilih Series</SectionLabel>
-        <div className="mt-2.5 flex flex-wrap gap-2">
-          {product.series.map((option) => {
-            const active = option.name === series.name;
-            return (
-              <Chip
-                key={option.name}
-                shape="square"
-                active={active}
-                onClick={() => onChange({ series: option.name, price: option.price })}
-              >
-                <span className="font-medium">{option.name}</span>
-                <span className="ml-1.5" style={{ color: active ? "rgba(248,245,241,.75)" : "var(--gold)" }}>
-                  mulai dari {money(option.price)}
-                </span>
-              </Chip>
-            );
-          })}
+      {/* Series — hanya produk yang punya series (mis. Thobe) */}
+      {product.series.length > 0 && (
+        <div className="mt-6">
+          <SectionLabel>Pilih Series</SectionLabel>
+          <div className="mt-2.5 flex flex-wrap gap-2">
+            {product.series.map((option) => {
+              const active = option.name === series?.name;
+              return (
+                <Chip
+                  key={option.name}
+                  shape="square"
+                  active={active}
+                  onClick={() => onChange({ series: option.name, price: option.price })}
+                >
+                  <span className="font-medium">{option.name}</span>
+                  <span className="ml-1.5" style={{ color: active ? "rgba(248,245,241,.75)" : "var(--gold)" }}>
+                    mulai dari {money(option.price)}
+                  </span>
+                </Chip>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Jumlah */}
       <div className="mt-6">
@@ -208,37 +230,51 @@ export default function StepProduct({
         </div>
       </div>
 
-      {/* Create Your Price */}
-      <div className="mt-6 rounded-2xl p-5" style={{ background: "var(--cream-bright)", border: "1px solid rgba(0,0,0,.25)" }}>
-        <p className="text-[11px] uppercase tracking-[0.12em]" style={{ color: MUTED }}>
-          Harga Minimum
-        </p>
-        <p className="mt-1 text-[20px] font-semibold tabular-nums" style={{ color: "var(--gold)" }}>
-          {money(minimum)}
-        </p>
-        <p className="mt-1 text-[12px]" style={{ color: MUTED }}>
-          Create Your Price — pilih harga terbaikmu untuk series {series.name}.
-        </p>
-        <div className="mt-3 flex items-center gap-2 rounded-lg bg-white px-4 py-3" style={{ border: "1px solid rgba(0,0,0,.35)" }}>
-          <span className="text-[13.5px] font-semibold" style={{ color: MUTED }}>
-            Rp
-          </span>
-          <input
-            value={price ? price.toLocaleString("id-ID") : ""}
-            onChange={(e) => handlePriceInput(e.target.value)}
-            inputMode="numeric"
-            aria-label="Harga pilihanmu"
-            placeholder={minimum.toLocaleString("id-ID")}
-            className="w-full bg-transparent text-[15px] font-semibold tabular-nums outline-none"
-            style={{ color: INK }}
-          />
-        </div>
-        {priceTooLow && (
-          <p className="mt-2 text-[11.5px] leading-relaxed" style={{ color: DANGER }}>
-            Harga minimum untuk series {series.name} adalah {money(minimum)}.
+      {/* Harga — Create Your Price kalau produknya mengaktifkan, kalau tidak harga tetap. */}
+      {cypEnabled ? (
+        <div className="mt-6 rounded-2xl p-5" style={{ background: "var(--cream-bright)", border: "1px solid rgba(0,0,0,.25)" }}>
+          <p className="text-[11px] uppercase tracking-[0.12em]" style={{ color: MUTED }}>
+            Harga Minimum
           </p>
-        )}
-      </div>
+          <p className="mt-1 text-[20px] font-semibold tabular-nums" style={{ color: "var(--gold)" }}>
+            {money(minimum)}
+          </p>
+          <p className="mt-1 text-[12px]" style={{ color: MUTED }}>
+            Create Your Price — pilih harga terbaikmu{series ? ` untuk series ${series.name}` : ""}.
+          </p>
+          <div className="mt-3 flex items-center gap-2 rounded-lg bg-white px-4 py-3" style={{ border: "1px solid rgba(0,0,0,.35)" }}>
+            <span className="text-[13.5px] font-semibold" style={{ color: MUTED }}>
+              Rp
+            </span>
+            <input
+              value={price ? price.toLocaleString("id-ID") : ""}
+              onChange={(e) => handlePriceInput(e.target.value)}
+              inputMode="numeric"
+              aria-label="Harga pilihanmu"
+              placeholder={minimum.toLocaleString("id-ID")}
+              className="w-full bg-transparent text-[15px] font-semibold tabular-nums outline-none"
+              style={{ color: INK }}
+            />
+          </div>
+          {priceTooLow && (
+            <p className="mt-2 text-[11.5px] leading-relaxed" style={{ color: DANGER }}>
+              Harga minimum{series ? ` untuk series ${series.name}` : ""} adalah {money(minimum)}.
+            </p>
+          )}
+        </div>
+      ) : (
+        <div className="mt-6 rounded-2xl p-5" style={{ background: "var(--cream-bright)", border: "1px solid rgba(0,0,0,.25)" }}>
+          <p className="text-[11px] uppercase tracking-[0.12em]" style={{ color: MUTED }}>
+            Harga
+          </p>
+          <p className="mt-1 text-[20px] font-semibold tabular-nums" style={{ color: "var(--espresso)" }}>
+            {money(minimum)}
+            <span className="ml-1.5 text-[12px] font-normal" style={{ color: MUTED }}>
+              / pcs
+            </span>
+          </p>
+        </div>
+      )}
 
       {/* Total & CTA */}
       <div className="mt-6 flex items-baseline justify-between">

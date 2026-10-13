@@ -1,15 +1,17 @@
 "use client";
 
 /**
- * Langkah 1 — daftar produk Open Order: filter kain + grid kartu produk (per warna ready stock).
- * Kartu dibuat sama seperti kartu katalog (serif espresso + aksen gold). Produk, warna, series,
- * dan harga semuanya diturunkan dari katalog (lihat `open-order-offering.ts`).
+ * Langkah 1 — daftar produk Open Order: filter **kategori** + grid kartu produk (per warna ready
+ * stock). Kartu dibuat sama seperti kartu katalog (serif espresso + aksen gold).
+ *
+ * Produk, warna, series, harga, dan foto semuanya diturunkan dari katalog (lihat
+ * `open-order-offering.ts` + `open-order-catalog.ts`) — produk apa pun yang diikutkan admin
+ * (`open_order_enabled`) muncul di sini, lintas kategori.
  */
 
 import { useMemo, useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { cloudinaryUrl } from "@/lib/cloudinary";
-import type { Product } from "@/lib/katalog-data";
 import { money, openOrderVariants, priceRange } from "@/lib/open-order-catalog";
 import { lowestOpenOrderPrice, type OpenOrderProduct } from "@/lib/open-order-offering";
 import { Chip, INK, MUTED, PrimaryButton } from "./ui";
@@ -18,25 +20,27 @@ const ALL = "semua";
 
 export default function StepCatalog({
   products,
-  catalog,
   period,
   cartCount,
   onOpen,
   onViewCart,
 }: {
   products: OpenOrderProduct[];
-  catalog: Product[];
   /** Periode Open Order — dibaca dari store_settings (diatur di menu admin "Open Order"). */
   period: string;
   cartCount: number;
   onOpen: (product: OpenOrderProduct, color: string) => void;
   onViewCart: () => void;
 }) {
-  const [fabric, setFabric] = useState<string>(ALL);
+  const [category, setCategory] = useState<string>(ALL);
 
-  const variants = useMemo(() => openOrderVariants(products, catalog), [products, catalog]);
+  const categories = useMemo(
+    () => [...new Set(products.map((product) => product.category))].sort((a, b) => a.localeCompare(b)),
+    [products]
+  );
+  const variants = useMemo(() => openOrderVariants(products), [products]);
   const lowestPrice = useMemo(() => lowestOpenOrderPrice(products), [products]);
-  const shown = fabric === ALL ? variants : variants.filter((v) => v.product.kain === fabric);
+  const shown = category === ALL ? variants : variants.filter((variant) => variant.product.category === category);
 
   return (
     <div>
@@ -59,17 +63,19 @@ export default function StepCatalog({
         </p>
       </div>
 
-      {/* Filter kain */}
-      <div className="mt-7 flex flex-wrap items-center gap-2">
-        <Chip active={fabric === ALL} onClick={() => setFabric(ALL)}>
-          Semua
-        </Chip>
-        {products.map((product) => (
-          <Chip key={product.kain} active={fabric === product.kain} onClick={() => setFabric(product.kain)}>
-            {product.kain}
+      {/* Filter kategori */}
+      {categories.length > 1 && (
+        <div className="mt-7 flex flex-wrap items-center gap-2">
+          <Chip active={category === ALL} onClick={() => setCategory(ALL)}>
+            Semua
           </Chip>
-        ))}
-      </div>
+          {categories.map((name) => (
+            <Chip key={name} active={category === name} onClick={() => setCategory(name)}>
+              {name}
+            </Chip>
+          ))}
+        </div>
+      )}
 
       {/* Grid produk */}
       <div className="mt-6 grid grid-cols-2 gap-4 sm:gap-5 lg:grid-cols-4">
@@ -102,7 +108,7 @@ export default function StepCatalog({
                 className="absolute left-3 top-3 rounded-full px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.12em]"
                 style={{ background: "rgba(248,246,242,.92)", color: "var(--gold)", border: "1px solid rgba(0,0,0,.35)" }}
               >
-                {variant.product.kain}
+                {variant.product.kain ? `Kain ${variant.product.kain}` : variant.product.category}
               </span>
             </div>
 
@@ -114,11 +120,13 @@ export default function StepCatalog({
                 {variant.product.name}
               </h3>
               <p className="mt-1 text-[11.5px]" style={{ color: "var(--gold)" }}>
-                Kain {variant.product.kain}
+                {variant.product.kain ? `Kain ${variant.product.kain}` : variant.product.category}
               </p>
-              <p className="mt-0.5 text-[11.5px] line-clamp-1" style={{ color: MUTED }}>
-                Warna: {variant.color}
-              </p>
+              {variant.label && (
+                <p className="mt-0.5 text-[11.5px] line-clamp-1" style={{ color: MUTED }}>
+                  Warna: {variant.label}
+                </p>
+              )}
               <p className="mt-1.5 text-[12.5px] font-medium tabular-nums" style={{ color: "var(--espresso)" }}>
                 {priceRange(variant.product)}
               </p>
@@ -132,7 +140,7 @@ export default function StepCatalog({
 
       {shown.length === 0 && (
         <p className="py-10 text-center text-[13px]" style={{ color: MUTED }}>
-          Belum ada produk untuk kain ini.
+          Belum ada produk untuk kategori ini.
         </p>
       )}
 

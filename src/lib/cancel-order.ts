@@ -17,6 +17,8 @@ export interface CancelableOrder {
   status: string;
   awb_no: string | null;
   jnt_order_id: string | null;
+  /** Kolom `orders.stock_reserved` — true kalau pesanan ini sudah memotong stok. */
+  stock_reserved?: boolean | null;
 }
 
 export type CancelOrderResult =
@@ -24,11 +26,13 @@ export type CancelOrderResult =
   | { success: false; stage: "jnt" | "status"; message: string };
 
 /**
- * Pesanan checkout website (`SMQ-`) memotong stok saat dibuat (`samaqu_decrement_stock`);
- * Open Order (`CYO-`) tidak pernah memotong stok — jadi hanya pesanan website yang stoknya
- * dikembalikan, kalau tidak stok yang tidak pernah dipotong malah bertambah.
+ * Stok dikembalikan hanya untuk pesanan yang MEMANG memotong stok. Penandanya kolom
+ * `orders.stock_reserved` — diisi `true` saat checkout website maupun Open Order membuat
+ * pesanannya. Dulu penandanya cuma awalan nomor pesanan (`SMQ-`), dan itu tidak lagi cukup
+ * sekarang Open Order (`CYO-`) juga memotong stok: pesanan CYO LAMA (dibuat sebelum perubahan
+ * ini) tidak pernah memotong stok, jadi kalau dibatalkan stoknya jangan sampai bertambah.
  */
-const hasStockReservation = (orderNumber: string) => orderNumber.startsWith("SMQ-");
+const hasStockReservation = (order: CancelableOrder) => order.stock_reserved === true;
 
 export async function cancelOrderCompletely(
   order: CancelableOrder,
@@ -55,7 +59,7 @@ export async function cancelOrderCompletely(
     console.log("[CANCEL] J&T voided:", order.order_number, cancelId);
   }
 
-  if (hasStockReservation(order.order_number)) {
+  if (hasStockReservation(order)) {
     const { data: items } = await supabase
       .from("order_items")
       .select("product_id, color, size, quantity")

@@ -1,39 +1,61 @@
 /**
- * Penawaran Open Order (/open-order) diturunkan dari katalog (tabel `products`), bukan
- * daftar hardcode: kain, warna, series, dan harga minimum per series semuanya dibaca dari
- * baris katalog. Jadi begitu harga/warna di katalog berubah, wizard ikut berubah tanpa
- * mengedit kode.
+ * Penawaran Open Order (/open-order) diturunkan dari katalog (tabel `products`), bukan daftar
+ * hardcode.
  *
- * Satu baris `products` = satu kombinasi kain × warna × series:
- * - kain   → relasi `jenis_kain` (mis. "B-01"),
- * - warna  → bagian nama produk setelah prefix kategori (mis. "Thobe Navy" → "Navy"),
- * - series → kolom `series`,
- * - harga  → `minimum_price` (batas Create Your Price), fallback ke `price`.
+ * Aturannya: **semua baris katalog yang ikut Open Order** (`open_order_enabled`, kolom
+ * `products.open_order_enabled`, default true) tampil di halaman /open-order — **lintas
+ * kategori** (Thobe, Kandora, Koko, Vest, Kabak, Cover & Hanger), bukan cuma Thobe.
  *
- * Struktur barisnya sama dengan yang dipakai halaman detail katalog (`getAvailableSeries`
- * di src/lib/db.ts), jadi wizard dan katalog membaca sumber yang sama.
+ * Baris dikelompokkan per **produk utama** (kategori + nama) — sama seperti kartu di halaman
+ * Katalog — jadi produk Thobe dengan beberapa series tetap jadi satu kartu. Tiap grup menyimpan
+ * peta `variants` ke **baris `products` asli**: itu dipakai server untuk memotong stok
+ * (`samaqu_decrement_stock` per produk + warna + ukuran) dan mengisi `order_items.product_id`
+ * dengan id baris katalog yang sebenarnya.
  */
 
-export interface OpenOrderSeries {
+/** Satu pilihan series + harga minimumnya. Kosong untuk produk tanpa series. */
+export interface OpenOrderSeriesOption {
   name: string;
   price: number;
 }
 
+/** Kombinasi warna (+ series) → baris `products` asli, untuk foto, stok, dan order_items. */
+export interface OpenOrderVariant {
+  /** Warna seperti tersimpan di varian (`product_variants.color`) — nilai yang dipakai stok. */
+  color: string;
+  /** Nama warna untuk ditampilkan. */
+  label: string;
+  series: string | null;
+  /** id baris `products` asli. */
+  productId: string;
+  /** Ukuran yang benar-benar punya varian di baris ini (dari `product_variants`). */
+  sizes: string[];
+  /** Foto (gambar saja) baris ini — sumber galeri di langkah detail. */
+  media: string[];
+}
+
 export interface OpenOrderProduct {
-  /** Kode kain (mis. "B-01") — dipakai sebagai id produk di keranjang & pesanan. */
+  /** id baris katalog acuan grup — dipakai sebagai kunci produk di keranjang & pesanan. */
   id: string;
   name: string;
+  category: string;
   kain: string;
   colors: string[];
-  /** Berat kirim per pcs (gram) untuk hitungan ongkir. */
+  series: OpenOrderSeriesOption[];
+  /** Harga yang tampil (termurah dari grup). */
+  price: number;
+  /** Batas bawah Create Your Price. */
+  minimumPrice: number;
+  cypEnabled: boolean;
   weight: number;
-  series: OpenOrderSeries[];
+  image: string;
+  variants: OpenOrderVariant[];
 }
 
 /**
  * Baris katalog yang dipakai menurunkan penawaran — subset struktural dari `Product`
- * supaya modul ini bisa dipakai di client (katalog dari getProducts) maupun di server
- * (route /api/open-order) tanpa ikut membawa tipe/klien Supabase.
+ * supaya modul ini bisa dipakai di client (`getProducts`) maupun di server (`/api/open-order`)
+ * tanpa ikut membawa tipe/klien Supabase.
  */
 export interface OpenOrderCatalogRow {
   id: string;
@@ -44,11 +66,23 @@ export interface OpenOrderCatalogRow {
   weight?: number | null;
   price?: number | null;
   minimum_price?: number | null;
+  create_your_price_enabled?: boolean | null;
+  colors?: string[] | null;
+  image?: string | null;
+  images?: string[] | null;
+  media?: { src: string; type?: string }[] | null;
+  /** Kolom `products.open_order_enabled` — false = disembunyikan dari /open-order. */
+  open_order_enabled?: boolean | null;
   jenis_kain?: { name?: string | null } | null;
 }
 
-/** Kategori katalog yang dijual lewat Open Order. */
-const OPEN_ORDER_CATEGORY = "Thobe";
+/** Baris `product_variants` — sumber daftar ukuran per warna (dan sisa stok). */
+export interface OpenOrderStockRow {
+  product_id: string;
+  color: string;
+  size: string;
+  stock?: number | null;
+}
 
 /** Berat kirim default kalau baris katalog tidak punya `weight` (gram). */
 export const DEFAULT_OPEN_ORDER_WEIGHT = 1200;
@@ -57,78 +91,188 @@ function kainOf(row: OpenOrderCatalogRow): string {
   return (row.jenis_kain?.name ?? row.kain ?? "").trim();
 }
 
-/** Warna = nama produk tanpa prefix kategori ("Thobe Navy" → "Navy"). */
-function colorOf(row: OpenOrderCatalogRow): string {
-  const name = row.name.trim();
-  const prefix = `${OPEN_ORDER_CATEGORY} `;
-  return name.toLowerCase().startsWith(prefix.toLowerCase()) ? name.slice(prefix.length).trim() : name;
+/** Foto baris katalog: `media` (gambar saja) → `images` → `image`. */
+function mediaOf(row: OpenOrderCatalogRow): string[] {
+  const fromMedia = (row.media ?? []).filter((item) => item.type !== "video" && item.src).map((item) => item.src);
+  if (fromMedia.length > 0) return fromMedia;
+  const fromImages = (row.images ?? []).filter(Boolean);
+  if (fromImages.length > 0) return fromImages;
+  return row.image ? [row.image] : [];
 }
 
 /**
- * Susun penawaran Open Order dari baris katalog: satu produk per kode kain, berisi daftar
- * warna ready stock dan series + harga minimumnya.
+ * Nama warna untuk ditampilkan. Produk Thobe menyimpan warnanya di **nama** produk
+ * ("Thobe Navy" → warna "Navy") sementara variannya berwarna `default`; produk lain memakai
+ * nama warna aslinya. Yang dipakai stok tetap warna asli varian (`product_variants.color`).
  */
-export function buildOpenOrderProducts(catalog: OpenOrderCatalogRow[]): OpenOrderProduct[] {
-  const groups = new Map<string, { colors: Set<string>; series: Map<string, number>; weight: number }>();
+function colorLabelOf(row: OpenOrderCatalogRow, color: string): string {
+  const isPlaceholder = !color || color.trim().toLowerCase() === "default";
+  if (!isPlaceholder) return color;
+  const name = (row.name ?? "").trim();
+  const prefix = `${(row.category ?? "").trim()} `;
+  if (prefix.trim() && name.toLowerCase().startsWith(prefix.toLowerCase())) {
+    const rest = name.slice(prefix.length).trim();
+    if (rest) return rest;
+  }
+  return color || "";
+}
 
-  for (const row of catalog) {
-    if ((row.category ?? "") !== OPEN_ORDER_CATEGORY) continue;
+/** Harga efektif satu baris: harga minimum saat Create Your Price aktif, kalau tidak harga biasa. */
+function effectivePrice(row: OpenOrderCatalogRow): number {
+  const price = row.price ?? 0;
+  if (row.create_your_price_enabled && row.minimum_price) return row.minimum_price;
+  return price;
+}
 
-    const kain = kainOf(row);
-    const series = (row.series ?? "").trim();
-    const price = row.minimum_price ?? row.price ?? 0;
-    if (!kain || !series || !price) continue;
-
-    const group = groups.get(kain) ?? { colors: new Set<string>(), series: new Map<string, number>(), weight: 0 };
-    groups.set(kain, group);
-
-    group.colors.add(colorOf(row));
-    if (row.weight) group.weight = Math.max(group.weight, row.weight);
-
-    // Harga minimum seragam per series; kalau ada baris yang berbeda, ambil yang terendah.
-    const current = group.series.get(series);
-    group.series.set(series, current === undefined ? price : Math.min(current, price));
+/**
+ * Susun penawaran Open Order dari baris katalog: satu produk utama per (kategori + nama), berisi
+ * daftar warna, series (kalau ada), harga, dan peta ke baris katalog aslinya.
+ *
+ * `stockRows` (baris `product_variants`) dipakai mengisi daftar ukuran tiap kombinasi
+ * warna/series; tanpa itu ukurannya kosong (UI memakai daftar ukuran cadangan).
+ */
+export function buildOpenOrderProducts(
+  catalog: OpenOrderCatalogRow[],
+  stockRows: OpenOrderStockRow[] = []
+): OpenOrderProduct[] {
+  const sizesByRow = new Map<string, Map<string, string[]>>();
+  for (const row of stockRows) {
+    if (!row.product_id || !row.color || !row.size) continue;
+    const byColor = sizesByRow.get(row.product_id) ?? new Map<string, string[]>();
+    sizesByRow.set(row.product_id, byColor);
+    const sizes = byColor.get(row.color) ?? [];
+    if (!sizes.includes(row.size)) sizes.push(row.size);
+    byColor.set(row.color, sizes);
   }
 
-  return [...groups].map(([kain, group]) => ({
-    id: kain,
-    name: `${OPEN_ORDER_CATEGORY} Kain ${kain}`,
-    kain,
-    colors: [...group.colors],
-    weight: group.weight || DEFAULT_OPEN_ORDER_WEIGHT,
-    series: [...group.series]
-      .map(([name, price]) => ({ name, price }))
-      .sort((a, b) => a.price - b.price || a.name.localeCompare(b.name)),
-  }));
-}
+  interface Group {
+    id: string;
+    name: string;
+    category: string;
+    kain: string;
+    colors: Set<string>;
+    series: Map<string, number>;
+    price: number;
+    minimumPrice: number;
+    cypEnabled: boolean;
+    weight: number;
+    image: string;
+    variants: OpenOrderVariant[];
+  }
 
-/**
- * Batasi penawaran ke series yang dibuka admin (menu "Open Order" → `open_order_series`).
- * Daftar kosong = semua series dibuka (perilaku lama). Produk yang tidak punya series terpilih
- * ikut disembunyikan supaya customer tidak bisa memesan series yang sedang ditutup.
- */
-export function restrictOpenOrderProducts(
-  products: OpenOrderProduct[],
-  allowedSeries: string[]
-): OpenOrderProduct[] {
-  if (allowedSeries.length === 0) return products;
+  const groups = new Map<string, Group>();
 
-  const allowed = new Set(allowedSeries.map((name) => name.trim().toLowerCase()));
-  return products
-    .map((product) => ({
-      ...product,
-      series: product.series.filter((series) => allowed.has(series.name.trim().toLowerCase())),
+  for (const row of catalog) {
+    // Baris yang dimatikan admin tidak ikut Open Order.
+    if (row.open_order_enabled === false) continue;
+
+    const name = (row.name ?? "").trim();
+    const category = (row.category ?? "").trim();
+    if (!name || !category) continue;
+
+    const series = (row.series ?? "").trim();
+    const price = effectivePrice(row);
+    if (!price) continue;
+
+    const key = `${category}::${name}`;
+    const group = groups.get(key) ?? {
+      id: row.id,
+      name,
+      category,
+      kain: kainOf(row),
+      colors: new Set<string>(),
+      series: new Map<string, number>(),
+      price,
+      minimumPrice: price,
+      cypEnabled: false,
+      weight: 0,
+      image: "",
+      variants: [],
+    };
+    groups.set(key, group);
+
+    group.price = Math.min(group.price, price);
+    group.minimumPrice = Math.min(group.minimumPrice, price);
+    if (row.create_your_price_enabled) group.cypEnabled = true;
+    if (!group.image) group.image = mediaOf(row)[0] ?? "";
+    if (row.weight) group.weight = Math.max(group.weight, row.weight);
+    if (series) {
+      const current = group.series.get(series);
+      group.series.set(series, current === undefined ? price : Math.min(current, price));
+    }
+
+    // Satu entri varian per warna di baris ini → peta ke baris `products` asli.
+    const media = mediaOf(row);
+    const colors = (row.colors ?? []).length > 0 ? row.colors! : [""];
+    for (const color of colors) {
+      group.colors.add(color);
+      group.variants.push({
+        color,
+        label: colorLabelOf(row, color),
+        series: series || null,
+        productId: row.id,
+        sizes: sizesByRow.get(row.id)?.get(color) ?? [],
+        media,
+      });
+    }
+  }
+
+  return [...groups.values()]
+    .map((group) => ({
+      id: group.id,
+      name: group.name,
+      category: group.category,
+      kain: group.kain,
+      colors: [...group.colors].filter(Boolean),
+      series: [...group.series]
+        .map(([name, price]) => ({ name, price }))
+        .sort((a, b) => a.price - b.price || a.name.localeCompare(b.name)),
+      price: group.price,
+      minimumPrice: group.minimumPrice,
+      cypEnabled: group.cypEnabled,
+      weight: group.weight || DEFAULT_OPEN_ORDER_WEIGHT,
+      image: group.image,
+      variants: group.variants,
     }))
-    .filter((product) => product.series.length > 0);
+    .sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name));
 }
 
-/** Cari produk penawaran berdasarkan id (kode kain). */
+/** Cari produk penawaran berdasarkan id (id baris acuan grup). */
 export function findOpenOrderProduct(products: OpenOrderProduct[], id: string): OpenOrderProduct | undefined {
   return products.find((product) => product.id === id);
 }
 
+/** Harga tampil produk: termurah dari series-nya, atau harganya sendiri kalau tanpa series. */
+export function openOrderProductPrice(product: OpenOrderProduct): number {
+  if (product.series.length === 0) return product.price;
+  return Math.min(...product.series.map((series) => series.price));
+}
+
 /** Harga minimum terendah dari seluruh penawaran — untuk catatan harga di langkah 1. */
 export function lowestOpenOrderPrice(products: OpenOrderProduct[]): number | null {
-  const prices = products.flatMap((product) => product.series.map((series) => series.price));
+  const prices = products.map(openOrderProductPrice);
   return prices.length ? Math.min(...prices) : null;
+}
+
+/**
+ * Baris katalog asli untuk kombinasi warna + series (atau warna saja kalau produknya tanpa
+ * series). Dipakai UI untuk galeri foto dan server untuk memotong stok.
+ */
+export function openOrderVariantFor(
+  product: OpenOrderProduct,
+  color: string,
+  series?: string | null
+): OpenOrderVariant | undefined {
+  const wantSeries = (series ?? "").trim();
+  const byColor = product.variants.filter((variant) => variant.color === color);
+  if (wantSeries) {
+    const exact = byColor.find((variant) => (variant.series ?? "") === wantSeries);
+    if (exact) return exact;
+  }
+  return byColor[0];
+}
+
+/** Nama warna untuk ditampilkan (Thobe: dari nama produk, mis. "Navy"; lainnya: warna varian). */
+export function openOrderColorLabel(product: OpenOrderProduct, color: string): string {
+  return openOrderVariantFor(product, color)?.label || color;
 }

@@ -21,7 +21,7 @@ export async function PATCH(request: NextRequest) {
     if (action === "cancelJnt") {
       const { data: order, error: fetchError } = await supabaseAdmin
         .from("orders")
-        .select("id, order_number, status, awb_no, jnt_order_id")
+        .select("id, order_number, status, awb_no, jnt_order_id, stock_reserved")
         .eq("order_number", identifier)
         .single();
 
@@ -149,7 +149,7 @@ export async function PATCH(request: NextRequest) {
     if (status === "dibatalkan" || status === "pending") {
       const { data: order } = await supabaseAdmin
         .from("orders")
-        .select("id, order_number, status, awb_no, jnt_order_id")
+        .select("id, order_number, status, awb_no, jnt_order_id, stock_reserved")
         .eq("order_number", identifier)
         .maybeSingle();
 
@@ -218,7 +218,7 @@ export async function DELETE(request: NextRequest) {
     // Fetch order status + items before deletion for stock restoration
     const { data: fullOrder } = await supabaseAdmin
       .from("orders")
-      .select("status")
+      .select("status, stock_reserved")
       .eq("id", uuidId)
       .single();
 
@@ -227,8 +227,11 @@ export async function DELETE(request: NextRequest) {
       .select("product_id, color, size, quantity")
       .eq("order_id", uuidId);
 
-    // Restore stock for pending/dibatalkan orders (stock was decremented)
-    if (orderItems && orderItems.length > 0 && fullOrder?.status === "pending") {
+    // Restore stock for pending orders whose stock was actually decremented. `stock_reserved`
+    // memastikan pesanan Open Order (`CYO-`) LAMA — yang dibuat sebelum Open Order ikut memotong
+    // stok — tidak ikut dikembalikan (stok hantu). Pesanan `dibatalkan` tidak disentuh di sini:
+    // stoknya sudah dikembalikan `cancelOrderCompletely()` saat pembatalan.
+    if (orderItems && orderItems.length > 0 && fullOrder?.status === "pending" && fullOrder?.stock_reserved === true) {
       for (const item of orderItems) {
         if (item.product_id && item.color && item.size && item.quantity) {
           await supabaseAdmin.rpc("samaqu_restore_stock", {

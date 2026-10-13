@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
 
     const { data: order } = await supabaseAdmin
       .from("orders")
-      .select("id, order_number, status, awb_no, jnt_order_id, customer_id")
+      .select("id, order_number, status, awb_no, jnt_order_id, customer_id, stock_reserved")
       .eq("order_number", orderNumber)
       .maybeSingle();
 

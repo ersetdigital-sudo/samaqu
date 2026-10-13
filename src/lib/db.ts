@@ -24,6 +24,8 @@ export interface DbProduct {
   recommended_price: number | null;
   create_your_price_enabled: boolean;
   cyp_microcopy_override: string | null;
+  // Open Order
+  open_order_enabled?: boolean | null;
   // Weight
   weight: number | null;
   // Joined relation (optional, only when fetched with join)
@@ -61,6 +63,8 @@ function dbProductToProduct(db: DbProduct): Product {
     recommended_price: db.recommended_price,
     create_your_price_enabled: db.create_your_price_enabled ?? false,
     cyp_microcopy_override: db.cyp_microcopy_override || null,
+    // Baris lama sebelum kolomnya ada → dianggap ikut Open Order (default kolomnya true).
+    open_order_enabled: db.open_order_enabled !== false,
     tag: (db.tag as Product["tag"]) || undefined,
     badge_type: db.badge_type || null,
     note: db.note || undefined,

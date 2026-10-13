@@ -1,125 +1,66 @@
 /**
- * Helper tampilan alur Open Order (/open-order): harga, foto dari katalog, dan kartu produk.
+ * Helper tampilan alur Open Order (/open-order): format harga, rentang harga, kartu produk, dan
+ * galeri foto.
  *
- * Penawaran (kain/warna/series/harga) diturunkan dari baris katalog lewat
- * `open-order-offering.ts`; modul ini yang mencocokkan baris katalog ke tiap kombinasi
- * produk + warna (+ series) untuk foto dan kartu.
+ * Semua data (termasuk foto) datang dari penawaran `open-order-offering.ts` — tiap varian sudah
+ * membawa media baris katalognya, jadi tidak ada lagi pencocokan nama/kain ke katalog dan
+ * helper ini jalan untuk semua kategori.
  */
 
-import type { Product } from "@/lib/katalog-data";
-import { getProductThumbnail } from "@/lib/product-thumbnail";
-import type { OpenOrderProduct } from "@/lib/open-order-offering";
+import { openOrderVariantFor, type OpenOrderProduct } from "@/lib/open-order-offering";
 
 /** Format harga seragam untuk seluruh alur: "Rp329.000". */
 export const money = (value: number) => `Rp${value.toLocaleString("id-ID")}`;
 
-/** Series dengan harga sama digabung supaya daftar harga tetap ringkas. */
-export function priceTiers(product: OpenOrderProduct) {
-  return product.series.reduce<{ price: number; names: string[] }[]>((tiers, series) => {
-    const last = tiers[tiers.length - 1];
-    if (last && last.price === series.price) last.names.push(series.name);
-    else tiers.push({ price: series.price, names: [series.name] });
-    return tiers;
-  }, []);
-}
-
-/** Rentang harga produk, mis. "Rp329.000 - Rp344.000". */
+/** Rentang harga produk, mis. "Rp329.000 - Rp344.000". Produk tanpa series → satu harga. */
 export function priceRange(product: OpenOrderProduct): string {
-  const prices = product.series.map((s) => s.price);
+  if (product.series.length === 0) return money(product.price);
+  const prices = product.series.map((series) => series.price);
   const min = Math.min(...prices);
   const max = Math.max(...prices);
   return min === max ? money(min) : `${money(min)} - ${money(max)}`;
 }
 
-/**
- * Produk katalog (tabel `products`) yang jadi acuan foto: kode kain (jenis_kain)
- * + warna ready stock ada di nama produk ("Thobe <warna>").
- */
-export function catalogMatches(product: OpenOrderProduct, catalog: Product[]): Product[] {
-  return catalog.filter((item) => {
-    if ((item.jenis_kain?.name ?? item.kain) !== product.kain) return false;
-    const name = item.name.toLowerCase();
-    return product.colors.some((color) => name.endsWith(color.toLowerCase()));
-  });
-}
-
-/** Foto untuk kombinasi produk + warna; fallback ke foto produk pertama yang cocok. */
-export function openOrderImage(product: OpenOrderProduct, color: string, catalog: Product[]): string {
-  const matches = catalogMatches(product, catalog);
-  const exact = matches.find((item) => item.name.toLowerCase().endsWith(color.toLowerCase()));
-  const primary = exact ?? matches[0];
-  return primary ? getProductThumbnail(primary) : "";
+/** Foto utama untuk kombinasi warna (+ series); fallback foto produk. */
+export function openOrderImage(product: OpenOrderProduct, color: string, series?: string | null): string {
+  return openOrderVariantFor(product, color, series)?.media[0] ?? product.image ?? "";
 }
 
 /**
- * Baris katalog (tabel `products`) untuk produk + warna + series yang sedang dipilih.
- * Satu baris katalog = satu kombinasi warna + series, jadi foto tiap series memang beda.
+ * Galeri (gambar saja) untuk kombinasi warna + series — sumbernya baris katalog yang sama dengan
+ * yang dipakai halaman detail katalog, supaya fotonya sama persis.
  */
-export function catalogProductFor(
-  product: OpenOrderProduct,
-  color: string,
-  seriesName: string,
-  catalog: Product[]
-): Product | undefined {
-  const colorLower = color.toLowerCase();
-  const matches = catalog.filter(
-    (item) =>
-      (item.jenis_kain?.name ?? item.kain) === product.kain && item.name.toLowerCase().endsWith(colorLower)
-  );
-  return matches.find((item) => item.series === seriesName) ?? matches[0];
+export function openOrderGallery(product: OpenOrderProduct, color: string, series?: string | null): string[] {
+  const media = openOrderVariantFor(product, color, series)?.media ?? [];
+  if (media.length > 0) return media;
+  return product.image ? [product.image] : [];
 }
 
-/**
- * Foto untuk satu baris `order_items` pesanan Open Order: baris itu menyimpan kode kain
- * (`kain` / `product_id`) + warna + series, bukan id baris katalog, jadi dicocokkan dulu ke
- * baris `products` yang sama seperti galeri di wizard.
- */
-export function orderItemImage(
-  item: { kain?: string | null; color?: string | null; series?: string | null },
-  catalog: Product[]
-): string {
-  const kain = (item.kain ?? "").trim();
-  if (!kain) return "";
-  const color = (item.color ?? "").trim().toLowerCase();
-  const matches = catalog.filter(
-    (row) => (row.jenis_kain?.name ?? row.kain) === kain && (!color || row.name.toLowerCase().endsWith(color))
-  );
-  const row = matches.find((match) => match.series === item.series) ?? matches[0];
-  return row ? getProductThumbnail(row) : "";
-}
-
-/**
- * Foto galeri (tanpa video) untuk kombinasi produk + warna + series — sumbernya baris katalog
- * yang sama dengan yang dipakai halaman detail katalog, supaya fotonya sama persis.
- */
-export function openOrderGallery(
-  product: OpenOrderProduct,
-  color: string,
-  seriesName: string,
-  catalog: Product[]
-): string[] {
-  const match = catalogProductFor(product, color, seriesName, catalog);
-  const photos = (match?.media ?? []).filter((item) => item.type === "image" && item.src).map((item) => item.src);
-  if (photos.length > 0) return photos;
-  const fallback = openOrderImage(product, color, catalog);
-  return fallback ? [fallback] : [];
-}
-
-export interface OpenOrderVariant {
+export interface OpenOrderVariantCard {
   key: string;
   product: OpenOrderProduct;
+  /** Warna seperti tersimpan di varian — nilai yang dikirim saat memesan. */
   color: string;
+  /** Nama warna untuk ditampilkan. */
+  label: string;
   image: string;
+  /** Ukuran yang tersedia untuk warna ini (dari varian produk). */
+  sizes: string[];
 }
 
-/** Satu kartu per produk × warna ready stock — dipakai grid di langkah pertama. */
-export function openOrderVariants(products: OpenOrderProduct[], catalog: Product[]): OpenOrderVariant[] {
+/** Satu kartu per produk × warna — dipakai grid di langkah pertama. */
+export function openOrderVariants(products: OpenOrderProduct[]): OpenOrderVariantCard[] {
   return products.flatMap((product) =>
-    product.colors.map((color) => ({
-      key: `${product.id}-${color.toLowerCase().replace(/\s+/g, "-")}`,
-      product,
-      color,
-      image: openOrderImage(product, color, catalog),
-    }))
+    product.colors.map((color) => {
+      const variant = openOrderVariantFor(product, color);
+      return {
+        key: `${product.id}-${color.toLowerCase().replace(/\s+/g, "-")}`,
+        product,
+        color,
+        label: variant?.label ?? color,
+        image: variant?.media[0] ?? product.image ?? "",
+        sizes: variant?.sizes ?? [],
+      };
+    })
   );
 }

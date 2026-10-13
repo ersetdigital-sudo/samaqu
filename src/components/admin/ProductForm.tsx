@@ -138,6 +138,8 @@ export default function TambahProdukPage() {
   const [selectedJenisKainId, setSelectedJenisKainId] = useState<string>("");
   const [showNewKainForm, setShowNewKainForm] = useState(false);
   const [badgeType, setBadgeType] = useState<string>("");
+  // Ikut Open Order: produk baru default tampil di /open-order (bisa dimatikan kapan saja).
+  const [openOrderEnabled, setOpenOrderEnabled] = useState(true);
 
   // Series list (dari produk yang sudah ada) + tambah baru
   const [seriesList, setSeriesList] = useState<string[]>([]);
@@ -582,6 +584,7 @@ export default function TambahProdukPage() {
             series: seriesName,
             catatan_harga: catatanHarga.trim() || null,
             badge_type: badgeType || null,
+            open_order_enabled: openOrderEnabled,
           }, { onConflict: "id" });
           if (productError) throw productError;
 
@@ -637,6 +640,7 @@ export default function TambahProdukPage() {
           series: series.trim() || null,
           catatan_harga: catatanHarga.trim() || null,
           badge_type: badgeType || null,
+          open_order_enabled: openOrderEnabled,
         }, { onConflict: "id" });
         if (productError) throw productError;
 
@@ -792,6 +796,25 @@ export default function TambahProdukPage() {
                     <ChevronDown size={14} className="pf-selectico" />
                   </div>
                   <p className="pf-hint">Badge yang tampil di pojok kanan atas foto card katalog.</p>
+                </div>
+                {/* Open Order — produk ikut tampil di katalog /open-order (menu Open Order). */}
+                <div className={`pf-panel${openOrderEnabled ? " accent" : " flat"}`}>
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-medium" style={{ color: "var(--espresso)" }}>Tampilkan di Open Order</p>
+                      <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>Produk ini muncul di katalog halaman /open-order.</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setOpenOrderEnabled((v) => !v)}
+                      aria-pressed={openOrderEnabled}
+                      aria-label="Tampilkan produk ini di menu Open Order"
+                      className="pf-toggle"
+                      style={{ background: openOrderEnabled ? "var(--gold)" : "#d4d4d8" }}
+                    >
+                      <span className="pf-toggle-knob" style={{ transform: openOrderEnabled ? "translateX(20px)" : "translateX(0)" }} />
+                    </button>
+                  </div>
                 </div>
                 {/* Create Your Price Toggle — hidden untuk Thobe (CYP per-series) */}
                 {category !== "Thobe" && (
