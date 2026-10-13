@@ -56,6 +56,9 @@ const HISTORY_KEY = "samaqu_chat_history";
 /** Batas pesan yang disimpan/ditampilkan dari riwayat. */
 const HISTORY_MAX = 30;
 
+/** Kunci localStorage: penanda pengunjung sudah menutup bubble teks pada tombol chat. */
+const FAB_DISMISS_KEY = "samaqu_chat_fab_dismissed";
+
 /** Empat pertanyaan cepat yang muncul di awal percakapan (ala marketplace). */
 const SUGGESTION_KEYS = ["suggestStock", "suggestSize", "suggestOrder", "suggestPay"] as const;
 
@@ -99,6 +102,7 @@ export default function ChatWidget() {
   const locale = useSafeLocale();
   const [ready, setReady] = useState(false);
   const [open, setOpen] = useState(false);
+  const [fabDismissed, setFabDismissed] = useState(false);
   const [greeting, setGreeting] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [messages, setMessages] = useState<Msg[]>([]);
@@ -126,6 +130,16 @@ export default function ChatWidget() {
     }
   }
 
+  /** Tutup bubble teks FAB: hilang sekarang, dan tidak muncul lagi setelah reload. */
+  function dismissFab() {
+    setFabDismissed(true);
+    try {
+      localStorage.setItem(FAB_DISMISS_KEY, "1");
+    } catch {
+      // storage tidak tersedia (mode privat / penuh) → cukup state di memori
+    }
+  }
+
   // ID sesi anonim (localStorage) supaya log percakapan bisa dikelompokkan per pengunjung.
   useEffect(() => {
     try {
@@ -140,6 +154,15 @@ export default function ChatWidget() {
       sessionIdRef.current = sid;
     } catch {
       sessionIdRef.current = "";
+    }
+  }, []);
+
+  // Bubble teks FAB yang dulu ditutup pengunjung tidak ditampilkan lagi (localStorage).
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(FAB_DISMISS_KEY) === "1") setFabDismissed(true);
+    } catch {
+      // storage tidak tersedia → biarkan bubble tampil apa adanya
     }
   }, []);
 
@@ -282,17 +305,60 @@ export default function ChatWidget() {
 
   if (!open) {
     return (
-      <button
-        onClick={() => setOpen(true)}
-        aria-label={t("open")}
-        className="fixed right-4 sm:right-6 bottom-[calc(var(--mobile-nav-h)+5.75rem)] z-[95] h-14 inline-flex items-center gap-2.5 rounded-full pl-4 pr-5 text-white shadow-lg transition-transform hover:scale-105"
-        style={{ background: "#000" }}
-      >
-        <RobotIcon size={24} />
-        <span className="text-[11px] tracking-[0.14em] uppercase font-ui font-medium whitespace-nowrap">
-          {t("fabLabel")}
-        </span>
-      </button>
+      // Anchor FAB tidak diubah: right-4 sm:right-6, offset --mobile-nav-h, z-[95].
+      <div className="fixed right-4 sm:right-6 bottom-[calc(var(--mobile-nav-h)+5.75rem)] z-[95]">
+        {/* Bubble teks (kartu putih ala WhatsApp) di samping kiri tombol — bisa ditutup. */}
+        {!fabDismissed && (
+          <div className="absolute right-[calc(100%+12px)] top-1/2 -translate-y-1/2">
+            {/* Badan bubble: klik area teks = buka chat. */}
+            <button
+              type="button"
+              onClick={() => setOpen(true)}
+              className="block w-max max-w-[calc(100vw_-_5.25rem)] sm:max-w-[17rem] rounded-2xl px-3.5 py-2.5 text-left"
+              style={{ background: "#fff", boxShadow: "0 8px 28px -8px rgba(0,0,0,.35)" }}
+            >
+              <span
+                className="block text-[11px] leading-snug tracking-[0.14em] uppercase font-ui font-medium"
+                style={{ color: "var(--fg, #18181b)" }}
+              >
+                {t("fabLabel")}
+              </span>
+            </button>
+
+            {/* Ekor bubble mengarah ke tombol bulat. */}
+            <span
+              aria-hidden
+              className="absolute -right-1 top-1/2 -translate-y-1/2 w-3 h-3 rotate-45"
+              style={{ background: "#fff" }}
+            />
+
+            {/* Tombol tutup (X) di sudut bubble — hanya menutup bubble, tidak membuka chat. */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                dismissFab();
+              }}
+              aria-label={t("fabDismiss")}
+              className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center text-white"
+              style={{ background: "rgba(0,0,0,.7)" }}
+            >
+              <X size={12} />
+            </button>
+          </div>
+        )}
+
+        {/* Tombol bulat ikon robot (ukuran ikon, hover:scale-105, z-index tetap). */}
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          aria-label={t("open")}
+          className="h-14 w-14 rounded-full inline-flex items-center justify-center text-white shadow-lg transition-transform hover:scale-105"
+          style={{ background: "#000" }}
+        >
+          <RobotIcon size={24} />
+        </button>
+      </div>
     );
   }
 
