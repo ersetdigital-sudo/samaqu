@@ -611,8 +611,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           MOBILE LAYOUT (max-md)
       ═══════════════════════════════════════ */}
       <div className="md:hidden">
-        {/* Breadcrumb mobile */}
-        <div className="max-w-7xl mx-auto px-4" style={{ paddingTop: "80px", marginBottom: "32px" }}>
+        {/* Breadcrumb mobile — navbar atas disembunyikan di mobile (lihat layout
+            (customer)), jadi tidak lagi butuh padding besar untuk navbar fixed. */}
+        <div className="max-w-7xl mx-auto px-4" style={{ paddingTop: "20px", marginBottom: "32px" }}>
           <Breadcrumb extra={[{ label: product.name }]} />
         </div>
         {/* Gallery */}
