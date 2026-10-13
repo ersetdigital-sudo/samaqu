@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
-import { defaultFirstFollowup } from "@/lib/ops-followup";
+import { defaultFirstFollowup, normalizeKontak } from "@/lib/ops-followup";
 import { isOpsAdmin } from "@/lib/ops-auth";
 
 /**
@@ -110,6 +110,25 @@ export async function POST(req: NextRequest) {
     }));
 
     const admin = getSupabaseAdmin();
+
+    // Anti-duplikat form manual: satu nomor pada tanggal sama tidak boleh masuk dua kali
+    // (kunci sama seperti Import Paste: tanggal + kontak yang dinormalisasi).
+    if (body?.blockDuplicates) {
+      const dates = Array.from(new Set(prepared.map((r: Record<string, unknown>) => String(r.tanggal))));
+      const incoming = new Set(prepared.map((r: Record<string, unknown>) => `${r.tanggal}|${normalizeKontak(r.kontak as string)}`));
+      const { data: existing } = await admin.from("leads").select("kontak, tanggal, sumber").in("tanggal", dates);
+      const clash = (existing || []).find((e: any) => incoming.has(`${e.tanggal}|${normalizeKontak(e.kontak)}`));
+      if (clash) {
+        return NextResponse.json(
+          {
+            error: `Nomor ${clash.kontak} sudah terdaftar sebagai lead di tanggal ${clash.tanggal}${clash.sumber ? ` (sumber: ${clash.sumber})` : ""}.`,
+            existing: clash,
+          },
+          { status: 409 },
+        );
+      }
+    }
+
     const { data, error } = await admin.from("leads").insert(prepared).select();
     if (error) {
       console.error("[OPS] leads POST error:", error);

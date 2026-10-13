@@ -3,6 +3,7 @@ import { base44 } from "@/lib/ops-api";
 import { motion, AnimatePresence } from "framer-motion";
 import { ClipboardPaste, CheckCircle2, XCircle, Loader2, Info, Copy, Upload } from "lucide-react";
 import { useToast } from "@/components/ops/ui/use-toast";
+import { normalizeKontak } from "@/lib/ops-followup";
 
 const SOURCES = ["Meta ads", "WA", "IG", "Website"];
 const BATCH_SIZE = 20;
@@ -74,17 +75,6 @@ const parseStatus = (raw) => {
   if (s.includes('closing')) return 'closing';
   return null;
 };
-
-// Normalisasi kontak: HP → digit tanpa awalan 0/62, username → lowercase tanpa @
-export function normalizeKontak(raw) {
-  const s = String(raw || '').trim().toLowerCase().replace(/^[=@"'\s]+|[@"'\s]+$/g, '');
-  if (!s) return '';
-  if (/[a-z]/.test(s.replace(/^@/, ''))) return s.replace(/^@+/, '');
-  const digits = s.replace(/\D/g, '');
-  let n = digits.replace(/^0+/, '');
-  if (n.startsWith('62') && n[2] === '8') n = n.slice(2);
-  return n || digits;
-}
 
 // Pecah satu baris: kalau ada TAB pakai TAB (hasil copy dari Google Sheet),
 // kalau tidak anggap CSV (perhatikan tanda kutip).

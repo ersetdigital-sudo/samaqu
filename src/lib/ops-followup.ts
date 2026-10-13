@@ -60,6 +60,20 @@ export function waLink(raw?: string | null): string | null {
   return n ? `https://wa.me/${n}` : null;
 }
 
+/**
+ * Normalisasi kontak lead untuk deteksi duplikat (dipakai server & UI Paste Import).
+ * HP → digit tanpa awalan 0/62 (08xx = 628xx = 8xx), username → lowercase tanpa @.
+ */
+export function normalizeKontak(raw?: string | null): string {
+  const s = String(raw || "").trim().toLowerCase().replace(/^[=@"'\s]+|[@"'\s]+$/g, "");
+  if (!s) return "";
+  if (/[a-z]/.test(s.replace(/^@/, ""))) return s.replace(/^@+/, "");
+  const digits = s.replace(/\D/g, "");
+  const n = digits.replace(/^0+/, "");
+  if (n.startsWith("62") && n[2] === "8") return n.slice(2);
+  return n || digits;
+}
+
 /** Batas hari bisnis (WIB) dalam ISO UTC. */
 export function jakartaDayBounds(now: Date = new Date()): { startIso: string; endIso: string } {
   const wib = new Date(now.getTime() + BIZ_OFFSET_MS);

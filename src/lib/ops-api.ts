@@ -43,14 +43,25 @@ export const base44 = {
   entities: {
     Lead: {
       async filter(query: any = {}, opts: any = {}) {
-        const params = new URLSearchParams();
-        if (query?.tanggal?.$gte) params.set("start", String(query.tanggal.$gte));
-        if (query?.tanggal?.$lte) params.set("end", String(query.tanggal.$lte));
-        if (query?.kontak?.$regex) params.set("search", String(query.kontak.$regex));
-        params.set("sort", String(opts?.sort ?? "tanggal"));
-        params.set("limit", String(opts?.limit ?? 1000));
-        const json = await call<{ items: any[] }>("GET", `${LEADS}?${params.toString()}`);
-        return { items: json.items ?? [] };
+        const base = new URLSearchParams();
+        if (query?.tanggal?.$gte) base.set("start", String(query.tanggal.$gte));
+        if (query?.tanggal?.$lte) base.set("end", String(query.tanggal.$lte));
+        if (query?.kontak?.$regex) base.set("search", String(query.kontak.$regex));
+        base.set("sort", String(opts?.sort ?? "tanggal"));
+
+        const pageSize = Math.min(Math.max(Number(opts?.limit) || 1000, 1), 2000);
+        const items: any[] = [];
+        for (let offset = 0; ; ) {
+          const params = new URLSearchParams(base);
+          params.set("limit", String(pageSize));
+          params.set("offset", String(offset));
+          const json = await call<{ items: any[]; next_cursor: string | null }>("GET", `${LEADS}?${params.toString()}`);
+          const batch = json.items ?? [];
+          items.push(...batch);
+          offset += batch.length;
+          if (!json.next_cursor || batch.length === 0) break;
+        }
+        return { items };
       },
       async list(opts: any = {}) {
         const params = new URLSearchParams();
@@ -60,7 +71,7 @@ export const base44 = {
         return { items: json.items ?? [], next_cursor: json.next_cursor ?? null };
       },
       async create(data: any) {
-        const json = await call<{ items: any[] }>("POST", LEADS, { rows: [data] });
+        const json = await call<{ items: any[] }>("POST", LEADS, { rows: [data], blockDuplicates: true });
         return json.items?.[0] ?? null;
       },
       async bulkCreate(rows: any[]) {

@@ -62,7 +62,7 @@ export default function LaporanLeads() {
   const { data: leads = [], isLoading } = useQuery({
     queryKey: ['leads_report', start, end],
     queryFn: async () => {
-      const page = await base44.entities.Lead.filter({ tanggal: { $gte: start, $lte: end } }, { sort: 'tanggal', limit: 500 });
+      const page = await base44.entities.Lead.filter({ tanggal: { $gte: start, $lte: end } }, { sort: 'tanggal', limit: 1000 });
       return page.items || [];
     },
   });
