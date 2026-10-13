@@ -1157,6 +1157,11 @@ export default function MasterProduk() {
                                     <span className="shrink-0 px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-100 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-900">{product.series}</span>
                                   ) : null}
                                 </div>
+                                {product.stok_bersama ? (
+                                  <p className="mt-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400 truncate" title={`${product.series || product.name} mengikuti ${product.stok_bersama.mengikuti}`}>
+                                    {product.series || product.name} mengikuti {product.stok_bersama.mengikuti}
+                                  </p>
+                                ) : null}
                               </td>
                               <td className="px-4 py-3.5 text-left align-middle font-inter text-sm font-medium text-gray-600 dark:text-slate-300 border-r border-gray-100 dark:border-slate-800/50">
                                 <span className="whitespace-nowrap" title={product.jenis_kain?.material || undefined}>
@@ -1259,6 +1264,11 @@ export default function MasterProduk() {
                           <p className="font-inter text-gray-500 dark:text-slate-400 truncate whitespace-nowrap mt-0.5" style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.01em' }}>
                             {[product.jenis_kain?.name, product.series].filter(Boolean).join(' · ') || 'Jenis kain belum diatur'}
                           </p>
+                          {product.stok_bersama ? (
+                            <p className="font-inter text-amber-600 truncate whitespace-nowrap mt-0.5" style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '0.01em' }}>
+                              {product.series || product.name} mengikuti {product.stok_bersama.mengikuti}
+                            </p>
+                          ) : null}
                         </div>
                         {renderStockIndicator(product)}
                         </div>
@@ -1451,9 +1461,9 @@ export default function MasterProduk() {
                             <tr key={v.id} className={`${rowBg} hover:bg-blue-100/50 dark:hover:bg-slate-800 transition-colors border-b border-gray-100 dark:border-slate-800/50`}>
                               <td className="px-4 py-3.5 text-left align-middle font-inter text-sm font-semibold text-gray-900 dark:text-white border-r border-gray-100 dark:border-slate-800/50">
                                 {product?.name || v.product_name || '-'}
-                                {v.base_product_name ? (
+                                {(v.base_series_name || v.base_product_name) ? (
                                   <span className="block text-[10px] font-medium text-amber-600 dark:text-amber-400">
-                                    Stok mengikuti {v.base_product_name}
+                                    {v.series_name || product?.name || v.product_name} mengikuti {v.base_series_name || v.base_product_name}
                                   </span>
                                 ) : null}
                               </td>
@@ -1503,8 +1513,10 @@ export default function MasterProduk() {
                         <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-200/60">
                           <div>
                             <p className="font-inter text-sm font-semibold text-gray-900">{product?.name || v.product_name || '-'}</p>
-                            {v.base_product_name ? (
-                              <p className="text-[10px] font-medium text-amber-600">Stok mengikuti {v.base_product_name}</p>
+                            {(v.base_series_name || v.base_product_name) ? (
+                              <p className="text-[10px] font-medium text-amber-600">
+                                {v.series_name || product?.name || v.product_name} mengikuti {v.base_series_name || v.base_product_name}
+                              </p>
                             ) : null}
                             <p className="text-xs text-gray-500">
                         {product?.jenis_kain?.name ? `${product.jenis_kain.name} • ` : ''}
