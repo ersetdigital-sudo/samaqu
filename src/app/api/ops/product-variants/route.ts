@@ -128,6 +128,9 @@ export async function GET(req: NextRequest) {
         // Terisi hanya kalau varian ini menumpang stok produk lain (series turunan).
         base_product_id: baseId,
         base_product_name: baseId ? byId[baseId]?.name || baseId : null,
+        // Nama SERIES basis — dipakai di layar supaya sama dengan panel admin
+        // ("Bayati mengikuti Jiharkah"), bukan nama produk yang dipakai bersama.
+        base_series_name: baseId ? byId[baseId]?.series || null : null,
       };
     }
     const size = (r.size || "").toUpperCase();

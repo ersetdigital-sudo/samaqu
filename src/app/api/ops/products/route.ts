@@ -61,9 +61,17 @@ async function withTotals(admin: ReturnType<typeof getSupabaseAdmin>, products: 
       //    supaya halaman lain (mis. Barang Masuk) tidak ikut berubah perilakunya. ──
       stock_efektif: efektif,
       status_efektif: stockStatus(efektif),
-      /** Terisi hanya kalau stok produk ini menumpang produk lain (series turunan). */
+      /** Terisi hanya kalau stok produk ini menumpang produk lain (series turunan).
+       *  `mengikuti` memakai nama SERIES produk basis supaya sama dengan panel admin
+       *  ("Bayati mengikuti Jiharkah"). Nama produk tidak dipakai karena satu nama
+       *  produk dipakai banyak series, jadi "mengikuti Thobe Mint" menyesatkan. */
       stok_bersama: baseId
-        ? { mengikuti: baseProduk?.name || baseId, series: baseProduk?.series || null, stock: efektif }
+        ? {
+            mengikuti: baseProduk?.series || baseProduk?.name || baseId,
+            base_name: baseProduk?.name || baseId,
+            series: baseProduk?.series || null,
+            stock: efektif,
+          }
         : null,
       /** Jenis kain (relasi `products.jenis_kain_id`) — dipakai kolom & detail di /ops. */
       jenis_kain: p.jenis_kain
