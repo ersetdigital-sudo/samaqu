@@ -111,17 +111,24 @@ export async function POST(req: NextRequest) {
 
     const admin = getSupabaseAdmin();
 
-    // Anti-duplikat form manual: satu nomor pada tanggal sama tidak boleh masuk dua kali
-    // (kunci sama seperti Import Paste: tanggal + kontak yang dinormalisasi).
+    // Anti-duplikat form manual: satu nomor hanya boleh jadi lead SEKALI (tanggal diabaikan —
+    // nomor sama = orang yang sama). Kontak dinormalisasi supaya 08xx = 628xx = 8xx.
     if (body?.blockDuplicates) {
-      const dates = Array.from(new Set(prepared.map((r: Record<string, unknown>) => String(r.tanggal))));
-      const incoming = new Set(prepared.map((r: Record<string, unknown>) => `${r.tanggal}|${normalizeKontak(r.kontak as string)}`));
-      const { data: existing } = await admin.from("leads").select("kontak, tanggal, sumber").in("tanggal", dates);
-      const clash = (existing || []).find((e: any) => incoming.has(`${e.tanggal}|${normalizeKontak(e.kontak)}`));
+      const incoming = new Set(
+        prepared.map((r: Record<string, unknown>) => normalizeKontak(r.kontak as string)).filter(Boolean),
+      );
+      let clash: any = null;
+      const PAGE = 1000;
+      for (let from = 0; !clash; from += PAGE) {
+        const { data } = await admin.from("leads").select("kontak, tanggal, sumber").range(from, from + PAGE - 1);
+        const rows = (data || []) as any[];
+        clash = rows.find((e) => { const n = normalizeKontak(e.kontak); return n && incoming.has(n); }) || null;
+        if (rows.length < PAGE) break;
+      }
       if (clash) {
         return NextResponse.json(
           {
-            error: `Nomor ${clash.kontak} sudah terdaftar sebagai lead di tanggal ${clash.tanggal}${clash.sumber ? ` (sumber: ${clash.sumber})` : ""}.`,
+            error: `Nomor ${clash.kontak} sudah terdaftar sebagai lead (tanggal ${clash.tanggal}${clash.sumber ? `, sumber ${clash.sumber}` : ""}).`,
             existing: clash,
           },
           { status: 409 },
