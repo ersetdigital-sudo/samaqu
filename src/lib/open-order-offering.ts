@@ -30,6 +30,8 @@ export interface OpenOrderVariant {
   productId: string;
   /** Ukuran yang benar-benar punya varian di baris ini (dari `product_variants`). */
   sizes: string[];
+  /** Total stok semua ukuran di baris + warna ini (0 kalau variannya tidak dikelola). */
+  stock: number;
   /** Foto (gambar saja) baris ini — sumber galeri di langkah detail. */
   media: string[];
 }
@@ -51,6 +53,8 @@ export interface OpenOrderProduct {
   image: string;
   /** Deskripsi produk (dari baris katalog; UI punya teks cadangan per kategori). */
   description: string;
+  /** Total stok seluruh varian grup — untuk microcopy "Ready stock / Menipis" di kartu. */
+  totalStock: number;
   variants: OpenOrderVariant[];
 }
 
@@ -139,6 +143,7 @@ export function buildOpenOrderProducts(
   stockRows: OpenOrderStockRow[] = []
 ): OpenOrderProduct[] {
   const sizesByRow = new Map<string, Map<string, string[]>>();
+  const stockByRow = new Map<string, Map<string, number>>();
   for (const row of stockRows) {
     if (!row.product_id || !row.color || !row.size) continue;
     const byColor = sizesByRow.get(row.product_id) ?? new Map<string, string[]>();
@@ -146,6 +151,10 @@ export function buildOpenOrderProducts(
     const sizes = byColor.get(row.color) ?? [];
     if (!sizes.includes(row.size)) sizes.push(row.size);
     byColor.set(row.color, sizes);
+
+    const stockByColor = stockByRow.get(row.product_id) ?? new Map<string, number>();
+    stockByRow.set(row.product_id, stockByColor);
+    stockByColor.set(row.color, (stockByColor.get(row.color) ?? 0) + (row.stock ?? 0));
   }
 
   interface Group {
@@ -161,6 +170,7 @@ export function buildOpenOrderProducts(
     weight: number;
     image: string;
     description: string;
+    totalStock: number;
     variants: OpenOrderVariant[];
   }
 
@@ -192,6 +202,7 @@ export function buildOpenOrderProducts(
       weight: 0,
       image: "",
       description: "",
+      totalStock: 0,
       variants: [],
     };
     groups.set(key, group);
@@ -211,13 +222,16 @@ export function buildOpenOrderProducts(
     const media = mediaOf(row);
     const colors = (row.colors ?? []).length > 0 ? row.colors! : [""];
     for (const color of colors) {
+      const stock = stockByRow.get(row.id)?.get(color) ?? 0;
       group.colors.add(color);
+      group.totalStock += stock;
       group.variants.push({
         color,
         label: colorLabelOf(row, color),
         series: series || null,
         productId: row.id,
         sizes: sizesByRow.get(row.id)?.get(color) ?? [],
+        stock,
         media,
       });
     }
@@ -239,6 +253,7 @@ export function buildOpenOrderProducts(
       weight: group.weight || DEFAULT_OPEN_ORDER_WEIGHT,
       image: group.image,
       description: group.description,
+      totalStock: group.totalStock,
       variants: group.variants,
     }))
     .sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name));

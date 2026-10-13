@@ -1,22 +1,28 @@
 "use client";
 
 /**
- * Langkah 1 — daftar produk Open Order: filter **kategori** + grid kartu produk (per warna ready
- * stock). Kartu dibuat sama seperti kartu katalog (serif espresso + aksen gold).
+ * Langkah 1 — daftar produk Open Order.
  *
- * Produk, warna, series, harga, dan foto semuanya diturunkan dari katalog (lihat
- * `open-order-offering.ts` + `open-order-catalog.ts`) — produk apa pun yang diikutkan admin
- * (`open_order_enabled`) muncul di sini, lintas kategori.
+ * Kartunya dibuat **identik** dengan kartu produk di halaman Katalog
+ * (`src/app/[locale]/(customer)/katalog/page.tsx` → `ProductCard`): kartu putih, judul serif,
+ * baris kain, chip "N series tersedia", microcopy stok, harga "Mulai Rp …", dan tombol
+ * "Lihat Detail". Bedanya cuma: klik kartu membuka langkah detail wizard (bukan `/katalog/<id>`),
+ * dan tombol wishlist tidak ada (Open Order tidak punya wishlist).
  */
 
 import { useMemo, useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { cloudinaryUrl } from "@/lib/cloudinary";
-import { money, openOrderVariants, priceRange } from "@/lib/open-order-catalog";
+import { openOrderVariants } from "@/lib/open-order-catalog";
 import { lowestOpenOrderPrice, type OpenOrderProduct } from "@/lib/open-order-offering";
 import { Chip, INK, MUTED, PrimaryButton } from "./ui";
 
 const ALL = "semua";
+/** Ambang "stok menipis" — angka yang sama dengan kartu katalog. */
+const LOW_STOCK_THRESHOLD = 3;
+
+/** Format harga kartu katalog: "Rp 329.000". */
+const rupiah = (value: number) => "Rp " + Math.round(value).toLocaleString("id-ID");
 
 export default function StepCatalog({
   products,
@@ -77,65 +83,117 @@ export default function StepCatalog({
         </div>
       )}
 
-      {/* Grid produk */}
-      <div className="mt-6 grid grid-cols-2 gap-4 sm:gap-5 lg:grid-cols-4">
-        {shown.map((variant) => (
-          <button
-            key={variant.key}
-            type="button"
-            onClick={() => onOpen(variant.product, variant.color)}
-            className="group flex h-full flex-col overflow-hidden rounded-2xl text-left transition-shadow duration-300 hover:shadow-[0_10px_30px_-18px_rgba(0,0,0,.45)]"
-            style={{ background: "var(--cream-bright)", border: "1px solid rgba(0,0,0,.2)" }}
-          >
-            <div className="relative aspect-[3/4] overflow-hidden" style={{ background: "#e5e5e5" }}>
-              {/* Gradient kain (terlihat kalau foto gagal dimuat) */}
-              <div
-                className="absolute inset-0 transition-transform duration-700 group-hover:scale-[1.04]"
-                style={{ background: "linear-gradient(135deg,rgba(232,223,209,.6),rgba(0,0,0,.4))" }}
-              />
-              {variant.image && (
-                <img
-                  src={cloudinaryUrl(variant.image, { width: 700 })}
-                  alt={`${variant.product.name} ${variant.color}`}
-                  loading="lazy"
-                  className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = "none";
-                  }}
-                />
-              )}
-              <span
-                className="absolute left-3 top-3 rounded-full px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.12em]"
-                style={{ background: "rgba(248,246,242,.92)", color: "var(--gold)", border: "1px solid rgba(0,0,0,.35)" }}
-              >
-                {variant.product.kain ? `Kain ${variant.product.kain}` : variant.product.category}
-              </span>
-            </div>
+      {/* Grid produk — kartu sama seperti halaman katalog */}
+      <div className="mt-6 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5 lg:gap-6">
+        {shown.map((variant) => {
+          const product = variant.product;
+          const label = product.kain ? `Kain ${product.kain}` : product.category;
+          const totalStock = product.totalStock;
+          const isSoldOut = totalStock === 0;
+          const isLowStock = totalStock > 0 && totalStock <= LOW_STOCK_THRESHOLD;
+          const seriesCount = product.series.length;
 
-            <div className="flex flex-1 flex-col p-3.5 sm:p-4">
-              <h3
-                className="line-clamp-1 text-[15px] font-semibold leading-snug"
-                style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}
-              >
-                {variant.product.name}
-              </h3>
-              <p className="mt-1 text-[11.5px]" style={{ color: "var(--gold)" }}>
-                {variant.product.kain ? `Kain ${variant.product.kain}` : variant.product.category}
-              </p>
-              {variant.label && (
-                <p className="mt-0.5 text-[11.5px] line-clamp-1" style={{ color: MUTED }}>
-                  Warna: {variant.label}
+          return (
+            <button
+              key={variant.key}
+              type="button"
+              onClick={() => onOpen(product, variant.color)}
+              className="group relative flex flex-col h-full rounded-2xl overflow-hidden cursor-pointer text-left"
+              style={{ background: "#ffffff", border: "1px solid rgba(0,0,0,.1)" }}
+            >
+              {/* Foto */}
+              <div className="relative aspect-[3/4] overflow-hidden" style={{ background: "#e5e5e5" }}>
+                <div
+                  className="absolute inset-0 transition-transform duration-700 group-hover:scale-[1.04]"
+                  style={{ background: "linear-gradient(135deg,rgba(232,223,209,.6),rgba(0,0,0,.25))" }}
+                />
+                {variant.image && (
+                  <img
+                    src={cloudinaryUrl(variant.image, { width: 700 })}
+                    alt={`${product.name}${variant.label ? ` ${variant.label}` : ""}`}
+                    loading="lazy"
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
+                    style={isSoldOut ? { filter: "grayscale(35%) brightness(.85)" } : undefined}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = "none";
+                    }}
+                  />
+                )}
+                {isSoldOut && <div className="absolute inset-0 pointer-events-none" style={{ background: "rgba(0,0,0,.18)" }} />}
+                {isSoldOut && (
+                  <span
+                    className="absolute top-3 right-3 px-2.5 py-1 text-[10px] tracking-[0.12em] uppercase font-ui font-semibold rounded-full z-10"
+                    style={{ background: "#000000", color: "white" }}
+                  >
+                    Sold Out
+                  </span>
+                )}
+              </div>
+
+              {/* Info */}
+              <div className="p-3.5 md:p-4 flex flex-col flex-1">
+                <h3
+                  className="text-[14px] md:text-[16px] font-semibold leading-snug line-clamp-1"
+                  style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "#000000" }}
+                >
+                  {product.name}
+                </h3>
+                <p className="mt-1 text-[11.5px] font-ui" style={{ color: "#000000" }}>
+                  {label}
                 </p>
-              )}
-              <p className="mt-1.5 text-[12.5px] font-medium tabular-nums" style={{ color: "var(--espresso)" }}>
-                {priceRange(variant.product)}
-              </p>
-              <span className="mt-auto flex w-full items-center justify-center gap-1.5 rounded-lg border border-[var(--espresso)] px-3 py-2.5 pt-3 text-[12.5px] font-medium text-[var(--espresso)] transition-all duration-200 group-hover:bg-[var(--espresso)] group-hover:text-white">
-                Lihat Detail <ChevronRight size={14} strokeWidth={2} />
-              </span>
-            </div>
-          </button>
-        ))}
+
+                {/* Jumlah series — slot tinggi tetap, sama seperti kartu katalog */}
+                <div className="mt-1.5 min-h-[22px]">
+                  {seriesCount > 1 && (
+                    <p className="inline-flex items-center gap-1.5 text-[10.5px] font-ui" style={{ color: "rgba(0,0,0,.55)" }}>
+                      <span
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full"
+                        style={{ background: "rgba(0,0,0,.05)", border: "1px solid rgba(0,0,0,.15)" }}
+                      >
+                        <svg
+                          width="11"
+                          height="11"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="shrink-0"
+                          style={{ color: "#000000" }}
+                        >
+                          <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
+                          <path d="m3.3 7 8.7 5 8.7-5" />
+                          <path d="M12 22V12" />
+                        </svg>
+                        {seriesCount} series tersedia
+                      </span>
+                    </p>
+                  )}
+                </div>
+
+                {/* Stok */}
+                {!isSoldOut && (
+                  <p className="mt-1 text-[10.5px] font-ui line-clamp-1" style={{ color: isLowStock ? "#b45309" : "#6b8a5e" }}>
+                    {isLowStock ? `Menipis — sisa ${totalStock}` : "Ready stock"}
+                  </p>
+                )}
+
+                {/* Harga */}
+                <p className="mt-1 text-[12.5px] font-ui" style={{ color: "rgba(0,0,0,.55)" }}>
+                  Mulai{" "}
+                  <span className="font-medium" style={{ color: "#000000" }}>
+                    {rupiah(product.price)}
+                  </span>
+                </p>
+
+                <span className="mt-auto pt-3 w-full rounded-lg border border-[#000000] px-3 py-2.5 text-[12.5px] text-[#000000] font-ui font-medium flex items-center justify-center gap-1.5 transition-all duration-200 group-hover:bg-[#000000] group-hover:text-white">
+                  Lihat Detail <ChevronRight size={14} strokeWidth={2} />
+                </span>
+              </div>
+            </button>
+          );
+        })}
       </div>
 
       {shown.length === 0 && (
@@ -148,7 +206,7 @@ export default function StepCatalog({
       {lowestPrice !== null && (
         <p className="mt-8 text-[11.5px] leading-relaxed" style={{ color: MUTED }}>
           Harga di atas adalah harga Open Order periode ini. Kamu bisa menentukan harga sendiri (Create Your Price) di
-          langkah berikutnya — mulai dari {money(lowestPrice)}.
+          langkah berikutnya — mulai dari {rupiah(lowestPrice)}.
         </p>
       )}
 
