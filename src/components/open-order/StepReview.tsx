@@ -7,6 +7,8 @@
 import { cloudinaryUrl } from "@/lib/cloudinary";
 import { money } from "@/lib/open-order-catalog";
 import { OPEN_ORDER_ADDON } from "@/lib/open-order-config";
+import { normalizeMethodType, paymentMethodLabel, type PaymentMethodRow } from "@/lib/payment-methods";
+import { PaymentIcon } from "@/lib/payment-icons";
 import type { OpenOrderProduct } from "@/lib/open-order-offering";
 import type { CartLine, DraftShipping } from "./types";
 import { lineColorLabel, lineImage, lineName } from "./StepCart";
@@ -22,6 +24,9 @@ export default function StepReview({
   ongkirError,
   notes,
   onNotes,
+  paymentMethods,
+  selectedPayment,
+  onSelectPayment,
   onSubmit,
   submitting,
   error,
@@ -35,6 +40,10 @@ export default function StepReview({
   ongkirError: boolean;
   notes: string;
   onNotes: (value: string) => void;
+  /** Metode pembayaran dari dashboard admin (tabel `payment_methods`). */
+  paymentMethods: PaymentMethodRow[];
+  selectedPayment: string;
+  onSelectPayment: (id: string) => void;
   onSubmit: () => void;
   submitting: boolean;
   error: string;
@@ -91,6 +100,52 @@ export default function StepReview({
         </div>
       </div>
 
+      {/* Metode pembayaran — datanya dari dashboard admin (Pengaturan → Metode Pembayaran). */}
+      <div className="mt-6">
+        <p className="text-[11px] sm:text-[12px] tracking-[0.12em] uppercase font-ui font-medium mb-3" style={{ color: "var(--espresso)" }}>
+          Metode Pembayaran
+        </p>
+        {paymentMethods.length === 0 ? (
+          <p className="text-[12px]" style={{ color: MUTED }}>
+            Metode pembayaran belum tersedia — admin akan menghubungi kamu lewat WhatsApp.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {paymentMethods.map((method) => {
+              const type = normalizeMethodType(method.method_type);
+              const active = selectedPayment === method.id;
+              const note = (type === "bank" || type === "ewallet") && method.account_name ? `a.n. ${method.account_name}` : null;
+              return (
+                <button
+                  key={method.id}
+                  type="button"
+                  onClick={() => onSelectPayment(method.id)}
+                  aria-pressed={active}
+                  className="w-full flex items-center gap-3 rounded-xl p-4 text-left transition-all"
+                  style={{ border: `1.5px solid ${active ? "var(--gold)" : "rgba(0,0,0,.25)"}`, background: active ? "white" : "transparent" }}
+                >
+                  <span className="relative w-4 h-4 rounded-full border-2 shrink-0" style={{ borderColor: active ? "var(--gold)" : MUTED }}>
+                    {active && <span className="absolute inset-[3px] rounded-full" style={{ background: "var(--gold)" }} />}
+                  </span>
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-[13px] font-ui font-medium truncate" style={{ color: "var(--espresso)" }}>
+                      {paymentMethodLabel(method)}
+                    </span>
+                    {note && <span className="block text-[11px] font-ui mt-0.5 truncate" style={{ color: MUTED }}>{note}</span>}
+                  </span>
+                  <PaymentIcon type={method.icon || method.method_type || undefined} size={22} style={{ color: MUTED }} />
+                </button>
+              );
+            })}
+          </div>
+        )}
+        {paymentMethods.length > 0 && !selectedPayment && (
+          <p className="mt-2 text-[11.5px]" style={{ color: DANGER }}>
+            Pilih metode pembayaran dulu ya.
+          </p>
+        )}
+      </div>
+
       {/* Catatan */}
       <div className="mt-6">
         <Field label="Catatan untuk Admin">
@@ -110,7 +165,7 @@ export default function StepReview({
       )}
 
       <div className="mt-6">
-        <PrimaryButton onClick={onSubmit} disabled={submitting}>
+        <PrimaryButton onClick={onSubmit} disabled={submitting || (paymentMethods.length > 0 && !selectedPayment)}>
           {submitting ? "Mengirim…" : "Submit Pesanan"}
         </PrimaryButton>
       </div>

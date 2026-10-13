@@ -9,6 +9,13 @@ import {
   type OpenOrderStockRow,
 } from "@/lib/open-order-offering";
 import { markLeadBoughtForOrder } from "@/lib/ops-lead-sync";
+import {
+  notifyAdminNewOrder,
+  notifyCustomerOrderCreated,
+  type NewOrderNotificationItem,
+  type PaymentInstruction,
+} from "@/lib/fonnte";
+import { SITE_URL } from "@/lib/site-config";
 
 /**
  * Pesanan dari alur Open Order Samaqu (halaman /open-order, 6 langkah).
@@ -75,6 +82,34 @@ interface OrderItemRow {
 function generateOrderNumber(): string {
   const d = new Date();
   return `CYO-${d.toISOString().slice(0, 10).replace(/-/g, "")}-${String(Math.floor(Math.random() * 900) + 100)}`;
+}
+
+interface PaymentRow {
+  id: string;
+  label?: string | null;
+  method_type?: string | null;
+  bank_name?: string | null;
+  account_name?: string | null;
+  account_number?: string | null;
+  account_info?: string | null;
+  instructions?: string | null;
+}
+
+/** Baris `payment_methods` (dikelola dari dashboard admin) → teks instruksi untuk pesan WA. */
+function toPaymentInstruction(row: PaymentRow): PaymentInstruction {
+  const type = ["qris", "ewallet", "cod", "other"].includes(row.method_type ?? "")
+    ? (row.method_type as string)
+    : "bank";
+  const label = row.label?.trim() || (row.bank_name ? `Transfer Bank (${row.bank_name})` : "Transfer Bank");
+  return {
+    label,
+    type,
+    bankName: row.bank_name,
+    accountName: row.account_name,
+    accountNumber: row.account_number,
+    accountInfo: row.account_info,
+    instructions: row.instructions,
+  };
 }
 
 export async function POST(request: NextRequest) {
@@ -225,6 +260,25 @@ export async function POST(request: NextRequest) {
     const shippingCost = Math.max(0, Math.round(Number(rawShipping.cost) || 0));
     const shippingMethod = String(rawShipping.method ?? "").trim() || "manual";
 
+    // Metode pembayaran: daftar resminya diatur admin di dashboard (tabel `payment_methods`).
+    // Pilihan customer divalidasi di sini; kalau admin belum punya metode aktif sama sekali,
+    // pesanan jatuh ke nilai lama `bank` supaya alur tidak putus.
+    const { data: activePayments } = await supabaseAdmin
+      .from("payment_methods")
+      .select("id, label, method_type, bank_name, account_name, account_number, account_info, instructions")
+      .eq("is_active", true)
+      .order("display_order");
+
+    const paymentOptions = (activePayments ?? []) as PaymentRow[];
+    const requestedPayment = String(body.paymentMethod ?? "").trim();
+    const paymentRow = paymentOptions.find((row) => row.id === requestedPayment) ?? null;
+
+    if (paymentOptions.length > 0 && !paymentRow) {
+      return NextResponse.json({ error: "Pilih metode pembayaran dulu ya." }, { status: 400 });
+    }
+
+    const shippingNotes = [instagram ? `IG @${instagram}` : "", note].filter(Boolean).join(" · ");
+
     const total = subtotal + addonTotal + shippingCost;
     const orderNumber = generateOrderNumber();
 
@@ -294,14 +348,14 @@ export async function POST(request: NextRequest) {
         shipping_postal_code: postalCode || null,
         shipping_method: shippingMethod,
         shipping_cost: shippingCost,
-        payment_method: "bank",
+        payment_method: paymentRow?.id ?? "bank",
         subtotal,
         discount: 0,
         total,
         status: "pending",
         // Pesanan ini sudah memotong stok → pembatalan wajib mengembalikannya.
         stock_reserved: true,
-        shipping_notes: [instagram ? `IG @${instagram}` : "", note].filter(Boolean).join(" · "),
+        shipping_notes: shippingNotes,
       })
       .select("id, order_number")
       .single();
@@ -360,6 +414,59 @@ export async function POST(request: NextRequest) {
       await markLeadBoughtForOrder(supabaseAdmin, { whatsapp, orderNumber, total });
     } catch (e) {
       console.error("[OPEN-ORDER] Lead sync gagal:", e);
+    }
+
+    // Notifikasi WhatsApp (Fonnte, best effort — gagal kirim tidak menggagalkan pesanan):
+    // - ke admin: ringkasan lengkap supaya bisa langsung verifikasi,
+    // - ke customer: konfirmasi + instruksi pembayaran metode yang dipilihnya, jadi admin tidak
+    //   perlu membalas satu-satu.
+    const notificationItems: NewOrderNotificationItem[] = validatedItems.map((item) => ({
+      name: item.productName,
+      color: item.color,
+      size: item.size,
+      quantity: item.quantity,
+      price: item.price,
+    }));
+    if (extraCover) {
+      notificationItems.push({
+        name: OPEN_ORDER_ADDON.name,
+        color: null,
+        size: null,
+        quantity: 1,
+        price: OPEN_ORDER_ADDON.price,
+      });
+    }
+    const paymentInstruction = paymentRow ? toPaymentInstruction(paymentRow) : null;
+
+    try {
+      await notifyAdminNewOrder({
+        orderNumber,
+        customerName: name,
+        customerWhatsapp: whatsapp,
+        total,
+        paymentType: paymentInstruction?.label ?? "Transfer Bank",
+        items: notificationItems,
+        shippingCity: [district, city].filter(Boolean).join(", "),
+        notes: shippingNotes || null,
+        source: "Open Order (Create Your Price)",
+      });
+    } catch (e) {
+      console.error("[OPEN-ORDER] Notif admin gagal:", e);
+    }
+
+    try {
+      await notifyCustomerOrderCreated({
+        orderNumber,
+        customerName: name,
+        customerWhatsapp: whatsapp,
+        items: notificationItems,
+        total,
+        paymentMethod: paymentInstruction,
+        isOpenOrder: true,
+        orderUrl: `${SITE_URL}/akun/pesanan/${orderNumber}`,
+      });
+    } catch (e) {
+      console.error("[OPEN-ORDER] Notif customer gagal:", e);
     }
 
     console.log("[OPEN-ORDER] Created:", { orderNumber, items: orderItems.length, total });

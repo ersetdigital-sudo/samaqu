@@ -178,6 +178,8 @@ export interface NewOrderNotification {
   items: NewOrderNotificationItem[];
   shippingCity?: string | null;
   notes?: string | null;
+  /** Asal pesanan (mis. "Open Order (Create Your Price)") — hanya ditampilkan kalau diisi. */
+  source?: string | null;
 }
 
 function rupiah(value: number): string {
@@ -208,6 +210,7 @@ export function buildNewOrderMessage(order: NewOrderNotification): string {
   ];
 
   if (order.shippingCity) lines.push("", `Tujuan: ${order.shippingCity}`);
+  if (order.source) lines.push(`Sumber: ${order.source}`);
   if (order.notes) lines.push(`Catatan: ${order.notes}`);
 
   lines.push("", `Kelola pesanan: ${SITE_URL}/admin?panel=orders`);
@@ -231,4 +234,151 @@ export async function notifyAdminNewOrder(order: NewOrderNotification): Promise<
   }
 
   await sendFonnteMessage(config.token, target, buildNewOrderMessage(order));
+}
+
+/* ══════════════════════════════════════════
+   Notifikasi ke CUSTOMER
+   Supaya admin tidak perlu membalas satu-satu: instruksi pembayaran, langkah berikutnya, dan
+   pengingat batas waktu ikut terkirim otomatis begitu pesanan dibuat (dan saat dibayar).
+══════════════════════════════════════════ */
+
+/**
+ * Ringkasan metode pembayaran untuk pesan customer — bentuk struktural dari baris
+ * `payment_methods` (dikelola dari dashboard admin), sengaja tidak mengimpor tipe client-nya.
+ */
+export interface PaymentInstruction {
+  label: string;
+  /** `bank` | `qris` | `ewallet` | `cod` | `other` */
+  type: string;
+  bankName?: string | null;
+  accountName?: string | null;
+  accountNumber?: string | null;
+  accountInfo?: string | null;
+  instructions?: string | null;
+}
+
+export interface CustomerOrderNotification {
+  orderNumber: string;
+  customerName: string;
+  customerWhatsapp: string;
+  items: NewOrderNotificationItem[];
+  total: number;
+  paymentMethod?: PaymentInstruction | null;
+  isOpenOrder?: boolean;
+  /** Tautan halaman pesanan milik customer di /akun/pesanan. */
+  orderUrl?: string;
+}
+
+/** Satu baris item untuk pesan customer: "- 1x Thobe Navy — Jiharkah (Uk. M) — Rp 329.000". */
+function customerItemLine(item: NewOrderNotificationItem): string {
+  const color = item.color && item.color !== "default" && item.color !== "-" ? item.color : null;
+  const variant = [color, item.size ? `Uk. ${item.size}` : null].filter(Boolean).join(" · ");
+  return `- ${item.quantity}x ${item.name}${variant ? ` (${variant})` : ""} — ${rupiah(item.price * item.quantity)}`;
+}
+
+/** Baris instruksi pembayaran sesuai metode yang dipilih (bank/QRIS/e-wallet/COD). */
+function paymentInstructionLines(payment?: PaymentInstruction | null): string[] {
+  const type = payment?.type || "bank";
+
+  if (type === "cod") {
+    return [
+      "Kamu memilih *Bayar di Tempat (COD)*, jadi belum perlu transfer ya — admin akan konfirmasi dulu lewat chat ini sebelum pesanan dikirim.",
+    ];
+  }
+
+  const lines: string[] = [];
+  if (type === "qris") lines.push("Silakan scan QRIS pembayaran (admin kirim QR-nya di chat ini):");
+  else if (type === "ewallet") lines.push(`Silakan kirim ke${payment?.label ? ` *${payment.label}*` : ""}:`);
+  else lines.push("Silakan transfer ke rekening berikut:");
+
+  if (payment?.bankName) lines.push(`🏦 ${payment.bankName}`);
+  if (payment?.accountNumber) lines.push(`No. Rekening: *${payment.accountNumber}*`);
+  if (payment?.accountName) lines.push(`a.n. ${payment.accountName}`);
+  if (payment?.accountInfo) lines.push(payment.accountInfo);
+  if (payment?.instructions) lines.push(payment.instructions);
+  return lines;
+}
+
+/** Pesan "pesanan kamu sudah kami terima" + cara bayar + langkah berikutnya. */
+export function buildCustomerOrderMessage(order: CustomerOrderNotification): string {
+  const firstName = (order.customerName || "").trim().split(/\s+/)[0] || "Kak";
+  const type = order.paymentMethod?.type || "bank";
+  const isCod = type === "cod";
+
+  const lines: string[] = [
+    `Halo ${firstName} 👋`,
+    `Pesanan${order.isOpenOrder ? " Open Order" : ""} kamu sudah kami terima.`,
+    "",
+    `No. Pesanan: *${order.orderNumber}*`,
+    ...order.items.map(customerItemLine),
+    `Total: *${rupiah(order.total)}*`,
+    "",
+    ...paymentInstructionLines(order.paymentMethod),
+    "",
+  ];
+
+  if (isCod) {
+    lines.push(
+      "Setelah dikonfirmasi admin:",
+      "1. Pesanan disiapkan & diserahkan ke J&T",
+      "2. Nomor resi dikirim ke chat ini"
+    );
+  } else {
+    lines.push(
+      "Setelah transfer, balas chat ini dengan *bukti transfer* ya — supaya admin bisa langsung verifikasi.",
+      "Pesanan otomatis dibatalkan kalau belum ada pembayaran dalam *24 jam*.",
+      "",
+      "Setelah pembayaran diverifikasi:",
+      "1. Pesanan disiapkan & diserahkan ke J&T",
+      "2. Nomor resi dikirim ke chat ini"
+    );
+  }
+  if (order.orderUrl) lines.push(`3. Status pesanan bisa kamu pantau kapan saja: ${order.orderUrl}`);
+
+  lines.push("", "Ada yang mau ditanyakan? Balas chat ini aja 🙏", "— SAMAQU");
+  return lines.join("\n");
+}
+
+/**
+ * Kirim pesan "pesanan diterima" ke WhatsApp customer. Dilewati diam-diam kalau token belum
+ * ada, notifikasi dimatikan, atau nomor customer kosong — supaya alur pesanan tetap aman.
+ */
+export async function notifyCustomerOrderCreated(order: CustomerOrderNotification): Promise<void> {
+  const config = await getFonnteConfig();
+  if (!config.enabled || !config.token) return;
+
+  const target = normalizeWhatsappTarget(order.customerWhatsapp);
+  if (!target) return;
+
+  await sendFonnteMessage(config.token, target, buildCustomerOrderMessage(order));
+}
+
+export interface OrderPaidNotification {
+  orderNumber: string;
+  customerName: string;
+  customerWhatsapp: string;
+  orderUrl?: string;
+}
+
+/** Pesan "pembayaran diterima, pesanan diproses" (dikirim saat admin ubah status ke Diproses). */
+export function buildOrderPaidMessage(order: OrderPaidNotification): string {
+  const firstName = (order.customerName || "").trim().split(/\s+/)[0] || "Kak";
+  const lines = [
+    `Halo ${firstName}, pembayaran pesanan *${order.orderNumber}* sudah kami terima ✅`,
+    "",
+    "Pesanan sedang disiapkan. Nomor resi J&T kami kirim ke chat ini begitu paket diserahkan ke kurir.",
+  ];
+  if (order.orderUrl) lines.push("", `Pantau status pesananmu: ${order.orderUrl}`);
+  lines.push("", "Terima kasih ya 🙏", "— SAMAQU");
+  return lines.join("\n");
+}
+
+export async function notifyCustomerOrderPaid(order: OrderPaidNotification): Promise<void> {
+  const config = await getFonnteConfig();
+  if (!config.enabled || !config.token) return;
+
+  const target = normalizeWhatsappTarget(order.customerWhatsapp);
+  if (!target) return;
+
+  await sendFonnteMessage(config.token, target, buildOrderPaidMessage(order));
 }

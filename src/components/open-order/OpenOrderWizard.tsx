@@ -32,6 +32,7 @@ import {
 import { useSafeLocale } from "@/lib/safe-i18n";
 import { useStoreSettings } from "@/lib/store-settings";
 import { getCurrentCustomer } from "@/lib/customer-auth";
+import { fetchActivePaymentMethods, type PaymentMethodRow } from "@/lib/payment-methods";
 import { supabase } from "@/lib/supabase";
 import StepAuth, { type AuthAccount } from "./StepAuth";
 import StepCart from "./StepCart";
@@ -97,6 +98,9 @@ export default function OpenOrderWizard() {
   /** Alamat tersimpan akun (tabel `saved_addresses`) — dipakai langsung kalau ada. */
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+  /** Metode pembayaran dari dashboard admin (tabel `payment_methods`). */
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethodRow[]>([]);
+  const [paymentMethod, setPaymentMethod] = useState("");
 
   const locale = useSafeLocale();
   // Periode & status Open Order diatur dari dashboard admin (store_settings).
@@ -121,6 +125,20 @@ export default function OpenOrderWizard() {
       .then(({ data }) => {
         if (active && data) setStockRows(data as OpenOrderStockRow[]);
       });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // Metode pembayaran aktif dibaca dari tabel `payment_methods` (diatur admin di dashboard).
+  // Kalau cuma ada satu metode, langsung dipilih supaya customer tidak perlu klik lagi.
+  useEffect(() => {
+    let active = true;
+    fetchActivePaymentMethods().then((methods) => {
+      if (!active) return;
+      setPaymentMethods(methods);
+      if (methods.length === 1) setPaymentMethod(methods[0].id);
+    });
     return () => {
       active = false;
     };
@@ -318,6 +336,10 @@ export default function OpenOrderWizard() {
 
   async function submitOrder() {
     setError("");
+    if (paymentMethods.length > 0 && !paymentMethod) {
+      setError("Pilih metode pembayaran dulu ya.");
+      return;
+    }
     setSubmitting(true);
     try {
       // Pesanan Open Order selalu milik akun customer: token sesi dikirim ke route, yang
@@ -344,6 +366,7 @@ export default function OpenOrderWizard() {
             notes: customer.notes,
           },
           extraCover,
+          paymentMethod,
           shipping: shipping ? { method: `J&T - ${shipping.service}`, cost: shipping.cost } : null,
           items: lines.map((line) => ({
             productId: line.productId,
@@ -552,6 +575,9 @@ export default function OpenOrderWizard() {
                 ongkirError={ongkirError}
                 notes={customer.notes}
                 onNotes={(value) => setCustomerField("notes", value)}
+                paymentMethods={paymentMethods}
+                selectedPayment={paymentMethod}
+                onSelectPayment={setPaymentMethod}
                 onSubmit={submitOrder}
                 submitting={submitting}
                 error={error}
