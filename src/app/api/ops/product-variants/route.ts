@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { isOpsAdmin, unauthorized, stockStatus } from "@/lib/ops-auth";
+import { ownSizeMap, resolveStock } from "@/lib/ops-stock";
 
 /**
  * Varian stok untuk dashboard internal.
@@ -98,17 +99,22 @@ export async function GET(req: NextRequest) {
   const admin = getSupabaseAdmin();
   const [{ data: products }, { data: rows }] = await Promise.all([
     admin.from("products").select("id, name, series, price, hpp"),
-    admin.from("product_variants").select("product_id, color, size, stock, price_override, hex, display_order"),
+    admin.from("product_variants").select("product_id, color, size, stock, price_override, hex, display_order, base_product_id"),
   ]);
 
   const byId: Record<string, any> = {};
   for (const p of products || []) byId[p.id] = p;
+
+  // Stok bersama ala series: baris ber-`base_product_id` menumpang stok produk basis.
+  // Resolusinya sama dengan /api/ops/products supaya angka di Laporan Stok = Daftar Produk.
+  const resolution = resolveStock((rows || []) as any);
 
   const grouped: Record<string, any> = {};
   for (const r of rows || []) {
     const key = groupKey(r.product_id, r.color || "default");
     if (!grouped[key]) {
       const prod = byId[r.product_id] || {};
+      const baseId = resolution.baseLink[r.product_id] || null;
       grouped[key] = {
         id: key,
         product_id: r.product_id,
@@ -119,6 +125,9 @@ export async function GET(req: NextRequest) {
         price: prod.price ?? 0,
         hpp: prod.hpp ?? 0,
         stock: {},
+        // Terisi hanya kalau varian ini menumpang stok produk lain (series turunan).
+        base_product_id: baseId,
+        base_product_name: baseId ? byId[baseId]?.name || baseId : null,
       };
     }
     const size = (r.size || "").toUpperCase();
@@ -127,7 +136,15 @@ export async function GET(req: NextRequest) {
 
   const items = Object.values(grouped).map((v: any) => {
     const total = Object.values(v.stock).reduce((a: number, b: any) => a + (Number(b) || 0), 0);
-    return { ...v, status: stockStatus(total) };
+    // Stok efektif: varian turunan memakai stok basisnya (per ukuran), bukan stoknya yang 0.
+    const efektifMap = v.base_product_id ? ownSizeMap(resolution, v.base_product_id) : { ...v.stock };
+    const totalEfektif = Object.values(efektifMap).reduce((a: number, b: any) => a + (Number(b) || 0), 0);
+    return {
+      ...v,
+      stock_efektif: efektifMap,
+      status: stockStatus(total),
+      status_efektif: stockStatus(totalEfektif),
+    };
   });
 
   return NextResponse.json({ items });

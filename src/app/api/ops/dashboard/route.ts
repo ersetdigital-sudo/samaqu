@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { isOpsAdmin, unauthorized } from "@/lib/ops-auth";
 import { jakartaDayBounds, BIZ_OFFSET_MS } from "@/lib/ops-followup";
+import { resolveStock } from "@/lib/ops-stock";
 
 /**
  * Dashboard ops — ringkasan lintas modul dalam satu request.
@@ -82,7 +83,7 @@ export async function GET(req: NextRequest) {
     countOf((q) => q.is("do_not_contact", false).not("next_followup_at", "is", null).lt("next_followup_at", startIso).or(activeLead)),
     countOf((q) => q.eq("outcome", "bought").gte("last_contact_at", month.startIso).lt("last_contact_at", month.endIso)),
     admin.from("orders").select("id, total, status, created_at").gte("created_at", month.startIso).lt("created_at", month.endIso),
-    admin.from("product_variants").select("stock"),
+    admin.from("product_variants").select("product_id, stock, base_product_id"),
     admin.from("lead_activities").select("id, lead_id, action, note, created_at, actor").order("created_at", { ascending: false }).limit(6),
     // Order 7 hari terakhir (WIB) — sumber grafik `trendHarian` (batas bulan ≠ jendela 7 hari).
     admin.from("orders").select("id, total, status, created_at").gte("created_at", trendStartIso).lt("created_at", endIso),
@@ -189,13 +190,14 @@ export async function GET(req: NextRequest) {
     trendHarian.push({ tanggal, label, omset: trendDailyMap.get(tanggal) || 0 });
   }
 
-  /* ── Stok ── */
-  const vrows = (variants.data || []) as any[];
-  const sumStock = (s: any) =>
-    s && typeof s === "object" ? Object.values(s).reduce((a: number, b: any) => a + (Number(b) || 0), 0) : 0;
-  const totalUnit = vrows.reduce((s, v) => s + sumStock(v.stock), 0);
-  const varianHabis = vrows.filter((v) => sumStock(v.stock) === 0).length;
-  const varianMenipis = vrows.filter((v) => { const n = sumStock(v.stock); return n > 0 && n <= 5; }).length;
+  /* ── Stok ──
+     Memakai resolver yang sama dengan /api/ops/products & /api/ops/product-variants:
+     produk series yang menumpang stok produk basisnya tidak lagi dihitung "habis". */
+  const { effectiveTotal } = resolveStock((variants.data || []) as any);
+  const totalPerProduk = Object.values(effectiveTotal);
+  const totalUnit = totalPerProduk.reduce((a, b) => a + b, 0);
+  const varianHabis = totalPerProduk.filter((n) => n === 0).length;
+  const varianMenipis = totalPerProduk.filter((n) => n > 0 && n <= 5).length;
 
   // Tugas follow-up hari ini (untuk daftar cepat) — berbasis "hari ini" WIB, bukan bulan terpilih.
   const { data: todayTasks } = await admin
@@ -234,7 +236,7 @@ export async function GET(req: NextRequest) {
       terlambat: leadOverdue,
       closingBulanIni: leadClosingBulan,
     },
-    stok: { totalUnit, varianHabis, varianMenipis, totalVarian: vrows.length },
+    stok: { totalUnit, varianHabis, varianMenipis, totalVarian: totalPerProduk.length },
     topProducts,
     aktivitas: activity.data || [],
     todayTasks: todayTasks || [],

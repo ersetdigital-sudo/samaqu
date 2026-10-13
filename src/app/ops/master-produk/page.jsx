@@ -53,6 +53,14 @@ import { SIZES, normalizeStock, sumStock, stockStatus } from "@/lib/ops-variants
 import { IconBoxes, IconLayers, IconCalendarClock, IconPackageX, IconArrowDownToLine, IconAlertTriangle } from "@/components/ops/icons";
 
 /**
+ * Stok yang ditampilkan di Laporan Stok & detail produk memakai stok EFEKTIF
+ * (`stock_efektif` dari API) — sama seperti Daftar Produk. Varian produk series
+ * menumpang stok produk basisnya, jadi tidak lagi dihitung "habis".
+ */
+const stokVarianMap = (v) => normalizeStock(v.stock_efektif ?? v.stock);
+const stokVarianTotal = (v) => sumStock(v.stock_efektif ?? v.stock);
+
+/**
  * Batas kalender menurut WIB (bukan zona waktu browser): tanggal hari ini,
  * awal bulan, dan akhir bulan berjalan dalam format YYYY-MM-DD.
  */
@@ -117,7 +125,7 @@ function ProductDetailModal({ isOpen, onClose, product, stockIns = [], transacti
   if (!isOpen || !product) return null;
 
   const pv = (variants || []).filter((v) => v.product_id === product.id);
-  const totalStock = pv.reduce((s, v) => s + sumStock(v.stock), 0);
+  const totalStock = pv.reduce((s, v) => s + stokVarianTotal(v), 0);
   // Stok yang ditampilkan di detail = stok efektif (series turunan menumpang stok basisnya).
   const stokEfektif = product.stock_efektif ?? totalStock;
   const status = product.status_efektif || stockStatus(stokEfektif);
@@ -253,7 +261,7 @@ function ProductDetailModal({ isOpen, onClose, product, stockIns = [], transacti
                         </thead>
                         <tbody>
                           {pv.map((v) => {
-                            const st = normalizeStock(v.stock);
+                            const st = stokVarianMap(v);
                             const total = SIZES.reduce((s, sz) => s + st[sz], 0);
                             return (
                               <tr key={v.id} className="border-t border-slate-100 dark:border-slate-800">
@@ -473,27 +481,29 @@ export default function MasterProduk() {
   //    bukan angka statis). Satuan = unit stok, bukan jumlah produk. ──
   const [stockFilter, setStockFilter] = useState("all"); // all | menipis | habis
 
+  // Pakai stok efektif (sama dengan Daftar Produk) supaya produk series yang
+  // menumpang stok basisnya tidak dihitung sebagai varian habis.
   const totalStockUnits = useMemo(
-    () => (variants || []).reduce((s, v) => s + sumStock(v.stock), 0),
+    () => (variants || []).reduce((s, v) => s + stokVarianTotal(v), 0),
     [variants],
   );
 
   // "Menipis" memakai ambang yang sudah dipakai sistem: total 1..5 (0 = habis, lihat lib/ops-variants).
   // Sengaja tidak memakai <= 5 agar tidak menghitung dua kali dengan card "Stok Habis".
   const lowStockVariantCount = useMemo(
-    () => (variants || []).filter((v) => { const t = sumStock(v.stock); return t > 0 && t <= 5; }).length,
+    () => (variants || []).filter((v) => { const t = stokVarianTotal(v); return t > 0 && t <= 5; }).length,
     [variants],
   );
 
   const outOfStockVariantCount = useMemo(
-    () => (variants || []).filter((v) => sumStock(v.stock) === 0).length,
+    () => (variants || []).filter((v) => stokVarianTotal(v) === 0).length,
     [variants],
   );
 
   const reportVariants = useMemo(() => {
     if (stockFilter === "all") return variants || [];
     return (variants || []).filter((v) => {
-      const t = sumStock(v.stock);
+      const t = stokVarianTotal(v);
       return stockFilter === "habis" ? t === 0 : t > 0 && t <= 5;
     });
   }, [variants, stockFilter]);
@@ -1434,13 +1444,18 @@ export default function MasterProduk() {
                       ) : (
                         reportVariants.map((v, index) => {
                           const product = products.find(p => p.id === v.product_id);
-                          const st = normalizeStock(v.stock);
+                          const st = stokVarianMap(v);
                           const total = SIZES.reduce((s, sz) => s + st[sz], 0);
                           const rowBg = index % 2 === 0 ? 'bg-white dark:bg-[#16171d]' : 'bg-blue-50/30 dark:bg-[#1a1d28]';
                           return (
                             <tr key={v.id} className={`${rowBg} hover:bg-blue-100/50 dark:hover:bg-slate-800 transition-colors border-b border-gray-100 dark:border-slate-800/50`}>
                               <td className="px-4 py-3.5 text-left align-middle font-inter text-sm font-semibold text-gray-900 dark:text-white border-r border-gray-100 dark:border-slate-800/50">
                                 {product?.name || v.product_name || '-'}
+                                {v.base_product_name ? (
+                                  <span className="block text-[10px] font-medium text-amber-600 dark:text-amber-400">
+                                    Stok mengikuti {v.base_product_name}
+                                  </span>
+                                ) : null}
                               </td>
                               <td className="px-4 py-3.5 text-left align-middle font-inter text-sm text-gray-600 dark:text-slate-300 border-r border-gray-100 dark:border-slate-800/50 whitespace-nowrap">
                                 {product?.jenis_kain?.name || <span className="text-gray-400 dark:text-slate-500">Belum diatur</span>}
@@ -1481,13 +1496,16 @@ export default function MasterProduk() {
                 ) : (
                   reportVariants.map((v) => {
                     const product = products.find(p => p.id === v.product_id);
-                    const st = normalizeStock(v.stock);
+                    const st = stokVarianMap(v);
                     const total = SIZES.reduce((s, sz) => s + st[sz], 0);
                     return (
                       <div key={v.id} className="bg-white rounded-2xl shadow-md border border-gray-200/80 p-4">
                         <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-200/60">
                           <div>
                             <p className="font-inter text-sm font-semibold text-gray-900">{product?.name || v.product_name || '-'}</p>
+                            {v.base_product_name ? (
+                              <p className="text-[10px] font-medium text-amber-600">Stok mengikuti {v.base_product_name}</p>
+                            ) : null}
                             <p className="text-xs text-gray-500">
                         {product?.jenis_kain?.name ? `${product.jenis_kain.name} • ` : ''}
                         {v.color && String(v.color).toLowerCase() !== 'default'
