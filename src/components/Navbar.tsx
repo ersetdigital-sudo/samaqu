@@ -13,7 +13,6 @@ import {
   ListChecks,
   Question,
   ChatCircle as MessageCircle,
-  User,
   CaretDown,
   Bag,
 } from "@phosphor-icons/react";
@@ -296,17 +295,7 @@ export default function Navbar() {
                   ))}
                 </div>
 
-                {/* Profile — mobile: icon di samping bendera */}
-                <Link
-                  href={`/${locale}/akun`}
-                  className="lg:hidden grid place-items-center w-10 h-10 rounded-full transition-colors duration-500"
-                  style={{ color: ctaColor }}
-                  aria-label="Akun saya"
-                >
-                  <User size={20} />
-                </Link>
-
-                {/* Profile — desktop only */}
+                {/* Profile — desktop only (di mobile disembunyikan; Akun tetap ada di drawer) */}
                 <div className="hidden lg:block">
                   <ProfileDropdown />
                 </div>
