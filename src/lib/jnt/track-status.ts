@@ -20,9 +20,11 @@ export function isDelivered(data: { history?: TrackHistoryItem[] | null } | null
  * jadi kode ini TIDAK boleh mengubah status ke "Dikirim" (kalau tidak, resi terbit = langsung
  * tampak dikirim, persis bug yang diperbaiki).
  *
+ * `162` = "Cancelled AWB by Seller": muncul setelah resi di-void — jelas bukan "dikirim".
+ *
  * Tambahkan kode lain di sini kalau nanti terbukti juga artefak (bukan pemindaian nyata).
  */
-export const JNT_NON_SHIPPING_CODES: ReadonlySet<number> = new Set([101]);
+export const JNT_NON_SHIPPING_CODES: ReadonlySet<number> = new Set([101, 162]);
 
 /**
  * Paket dianggap **sudah dikirim** (diserahkan ke J&T / dipindai kurir) bila J&T memuat minimal
