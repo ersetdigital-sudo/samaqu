@@ -35,6 +35,19 @@ export interface CatalogCard {
   totalStock?: number;
   matchedSeries?: string;
   seriesStock?: { name: string; stock: number; isDerived: boolean; follows?: string }[];
+  /** Status keikutsertaan di /open-order (kolom `products.open_order_enabled`, default true). */
+  openOrderEnabled?: boolean;
+}
+
+/**
+ * Mode "Open Order" — kartu katalog dipakai juga di menu admin "Open Order", tapi aksi
+ * kartunya diganti sakelar Tampil/Tersembunyi (tanpa Edit/Hapus).
+ */
+export interface OpenOrderMode {
+  isEnabled: (p: CatalogCard) => boolean;
+  onToggle: (p: CatalogCard) => void;
+  /** id kartu yang sedang disimpan (tombolnya jadi "Menyimpan…"). */
+  savingId?: string | null;
 }
 
 type Availability = "all" | "ready" | "low" | "out";
@@ -82,8 +95,8 @@ function CardActions({
   onDetail,
 }: {
   p: CatalogCard;
-  onDelete: (id: string, name: string, memberIds?: string[]) => void;
-  onDetail: (id: string) => void;
+  onDelete?: (id: string, name: string, memberIds?: string[]) => void;
+  onDetail?: (id: string) => void;
 }) {
   return (
     <div className="flex gap-2 mt-3">
@@ -97,7 +110,7 @@ function CardActions({
       {/* Detail dibuka sebagai drawer (bukan pindah halaman); halaman
           /admin/produk/detail/<id> tetap ada sebagai tautan langsung. */}
       <button
-        onClick={() => onDetail(p.id)}
+        onClick={() => onDetail?.(p.id)}
         className="w-9 h-9 flex items-center justify-center rounded-lg"
         style={{ border: "1px solid var(--bd)", color: "var(--fg2)" }}
         title="Detail produk"
@@ -105,13 +118,55 @@ function CardActions({
         <Eye size={15} strokeWidth={2} />
       </button>
       <button
-        onClick={() => onDelete(p.id, p.name, p.memberIds)}
+        onClick={() => onDelete?.(p.id, p.name, p.memberIds)}
         className="w-9 h-9 flex items-center justify-center rounded-lg"
         style={{ border: "1px solid var(--bd)", color: "#b91c1c" }}
         title="Hapus produk"
       >
         <Trash2 size={15} strokeWidth={2} />
       </button>
+    </div>
+  );
+}
+
+/** Aksi kartu mode Open Order: sakelar Tampil/Tersembunyi + tombol detail. */
+function OpenOrderAction({
+  p,
+  openOrder,
+  onDetail,
+}: {
+  p: CatalogCard;
+  openOrder: OpenOrderMode;
+  onDetail?: (id: string) => void;
+}) {
+  const on = openOrder.isEnabled(p);
+  const saving = openOrder.savingId === p.id;
+  return (
+    <div className="flex gap-2 mt-3">
+      <button
+        onClick={() => openOrder.onToggle(p)}
+        disabled={saving}
+        aria-pressed={on}
+        className="flex-1 flex items-center justify-center gap-1.5 text-xs font-bold py-2 rounded-lg whitespace-nowrap"
+        style={
+          on
+            ? { background: "#ecfdf5", border: "1px solid #a7f3d0", color: "#047857" }
+            : { background: "var(--sub)", border: "1px solid var(--bd)", color: "var(--fg2)" }
+        }
+      >
+        <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: on ? "#047857" : "var(--fg3)" }} />
+        {saving ? "Menyimpan…" : on ? "Tampil di Open Order" : "Tersembunyi"}
+      </button>
+      {onDetail && (
+        <button
+          onClick={() => onDetail(p.id)}
+          className="w-9 h-9 flex items-center justify-center rounded-lg shrink-0"
+          style={{ border: "1px solid var(--bd)", color: "var(--fg2)" }}
+          title="Detail produk"
+        >
+          <Eye size={15} strokeWidth={2} />
+        </button>
+      )}
     </div>
   );
 }
@@ -238,6 +293,9 @@ export default function ProductsCatalog({
   onDelete,
   onDetail,
   loading = false,
+  openOrder,
+  title,
+  subtitle,
 }: {
   /** Hasil pencarian dari caller (topbar) — jadi dasar perhitungan facet di rail. */
   items: CatalogCard[];
@@ -246,10 +304,14 @@ export default function ProductsCatalog({
   thumbnails: Record<string, string>;
   search: string;
   setSearch: (v: string) => void;
-  onDelete: (id: string, name: string, memberIds?: string[]) => void;
+  onDelete?: (id: string, name: string, memberIds?: string[]) => void;
   /** Buka detail produk sebagai drawer (disediakan kedua dashboard admin). */
-  onDetail: (id: string) => void;
+  onDetail?: (id: string) => void;
   loading?: boolean;
+  /** Diisi = mode Open Order: aksi kartu jadi sakelar Tampil/Tersembunyi. */
+  openOrder?: OpenOrderMode;
+  title?: string;
+  subtitle?: string;
 }) {
   const [view, setView] = useState<"grid" | "list">("grid");
   const [sort, setSort] = useState<SortKey>("name-asc");
@@ -338,9 +400,9 @@ export default function ProductsCatalog({
       {/* ── Baris judul: katalog-style, tanpa kartu statistik (sesuai wireframe) ── */}
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
         <div>
-          <h2 className="text-2xl font-extrabold leading-tight" style={{ color: "var(--fg)" }}>Katalog Produk</h2>
+          <h2 className="text-2xl font-extrabold leading-tight" style={{ color: "var(--fg)" }}>{title || "Katalog Produk"}</h2>
           <p className="text-sm mt-1" style={{ color: "var(--fg3)" }}>
-            Menampilkan {rows.length} dari {total} produk
+            {subtitle ? `${subtitle} · ` : ""}Menampilkan {rows.length} dari {total} produk
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -575,8 +637,10 @@ export default function ProductsCatalog({
                   <div className="min-w-0 flex-1">
                     <CardBody p={p} maxStock={facets.maxStock} />
                   </div>
-                  <div className="sm:w-44 shrink-0">
-                    <CardActions p={p} onDelete={onDelete} onDetail={onDetail} />
+                  <div className={openOrder ? "sm:w-60 shrink-0" : "sm:w-44 shrink-0"}>
+                    {openOrder
+                      ? <OpenOrderAction p={p} openOrder={openOrder} onDetail={onDetail} />
+                      : <CardActions p={p} onDelete={onDelete} onDetail={onDetail} />}
                   </div>
                 </div>
               ))}
@@ -600,7 +664,9 @@ export default function ProductsCatalog({
                     <div className="p-4 flex flex-col flex-1">
                       <CardBody p={p} maxStock={facets.maxStock} />
                       <div className="mt-auto">
-                        <CardActions p={p} onDelete={onDelete} onDetail={onDetail} />
+                        {openOrder
+                          ? <OpenOrderAction p={p} openOrder={openOrder} onDetail={onDetail} />
+                          : <CardActions p={p} onDelete={onDelete} onDetail={onDetail} />}
                       </div>
                     </div>
                   </div>
