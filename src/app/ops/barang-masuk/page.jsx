@@ -8,7 +8,7 @@ import { ArrowLeft, TrendingUp, Package, Calendar as CalendarIcon, Hash, FileTex
 import { format } from "date-fns";
 import { createPageUrl } from "@/lib/ops-router";
 import { useToast } from "@/components/ops/ui/use-toast";
-import { SIZES, normalizeStock, stockStatus } from "@/lib/ops-variants";
+import { SIZES, normalizeStock } from "@/lib/ops-variants";
 
 export default function TambahBarangMasuk() {
   const navigate = useNavigate();
@@ -99,24 +99,19 @@ export default function TambahBarangMasuk() {
         source: "manual"
       });
 
-      // ✅ Tambah stok variant per ukuran
-      if (data.variant_id) {
-        const variant = allVariants.find(v => v.id === data.variant_id);
-        if (variant) {
-          const newStockMap = { ...normalizeStock(variant.stock) };
-          newStockMap[data.size] = (newStockMap[data.size] || 0) + data.qty;
-          const variantTotal = Object.values(newStockMap).reduce((a, b) => a + b, 0);
-          await base44.entities.ProductVariant.update(data.variant_id, {
-            stock: newStockMap,
-            status: stockStatus(variantTotal)
-          });
-        }
-      }
+      // Stok varian TIDAK ditulis dari sini: POST /api/ops/stock-in sudah
+      // menaikkannya di server lewat RPC samaqu_increment_stock (termasuk untuk
+      // produk series yang stoknya menumpang produk basisnya). Sebelumnya klien
+      // ikut menulis lewat ProductVariant.update — method itu tidak ada di shim
+      // /ops, jadi simpan selalu berakhir "Gagal" padahal stok sudah tersimpan.
 
-      // Update Product dengan stok dan HPP baru
+      // Update Product dengan stok dan HPP baru.
+      // HPP dibulatkan ke rupiah bulat: kolom `products.hpp` bertipe integer,
+      // sedangkan weighted-average di atas menghasilkan pecahan (mis.
+      // 1836.734…) yang ditolak Postgres ("invalid input syntax for type integer").
       await base44.entities.Product.update(data.product_id, {
         stock: newTotalStock,
-        hpp: newHPP,
+        hpp: Math.round(newHPP),
         status: newTotalStock === 0 ? 'habis' : newTotalStock <= 5 ? 'menipis' : 'aman'
       });
     },
