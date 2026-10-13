@@ -56,8 +56,21 @@ const HISTORY_KEY = "samaqu_chat_history";
 /** Batas pesan yang disimpan/ditampilkan dari riwayat. */
 const HISTORY_MAX = 30;
 
-/** Kunci localStorage: penanda pengunjung sudah menutup bubble teks pada tombol chat. */
-const FAB_DISMISS_KEY = "samaqu_chat_fab_dismissed";
+/**
+ * Penanda bubble teks pada tombol chat sudah ditutup permanen oleh pengunjung.
+ *
+ * Disimpan di `sessionStorage` (bukan `localStorage`) supaya dismiss hanya berlaku
+ * selama tab itu hidup: kunjungan / tab baru menampilkan bubble lagi. Nama key dinaikkan
+ * ke `_v2` supaya nilai lama `samaqu_chat_fab_dismissed=1` di `localStorage` (dari
+ * percobaan sebelumnya) tidak lagi memblokir bubble selamanya.
+ */
+const FAB_DISMISS_KEY = "samaqu_chat_fab_dismissed_v2";
+
+/**
+ * Jeda sebelum bubble teks muncul ulang setelah ditutup (±45 detik), meniru perilaku
+ * tombol WhatsApp lama yang punya "reappear after dismiss". Hanya sekali per sesi.
+ */
+const FAB_REAPPEAR_DELAY_MS = 45_000;
 
 /** Empat pertanyaan cepat yang muncul di awal percakapan (ala marketplace). */
 const SUGGESTION_KEYS = ["suggestStock", "suggestSize", "suggestOrder", "suggestPay"] as const;
@@ -117,6 +130,12 @@ export default function ChatWidget() {
   const fileRef = useRef<HTMLInputElement>(null);
   /** Timer pemicu bubble teks FAB (5 detik). */
   const fabShowTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  /** Timer kemunculan ulang bubble teks FAB setelah ditutup (±45 detik, sekali saja). */
+  const fabReappearTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  /** Sudah pernah muncul ulang sekali setelah ditutup? → cegah loop kemunculan terus-menerus. */
+  const fabReappearUsedRef = useRef(false);
+  /** Sedang "dibungkam": pemicu 5 detik / scroll diabaikan selama bubble disembunyikan pengunjung. */
+  const fabSnoozeRef = useRef(false);
 
   async function handleImageFile(file: File | null | undefined) {
     if (!file) return;
@@ -133,13 +152,35 @@ export default function ChatWidget() {
     }
   }
 
-  /** Tutup bubble teks FAB: hilang sekarang, dan tidak muncul lagi setelah reload. */
+  /**
+   * Tutup bubble teks FAB (klik X).
+   *
+   * - Tutup pertama: bubble hilang, lalu muncul ulang SEKALI setelah ±45 detik.
+   * - Tutup kedua (setelah muncul ulang): berhenti untuk sesi ini; penandanya disimpan di
+   *   `sessionStorage` supaya tidak tampil lagi pada reload dalam tab yang sama.
+   */
   function dismissFab() {
-    setFabDismissed(true);
     setFabBubbleVisible(false);
     clearTimeout(fabShowTimerRef.current);
+    // Tahan pemicu (timer/scroll) selama bubble disembunyikan, supaya tidak langsung tampil lagi.
+    fabSnoozeRef.current = true;
+
+    if (!fabReappearUsedRef.current) {
+      // Kemunculan ulang sekali saja — seperti "reappear after dismiss" tombol WhatsApp lama.
+      fabReappearUsedRef.current = true;
+      clearTimeout(fabReappearTimerRef.current);
+      fabReappearTimerRef.current = setTimeout(() => {
+        fabSnoozeRef.current = false;
+        setFabBubbleVisible(true);
+      }, FAB_REAPPEAR_DELAY_MS);
+      return;
+    }
+
+    // Sudah muncul ulang sekali lalu ditutup lagi → jangan tampil lagi untuk sesi ini.
+    clearTimeout(fabReappearTimerRef.current);
+    setFabDismissed(true);
     try {
-      localStorage.setItem(FAB_DISMISS_KEY, "1");
+      sessionStorage.setItem(FAB_DISMISS_KEY, "1");
     } catch {
       // storage tidak tersedia (mode privat / penuh) → cukup state di memori
     }
@@ -162,36 +203,44 @@ export default function ChatWidget() {
     }
   }, []);
 
-  // Bubble teks FAB yang dulu ditutup pengunjung tidak ditampilkan lagi (localStorage).
+  // Bubble teks FAB yang sudah ditutup permanen pengunjung: penandanya di sessionStorage
+  // sehingga hanya berlaku untuk tab ini (tab/kunjungan baru menampilkan bubble lagi).
   useEffect(() => {
     try {
-      if (localStorage.getItem(FAB_DISMISS_KEY) === "1") setFabDismissed(true);
+      if (sessionStorage.getItem(FAB_DISMISS_KEY) === "1") setFabDismissed(true);
     } catch {
       // storage tidak tersedia → biarkan bubble tampil apa adanya
     }
   }, []);
 
   // Pemicu bubble teks FAB: muncul setelah 5 detik ATAU 30% scroll (mana yang lebih dulu),
-  // meniru pola AutoCTA (timer + scroll listener + cleanup). Bila sudah di-dismiss, tidak
-  // akan muncul lagi walaupun timer/scroll tercapai.
+  // meniru pola AutoCTA (timer + scroll listener + cleanup). Efek ini dipasang SEKALI saat
+  // mount dan sengaja tidak punya `return` dini: timer & listener selalu terpasang, dan
+  // yang mengatur apakah bubble benar-benar tampil adalah gate render
+  // `!fabDismissed && fabBubbleVisible` di bawah.
   useEffect(() => {
-    if (fabDismissed) return;
-
-    fabShowTimerRef.current = setTimeout(() => setFabBubbleVisible(true), 5000);
+    fabShowTimerRef.current = setTimeout(() => {
+      if (!fabSnoozeRef.current) setFabBubbleVisible(true);
+    }, 5000);
 
     function onScroll() {
-      if (fabBubbleVisible) return;
+      if (fabSnoozeRef.current) return;
       const scrollable = document.body.scrollHeight - window.innerHeight;
       if (scrollable <= 0) return;
       if (window.scrollY / scrollable >= 0.3) setFabBubbleVisible(true);
     }
+
+    // Refresh di tengah halaman: window.scrollY bisa sudah > 30% saat mount sementara event
+    // `scroll` belum tentu terpicu — jadi posisi scroll dicek langsung di sini.
+    onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
 
     return () => {
       clearTimeout(fabShowTimerRef.current);
+      clearTimeout(fabReappearTimerRef.current);
       window.removeEventListener("scroll", onScroll);
     };
-  }, [fabBubbleVisible, fabDismissed]);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
