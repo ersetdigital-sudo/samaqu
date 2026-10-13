@@ -99,11 +99,16 @@ export const SHIPPING_STATUS_STYLE: Record<ShippingStatus, { bg: string; color: 
 
 /** Sumber untuk status pengiriman: kolom + fallback resi (data lama sebelum kolom ada). */
 export interface ShippingSource {
+  /** Status pesanan; pesanan `dibatalkan` tidak punya progres pengiriman. */
+  status?: string;
   shipping_status?: string | null;
   awb_no?: string | null;
 }
 
 export function shippingStatusOf(order: ShippingSource): ShippingStatus | null {
+  // Pesanan dibatalkan → jangan tampilkan progres pengiriman. Kalau tidak, pesanan batal masih
+  // memperlihatkan "Menunggu Pickup" (resi yang sudah di-void) — tidak konsisten dengan status batal.
+  if (order.status === "dibatalkan") return null;
   if (order.shipping_status === "menunggu_pickup" || order.shipping_status === "dikirim" || order.shipping_status === "selesai") {
     return order.shipping_status;
   }
@@ -115,14 +120,17 @@ export function shippingStatusOf(order: ShippingSource): ShippingStatus | null {
 /** Ringkasan pengiriman satu baris daftar: kurir + nomor resi + status pengiriman. */
 export function shippingLine(
   order: StageSource & ShippingSource & { shipping_method?: string | null }
-): { courier: string; resi: string; status: string | null; awaiting: boolean } {
+): { courier: string; resi: string; status: string | null; awaiting: boolean; cancelled: boolean } {
   const stage = orderStage(order);
+  const cancelled = stage === "dibatalkan";
   const awaiting = !order.awb_no && stage === "perlu_dikirim";
   const ss = shippingStatusOf(order);
   return {
     courier: order.shipping_method || "Pengiriman",
-    resi: order.awb_no || (awaiting ? "Resi belum dibuat" : "Tanpa resi"),
+    // Pesanan batal: resi ditampilkan apa adanya (kalau ada), atau "-" — bukan "Tanpa resi".
+    resi: order.awb_no || (cancelled ? "-" : awaiting ? "Resi belum dibuat" : "Tanpa resi"),
     status: ss ? SHIPPING_STATUS_LABEL[ss] : null,
     awaiting,
+    cancelled,
   };
 }

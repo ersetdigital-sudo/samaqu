@@ -78,8 +78,13 @@ export default function OrdersMobileList<T extends OrderSummary>({
               <Truck size={13} strokeWidth={1.9} className="shrink-0" />
               <span className="text-xs font-medium truncate">{ship.courier} · {ship.resi}</span>
             </div>
-            {/* Status pengiriman (mis. "Menunggu Pickup") — dipisah dari pill tahap pesanan. */}
-            {(() => {
+            {/* Status pengiriman (mis. "Menunggu Pickup") — dipisah dari pill tahap pesanan.
+                Pesanan dibatalkan → "Dibatalkan" biar konsisten. */}
+            {ship.cancelled ? (
+              <span className="badge mt-1.5" style={{ background: ORDER_STAGE_STYLE.dibatalkan.bg, color: ORDER_STAGE_STYLE.dibatalkan.color, border: `1px solid ${ORDER_STAGE_STYLE.dibatalkan.border}` }}>
+                Dibatalkan
+              </span>
+            ) : (() => {
               const ss = shippingStatusOf(o);
               if (!ss) return null;
               const st = SHIPPING_STATUS_STYLE[ss];
