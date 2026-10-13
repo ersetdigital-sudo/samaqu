@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { strukStatus, strukSteps, tglJamID, rupiah } from "@/lib/akun-format";
 import type { TrackHistoryItem } from "@/lib/jnt/types";
-import { isDelivered } from "@/lib/jnt/track-status";
+import { shippingStatusOf, SHIPPING_STATUS_LABEL } from "@/lib/order-flow";
 import { PaymentMethodValue } from "@/components/admin/PaymentMethodsManager";
 import { RINCIAN_CSS, FALLBACK_PHOTO } from "@/components/akun/RincianPesanan";
 import { waNumber, waLink, pesanPembayaran } from "@/lib/whatsapp";
@@ -47,6 +47,11 @@ export interface AdminDetailOrder {
   shipping_method?: string | null;
   payment_method?: string | null;
   awb_no?: string | null;
+  /** Status pengiriman terpisah dari status pesanan (menunggu_pickup | dikirim | selesai). */
+  shipping_status?: string | null;
+  tracking_status_text?: string | null;
+  tracking_city?: string | null;
+  tracking_updated_at?: string | null;
   customer_name?: string | null;
   customer_email?: string | null;
   customer_whatsapp?: string | null;
@@ -142,6 +147,7 @@ export default function OrderDetailContent({
   onCancelJnt,
   onDelete,
   onArrangeOrder,
+  onSynced,
 }: {
   order: AdminDetailOrder;
   onStatusChange: (status: string) => void;
@@ -149,6 +155,8 @@ export default function OrderDetailContent({
   onDelete: () => void;
   /** "Atur Pesanan": buat resi J&T setelah pembayaran diverifikasi (ala Shopee). */
   onArrangeOrder?: () => Promise<void> | void;
+  /** Dipanggil setelah "Lacak Paket" menyinkronkan status dari J&T (server). */
+  onSynced?: (patch: { status?: string; shipping_status?: string | null }) => void;
 }) {
   const sc = strukStatus(order.status);
   const steps = strukSteps(order);
@@ -197,18 +205,24 @@ export default function OrderDetailContent({
     setTracking(true);
     setTrackError(null);
     try {
-      const res = await fetch(`/api/jnt/track?awb=${encodeURIComponent(resi)}`);
+      // Server yang menyinkronkan status (ambil tracking + transisi maju-saja, lihat
+      // src/lib/jnt/tracking-sync.ts) supaya logikanya satu tempat dengan cron. Klien tidak
+      // lagi menulis status sendiri.
+      const res = await fetch("/api/admin/orders", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderNumber: order.order_number, action: "syncTracking" }),
+      });
       const json = await res.json();
-      if (json?.success && json?.data) {
-        const data = json.data as { history?: TrackHistoryItem[] };
-        setTrackHistory(data.history || []);
-        // Otomatis: paket sudah diterima penerima (status_code 200) → status pesanan jadi selesai.
-        if (isDelivered(data) && ["pending", "diproses", "dikirim"].includes(order.status)) {
-          onStatusChange("selesai");
-        }
-      } else {
+      if (!res.ok) {
         setTrackError(json?.error || "Data pelacakan J&T belum bisa diambil.");
+        return;
       }
+      const data = json?.track as { history?: TrackHistoryItem[] } | null;
+      setTrackHistory(data?.history ?? []);
+      if (!data && json?.trackError) setTrackError(json.trackError);
+      // Kalau server menaikkan status, beri tahu induk supaya daftar & drawer ikut segar.
+      if (json?.changed) onSynced?.({ status: json.status, shipping_status: json.shippingStatus ?? null });
     } catch {
       setTrackError("Tidak bisa menghubungi layanan J&T. Coba lagi sebentar lagi.");
     } finally {
@@ -262,6 +276,27 @@ export default function OrderDetailContent({
                     </span>
                   </div>
                 )}
+
+                {/* Status pengiriman terpisah dari status pesanan + pemindaian terakhir J&T.
+                    Resi terbit = "Menunggu Pickup"; naik ke "Dikirim" setelah J&T memindai. */}
+                {resi ? (() => {
+                  const ss = shippingStatusOf(order);
+                  return ss ? (
+                    <div className="rp-line" style={{ marginTop: 8 }}>
+                      <span className="rp-sub">Status pengiriman</span>
+                      <span className="rp-strong" style={{ marginLeft: "auto" }}>{SHIPPING_STATUS_LABEL[ss]}</span>
+                    </div>
+                  ) : null;
+                })() : null}
+                {resi && order.tracking_status_text ? (
+                  <div className="rp-line" style={{ marginTop: 8 }}>
+                    <span className="rp-sub">Tracking terakhir</span>
+                    <span className="rp-strong" style={{ marginLeft: "auto", textAlign: "right" }}>
+                      {order.tracking_status_text}
+                      {order.tracking_city ? ` · ${order.tracking_city}` : ""}
+                    </span>
+                  </div>
+                ) : null}
               </div>
 
               {/* Metode pembayaran selalu terlihat (dulu hanya ada di dalam ringkasan "Total

@@ -44,6 +44,11 @@ interface Order {
   total: number;
   status: string;
   awb_no: string | null;
+  /** Status pengiriman terpisah dari status pesanan (menunggu_pickup | dikirim | selesai). */
+  shipping_status?: string | null;
+  tracking_status_text?: string | null;
+  tracking_city?: string | null;
+  tracking_updated_at?: string | null;
   created_at: string;
   /** Jam pembatalan yang akurat (kolom `orders.cancelled_at`), dibaca `waktuBatal`. */
   cancelled_at?: string | null;
@@ -464,7 +469,7 @@ function AdminPageInner() {
   async function arrangeOrder(order: { order_number: string }) {
     showConfirm(
       "Atur Pesanan?",
-      `Buat nomor resi J&T untuk pesanan ${order.order_number}? Pesanan akan berstatus "diproses".`,
+      `Buat nomor resi J&T untuk pesanan ${order.order_number}? Pengiriman dibuat & paket menunggu pickup kurir (status pesanan tetap "Perlu Dikirim").`,
       async () => {
         try {
           const res = await fetch("/api/admin/orders", {
@@ -478,9 +483,12 @@ function AdminPageInner() {
             return;
           }
           const awbNo = data.awbNo as string;
-          setOrders((prev) => prev.map((o) => o.order_number === order.order_number ? { ...o, awb_no: awbNo, status: "diproses" } : o));
-          setSelectedOrder((prev) => prev && prev.order_number === order.order_number ? { ...prev, awb_no: awbNo, status: "diproses" } : prev);
-          toast.showToast("success", `Resi J&T terbit: ${awbNo}`);
+          // Resi terbit ≠ paket dikirim: status pesanan tetap "diproses", status pengiriman
+          // jadi "menunggu_pickup". Baru naik ke "dikirim" setelah J&T melaporkan pemindaian.
+          const patch = { awb_no: awbNo, status: "diproses", shipping_status: "menunggu_pickup" };
+          setOrders((prev) => prev.map((o) => o.order_number === order.order_number ? { ...o, ...patch } : o));
+          setSelectedOrder((prev) => prev && prev.order_number === order.order_number ? { ...prev, ...patch } : prev);
+          toast.showToast("success", `Resi J&T terbit: ${awbNo} — pengiriman dibuat, menunggu pickup kurir`);
         } catch (err) {
           console.error("Arrange order error:", err);
           toast.showToast("error", "Gagal membuat resi J&T, coba lagi");
@@ -866,6 +874,12 @@ function AdminPageInner() {
         onCancelJnt={() => { if (selectedOrder) cancelJntOrder(selectedOrder); }}
         onArrangeOrder={() => { if (selectedOrder) arrangeOrder(selectedOrder); }}
         onDelete={() => { if (selectedOrder) deleteOrder(selectedOrder.order_number); }}
+        onSynced={(patch) => {
+          // Tracking J&T (server) menaikkan status → segarkan baris daftar & drawer.
+          if (!selectedOrder) return;
+          setOrders((prev) => prev.map((o) => o.order_number === selectedOrder.order_number ? { ...o, ...patch } : o));
+          setSelectedOrder((prev) => (prev ? { ...prev, ...patch } : prev));
+        }}
       />
 
       <ConfirmModal

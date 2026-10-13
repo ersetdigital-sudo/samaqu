@@ -51,5 +51,20 @@ const signature = Buffer.from(hexHash).toString("base64");
 2. Customer checkout → pilih alamat
 3. System call J&T Tariff API → tampilkan ongkir
 4. Customer pilih ongkir → buat pesanan
-5. System call J&T Order API → dapet AWB
+5. Admin verifikasi bayar → **Atur Pesanan** → System call J&T Order API → dapat AWB
 6. Customer dapat nomor AWB
+
+## Status pengiriman (revisi 2026-10-14)
+Resi terbit ≠ paket dikirim. Alur:
+`Perlu Dikirim` → **Atur Pesanan** (resi terbit, `orders.shipping_status='menunggu_pickup'`,
+status pesanan tetap `diproses`) → J&T **pemindaian pertama** (`sync-tracking` → `shipping_status='dikirim'`,
+`orders.status='dikirim'`) → paket diterima (`status_code=200` → `selesai`).
+
+- Logika transisi: `src/lib/jnt/tracking-sync.ts` (+ `track-status.ts`: `isShipped`/`isDelivered`).
+- Riwayat tracking disimpan di tabel `order_tracking_events` (idempoten, `event_key` unik) +
+  snapshot di kolom `orders.tracking_*`.
+- Sinkronisasi: `GET /api/cron/sync-tracking` (Bearer `CRON_SECRET`) dijadwalkan **cron-job eksternal**
+  (tidak ada webhook J&T).
+- Tidak ada kode J&T yang di-hardcode: pemindaian pertama apa pun dianggap "Dikirim"; kode tak dikenal
+  tetap disimpan mentah tanpa menebak.
+- Blocker lama tetap: kredensial Order/Cancel API production masih ditolak → "Atur Pesanan" bisa gagal.

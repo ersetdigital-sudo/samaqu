@@ -946,7 +946,42 @@ untuk `diproses`; verified ulang lewat preview (sesi admin diputar ulang): `pend
 (`SMQ-20261011-643`) → chip Pending, **tanpa** tombol Atur Pesanan; `diproses` tanpa resi
 (`SMQ-20261011-371`) → tombol muncul + petunjuk "Klik Atur Pesanan", tanpa error console. Kasus
 **`pending` tanpa resi** tidak bisa direproduksi saat itu (satu-satunya pesanan `pending` sudah
-ber-resi) — kondisi `order.status === "diproses"` yang menutupnya.
+ ber-resi) — kondisi `order.status === "diproses"` yang menutupnya.
+
+## Status pesanan vs status pengiriman (revisi 2026-10-14)
+
+Permintaan pemilik: klik "Atur Pesanan" jangan langsung bikin pesanan tampak **Dikirim** — resi
+terbit ≠ paket berangkat. Alur baru:
+
+`Perlu Dikirim` (diproses, resi belum ada) → **Atur Pesanan** → `Menunggu Pickup` (resi terbit) →
+J&T **pemindaian pertama** → `Dikirim` → paket diterima (J&T `status_code` 200) → `Selesai`.
+
+- **Data**: `orders.shipping_status` (`NULL`→`menunggu_pickup`→`dikirim`→`selesai`) +
+  `tracking_status_code/text/city/updated_at`, dan tabel `order_tracking_events`
+  (`supabase/migrations/20261014_order_shipping_status.sql`). Riwayat idempoten via `event_key`
+  unik (`<awb>|<status_code>|<date_time>`). **Catatan**: `orders.id` di DB ini bertipe **TEXT**
+  (bukan UUID) — FK `order_tracking_events.order_id` ikut TEXT.
+- **Atur Pesanan** (`PATCH /api/admin/orders` `action:"createJnt"`) sekarang menulis
+  `{awb_no, jnt_order_id, status:"diproses", shipping_status:"menunggu_pickup"}` — **tidak** `dikirim`.
+- **Satu sumber logika transisi**: `src/lib/jnt/tracking-sync.ts` (`applyTrackingToOrder`) —
+  dipakai cron **dan** aksi admin `action:"syncTracking"` (dipicu tombol "Lacak Paket"). Aturan:
+  riwayat kosong / API gagal → status tak berubah; pemindaian pertama → `dikirim`; `200` → `selesai`;
+  **maju-saja** (respons telat tak memundurkan status); `dibatalkan` tak disentuh; kode tak dikenal
+  hanya disimpan (kolom `raw`) tanpa menebak. `src/lib/jnt/track-status.ts` menyediakan `isShipped`
+  + `isDelivered` + rank.
+- **Tampilan**: `src/lib/order-flow.ts` `orderStage` kini **murni dari `orders.status`** (tidak lagi
+  `diproses && awb_no → dikirim`); status pengiriman ditampilkan terpisah lewat `shippingLine`/
+  `shippingStatusOf` (pill "Menunggu Pickup"/"Dikirim") di `OrdersView`, `OrdersMobileList`, dan
+  `OrderDetailContent` (+ "Tracking terakhir").
+- **Sinkronisasi**: **tanpa webhook J&T** → polling `GET /api/cron/sync-tracking` (header
+  `Authorization: Bearer $CRON_SECRET`) yang dijadwalkan **cron-job eksternal** milik pemilik
+  (bukan Vercel Cron). Belum ada penjadwal di repo.
+- **Diuji** (harness memanggil `applyTrackingToOrder` dengan stub + payload track terkontrol,
+  lib di-compile dari sumber nyata): resi tanpa scan → tetap `menunggu_pickup`; scan pertama →
+  `dikirim` + event tersimpan; API gagal → tak berubah; riwayat sama berulang → idempoten
+  (event_key unik diverifikasi di DB: 2 insert identik = 1 baris); sudah `dikirim` + respons lama →
+  tak mundur; `200` → `selesai`; `dibatalkan` → tak disentuh. "Pembuatan resi sukses" tetap perlu
+  kredensial J&T Order API production yang valid (lihat catatan blocker di atas).
 
 ## Lacak paket di drawer pesanan & status selesai otomatis
 

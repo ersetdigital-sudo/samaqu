@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { createJntOrderForOrder } from "@/lib/jnt/order-from-order";
+import { trackShipment } from "@/lib/jnt/track";
+import { applyTrackingToOrder } from "@/lib/jnt/tracking-sync";
 import { cancelOrderCompletely } from "@/lib/cancel-order";
 
 export async function PATCH(request: NextRequest) {
@@ -88,9 +90,17 @@ export async function PATCH(request: NextRequest) {
         return NextResponse.json({ error: `Gagal membuat resi J&T: ${result.error}` }, { status: 400 });
       }
 
+      // PENTING: resi terbit ≠ paket sudah dikirim. Status pesanan tetap `diproses`
+      // (masih "Perlu Dikirim") dan status pengiriman jadi `menunggu_pickup`. Baru naik ke
+      // `dikirim` setelah J&T melaporkan pemindaian (lihat src/lib/jnt/tracking-sync.ts).
       const { error: updateError } = await supabaseAdmin
         .from("orders")
-        .update({ awb_no: result.awbNo, jnt_order_id: order.order_number, status: "diproses" })
+        .update({
+          awb_no: result.awbNo,
+          jnt_order_id: order.order_number,
+          status: "diproses",
+          shipping_status: "menunggu_pickup",
+        })
         .eq("id", order.id);
 
       if (updateError) {
@@ -99,7 +109,33 @@ export async function PATCH(request: NextRequest) {
       }
 
       console.log("[ADMIN] J&T AWB created:", identifier, result.awbNo);
-      return NextResponse.json({ success: true, awbNo: result.awbNo, status: "diproses" });
+      return NextResponse.json({ success: true, awbNo: result.awbNo, status: "diproses", shippingStatus: "menunggu_pickup" });
+    }
+
+    // ── Sinkronkan status pengiriman dari tracking J&T (dipicu admin saat "Lacak Paket") ──
+    // Logika transisinya sama dengan cron; ini cuma mempercepat saat admin sedang melihat pesanan.
+    if (action === "syncTracking") {
+      const { data: order, error: fetchError } = await supabaseAdmin
+        .from("orders")
+        .select("id, order_number, status, shipping_status, awb_no")
+        .eq("order_number", identifier)
+        .single();
+
+      if (fetchError || !order) {
+        return NextResponse.json({ error: "Pesanan tidak ditemukan" }, { status: 404 });
+      }
+      if (!order.awb_no) {
+        return NextResponse.json({ error: "Pesanan ini belum punya nomor resi J&T." }, { status: 400 });
+      }
+
+      const track = await trackShipment(order.awb_no);
+      const result = await applyTrackingToOrder(supabaseAdmin, order, track);
+      return NextResponse.json({
+        success: true,
+        ...result,
+        track: track.success ? track.data : null,
+        trackError: track.success ? null : track.error || null,
+      });
     }
 
     // Normal status update

@@ -27,9 +27,11 @@ import {
   ORDER_STAGE_LABEL,
   ORDER_STAGE_STYLE,
   ORDER_STAGE_TABS,
+  SHIPPING_STATUS_STYLE,
   matchesStage,
   orderStage,
   shippingLine,
+  shippingStatusOf,
   stageNeedsAdminAction,
   type OrderStageFilter,
 } from "@/lib/order-flow";
@@ -43,6 +45,8 @@ export interface AdminOrderRow {
   customer_whatsapp?: string | null;
   shipping_method?: string | null;
   awb_no?: string | null;
+  /** Status pengiriman (menunggu_pickup | dikirim | selesai) — beda dari status pesanan. */
+  shipping_status?: string | null;
   status: string;
   total: number;
   created_at: string;
@@ -199,9 +203,20 @@ export default function OrdersView({
                   <td className="px-5 py-3.5 font-semibold whitespace-nowrap">{o.order_number}</td>
                   <td className="px-5 py-3.5 max-w-[200px] truncate" title={o.customer_name}>{o.customer_name}</td>
                   <td className="px-5 py-3.5 whitespace-nowrap" style={{ color: "var(--text-muted)" }}>{tanggal(o.created_at)}</td>
-                  <td className="px-5 py-3.5 min-w-[150px]">
+                  <td className="px-5 py-3.5 min-w-[170px]">
                     <span className="block text-xs whitespace-nowrap" style={{ color: "var(--text-muted)" }}>{ship.courier}</span>
                     <span className="block text-xs font-semibold mt-0.5 whitespace-nowrap" style={{ color: ship.awaiting ? "#c2410c" : "var(--espresso)" }}>{ship.resi}</span>
+                    {/* Status pengiriman terpisah dari status pesanan (mis. "Menunggu Pickup"). */}
+                    {(() => {
+                      const ss = shippingStatusOf(o);
+                      if (!ss) return null;
+                      const st = SHIPPING_STATUS_STYLE[ss];
+                      return (
+                        <span className="badge mt-1" style={{ background: st.bg, color: st.color, border: `1px solid ${st.border}` }}>
+                          {ship.status}
+                        </span>
+                      );
+                    })()}
                   </td>
                   <td className="px-5 py-3.5"><StageBadge order={o} /></td>
                   <td className="px-5 py-3.5 text-right">

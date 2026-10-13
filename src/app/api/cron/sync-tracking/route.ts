@@ -1,20 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { trackShipment } from "@/lib/jnt/track";
-import { isDelivered } from "@/lib/jnt/track-status";
+import { applyTrackingToOrder } from "@/lib/jnt/tracking-sync";
 
 /**
- * Sinkronkan status pesanan dengan pelacakan J&T: begitu paket **diterima** penerima
- * (J&T `status_code` 200), pesanan otomatis jadi `selesai` — admin tidak perlu mengubah
- * statusnya sendiri.
+ * Sinkronkan status pengiriman & pesanan dengan tracking J&T.
  *
- * GET /api/cron/sync-tracking — aman dipanggil Vercel Cron / cron eksternal
- * (header `Authorization: Bearer $CRON_SECRET`) atau manual. Hanya pesanan yang punya
- * resi dan statusnya belum final (`pending`/`diproses`/`dikirim`) yang diperiksa;
- * pesanan tanpa resi dilewati tanpa error.
+ * - Pemindaian J&T pertama → status pengiriman `dikirim` (dan `orders.status = "dikirim"`).
+ * - Paket diterima penerima (J&T `status_code` 200) → `selesai`.
+ * - Riwayat kosong / API gagal → status TIDAK berubah (tetap "Menunggu Pickup").
+ *
+ * GET /api/cron/sync-tracking — dipanggil penjadwal cron eksternal (cron-job) dengan header
+ * `Authorization: Bearer $CRON_SECRET`, atau manual. Hanya pesanan ber-resi yang belum final
+ * (`pending`/`diproses`/`dikirim`) yang diperiksa; tanpa resi dilewati tanpa error.
+ * Logika transisinya ada di `src/lib/jnt/tracking-sync.ts` (idempoten, maju-saja).
  */
 export async function GET(request: NextRequest) {
-  // Verify cron secret (Vercel Cron sends CRON_SECRET header)
+  // Verify cron secret (penjadwal mengirim header Authorization: Bearer $CRON_SECRET)
   const authHeader = request.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
   if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
@@ -25,7 +27,7 @@ export async function GET(request: NextRequest) {
 
   const { data: orders, error } = await supabase
     .from("orders")
-    .select("id, order_number, awb_no, status")
+    .select("id, order_number, awb_no, status, shipping_status")
     .in("status", ["pending", "diproses", "dikirim"])
     .not("awb_no", "is", null)
     .order("created_at", { ascending: false })
@@ -37,28 +39,24 @@ export async function GET(request: NextRequest) {
   }
 
   let checked = 0;
+  let shipped = 0;
   let completed = 0;
+  let eventsStored = 0;
   let errors = 0;
 
   for (const order of orders || []) {
     if (!order.awb_no) continue;
     checked++;
     try {
-      const result = await trackShipment(order.awb_no);
-      // Resi belum dikenal J&T / kredensial kosong → bukan paket diterima, lewati.
-      if (!result.success || !isDelivered(result.data)) continue;
-
-      const { error: updateError } = await supabase
-        .from("orders")
-        .update({ status: "selesai" })
-        .eq("id", order.id);
-
-      if (updateError) {
-        console.error("[SYNC-TRACKING] Status update error:", order.order_number, updateError);
-        errors++;
-      } else {
+      const track = await trackShipment(order.awb_no);
+      const result = await applyTrackingToOrder(supabase, order, track);
+      eventsStored += result.eventsStored;
+      if (result.reason === "delivered") {
         completed++;
         console.log("[SYNC-TRACKING] Paket diterima → selesai:", order.order_number);
+      } else if (result.reason === "shipped") {
+        shipped++;
+        console.log("[SYNC-TRACKING] Pemindaian J&T → dikirim:", order.order_number);
       }
     } catch (e) {
       console.error("[SYNC-TRACKING] Unexpected error:", order.order_number, e);
@@ -66,5 +64,5 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  return NextResponse.json({ checked, completed, errors });
+  return NextResponse.json({ checked, shipped, completed, eventsStored, errors });
 }

@@ -32,6 +32,7 @@ export default function OrderDetailDrawer({
   onCancelJnt,
   onDelete,
   onArrangeOrder,
+  onSynced,
 }: {
   order: AdminDetailOrder | null;
   onClose: () => void;
@@ -40,6 +41,8 @@ export default function OrderDetailDrawer({
   onDelete: () => void;
   /** "Atur Pesanan" — buat resi J&T untuk pesanan yang belum punya resi. */
   onArrangeOrder?: () => Promise<void> | void;
+  /** Setelah tracking J&T disinkronkan (server) — dipakai memperbarui daftar/drawer. */
+  onSynced?: (patch: { status?: string; shipping_status?: string | null }) => void;
 }) {
   useEffect(() => {
     if (!order) return;
@@ -98,6 +101,7 @@ export default function OrderDetailDrawer({
                 onCancelJnt={onCancelJnt}
                 onDelete={onDelete}
                 onArrangeOrder={onArrangeOrder}
+                onSynced={onSynced}
               />
             </div>
 
