@@ -11,9 +11,11 @@ import { cancelOrderCompletely } from "@/lib/cancel-order";
  * menolak, status tidak diubah supaya resi tidak menggantung. Bedanya: route ini memverifikasi
  * sesi customer dan memastikan pesanan itu memang miliknya.
  *
- * Stok hanya dikembalikan untuk pesanan checkout website (`SMQ-`), karena hanya jalur itu yang
- * memotong stok; pesanan Open Order (`CYO-`) tidak pernah memotong stok, jadi memanggil
- * `samaqu_restore_stock` untuknya justru menambah stok yang tidak pernah diambil.
+ * Stok dikembalikan hanya untuk pesanan yang MEMANG memotong stok — penandanya kolom
+ * `orders.stock_reserved`, bukan awalan nomor pesanan. Checkout website (`SMQ-`) maupun
+ * Open Order (`CYO-`) sama-sama memotong stok saat pesanan dibuat, jadi keduanya
+ * mengembalikan stok saat dibatalkan; pesanan lama yang belum menandai kolom itu dilewati
+ * supaya stoknya tidak bertambah tanpa pernah diambil (lihat src/lib/cancel-order.ts).
  */
 
 /** Status yang masih boleh dibatalkan customer (belum diserahkan ke kurir). */

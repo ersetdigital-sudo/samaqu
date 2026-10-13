@@ -7,9 +7,12 @@ import { isOpsAdmin, unauthorized } from "@/lib/ops-auth";
  * Sumbernya order website (orders + order_items) — jadi penjualan lewat website
  * otomatis muncul sebagai barang keluar, tanpa input dobel.
  *
- * Bentuk data mengikuti entity `Transaction` app Base44. Order yang dibatalkan
- * dikirim dengan status "return" supaya halaman stok tidak menghitungnya
- * (halaman MasterProduk mengabaikan status 'return').
+ * Status baris:
+ * - `return`     → order dibatalkan (stok sudah dikembalikan)
+ * - `pending`    → order dibuat tapi BELUM DIBAYAR. Stoknya sudah direservasi
+ *                  (lihat /api/orders & /api/open-order), tapi belum dihitung
+ *                  sebagai penjualan — daftar barang keluar menandainya "Belum bayar".
+ * - `completed`  → sudah dibayar/diproses (pesanan benar-benar terjual).
  */
 export async function GET(req: NextRequest) {
   if (!(await isOpsAdmin(req))) return unauthorized();
@@ -41,7 +44,11 @@ export async function GET(req: NextRequest) {
     const o = byOrder[it.order_id] || {};
     const qty = Number(it.quantity) || 0;
     const price = Number(it.price) || 0;
-    const cancelled = String(o.status || "").toLowerCase().includes("batal") || String(o.status || "").toLowerCase().includes("cancel");
+    const st = String(o.status || "").toLowerCase();
+    const cancelled = st.includes("batal") || st.includes("cancel");
+    // `pending` = menunggu pembayaran. Stoknya sudah terpotong (reservasi) tapi
+    // pesanannya belum dihitung sebagai penjualan, jadi statusnya dibedakan.
+    const unpaid = st === "pending";
     return {
       id: it.id,
       date: (o.created_at || "").slice(0, 10),
@@ -56,7 +63,7 @@ export async function GET(req: NextRequest) {
       total: qty * price,
       ongkir: 0,
       platform: "Website",
-      status: cancelled ? "return" : "completed",
+      status: cancelled ? "return" : unpaid ? "pending" : "completed",
       payment_method: o.payment_method || null,
       is_free_gift: false,
       created_date: o.created_at,

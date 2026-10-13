@@ -9,8 +9,9 @@ import { cancelOrderCompletely } from "@/lib/cancel-order";
  * Pembatalannya memakai jalur bersama `cancelOrderCompletely()`: kalau pesanan ternyata
  * masih memegang resi J&T (mis. statusnya pernah ditarik balik ke `pending` dari chip admin),
  * resinya di-void dulu baru status jadi `dibatalkan` — kalau J&T menolak, pesanan dilewati
- * supaya resi aktif tidak menggantung. Stok hanya dikembalikan untuk pesanan website (`SMQ-`),
- * karena Open Order (`CYO-`) tidak pernah memotong stok (lihat src/lib/cancel-order.ts).
+ * supaya resi aktif tidak menggantung. Stok dikembalikan untuk pesanan yang benar-benar
+ * memotongnya (penanda `orders.stock_reserved`), baik checkout website (`SMQ-`) maupun
+ * Open Order (`CYO-`) — lihat src/lib/cancel-order.ts.
  */
 export async function GET(request: NextRequest) {
   // Verify cron secret (Vercel Cron sends CRON_SECRET header)

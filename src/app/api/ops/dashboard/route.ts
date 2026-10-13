@@ -15,6 +15,16 @@ import { resolveStock } from "@/lib/ops-stock";
 const BULAN = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
 
 /**
+ * Penjualan (omset/HPP/laba/terlaris) hanya dihitung dari pesanan yang SUDAH DIBAYAR.
+ * `pending` = menunggu transfer: stoknya sudah direservasi saat order dibuat
+ * (lihat /api/orders & /api/open-order), tapi belum jadi penjualan. `dibatalkan`
+ * tentu tidak dihitung. Kalau kamu ubah alur pembayaran, ubah daftar ini.
+ */
+const PAID_ORDER_STATUS = ["diproses", "selesai"];
+const isPaidOrder = (o: { status?: string | null }) =>
+  PAID_ORDER_STATUS.includes(String(o?.status || "").toLowerCase());
+
+/**
  * Batas awal/akhir bulan (WIB) untuk parameter `YYYY-MM`.
  * Parameter tidak valid → diabaikan dan dipakai bulan WIB sekarang.
  */
@@ -90,8 +100,9 @@ export async function GET(req: NextRequest) {
   ]);
 
   const orders = (ordersMonth.data || []) as any[];
-  // Order valid = status bukan "dibatalkan" (selesai/diproses/pending ikut dihitung).
-  const valid = orders.filter((o) => String(o.status || "") !== "dibatalkan");
+  // Penjualan = hanya pesanan lunas (`diproses`/`selesai`). `pending` (menunggu
+  // transfer) dan `dibatalkan` tidak dihitung — lihat PAID_ORDER_STATUS di atas.
+  const valid = orders.filter(isPaidOrder);
   const omset = valid.reduce((s, o) => s + (Number(o.total) || 0), 0);
   const transaksi = valid.length;
   const rataRata = transaksi > 0 ? Math.round(omset / transaksi) : 0;
@@ -173,7 +184,8 @@ export async function GET(req: NextRequest) {
   /* ── Tren 7 hari terakhir (WIB, termasuk hari ini) — dipakai grafik dashboard ──
      Jendela 7 hari tidak selalu berada di dalam bulan terpilih (mis. awal bulan),
      jadi dihitung dari query `ordersTrend` sendiri. Urut paling lama → hari ini. */
-  const trendValid = ((ordersTrend.data || []) as any[]).filter((o) => String(o.status || "") !== "dibatalkan");
+  // Grafik tren juga penjualan → hanya pesanan lunas (bukan pending/batal).
+  const trendValid = ((ordersTrend.data || []) as any[]).filter(isPaidOrder);
   const trendDailyMap = new Map<string, number>();
   for (const o of trendValid) {
     const created = new Date(o.created_at);
