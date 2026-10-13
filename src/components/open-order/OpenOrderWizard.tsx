@@ -11,7 +11,7 @@
  * Periode & status buka/tutup datang dari store_settings (menu admin "Open Order").
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Calendar, ChevronLeft, X } from "lucide-react";
 import { getProducts } from "@/lib/db";
@@ -182,15 +182,48 @@ export default function OpenOrderWizard() {
       (extraCover ? OPEN_ORDER_ADDON.weight : 0)
   );
 
-  // Ongkir J&T dihitung otomatis begitu kecamatan tujuan diisi (perilaku form sebelumnya).
+  /**
+   * Ongkir yang sudah pernah dihitung (kunci: kota|kecamatan|berat). Menghindari menunggu
+   * panggilan J&T (~3 detik) dua kali untuk kombinasi yang sama — mis. saat customer bolak-balik
+   * ubah jumlah lalu kembali ke jumlah sebelumnya.
+   */
+  const ongkirCacheRef = useRef<Map<string, { service: string; cost: number }>>(new Map());
+  /**
+   * Ongkir dihitung LEBIH DULU kalau kota/kecamatan datang dari pilihan (alamat tersimpan /
+   * dropdown wilayah), bukan dari ketikan — jadi tidak perlu menunggu debounce 1 detik.
+   */
+  const immediateOngkirRef = useRef(false);
+
+  // Ongkir J&T dihitung otomatis begitu kota/kecamatan tujuan terisi (perilaku form sebelumnya).
   useEffect(() => {
     const district = customer.district.trim();
-    if (district.length < 3) {
-      setShipping(null);
-      setOngkirError(false);
-      setLoadingOngkir(false);
+
+    // Tunggu katalog selesai dimuat dulu: berat kirim dihitung dari berat produk, dan sebelum
+    // katalog siap angkanya masih default — kalau dihitung sekarang, hasilnya dihitung ulang.
+    if (district.length < 3 || products.length === 0) {
+      if (district.length < 3) {
+        setShipping(null);
+        setOngkirError(false);
+        setLoadingOngkir(false);
+      }
+      immediateOngkirRef.current = false;
       return;
     }
+
+    const cacheKey = `${customer.city.trim()}|${district}|${totalWeight}`;
+    const cached = ongkirCacheRef.current.get(cacheKey);
+    if (cached) {
+      setShipping(cached);
+      setOngkirError(false);
+      setLoadingOngkir(false);
+      immediateOngkirRef.current = false;
+      return;
+    }
+
+    // Pilihan (bukan ketikan) → hitung langsung; ketikan manual → tunggu 1 detik supaya tidak
+    // membanjiri API J&T saat customer masih menulis nama kecamatan.
+    const delay = immediateOngkirRef.current ? 0 : 1000;
+    immediateOngkirRef.current = false;
 
     const controller = new AbortController();
     const timer = setTimeout(async () => {
@@ -216,7 +249,9 @@ export default function OpenOrderWizard() {
         }
         // Route J&T sudah mengurutkan opsi dari yang termurah.
         const cheapest = json.data[0];
-        setShipping({ service: cheapest.service || "J&T", cost: cheapest.cost || 0 });
+        const next = { service: cheapest.service || "J&T", cost: cheapest.cost || 0 };
+        ongkirCacheRef.current.set(cacheKey, next);
+        setShipping(next);
       } catch (err) {
         if ((err as Error).name === "AbortError") return;
         console.error("[OPEN-ORDER] hitung ongkir gagal:", err);
@@ -225,13 +260,13 @@ export default function OpenOrderWizard() {
       } finally {
         setLoadingOngkir(false);
       }
-    }, 1000);
+    }, delay);
 
     return () => {
       controller.abort();
       clearTimeout(timer);
     };
-  }, [customer.district, customer.city, totalWeight]);
+  }, [customer.district, customer.city, totalWeight, products.length]);
 
   function openDetail(productId: string, color: string) {
     const next = defaultDraft(products, productId, color);
@@ -256,6 +291,9 @@ export default function OpenOrderWizard() {
   }
 
   function setCustomerField(field: keyof CustomerData, value: string) {
+    // Kecamatan dipilih dari dropdown RajaOngkir (bukan diketik) → hitung ongkir langsung,
+    // tanpa menunggu debounce 1 detik.
+    if (field === "districtId" && value) immediateOngkirRef.current = true;
     setCustomer((prev) => ({ ...prev, [field]: value }));
   }
 
@@ -266,6 +304,8 @@ export default function OpenOrderWizard() {
    */
   function applySavedAddress(addr: SavedAddress) {
     setSelectedAddressId(addr.id);
+    // Alamat tersimpan = pilihan, bukan ketikan → ongkir dihitung langsung (tanpa debounce).
+    immediateOngkirRef.current = true;
     setCustomer((prev) => ({
       ...prev,
       name: addr.recipient_name || prev.name,
