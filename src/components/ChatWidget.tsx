@@ -103,6 +103,7 @@ export default function ChatWidget() {
   const [ready, setReady] = useState(false);
   const [open, setOpen] = useState(false);
   const [fabDismissed, setFabDismissed] = useState(false);
+  const [fabBubbleVisible, setFabBubbleVisible] = useState(false);
   const [greeting, setGreeting] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [messages, setMessages] = useState<Msg[]>([]);
@@ -114,6 +115,8 @@ export default function ChatWidget() {
   const startedRef = useRef(false);
   const sessionIdRef = useRef("");
   const fileRef = useRef<HTMLInputElement>(null);
+  /** Timer pemicu bubble teks FAB (5 detik). */
+  const fabShowTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   async function handleImageFile(file: File | null | undefined) {
     if (!file) return;
@@ -133,6 +136,8 @@ export default function ChatWidget() {
   /** Tutup bubble teks FAB: hilang sekarang, dan tidak muncul lagi setelah reload. */
   function dismissFab() {
     setFabDismissed(true);
+    setFabBubbleVisible(false);
+    clearTimeout(fabShowTimerRef.current);
     try {
       localStorage.setItem(FAB_DISMISS_KEY, "1");
     } catch {
@@ -165,6 +170,28 @@ export default function ChatWidget() {
       // storage tidak tersedia → biarkan bubble tampil apa adanya
     }
   }, []);
+
+  // Pemicu bubble teks FAB: muncul setelah 5 detik ATAU 30% scroll (mana yang lebih dulu),
+  // meniru pola AutoCTA (timer + scroll listener + cleanup). Bila sudah di-dismiss, tidak
+  // akan muncul lagi walaupun timer/scroll tercapai.
+  useEffect(() => {
+    if (fabDismissed) return;
+
+    fabShowTimerRef.current = setTimeout(() => setFabBubbleVisible(true), 5000);
+
+    function onScroll() {
+      if (fabBubbleVisible) return;
+      const scrollable = document.body.scrollHeight - window.innerHeight;
+      if (scrollable <= 0) return;
+      if (window.scrollY / scrollable >= 0.3) setFabBubbleVisible(true);
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+
+    return () => {
+      clearTimeout(fabShowTimerRef.current);
+      window.removeEventListener("scroll", onScroll);
+    };
+  }, [fabBubbleVisible, fabDismissed]);
 
   useEffect(() => {
     let cancelled = false;
@@ -307,8 +334,9 @@ export default function ChatWidget() {
     return (
       // Anchor FAB tidak diubah: right-4 sm:right-6, offset --mobile-nav-h, z-[95].
       <div className="fixed right-4 sm:right-6 bottom-[calc(var(--mobile-nav-h)+5.75rem)] z-[95]">
-        {/* Bubble teks (kartu putih ala WhatsApp) di samping kiri tombol — bisa ditutup. */}
-        {!fabDismissed && (
+        {/* Bubble teks (kartu putih ala WhatsApp) di samping kiri tombol — bisa ditutup.
+            Hanya tampil setelah pemicu (5 detik / 30% scroll) dan tidak di-dismiss. */}
+        {!fabDismissed && fabBubbleVisible && (
           <div className="absolute right-[calc(100%+12px)] top-1/2 -translate-y-1/2">
             {/* Badan bubble: klik area teks = buka chat. */}
             <button
