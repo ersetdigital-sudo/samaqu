@@ -118,6 +118,7 @@ export default function StepProduct({
   }
 
   return (
+    <>
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10 lg:gap-14">
       {/* ── Galeri ── */}
       <div>
@@ -375,25 +376,27 @@ export default function StepProduct({
           </div>
         </div>
 
-        {/* Total + aksi */}
-        <div className="flex items-end justify-between mb-4">
-          <span className="text-[11px] sm:text-[12px] tracking-[0.12em] uppercase font-ui font-medium" style={{ color: "var(--espresso)" }}>
-            Total ({draft.quantity} pcs)
-          </span>
-          <span className="text-[1.25rem] font-ui font-semibold tabular-nums" style={{ color: "var(--gold)" }}>
-            {rupiah(lineTotal)}
-          </span>
-        </div>
+        {/* Total + aksi — desktop & tablet (mobile pakai bar sticky di bawah) */}
+        <div className="hidden md:block">
+          <div className="flex items-end justify-between mb-4">
+            <span className="text-[11px] sm:text-[12px] tracking-[0.12em] uppercase font-ui font-medium" style={{ color: "var(--espresso)" }}>
+              Total ({draft.quantity} pcs)
+            </span>
+            <span className="text-[1.25rem] font-ui font-semibold tabular-nums" style={{ color: "var(--gold)" }}>
+              {rupiah(lineTotal)}
+            </span>
+          </div>
 
-        <button
-          type="button"
-          onClick={handleAdd}
-          disabled={priceTooLow}
-          className="w-full flex items-center justify-center gap-2.5 py-4 rounded-sm text-[12px] tracking-[0.08em] uppercase font-ui font-semibold transition-all duration-300 hover:scale-[1.01] hover:shadow-lg disabled:opacity-40 disabled:hover:scale-100"
-          style={{ background: "var(--espresso)", color: "white", boxShadow: "0 8px 28px -8px rgba(0,0,0,.35)" }}
-        >
-          Tambah ke Pesanan
-        </button>
+          <button
+            type="button"
+            onClick={handleAdd}
+            disabled={priceTooLow}
+            className="w-full flex items-center justify-center gap-2.5 py-4 rounded-sm text-[12px] tracking-[0.08em] uppercase font-ui font-semibold transition-all duration-300 hover:scale-[1.01] hover:shadow-lg disabled:opacity-40 disabled:hover:scale-100"
+            style={{ background: "var(--espresso)", color: "white", boxShadow: "0 8px 28px -8px rgba(0,0,0,.35)" }}
+          >
+            Tambah ke Pesanan
+          </button>
+        </div>
 
         {/* Info tambahan */}
         <div className="mt-5 md:mt-7 space-y-2.5">
@@ -409,5 +412,41 @@ export default function StepProduct({
         </div>
       </div>
     </div>
+
+    {/* ── Bar aksi sticky (mobile) ──
+        Mengikuti wireframe needmcp "orange-food-details" (Sticky Bottom CTA Bar): bar putih
+        translucent menempel di dasar layar, total di kiri, tombol pill di kanan. Versi desktop
+        tetap pakai tombol lebar di atas (blok `hidden md:block`). */}
+    <div
+      className="md:hidden fixed bottom-0 inset-x-0 z-40"
+      style={{ background: "rgba(255,255,255,.95)", backdropFilter: "blur(8px)", borderTop: "1px solid rgba(0,0,0,.12)" }}
+    >
+      <div
+        className="flex items-center justify-between gap-4 px-6 pt-4"
+        style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom))" }}
+      >
+        <div className="min-w-0">
+          <p className="text-[10px] font-ui font-bold uppercase tracking-[0.08em]" style={{ color: "var(--stone)" }}>
+            Total
+          </p>
+          <p className="text-[20px] font-ui font-extrabold leading-none tabular-nums" style={{ color: "var(--gold)" }}>
+            {rupiah(lineTotal)}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={handleAdd}
+          disabled={priceTooLow}
+          className="shrink-0 h-12 px-6 rounded-full text-[14px] font-ui font-bold transition-all duration-300 active:scale-[.98] disabled:opacity-40"
+          style={{ background: "var(--espresso)", color: "white" }}
+        >
+          Tambah ke Pesanan
+        </button>
+      </div>
+    </div>
+
+    {/* Ruang bawah supaya isi terakhir tidak ketutup bar sticky (mobile). */}
+    <div className="md:hidden h-24" aria-hidden="true" />
+    </>
   );
 }
