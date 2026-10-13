@@ -138,7 +138,11 @@ function ProductDetailModal({ isOpen, onClose, product, stockIns = [], transacti
 
   const productStockIns = (stockIns || []).filter((si) => si.product_id === product.id);
   const productTransactions = (transactions || []).filter((t) => t.product_id === product.id);
-  const validTransactions = productTransactions.filter((t) => String(t.status || "") !== "return");
+  // Penjualan di detail produk = yang sudah dibayar saja (belum bayar & batal dikecualikan).
+  const validTransactions = productTransactions.filter((t) => {
+    const st = String(t.status || "").toLowerCase();
+    return st !== "return" && st !== "pending";
+  });
   const totalIn = productStockIns.reduce((s, si) => s + (Number(si.qty) || 0), 0);
   const totalOut = validTransactions.reduce((s, t) => s + (Number(t.qty) || 0), 0);
   const revenue = validTransactions.reduce((s, t) => s + (Number(t.total) || 0), 0);
@@ -461,11 +465,14 @@ export default function MasterProduk() {
     () => (products || []).filter((p) => String(p.status_efektif || p.status || "aman") !== "habis").length,
     [products],
   );
-  // Terlaris = unit terjual dari order website. Order batal (status "return") tidak dihitung.
+  // Terlaris = unit TERJUAL dari order website. Yang belum dibayar (status
+  // "pending") belum dianggap terjual (stoknya cuma direservasi), batal
+  // ("return") juga tidak dihitung.
   const topSeller = useMemo(() => {
     const sold = {};
     for (const t of transactions || []) {
-      if (String(t.status || "").toLowerCase() === "return") continue;
+      const st = String(t.status || "").toLowerCase();
+      if (st === "return" || st === "pending") continue;
       const name = String(t.product_name || "").trim();
       if (!name) continue;
       sold[name] = (sold[name] || 0) + (Number(t.qty) || 0);
@@ -1723,6 +1730,9 @@ export default function MasterProduk() {
                     </span>
                     {String(t.status || '') === 'return' && (
                     <span className="px-1.5 py-0.5 rounded bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400 text-[10px] font-bold">Batal</span>
+                    )}
+                    {String(t.status || '') === 'pending' && (
+                    <span className="px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 text-[10px] font-bold">Belum bayar</span>
                     )}
                     </span>
                     </td>
