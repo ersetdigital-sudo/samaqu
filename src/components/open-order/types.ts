@@ -45,3 +45,21 @@ export interface DraftShipping {
   service: string;
   cost: number;
 }
+
+/**
+ * Alamat tersimpan customer (tabel `saved_addresses`) — dibaca di langkah 4 supaya customer
+ * yang sudah login tidak perlu mengetik ulang alamat, sama seperti halaman checkout.
+ */
+export interface SavedAddress {
+  id: string;
+  label: string;
+  recipient_name: string;
+  phone: string;
+  address: string;
+  city: string;
+  postal_code: string;
+  is_default: boolean;
+  province?: string | null;
+  kecamatan?: string | null;
+  district_id?: number | null;
+}

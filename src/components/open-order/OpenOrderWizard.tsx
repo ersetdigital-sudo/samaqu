@@ -40,7 +40,7 @@ import StepCustomer from "./StepCustomer";
 import StepProduct from "./StepProduct";
 import StepReview from "./StepReview";
 import StepSuccess from "./StepSuccess";
-import { EMPTY_CUSTOMER, type CartLine, type CustomerData, type DraftShipping, type ProductDraft } from "./types";
+import { EMPTY_CUSTOMER, type CartLine, type CustomerData, type DraftShipping, type ProductDraft, type SavedAddress } from "./types";
 import { INK, LINE, MUTED } from "./ui";
 
 type Step = 1 | 2 | 3 | 4 | 5 | 6;
@@ -94,6 +94,9 @@ export default function OpenOrderWizard() {
   const [result, setResult] = useState<{ orderNumber: string; total: number } | null>(null);
   /** Akun customer — langkah 4 hanya terbuka untuk yang sudah masuk/daftar (gerbang `StepAuth`). */
   const [account, setAccount] = useState<AuthAccount | null>(null);
+  /** Alamat tersimpan akun (tabel `saved_addresses`) — dipakai langsung kalau ada. */
+  const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
 
   const locale = useSafeLocale();
   // Periode & status Open Order diatur dari dashboard admin (store_settings).
@@ -237,6 +240,68 @@ export default function OpenOrderWizard() {
   function setCustomerField(field: keyof CustomerData, value: string) {
     setCustomer((prev) => ({ ...prev, [field]: value }));
   }
+
+  /**
+   * Pakai alamat tersimpan customer — sama seperti halaman checkout: pilih alamat default
+   * (atau yang dipilih customer) lalu isi data pemesan dari alamat itu, dan hitung ulang ongkir
+   * dari kecamatan/kota yang tersimpan.
+   */
+  function applySavedAddress(addr: SavedAddress) {
+    setSelectedAddressId(addr.id);
+    setCustomer((prev) => ({
+      ...prev,
+      name: addr.recipient_name || prev.name,
+      whatsapp: addr.phone || prev.whatsapp,
+      address: addr.address || "",
+      postalCode: addr.postal_code || "",
+      district: addr.kecamatan || "",
+      city: addr.city || "",
+      districtId: addr.district_id != null ? String(addr.district_id) : "",
+    }));
+    setShipping(null);
+    setOngkirError(false);
+  }
+
+  /** "Gunakan alamat baru" — kosongkan lokasi supaya pemilih wilayah mulai dari nol. */
+  function startNewAddress() {
+    setSelectedAddressId(null);
+    setCustomer((prev) => ({
+      ...prev,
+      address: "",
+      provinceId: "",
+      cityId: "",
+      districtId: "",
+      district: "",
+      city: "",
+      postalCode: "",
+    }));
+    setShipping(null);
+    setOngkirError(false);
+  }
+
+  // Alamat tersimpan dibaca begitu akun customer diketahui; kalau ada, alamat utama langsung
+  // dipakai supaya form tidak perlu diisi ulang.
+  useEffect(() => {
+    const customerId = account?.id;
+    if (!customerId) return;
+    let active = true;
+    supabase
+      .from("saved_addresses")
+      .select("*")
+      .eq("customer_id", customerId)
+      .order("is_default", { ascending: false })
+      .order("created_at", { ascending: true })
+      .then(({ data }) => {
+        if (!active || !data || data.length === 0) return;
+        const list = data as SavedAddress[];
+        setSavedAddresses(list);
+        applySavedAddress(list.find((address) => address.is_default) ?? list[0]);
+      });
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [account?.id]);
 
   /**
    * Selesai masuk/daftar (gerbang langkah 4): simpan akunnya lalu isi data pemesan dari akun —
@@ -467,6 +532,10 @@ export default function OpenOrderWizard() {
                   shipping={shipping}
                   loadingOngkir={loadingOngkir}
                   ongkirError={ongkirError}
+                  savedAddresses={savedAddresses}
+                  selectedAddressId={selectedAddressId}
+                  onSelectAddress={applySavedAddress}
+                  onUseNewAddress={startNewAddress}
                 />
               ) : (
                 <StepAuth onAuthenticated={applyAccount} />
