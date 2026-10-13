@@ -1,12 +1,46 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Edit, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { getCurrentCustomer } from "@/lib/customer-auth";
+import { getCurrentCustomer, logoutCustomer } from "@/lib/customer-auth";
+import { useSafeLocale } from "@/lib/safe-i18n";
 import { AkunHeader } from "@/components/akun/AkunShell";
 
 const BULAN = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+
+/** Pintasan pengaturan lain dari halaman profil (dipakai di mobile & desktop). */
+const PENGATURAN = [
+  {
+    href: "/akun/alamat",
+    title: "Alamat Pengiriman",
+    sub: "Simpan alamat biar pesanan berikutnya lebih cepat",
+    icon: <path d="M12 21s7-5.5 7-11a7 7 0 1 0-14 0c0 5.5 7 11 7 11ZM12 10a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />,
+  },
+  {
+    href: "/akun/panduan-ukuran",
+    title: "Panduan Ukuran",
+    sub: "Tabel ukuran biar tidak salah pilih size",
+    icon: (
+      <>
+        <path d="M3 14 14 3l7 7L10 21z" />
+        <path d="M7.5 12.5 9 14M10.5 9.5 12 11M13.5 6.5 15 8" />
+      </>
+    ),
+  },
+  {
+    href: "/akun/bantuan",
+    title: "Hubungi Admin",
+    sub: "Chat tim SAMAQU kalau ada pertanyaan",
+    icon: (
+      <>
+        <path d="M21 12a8 8 0 1 1-3.2-6.4" />
+        <path d="M8 11h8M8 15h5" />
+      </>
+    ),
+  },
+];
 
 type Profil = { name: string; whatsapp: string; dd: string; mm: string; yyyy: string };
 
@@ -26,9 +60,11 @@ function Baris({ label, value, hint }: { label: string; value: string; hint?: st
 }
 
 export default function ProfilPage() {
+  const locale = useSafeLocale();
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   const [email, setEmail] = useState("");
   const [form, setForm] = useState<Profil>(KOSONG);
   // Nilai terakhir yang tersimpan — sumber tampilan read-only & tujuan tombol Batal.
@@ -107,6 +143,16 @@ export default function ProfilPage() {
           : "Perubahan berhasil disimpan."
     );
     setTimeout(() => setToast(""), birthSkipped ? 4000 : 2400);
+  }
+
+  /**
+   * Keluar dari akun: hapus sesi lalu muat ulang ke beranda — muat ulang penuh dipakai supaya
+   * state customer yang sudah dimuat provider (layout akun) ikut bersih.
+   */
+  async function keluar() {
+    setLoggingOut(true);
+    await logoutCustomer();
+    window.location.href = `/${locale}`;
   }
 
   const days = Array.from({ length: 31 }, (_, i) => i + 1);
@@ -222,6 +268,57 @@ export default function ProfilPage() {
               Edit
             </button>
           )}
+        </div>
+      )}
+
+      {/* ── Pengaturan akun: alamat, panduan ukuran, bantuan, dan keluar ──
+          Di mobile jadi daftar baris yang gampang dijangkau jempol; di desktop satu kartu
+          yang sama lebar dengan kartu profil di atasnya. */}
+      {!loading && (
+        <div className="mt-6 md:mt-8 md:max-w-[600px] md:akun-card md:p-8">
+          <h2 className="akun-sect mb-3">Pengaturan</h2>
+
+          <div className="space-y-2.5">
+            {PENGATURAN.map((item) => (
+              <Link
+                key={item.href}
+                href={`/${locale}${item.href}`}
+                prefetch={true}
+                className="flex items-center gap-3 rounded-2xl border border-[#EDE7DC] bg-[#faf8f4] px-4 py-3.5 transition hover:bg-[#f5f1ea] active:scale-[.99]"
+              >
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[12px]" style={{ background: "#e3ede9" }}>
+                  <svg viewBox="0 0 24 24" className="w-[18px] h-[18px]" fill="none" stroke="#000000" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                    {item.icon}
+                  </svg>
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[13.5px] font-bold" style={{ color: "#000000" }}>{item.title}</span>
+                  <span className="block text-[11.5px] text-[#777777] mt-0.5">{item.sub}</span>
+                </span>
+                <svg viewBox="0 0 24 24" className="w-4 h-4 shrink-0 text-[#9aa5a1]" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="m9 6 6 6-6 6" />
+                </svg>
+              </Link>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            onClick={keluar}
+            disabled={loggingOut}
+            className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl border border-[#F3D6D3] bg-[#FDECEC] py-3.5 text-[13.5px] font-extrabold transition hover:bg-[#fbdedb] active:scale-[.99] disabled:opacity-60"
+            style={{ color: "#b3261e" }}
+          >
+            <svg viewBox="0 0 24 24" className="w-[18px] h-[18px] shrink-0" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <path d="m16 17 5-5-5-5" />
+              <path d="M21 12H9" />
+            </svg>
+            {loggingOut ? "Keluar…" : "Keluar dari Akun"}
+          </button>
+          <p className="mt-2.5 text-center text-[11.5px] text-[#9aa5a1]">
+            Kamu akan keluar dari akun ini di perangkat ini.
+          </p>
         </div>
       )}
 

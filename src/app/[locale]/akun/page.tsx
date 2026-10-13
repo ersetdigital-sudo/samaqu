@@ -75,7 +75,14 @@ export default function DashboardAkunPage() {
           <p className="text-[17px] font-extrabold tracking-wide">SAMAQU</p>
         </div>
         <div className="px-5 pt-4 flex items-start gap-3">
-          <span className="w-11 h-11 shrink-0 rounded-2xl grid place-items-center text-[13px] font-extrabold bg-white/15 border border-white/15">{initials}</span>
+          {/* Avatar = pintasan ke pengaturan profil (nama/WA/tanggal lahir, alamat, keluar). */}
+          <Link
+            href={to("/akun/profil")}
+            aria-label="Pengaturan profil"
+            className="w-11 h-11 shrink-0 rounded-2xl grid place-items-center text-[13px] font-extrabold bg-white/15 border border-white/15 transition active:scale-95"
+          >
+            {initials}
+          </Link>
           <div className="min-w-0 flex-1">
             <p className="text-[20px] font-extrabold leading-tight">Hai, {firstName}</p>
             <p className="text-[13px] text-white/60 mt-0.5">Selamat datang kembali di Samaqu.</p>
