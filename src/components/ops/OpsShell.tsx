@@ -29,7 +29,7 @@ import OpsFooter from "@/components/ops/OpsFooter";
 type MenuItem = { title: string; href: string; icon: any; soon?: boolean };
 
 const MENU_GROUPS: { label: string; items: MenuItem[] }[] = [
-  { label: "Utama", items: [{ title: "Dashboard", href: "/ops", icon: LayoutDashboard, soon: true }] },
+  { label: "Utama", items: [{ title: "Dashboard", href: "/ops", icon: LayoutDashboard }] },
   {
     label: "Penjualan",
     items: [
