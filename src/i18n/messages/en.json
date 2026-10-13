@@ -471,8 +471,6 @@
     "ctaButton": "Contact Admin"
   },
   "autoCTA": {
-    "tooltip": "Need help? Chat Admin",
-    "closeLabel": "Close",
     "whatsappMsg": "Hello SAMAQU Admin, I'm interested in your collection and would like to ask about ordering.",
     "ariaLabel": "Chat Admin via WhatsApp"
   },
@@ -703,6 +701,7 @@
     "send": "Send",
     "close": "Close",
     "open": "Open chat",
+    "fabLabel": "Need help? Chat Admin",
     "handoff": "Continue on WhatsApp with admin",
     "handoffMessage": "Hi SAMAQU admin, I need help with a product.",
     "error": "Sorry, something went wrong. Please try again \ud83d\ude4f",
