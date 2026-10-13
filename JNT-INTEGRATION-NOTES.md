@@ -1,9 +1,11 @@
 # J&T API Integration Notes
 
 ## Status
+- **Production (2026-10-13)**: kredensial diterima & diverifikasi — create order ✅ (resi
+  `JO0329847318`), tariff ✅ (Rp68.000), track ✅, cancel/void ✅ (endpoint production).
+  Pemilik akan merotasi kredensial.
 - **Sandbox**: Active, tested working
-- **Production**: Menunggu credentials dari J&T
-- **Mapping**: Menunggu J&T kasih kode (origin_code, destination_code, receiver_area)
+- **Mapping**: sebagian jalan — origin Depok = `DPK`; uji order production memakai fallback `JKT` → `MEH`.
 
 ## Credentials
 
