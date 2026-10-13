@@ -984,7 +984,8 @@ J&T **pemindaian pertama** → `Dikirim` → paket diterima (J&T `status_code` 2
   kredensial production terbaru, create order ✅ (resi `JO0329847318`), tariff ✅ (Rp68.000),
   track ✅, cancel/void ✅ — semua diuji langsung ke endpoint production. Catatan penting: resi
   baru **langsung** punya entri tracking `status_code 101 = "Manifes"` (otomatis saat order dibuat),
-  jadi kode itu dikecualikan (`JNT_NON_SHIPPING_CODES`) supaya tidak salah menandai "Dikirim".
+  dan void resi menghasilkan `status_code 162 = "Cancelled AWB by Seller"` — keduanya dikecualikan
+  (`JNT_NON_SHIPPING_CODES`) supaya tidak salah menandai "Dikirim".
 
 ## Lacak paket di drawer pesanan & status selesai otomatis
 
