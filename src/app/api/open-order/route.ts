@@ -1,39 +1,37 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
-import { OPEN_ORDER_ADDON, OPEN_ORDER_SIZES } from "@/lib/open-order-config";
+import { OPEN_ORDER_ADDON } from "@/lib/open-order-config";
 import {
   buildOpenOrderProducts,
   findOpenOrderProduct,
-  restrictOpenOrderProducts,
+  openOrderVariantFor,
   type OpenOrderCatalogRow,
+  type OpenOrderStockRow,
 } from "@/lib/open-order-offering";
-import { openOrderSeriesList } from "@/lib/open-order-window";
 import { markLeadBoughtForOrder } from "@/lib/ops-lead-sync";
 
 /**
  * Pesanan dari alur Open Order Samaqu (halaman /open-order, 6 langkah).
  *
- * Ongkir dihitung di client lewat API J&T (`/api/shipping/jnt-cost`) dari kecamatan tujuan,
- * lalu ikut dikirim bersama pesanan. Pesanan disimpan ke `orders` + `order_items` dengan:
- * - nomor pesanan berawalan `CYO-` (membedakan dari pesanan checkout website),
- * - `shipping_method` = "J&T - <service>" dan `shipping_cost` = tarif J&T; kalau customer
- *   belum mengisi kecamatan atau hitungannya gagal, jatuh ke "manual" / 0 dan admin
- *   menghitung ongkir menyusul,
- * - `status` = "pending" supaya muncul di dashboard admin sebagai pesanan baru,
- * - `awb_no` TIDAK dibuat di sini: resi J&T terbit saat admin menekan tombol "Atur Pesanan" di
- *   drawer detail pesanan (`PATCH /api/admin/orders` dengan `action: "createJnt"`) setelah
- *   pembayaran diverifikasi — sama seperti checkout website di /api/orders,
- * - `customer_id` dari sesi yang terverifikasi (header `Authorization`), jadi checkout Open Order
- *   hanya bisa diselesaikan customer yang sudah masuk/daftar dan pesanannya muncul di menu
- *   "Pesanan" milik akun itu. Tanpa sesi valid route membalas 401.
+ * Sejak Open Order disamakan dengan pesanan biasa:
+ * - **katalognya lintas kategori**: semua baris `products` yang `open_order_enabled` (kolom itu,
+ *   default true) ikut, bukan cuma Thobe. Daftar "series yang dibuka" tidak dipakai lagi — admin
+ *   memilih produk lewat sakelar di menu "Open Order" / form produk.
+ * - **stok dipotong** seperti checkout website: stok dikurangi DULU secara atomik
+ *   (`samaqu_decrement_stock`, satu per item). Kalau ada item yang gagal/stok kurang, semua
+ *   decrement di-rollback dan pesanan ditolak. Stok ini stok yang sama dengan menu Produk, jadi
+ *   otomatis sinkron. `orders.stock_reserved = true` menandai pesanan ini pernah memotong stok,
+ *   supaya pembatalan (`src/lib/cancel-order.ts`) mengembalikannya dan pesanan CYO lama (yang
+ *   belum pernah memotong) tidak ikut dikembalikan.
+ * - `order_items.product_id` sekarang berisi **id baris `products` yang sebenarnya** (dulu kode
+ *   kain), supaya stok & foto bisa dicocokkan.
+ * - nomor pesanan tetap `CYO-`; resi J&T tetap dibuat admin setelah pembayaran diverifikasi.
  *
- * Harga produk/series tidak dipercaya dari client: baris katalog (`products`) dibaca ulang di
- * sini lewat `buildOpenOrderProducts()` — sumber yang sama dengan wizard — lalu dipakai
- * memvalidasi.
- * Yang datang dari client hanyalah harga pilihan customer (Create Your Price) — itu di-clamp
- * supaya tidak pernah di bawah harga series terpilih, lalu disimpan di `price` +
- * `customer_price`, dengan `minimum_price` = harga series-nya (dibaca admin sebagai
- * "Min: … · Dipilih: …"). Ukuran divalidasi terhadap OPEN_ORDER_SIZES.
+ * Ongkir dihitung di client lewat API J&T (`/api/shipping/jnt-cost`) dari kecamatan tujuan.
+ * Harga produk/series tidak dipercaya dari client: baris katalog dibaca ulang di sini lewat
+ * `buildOpenOrderProducts()` — sumber yang sama dengan wizard — lalu dipakai memvalidasi. Yang
+ * datang dari client hanyalah harga pilihan customer (Create Your Price), di-clamp supaya tidak
+ * pernah di bawah harga series terpilih.
  */
 
 interface OpenOrderItemInput {
@@ -47,15 +45,17 @@ interface OpenOrderItemInput {
 }
 
 interface ValidatedItem {
+  /** id baris `products` asli — dipakai untuk stok & order_items. */
   productId: string;
   productName: string;
-  color: string | null;
-  size: string | null;
+  color: string;
+  size: string;
   series: string | null;
   kain: string | null;
   quantity: number;
   price: number;
   minimumPrice: number;
+  cypEnabled: boolean;
 }
 
 interface OrderItemRow {
@@ -122,31 +122,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Pesanan masih kosong" }, { status: 400 });
     }
 
-    // Penawaran Open Order diturunkan dari katalog (sama seperti wizard), jadi harga/warna/
-    // series yang berlaku selalu yang ada di tabel `products` — bukan yang dikirim client.
+    // Katalog + varian dibaca ulang (sumber yang sama dengan wizard). Baris yang dimatikan admin
+    // (`open_order_enabled = false`) otomatis tersaring di `buildOpenOrderProducts`.
+    // Urutan `created_at` menaik sama seperti `getProducts()` supaya id produk grup-nya identik
+    // dengan yang dikirim client.
     const { data: catalogRows, error: catalogError } = await supabaseAdmin
       .from("products")
       .select("*, jenis_kain(*)")
-      .eq("category", "Thobe");
+      .order("created_at", { ascending: true });
 
     if (catalogError) {
       console.error("[OPEN-ORDER] Catalog fetch error:", catalogError);
       return NextResponse.json({ error: "Gagal membaca katalog" }, { status: 500 });
     }
 
-    // Series yang dibuka diatur admin (menu "Open Order" → store_settings.open_order_series);
-    // daftar kosong = semua series. Dibatasi di sini juga supaya series yang ditutup tidak bisa
-    // dipesan lewat request langsung. Kalau kolomnya belum ada, select ini gagal dan dianggap
-    // "semua series" (perilaku lama).
-    const { data: settingsRow } = await supabaseAdmin
-      .from("store_settings")
-      .select("open_order_series")
-      .eq("id", 1)
-      .maybeSingle();
+    const { data: stockRows } = await supabaseAdmin
+      .from("product_variants")
+      .select("product_id, color, size, stock");
 
-    const products = restrictOpenOrderProducts(
-      buildOpenOrderProducts((catalogRows ?? []) as OpenOrderCatalogRow[]),
-      openOrderSeriesList(settingsRow?.open_order_series)
+    const products = buildOpenOrderProducts(
+      (catalogRows ?? []) as OpenOrderCatalogRow[],
+      (stockRows ?? []) as OpenOrderStockRow[]
     );
     if (products.length === 0) {
       return NextResponse.json({ error: "Katalog Open Order belum tersedia" }, { status: 400 });
@@ -156,38 +152,64 @@ export async function POST(request: NextRequest) {
 
     for (const item of rawItems) {
       const product = findOpenOrderProduct(products, String(item.productId ?? ""));
-      const series = product?.series.find((s) => s.name === item.series);
+      if (!product) {
+        return NextResponse.json({ error: "Produk tidak valid" }, { status: 400 });
+      }
+
       const color = String(item.color ?? "");
       const size = String(item.size ?? "");
       const quantity = Number(item.quantity);
 
-      if (!product || !series) {
-        return NextResponse.json({ error: "Produk atau series tidak valid" }, { status: 400 });
-      }
-      if (!product.colors.includes(color)) {
+      if (product.colors.length > 0 && !product.colors.includes(color)) {
         return NextResponse.json({ error: `Warna untuk ${product.name} tidak valid` }, { status: 400 });
       }
-      if (!OPEN_ORDER_SIZES.includes(size)) {
+
+      // Series opsional: wajib cocok kalau produknya punya series, wajib kosong kalau tidak.
+      const requestedSeries = String(item.series ?? "").trim();
+      if (product.series.length > 0) {
+        if (!product.series.some((option) => option.name === requestedSeries)) {
+          return NextResponse.json({ error: `Series untuk ${product.name} tidak valid` }, { status: 400 });
+        }
+      } else if (requestedSeries) {
+        return NextResponse.json({ error: `Series untuk ${product.name} tidak valid` }, { status: 400 });
+      }
+
+      const variant = openOrderVariantFor(product, color, requestedSeries);
+      if (!variant && product.colors.length > 0) {
+        return NextResponse.json({ error: `Varian untuk ${product.name} tidak ditemukan` }, { status: 400 });
+      }
+      if (variant && variant.sizes.length > 0 && !variant.sizes.includes(size)) {
+        return NextResponse.json({ error: `Ukuran untuk ${product.name} tidak tersedia` }, { status: 400 });
+      }
+      if (!size) {
         return NextResponse.json({ error: `Ukuran untuk ${product.name} tidak valid` }, { status: 400 });
       }
       if (!Number.isInteger(quantity) || quantity < 1 || quantity > 99) {
         return NextResponse.json({ error: `Jumlah untuk ${product.name} tidak valid` }, { status: 400 });
       }
 
-      // Create Your Price: harga pilihan customer, minimal harga series terpilih.
+      // Harga: bila Create Your Price aktif → pakai harga pilihan customer (minimal harga series
+      // terpilih); bila tidak → harga katalog, harga dari client diabaikan.
+      const seriesOption = product.series.find((option) => option.name === requestedSeries) ?? null;
+      const minimumPrice = seriesOption?.price ?? product.minimumPrice;
       const requested = Math.round(Number(item.price));
-      const price = Number.isFinite(requested) && requested > series.price ? requested : series.price;
+      const price = product.cypEnabled
+        ? Number.isFinite(requested) && requested > minimumPrice
+          ? requested
+          : minimumPrice
+        : minimumPrice;
 
       validatedItems.push({
-        productId: product.id,
-        productName: `${product.name} — ${series.name}`,
+        productId: variant?.productId ?? product.id,
+        productName: seriesOption ? `${product.name} — ${seriesOption.name}` : product.name,
         color,
         size,
-        series: series.name,
-        kain: product.kain,
+        series: seriesOption ? seriesOption.name : null,
+        kain: product.kain || null,
         quantity,
         price,
-        minimumPrice: series.price,
+        minimumPrice,
+        cypEnabled: product.cypEnabled,
       });
     }
 
@@ -205,6 +227,59 @@ export async function POST(request: NextRequest) {
 
     const total = subtotal + addonTotal + shippingCost;
     const orderNumber = generateOrderNumber();
+
+    // ── Potong stok (atomik, rollback kalau ada yang gagal) ──
+    // Sama seperti checkout website: stok dikurangi DULU, baru pesanan disimpan. Stok ini stok
+    // yang sama dengan menu Produk, jadi otomatis sinkron.
+    const decremented: Array<{ productId: string; color: string; size: string; quantity: number }> = [];
+
+    async function rollbackStock() {
+      for (const item of decremented) {
+        await supabaseAdmin.rpc("samaqu_restore_stock", {
+          p_product_id: item.productId,
+          p_color: item.color,
+          p_size: item.size,
+          p_qty: item.quantity,
+        });
+      }
+      decremented.length = 0;
+    }
+
+    for (const item of validatedItems) {
+      // Produk tanpa varian (tanpa warna/ukuran) → stok tidak dikelola, lewati.
+      if (!item.color || !item.size || item.color === "-") continue;
+
+      const { data: stockOk, error: stockError } = await supabaseAdmin.rpc("samaqu_decrement_stock", {
+        p_product_id: item.productId,
+        p_color: item.color,
+        p_size: item.size,
+        p_qty: item.quantity,
+      });
+
+      if (stockError) {
+        console.error("[OPEN-ORDER] Stock RPC error:", stockError);
+        await rollbackStock();
+        return NextResponse.json({ error: "Gagal memvalidasi stok. Silakan coba lagi." }, { status: 500 });
+      }
+      if (!stockOk) {
+        console.error("[OPEN-ORDER] Stock INSUFFICIENT:", item);
+        await rollbackStock();
+        return NextResponse.json(
+          {
+            error: `Stok "${item.productName}" (${item.color} / ${item.size}) tidak mencukupi. Silakan kurangi jumlah atau pilih varian lain.`,
+          },
+          { status: 400 }
+        );
+      }
+
+      decremented.push({ productId: item.productId, color: item.color, size: item.size, quantity: item.quantity });
+      console.log("[OPEN-ORDER] Stock decremented:", {
+        name: item.productName,
+        color: item.color,
+        size: item.size,
+        qty: item.quantity,
+      });
+    }
 
     const { data: order, error: orderError } = await supabaseAdmin
       .from("orders")
@@ -224,6 +299,8 @@ export async function POST(request: NextRequest) {
         discount: 0,
         total,
         status: "pending",
+        // Pesanan ini sudah memotong stok → pembatalan wajib mengembalikannya.
+        stock_reserved: true,
         shipping_notes: [instagram ? `IG @${instagram}` : "", note].filter(Boolean).join(" · "),
       })
       .select("id, order_number")
@@ -231,6 +308,7 @@ export async function POST(request: NextRequest) {
 
     if (orderError || !order) {
       console.error("[OPEN-ORDER] Order insert error:", orderError);
+      await rollbackStock();
       return NextResponse.json({ error: "Gagal menyimpan pesanan" }, { status: 500 });
     }
 
@@ -244,8 +322,8 @@ export async function POST(request: NextRequest) {
       price: item.price,
       series: item.series,
       kain: item.kain,
-      customer_price: item.price,
-      minimum_price: item.minimumPrice,
+      customer_price: item.cypEnabled ? item.price : null,
+      minimum_price: item.cypEnabled ? item.minimumPrice : null,
     }));
 
     if (extraCover) {
@@ -269,6 +347,7 @@ export async function POST(request: NextRequest) {
     if (itemsError) {
       console.error("[OPEN-ORDER] Order items insert error:", itemsError);
       await supabaseAdmin.from("orders").delete().eq("id", order.id);
+      await rollbackStock();
       return NextResponse.json({ error: "Gagal menyimpan detail pesanan" }, { status: 500 });
     }
 

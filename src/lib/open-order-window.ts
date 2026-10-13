@@ -1,8 +1,9 @@
 /**
- * Jendela Open Order: tanggal mulai + tanggal tutup dan daftar series yang dibuka.
+ * Jendela Open Order: tanggal mulai + tanggal tutup.
  *
- * Semuanya diatur dari menu admin "Open Order" dan disimpan di `store_settings`:
- * `open_order_start_date` + `open_order_end_date` (DATE) dan `open_order_series` (JSONB array).
+ * Diatur dari menu admin "Open Order" dan disimpan di `store_settings`:
+ * `open_order_start_date` + `open_order_end_date` (DATE). Kolom lama `open_order_series` sudah
+ * tidak dipakai — pemilihan produk Open Order sekarang lewat kolom `products.open_order_enabled`.
  *
  * Tanggal dibandingkan sebagai teks "YYYY-MM-DD" (tanggal lokal), bukan objek Date, supaya
  * tidak bergeser gara-gara zona waktu. Dipakai halaman admin *dan* halaman publik /open-order,
@@ -17,7 +18,6 @@ export interface OpenOrderWindow {
   open_order_end_date?: string | null;
   /** Toggle lama — dipakai sebagai fallback selama tanggalnya belum diisi. */
   open_order_active?: boolean | null;
-  open_order_series?: unknown;
 }
 
 const MONTHS = [
@@ -79,19 +79,3 @@ export function resolveOpenOrderState(window: OpenOrderWindow, today = todayIso(
   return window.open_order_active === false ? "closed" : "open";
 }
 
-/**
- * Daftar series yang dibuka dari kolom `open_order_series`. Kolomnya JSONB (array), tapi
- * nilai string JSON juga diterima supaya aman kalau diisi manual. Array kosong = semua series.
- */
-export function openOrderSeriesList(value: unknown): string[] {
-  let parsed: unknown = value;
-  if (typeof parsed === "string") {
-    try {
-      parsed = JSON.parse(parsed);
-    } catch {
-      return [];
-    }
-  }
-  if (!Array.isArray(parsed)) return [];
-  return parsed.map((item) => String(item ?? "").trim()).filter(Boolean);
-}

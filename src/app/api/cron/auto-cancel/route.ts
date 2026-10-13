@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
 
   const { data: expiredOrders, error: fetchError } = await supabase
     .from("orders")
-    .select("id, order_number, status, awb_no, jnt_order_id")
+    .select("id, order_number, status, awb_no, jnt_order_id, stock_reserved")
     .eq("status", "pending")
     .lt("created_at", cutoff);
 

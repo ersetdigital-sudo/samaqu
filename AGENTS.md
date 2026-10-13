@@ -149,38 +149,51 @@ title, "Pilih Series / Warna / Ukuran" chip rows, cream "Harga Minimum" card). I
 hardcoded inside the step components and is not part of the i18n flow (the now-unused `openOrder`
 keys are still in `src/i18n/messages/{id,en}.json`).
 
-The offering — which kain are sold, their ready-stock colors, the series names and the minimum
-price per series — is **derived from the catalog `products` table**, not written by hand.
-`src/lib/open-order-offering.ts` → `buildOpenOrderProducts(rows)` groups Thobe rows by their
-`jenis_kain` code and takes each row's color from the product name (`"Thobe Navy"` → `Navy`), its
-`series`, and its `minimum_price` as the Create-Your-Price floor (fallback `price`); one catalog
-row is one kain × warna × series combination, so changing a price or adding a color in the
-catalog is enough — no code edit. Scope is `category === "Thobe"`. The input type
+The offering is **derived from the catalog `products` table**, not written by hand. Sejak
+**2026-10-14**, Open Order dijadikan seperti pesanan biasa: **semua baris katalog yang kolom
+`products.open_order_enabled`-nya true** (default true, jadi produk baru & lama ikut — admin
+tinggal mematikan lewat form Produk atau daftar di menu admin "Open Order") tampil di
+`/open-order`, **lintas kategori** (Thobe, Kandora, Koko, Vest, Kabak, Cover & Hanger) — bukan
+cuma Thobe — dan penjualannya **memotong stok** yang sama dengan menu Produk.
+
+`src/lib/open-order-offering.ts` → `buildOpenOrderProducts(rows, stockRows)` mengelompokkan baris
+per **produk utama** (`category::name`) — sama seperti kartu di halaman Katalog, jadi produk Thobe
+dengan beberapa series tetap satu kartu — lalu tiap grup membawa `colors`, `series` (boleh
+kosong), harga terendah, dan **peta `variants` ke baris `products` asli**: `{ color, label,
+series, productId, sizes, media }`, dengan `sizes` dari `product_variants`. `color` adalah warna
+varian asli (nilai yang dipakai stok & dikirim ke API); `label` adalah nama tampilannya — untuk
+Thobe, yang tersimpan cuma `default`, jadi labelnya diambil dari **nama** produk
+(`"Thobe Navy"` → `Navy`). Satu baris katalog = satu kombinasi warna × series, jadi mengubah
+harga/menambah warna di katalog sudah cukup — tanpa edit kode. The input type
 `OpenOrderCatalogRow` is structural, so the same function serves the client (from `getProducts()`,
-which embeds `jenis_kain(*)`) and the API route (admin client, same embed).
+which embeds `jenis_kain(*)`, plus a `product_variants` read for the sizes) and the API route
+(admin client, same reads) — id produk grup diambil dari baris **terlama** (urutan
+`created_at` menaik, sama di klien dan server).
 
-Only what is not catalog data stays static in `src/lib/open-order-config.ts`: `OPEN_ORDER_PERIOD`,
-the `OPEN_ORDER_ADDON` (Cover & Hanger) price/weight, and `OPEN_ORDER_SIZES` (S–XXL, the size list
-the wizard offers and the API validates against — these `products` rows carry no sizes). A derived
-product's shipping `weight` comes from the catalog rows too. Client prices are never trusted (see
-the API notes below). `src/lib/open-order-catalog.ts` holds the shared display helpers: `money`,
-series price tiers, catalog photo matching, and `openOrderVariants(products, catalog)` — one card
-per derived product × ready-stock color, which is what the step-1 grid renders.
+Hanya data non-katalog yang tetap statis di `src/lib/open-order-config.ts`: `OPEN_ORDER_PERIOD`,
+`OPEN_ORDER_ADDON` (Cover & Hanger) price/weight, dan `OPEN_ORDER_SIZES` — daftar ukuran S–XXL kini
+hanya **cadangan** kalau baris varian tidak punya ukuran; daftar normalnya datang dari
+`product_variants`. Berat kirim produk diambil dari baris katalog. Client prices are never trusted
+(see the API notes below). `src/lib/open-order-catalog.ts` holds the shared display helpers:
+`money`, `priceRange`, `openOrderImage`/`openOrderGallery` (foto per warna+series dari varian),
+dan `openOrderVariants(products)` — satu kartu per produk × warna, which is what the step-1 grid
+renders, difilter dengan chip **kategori**.
 
-Step 2 (detail produk) shows the **real catalog photos**, not the single thumbnail: `catalogProductFor`
-+ `openOrderGallery` look up the `products` row for the selected **kain + warna + series** (in the live
-DB each row *is* one warna × series combination, e.g. `thobe-navy-bayati`, with its own `images`
-array) and render that row's photos in the catalog's order — same photos as the catalog detail
-gallery, minus the videos (videos are filtered out; `getProductThumbnail`/`openOrderImage` still feed
-the small card/cart thumbnails). Switching a warna or series chip swaps the gallery and resets it to
-the first photo.
+Step 2 (detail produk) shows the **real catalog photos**, not the single thumbnail:
+`openOrderGallery(product, color, series)` membaca media varian (baris `products` asli untuk
+kombinasi warna + series terpilih, mis. `thobe-navy-bayati`, dengan `images`-nya sendiri) dan
+merendernya urut seperti galeri detail katalog, minus video. Selector **series hanya muncul kalau
+produknya punya series**, kartu **Create Your Price hanya muncul kalau produknya mengaktifkannya**
+(kalau tidak, harga tetap dan tidak ada input), dan chip **ukuran** datang dari `sizes` varian.
+Switching a warna or series chip swaps the gallery and resets it to the first photo — dan kalau
+ukuran terpilih tidak ada di varian baru, otomatis pindah ke ukuran pertama yang tersedia.
 
 Submissions POST to **`/api/open-order`** (`src/app/api/open-order/route.ts`; the `[locale]/api`
 copy is the dead duplicate — the live API is the one under `src/app/api/`). The route re-reads
-`products` (+ `jenis_kain`) with the admin client, rebuilds the offering via
-`buildOpenOrderProducts()` and re-validates product/series/color/quantity and the price floor
-against it (client prices are never trusted), then writes ordinary rows into
-**`orders` + `order_items`**, so they appear in the
+`products` (+ `jenis_kain`) dan `product_variants` with the admin client, rebuilds the offering via
+`buildOpenOrderProducts()` and re-validates product/color/series/size/quantity and the price floor
+against it (client prices are never trusted), lalu **memotong stok** dulu (lihat bagian stok di
+bawah), baru menulis baris biasa ke **`orders` + `order_items`**, so they appear in the
 existing admin dashboard (`/[locale]/admin`, "Pesanan" tab) with the normal status flow:
 
 - `order_number` uses the prefix **`CYO-`** (`SMQ-` = website checkout) — that is how the two
@@ -189,23 +202,38 @@ existing admin dashboard (`/[locale]/admin`, "Pesanan" tab) with the normal stat
   kecamatan (see the ongkir note below); it falls back to `manual` / 0 when kecamatan is empty
   or the J&T call fails, and then the admin arranges shipping later,
 - `payment_method` `bank` (legacy value, renders as "Transfer Bank"),
-- `status` `pending`, and `shipping_notes` = `IG @username · <customer note>` (each part only
+- `status` `pending` dan **`stock_reserved` `true`** (sejak 2026-10-14) — penanda bahwa pesanan ini
+  sudah memotong stok, dipakai jalur pembatalan & penghapusan supaya stok hanya dikembalikan
+  sekali (lihat `src/lib/cancel-order.ts`),
+- `shipping_notes` = `IG @username · <customer note>` (each part only
   when filled) — the admin order detail renders that as "Catatan", which is where the Instagram
   handle is read. The wizard no longer asks for Instagram (the reference flow has no such
   field), so `instagram` is **optional** in the route and `shipping_notes` holds just the
   customer note,
 - `shipping_postal_code` is filled from the wizard's "Kode Pos" field (the orders table already
   had the column),
-- `order_items.size` comes from the wizard's size chips and is validated against
-  `OPEN_ORDER_SIZES` — it used to be hardcoded `null`,
+- `order_items.product_id` = **id baris `products` asli** (dulu kode kain) dan `order_items.size`
+  divalidasi terhadap **ukuran varian** yang benar-benar ada di baris itu (fallback
+  `OPEN_ORDER_SIZES` hanya kalau variannya tidak punya ukuran). `kain` tetap diisi kalau barisnya
+  punya jenis kain,
 - **Create Your Price**: the wizard's detail step sends the customer's chosen `price` per item.
-  The route clamps it to the selected series' catalog minimum price (`price = max(series.price, client price)`,
+  The route clamps it to the selected series' catalog minimum price (`price = max(minimum, client price)`,
   so a client can never go below the minimum) and stores `price` + `customer_price` = that
-  value with `minimum_price` = the series price — exactly the pair the admin order detail
-  already renders as `Min: … · Dipilih: …`. The add-on row keeps both columns `null`. Anything
-  else about product/series/color/quantity is still re-derived from the config,
+  value with `minimum_price` = the series/product minimum — exactly the pair the admin order detail
+  already renders as `Min: … · Dipilih: …`. Kalau produknya **tidak** mengaktifkan CYP, harga dari
+  client diabaikan total (dipakai harga katalog) dan kedua kolom CYP diisi `null`. The add-on row
+  keeps both columns `null`,
 - the Cover & Hanger add-on is one extra `order_items` row (`product_id` `addon-cover-hanger`),
   toggled in step 3 (keranjang) — the wizard has no add-on page section.
+
+**Stok (sejak 2026-10-14)** — Open Order memotong stok yang sama dengan menu Produk, persis
+checkout website (`/api/orders`): stok dikurangi DULU secara atomik lewat `samaqu_decrement_stock`
+(per baris `products` asli + warna + ukuran); kalau ada satu item gagal / stok kurang, semua
+decrement di-rollback (`samaqu_restore_stock`) dan pesanan ditolak **400** dengan pesan jelas —
+jadi item lain tidak ikut terpotong. Kalau insert order/order_items gagal setelah stok terpotong,
+stok juga di-rollback. Pembatalan mengembalikannya lewat `cancelOrderCompletely()`. Item tanpa
+warna/ukuran (`color` kosong atau `-`) dilewati, sama seperti `/api/orders`. Kolom `stock_reserved`
+yang membedakan CYO lama (tidak pernah memotong stok → tidak dikembalikan) dari CYO baru.
 
 Ongkir (J&T shipping): the form asks for **Kecamatan**; once ~3+ chars are typed the client
 debounces 1s and POSTs `{ city, district, weight }` to **`/api/shipping/jnt-cost`** (the same
@@ -458,18 +486,10 @@ Page presentation (not obvious from the code):
   berhasil (`original` = nilai tersimpan, dasar Batal + penanda `dirty`; Simpan nonaktif selama
   tidak ada perubahan). Permintaan pemilik 2026-10-11: "button simpan nya harusnya jadi edit gitu
   bro, soalnya kan udah di simpan, bikin kaya yg di pengaturan".
-  Tombol **"Buka semua series"** kini benar-benar **memilih semua chip** (`setSeries([...allSeries])`),
-  hanya tampil selama belum semua terpilih (`series.length < allSeries.length`) **dan** hanya di
-  mode Edit (chip-nya sendiri juga tidak bisa diubah di mode read-only). Sebelumnya
-  tombol itu **mengosongkan** pilihan (`setSeries([])`) — secara semantik sama-sama "semua series
-  dibuka" (array kosong = semua, lihat `restrictOpenOrderProducts`), tapi chip-nya jadi terlihat
-  ter-uncheck dan pemilik melaporkannya sebagai bug ("pas gue klik buka semua series malah jadi ke
-  un centang"). Nilai kosong tetap berarti "semua series" di database, jadi jangan ubah arti itu —
-  cukup jangan lagi memakai tombol ini untuk mengosongkan. Verifikasi (sesi admin diputar ulang,
-  halaman admin harus dibuka lewat kunjungan penuh `preview_screenshot({path:'/admin/open-order'})`
-  dulu): lepas satu chip (mis. Jiharkah) → ringkasan "5 series dibuka …" + tombol muncul → klik
-  tombol → enam `aria-pressed="true"` + "6 series dibuka: …" dan tombolnya hilang lagi, tanpa error
-  console (tanpa menekan Simpan, jadi tidak ada perubahan tersimpan).
+  ~~Tombol **"Buka semua series"**~~ — **sudah dihapus 2026-10-14** bersama seluruh kartu "Series
+  yang dibuka": pemilihan produk Open Order sekarang lewat sakelar `products.open_order_enabled`
+  (lihat butir "Pilih produk" di bawah), dan kartu tanggal tetap memakai pola Edit/Simpan/Batal
+  yang sama.
 - Aturan jendela ada di **satu** modul, `src/lib/open-order-window.ts` — dipakai halaman admin
   *dan* publik: `resolveOpenOrderState()` (`before` / `open` / `closed`, dibandingkan sebagai teks
   `YYYY-MM-DD` lokal, bukan objek `Date`, supaya tidak bergeser zona waktu),
@@ -478,28 +498,36 @@ Page presentation (not obvious from the code):
   tidak berubah sampai admin mengisi tanggal. `OpenOrderWizard` merender layar pesan (bukan langkah 1)
   untuk `before` ("Open Order belum dibuka" + tanggal mulainya) dan `closed`
   ("Nanti Open Order berikutnya") — murni di klien.
-- **Batasi series**: `open_order_series` (JSONB array nama series; `[]` = semua series) disaring oleh
-  `restrictOpenOrderProducts()` di `src/lib/open-order-offering.ts` — produk yang tidak punya series
-  terpilih ikut hilang, jadi series yang ditutup tidak muncul di langkah 1 maupun chip series di
-  langkah 2. Route `/api/open-order` menerapkan saringan yang sama (baca `store_settings` dengan
-  admin client) supaya series yang ditutup tidak bisa dipesan lewat request langsung; kalau kolomnya
-  belum ada, select-nya gagal dan dianggap "semua series".
-- `useStoreSettings()` (`src/lib/store-settings.ts`) membawa `open_order_start_date`,
-  `open_order_end_date`, dan `open_order_series` (dinormalkan lewat `openOrderSeriesList`).
-- Kolomnya datang dari **`supabase/open-order-settings.sql` yang harus dijalankan manual** di SQL
+- **Pilih produk** (dulu "batasi series"): sejak **2026-10-14** yang menentukan produk mana yang
+  tampil di `/open-order` adalah kolom **`products.open_order_enabled`** (default `true`), bukan lagi
+  `store_settings.open_order_series`. Dua tempat mengaturnya: **checkbox "Tampilkan di Open Order"**
+  di form Produk (tambah + dua halaman edit; produk baru default nyala, dan ikut ke semua baris
+  satu grup nama+kategori) dan **daftar "Produk di Open Order"** di menu admin Open Order (sakelar
+  per produk, tersimpan langsung). `open_order_series` + `restrictOpenOrderProducts()` +
+  `openOrderSeriesList` **sudah tidak dipakai** (kolomnya dibiarkan di DB; `useStoreSettings` tidak
+  lagi membawanya). Saringan `open_order_enabled` diterapkan di `buildOpenOrderProducts()` — jadi
+  klien dan route `/api/open-order` otomatis memakai aturan yang sama.
+- `useStoreSettings()` (`src/lib/store-settings.ts`) membawa `open_order_start_date` dan
+  `open_order_end_date` saja.
+- Kolom tanggalnya datang dari **`supabase/open-order-settings.sql` yang harus dijalankan manual** di SQL
   editor Supabase (sandbox tidak punya jalur DDL, sama seperti kolom pengaturan lain). Selama belum
   dijalankan, halaman admin menampilkan peringatan dan simpan akan gagal; halaman publik tetap jalan
   dengan `OPEN_ORDER_PERIOD`.
   **Sudah dijalankan untuk `open_order_period` + `open_order_active`** (2026-10-10, peringatan di
   halaman admin hilang dan simpan→muat-ulang terbukti mem-persist).
-  **Kolom baru — `open_order_start_date`, `open_order_end_date`, `open_order_series` (JSONB) — ada di
-  file yang sama dan harus dijalankan ulang** (`ALTER TABLE ... ADD COLUMN IF NOT EXISTS`, jadi aman
-  diulang). Selama belum dijalankan: halaman admin menampilkan peringatan dan simpan gagal, sedangkan
-  halaman publik tetap jalan dengan perilaku lama (tanggal kosong → fallback `open_order_active`).
-  Cek cepat: `curl -s "$NEXT_PUBLIC_SUPABASE_URL/rest/v1/store_settings?select=id,open_order_period,open_order_active,open_order_start_date,open_order_end_date,open_order_series" -H "apikey: $SUPABASE_SERVICE_ROLE_KEY"`.
+  **`open_order_start_date` + `open_order_end_date`** ada di file yang sama dan sudah dijalankan.
+- **Kolom baru 2026-10-14 — `supabase/migrations/20261014_open_order_products.sql`** (sudah dijalankan
+  ke produksi): `products.open_order_enabled BOOLEAN NOT NULL DEFAULT true` (produk ini tampil di
+  `/open-order`) dan `orders.stock_reserved BOOLEAN NOT NULL DEFAULT false` (penanda "pesanan ini
+  pernah memotong stok"), plus backfill `UPDATE orders SET stock_reserved = true WHERE order_number
+  LIKE 'SMQ-%'` — pesanan CYO yang dibuat **sebelum** perubahan ini tidak pernah memotong stok, jadi
+  jangan sampai dibatalkan lalu menambah stok. Cek cepat:
+  `curl -s "$NEXT_PUBLIC_SUPABASE_URL/rest/v1/products?select=id,open_order_enabled&limit=1" -H "apikey: $SUPABASE_SERVICE_ROLE_KEY"`.
 - `src/types/lucide-react.d.ts` adalah shim tipe tulis-tangan berisi daftar ikon yang boleh diimpor
   proyek ini — ikon lucide baru (di sini `AlertTriangle`, `LayoutGrid`, `Save`) harus ditambahkan ke
-  situ, kalau tidak `tsc` gagal dengan TS2305 walaupun ikonnya ada saat runtime.
+  situ, kalau tidak `tsc` gagal dengan TS2305 walaupun ikonnya ada saat runtime. (Karena itu
+  `ToggleLeft`/`ToggleRight`/`EyeOff` tidak bisa dipakai — pakai ikon yang sudah ada di shim, atau
+  ornamen CSS/titik seperti di daftar "Produk di Open Order".)
 - The success screen shows the order number and the "Menunggu Konfirmasi Admin" badge; "Lihat
   Pesanan Saya" points at `/akun/pesanan`, which needs a logged-in customer.
 
@@ -612,9 +640,9 @@ Yang tidak kelihatan dari kode:
   pesanan, dashboard akun, banner struk, dan modal admin), `dibatalkan` pakai `akun-pill-batal` (merah). Dipakai bersama oleh `/akun` (dashboard),
   list pesanan, dan detail — ubah di `src/lib/akun-format.ts` saja.
 - **Foto "Informasi Produk" diambil dari katalog.** Baris `order_items` pesanan Open Order tidak
-  menyimpan `product_image` (route `/api/open-order` tidak pernah mengisinya), jadi
-  `orderItemImage(item, catalog)` di `src/lib/open-order-catalog.ts` mencocokkan `kain` + warna +
-  `series` ke baris `products` lalu memakai `getProductThumbnail`. Karena itu
+  menyimpan `product_image` (route `/api/open-order` tidak pernah mengisinya), jadi foto item
+  dicocokkan ke baris `products` (sejak 2026-10-14 `order_items.product_id` **adalah** id baris
+  `products` asli, jadi pencocokan jadi langsung) dan memakai `getProductThumbnail`. Karena itu
   `getCustomerOrders()` di `src/lib/customer-auth.ts` **wajib memilih `kain, series`** — kalau
   kolomnya tidak ikut di-select, fotonya hilang tanpa error (placeholder ikon lagi).
 - **Nomor resi TIDAK dibuat saat pesanan dibuat** (sejak 2026-10-11): `/api/open-order` dan
@@ -627,9 +655,9 @@ Yang tidak kelihatan dari kode:
 - **Customer bisa membatalkan pesanannya sendiri**: `POST /api/orders/cancel` (body
   `{ orderNumber }`, header `Authorization: Bearer <access_token>`) — verifikasi sesi, pesanan
   harus milik customer itu (kalau bukan → 404, bukan 403), hanya status `pending`/`diproses` yang
-  boleh, batalkan pengiriman di J&T dulu baru `status = dibatalkan`. Stok **tidak** dikembalikan
-  karena `/api/open-order` tidak pernah memotong stok (memanggil `samaqu_restore_stock` justru
-  menambah stok yang tidak pernah diambil). Tombolnya di blok aksi
+  boleh, batalkan pengiriman di J&T dulu baru `status = dibatalkan`. Stok dikembalikan **hanya
+  kalau `orders.stock_reserved` true** (sejak 2026-10-14 penanda itu diisi checkout website **dan**
+  Open Order) — jadi CYO lama yang belum pernah memotong stok tidak ikut dikembalikan. Tombolnya di blok aksi
   `src/components/akun/RincianPesanan.tsx` (di bawah "Lacak Pesanan") + `ConfirmModal`.
 
 Verify (mobile 374px, akun customer):
@@ -1091,9 +1119,11 @@ bisa dikembalikan ke `pending` atau ditandai `dibatalkan` sementara resinya teta
   Dipakai **empat** pemanggil: `PATCH /api/admin/orders` (action `cancelJnt` **dan** status
   `dibatalkan`), `POST /api/orders/cancel` (customer), dan `GET /api/cron/auto-cancel`.
   Jangan tulis ulang urutan void→stok→status di route baru; panggil modul ini.
-- **Stok hanya untuk `SMQ-`**: `hasStockReservation()` di modul itu memakai prefix nomor pesanan,
-  karena hanya checkout website yang memotong stok (`samaqu_decrement_stock`); `CYO-` (Open Order)
-  tidak pernah memotong, jadi dulu jalur admin & cron **menambah** stok yang tidak pernah diambil.
+- **Stok dikembalikan hanya kalau `orders.stock_reserved` true**: `hasStockReservation()` di modul
+  itu memakai kolom itu (sejak 2026-10-14), bukan lagi awalan nomor pesanan. Checkout website
+  **dan** Open Order sama-sama memotong stok (`samaqu_decrement_stock`) dan sama-sama menandai
+  `stock_reserved`; CYO lama tidak, jadi jalur admin & cron tidak lagi **menambah** stok yang tidak
+  pernah diambil hanya karena nomornya berawalan `CYO-`.
   Customer hanya bisa membatalkan order miliknya (`customer_id`), dan order website lama/baru
   `customer_id`-nya null → praktis tidak berubah, tapi aturannya sekarang eksplisit.
 - **Dua penjagaan di `PATCH /api/admin/orders`** (selain `cancelJnt`): status `pending` **ditolak

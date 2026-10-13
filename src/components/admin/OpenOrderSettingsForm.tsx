@@ -4,33 +4,35 @@
  * Pengaturan Open Order (menu admin "Open Order") — isi halaman /admin/open-order dan
  * /id/admin/open-order.
  *
- * Admin memilih **tanggal mulai + tanggal tutup** dan **series yang dibuka**. Status buka/tutup
- * tidak lagi diatur manual: dihitung dari tanggalnya (lihat `src/lib/open-order-window.ts`).
- * Series yang tidak dipilih otomatis hilang dari wizard /open-order.
+ * Dua bagian:
+ * - **Jendela Open Order** — tanggal mulai + tanggal tutup. Status buka/tutup dihitung dari
+ *   tanggalnya (lihat `src/lib/open-order-window.ts`), bukan toggle manual. Read-only sampai
+ *   tombol Edit ditekan.
+ * - **Produk di Open Order** — daftar produk katalog (dikelompokkan per produk utama, sama
+ *   seperti kartu di halaman Katalog) dengan sakelar `products.open_order_enabled`. Sakelar
+ *   tersimpan langsung per produk; produk yang dimatikan hilang dari wizard /open-order.
+ *   Tombol **Tambah Produk** membuka form tambah produk (opsi "Tampilkan di Open Order" sudah
+ *   nyala secara default).
  *
- * Tersimpan di baris tunggal `store_settings` (id = 1): `open_order_start_date`,
- * `open_order_end_date`, `open_order_series` (JSONB array). Kolomnya dibuat oleh
- * `supabase/open-order-settings.sql` yang dijalankan manual di Supabase SQL editor — selama
- * belum dijalankan halaman ini menampilkan peringatan dan simpan akan gagal.
- *
- * Tampilannya memakai pola kartu **Pengaturan**: default read-only (tanggal & chip series sebagai
- * teks, footer hanya tombol **Edit**), lalu klik Edit membuat tanggal jadi input dan chip bisa
- * dipilih, dengan footer **Simpan + Batal**. Setelah simpan berhasil halaman kembali read-only.
+ * Tanggal tersimpan di baris tunggal `store_settings` (id = 1): `open_order_start_date`,
+ * `open_order_end_date`. Kolomnya dibuat oleh `supabase/open-order-settings.sql` — selama belum
+ * dijalankan halaman ini menampilkan peringatan dan simpan akan gagal.
  */
 
-import { useEffect, useState } from "react";
-import { AlertTriangle, Calendar, Check, Edit, Loader2, Save } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { AlertTriangle, Calendar, Edit, Loader2, Plus, Search } from "lucide-react";
 import { useToast } from "@/components/AdminToast";
 import { getProducts } from "@/lib/db";
+import type { Product } from "@/lib/katalog-data";
 import { OPEN_ORDER_PERIOD } from "@/lib/open-order-config";
-import { buildOpenOrderProducts } from "@/lib/open-order-offering";
 import {
   formatDateLabel,
   formatOpenOrderPeriod,
-  openOrderSeriesList,
   resolveOpenOrderState,
   type OpenOrderState,
 } from "@/lib/open-order-window";
+import { useSafeLocale } from "@/lib/safe-i18n";
 import { supabase } from "@/lib/supabase";
 
 const LABEL = "text-[11px] font-medium uppercase tracking-[0.14em]";
@@ -43,25 +45,62 @@ const STATE_STYLE: Record<OpenOrderState, { label: string; color: string; backgr
   closed: { label: "Ditutup — menunggu periode berikutnya", color: "#7a5548", background: "rgba(122,85,72,.1)" },
 };
 
+/** Satu baris daftar = satu produk utama (nama + kategori), gabungan semua baris series/warnanya. */
+interface OpenOrderProductRow {
+  key: string;
+  name: string;
+  category: string;
+  /** Baris `products` di grup ini (satu per series/warna). */
+  rowCount: number;
+  enabled: boolean;
+}
+
+/** Kelompokkan baris `products` per produk utama — sama seperti kartu di halaman Katalog. */
+function groupCatalog(products: Product[]): OpenOrderProductRow[] {
+  const groups = new Map<string, OpenOrderProductRow>();
+  for (const product of products) {
+    const key = `${product.category}::${product.name}`;
+    const existing = groups.get(key);
+    if (existing) {
+      existing.rowCount += 1;
+      continue;
+    }
+    groups.set(key, {
+      key,
+      name: product.name,
+      category: product.category,
+      rowCount: 1,
+      enabled: product.open_order_enabled !== false,
+    });
+  }
+  return [...groups.values()].sort(
+    (a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name)
+  );
+}
+
 export default function OpenOrderSettingsForm() {
   const toast = useToast();
+  const locale = useSafeLocale();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
   const [needsSql, setNeedsSql] = useState(false);
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
-  const [series, setSeries] = useState<string[]>([]);
-  // Nilai terakhir yang tersimpan — dasar tombol Batal & penanda perubahan.
-  const [original, setOriginal] = useState({ start: "", end: "", series: [] as string[] });
-  const [allSeries, setAllSeries] = useState<string[]>([]);
+  // Nilai tanggal terakhir yang tersimpan — dasar tombol Batal & penanda perubahan.
+  const [original, setOriginal] = useState({ start: "", end: "" });
+
+  // Produk di Open Order
+  const [items, setItems] = useState<OpenOrderProductRow[]>([]);
+  const [savingKey, setSavingKey] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     let mounted = true;
 
     supabase
       .from("store_settings")
-      .select("open_order_start_date, open_order_end_date, open_order_series")
+      .select("open_order_start_date, open_order_end_date")
       .eq("id", 1)
       .single()
       .then(({ data, error }) => {
@@ -72,24 +111,18 @@ export default function OpenOrderSettingsForm() {
         } else if (data) {
           const savedStart = data.open_order_start_date ?? "";
           const savedEnd = data.open_order_end_date ?? "";
-          const savedSeries = openOrderSeriesList(data.open_order_series);
           setStart(savedStart);
           setEnd(savedEnd);
-          setSeries(savedSeries);
-          setOriginal({ start: savedStart, end: savedEnd, series: savedSeries });
+          setOriginal({ start: savedStart, end: savedEnd });
         }
         setLoading(false);
       });
 
-    // Pilihan series datang dari katalog yang sama dengan wizard (bukan daftar hardcode).
+    // Daftar produk dari katalog yang sama dengan wizard.
     getProducts()
       .then((products) => {
         if (!mounted) return;
-        const names = new Set<string>();
-        buildOpenOrderProducts(products).forEach((product) =>
-          product.series.forEach((option) => names.add(option.name))
-        );
-        setAllSeries([...names].sort((a, b) => a.localeCompare(b)));
+        setItems(groupCatalog(products));
       })
       .catch(() => {});
 
@@ -102,19 +135,21 @@ export default function OpenOrderSettingsForm() {
   const state = resolveOpenOrderState(windowSettings);
   const periodLabel = formatOpenOrderPeriod(windowSettings, OPEN_ORDER_PERIOD);
   const invalidRange = Boolean(start && end && end < start);
+  const dirty = start !== original.start || end !== original.end;
 
-  // Urutan series tidak penting (JSONB array) — bandingkan setelah diurutkan.
-  const seriesChanged = [...series].sort().join("|") !== [...original.series].sort().join("|");
-  const dirty = start !== original.start || end !== original.end || seriesChanged;
+  const shown = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return items;
+    return items.filter(
+      (item) => item.name.toLowerCase().includes(q) || item.category.toLowerCase().includes(q)
+    );
+  }, [items, query]);
 
-  function toggleSeries(name: string) {
-    setSeries((prev) => (prev.includes(name) ? prev.filter((item) => item !== name) : [...prev, name]));
-  }
+  const enabledCount = items.filter((item) => item.enabled).length;
 
   function cancel() {
     setStart(original.start);
     setEnd(original.end);
-    setSeries([...original.series]);
     setEditing(false);
   }
 
@@ -125,7 +160,6 @@ export default function OpenOrderSettingsForm() {
       id: 1,
       open_order_start_date: start || null,
       open_order_end_date: end || null,
-      open_order_series: series,
       updated_at: new Date().toISOString(),
     });
     setSaving(false);
@@ -133,9 +167,27 @@ export default function OpenOrderSettingsForm() {
       toast.showToast("error", error.message);
       return;
     }
-    setOriginal({ start, end, series: [...series] });
+    setOriginal({ start, end });
     setEditing(false);
-    toast.showToast("success", "Pengaturan Open Order disimpan");
+    toast.showToast("success", "Jendela Open Order disimpan");
+  }
+
+  /** Sakelar produk: simpan langsung ke SEMUA baris katalog pada grup nama + kategori ini. */
+  async function toggleProduct(item: OpenOrderProductRow) {
+    const next = !item.enabled;
+    setSavingKey(item.key);
+    const { error } = await supabase
+      .from("products")
+      .update({ open_order_enabled: next })
+      .eq("category", item.category)
+      .eq("name", item.name);
+    setSavingKey(null);
+    if (error) {
+      toast.showToast("error", error.message);
+      return;
+    }
+    setItems((prev) => prev.map((row) => (row.key === item.key ? { ...row, enabled: next } : row)));
+    toast.showToast("success", next ? `${item.name} tampil di Open Order` : `${item.name} disembunyikan dari Open Order`);
   }
 
   const fieldStyle = {
@@ -143,12 +195,6 @@ export default function OpenOrderSettingsForm() {
     border: "1px solid rgba(17,17,17,.12)",
     color: "var(--espresso)",
   };
-  const chipClass =
-    "inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-[12.5px] font-medium transition-colors duration-150";
-  const chipStyle = (active: boolean) =>
-    active
-      ? { background: "var(--espresso)", borderColor: "var(--espresso)", color: "#fff" }
-      : { background: "#fff", borderColor: "rgba(17,17,17,.14)", color: "var(--espresso)" };
   const labelStyle = { color: LABEL_COLOR };
 
   return (
@@ -158,7 +204,7 @@ export default function OpenOrderSettingsForm() {
           Open Order
         </h1>
         <p className="mt-1.5 text-[13px] leading-relaxed" style={{ color: LABEL_COLOR }}>
-          Atur tanggal buka &amp; tutup, lalu pilih series yang dibuka untuk periode ini.
+          Atur tanggal buka &amp; tutup, lalu pilih produk mana yang tampil di halaman /open-order.
         </p>
       </header>
 
@@ -169,9 +215,9 @@ export default function OpenOrderSettingsForm() {
         >
           <AlertTriangle size={18} className="mt-0.5 shrink-0" style={{ color: "var(--gold-deep)" }} />
           <p className="text-[13px] leading-relaxed" style={{ color: "#7a5c22" }}>
-            Kolom <code>open_order_start_date</code> / <code>open_order_end_date</code> /{" "}
-            <code>open_order_series</code> belum ada di Supabase. Jalankan{" "}
-            <code>supabase/open-order-settings.sql</code> di SQL editor Supabase, lalu muat ulang halaman ini.
+            Kolom <code>open_order_start_date</code> / <code>open_order_end_date</code> belum ada di
+            Supabase. Jalankan <code>supabase/open-order-settings.sql</code> di SQL editor Supabase,
+            lalu muat ulang halaman ini.
           </p>
         </div>
       )}
@@ -265,114 +311,143 @@ export default function OpenOrderSettingsForm() {
             <p className="mt-4 text-[12.5px] leading-relaxed" style={{ color: LABEL_COLOR }}>
               Tampil di halaman /open-order sebagai <span style={{ color: "var(--espresso)" }}>Periode {periodLabel}</span>.
             </p>
-          </div>
 
-          {/* Series yang dibuka */}
-          <div className="rounded-2xl bg-white p-6 sm:p-7" style={{ border: "1px solid rgba(17,17,17,.08)" }}>
-            <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <div>
-                <p className="text-[14px] font-semibold" style={{ color: "var(--espresso)" }}>
-                  Series yang dibuka
-                </p>
-                <p className="mt-1 text-[12.5px] leading-relaxed" style={{ color: LABEL_COLOR }}>
-                  Series yang tidak dipilih tidak muncul di /open-order.
-                </p>
-              </div>
-              {editing && allSeries.length > 0 && series.length < allSeries.length && (
+            <div className="mt-5 flex flex-wrap items-center justify-between gap-4">
+              <span
+                className="inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-[12.5px] font-medium"
+                style={{ background: STATE_STYLE[state].background, color: STATE_STYLE[state].color }}
+              >
+                <span className="h-1.5 w-1.5 rounded-full" style={{ background: STATE_STYLE[state].color }} />
+                {STATE_STYLE[state].label}
+              </span>
+
+              {editing ? (
+                <div className="flex flex-wrap items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={save}
+                    disabled={saving || invalidRange || !dirty}
+                    className="inline-flex items-center gap-2 rounded-xl px-5 py-3 text-[13.5px] font-semibold text-white transition-opacity duration-150 disabled:opacity-50"
+                    style={{ background: "var(--espresso)" }}
+                  >
+                    {saving ? <Loader2 size={16} className="animate-spin" /> : <Edit size={16} />}
+                    Simpan
+                  </button>
+                  <button
+                    type="button"
+                    onClick={cancel}
+                    disabled={saving}
+                    className="inline-flex items-center rounded-xl px-5 py-3 text-[13.5px] font-semibold transition-colors duration-150 disabled:opacity-50"
+                    style={{ border: "1px solid rgba(17,17,17,.14)", color: "var(--espresso)" }}
+                  >
+                    Batal
+                  </button>
+                </div>
+              ) : (
                 <button
                   type="button"
-                  onClick={() => setSeries([...allSeries])}
-                  className="text-[12px] font-medium underline underline-offset-2"
-                  style={{ color: LABEL_COLOR }}
+                  onClick={() => setEditing(true)}
+                  className="inline-flex items-center gap-2 rounded-xl px-5 py-3 text-[13.5px] font-semibold transition-colors duration-150"
+                  style={{ border: "1px solid rgba(17,17,17,.14)", color: "var(--espresso)" }}
                 >
-                  Buka semua series
+                  <Edit size={16} />
+                  Edit tanggal
                 </button>
               )}
             </div>
+          </div>
 
-            {allSeries.length === 0 ? (
-              <p className="mt-6 text-[12.5px]" style={{ color: LABEL_COLOR }}>
-                Memuat daftar series dari katalog…
-              </p>
-            ) : (
-              <div className="mt-5 flex flex-wrap gap-2">
-                {allSeries.map((name) => {
-                  const active = series.includes(name);
-                  // Read-only: chip-nya jadi label biasa supaya tidak bisa diubah sebelum menekan Edit.
-                  if (!editing) {
-                    return (
-                      <span key={name} className={chipClass} style={chipStyle(active)}>
-                        {active && <Check size={13} strokeWidth={2.5} />}
-                        {name}
-                      </span>
-                    );
-                  }
-                  return (
-                    <button
-                      key={name}
-                      type="button"
-                      onClick={() => toggleSeries(name)}
-                      aria-pressed={active}
-                      className={chipClass}
-                      style={chipStyle(active)}
-                    >
-                      {active && <Check size={13} strokeWidth={2.5} />}
-                      {name}
-                    </button>
-                  );
-                })}
+          {/* Produk di Open Order */}
+          <div className="rounded-2xl bg-white p-6 sm:p-7" style={{ border: "1px solid rgba(17,17,17,.08)" }}>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-[14px] font-semibold" style={{ color: "var(--espresso)" }}>
+                  Produk di Open Order
+                </p>
+                <p className="mt-1 text-[12.5px] leading-relaxed" style={{ color: LABEL_COLOR }}>
+                  Produk yang dimatikan tidak muncul di /open-order. Produk baru otomatis ikut.
+                </p>
+              </div>
+              <Link
+                href={`/${locale}/admin/produk/tambah`}
+                className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-[13px] font-semibold text-white transition-opacity duration-150 hover:opacity-90"
+                style={{ background: "var(--espresso)" }}
+              >
+                <Plus size={15} />
+                Tambah Produk
+              </Link>
+            </div>
+
+            <p className="mt-4 text-[12.5px] font-medium" style={{ color: "var(--espresso)" }}>
+              {enabledCount} dari {items.length} produk tampil di Open Order.
+            </p>
+
+            {items.length > 5 && (
+              <div className="relative mt-4">
+                <Search
+                  size={15}
+                  className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2"
+                  style={{ color: LABEL_COLOR }}
+                />
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Cari produk…"
+                  className="w-full rounded-xl pl-10 pr-4 py-2.5 text-[13px] outline-none"
+                  style={fieldStyle}
+                />
               </div>
             )}
 
-            <p className="mt-4 text-[12.5px] leading-relaxed" style={{ color: LABEL_COLOR }}>
-              {series.length === 0
-                ? "Belum ada yang dipilih — semua series dibuka."
-                : `${series.length} series dibuka: ${series.join(", ")}.`}
-            </p>
-          </div>
-
-          {/* Simpan */}
-          <div className="flex flex-wrap items-center justify-between gap-4 pt-1">
-            <span
-              className="inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-[12.5px] font-medium"
-              style={{ background: STATE_STYLE[state].background, color: STATE_STYLE[state].color }}
-            >
-              <span className="h-1.5 w-1.5 rounded-full" style={{ background: STATE_STYLE[state].color }} />
-              {STATE_STYLE[state].label}
-            </span>
-
-            {editing ? (
-              <div className="flex flex-wrap items-center gap-3">
-                <button
-                  type="button"
-                  onClick={save}
-                  disabled={saving || invalidRange || !dirty}
-                  className="inline-flex items-center gap-2 rounded-xl px-5 py-3 text-[13.5px] font-semibold text-white transition-opacity duration-150 disabled:opacity-50"
-                  style={{ background: "var(--espresso)" }}
-                >
-                  {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-                  Simpan
-                </button>
-                <button
-                  type="button"
-                  onClick={cancel}
-                  disabled={saving}
-                  className="inline-flex items-center rounded-xl px-5 py-3 text-[13.5px] font-semibold transition-colors duration-150 disabled:opacity-50"
-                  style={{ border: "1px solid rgba(17,17,17,.14)", color: "var(--espresso)" }}
-                >
-                  Batal
-                </button>
-              </div>
+            {items.length === 0 ? (
+              <p className="mt-5 text-[12.5px]" style={{ color: LABEL_COLOR }}>
+                Belum ada produk di katalog.
+              </p>
             ) : (
-              <button
-                type="button"
-                onClick={() => setEditing(true)}
-                className="inline-flex items-center gap-2 rounded-xl px-5 py-3 text-[13.5px] font-semibold transition-colors duration-150"
-                style={{ border: "1px solid rgba(17,17,17,.14)", color: "var(--espresso)" }}
-              >
-                <Edit size={16} />
-                Edit
-              </button>
+              <ul className="mt-4 divide-y" style={{ borderColor: "rgba(17,17,17,.06)" }}>
+                {shown.map((item) => (
+                  <li key={item.key} className="flex items-center justify-between gap-4 py-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-[13.5px] font-medium" style={{ color: "var(--espresso)" }}>
+                        {item.name}
+                      </p>
+                      <p className="mt-0.5 text-[11.5px]" style={{ color: LABEL_COLOR }}>
+                        {item.category}
+                        {item.rowCount > 1 ? ` · ${item.rowCount} series/warna` : ""}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => toggleProduct(item)}
+                      disabled={savingKey === item.key}
+                      aria-pressed={item.enabled}
+                      aria-label={`${item.enabled ? "Sembunyikan" : "Tampilkan"} ${item.name} di Open Order`}
+                      className="inline-flex shrink-0 items-center gap-2 rounded-full px-3 py-1.5 text-[11.5px] font-semibold transition-colors duration-150 disabled:opacity-50"
+                      style={
+                        item.enabled
+                          ? { background: "rgba(31,111,69,.1)", color: "#1f6f45" }
+                          : { background: "rgba(17,17,17,.06)", color: LABEL_COLOR }
+                      }
+                    >
+                      {savingKey === item.key ? (
+                        <Loader2 size={14} className="animate-spin" />
+                      ) : (
+                        <span
+                          className="h-1.5 w-1.5 rounded-full"
+                          style={{ background: "currentColor" }}
+                        />
+                      )}
+                      {item.enabled ? "Tampil" : "Tersembunyi"}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {items.length > 0 && shown.length === 0 && (
+              <p className="py-6 text-center text-[12.5px]" style={{ color: LABEL_COLOR }}>
+                Tidak ada produk yang cocok dengan pencarian “{query}”.
+              </p>
             )}
           </div>
         </div>

@@ -6,10 +6,9 @@
 
 import { Trash2 } from "lucide-react";
 import { cloudinaryUrl } from "@/lib/cloudinary";
-import type { Product } from "@/lib/katalog-data";
 import { money, openOrderImage } from "@/lib/open-order-catalog";
 import { OPEN_ORDER_ADDON } from "@/lib/open-order-config";
-import { findOpenOrderProduct, type OpenOrderProduct } from "@/lib/open-order-offering";
+import { findOpenOrderProduct, openOrderColorLabel, type OpenOrderProduct } from "@/lib/open-order-offering";
 import type { CartLine } from "./types";
 import { Counter, FIELD_BG, GhostButton, LINE, MUTED, PrimaryButton, SummaryRow } from "./ui";
 
@@ -40,15 +39,20 @@ export function lineName(line: CartLine, products: OpenOrderProduct[]): string {
   return findOpenOrderProduct(products, line.productId)?.name ?? line.productId;
 }
 
-export function lineImage(line: CartLine, products: OpenOrderProduct[], catalog: Product[]): string {
+export function lineImage(line: CartLine, products: OpenOrderProduct[]): string {
   const product = findOpenOrderProduct(products, line.productId);
-  return product ? openOrderImage(product, line.color, catalog) : "";
+  return product ? openOrderImage(product, line.color, line.series) : "";
+}
+
+/** Nama warna untuk tampilan (Thobe: dari nama produk, mis. "Navy"). */
+export function lineColorLabel(line: CartLine, products: OpenOrderProduct[]): string {
+  const product = findOpenOrderProduct(products, line.productId);
+  return product ? openOrderColorLabel(product, line.color) : line.color;
 }
 
 export default function StepCart({
   lines,
   products,
-  catalog,
   subtotal,
   extraCover,
   onToggleExtra,
@@ -59,7 +63,6 @@ export default function StepCart({
 }: {
   lines: CartLine[];
   products: OpenOrderProduct[];
-  catalog: Product[];
   subtotal: number;
   extraCover: boolean;
   onToggleExtra: (next: boolean) => void;
@@ -90,7 +93,7 @@ export default function StepCart({
     <div>
       <div className="space-y-3">
         {lines.map((line) => {
-          const image = lineImage(line, products, catalog);
+          const image = lineImage(line, products);
           return (
             <div key={line.key} className="flex gap-4 rounded-2xl p-4" style={{ border: `1px solid ${LINE}`, background: FIELD_BG }}>
               <div className="h-20 w-16 shrink-0 overflow-hidden rounded-xl" style={{ background: "#e5e5e5" }}>
@@ -104,7 +107,7 @@ export default function StepCart({
                   <div className="min-w-0">
                     <p className="truncate text-[13.5px] font-semibold">{lineName(line, products)}</p>
                     <p className="mt-0.5 text-[11.5px]" style={{ color: MUTED }}>
-                      {line.color} · {line.size} · Series {line.series}
+                      {[lineColorLabel(line, products), line.size, line.series ? `Series ${line.series}` : ""].filter(Boolean).join(" · ")}
                     </p>
                     <p className="mt-1 text-[12.5px] tabular-nums" style={{ color: MUTED }}>
                       {money(line.price)} / pcs

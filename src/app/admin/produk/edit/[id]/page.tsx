@@ -223,6 +223,8 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
   const [selectedJenisKainId, setSelectedJenisKainId] = useState<string>("");
   const [showNewKainForm, setShowNewKainForm] = useState(false);
   const [badgeType, setBadgeType] = useState<string>("");
+  // Ikut Open Order: produk tampil di katalog /open-order (bisa dimatikan kapan saja).
+  const [openOrderEnabled, setOpenOrderEnabled] = useState(true);
   const [jenisKainList, setJenisKainList] = useState<{ id: string; name: string }[]>([]);
 
   // Series list (dari produk yang sudah ada) + tambah baru
@@ -285,6 +287,7 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
         setSeries(product.series || "");
         setCatatanHarga(product.catatan_harga || "");
         setBadgeType(product.badge_type || "");
+        setOpenOrderEnabled(product.open_order_enabled ?? true);
         setSelectedJenisKainId(product.jenis_kain_id || "");
         setCypEnabled(product.create_your_price_enabled || false);
         setMinimumPrice(product.minimum_price ? String(product.minimum_price) : "");
@@ -737,6 +740,7 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
             series: seriesName,
             catatan_harga: catatanHarga.trim() || null,
             badge_type: badgeType || null,
+            open_order_enabled: openOrderEnabled,
           }, { onConflict: "id" });
 
           // Delete old + re-insert variants
@@ -793,6 +797,7 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
           series: series.trim() || null,
           catatan_harga: catatanHarga.trim() || null,
           badge_type: badgeType || null,
+          open_order_enabled: openOrderEnabled,
         }, { onConflict: "id" });
 
         await supabase.from("product_variants").delete().eq("product_id", slug);
@@ -900,6 +905,18 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
                     <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--text-muted)" }} />
                   </div>
                   <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>Badge yang tampil di pojok kanan atas foto card katalog.</p>
+                </div>
+                {/* Open Order — produk ikut tampil di katalog /open-order */}
+                <div className="p-4 rounded-xl" style={{ background: "rgba(0,0,0,.03)", border: "1px solid #e4e4e7" }}>
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-medium" style={{ color: "var(--espresso)" }}>Tampilkan di Open Order</p>
+                      <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>Produk ini muncul di katalog halaman /open-order.</p>
+                    </div>
+                    <button type="button" onClick={() => setOpenOrderEnabled((v) => !v)} aria-pressed={openOrderEnabled} aria-label="Tampilkan produk ini di menu Open Order" className="relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0" style={{ background: openOrderEnabled ? "var(--gold)" : "#d4d4d8" }}>
+                      <span className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200" style={{ transform: openOrderEnabled ? "translateX(20px)" : "translateX(0)" }} />
+                    </button>
+                  </div>
                 </div>
                 {category !== "Thobe" && (
                 <div className="p-4 rounded-xl" style={{ background: cypEnabled ? "rgba(0,0,0,.03)" : "rgba(0,0,0,.03)", border: `1px solid ${cypEnabled ? "#e4e4e7" : "#e4e4e7"}` }}>

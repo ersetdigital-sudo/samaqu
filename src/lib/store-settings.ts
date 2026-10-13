@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "./supabase";
 import { OPEN_ORDER_PERIOD } from "./open-order-config";
-import { openOrderSeriesList } from "./open-order-window";
 
 interface StoreSettings {
   store_name: string;
@@ -22,8 +21,6 @@ interface StoreSettings {
   open_order_start_date: string | null;
   /** Tanggal tutup jendela Open Order (YYYY-MM-DD). */
   open_order_end_date: string | null;
-  /** Series yang dibuka; array kosong = semua series. */
-  open_order_series: string[];
 }
 
 const DEFAULTS: StoreSettings = {
@@ -39,7 +36,6 @@ const DEFAULTS: StoreSettings = {
   open_order_active: true,
   open_order_start_date: null,
   open_order_end_date: null,
-  open_order_series: [],
 };
 
 let cached: StoreSettings = DEFAULTS;
@@ -64,7 +60,6 @@ export function useStoreSettings() {
             ...DEFAULTS,
             ...data,
             enabled_couriers: couriers,
-            open_order_series: openOrderSeriesList(data.open_order_series),
           };
           setSettings(cached);
         }

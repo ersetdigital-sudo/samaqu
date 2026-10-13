@@ -48,6 +48,8 @@ export interface Product {
   recommended_price?: number | null;
   create_your_price_enabled?: boolean;
   cyp_microcopy_override?: string | null;
+  /** Ikut tampil di katalog halaman /open-order (kolom `products.open_order_enabled`). */
+  open_order_enabled?: boolean;
 }
 
 /* ── Color hex map ── */
