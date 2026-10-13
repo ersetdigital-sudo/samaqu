@@ -8,23 +8,24 @@
  * - **Jendela Open Order** — tanggal mulai + tanggal tutup. Status buka/tutup dihitung dari
  *   tanggalnya (lihat `src/lib/open-order-window.ts`), bukan toggle manual. Read-only sampai
  *   tombol Edit ditekan.
- * - **Produk di Open Order** — daftar produk katalog (dikelompokkan per produk utama, sama
- *   seperti kartu di halaman Katalog) dengan sakelar `products.open_order_enabled`. Sakelar
- *   tersimpan langsung per produk; produk yang dimatikan hilang dari wizard /open-order.
- *   Tombol **Tambah Produk** membuka form tambah produk (opsi "Tampilkan di Open Order" sudah
- *   nyala secara default).
+ * - **Produk di Open Order** — memakai komponen yang sama dengan menu **Produk**
+ *   (`ProductsCatalog`): kartu/list dengan foto, kategori, harga, stok, dan chip series. Bedanya
+ *   aksi kartunya diganti sakelar **Tampil di Open Order / Tersembunyi** (mode `openOrder`),
+ *   tersimpan langsung ke kolom `products.open_order_enabled` untuk semua baris satu grup
+ *   (category + name) — jadi produk Thobe (banyak series) ikut berubah sekaligus.
  *
  * Tanggal tersimpan di baris tunggal `store_settings` (id = 1): `open_order_start_date`,
  * `open_order_end_date`. Kolomnya dibuat oleh `supabase/open-order-settings.sql` — selama belum
  * dijalankan halaman ini menampilkan peringatan dan simpan akan gagal.
  */
 
-import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import { AlertTriangle, Calendar, Edit, Loader2, Plus, Search } from "lucide-react";
+import { useEffect, useState } from "react";
+import { AlertTriangle, Calendar, Edit, Loader2 } from "lucide-react";
 import { useToast } from "@/components/AdminToast";
+import ProductsCatalog, { type CatalogCard } from "@/components/admin/ProductsCatalog";
 import { getProducts } from "@/lib/db";
 import type { Product } from "@/lib/katalog-data";
+import { getThumbnailFromImages } from "@/lib/product-thumbnail";
 import { OPEN_ORDER_PERIOD } from "@/lib/open-order-config";
 import {
   formatDateLabel,
@@ -32,7 +33,6 @@ import {
   resolveOpenOrderState,
   type OpenOrderState,
 } from "@/lib/open-order-window";
-import { useSafeLocale } from "@/lib/safe-i18n";
 import { supabase } from "@/lib/supabase";
 
 const LABEL = "text-[11px] font-medium uppercase tracking-[0.14em]";
@@ -45,43 +45,84 @@ const STATE_STYLE: Record<OpenOrderState, { label: string; color: string; backgr
   closed: { label: "Ditutup — menunggu periode berikutnya", color: "#7a5548", background: "rgba(122,85,72,.1)" },
 };
 
-/** Satu baris daftar = satu produk utama (nama + kategori), gabungan semua baris series/warnanya. */
-interface OpenOrderProductRow {
-  key: string;
-  name: string;
-  category: string;
-  /** Baris `products` di grup ini (satu per series/warna). */
-  rowCount: number;
-  enabled: boolean;
+type VariantRow = { product_id: string; stock: number; base_product_id: string | null };
+
+function effectivePrice(p: Product): number {
+  return p.create_your_price_enabled && p.minimum_price ? p.minimum_price : p.price;
 }
 
-/** Kelompokkan baris `products` per produk utama — sama seperti kartu di halaman Katalog. */
-function groupCatalog(products: Product[]): OpenOrderProductRow[] {
-  const groups = new Map<string, OpenOrderProductRow>();
+/**
+ * Kelompokkan baris `products` per produk utama (kategori + nama) — aturan yang sama dengan
+ * menu Produk & halaman Katalog, jadi satu produk Thobe dengan beberapa series jadi satu kartu.
+ */
+function groupCatalog(products: Product[]): CatalogCard[] {
+  const groups = new Map<string, Product[]>();
   for (const product of products) {
     const key = `${product.category}::${product.name}`;
-    const existing = groups.get(key);
-    if (existing) {
-      existing.rowCount += 1;
-      continue;
-    }
-    groups.set(key, {
-      key,
-      name: product.name,
-      category: product.category,
-      rowCount: 1,
-      enabled: product.open_order_enabled !== false,
-    });
+    groups.set(key, [...(groups.get(key) ?? []), product]);
   }
-  return [...groups.values()].sort(
-    (a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name)
-  );
+
+  const items: CatalogCard[] = [];
+  for (const group of groups.values()) {
+    const rep: CatalogCard = {
+      ...group[0],
+      memberIds: group.map((member) => member.id),
+      // Produk tampil di /open-order kalau minimal satu barisnya masih diikutkan.
+      openOrderEnabled: group.some((member) => member.open_order_enabled !== false),
+    };
+    if (group.length > 1) {
+      let cheapest = group[0];
+      for (const member of group) {
+        if (effectivePrice(member) < effectivePrice(cheapest)) cheapest = member;
+      }
+      rep.price = effectivePrice(cheapest);
+      rep.minimum_price = cheapest.minimum_price;
+      rep.create_your_price_enabled = cheapest.create_your_price_enabled;
+      rep.availableSeries = [...new Set(group.map((member) => member.series).filter((s): s is string => !!s))].sort();
+    }
+    items.push(rep);
+  }
+  return items;
+}
+
+/** Total stok + stok per series — aturan sama dengan menu Produk (series turunan ikut produk dasar). */
+function withStock(
+  items: CatalogCard[],
+  variants: VariantRow[],
+  seriesByProduct: Record<string, string>
+): CatalogCard[] {
+  const stockByProduct: Record<string, number> = {};
+  const baseLinkByProduct: Record<string, string> = {};
+  for (const variant of variants) {
+    if (variant.base_product_id) baseLinkByProduct[variant.product_id] = variant.base_product_id;
+    else stockByProduct[variant.product_id] = (stockByProduct[variant.product_id] || 0) + variant.stock;
+  }
+
+  return items.map((item) => {
+    const seriesStock: NonNullable<CatalogCard["seriesStock"]> = [];
+    let totalStock = 0;
+    for (const memberId of item.memberIds ?? []) {
+      const name = seriesByProduct[memberId] || memberId;
+      const baseId = baseLinkByProduct[memberId];
+      if (baseId) {
+        const baseStock = stockByProduct[baseId] || 0;
+        seriesStock.push({ name, stock: baseStock, isDerived: true, follows: seriesByProduct[baseId] || baseId });
+        totalStock += baseStock;
+      } else {
+        const stock = stockByProduct[memberId] || 0;
+        seriesStock.push({ name, stock, isDerived: false });
+        totalStock += stock;
+      }
+    }
+    seriesStock.sort((a, b) => a.name.localeCompare(b.name));
+    return { ...item, totalStock, seriesStock };
+  });
 }
 
 export default function OpenOrderSettingsForm() {
   const toast = useToast();
-  const locale = useSafeLocale();
   const [loading, setLoading] = useState(true);
+  const [catalogLoading, setCatalogLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
   const [needsSql, setNeedsSql] = useState(false);
@@ -90,10 +131,11 @@ export default function OpenOrderSettingsForm() {
   // Nilai tanggal terakhir yang tersimpan — dasar tombol Batal & penanda perubahan.
   const [original, setOriginal] = useState({ start: "", end: "" });
 
-  // Produk di Open Order
-  const [items, setItems] = useState<OpenOrderProductRow[]>([]);
-  const [savingKey, setSavingKey] = useState<string | null>(null);
-  const [query, setQuery] = useState("");
+  // Produk di Open Order (kartu katalog + sakelar)
+  const [items, setItems] = useState<CatalogCard[]>([]);
+  const [thumbnails, setThumbnails] = useState<Record<string, string>>({});
+  const [search, setSearch] = useState("");
+  const [savingId, setSavingId] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -118,13 +160,33 @@ export default function OpenOrderSettingsForm() {
         setLoading(false);
       });
 
-    // Daftar produk dari katalog yang sama dengan wizard.
-    getProducts()
-      .then((products) => {
-        if (!mounted) return;
-        setItems(groupCatalog(products));
-      })
-      .catch(() => {});
+    // Katalog: produk + varian (stok) + foto — sumber yang sama dengan menu Produk.
+    async function loadCatalog() {
+      const products = await getProducts();
+      if (!mounted) return;
+      const ids = products.map((product) => product.id);
+      const [variantsRes, imagesRes] = await Promise.all([
+        supabase.from("product_variants").select("product_id, stock, base_product_id"),
+        ids.length > 0
+          ? supabase.from("product_images").select("product_id, url, is_video").in("product_id", ids).order("display_order")
+          : Promise.resolve({ data: [] as { product_id: string; url: string; is_video: boolean }[] }),
+      ]);
+      if (!mounted) return;
+
+      const images = (imagesRes.data ?? []) as { product_id: string; url: string; is_video: boolean }[];
+      const thumbs: Record<string, string> = {};
+      const seriesByProduct: Record<string, string> = {};
+      for (const product of products) {
+        thumbs[product.id] = getThumbnailFromImages(product.id, product.image, images);
+        if (product.series) seriesByProduct[product.id] = product.series;
+      }
+      setThumbnails(thumbs);
+      setItems(withStock(groupCatalog(products), (variantsRes.data ?? []) as VariantRow[], seriesByProduct));
+      setCatalogLoading(false);
+    }
+    loadCatalog().catch(() => {
+      if (mounted) setCatalogLoading(false);
+    });
 
     return () => {
       mounted = false;
@@ -136,16 +198,7 @@ export default function OpenOrderSettingsForm() {
   const periodLabel = formatOpenOrderPeriod(windowSettings, OPEN_ORDER_PERIOD);
   const invalidRange = Boolean(start && end && end < start);
   const dirty = start !== original.start || end !== original.end;
-
-  const shown = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return items;
-    return items.filter(
-      (item) => item.name.toLowerCase().includes(q) || item.category.toLowerCase().includes(q)
-    );
-  }, [items, query]);
-
-  const enabledCount = items.filter((item) => item.enabled).length;
+  const enabledCount = items.filter((item) => item.openOrderEnabled !== false).length;
 
   function cancel() {
     setStart(original.start);
@@ -172,22 +225,22 @@ export default function OpenOrderSettingsForm() {
     toast.showToast("success", "Jendela Open Order disimpan");
   }
 
-  /** Sakelar produk: simpan langsung ke SEMUA baris katalog pada grup nama + kategori ini. */
-  async function toggleProduct(item: OpenOrderProductRow) {
-    const next = !item.enabled;
-    setSavingKey(item.key);
+  /** Sakelar kartu: simpan langsung ke SEMUA baris katalog pada grup nama + kategori ini. */
+  async function toggleProduct(card: CatalogCard) {
+    const next = card.openOrderEnabled === false;
+    setSavingId(card.id);
     const { error } = await supabase
       .from("products")
       .update({ open_order_enabled: next })
-      .eq("category", item.category)
-      .eq("name", item.name);
-    setSavingKey(null);
+      .eq("category", card.category)
+      .eq("name", card.name);
+    setSavingId(null);
     if (error) {
       toast.showToast("error", error.message);
       return;
     }
-    setItems((prev) => prev.map((row) => (row.key === item.key ? { ...row, enabled: next } : row)));
-    toast.showToast("success", next ? `${item.name} tampil di Open Order` : `${item.name} disembunyikan dari Open Order`);
+    setItems((prev) => prev.map((item) => (item.id === card.id ? { ...item, openOrderEnabled: next } : item)));
+    toast.showToast("success", next ? `${card.name} tampil di Open Order` : `${card.name} disembunyikan dari Open Order`);
   }
 
   const fieldStyle = {
@@ -198,19 +251,25 @@ export default function OpenOrderSettingsForm() {
   const labelStyle = { color: LABEL_COLOR };
 
   return (
-    <section className="mx-auto max-w-3xl p-5 lg:p-8">
-      <header className="mb-7">
+    <section className="mx-auto max-w-[1200px] p-5 lg:p-8 space-y-6">
+      <header>
         <h1 className="text-2xl font-semibold tracking-tight" style={{ color: "var(--espresso)" }}>
           Open Order
         </h1>
         <p className="mt-1.5 text-[13px] leading-relaxed" style={{ color: LABEL_COLOR }}>
-          Atur tanggal buka &amp; tutup, lalu pilih produk mana yang tampil di halaman /open-order.
+          Atur tanggal buka &amp; tutup, lalu tentukan produk mana yang tampil di halaman /open-order
+          lewat sakelar di tiap kartu produk.
         </p>
+        {!catalogLoading && (
+          <p className="mt-2 text-[12.5px] font-medium" style={{ color: "var(--espresso)" }}>
+            {enabledCount} dari {items.length} produk tampil di Open Order.
+          </p>
+        )}
       </header>
 
       {needsSql && (
         <div
-          className="mb-6 flex gap-3 rounded-xl p-4"
+          className="flex gap-3 rounded-xl p-4"
           style={{ background: "#fdf6e7", border: "1px solid rgba(181,140,74,.28)" }}
         >
           <AlertTriangle size={18} className="mt-0.5 shrink-0" style={{ color: "var(--gold-deep)" }} />
@@ -222,31 +281,31 @@ export default function OpenOrderSettingsForm() {
         </div>
       )}
 
-      {loading ? (
-        <div className="flex justify-center py-14">
-          <Loader2 size={22} className="animate-spin" style={{ color: "var(--gold)" }} />
+      {/* Jendela Open Order */}
+      <div className="max-w-3xl rounded-2xl bg-white p-6 sm:p-7" style={{ border: "1px solid rgba(17,17,17,.08)" }}>
+        <div className="flex items-start gap-3">
+          <span
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-full"
+            style={{ background: "rgba(17,17,17,.04)", color: "var(--espresso)" }}
+          >
+            <Calendar size={17} />
+          </span>
+          <div>
+            <p className="text-[14px] font-semibold" style={{ color: "var(--espresso)" }}>
+              Jendela Open Order
+            </p>
+            <p className="mt-1 text-[12.5px] leading-relaxed" style={{ color: LABEL_COLOR }}>
+              Status buka/tutup dihitung otomatis dari dua tanggal ini.
+            </p>
+          </div>
         </div>
-      ) : (
-        <div className="space-y-5">
-          {/* Jendela Open Order */}
-          <div className="rounded-2xl bg-white p-6 sm:p-7" style={{ border: "1px solid rgba(17,17,17,.08)" }}>
-            <div className="flex items-start gap-3">
-              <span
-                className="grid h-9 w-9 shrink-0 place-items-center rounded-full"
-                style={{ background: "rgba(17,17,17,.04)", color: "var(--espresso)" }}
-              >
-                <Calendar size={17} />
-              </span>
-              <div>
-                <p className="text-[14px] font-semibold" style={{ color: "var(--espresso)" }}>
-                  Jendela Open Order
-                </p>
-                <p className="mt-1 text-[12.5px] leading-relaxed" style={{ color: LABEL_COLOR }}>
-                  Status buka/tutup dihitung otomatis dari dua tanggal ini.
-                </p>
-              </div>
-            </div>
 
+        {loading ? (
+          <div className="flex justify-center py-8">
+            <Loader2 size={20} className="animate-spin" style={{ color: "var(--gold)" }} />
+          </div>
+        ) : (
+          <>
             {editing ? (
               <div className="mt-6 grid gap-4 sm:grid-cols-2">
                 <label className="block">
@@ -281,10 +340,7 @@ export default function OpenOrderSettingsForm() {
                   <span className={LABEL} style={labelStyle}>
                     Tanggal mulai
                   </span>
-                  <p
-                    className="mt-2 text-sm font-medium"
-                    style={{ color: start ? "var(--espresso)" : LABEL_COLOR }}
-                  >
+                  <p className="mt-2 text-sm font-medium" style={{ color: start ? "var(--espresso)" : LABEL_COLOR }}>
                     {formatDateLabel(start) || "Belum diatur"}
                   </p>
                 </div>
@@ -292,10 +348,7 @@ export default function OpenOrderSettingsForm() {
                   <span className={LABEL} style={labelStyle}>
                     Tanggal tutup
                   </span>
-                  <p
-                    className="mt-2 text-sm font-medium"
-                    style={{ color: end ? "var(--espresso)" : LABEL_COLOR }}
-                  >
+                  <p className="mt-2 text-sm font-medium" style={{ color: end ? "var(--espresso)" : LABEL_COLOR }}>
                     {formatDateLabel(end) || "Belum diatur"}
                   </p>
                 </div>
@@ -355,103 +408,25 @@ export default function OpenOrderSettingsForm() {
                 </button>
               )}
             </div>
-          </div>
+          </>
+        )}
+      </div>
 
-          {/* Produk di Open Order */}
-          <div className="rounded-2xl bg-white p-6 sm:p-7" style={{ border: "1px solid rgba(17,17,17,.08)" }}>
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <p className="text-[14px] font-semibold" style={{ color: "var(--espresso)" }}>
-                  Produk di Open Order
-                </p>
-                <p className="mt-1 text-[12.5px] leading-relaxed" style={{ color: LABEL_COLOR }}>
-                  Produk yang dimatikan tidak muncul di /open-order. Produk baru otomatis ikut.
-                </p>
-              </div>
-              <Link
-                href={`/${locale}/admin/produk/tambah`}
-                className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-[13px] font-semibold text-white transition-opacity duration-150 hover:opacity-90"
-                style={{ background: "var(--espresso)" }}
-              >
-                <Plus size={15} />
-                Tambah Produk
-              </Link>
-            </div>
-
-            <p className="mt-4 text-[12.5px] font-medium" style={{ color: "var(--espresso)" }}>
-              {enabledCount} dari {items.length} produk tampil di Open Order.
-            </p>
-
-            {items.length > 5 && (
-              <div className="relative mt-4">
-                <Search
-                  size={15}
-                  className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2"
-                  style={{ color: LABEL_COLOR }}
-                />
-                <input
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Cari produk…"
-                  className="w-full rounded-xl pl-10 pr-4 py-2.5 text-[13px] outline-none"
-                  style={fieldStyle}
-                />
-              </div>
-            )}
-
-            {items.length === 0 ? (
-              <p className="mt-5 text-[12.5px]" style={{ color: LABEL_COLOR }}>
-                Belum ada produk di katalog.
-              </p>
-            ) : (
-              <ul className="mt-4 divide-y" style={{ borderColor: "rgba(17,17,17,.06)" }}>
-                {shown.map((item) => (
-                  <li key={item.key} className="flex items-center justify-between gap-4 py-3">
-                    <div className="min-w-0">
-                      <p className="truncate text-[13.5px] font-medium" style={{ color: "var(--espresso)" }}>
-                        {item.name}
-                      </p>
-                      <p className="mt-0.5 text-[11.5px]" style={{ color: LABEL_COLOR }}>
-                        {item.category}
-                        {item.rowCount > 1 ? ` · ${item.rowCount} series/warna` : ""}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => toggleProduct(item)}
-                      disabled={savingKey === item.key}
-                      aria-pressed={item.enabled}
-                      aria-label={`${item.enabled ? "Sembunyikan" : "Tampilkan"} ${item.name} di Open Order`}
-                      className="inline-flex shrink-0 items-center gap-2 rounded-full px-3 py-1.5 text-[11.5px] font-semibold transition-colors duration-150 disabled:opacity-50"
-                      style={
-                        item.enabled
-                          ? { background: "rgba(31,111,69,.1)", color: "#1f6f45" }
-                          : { background: "rgba(17,17,17,.06)", color: LABEL_COLOR }
-                      }
-                    >
-                      {savingKey === item.key ? (
-                        <Loader2 size={14} className="animate-spin" />
-                      ) : (
-                        <span
-                          className="h-1.5 w-1.5 rounded-full"
-                          style={{ background: "currentColor" }}
-                        />
-                      )}
-                      {item.enabled ? "Tampil" : "Tersembunyi"}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-
-            {items.length > 0 && shown.length === 0 && (
-              <p className="py-6 text-center text-[12.5px]" style={{ color: LABEL_COLOR }}>
-                Tidak ada produk yang cocok dengan pencarian “{query}”.
-              </p>
-            )}
-          </div>
-        </div>
-      )}
+      {/* Produk di Open Order — komponen yang sama dengan menu Produk */}
+      <ProductsCatalog
+        items={items}
+        total={items.length}
+        thumbnails={thumbnails}
+        search={search}
+        setSearch={setSearch}
+        loading={catalogLoading}
+        title="Produk di Open Order"
+        openOrder={{
+          isEnabled: (card) => card.openOrderEnabled !== false,
+          onToggle: toggleProduct,
+          savingId,
+        }}
+      />
     </section>
   );
 }
