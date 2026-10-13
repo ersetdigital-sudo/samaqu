@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
+import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { isPaymentMethodId, legacyPaymentType } from "@/lib/payment-methods";
 import { notifyAdminNewOrder } from "@/lib/fonnte";
+import { markLeadBoughtForOrder } from "@/lib/ops-lead-sync";
 
 function generateOrderNumber(): string {
   const d = new Date();
@@ -270,6 +272,15 @@ export async function POST(request: NextRequest) {
 
     // Resi J&T tidak lagi dibuat di sini: pembuatan resi dipicu admin lewat "Atur Pesanan"
     // (PATCH /api/admin/orders action=createJnt) setelah pembayaran diverifikasi.
+
+    // Sinkron ke lead: kalau nomor ini cocok dengan lead yang MASIH AKTIF, tandai Closing/Beli
+    // (order tidak membuat lead baru). Pakai service role (tabel `leads` tanpa policy RLS).
+    // Kegagalan sync tidak boleh menggagalkan pesanan yang sudah tersimpan.
+    try {
+      await markLeadBoughtForOrder(getSupabaseAdmin(), { whatsapp: customer.whatsapp, orderNumber, total });
+    } catch (e) {
+      console.error("[ORDERS] Lead sync gagal:", e);
+    }
 
     // Notifikasi WhatsApp ke admin via Fonnte (aktif kalau FONNTE_TOKEN diisi). Di-await
     // supaya tetap terkirim di runtime serverless, tapi kegagalannya ditelan di dalam modul

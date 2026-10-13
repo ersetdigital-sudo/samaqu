@@ -38,6 +38,7 @@ const MENU_GROUPS: { label: string; items: MenuItem[] }[] = [
       { title: "Leads", href: "/ops/leads", icon: Users },
       { title: "Follow-up", href: "/ops/follow-up", icon: IconPhoneCall },
       { title: "Laporan Leads", href: "/ops/leads/laporan", icon: BarChart3 },
+      { title: "Pelanggan", href: "/ops/pelanggan", icon: Users },
     ],
   },
   {

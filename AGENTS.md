@@ -1164,3 +1164,26 @@ kunjungan halaman penuh lalu diuji manual).
   `.env.local` (gitignored) + env Vercel; pemilik akan merotasi. Temuan penting: entri tracking
   pertama resi baru adalah `status_code 101 = "Manifes"` (otomatis saat order dibuat) → dikecualikan
   dari pemicu "Dikirim" (lihat bagian "Status pesanan vs status pengiriman").
+
+## Pusat data pelanggan (admin + ops) + sinkron Order→Lead (2026-10-13)
+
+Permintaan pemilik: daftar **Pelanggan** admin urut **terbaru** + **filter**; modul **Pelanggan di
+dashboards ops**; dan "order baru bikin lead". Keputusan user = **"tandai closing kalau cocok"**.
+
+- **Satu sumber data**: `src/lib/customer-directory.ts` (`buildCustomerDirectory` + `filterCustomers`
+  + `sortCustomers`). Dipakai `GET /api/admin/customers` (`{ customers }`) dan `GET /api/ops/customers`
+  (`{ items }`, guard `isOpsAdmin`). Default urut **Terbaru** = aktivitas terakhir (`max(createdAt, lastOrderAt)`).
+  Kolom baru: `createdAt` + `cities` (untuk filter Kota).
+- **UI bersama**: `src/components/customers/CustomerDirectoryView.tsx` (kelas Tailwind netral/slate —
+  BUKAN var tema admin, karena `--fg`/`.card`/`--bd` cuma ada di tema admin) dipakai oleh panel admin
+  (`CustomersView`, + stat cards + Export) dan halaman ops `src/app/ops/pelanggan/page.tsx`.
+  Filter: **Punya akun/Belum daftar**, **Belanja terakhir (30/90/365 hari)**, **Kota**, **Ulang tahun
+  bulan ini**; + pilih urut (Terbaru/Belanja/Nama A–Z).
+- **Order→Lead** (`src/lib/ops-lead-sync.ts` `markLeadBoughtForOrder`): order **TIDAK** membuat lead
+  baru (kalau tiap order dibikin lead, pembeli masuk antrean Follow-up). Kalau nomor order
+  (`normalizeKontak`) cocok dengan lead yang **masih aktif** → lead ditandai `status="closing"`,
+  `outcome="buy"`, `followup_status="selesai"` + `lead_activities` "order_created" (idempoten via
+  `note_followup` memuat nomor order). Dipanggil di `api/orders` + `api/open-order` (service role,
+  try/catch supaya tak menggagalkan order).
+- Diuji: filter/urut di dua dashboard (0 error konsol); `markLeadBoughtForOrder` — cocok+aktif →
+  closing+buy+aktivitas; terminal / tak cocok / idempoten → tidak berubah.

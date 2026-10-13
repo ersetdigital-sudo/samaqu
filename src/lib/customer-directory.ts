@@ -1,0 +1,249 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+
+/**
+ * "Pusat data pelanggan" — satu sumber untuk agregasi + filter + sort, dipakai
+ * dashboard admin (`/admin`) **dan** dashboard ops (`/ops/pelanggan`).
+ *
+ * Satu pelanggan = satu baris `customers` bila akunnya terdaftar; pembeli tanpa akun
+ * (order tanpa `customer_id`) tetap ditampilkan sebagai entri "guest" yang dikelompokkan
+ * per nama, supaya tidak ada yang hilang.
+ *
+ * Modul ini mengimpor `SupabaseClient` sebagai **tipe** saja, jadi fungsi filter/sort-nya
+ * aman dipakai di klien.
+ */
+
+export type DirectoryOrder = {
+  order_number: string;
+  created_at: string;
+  total: number;
+  status: string;
+  items: string[];
+  address: string | null;
+};
+
+export type DirectoryCustomer = {
+  key: string;
+  id: string | null;
+  name: string;
+  whatsapp: string;
+  birthDate: string | null;
+  registered: boolean;
+  /** Waktu daftar akun (kolom `customers.created_at`); tamu → null. */
+  createdAt: string | null;
+  orders: DirectoryOrder[];
+  ordersCount: number;
+  totalSpend: number;
+  lastOrderAt: string | null;
+  /** Kota unik dari alamat pesanan (untuk filter Kota). */
+  cities: string[];
+};
+
+/* ── Agregasi (server) ── */
+
+type ItemRow = { product_name: string | null; series: string | null; kain: string | null; color: string | null; quantity: number | null };
+type OrderRow = {
+  id: string;
+  order_number: string;
+  customer_id: string | null;
+  customer_name: string | null;
+  customer_whatsapp: string | null;
+  shipping_address: string | null;
+  shipping_city: string | null;
+  shipping_postal_code: string | null;
+  total: number | null;
+  status: string | null;
+  created_at: string;
+  order_items?: ItemRow[] | null;
+};
+type CustomerRow = { id: string; name: string | null; whatsapp: string | null; birth_date?: string | null; created_at?: string | null };
+
+const norm = (v: unknown) => String(v ?? "").trim().toLowerCase();
+
+/** Ringkasan singkat isi pesanan untuk baris riwayat belanja. */
+function describeItems(items?: ItemRow[] | null): string[] {
+  if (!items) return [];
+  return items.map((it) => {
+    const name = it.product_name || it.series || it.kain || "Item";
+    const color = it.color && it.color.toLowerCase() !== "default" ? ` ${it.color}` : "";
+    const qty = it.quantity && it.quantity > 1 ? ` ×${it.quantity}` : "";
+    return `${name}${color}${qty}`.trim();
+  });
+}
+
+export async function buildCustomerDirectory(admin: SupabaseClient): Promise<DirectoryCustomer[]> {
+  // `birth_date` ditambahkan lewat migration terpisah — kalau belum ada, ulangi select tanpa
+  // kolom itu supaya daftarnya tidak kosong.
+  let customers: CustomerRow[] = [];
+  const withBirth = await admin.from("customers").select("id, name, whatsapp, birth_date, created_at");
+  if (withBirth.error) {
+    console.warn("[CUSTOMERS] customers.birth_date belum tersedia, membaca tanpa kolom itu:", withBirth.error.message);
+    const fallback = await admin.from("customers").select("id, name, whatsapp, created_at");
+    customers = (fallback.data || []) as CustomerRow[];
+  } else {
+    customers = (withBirth.data || []) as CustomerRow[];
+  }
+
+  const { data: orders, error: ordersError } = await admin
+    .from("orders")
+    .select("id, order_number, customer_id, customer_name, customer_whatsapp, shipping_address, shipping_city, shipping_postal_code, total, status, created_at, order_items(product_name, series, kain, color, quantity)");
+  if (ordersError) console.warn("[CUSTOMERS] Gagal membaca orders:", ordersError.message);
+
+  type Agg = DirectoryCustomer;
+  const byKey = new Map<string, Agg>();
+  const idByName = new Map<string, string>();
+
+  for (const c of customers) {
+    byKey.set(c.id, {
+      key: c.id,
+      id: c.id,
+      name: c.name || "Tanpa nama",
+      whatsapp: c.whatsapp || "",
+      birthDate: c.birth_date || null,
+      registered: true,
+      createdAt: c.created_at || null,
+      orders: [],
+      ordersCount: 0,
+      totalSpend: 0,
+      lastOrderAt: null,
+      cities: [],
+    });
+    const n = norm(c.name);
+    if (n && !idByName.has(n)) idByName.set(n, c.id);
+  }
+
+  const citySets = new Map<string, Set<string>>();
+  for (const o of (orders || []) as OrderRow[]) {
+    // Utamakan `customer_id`; order lama (customer_id null) dicocokkan lewat nama.
+    let key: string | null = null;
+    if (o.customer_id && byKey.has(o.customer_id)) key = o.customer_id;
+    else if (norm(o.customer_name) && idByName.has(norm(o.customer_name))) key = idByName.get(norm(o.customer_name)) || null;
+
+    if (!key) {
+      key = `guest:${norm(o.customer_name) || norm(o.customer_whatsapp) || o.id}`;
+      if (!byKey.has(key)) {
+        byKey.set(key, {
+          key,
+          id: null,
+          name: o.customer_name || "Tanpa nama",
+          whatsapp: o.customer_whatsapp || "",
+          birthDate: null,
+          registered: false,
+          createdAt: null,
+          orders: [],
+          ordersCount: 0,
+          totalSpend: 0,
+          lastOrderAt: null,
+          cities: [],
+        });
+      }
+    }
+
+    const agg = byKey.get(key)!;
+    agg.orders.push({
+      order_number: o.order_number,
+      created_at: o.created_at,
+      total: o.total || 0,
+      status: o.status || "",
+      items: describeItems(o.order_items),
+      address: [o.shipping_address, o.shipping_city, o.shipping_postal_code].filter(Boolean).join(", ") || null,
+    });
+    agg.ordersCount += 1;
+    // "Total belanja" = nilai yang benar-benar dibelanjakan, jadi pesanan batal tidak dihitung.
+    if (o.status !== "dibatalkan") agg.totalSpend += o.total || 0;
+    if (!agg.whatsapp && o.customer_whatsapp) agg.whatsapp = o.customer_whatsapp;
+    if (!agg.lastOrderAt || o.created_at > agg.lastOrderAt) agg.lastOrderAt = o.created_at;
+
+    const city = (o.shipping_city || "").trim();
+    if (city) {
+      if (!citySets.has(key)) citySets.set(key, new Set());
+      citySets.get(key)!.add(city);
+    }
+  }
+
+  const result = Array.from(byKey.values());
+  for (const c of result) {
+    c.orders.sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+    c.cities = Array.from(citySets.get(c.key) || []).sort((a, b) => a.localeCompare(b, "id-ID"));
+  }
+  return result;
+}
+
+/* ── Filter & sort (murni, bisa di klien) ── */
+
+export type AccountFilter = "all" | "registered" | "guest";
+export type PeriodFilter = "all" | "30" | "90" | "365";
+export type CustomerSort = "newest" | "spend" | "name";
+
+export const ACCOUNT_FILTERS: { key: AccountFilter; label: string }[] = [
+  { key: "all", label: "Semua akun" },
+  { key: "registered", label: "Punya akun" },
+  { key: "guest", label: "Belum daftar" },
+];
+
+export const PERIOD_FILTERS: { key: PeriodFilter; label: string }[] = [
+  { key: "all", label: "Semua waktu" },
+  { key: "30", label: "Belanja 30 hari" },
+  { key: "90", label: "Belanja 90 hari" },
+  { key: "365", label: "Belanja 1 tahun" },
+];
+
+export const CUSTOMER_SORTS: { key: CustomerSort; label: string }[] = [
+  { key: "newest", label: "Terbaru" },
+  { key: "spend", label: "Belanja terbanyak" },
+  { key: "name", label: "Nama A–Z" },
+];
+
+function parseBirth(iso: string) {
+  const [y, m, d] = iso.split("-").map(Number);
+  if (!y || !m || !d) return null;
+  return { y, m, d };
+}
+
+/** Aktivitas terakhir: order terakhir, atau waktu daftar — dipakai untuk urutan "Terbaru". */
+export function lastActivityAt(c: DirectoryCustomer): string {
+  const a = c.lastOrderAt || "";
+  const b = c.createdAt || "";
+  return a > b ? a : b;
+}
+
+export function distinctCities(list: DirectoryCustomer[]): string[] {
+  const set = new Set<string>();
+  for (const c of list) for (const city of c.cities) set.add(city);
+  return Array.from(set).sort((a, b) => a.localeCompare(b, "id-ID"));
+}
+
+export function filterCustomers(
+  list: DirectoryCustomer[],
+  opts: { query?: string; account?: AccountFilter; period?: PeriodFilter; city?: string; birthdayThisMonth?: boolean },
+  now: Date = new Date()
+): DirectoryCustomer[] {
+  const q = (opts.query || "").trim().toLowerCase();
+  const nowMs = now.getTime();
+  return list.filter((c) => {
+    if (opts.account === "registered" && !c.registered) return false;
+    if (opts.account === "guest" && c.registered) return false;
+    if (opts.birthdayThisMonth) {
+      const b = c.birthDate ? parseBirth(c.birthDate) : null;
+      if (!b || b.m !== now.getMonth() + 1) return false;
+    }
+    if (opts.city && opts.city !== "all" && !c.cities.includes(opts.city)) return false;
+    if (opts.period && opts.period !== "all") {
+      if (!c.lastOrderAt) return false;
+      const diffDays = (nowMs - new Date(c.lastOrderAt).getTime()) / 86400000;
+      if (diffDays > Number(opts.period)) return false;
+    }
+    if (q) {
+      const hit = c.name.toLowerCase().includes(q) || (c.whatsapp || "").includes(q);
+      if (!hit) return false;
+    }
+    return true;
+  });
+}
+
+export function sortCustomers(list: DirectoryCustomer[], sort: CustomerSort): DirectoryCustomer[] {
+  const arr = [...list];
+  if (sort === "spend") arr.sort((a, b) => b.totalSpend - a.totalSpend);
+  else if (sort === "name") arr.sort((a, b) => a.name.localeCompare(b.name, "id-ID"));
+  else arr.sort((a, b) => lastActivityAt(b).localeCompare(lastActivityAt(a)));
+  return arr;
+}

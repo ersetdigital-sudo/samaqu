@@ -8,6 +8,7 @@ import {
   type OpenOrderCatalogRow,
 } from "@/lib/open-order-offering";
 import { openOrderSeriesList } from "@/lib/open-order-window";
+import { markLeadBoughtForOrder } from "@/lib/ops-lead-sync";
 
 /**
  * Pesanan dari alur Open Order Samaqu (halaman /open-order, 6 langkah).
@@ -273,6 +274,14 @@ export async function POST(request: NextRequest) {
 
     // Resi J&T tidak dibuat di sini — admin menekan "Atur Pesanan" setelah pembayaran
     // diverifikasi (PATCH /api/admin/orders action=createJnt).
+
+    // Sinkron ke lead: kalau nomor ini cocok dengan lead yang masih aktif, tandai Closing/Beli
+    // (order tidak membuat lead baru). Kegagalan sync tidak menggagalkan pesanan.
+    try {
+      await markLeadBoughtForOrder(supabaseAdmin, { whatsapp, orderNumber, total });
+    } catch (e) {
+      console.error("[OPEN-ORDER] Lead sync gagal:", e);
+    }
 
     console.log("[OPEN-ORDER] Created:", { orderNumber, items: orderItems.length, total });
     return NextResponse.json({ success: true, orderNumber, total, awbNo: null });
