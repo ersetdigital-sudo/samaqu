@@ -4,6 +4,8 @@ import { createJntOrderForOrder } from "@/lib/jnt/order-from-order";
 import { trackShipment } from "@/lib/jnt/track";
 import { applyTrackingToOrder } from "@/lib/jnt/tracking-sync";
 import { cancelOrderCompletely } from "@/lib/cancel-order";
+import { notifyCustomerOrderPaid } from "@/lib/fonnte";
+import { SITE_URL } from "@/lib/site-config";
 
 export async function PATCH(request: NextRequest) {
   try {
@@ -173,6 +175,18 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
+    // Dipakai untuk notifikasi "pembayaran diterima" (pending → diproses): butuh status SEBELUM
+    // diubah + kontak customer, jadi dibaca dulu.
+    const previous = status === "diproses"
+      ? (
+          await supabaseAdmin
+            .from("orders")
+            .select("status, order_number, customer_name, customer_whatsapp")
+            .eq("order_number", identifier)
+            .maybeSingle()
+        ).data
+      : null;
+
     const { error } = await supabaseAdmin
       .from("orders")
       .update({ status, updated_at: new Date().toISOString() })
@@ -181,6 +195,22 @@ export async function PATCH(request: NextRequest) {
     if (error) {
       console.error("[ADMIN] Failed to update order status:", JSON.stringify(error));
       return NextResponse.json({ error: "Gagal memperbarui status pesanan", detail: error.message, code: error.code }, { status: 500 });
+    }
+
+    // Pembayaran baru diverifikasi (pending → diproses) → kabari customer lewat WhatsApp, supaya
+    // admin tidak perlu mengetik pesan satu-satu. Best effort: gagal kirim tidak menggagalkan update.
+    if (previous && previous.status === "pending" && previous.customer_whatsapp) {
+      const number = previous.order_number || identifier;
+      try {
+        await notifyCustomerOrderPaid({
+          orderNumber: number,
+          customerName: previous.customer_name || "",
+          customerWhatsapp: previous.customer_whatsapp,
+          orderUrl: `${SITE_URL}/akun/pesanan/${number}`,
+        });
+      } catch (e) {
+        console.error("[ADMIN] Notif pembayaran ke customer gagal:", e);
+      }
     }
 
     return NextResponse.json({ success: true });
