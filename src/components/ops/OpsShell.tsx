@@ -24,6 +24,7 @@ const WalletIcon: any = (LucideIcons as any).WalletMinimal ?? (LucideIcons as an
 const IconPhoneCall: any = (LucideIcons as any).PhoneCall ?? (LucideIcons as any).Phone;
 import { supabase } from "@/lib/supabase";
 import { Toaster } from "@/components/ops/ui/toaster";
+import OpsFooter from "@/components/ops/OpsFooter";
 
 type MenuItem = { title: string; href: string; icon: any; soon?: boolean };
 
@@ -257,14 +258,9 @@ export default function OpsShell({ children }: { children: React.ReactNode }) {
       <div className="ops-root flex min-h-screen">
         {/* Sidebar desktop */}
         <aside className="hidden lg:flex flex-col w-[248px] shrink-0 bg-white dark:bg-[#141821] border-r border-slate-200 dark:border-slate-800 sticky top-0 h-screen">
-          <div className="flex items-center gap-3 px-5 h-[68px] border-b border-slate-200 dark:border-slate-800 shrink-0">
-            <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center">
-              <span className="text-white font-black text-sm">S</span>
-            </div>
-            <div>
-              <p className="font-extrabold text-[15px] tracking-tight text-slate-900 dark:text-white">SAMAQU</p>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Internal</p>
-            </div>
+          <div className="flex flex-col justify-center gap-0.5 px-5 h-[68px] border-b border-slate-200 dark:border-slate-800 shrink-0">
+            <img src="/logo.svg" alt="SAMAQU" className="h-6 w-auto object-contain" />
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Internal</p>
           </div>
           <SidebarContent pathname={pathname} stripOps={onOpsHost} />
           <div className="p-3 border-t border-slate-200 dark:border-slate-800 shrink-0">
@@ -283,7 +279,10 @@ export default function OpsShell({ children }: { children: React.ReactNode }) {
             <div className="absolute inset-0 bg-black/50" onClick={() => setDrawer(false)} />
             <div className="absolute left-0 top-0 bottom-0 w-[270px] bg-white dark:bg-[#141821] flex flex-col">
               <div className="flex items-center justify-between px-5 h-[68px] border-b border-slate-200 dark:border-slate-800">
-                <span className="font-extrabold text-slate-900 dark:text-white">SAMAQU Internal</span>
+                <div className="flex flex-col justify-center gap-0.5">
+                  <img src="/logo.svg" alt="SAMAQU" className="h-6 w-auto object-contain" />
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Internal</span>
+                </div>
                 <button onClick={() => setDrawer(false)} className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">
                   <X size={18} className="text-slate-500" />
                 </button>
@@ -307,6 +306,7 @@ export default function OpsShell({ children }: { children: React.ReactNode }) {
             <span className="font-extrabold text-slate-900 dark:text-white">SAMAQU Internal</span>
           </header>
           <main className="p-4 md:p-6 lg:p-8">{children}</main>
+          <OpsFooter />
         </div>
 
         <Toaster />
