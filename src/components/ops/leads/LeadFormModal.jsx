@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/lib/ops-api";
 import { motion } from "framer-motion";
-import { X, Save, CalendarClock, User } from "lucide-react";
+import { X, Save, CalendarClock, User, AlertCircle } from "lucide-react";
 import { useToast } from "@/components/ops/ui/use-toast";
 import { defaultFirstFollowup, isoToWibInput, wibInputToIso } from "@/lib/ops-followup";
 
@@ -40,6 +40,7 @@ export default function LeadFormModal({ isOpen, onClose, initialData = null, def
 
   const [form, setForm] = useState(emptyForm);
   const [displayNominal, setDisplayNominal] = useState('');
+  const [saveError, setSaveError] = useState('');
 
   // Pilihan produk (katalog asli) & PIC (dari PIC yang sudah dipakai + akun admin)
   const { data: products = [] } = useQuery({
@@ -67,6 +68,7 @@ export default function LeadFormModal({ isOpen, onClose, initialData = null, def
 
   useEffect(() => {
     if (isOpen) {
+      setSaveError('');
       if (initialData) {
         setForm({
           tanggal: initialData.tanggal || '',
@@ -94,6 +96,7 @@ export default function LeadFormModal({ isOpen, onClose, initialData = null, def
       ? base44.entities.Lead.update(initialData.id, data)
       : base44.entities.Lead.create(data),
     onSuccess: () => {
+      setSaveError('');
       queryClient.invalidateQueries(['leads']);
       queryClient.invalidateQueries({ queryKey: ['followups'] });
       toast({
@@ -104,16 +107,13 @@ export default function LeadFormModal({ isOpen, onClose, initialData = null, def
       onClose();
     },
     onError: (e) => {
-      toast({
-        title: "❌ Gagal menyimpan lead",
-        description: e instanceof Error ? e.message : "Coba lagi.",
-        variant: "destructive",
-      });
+      setSaveError(e instanceof Error ? e.message : "Gagal menyimpan lead. Coba lagi.");
     },
   });
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    setSaveError('');
     if (!form.tanggal || !form.kontak.trim()) return;
     const payload = {
       tanggal: form.tanggal,
@@ -190,9 +190,11 @@ export default function LeadFormModal({ isOpen, onClose, initialData = null, def
                 type="text"
                 required
                 value={form.kontak}
-                onChange={(e) => setForm({ ...form, kontak: e.target.value })}
+                onChange={(e) => { setForm({ ...form, kontak: e.target.value }); if (saveError) setSaveError(''); }}
                 placeholder="Contoh: 85892344482 atau @username"
-                className={inputClass}
+                aria-invalid={saveError ? true : undefined}
+                aria-describedby={saveError ? "lead-form-error" : undefined}
+                className={`${inputClass} aria-invalid:border-red-400 aria-invalid:focus:border-red-500 aria-invalid:focus:ring-red-100`}
               />
             </div>
 
@@ -341,6 +343,19 @@ export default function LeadFormModal({ isOpen, onClose, initialData = null, def
                 className="w-full px-3 py-2.5 bg-gray-50 dark:bg-slate-900 border-2 border-gray-200 dark:border-slate-700 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 text-sm font-medium text-slate-900 dark:text-white resize-none"
               />
             </div>
+
+            {saveError && (
+              <motion.div
+                id="lead-form-error"
+                role="alert"
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-start gap-2.5 rounded-xl border-2 border-red-200 bg-red-50 px-3.5 py-3"
+              >
+                <AlertCircle size={16} className="mt-px shrink-0 text-red-600" />
+                <p className="text-sm font-medium leading-snug text-red-700">{saveError}</p>
+              </motion.div>
+            )}
 
             <div className="flex gap-3 pt-2">
               <button
