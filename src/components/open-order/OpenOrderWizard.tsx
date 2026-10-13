@@ -666,8 +666,14 @@ export default function OpenOrderWizard() {
         )}
 
         {step === 6 && result && (
-          <div className="mx-auto max-w-xl">
-            <StepSuccess orderNumber={result.orderNumber} />
+          <div className="mx-auto max-w-2xl">
+            <StepSuccess
+              orderNumber={result.orderNumber}
+              total={result.total}
+              customerName={customer.name}
+              paymentMethod={paymentMethods.find((method) => method.id === paymentMethod) ?? null}
+              itemCount={lines.reduce((sum, line) => sum + line.quantity, 0)}
+            />
           </div>
         )}
       </main>
