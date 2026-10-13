@@ -33,18 +33,34 @@ export function createPageUrl(page: string): string {
   return PAGE_ROUTES[page] || `/ops/${String(page).toLowerCase()}`;
 }
 
+/**
+ * `state` navigasi ala react-router (react-router menyimpannya di history).
+ * Disimpan di memori supaya halaman port Base44 (mis. form Edit Produk) tetap
+ * menerimanya pada render pertama setelah navigasi klien. Konsekuensinya sama
+ * seperti state di memori: hilang kalau halaman di-refresh/dibuka langsung.
+ */
+let navState: { path: string; state: any } | null = null;
+
 /** useNavigate() ala react-router → router.push() Next */
 export function useNavigate() {
   const router = useRouter();
-  return (to: string | number) => {
+  return (to: string | number, options?: { state?: any }) => {
     if (typeof to === "number") {
       if (to < 0) router.back();
       return;
     }
+    // Selalu ditimpa — termasuk saat navigasi tanpa state — supaya state lama
+    // tidak nyangkut dipakai halaman berikutnya.
+    navState = { path: to, state: options?.state };
     router.push(to);
   };
 }
 
-export function useLocation() {
-  return { pathname: typeof window === "undefined" ? "" : window.location.pathname };
+export function useLocation(): { pathname: string; state: any } {
+  const pathname = typeof window === "undefined" ? "" : window.location.pathname;
+  // Sengaja TIDAK dicocokkan dengan pathname: saat transisi, komponen halaman
+  // tujuan sudah render sebelum `window.location` ikut berpindah. Kalau digantungkan
+  // ke pathname, render pertama selalu kehilangan state — form Edit Produk jadi kosong.
+  // State selalu ditimpa di setiap useNavigate(), jadi tidak nyangkut ke halaman lain.
+  return { pathname, state: navState?.state };
 }
