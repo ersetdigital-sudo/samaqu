@@ -26,13 +26,27 @@ const PRODUCT_FIELDS = [
 ] as const;
 
 async function withTotals(admin: ReturnType<typeof getSupabaseAdmin>, products: any[]) {
-  const { data: variants } = await admin.from("product_variants").select("product_id, stock");
-  const totals: Record<string, number> = {};
+  // `base_product_id` = stok bersama ala series: series turunan tidak memegang stoknya
+  // sendiri, stoknya milik produk basis (perilaku yang sama dipakai `samaqu_decrement_stock`).
+  // Jadi stok yang benar-benar bisa dijual = stok produk basisnya.
+  const { data: variants } = await admin
+    .from("product_variants")
+    .select("product_id, stock, base_product_id");
+  const ownStock: Record<string, number> = {};
+  const baseLink: Record<string, string> = {};
   for (const v of variants || []) {
-    totals[v.product_id] = (totals[v.product_id] || 0) + (Number(v.stock) || 0);
+    if (v.base_product_id) {
+      baseLink[v.product_id] = v.base_product_id;
+      continue;
+    }
+    ownStock[v.product_id] = (ownStock[v.product_id] || 0) + (Number(v.stock) || 0);
   }
   return products.map((p) => {
-    const total = totals[p.id] || 0;
+    const total = ownStock[p.id] || 0;
+    const baseId = baseLink[p.id] as string | undefined;
+    // Stok efektif: series turunan memakai stok basis; produk biasa memakai stoknya sendiri.
+    const efektif = baseId ? ownStock[baseId] || 0 : total;
+    const baseProduk = baseId ? products.find((b) => b.id === baseId) : null;
     return {
       id: p.id,
       sku: p.sku || String(p.id || "").toUpperCase(),
@@ -42,6 +56,25 @@ async function withTotals(admin: ReturnType<typeof getSupabaseAdmin>, products: 
       stock: total,
       initial_stock: p.initial_stock ?? 0,
       status: stockStatus(total),
+      // ── Tambahan untuk halaman Produk ops. Field lama di atas sengaja TIDAK diubah
+      //    supaya halaman lain (mis. Barang Masuk) tidak ikut berubah perilakunya. ──
+      stock_efektif: efektif,
+      status_efektif: stockStatus(efektif),
+      /** Terisi hanya kalau stok produk ini menumpang produk lain (series turunan). */
+      stok_bersama: baseId
+        ? { mengikuti: baseProduk?.name || baseId, series: baseProduk?.series || null, stock: efektif }
+        : null,
+      /** Jenis kain (relasi `products.jenis_kain_id`) — dipakai kolom & detail di /ops. */
+      jenis_kain: p.jenis_kain
+        ? {
+            id: p.jenis_kain.id,
+            name: p.jenis_kain.name,
+            material: p.jenis_kain.material ?? null,
+            texture: p.jenis_kain.texture ?? null,
+            suitable_for: p.jenis_kain.suitable_for ?? null,
+            care_instructions: p.jenis_kain.care_instructions ?? null,
+          }
+        : null,
       product_type: p.product_type || "normal",
       category: p.category,
       series: p.series,
@@ -54,7 +87,7 @@ async function withTotals(admin: ReturnType<typeof getSupabaseAdmin>, products: 
 export async function GET(req: NextRequest) {
   if (!(await isOpsAdmin(req))) return unauthorized();
   const admin = getSupabaseAdmin();
-  const { data, error } = await admin.from("products").select("*").order("name", { ascending: true });
+  const { data, error } = await admin.from("products").select("*, jenis_kain(*)").order("name", { ascending: true });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   const items = await withTotals(admin, data || []);
   return NextResponse.json({ items });

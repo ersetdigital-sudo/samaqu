@@ -118,7 +118,9 @@ function ProductDetailModal({ isOpen, onClose, product, stockIns = [], transacti
 
   const pv = (variants || []).filter((v) => v.product_id === product.id);
   const totalStock = pv.reduce((s, v) => s + sumStock(v.stock), 0);
-  const status = stockStatus(totalStock);
+  // Stok yang ditampilkan di detail = stok efektif (series turunan menumpang stok basisnya).
+  const stokEfektif = product.stock_efektif ?? totalStock;
+  const status = product.status_efektif || stockStatus(stokEfektif);
   const statusStyle = {
     habis: "bg-red-100 text-red-700 border-red-200",
     menipis: "bg-amber-100 text-amber-700 border-amber-200",
@@ -135,7 +137,7 @@ function ProductDetailModal({ isOpen, onClose, product, stockIns = [], transacti
   const hpp = Number(product.hpp) || 0;
   const price = Number(product.price) || 0;
   const margin = price > 0 ? Math.round(((price - hpp) / price) * 100) : 0;
-  const stockValue = totalStock * hpp;
+  const stockValue = stokEfektif * hpp;
 
   const Info = ({ label, value, tone = "" }) => (
     <div className="rounded-xl border border-slate-200 dark:border-slate-800 px-3 py-2.5">
@@ -199,8 +201,7 @@ function ProductDetailModal({ isOpen, onClose, product, stockIns = [], transacti
               <section>
                 <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">Ringkasan</p>
                 <div className="grid grid-cols-2 gap-2.5">
-                  <Info label="Total Stok" value={`${totalStock.toLocaleString("id-ID")} unit`} />
-                  <Info label="Stok Awal" value={`${(product.initial_stock || 0).toLocaleString("id-ID")} unit`} />
+                  <Info label="Total Stok" value={`${stokEfektif.toLocaleString("id-ID")} unit`} />
                   <Info label="HPP / unit" value={`Rp ${hpp.toLocaleString("id-ID")}`} />
                   <Info label="Harga Jual" value={`Rp ${price.toLocaleString("id-ID")}`} />
                   <Info
@@ -213,7 +214,10 @@ function ProductDetailModal({ isOpen, onClose, product, stockIns = [], transacti
                 <div className="mt-2.5 grid grid-cols-2 gap-2.5">
                   <Info label="Kategori" value={product.category || "-"} />
                   <Info label="Series" value={product.series || "Belum diatur"} />
-                  <Info label="Kain" value={product.kain || "-"} />
+                  <Info label="Jenis Kain" value={product.jenis_kain?.name || "-"} />
+                  {product.stok_bersama ? (
+                    <Info label="Stok Bersama" value={`Mengikuti ${product.stok_bersama.mengikuti}`} />
+                  ) : null}
                   {product.weight ? <Info label="Berat" value={`${product.weight} gram`} /> : null}
                   {product.created_at ? (
                     <Info label="Dibuat" value={format(new Date(product.created_at), "dd MMM yyyy")} />
@@ -226,6 +230,12 @@ function ProductDetailModal({ isOpen, onClose, product, stockIns = [], transacti
                 <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">
                   Stok per Varian ({pv.length})
                 </p>
+                {product.stok_bersama ? (
+                  <p className="text-[12px] text-slate-500 dark:text-slate-400 mb-2">
+                    Varian di bawah tidak memegang stok sendiri — stoknya mengikuti{" "}
+                    <span className="font-semibold text-slate-700 dark:text-slate-200">{product.stok_bersama.mengikuti}</span>.
+                  </p>
+                ) : null}
                 {pv.length === 0 ? (
                   <p className="text-sm text-slate-500">Belum ada varian untuk produk ini.</p>
                 ) : (
@@ -440,7 +450,7 @@ export default function MasterProduk() {
   // ── Ringkasan tab Daftar Produk ──
   // "Aktif" = varian produknya masih punya stok (status dari server: aman/menipis/habis).
   const activeProductCount = useMemo(
-    () => (products || []).filter((p) => String(p.status || "aman") !== "habis").length,
+    () => (products || []).filter((p) => String(p.status_efektif || p.status || "aman") !== "habis").length,
     [products],
   );
   // Terlaris = unit terjual dari order website. Order batal (status "return") tidak dihitung.
@@ -489,9 +499,21 @@ export default function MasterProduk() {
   }, [variants, stockFilter]);
 
   const totalProducts = useMemo(() => products?.length || 0, [products]);
-  const totalStock = useMemo(() => (products || []).reduce((sum, p) => sum + (p.stock || 0), 0), [products]);
-  const totalValue = useMemo(() => (products || []).reduce((sum, p) => sum + ((p.stock || 0) * (p.hpp || 0)), 0), [products]);
-  const lowStockCount = useMemo(() => (products || []).filter(p => p.status === 'menipis').length, [products]);
+  const totalStock = useMemo(() => (products || []).reduce((sum, p) => sum + (p.stock_efektif ?? p.stock ?? 0), 0), [products]);
+  const totalValue = useMemo(() => (products || []).reduce((sum, p) => sum + ((p.stock_efektif ?? p.stock ?? 0) * (p.hpp || 0)), 0), [products]);
+  const lowStockCount = useMemo(() => (products || []).filter(p => (p.status_efektif || p.status) === 'menipis').length, [products]);
+
+  // ── Stok yang tampil di halaman Produk ops ──
+  // Pakai stok EFEKTIF dari API (`stock_efektif`): stok bersama ala series sudah
+  // di-resolve ke produk basisnya. Rumus buku besar lama (initial_stock + masuk −
+  // keluar) tidak dipakai lagi karena `initial_stock` tidak pernah diisi dan
+  // `stock_in` masih kosong, jadi mustahil menghasilkan angka benar — akibatnya
+  // semua produk tampil "HABIS 0%". Fallback ke `stock`/`status` lama kalau API
+  // masih mengirim bentuk sebelumnya.
+  const stokProduk = (product) => {
+    const nilai = product.stock_efektif ?? product.stock ?? 0;
+    return { nilai, status: product.status_efektif || product.status || stockStatus(nilai) };
+  };
 
   const filteredProducts = useMemo(() => {
     if (!products || !Array.isArray(products)) return [];
@@ -499,26 +521,10 @@ export default function MasterProduk() {
     return products.filter(product => {
       const matchSearch = product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           product.sku?.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchStatus = statusFilter === 'all' || product.status === statusFilter;
+      const matchStatus = statusFilter === 'all' || stokProduk(product).status === statusFilter;
       return matchSearch && matchStatus;
     });
   }, [products, searchTerm, statusFilter]);
-
-  // Helper to calculate stock metrics for a product
-  const getProductStockMetrics = (product) => {
-    const pStockIns = stockIns.filter(si => si.product_id === product.id);
-    const pTransactions = transactions.filter(t => t.product_id === product.id && t.status !== 'return');
-    const totalIn = pStockIns.reduce((sum, si) => sum + (si.qty || 0), 0);
-    const totalOut = pTransactions.reduce((sum, t) => sum + (t.qty || 0), 0);
-    const initStock = product.initial_stock || 0;
-    const finalStock = initStock + totalIn - totalOut;
-    
-    let percentage = 0;
-    if (initStock > 0) percentage = (finalStock / initStock) * 100;
-    else if (finalStock > 0) percentage = 100;
-    
-    return { finalStock, percentage: Math.min(Math.max(0, Math.round(percentage)), 100) };
-  };
 
   // Sorting Logic
   const sortedProducts = useMemo(() => {
@@ -528,8 +534,8 @@ export default function MasterProduk() {
         let aValue, bValue;
 
         if (sortConfig.key === 'stockPercentage') {
-          aValue = getProductStockMetrics(a).percentage;
-          bValue = getProductStockMetrics(b).percentage;
+          aValue = stokProduk(a).nilai;
+          bValue = stokProduk(b).nilai;
         } else {
           aValue = a[sortConfig.key];
           bValue = b[sortConfig.key];
@@ -566,87 +572,22 @@ export default function MasterProduk() {
     currentPage * itemsPerPage
   );
 
-  // New Render Helper for Stock Indicator
+  // Status stok untuk tabel & kartu — satu baris, tanpa bar persentase.
+  // Dasarnya stok EFEKTIF (sudah memperhitungkan stok bersama antar-series).
   const renderStockIndicator = (product) => {
-    const { percentage } = getProductStockMetrics(product);
-    
-    // Helper to get color gradient class
-    const getColorClass = (pct) => {
-      if (pct === 100) return 'bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-400';
-      if (pct >= 75) return 'bg-gradient-to-r from-emerald-400 via-green-500 to-emerald-400';
-      if (pct >= 50) return 'bg-gradient-to-r from-teal-400 via-cyan-500 to-teal-400';
-      if (pct >= 20) return 'bg-gradient-to-r from-orange-400 via-amber-500 to-orange-400';
-      if (pct > 0) return 'bg-gradient-to-r from-rose-500 via-red-600 to-rose-500';
-      return 'bg-red-600';
-    };
-
-    // Helper to get status label
-    const getStatusLabel = (pct) => {
-      if (pct === 100) return 'Full Stock';
-      if (pct >= 75) return 'Aman';
-      if (pct >= 50) return 'Baik';
-      if (pct >= 20) return 'Rendah';
-      if (pct > 0) return 'Kritis';
-      return 'Habis';
-    };
-
-    // Helper to get icon
-    const getStockIcon = (pct) => {
-      if (pct === 100) {
-        return (
-          <div className="relative flex-shrink-0">
-            <CheckCircle className="w-5 h-5 text-amber-500" />
-            <span className="absolute -top-1 -right-1 text-[10px]">⭐</span>
-          </div>
-        );
-      }
-      if (pct >= 75) return <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0" />;
-      if (pct >= 50) return <Shield className="w-5 h-5 text-teal-500 flex-shrink-0" />;
-      if (pct >= 20) return <AlertCircle className="w-5 h-5 text-orange-500 flex-shrink-0" />;
-      if (pct > 0) return <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0" />;
-      return null;
-    };
+    const { nilai, status } = stokProduk(product);
+    const gaya = {
+      habis: { cls: 'bg-red-100 border-red-300 text-red-600', label: 'HABIS' },
+      menipis: { cls: 'bg-amber-100 border-amber-300 text-amber-700', label: 'MENIPIS' },
+      aman: { cls: 'bg-emerald-100 border-emerald-300 text-emerald-700', label: 'AMAN' },
+    }[status] || { cls: 'bg-slate-100 border-slate-300 text-slate-600', label: '—' };
 
     return (
-      <div 
-        className="flex items-center justify-center gap-3 group cursor-help"
-        title={`Stok Level: ${percentage}% - ${getStatusLabel(percentage)}`}
-      >
-        {percentage === 0 ? (
-          // 0% Badge
-          <div className="flex items-center justify-center gap-2">
-            <div className="px-3 py-1 bg-red-100 border border-red-300 rounded-full flex items-center gap-1.5 animate-pulse">
-              <XCircle className="w-4 h-4 text-red-600" />
-              <span className="text-xs font-bold text-red-600">HABIS</span>
-            </div>
-            <span className="text-xs font-semibold text-red-600">0%</span>
-          </div>
-        ) : (
-          // Progress Bar Display
-          <div className="flex items-center justify-center gap-3 w-full">
-            {/* Progress Bar */}
-            <div className="flex-1 min-w-[70px] max-w-[100px]">
-              <div className="relative w-full bg-gray-200 rounded-full h-2.5 overflow-hidden shadow-inner">
-                <div 
-                  className={`h-full rounded-full transition-all duration-500 ${getColorClass(percentage)}`}
-                  style={{ width: `${percentage}%` }}
-                >
-                  {percentage === 100 && (
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent animate-shimmer" />
-                  )}
-                </div>
-              </div>
-            </div>
-            
-            {/* Icon */}
-            {getStockIcon(percentage)}
-            
-            {/* Percentage Text */}
-            <span className="text-xs font-semibold text-gray-900 dark:text-slate-100 min-w-[40px] text-right font-inter">
-              {percentage}%
-            </span>
-          </div>
-        )}
+      <div className="flex items-center justify-center gap-2 whitespace-nowrap" title={`Stok efektif ${nilai} unit`}>
+        <span className={`px-2.5 py-1 rounded-full border text-[11px] font-bold ${gaya.cls}`}>{gaya.label}</span>
+        <span className={`text-xs font-bold ${nilai === 0 ? 'text-red-600' : 'text-slate-600 dark:text-slate-300'}`}>
+          {nilai} unit
+        </span>
       </div>
     );
   };
@@ -672,7 +613,7 @@ export default function MasterProduk() {
   // NEW: Low stock products (stock < 5)
   const lowStockProducts = useMemo(() => {
     if (!products || !Array.isArray(products)) return [];
-    return products.filter(product => product.stock < 5);
+    return products.filter(product => (product.stock_efektif ?? product.stock ?? 0) < 5);
   }, [products]);
 
   const handleDeleteClick = (item, type) => {
@@ -1159,8 +1100,11 @@ export default function MasterProduk() {
                         <th className="px-4 py-3.5 text-left font-inter text-xs font-bold text-white uppercase tracking-wide border-r border-[#2d4a6f]">
                           Nama Produk
                         </th>
-                        <th className="px-4 py-3.5 text-center font-inter text-xs font-bold text-white uppercase tracking-wide border-r border-[#2d4a6f]">
-                          Stok Awal
+                        <th className="px-4 py-3.5 text-left font-inter text-xs font-bold text-white uppercase tracking-wide border-r border-[#2d4a6f] whitespace-nowrap">
+                          Jenis Kain
+                        </th>
+                        <th className="px-4 py-3.5 text-center font-inter text-xs font-bold text-white uppercase tracking-wide border-r border-[#2d4a6f] whitespace-nowrap">
+                          Stok
                         </th>
                         <th className="px-4 py-3.5 text-right font-inter text-xs font-bold text-white uppercase tracking-wide border-r border-[#2d4a6f]">
                           HPP
@@ -1184,7 +1128,7 @@ export default function MasterProduk() {
                     <tbody>
                       {paginatedProducts.length === 0 ? (
                         <tr>
-                          <td colSpan="6" className="px-6 py-12 text-center font-inter text-sm text-gray-400 dark:text-slate-500">
+                          <td colSpan="7" className="px-6 py-12 text-center font-inter text-sm text-gray-400 dark:text-slate-500">
                             {filteredProducts.length === 0 ? "Belum ada produk" : "Tidak ada produk di halaman ini"}
                           </td>
                         </tr>
@@ -1197,10 +1141,20 @@ export default function MasterProduk() {
                              className={`${rowBg} hover:bg-blue-100/50 dark:hover:bg-slate-800 transition-colors border-b border-gray-100 dark:border-slate-800/50 ${product.product_type === 'free_gift' ? 'border-l-4 border-l-indigo-400' : ''}`}
                            >
                               <td className="px-4 py-3.5 text-left align-middle font-inter text-sm font-medium text-gray-700 dark:text-slate-300 border-r border-gray-100 dark:border-slate-800/50">
-                                {product.name}
+                                <div className="flex items-center gap-2 min-w-0 max-w-[280px]" title={product.name}>
+                                  <span className="truncate whitespace-nowrap">{product.name}</span>
+                                  {product.series ? (
+                                    <span className="shrink-0 px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-100 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-900">{product.series}</span>
+                                  ) : null}
+                                </div>
                               </td>
-                              <td className="px-4 py-3.5 text-center align-middle font-inter text-sm font-bold text-gray-900 dark:text-white border-r border-gray-100 dark:border-slate-800/50">
-                                {product.initial_stock || 0}
+                              <td className="px-4 py-3.5 text-left align-middle font-inter text-sm font-medium text-gray-600 dark:text-slate-300 border-r border-gray-100 dark:border-slate-800/50">
+                                <span className="whitespace-nowrap" title={product.jenis_kain?.material || undefined}>
+                                  {product.jenis_kain?.name || <span className="text-gray-400 dark:text-slate-500">Belum diatur</span>}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3.5 text-center align-middle font-inter text-sm font-bold text-gray-900 dark:text-white border-r border-gray-100 dark:border-slate-800/50 whitespace-nowrap" title={product.stok_bersama ? `Stok bersama: mengikuti ${product.stok_bersama.mengikuti}` : undefined}>
+                                {stokProduk(product).nilai}
                               </td>
                               <td className="px-4 py-3.5 text-right align-middle font-inter text-sm font-medium text-gray-600 dark:text-slate-300 border-r border-gray-100 dark:border-slate-800/50">
                                 Rp {product.hpp.toLocaleString('id-ID')}
@@ -1289,8 +1243,11 @@ export default function MasterProduk() {
                               {product.sku}
                             </p>
                           </div>
-                          <p className="font-inter text-gray-900 dark:text-slate-100" style={{ fontSize: '15px', fontWeight: 600, letterSpacing: '0.01em' }}>
+                          <p className="font-inter text-gray-900 dark:text-slate-100 truncate whitespace-nowrap" style={{ fontSize: '15px', fontWeight: 600, letterSpacing: '0.01em' }} title={product.name}>
                             {product.name}
+                          </p>
+                          <p className="font-inter text-gray-500 dark:text-slate-400 truncate whitespace-nowrap mt-0.5" style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.01em' }}>
+                            {[product.jenis_kain?.name, product.series].filter(Boolean).join(' · ') || 'Jenis kain belum diatur'}
                           </p>
                         </div>
                         {renderStockIndicator(product)}
@@ -1298,9 +1255,9 @@ export default function MasterProduk() {
 
                         <div className="grid grid-cols-2 gap-3 mb-3">
                         <div className="bg-blue-50/50 dark:bg-[#404B5C] rounded-xl p-3 border border-blue-100/60 dark:border-slate-600/50 transition-colors duration-300">
-                          <p className="font-inter text-xs text-blue-600 dark:text-blue-400 mb-1 font-semibold">Stok Awal</p>
-                          <p className="font-outfit font-tabular text-blue-600 dark:text-blue-400" style={{ fontSize: '18px', fontWeight: 800, letterSpacing: '0.01em' }}>
-                            {product.initial_stock || 0}
+                          <p className="font-inter text-xs text-blue-600 dark:text-blue-400 mb-1 font-semibold">Stok</p>
+                          <p className="font-outfit font-tabular text-blue-600 dark:text-blue-400" style={{ fontSize: '18px', fontWeight: 800, letterSpacing: '0.01em' }} title={product.stok_bersama ? `Stok bersama: mengikuti ${product.stok_bersama.mengikuti}` : undefined}>
+                            {stokProduk(product).nilai}
                           </p>
                         </div>
                         <div className="bg-orange-50/50 dark:bg-[#404B5C] rounded-xl p-3 border border-orange-100/60 dark:border-slate-600/50 transition-colors duration-300">
