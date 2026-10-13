@@ -17,7 +17,7 @@
  * pemanggil tetap merender tabelnya (`hidden lg:table`).
  */
 import { ChevronRight, Truck } from "lucide-react";
-import { ORDER_STAGE_LABEL, ORDER_STAGE_STYLE, orderStage, shippingLine } from "@/lib/order-flow";
+import { ORDER_STAGE_LABEL, ORDER_STAGE_STYLE, SHIPPING_STATUS_STYLE, orderStage, shippingLine, shippingStatusOf } from "@/lib/order-flow";
 
 export interface OrderSummary {
   id: string;
@@ -29,6 +29,8 @@ export interface OrderSummary {
   /** Baris pengiriman; opsional supaya pemakai lama tanpa field ini tetap jalan. */
   shipping_method?: string | null;
   awb_no?: string | null;
+  /** Status pengiriman terpisah dari status pesanan. */
+  shipping_status?: string | null;
 }
 
 function rupiah(n: number) {
@@ -76,6 +78,17 @@ export default function OrdersMobileList<T extends OrderSummary>({
               <Truck size={13} strokeWidth={1.9} className="shrink-0" />
               <span className="text-xs font-medium truncate">{ship.courier} · {ship.resi}</span>
             </div>
+            {/* Status pengiriman (mis. "Menunggu Pickup") — dipisah dari pill tahap pesanan. */}
+            {(() => {
+              const ss = shippingStatusOf(o);
+              if (!ss) return null;
+              const st = SHIPPING_STATUS_STYLE[ss];
+              return (
+                <span className="badge mt-1.5" style={{ background: st.bg, color: st.color, border: `1px solid ${st.border}` }}>
+                  {ship.status}
+                </span>
+              );
+            })()}
           </>
         );
 

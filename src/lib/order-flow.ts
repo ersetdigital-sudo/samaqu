@@ -1,24 +1,26 @@
 /**
  * Tahap (stage) alur pesanan admin — istilah ala Shopee Seller Centre.
  *
- * Tabel `orders` hanya menyimpan empat status: `pending`, `diproses`, `selesai`, `dibatalkan`
- * (plus `dikirim`, yang datang dari pelacakan J&T). Shopee Seller Centre menampilkan daftar
- * pesanan menurut **langkah berikutnya yang harus dikerjakan penjual**, jadi tab "Perlu Dikirim"
- * dan "Dikirim" di sini diturunkan dari status + ada/tidaknya resi:
- * `diproses` tanpa resi = belum diatur (perlu dikirim), `diproses` ber-resi = paket sudah jalan.
+ * Status PESANAN (`orders.status`) dan status PENGIRIMAN (`orders.shipping_status`) sengaja
+ * dipisah:
+ * - `orders.status`: `pending` → `diproses` → `dikirim` → `selesai` (+ `dibatalkan`).
+ *   `dikirim` HANYA ditulis saat J&T melaporkan pemindaian (lihat `src/lib/jnt/tracking-sync.ts`),
+ *   bukan sekadar karena resi sudah terbit.
+ * - `orders.shipping_status`: `menunggu_pickup` → `dikirim` → `selesai` (NULL = resi belum dibuat).
  *
- * Ini murni lapisan tampilan: tidak ada status baru yang ditulis ke database, dan filter daftar
- * tidak mengubah query apa pun. Gerbang "Atur Pesanan" tetap status `diproses`
- * (lihat `OrderDetailContent` + bagian "Atur Pesanan" di AGENTS.md) — modul ini hanya menamai
- * dan mengelompokkan keadaan itu supaya cocok dengan yang dilihat admin.
+ * Tahap daftar diturunkan murni dari `orders.status`:
+ * `pending`=Belum Bayar, `diproses`=Perlu Dikirim (resi bisa belum/sudah terbit), `dikirim`,
+ * `selesai`, `dibatalkan`. Informasi "Menunggu Pickup" dsb. ditampilkan terpisah lewat
+ * `shippingLine()`, bukan sebagai tahap.
+ *
+ * Modul ini murni lapisan tampilan: tidak menulis status apa pun ke database.
  */
 
 export type OrderStage = "belum_bayar" | "perlu_dikirim" | "dikirim" | "selesai" | "dibatalkan";
 
-/** Field minimum untuk menentukan tahap: status pesanan + nomor resi J&T. */
+/** Field minimum untuk menentukan tahap: status pesanan. */
 export interface StageSource {
   status: string;
-  awb_no?: string | null;
 }
 
 export function orderStage(order: StageSource): OrderStage {
@@ -32,8 +34,8 @@ export function orderStage(order: StageSource): OrderStage {
     case "dibatalkan":
       return "dibatalkan";
     default:
-      // `diproses` (dan status tak dikenal): resi sudah terbit = paket jalan, belum = menunggu diatur.
-      return order.awb_no ? "dikirim" : "perlu_dikirim";
+      // `diproses` (dibayar, belum diserahkan ke kurir) dan status tak dikenal.
+      return "perlu_dikirim";
   }
 }
 
@@ -79,15 +81,48 @@ export const ORDER_STAGE_STYLE: Record<OrderStage, { bg: string; color: string; 
   dibatalkan: { bg: "#f4f4f5", color: "#52525b", border: "#e4e4e7" },
 };
 
-/** Ringkasan pengiriman satu baris daftar: kurir + nomor resi (atau alasan resi kosong). */
+/* ── Status pengiriman (terpisah dari tahap pesanan) ── */
+
+export type ShippingStatus = "menunggu_pickup" | "dikirim" | "selesai";
+
+export const SHIPPING_STATUS_LABEL: Record<ShippingStatus, string> = {
+  menunggu_pickup: "Menunggu Pickup",
+  dikirim: "Dikirim",
+  selesai: "Terkirim",
+};
+
+export const SHIPPING_STATUS_STYLE: Record<ShippingStatus, { bg: string; color: string; border: string }> = {
+  menunggu_pickup: { bg: "#fff7ed", color: "#c2410c", border: "#ffedd5" },
+  dikirim: { bg: "#eff6ff", color: "#1d4ed8", border: "#dbeafe" },
+  selesai: { bg: "#ecfdf5", color: "#047857", border: "#d1fae5" },
+};
+
+/** Sumber untuk status pengiriman: kolom + fallback resi (data lama sebelum kolom ada). */
+export interface ShippingSource {
+  shipping_status?: string | null;
+  awb_no?: string | null;
+}
+
+export function shippingStatusOf(order: ShippingSource): ShippingStatus | null {
+  if (order.shipping_status === "menunggu_pickup" || order.shipping_status === "dikirim" || order.shipping_status === "selesai") {
+    return order.shipping_status;
+  }
+  // Data lama: resi sudah ada tapi kolom belum pernah diisi → anggap menunggu pickup.
+  if (order.awb_no) return "menunggu_pickup";
+  return null;
+}
+
+/** Ringkasan pengiriman satu baris daftar: kurir + nomor resi + status pengiriman. */
 export function shippingLine(
-  order: StageSource & { shipping_method?: string | null }
-): { courier: string; resi: string; awaiting: boolean } {
+  order: StageSource & ShippingSource & { shipping_method?: string | null }
+): { courier: string; resi: string; status: string | null; awaiting: boolean } {
   const stage = orderStage(order);
   const awaiting = !order.awb_no && stage === "perlu_dikirim";
+  const ss = shippingStatusOf(order);
   return {
     courier: order.shipping_method || "Pengiriman",
     resi: order.awb_no || (awaiting ? "Resi belum dibuat" : "Tanpa resi"),
+    status: ss ? SHIPPING_STATUS_LABEL[ss] : null,
     awaiting,
   };
 }
