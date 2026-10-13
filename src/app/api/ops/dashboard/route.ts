@@ -52,6 +52,8 @@ export async function GET(req: NextRequest) {
   const admin = getSupabaseAdmin();
   const { startIso, endIso } = jakartaDayBounds();
   const month = jakartaMonthBounds(new URL(req.url).searchParams.get("month"));
+  // Awal jendela "7 hari terakhir" (WIB): hari ini + 6 hari ke belakang.
+  const trendStartIso = new Date(new Date(startIso).getTime() - 6 * 86400000).toISOString();
 
   const activeLead = "followup_status.eq.baru,followup_status.eq.dijadwalkan,followup_status.eq.dnd";
   const countOf = async (build: (q: any) => any) => {
@@ -70,6 +72,7 @@ export async function GET(req: NextRequest) {
     ordersMonth,
     variants,
     activity,
+    ordersTrend,
   ] = await Promise.all([
     countOf((q) => q),
     countOf((q) => q.gte("created_at", startIso)),
@@ -81,6 +84,8 @@ export async function GET(req: NextRequest) {
     admin.from("orders").select("id, total, status, created_at").gte("created_at", month.startIso).lt("created_at", month.endIso),
     admin.from("product_variants").select("stock"),
     admin.from("lead_activities").select("id, lead_id, action, note, created_at, actor").order("created_at", { ascending: false }).limit(6),
+    // Order 7 hari terakhir (WIB) — sumber grafik `trendHarian` (batas bulan ≠ jendela 7 hari).
+    admin.from("orders").select("id, total, status, created_at").gte("created_at", trendStartIso).lt("created_at", endIso),
   ]);
 
   const orders = (ordersMonth.data || []) as any[];
@@ -108,13 +113,18 @@ export async function GET(req: NextRequest) {
   // tidak dikarang).
   const productIds = Array.from(new Set(items.map((it) => it.product_id).filter(Boolean))) as string[];
   const hppByProduct = new Map<string, number>();
+  const skuByProduct = new Map<string, string>();
   if (productIds.length > 0) {
-    const { data: prods } = await admin.from("products").select("id, hpp").in("id", productIds);
-    for (const p of (prods || []) as any[]) hppByProduct.set(String(p.id), Number(p.hpp) || 0);
+    const { data: prods } = await admin.from("products").select("id, hpp, sku").in("id", productIds);
+    for (const p of (prods || []) as any[]) {
+      hppByProduct.set(String(p.id), Number(p.hpp) || 0);
+      const sku = String(p.sku ?? "").trim();
+      if (sku) skuByProduct.set(String(p.id), sku);
+    }
   }
 
   let hpp = 0;
-  const agg = new Map<string, { name: string; qty: number; total: number }>();
+  const agg = new Map<string, { name: string; qty: number; total: number; productId: string }>();
   for (const it of items) {
     const qty = Number(it.quantity ?? it.qty) || 0;
     const price = Number(it.price) || 0;
@@ -125,13 +135,18 @@ export async function GET(req: NextRequest) {
     hpp += unitHpp * qty;
 
     const key = it.product_name || "(tanpa nama)";
-    const cur = agg.get(key) || { name: key, qty: 0, total: 0 };
+    const cur = agg.get(key) || { name: key, qty: 0, total: 0, productId: "" };
     cur.qty += qty;
     cur.total += lineTotal;
+    if (!cur.productId && it.product_id) cur.productId = String(it.product_id);
     agg.set(key, cur);
   }
 
-  const topProducts = Array.from(agg.values()).sort((a, b) => b.qty - a.qty).slice(0, 5);
+  // SKU di-join dari `products.sku` lewat product_id (kosong → "-").
+  const topProducts = Array.from(agg.values())
+    .sort((a, b) => b.qty - a.qty)
+    .slice(0, 5)
+    .map((p) => ({ name: p.name, qty: p.qty, total: p.total, sku: skuByProduct.get(p.productId) || "-" }));
 
   // BIAYA operasional & packing: belum ada modul Pengeluaran → 0.
   // (Menunggu modul Pengeluaran supaya netProfit tidak dikarang.)
@@ -152,6 +167,26 @@ export async function GET(req: NextRequest) {
   for (let d = 1; d <= month.daysInMonth; d++) {
     const tanggal = `${month.value}-${String(d).padStart(2, "0")}`;
     trend.push({ tanggal, hari: String(d), omset: dailyMap.get(tanggal) || 0 });
+  }
+
+  /* ── Tren 7 hari terakhir (WIB, termasuk hari ini) — dipakai grafik dashboard ──
+     Jendela 7 hari tidak selalu berada di dalam bulan terpilih (mis. awal bulan),
+     jadi dihitung dari query `ordersTrend` sendiri. Urut paling lama → hari ini. */
+  const trendValid = ((ordersTrend.data || []) as any[]).filter((o) => String(o.status || "") !== "dibatalkan");
+  const trendDailyMap = new Map<string, number>();
+  for (const o of trendValid) {
+    const created = new Date(o.created_at);
+    if (Number.isNaN(created.getTime())) continue;
+    const wibDay = new Date(created.getTime() + BIZ_OFFSET_MS).toISOString().slice(0, 10);
+    trendDailyMap.set(wibDay, (trendDailyMap.get(wibDay) || 0) + (Number(o.total) || 0));
+  }
+
+  const trendHarian: { tanggal: string; label: string; omset: number }[] = [];
+  for (let back = 6; back >= 0; back--) {
+    const wib = new Date(new Date(startIso).getTime() - back * 86400000 + BIZ_OFFSET_MS);
+    const tanggal = wib.toISOString().slice(0, 10);
+    const label = `${String(wib.getUTCDate()).padStart(2, "0")}/${String(wib.getUTCMonth() + 1).padStart(2, "0")}`;
+    trendHarian.push({ tanggal, label, omset: trendDailyMap.get(tanggal) || 0 });
   }
 
   /* ── Stok ── */
@@ -189,6 +224,7 @@ export async function GET(req: NextRequest) {
       rataRata,
     },
     trend,
+    trendHarian,
     leads: {
       total: leadTotal,
       baruHariIni: leadBaruHariIni,

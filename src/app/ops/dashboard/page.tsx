@@ -26,8 +26,9 @@ const IconProfit: any = (LucideIcons as any).TrendingUp ?? (LucideIcons as any).
    data hardcode / dummy. Grafik tren pakai SVG inline (tanpa dependency baru).
    ────────────────────────────────────────────────────────────────────────── */
 
-type TopProduct = { name: string; qty: number; total: number };
+type TopProduct = { name: string; qty: number; total: number; sku: string };
 type TrendPoint = { tanggal: string; hari: string; omset: number };
+type TrendHarian = { tanggal: string; label: string; omset: number };
 
 type DashboardData = {
   generatedAt: string;
@@ -45,6 +46,7 @@ type DashboardData = {
     rataRata: number;
   };
   trend: TrendPoint[];
+  trendHarian: TrendHarian[];
   topProducts: TopProduct[];
 };
 
@@ -104,47 +106,115 @@ function StatCard({ label, value, caption, tone }: { label: string; value: strin
   );
 }
 
-/** Grafik batang sederhana (SVG inline, tanpa recharts). */
-function TrendChart({ trend }: { trend: TrendPoint[] }) {
-  const max = trend.reduce((m, d) => Math.max(m, Number(d.omset) || 0), 0);
-  if (trend.length === 0 || max <= 0) {
-    return <p className="text-sm text-gray-500 py-12 text-center">Belum ada penjualan bulan ini</p>;
+/* ── Grafik "Tren Penjualan" (SVG inline, tanpa library/tambahan dependency) ── */
+
+const BULAN_SINGKAT = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+
+/** "2026-10-12" → "12 Okt" (untuk tooltip). */
+function tanggalRingkas(tanggal: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(tanggal || "");
+  if (!m) return tanggal || "";
+  return `${Number(m[3])} ${BULAN_SINGKAT[Number(m[2]) - 1] || m[2]}`;
+}
+
+/** Label sumbu Y ringkas: 1.200.000 → "1,2jt"; 800.000 → "800rb"; 0 → "0". */
+function fmtSumbu(v: number): string {
+  if (v >= 1_000_000) return `${(v / 1_000_000).toLocaleString("id-ID", { maximumFractionDigits: 1 })}jt`;
+  if (v >= 1000) return `${Math.round(v / 1000).toLocaleString("id-ID")}rb`;
+  return nfmt(v);
+}
+
+/** Batas atas "bulat enak dibaca" supaya tiap tick rapi (mis. 800.000 = 4 × 200.000). */
+function niceTop(rawMax: number, ticks = 4): number {
+  if (!(rawMax > 0)) return ticks;
+  const step = rawMax / ticks;
+  const pow = Math.pow(10, Math.floor(Math.log10(step)));
+  const f = step / pow;
+  const nf = f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10;
+  return nf * pow * ticks;
+}
+
+/** Path batang dengan HANYA sudut atas yang membulat (radius `r`). */
+function barPath(x: number, y: number, w: number, h: number, r: number): string {
+  const rr = Math.max(0, Math.min(r, w / 2, h));
+  return [
+    `M ${x} ${y + h}`,
+    `L ${x} ${y + rr}`,
+    `Q ${x} ${y} ${x + rr} ${y}`,
+    `L ${x + w - rr} ${y}`,
+    `Q ${x + w} ${y} ${x + w} ${y + rr}`,
+    `L ${x + w} ${y + h}`,
+    "Z",
+  ].join(" ");
+}
+
+/** Grafik batang vertikal 7 hari terakhir + gradient biru, grid putus-putus, label sumbu. */
+function TrendChart({ trend }: { trend: TrendHarian[] }) {
+  const max = (trend || []).reduce((m, d) => Math.max(m, Number(d.omset) || 0), 0);
+  if (!trend || trend.length === 0 || max <= 0) {
+    return <p className="text-sm text-gray-500 py-16 text-center">Belum ada penjualan 7 hari terakhir</p>;
   }
 
-  const count = trend.length;
-  const barW = 10;
-  const gap = 6;
-  const step = barW + gap;
-  const width = count * step + gap;
-  const chartH = 140;
-  const axisH = 22;
-  const height = chartH + axisH;
-  const labelEvery = count > 20 ? 5 : count > 10 ? 3 : 2;
+  const VB_W = 720;
+  const VB_H = 300;
+  const padL = 54; // ruang label sumbu Y
+  const padR = 14;
+  const padT = 18; // sedikit ruang di atas batang tertinggi
+  const padB = 30; // ruang label sumbu X
+  const plotW = VB_W - padL - padR;
+  const plotH = VB_H - padT - padB;
+  const baseY = padT + plotH;
+  const top = niceTop(max);
+  const n = trend.length;
+  const slot = plotW / n;
+  const barW = Math.min(slot * 0.58, 66); // batang melebar, tidak kurus
+  const radius = 7;
+  const hMin = 3; // nilai 0 tetap digambar tipis menempel garis dasar
 
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} className="w-full" role="img" aria-label="Tren penjualan harian">
+    <svg
+      viewBox={`0 0 ${VB_W} ${VB_H}`}
+      preserveAspectRatio="xMidYMid meet"
+      className="w-full h-[220px] md:h-[260px]"
+      role="img"
+      aria-label="Tren penjualan 7 hari terakhir"
+    >
       <defs>
-        <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#8b5cf6" />
+        <linearGradient id="trendBarGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#93c5fd" />
           <stop offset="100%" stopColor="#3b82f6" />
         </linearGradient>
       </defs>
-      <line x1="0" y1={chartH} x2={width} y2={chartH} stroke="#e2e8f0" strokeWidth="1" />
+
+      {/* Grid horizontal putus-putus + label sumbu Y: 0 dan 4 tick ke atas */}
+      {[0, 1, 2, 3, 4].map((i) => {
+        const value = (top / 4) * i;
+        const y = baseY - (value / top) * plotH;
+        return (
+          <g key={`grid-${i}`}>
+            <line x1={padL} y1={y} x2={VB_W - padR} y2={y} stroke="#e5e7eb" strokeWidth="1" strokeDasharray="4 4" />
+            <text x={padL - 9} y={y} textAnchor="end" dominantBaseline="middle" fontSize="12" fill="#94a3b8">
+              {fmtSumbu(value)}
+            </text>
+          </g>
+        );
+      })}
+
+      {/* Batang + label sumbu X (DD/MM) */}
       {trend.map((d, i) => {
         const value = Number(d.omset) || 0;
-        const h = (value / max) * (chartH - 8);
-        const x = gap + i * step;
-        const showLabel = i === 0 || (i + 1) % labelEvery === 0 || i === count - 1;
+        const h = value > 0 ? Math.max((value / top) * plotH, hMin) : hMin;
+        const x = padL + i * slot + (slot - barW) / 2;
+        const y = baseY - h;
         return (
           <g key={d.tanggal}>
-            <rect x={x} y={chartH - h} width={barW} height={h} rx="2" fill="url(#barGrad)">
-              <title>{`${d.tanggal} · ${rp(value)}`}</title>
-            </rect>
-            {showLabel && (
-              <text x={x + barW / 2} y={chartH + 15} textAnchor="middle" fontSize="10" fill="#94a3b8">
-                {d.hari}
-              </text>
-            )}
+            <g>
+              <title>{`${tanggalRingkas(d.tanggal)} · ${rp(value)}`}</title>
+              <path d={barPath(x, y, barW, h, radius)} fill="url(#trendBarGrad)" />
+            </g>
+            <text x={x + barW / 2} y={baseY + 20} textAnchor="middle" fontSize="12" fill="#64748b">
+              {d.label}
+            </text>
           </g>
         );
       })}
@@ -183,7 +253,7 @@ export default function OpsDashboardPage() {
   if (isLoading) {
     return (
       <div className="space-y-5">
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl relative overflow-hidden p-6 md:p-8">
+        <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-3xl relative overflow-hidden p-6 md:p-8">
           <div className="relative z-10 space-y-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="flex items-start gap-4">
@@ -235,13 +305,13 @@ export default function OpsDashboardPage() {
     );
   }
 
-  const { ringkasan: r, trend, topProducts } = data;
+  const { ringkasan: r, trendHarian, topProducts } = data;
   const profit = r.netProfit >= 0;
 
   return (
     <div className="space-y-5">
       {/* ── Header gradient + 4 card kaca ── */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl relative overflow-hidden p-6 md:p-8">
+      <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-3xl relative overflow-hidden p-6 md:p-8">
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -mr-16 -mt-16" />
         <div className="absolute bottom-0 left-0 w-40 h-40 bg-white/5 rounded-full blur-2xl -ml-10 -mb-10" />
         <div className="relative z-10 space-y-6">
@@ -350,30 +420,38 @@ export default function OpsDashboardPage() {
             <IconProfit size={18} className="text-blue-600" />
             <h2 className="font-bold text-slate-900">Tren Penjualan</h2>
           </div>
-          <p className="text-xs text-gray-500 mb-4">Melihat pola penjualan harian</p>
-          <TrendChart trend={trend} />
+          <p className="text-[11px] uppercase tracking-wide text-gray-500 font-semibold mb-4">7 HARI TERAKHIR</p>
+          <TrendChart trend={trendHarian} />
         </div>
 
         <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex items-center gap-2 mb-2">
             <IconProfit size={18} className="text-blue-600" />
             <h2 className="font-bold text-slate-900">Produk Terlaris</h2>
           </div>
           {topProducts.length === 0 ? (
             <p className="text-sm text-gray-500">Belum ada penjualan bulan ini</p>
           ) : (
-            <ol className="space-y-3">
+            <ol>
               {topProducts.slice(0, 5).map((p, i) => (
-                <li key={`${p.name}-${i}`} className="flex items-center gap-3">
-                  <span className="w-7 h-7 rounded-full bg-blue-50 text-blue-600 text-xs font-black flex items-center justify-center shrink-0">
+                <li
+                  key={`${p.name}-${i}`}
+                  className="flex items-center gap-3 py-3 border-b border-gray-100 last:border-0"
+                >
+                  <span
+                    className={`w-7 h-7 rounded-full text-xs font-black flex items-center justify-center shrink-0 ${
+                      i === 0 ? "bg-amber-400 text-amber-950" : "bg-gray-200 text-gray-600"
+                    }`}
+                  >
                     {i + 1}
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-bold text-slate-900 truncate">{p.name}</p>
-                    <p className="text-xs text-gray-500">
-                      {nfmt(p.qty)} unit · {rp(p.total)}
-                    </p>
+                    <p className="text-xs text-gray-500 truncate">Kode: {p.sku || "-"}</p>
                   </div>
+                  <span className="shrink-0 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold whitespace-nowrap">
+                    {nfmt(p.qty)} terjual
+                  </span>
                 </li>
               ))}
             </ol>
