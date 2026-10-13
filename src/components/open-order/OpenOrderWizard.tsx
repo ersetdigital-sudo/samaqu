@@ -58,6 +58,43 @@ const STEP_TITLES: Record<Step, string> = {
 /** Tombol kembali di header per langkah. */
 const BACK_TO: Partial<Record<Step, Step>> = { 2: 1, 3: 1, 4: 3, 5: 4 };
 
+/* ── Cache ongkir J&T ──
+   Panggilan pertama ke API tarif J&T memang ~3 detik (yang berikutnya ~0,1 detik karena
+   di-cache server 10 menit). Cache di klien (memori + localStorage) bikin kombinasi yang pernah
+   dihitung tampil seketika — mis. customer buka lagi wizardnya atau bolak-balik ubah jumlah. */
+const ONGKIR_CACHE_KEY = "samaqu:open-order:ongkir";
+const ONGKIR_CACHE_TTL_MS = 2 * 60 * 60 * 1000;
+type OngkirResult = { service: string; cost: number };
+
+function readOngkirCache(cacheKey: string): OngkirResult | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = JSON.parse(window.localStorage.getItem(ONGKIR_CACHE_KEY) || "{}") as Record<
+      string,
+      OngkirResult & { ts: number }
+    >;
+    const hit = raw[cacheKey];
+    if (!hit || Date.now() - hit.ts > ONGKIR_CACHE_TTL_MS) return null;
+    return { service: hit.service, cost: hit.cost };
+  } catch {
+    return null;
+  }
+}
+
+function writeOngkirCache(cacheKey: string, value: OngkirResult): void {
+  if (typeof window === "undefined") return;
+  try {
+    const raw = JSON.parse(window.localStorage.getItem(ONGKIR_CACHE_KEY) || "{}") as Record<
+      string,
+      OngkirResult & { ts: number }
+    >;
+    raw[cacheKey] = { ...value, ts: Date.now() };
+    window.localStorage.setItem(ONGKIR_CACHE_KEY, JSON.stringify(raw));
+  } catch {
+    /* localStorage penuh / diblokir → abaikan, hitungan tetap jalan */
+  }
+}
+
 function defaultDraft(products: OpenOrderProduct[], productId: string, color: string): ProductDraft | null {
   const product = findOpenOrderProduct(products, productId) ?? products[0];
   if (!product) return null;
@@ -211,8 +248,9 @@ export default function OpenOrderWizard() {
     }
 
     const cacheKey = `${customer.city.trim()}|${district}|${totalWeight}`;
-    const cached = ongkirCacheRef.current.get(cacheKey);
+    const cached = ongkirCacheRef.current.get(cacheKey) ?? readOngkirCache(cacheKey);
     if (cached) {
+      ongkirCacheRef.current.set(cacheKey, cached);
       setShipping(cached);
       setOngkirError(false);
       setLoadingOngkir(false);
@@ -251,6 +289,7 @@ export default function OpenOrderWizard() {
         const cheapest = json.data[0];
         const next = { service: cheapest.service || "J&T", cost: cheapest.cost || 0 };
         ongkirCacheRef.current.set(cacheKey, next);
+        writeOngkirCache(cacheKey, next);
         setShipping(next);
       } catch (err) {
         if ((err as Error).name === "AbortError") return;
