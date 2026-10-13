@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigate, useLocation } from "@/lib/ops-router";
 import { base44 } from "@/lib/ops-api";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
@@ -48,6 +48,8 @@ export default function TambahProduk() {
     hpp: productToEdit?.hpp || 0,
     price: productToEdit?.price || 0,
     stock: productToEdit?.stock || 0,
+    category: productToEdit?.category || '', // ✅ KATEGORI (kolom wajib di DB)
+    jenis_kain_id: productToEdit?.jenis_kain_id || '', // ✅ JENIS KAIN
     product_type: productToEdit?.product_type || 'normal' // ✅ FREE GIFT SUPPORT
   });
 
@@ -80,12 +82,26 @@ export default function TambahProduk() {
   const [duplicateSku, setDuplicateSku] = useState(null);
   const skuCheckTimeoutRef = useRef(null);
 
-  // Fetch all products for SKU validation
+  // ✅ JENIS KAIN: daftar pilihan dari tabel yang sama dengan website
+  const { data: jenisKainList = [] } = useQuery({
+    queryKey: ['jenis-kain'],
+    queryFn: () => base44.entities.JenisKain.list(),
+    initialData: [],
+  });
+
+  // Fetch all products: dipakai untuk cek SKU duplikat + daftar pilihan kategori
   const { data: allProducts = [] } = useQuery({
     queryKey: ['products-for-sku-check'],
     queryFn: () => base44.entities.Product.list(),
-    enabled: !isEditMode, // Only fetch when creating new product
+    initialData: [], // juga dipakai daftar kategori, jadi selalu diambil (bukan hanya saat tambah)
   });
+
+  // Pilihan kategori = yang sudah dipakai produk lain (+ kategori produk yang sedang diedit).
+  const categoryOptions = useMemo(() => {
+    const set = new Set(allProducts.map((p) => p.category).filter(Boolean));
+    if (productToEdit?.category) set.add(productToEdit.category);
+    return [...set].sort();
+  }, [allProducts, productToEdit?.category]);
 
   // Debounced SKU check function
   const checkSkuAvailability = useCallback((skuValue) => {
@@ -133,8 +149,10 @@ export default function TambahProduk() {
     };
   }, [formData.sku, checkSkuAvailability, isEditMode]);
 
+  // 0 tetap ditulis "0" (bukan kosong): input HPP/ Harga Jual `required`, jadi kalau
+  // dikosongkan browser menolak submit tanpa pesan apa pun — dan HPP 0 itu wajar.
   const formatRupiah = (value) => {
-    if (!value) return '';
+    if (value === null || value === undefined || value === '') return '';
     const number = parseInt(value.toString().replace(/\D/g, ''));
     if (isNaN(number)) return '';
     return number.toLocaleString('id-ID');
@@ -144,8 +162,30 @@ export default function TambahProduk() {
     return parseInt(value.replace(/\D/g, '')) || 0;
   };
 
-  const [displayHPP, setDisplayHPP] = useState(productToEdit ? formatRupiah(productToEdit.hpp) : '');
-  const [displayPrice, setDisplayPrice] = useState(productToEdit ? formatRupiah(productToEdit.price) : '');
+  const [displayHPP, setDisplayHPP] = useState(productToEdit ? formatRupiah(productToEdit.hpp ?? 0) : '');
+  const [displayPrice, setDisplayPrice] = useState(productToEdit ? formatRupiah(productToEdit.price ?? 0) : '');
+
+  // Produk yang mau diedit bisa baru tersedia di render berikutnya (state navigasi baru
+  // terbaca setelah URL berpindah), jadi formData disamakan begitu produknya siap —
+  // bukan hanya dari nilai awal useState. Isian user yang sudah diketik tidak ditimpa.
+  useEffect(() => {
+    if (!isEditMode || !productToEdit?.id) return;
+    setFormData((prev) => {
+      if (prev.name || prev.sku) return prev;
+      return {
+        sku: productToEdit.sku || '',
+        name: productToEdit.name || '',
+        hpp: productToEdit.hpp || 0,
+        price: productToEdit.price || 0,
+        stock: productToEdit.stock || 0,
+        category: productToEdit.category || '',
+        jenis_kain_id: productToEdit.jenis_kain_id || '',
+        product_type: productToEdit.product_type || 'normal'
+      };
+    });
+    setDisplayHPP((prev) => prev || formatRupiah(productToEdit.hpp ?? 0));
+    setDisplayPrice((prev) => prev || formatRupiah(productToEdit.price ?? 0));
+  }, [isEditMode, productToEdit?.id]);
 
   // ✅ Mutasi gabungan: simpan produk + variant (create/edit)
   const saveMutation = useMutation({
@@ -313,7 +353,13 @@ export default function TambahProduk() {
       stock: totalStock,
       initial_stock: isEditMode ? productToEdit.initial_stock : totalStock, // Preserve initial_stock in edit mode
       status,
-      product_type: formData.product_type // ✅ Include product_type
+      category: formData.category.trim(), // ✅ Kategori wajib (NOT NULL di DB)
+      // Series & daftar warna disimpan per PRODUK, diambil dari baris varian.
+      // Series dipakai juga untuk menyusun id produk baru ("nama-series").
+      series: variantRows.map((v) => v.series_name.trim()).find(Boolean) || null,
+      colors: [...new Set(variantRows.map((v) => v.color.trim()).filter(Boolean))],
+      product_type: formData.product_type, // ✅ Include product_type
+      jenis_kain_id: formData.jenis_kain_id || null // ✅ JENIS KAIN: relasi ke tabel jenis_kain
     };
 
     saveMutation.mutate({ product: dataToSubmit, variantRows, removedIds: removedVariantIds });
@@ -328,10 +374,12 @@ export default function TambahProduk() {
         hpp: productToEdit.hpp,
         price: productToEdit.price,
         stock: productToEdit.stock,
+        category: productToEdit.category || '',
+        jenis_kain_id: productToEdit.jenis_kain_id || '',
         product_type: productToEdit.product_type || 'normal'
       });
-      setDisplayHPP(formatRupiah(productToEdit.hpp));
-      setDisplayPrice(formatRupiah(productToEdit.price));
+      setDisplayHPP(formatRupiah(productToEdit.hpp ?? 0));
+      setDisplayPrice(formatRupiah(productToEdit.price ?? 0));
     } else {
       // Reset to empty
       setFormData({
@@ -340,6 +388,8 @@ export default function TambahProduk() {
         hpp: 0,
         price: 0,
         stock: 0,
+        category: '',
+        jenis_kain_id: '',
         product_type: 'normal'
       });
       setDisplayHPP('');
@@ -551,6 +601,58 @@ export default function TambahProduk() {
                     className="w-full pl-12 pr-4 py-3.5 bg-white dark:bg-slate-900 border-2 border-gray-300 dark:border-slate-700 rounded-xl focus:border-blue-500 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 transition-all duration-200 text-lg font-semibold text-slate-900 dark:text-white"
                   />
                 </div>
+              </div>
+
+              {/* ✅ KATEGORI — wajib, menentukan bagian katalog di website */}
+              <div className="space-y-2">
+                <label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-slate-200">
+                  Kategori <span className="text-red-600 dark:text-red-400">*</span>
+                </label>
+                <div className="relative">
+                  <Layers className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={20} />
+                  <input
+                    type="text"
+                    required
+                    list="ops-kategori-produk"
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    placeholder="Contoh: Thobe"
+                    className="w-full pl-12 pr-4 py-3.5 bg-white dark:bg-slate-900 border-2 border-gray-300 dark:border-slate-700 rounded-xl focus:border-blue-500 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 transition-all duration-200 text-base font-semibold text-slate-900 dark:text-white"
+                  />
+                  <datalist id="ops-kategori-produk">
+                    {categoryOptions.map((c) => (
+                      <option key={c} value={c} />
+                    ))}
+                  </datalist>
+                </div>
+                <p className="text-gray-500 dark:text-gray-400 text-xs font-medium">
+                  Pilih kategori yang sudah ada atau tulis baru; kategori menentukan produk muncul di bagian mana pada katalog website
+                </p>
+              </div>
+
+              {/* ✅ JENIS KAIN */}
+              <div className="space-y-2">
+                <label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-slate-200">
+                  Jenis Kain
+                </label>
+                <div className="relative">
+                  <Layers className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={20} />
+                  <select
+                    value={formData.jenis_kain_id}
+                    onChange={(e) => setFormData({ ...formData, jenis_kain_id: e.target.value })}
+                    className="w-full pl-12 pr-4 py-3.5 bg-white dark:bg-slate-900 border-2 border-gray-300 dark:border-slate-700 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 transition-all duration-200 text-base font-semibold text-slate-900 dark:text-white cursor-pointer"
+                  >
+                    <option value="">— Pilih jenis kain —</option>
+                    {jenisKainList.map((jk) => (
+                      <option key={jk.id} value={jk.id}>
+                        {jk.name}{jk.material ? ` · ${jk.material}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <p className="text-gray-500 dark:text-gray-400 text-xs font-medium">
+                  Jenis kain dipakai website untuk filter katalog & info material di halaman produk
+                </p>
               </div>
 
               {/* ✅ TIPE PRODUK - FREE GIFT SUPPORT */}

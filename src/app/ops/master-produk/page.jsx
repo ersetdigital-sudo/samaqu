@@ -798,10 +798,10 @@ export default function MasterProduk() {
                 <IconBoxes size={15} className="shrink-0 opacity-90" />
                 <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-wide leading-tight min-h-[26px] md:min-h-[15px]">Total Stok</p>
               </div>
-              <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none">
+              <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none mt-2">
                 {totalStockUnits.toLocaleString('id-ID')}<span className="text-xs md:text-sm font-bold"> unit</span>
               </p>
-              <p className="mt-1 text-[10px] md:text-[11px] text-white/85 leading-tight">Total unit tersedia</p>
+              <p className="mt-1.5 text-[10px] md:text-[11px] text-white/85 leading-tight">Total unit tersedia</p>
             </button>
 
             <button
@@ -814,10 +814,10 @@ export default function MasterProduk() {
                 <IconAlertTriangle size={15} className="shrink-0 opacity-90" />
                 <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-wide leading-tight min-h-[26px] md:min-h-[15px]">Stok Menipis</p>
               </div>
-              <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none">
+              <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none mt-2">
                 {lowStockVariantCount.toLocaleString('id-ID')}<span className="text-xs md:text-sm font-bold"> varian</span>
               </p>
-              <p className="mt-1 text-[10px] md:text-[11px] text-white/85 leading-tight">Perlu restock</p>
+              <p className="mt-1.5 text-[10px] md:text-[11px] text-white/85 leading-tight">Perlu restock</p>
             </button>
 
             <button
@@ -830,10 +830,10 @@ export default function MasterProduk() {
                 <IconArrowDownToLine size={15} className="shrink-0 opacity-90" />
                 <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-wide leading-tight min-h-[26px] md:min-h-[15px]">Barang Masuk</p>
               </div>
-              <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none">
+              <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none mt-2">
                 {stockInMonthUnits.toLocaleString('id-ID')}<span className="text-xs md:text-sm font-bold"> unit</span>
               </p>
-              <p className="mt-1 text-[10px] md:text-[11px] text-white/85 leading-tight">Bulan berjalan (WIB)</p>
+              <p className="mt-1.5 text-[10px] md:text-[11px] text-white/85 leading-tight">Bulan berjalan (WIB)</p>
             </button>
 
             <button
@@ -846,10 +846,10 @@ export default function MasterProduk() {
                 <IconPackageX size={15} className="shrink-0 opacity-90" />
                 <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-wide leading-tight min-h-[26px] md:min-h-[15px]">Stok Habis</p>
               </div>
-              <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none">
+              <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none mt-2">
                 {outOfStockVariantCount.toLocaleString('id-ID')}<span className="text-xs md:text-sm font-bold"> varian</span>
               </p>
-              <p className="mt-1 text-[10px] md:text-[11px] text-white/85 leading-tight">Tidak ada stok tersedia</p>
+              <p className="mt-1.5 text-[10px] md:text-[11px] text-white/85 leading-tight">Tidak ada stok tersedia</p>
             </button>
           </>
         ) : activeTab === 'produk' ? (
@@ -912,10 +912,10 @@ export default function MasterProduk() {
                       <IconArrowDownToLine size={15} className="shrink-0 opacity-90" />
                       <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-wide leading-tight min-h-[26px] md:min-h-[15px]">Total Barang Masuk</p>
                     </div>
-                    <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none">
+                    <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none mt-2">
                       {stockInMonthUnits.toLocaleString('id-ID')}<span className="text-xs md:text-sm font-bold"> unit</span>
                     </p>
-                    <p className="mt-1 text-[10px] md:text-[11px] text-white/85 leading-tight">Unit diterima bulan ini</p>
+                    <p className="mt-1.5 text-[10px] md:text-[11px] text-white/85 leading-tight">Unit diterima bulan ini</p>
                   </div>
 
                   <div className="col-span-1 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-3.5 py-3 md:px-4 md:py-3.5 hover:bg-white/15 transition-all duration-300">
@@ -923,10 +923,10 @@ export default function MasterProduk() {
                       <IconCalendarClock size={15} className="shrink-0 opacity-90" />
                       <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-wide leading-tight min-h-[26px] md:min-h-[15px]">Masuk Hari Ini</p>
                     </div>
-                    <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none">
+                    <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none mt-2">
                       {stockInTodayUnits.toLocaleString('id-ID')}<span className="text-xs md:text-sm font-bold"> unit</span>
                     </p>
-                    <p className="mt-1 text-[10px] md:text-[11px] text-white/85 leading-tight">Diterima hari ini (WIB)</p>
+                    <p className="mt-1.5 text-[10px] md:text-[11px] text-white/85 leading-tight">Diterima hari ini (WIB)</p>
                   </div>
 
                   <div className="col-span-1 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-3.5 py-3 md:px-4 md:py-3.5 hover:bg-white/15 transition-all duration-300">
@@ -934,10 +934,10 @@ export default function MasterProduk() {
                       <IconBoxes size={15} className="shrink-0 opacity-90" />
                       <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-wide leading-tight min-h-[26px] md:min-h-[15px]">Varian Diterima</p>
                     </div>
-                    <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none">
+                    <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none mt-2">
                       {stockInMonthVariantCount.toLocaleString('id-ID')}<span className="text-xs md:text-sm font-bold"> varian</span>
                     </p>
-                    <p className="mt-1 text-[10px] md:text-[11px] text-white/85 leading-tight">SKU unik bulan ini</p>
+                    <p className="mt-1.5 text-[10px] md:text-[11px] text-white/85 leading-tight">SKU unik bulan ini</p>
                   </div>
 
                   <div className="col-span-2 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-3.5 py-3 md:px-4 md:py-3.5 hover:bg-white/15 transition-all duration-300">
@@ -945,10 +945,10 @@ export default function MasterProduk() {
                       <ClipboardList size={15} className="shrink-0 opacity-90" />
                       <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-wide leading-tight min-h-[26px] md:min-h-[15px]">Total Pencatatan</p>
                     </div>
-                    <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none">
+                    <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none mt-2">
                       {stockInMonthRecordCount.toLocaleString('id-ID')}<span className="text-xs md:text-sm font-bold"> pencatatan</span>
                     </p>
-                    <p className="mt-1 text-[10px] md:text-[11px] text-white/85 leading-tight">Pencatatan bulan ini</p>
+                    <p className="mt-1.5 text-[10px] md:text-[11px] text-white/85 leading-tight">Pencatatan bulan ini</p>
                   </div>
                 </>
               ) : (
@@ -959,10 +959,10 @@ export default function MasterProduk() {
                       <Package size={15} className="shrink-0 opacity-90" />
                       <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-wide leading-tight min-h-[26px] md:min-h-[15px]">Total Barang Keluar</p>
                     </div>
-                    <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none">
+                    <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none mt-2">
                       {stockOutUnits.toLocaleString('id-ID')}<span className="text-xs md:text-sm font-bold"> unit</span>
                     </p>
-                    <p className="mt-1 text-[10px] md:text-[11px] text-white/85 leading-tight">Total unit stok keluar</p>
+                    <p className="mt-1.5 text-[10px] md:text-[11px] text-white/85 leading-tight">Total unit stok keluar</p>
                   </div>
 
                   <div className="col-span-1 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-3.5 py-3 md:px-4 md:py-3.5 hover:bg-white/15 transition-all duration-300">
@@ -970,10 +970,10 @@ export default function MasterProduk() {
                       <ClipboardList size={15} className="shrink-0 opacity-90" />
                       <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-wide leading-tight min-h-[26px] md:min-h-[15px]">Total Transaksi</p>
                     </div>
-                    <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none">
+                    <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none mt-2">
                       {(transactions || []).length.toLocaleString('id-ID')}
                     </p>
-                    <p className="mt-1 text-[10px] md:text-[11px] text-white/85 leading-tight">Transaksi penjualan</p>
+                    <p className="mt-1.5 text-[10px] md:text-[11px] text-white/85 leading-tight">Transaksi penjualan</p>
                   </div>
 
                   <div className="col-span-1 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-3.5 py-3 md:px-4 md:py-3.5 hover:bg-white/15 transition-all duration-300">
@@ -981,10 +981,10 @@ export default function MasterProduk() {
                       <IconLayers size={15} className="shrink-0 opacity-90" />
                       <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-wide leading-tight min-h-[26px] md:min-h-[15px]">Produk Terjual</p>
                     </div>
-                    <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none">
+                    <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none mt-2">
                       {stockOutProductCount.toLocaleString('id-ID')}
                     </p>
-                    <p className="mt-1 text-[10px] md:text-[11px] text-white/85 leading-tight">Produk berbeda terjual</p>
+                    <p className="mt-1.5 text-[10px] md:text-[11px] text-white/85 leading-tight">Produk berbeda terjual</p>
                   </div>
 
                   <div className="col-span-2 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-3.5 py-3 md:px-4 md:py-3.5 hover:bg-white/15 transition-all duration-300">
@@ -992,10 +992,10 @@ export default function MasterProduk() {
                       <IconCalendarClock size={15} className="shrink-0 opacity-90" />
                       <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-wide leading-tight min-h-[26px] md:min-h-[15px]">Keluar Hari Ini</p>
                     </div>
-                    <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none">
+                    <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none mt-2">
                       {stockOutTodayUnits.toLocaleString('id-ID')}<span className="text-xs md:text-sm font-bold"> unit</span>
                     </p>
-                    <p className="mt-1 text-[10px] md:text-[11px] text-white/85 leading-tight">Unit keluar hari ini (WIB)</p>
+                    <p className="mt-1.5 text-[10px] md:text-[11px] text-white/85 leading-tight">Unit keluar hari ini (WIB)</p>
                   </div>
                 </>
               )}
@@ -1413,6 +1413,7 @@ export default function MasterProduk() {
                     <thead>
                       <tr className="bg-[#1e3a5f]">
                         <th className="px-4 py-3.5 text-left font-inter text-xs font-bold text-white uppercase tracking-wide border-r border-[#2d4a6f]">Produk</th>
+                        <th className="px-4 py-3.5 text-left font-inter text-xs font-bold text-white uppercase tracking-wide border-r border-[#2d4a6f] whitespace-nowrap">Jenis Kain</th>
                         <th className="px-4 py-3.5 text-left font-inter text-xs font-bold text-white uppercase tracking-wide border-r border-[#2d4a6f]">Series</th>
                         <th className="px-4 py-3.5 text-left font-inter text-xs font-bold text-white uppercase tracking-wide border-r border-[#2d4a6f]">Warna</th>
                         {SIZES.map((size) => (
@@ -1424,7 +1425,7 @@ export default function MasterProduk() {
                     <tbody>
                       {reportVariants.length === 0 ? (
                         <tr>
-                          <td colSpan={3 + SIZES.length + 1} className="px-6 py-12 text-center font-inter text-sm text-gray-400 dark:text-slate-500">
+                          <td colSpan={4 + SIZES.length + 1} className="px-6 py-12 text-center font-inter text-sm text-gray-400 dark:text-slate-500">
                             {stockFilter === 'all'
                               ? 'Belum ada variant — tambahkan produk dengan warna & ukuran dulu'
                               : 'Tidak ada varian yang cocok dengan filter ini'}
@@ -1440,6 +1441,9 @@ export default function MasterProduk() {
                             <tr key={v.id} className={`${rowBg} hover:bg-blue-100/50 dark:hover:bg-slate-800 transition-colors border-b border-gray-100 dark:border-slate-800/50`}>
                               <td className="px-4 py-3.5 text-left align-middle font-inter text-sm font-semibold text-gray-900 dark:text-white border-r border-gray-100 dark:border-slate-800/50">
                                 {product?.name || v.product_name || '-'}
+                              </td>
+                              <td className="px-4 py-3.5 text-left align-middle font-inter text-sm text-gray-600 dark:text-slate-300 border-r border-gray-100 dark:border-slate-800/50 whitespace-nowrap">
+                                {product?.jenis_kain?.name || <span className="text-gray-400 dark:text-slate-500">Belum diatur</span>}
                               </td>
                               <td className="px-4 py-3.5 text-left align-middle font-inter text-sm text-gray-600 dark:text-slate-300 border-r border-gray-100 dark:border-slate-800/50">
                                 {v.series_name || '-'}
@@ -1485,6 +1489,7 @@ export default function MasterProduk() {
                           <div>
                             <p className="font-inter text-sm font-semibold text-gray-900">{product?.name || v.product_name || '-'}</p>
                             <p className="text-xs text-gray-500">
+                        {product?.jenis_kain?.name ? `${product.jenis_kain.name} • ` : ''}
                         {v.color && String(v.color).toLowerCase() !== 'default'
                           ? v.color
                           : <span className="italic">Belum diatur</span>}

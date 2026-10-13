@@ -20,6 +20,7 @@ const PRODUCT_FIELDS = [
   "status_stok",
   "category",
   "series",
+  "jenis_kain_id",
   "colors",
   "image",
   "weight",
@@ -75,6 +76,8 @@ async function withTotals(admin: ReturnType<typeof getSupabaseAdmin>, products: 
             care_instructions: p.jenis_kain.care_instructions ?? null,
           }
         : null,
+      /** Id jenis kain — dipakai form edit di /ops supaya pilihan lamanya tidak hilang. */
+      jenis_kain_id: p.jenis_kain_id ?? null,
       product_type: p.product_type || "normal",
       category: p.category,
       series: p.series,
@@ -93,12 +96,51 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ items });
 }
 
+/**
+ * Kolom `products` yang NOT NULL tapi tidak ada di form /ops.
+ * Diisi nilai netral supaya produk baru tetap bisa disimpan tanpa error —
+ * foto & deskripsi aslinya dilengkapi lewat panel admin.
+ */
+const CREATE_DEFAULTS: Record<string, unknown> = {
+  image: "/logo.svg",
+  images: [],
+  colors: [],
+  description: "",
+};
+
+/** id produk di tabel ini berupa slug, bukan uuid: "nama" atau "nama-series". */
+function slugify(value: unknown) {
+  return String(value ?? "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+/** Susun id baru dari nama + series; kalau sudah dipakai, tambah angka di belakang. */
+async function buildProductId(
+  admin: ReturnType<typeof getSupabaseAdmin>,
+  name: unknown,
+  series: unknown,
+) {
+  const base = [slugify(name), slugify(series)].filter(Boolean).join("-") || `produk-${Date.now()}`;
+  const { data } = await admin.from("products").select("id").like("id", `${base}%`);
+  const taken = new Set((data || []).map((r) => String(r.id)));
+  if (!taken.has(base)) return base;
+  for (let i = 2; i < 100; i++) {
+    if (!taken.has(`${base}-${i}`)) return `${base}-${i}`;
+  }
+  return `${base}-${Date.now()}`;
+}
+
 export async function POST(req: NextRequest) {
   if (!(await isOpsAdmin(req))) return unauthorized();
   try {
     const body = await req.json();
     const admin = getSupabaseAdmin();
-    const row: Record<string, unknown> = { id: body.id, name: body.name };
+    // Produk baru dari form /ops tidak mengirim id — dibuatkan dari nama + series.
+    const id = body.id || (await buildProductId(admin, body.name, body.series));
+    const row: Record<string, unknown> = { ...CREATE_DEFAULTS, id, name: body.name };
     for (const f of PRODUCT_FIELDS) if (body[f] !== undefined) row[f] = body[f];
     const { data, error } = await admin.from("products").insert(row).select().maybeSingle();
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });

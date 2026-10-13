@@ -27,8 +27,14 @@ async function call<T = any>(method: string, path: string, body?: unknown): Prom
   return json as T;
 }
 
+async function fetchVariants(): Promise<any[]> {
+  const json = await call<{ items: any[] }>("GET", VARIANTS);
+  return json.items ?? [];
+}
+
 const LEADS = "/api/ops/leads";
 const PRODUCTS = "/api/ops/products";
+const JENIS_KAIN = "/api/ops/jenis-kain";
 const VARIANTS = "/api/ops/product-variants";
 const STOCK_IN = "/api/ops/stock-in";
 const TRANSACTIONS = "/api/ops/transactions";
@@ -105,10 +111,32 @@ export const base44 = {
       },
     },
 
+    JenisKain: {
+      async list() {
+        const json = await call<{ items: any[] }>("GET", JENIS_KAIN);
+        return json.items ?? [];
+      },
+    },
+
     ProductVariant: {
       async list(_sort?: string) {
-        const json = await call<{ items: any[] }>("GET", VARIANTS);
-        return json.items ?? [];
+        return fetchVariants();
+      },
+      /** Varian milik satu produk (dipakai form edit produk). */
+      async filter(query: any = {}) {
+        const items = await fetchVariants();
+        return query?.product_id ? items.filter((v) => v.product_id === query.product_id) : items;
+      },
+      /** Simpan varian baru: satu baris = satu (produk, warna) + stok per ukuran. */
+      async bulkCreate(rows: any[]) {
+        return call<{ saved: number }>("POST", VARIANTS, { rows });
+      },
+      /** Update varian lama; `id`-nya bentuk "product_id||color" dari list(). */
+      async bulkUpdate(rows: any[]) {
+        return call<{ saved: number }>("PATCH", VARIANTS, { rows });
+      },
+      async deleteMany(query: any = {}) {
+        return call<{ deleted: number }>("DELETE", VARIANTS, query);
       },
     },
 
