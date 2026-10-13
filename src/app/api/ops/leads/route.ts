@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
-import { defaultFirstFollowup, normalizeKontak } from "@/lib/ops-followup";
+import { defaultFirstFollowup, normalizeKontak, formatTanggalId } from "@/lib/ops-followup";
 import { isOpsAdmin } from "@/lib/ops-auth";
 
 /**
@@ -128,7 +128,7 @@ export async function POST(req: NextRequest) {
       if (clash) {
         return NextResponse.json(
           {
-            error: `Nomor ${clash.kontak} sudah terdaftar sebagai lead (tanggal ${clash.tanggal}${clash.sumber ? `, sumber ${clash.sumber}` : ""}).`,
+            error: `Nomor ${clash.kontak} sudah terdaftar sebagai lead (tanggal ${formatTanggalId(clash.tanggal)}${clash.sumber ? `, sumber ${clash.sumber}` : ""}).`,
             existing: clash,
           },
           { status: 409 },

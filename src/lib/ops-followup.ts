@@ -181,3 +181,15 @@ export function fmtWibDateTime(iso?: string | null): string {
   if (Number.isNaN(d.getTime())) return "-";
   return `${WIB_FMT.format(d)}, ${WIB_TIME_FMT.format(d).replace(":", ".")}`;
 }
+
+const BULAN_ID = [
+  "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+  "Juli", "Agustus", "September", "Oktober", "November", "Desember",
+];
+
+/** "2026-10-01" → "1 Oktober 2026" (format Hari Bulan Tahun, bahasa Indonesia). */
+export function formatTanggalId(value?: string | null): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(value || ""));
+  if (!m) return String(value || "-");
+  return `${Number(m[3])} ${BULAN_ID[Number(m[2]) - 1] || m[2]} ${m[1]}`;
+}
