@@ -434,7 +434,7 @@ export default function OpenOrderWizard() {
         )}
 
         {(step === 2 || step === 3 || step === 4 || step === 5) && (
-          <div className="mx-auto max-w-2xl">
+          <div className={step === 2 ? "mx-auto max-w-5xl" : "mx-auto max-w-2xl"}>
             {step === 2 && draft && (
               <StepProduct
                 draft={draft}

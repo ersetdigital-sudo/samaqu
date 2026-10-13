@@ -49,6 +49,8 @@ export interface OpenOrderProduct {
   cypEnabled: boolean;
   weight: number;
   image: string;
+  /** Deskripsi produk (dari baris katalog; UI punya teks cadangan per kategori). */
+  description: string;
   variants: OpenOrderVariant[];
 }
 
@@ -61,6 +63,7 @@ export interface OpenOrderCatalogRow {
   id: string;
   name: string;
   category?: string | null;
+  description?: string | null;
   kain?: string | null;
   series?: string | null;
   weight?: number | null;
@@ -157,6 +160,7 @@ export function buildOpenOrderProducts(
     cypEnabled: boolean;
     weight: number;
     image: string;
+    description: string;
     variants: OpenOrderVariant[];
   }
 
@@ -187,6 +191,7 @@ export function buildOpenOrderProducts(
       cypEnabled: false,
       weight: 0,
       image: "",
+      description: "",
       variants: [],
     };
     groups.set(key, group);
@@ -195,6 +200,7 @@ export function buildOpenOrderProducts(
     group.minimumPrice = Math.min(group.minimumPrice, price);
     if (row.create_your_price_enabled) group.cypEnabled = true;
     if (!group.image) group.image = mediaOf(row)[0] ?? "";
+    if (!group.description && row.description) group.description = row.description.trim();
     if (row.weight) group.weight = Math.max(group.weight, row.weight);
     if (series) {
       const current = group.series.get(series);
@@ -232,6 +238,7 @@ export function buildOpenOrderProducts(
       cypEnabled: group.cypEnabled,
       weight: group.weight || DEFAULT_OPEN_ORDER_WEIGHT,
       image: group.image,
+      description: group.description,
       variants: group.variants,
     }))
     .sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name));
