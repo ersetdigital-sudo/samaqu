@@ -21,7 +21,7 @@ import { useEffect, useState } from "react";
 import { useBodyScrollLock } from "@/lib/use-scroll-lock";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Box, DollarSign, Edit, Image as ImageIcon, Layers, Package, ShoppingCart, TrendingUp, X } from "lucide-react";
+import { Box, DollarSign, Edit, Image as ImageIcon, Layers, Package, Shirt, ShoppingCart, TrendingUp, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { colorMap } from "@/lib/katalog-data";
 
@@ -37,6 +37,8 @@ interface ProductData {
   create_your_price_enabled?: boolean;
   series?: string | null;
   kain?: string | null;
+  /** Ikut tampil di katalog /open-order (kolom `products.open_order_enabled`, default true). */
+  open_order_enabled?: boolean | null;
 }
 
 interface Variant {
@@ -99,6 +101,7 @@ export function ProductDetailPanel({
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<string | null>(null);
+  const [savingOpenOrder, setSavingOpenOrder] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -165,6 +168,29 @@ export function ProductDetailPanel({
 
   const sku = tabVariants.map((v) => v.sku).find(Boolean) || variants.map((v) => v.sku).find(Boolean) || "—";
   const activeTag = showSeriesTabs ? activeTab : uniqueColors.length === 1 ? uniqueColors[0] : activeTab;
+  const openOrderEnabled = product?.open_order_enabled !== false;
+
+  /**
+   * Sakelar Open Order dari panel detail — produk yang dimatikan hilang dari katalog
+   * /open-order. Satu nama + kategori = satu produk di Open Order, jadi semua baris series-nya
+   * ikut diubah (sama seperti sakelar di menu admin "Open Order").
+   */
+  async function toggleOpenOrder() {
+    if (!product) return;
+    const next = product.open_order_enabled === false;
+    setSavingOpenOrder(true);
+    const { error } = await supabase
+      .from("products")
+      .update({ open_order_enabled: next })
+      .eq("category", product.category)
+      .eq("name", product.name);
+    setSavingOpenOrder(false);
+    if (error) {
+      console.error("[PD] Gagal mengubah status Open Order:", error);
+      return;
+    }
+    setProduct((prev) => (prev ? { ...prev, open_order_enabled: next } : prev));
+  }
 
   return (
     <div className={`pd-root pd-root--${mode}`}>
@@ -221,6 +247,31 @@ export function ProductDetailPanel({
               <p className="pd-label">Harga Jual</p>
               <p className="pd-price">{money(effectivePrice(product))}</p>
               <p className="pd-price-sub">Per unit</p>
+            </div>
+
+            {/* Open Order */}
+            <div className="pd-card pd-stats">
+              <p className="pd-section-title">
+                <Shirt size={14} strokeWidth={2.2} /> Open Order
+              </p>
+              <div className="pd-row">
+                <span>Tampil di halaman /open-order</span>
+                <button
+                  type="button"
+                  onClick={toggleOpenOrder}
+                  disabled={savingOpenOrder}
+                  aria-pressed={openOrderEnabled}
+                  aria-label="Tampilkan produk ini di menu Open Order"
+                  className={`pd-oo${openOrderEnabled ? " is-on" : ""}`}
+                >
+                  {savingOpenOrder ? "…" : openOrderEnabled ? "Tampil" : "Tersembunyi"}
+                </button>
+              </div>
+              <p className="pd-empty">
+                {openOrderEnabled
+                  ? "Produk ini muncul di katalog Open Order."
+                  : "Produk ini disembunyikan dari katalog Open Order."}
+              </p>
             </div>
 
             {/* Statistik penjualan */}
@@ -576,4 +627,14 @@ const PD_CSS = `
     background: var(--pd-fg); color: #ffffff; font-size: .84rem; font-weight: 800;
   }
   .pd-close:hover { background: #0f0f0f; }
+
+  /* Sakelar Open Order di kartu detail produk */
+  .pd-oo {
+    font-size: .66rem; font-weight: 800; padding: .32rem .68rem; border-radius: 999px;
+    border: 1px solid var(--pd-bd); background: var(--pd-sub); color: var(--pd-fg2);
+    cursor: pointer; white-space: nowrap;
+  }
+  .pd-oo.is-on { background: rgba(34,197,94,.14); border-color: rgba(34,197,94,.32); color: var(--pd-green); }
+  .pd-oo:hover { filter: brightness(.97); }
+  .pd-oo:disabled { opacity: .6; cursor: default; }
 `;
