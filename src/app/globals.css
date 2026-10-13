@@ -611,7 +611,7 @@ a { text-decoration: none; }
 /* Tinggi bar aksi bawah halaman detail produk (mobile, < md). Dipakai untuk padding bawah
    konten dan mengangkat tombol chat agar tepat di atas bar. Bar itu sendiri tidak muncul ≥ md. */
 @media (max-width: 767px) {
-  :root { --action-bar-h: calc(127px + env(safe-area-inset-bottom)); }
+  :root { --action-bar-h: calc(110px + env(safe-area-inset-bottom)); }
   /* Halaman detail produk (mobile): nav bawah disembunyikan supaya bar harga menempel di dasar
      layar, tinggi nav di-nol-kan, dan tombol chat diangkat tepat di atas bar harga. */
   .pd-mobile { --mobile-nav-h: 0px; --fab-bottom: calc(var(--action-bar-h) + 0.75rem); }
