@@ -28,12 +28,15 @@ export default function CustomerLayout({ children }: { children: ReactNode }) {
   const isProductDetail = PRODUCT_DETAIL_RE.test(barePathname(pathname));
   // Detail produk: sembunyikan navbar atas hanya di mobile; desktop tetap.
   const hideNavbarOnMobile = !hideNavbar && isProductDetail;
+  // Detail produk & Open Order: nav bawah disembunyikan di mobile (halaman fokus, punya
+  // navigasi sendiri) — lihat class `pd-mobile` di globals.css. Desktop tidak terpengaruh.
+  const hideBottomNav = isProductDetail || barePathname(pathname) === "/open-order";
 
   return (
-    // Detail produk (mobile) punya bar aksi sendiri di dasar layar: lewat class `pd-mobile`,
-    // nav bawah disembunyikan, --mobile-nav-h di-nol-kan, dan tombol chat diangkat tepat di atas
-    // bar harga (lihat globals.css). Semua hanya berlaku < md, jadi tablet & desktop tak berubah.
-    <div className={isProductDetail ? "pd-mobile" : undefined}>
+    // Detail produk & Open Order (mobile) tampil tanpa nav bawah: lewat class `pd-mobile`,
+    // nav bawah disembunyikan dan --mobile-nav-h di-nol-kan (lihat globals.css).
+    // Semua hanya berlaku < md, jadi tablet & desktop tak berubah.
+    <div className={hideBottomNav ? "pd-mobile" : undefined}>
       {!hideNavbar && (
         // `hidden md:block` → hilang < md (mobile), tampil ≥ md (desktop, tak diubah).
         <div className={hideNavbarOnMobile ? "hidden md:block" : undefined}>

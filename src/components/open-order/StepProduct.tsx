@@ -14,6 +14,7 @@
 import { useEffect, useState } from "react";
 import { ChevronDown, ChevronLeft, ChevronRight, Minus, Plus } from "lucide-react";
 import { cloudinaryUrl } from "@/lib/cloudinary";
+import { colorMap } from "@/lib/katalog-data";
 import { openOrderGallery } from "@/lib/open-order-catalog";
 import { OPEN_ORDER_SIZES } from "@/lib/open-order-config";
 import {
@@ -175,7 +176,7 @@ export default function StepProduct({
 
         {/* Thumbnail */}
         {gallery.length > 1 && (
-          <div className="mt-4 grid grid-cols-4 gap-2">
+          <div className="hidden md:grid mt-4 grid-cols-4 gap-2">
             {gallery.map((src, i) => (
               <button
                 key={src}
@@ -194,10 +195,10 @@ export default function StepProduct({
 
       {/* ── Info ── */}
       <div>
-        <p className="text-[11px] tracking-[0.28em] uppercase font-ui mb-3" style={{ color: "var(--gold)" }}>
+        <p className="text-[10px] md:text-[11px] tracking-[0.28em] uppercase font-ui mb-2 md:mb-3" style={{ color: "var(--gold)" }}>
           Detail Produk
         </p>
-        <h2 className="text-[1.7rem] sm:text-[2rem] lg:text-[2.2rem] font-semibold leading-tight mb-2" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
+        <h2 className="text-[1.5rem] sm:text-[1.8rem] md:text-[2rem] lg:text-[2.2rem] font-semibold leading-tight mb-1.5 md:mb-2" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
           {product.name}
           {product.kain ? (
             <span style={{ color: "var(--gold)" }}> — Kain {product.kain}</span>
@@ -207,7 +208,7 @@ export default function StepProduct({
             <span style={{ color: "var(--gold)" }}> — {colorLabel}</span>
           ) : null}
         </h2>
-        <p className="text-[13px] font-ui mb-6" style={{ color: "var(--stone)" }}>
+        <p className="text-[13px] font-ui mb-5 md:mb-6" style={{ color: "var(--stone)" }}>
           {product.kain && (
             <>
               Jenis kain <span style={{ color: "var(--gold)" }}>{product.kain}</span>
@@ -221,8 +222,8 @@ export default function StepProduct({
         {/* Series — hanya produk yang punya series (mis. Thobe) */}
         {product.series.length > 0 && (
           <div className="mb-6">
-            <p className="text-[10.5px] tracking-[0.18em] uppercase text-[var(--muted)] mb-2.5">Pilih Series</p>
-            <div className="flex flex-wrap gap-2">
+            <p className="text-[10px] tracking-[0.1em] md:text-[10.5px] md:tracking-[0.18em] uppercase text-[var(--muted)] mb-2.5">Pilih Series</p>
+            <div className="grid grid-cols-2 gap-2 md:flex md:flex-wrap md:gap-2">
               {product.series.map((option) => {
                 const active = option.name === series?.name;
                 return (
@@ -230,7 +231,7 @@ export default function StepProduct({
                     key={option.name}
                     type="button"
                     onClick={() => onChange({ series: option.name, price: option.price })}
-                    className="px-4 py-2 rounded-lg text-[12.5px] transition"
+                    className="flex flex-col items-start gap-1 px-3 py-2.5 md:inline-flex md:flex-row md:items-center md:justify-between md:gap-1.5 md:px-3.5 md:py-2 rounded-lg text-[11px] md:text-[12.5px] transition"
                     style={{
                       background: active ? "var(--espresso)" : "var(--cream-bright)",
                       color: active ? "var(--cream)" : "var(--coffee)",
@@ -251,22 +252,26 @@ export default function StepProduct({
         {/* Warna */}
         {product.colors.length > 0 && product.colors.some((c) => c && c !== "default") && (
           <div className="mb-6">
-            <p className="text-[11px] sm:text-[12px] tracking-[0.12em] uppercase font-ui font-medium mb-3" style={{ color: "var(--espresso)" }}>
+            <p className="text-[10px] tracking-[0.1em] md:text-[11px] md:tracking-[0.12em] uppercase font-ui font-medium mb-2.5 md:mb-3" style={{ color: "var(--espresso)" }}>
               Pilih Warna
             </p>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5 md:gap-2">
               {product.colors.map((color) => (
                 <button
                   key={color}
                   type="button"
                   onClick={() => onChange({ color })}
-                  className="px-3 py-2 text-[12px] font-ui rounded-sm transition-all duration-200"
+                  className="flex items-center gap-1.5 md:gap-2 px-2.5 md:px-3 py-1.5 md:py-2 text-[11px] md:text-[12px] font-ui rounded-sm transition-all duration-200"
                   style={{
                     background: color === draft.color ? "var(--espresso)" : "transparent",
                     color: color === draft.color ? "var(--cream)" : "var(--coffee)",
                     border: `1px solid ${color === draft.color ? "var(--espresso)" : "rgba(0,0,0,.3)"}`,
                   }}
                 >
+                  <span
+                    className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full shrink-0"
+                    style={{ background: colorMap[color] || "#ccc", border: "1px solid rgba(0,0,0,.1)" }}
+                  />
                   {openOrderColorLabel(product, color)}
                 </button>
               ))}
@@ -276,14 +281,14 @@ export default function StepProduct({
 
         {/* Ukuran */}
         <div className="mb-6">
-          <p className="text-[10.5px] tracking-[0.18em] uppercase text-[var(--muted)] mb-2.5">Pilih Ukuran</p>
-          <div className="flex flex-wrap gap-2">
+          <p className="text-[10px] tracking-[0.1em] md:text-[10.5px] md:tracking-[0.18em] uppercase text-[var(--muted)] mb-2.5">Pilih Ukuran</p>
+          <div className="flex flex-wrap gap-1.5 md:gap-2">
             {sizes.map((size) => (
               <button
                 key={size}
                 type="button"
                 onClick={() => onChange({ size })}
-                className="px-4 py-2 rounded-lg text-[12.5px] transition"
+                className="w-10 h-10 md:w-auto md:h-auto flex items-center justify-center md:px-4 md:py-2 rounded-sm md:rounded-lg text-[12px] md:text-[12.5px] transition"
                 style={{
                   background: size === draft.size ? "var(--espresso)" : "var(--cream-bright)",
                   color: size === draft.size ? "var(--cream)" : "var(--coffee)",
@@ -298,11 +303,11 @@ export default function StepProduct({
 
         {/* Kartu harga — gaya Open Order: Harga Minimum + input harga bebas (Create Your Price).
             Quick-pick ala katalog sengaja TIDAK dipakai di sini. */}
-        <div className="mb-8 rounded-2xl p-6" style={{ background: "var(--cream-bright)", border: "1px solid rgba(0,0,0,.25)" }}>
+        <div className="mb-6 md:mb-8 rounded-2xl p-5 md:p-6" style={{ background: "var(--cream-bright)", border: "1px solid rgba(0,0,0,.25)" }}>
           {cypEnabled ? (
             <div>
-              <p className="text-[11px] tracking-[0.1em] uppercase font-ui mb-1" style={{ color: "var(--stone)" }}>Harga Minimum</p>
-              <p className="text-[20px] sm:text-[22px] font-ui font-semibold mb-1" style={{ color: "var(--gold)" }}>
+              <p className="text-[10px] md:text-[11px] tracking-[0.1em] uppercase font-ui mb-1" style={{ color: "var(--stone)" }}>Harga Minimum</p>
+              <p className="text-[1.3rem] md:text-[20px] font-ui font-semibold mb-1" style={{ color: "var(--gold)" }}>
                 {rupiah(minimum)}
               </p>
               <p className="text-[12px] font-ui" style={{ color: "var(--stone)" }}>
@@ -328,8 +333,8 @@ export default function StepProduct({
             </div>
           ) : (
             <div>
-              <p className="text-[11px] tracking-[0.1em] uppercase font-ui mb-1" style={{ color: "var(--stone)" }}>Harga</p>
-              <p className="text-[20px] sm:text-[22px] font-ui font-semibold" style={{ color: "var(--gold)" }}>
+              <p className="text-[10px] md:text-[11px] tracking-[0.1em] uppercase font-ui mb-1" style={{ color: "var(--stone)" }}>Harga</p>
+              <p className="text-[1.3rem] md:text-[20px] font-ui font-semibold" style={{ color: "var(--gold)" }}>
                 {rupiah(minimum)}
               </p>
             </div>
@@ -337,15 +342,15 @@ export default function StepProduct({
         </div>
 
         {description && (
-          <p className="text-sm sm:text-[15px] leading-relaxed font-ui mb-8" style={{ color: "rgba(0,0,0,.8)" }}>
+          <p className="text-[13px] md:text-[15px] leading-relaxed font-ui mb-5 md:mb-8" style={{ color: "rgba(0,0,0,.8)" }}>
             {description}
           </p>
         )}
 
-        <div className="h-px mb-7" style={{ background: "rgba(0,0,0,.2)" }} />
+        <div className="h-px mb-5 md:mb-7" style={{ background: "rgba(0,0,0,.2)" }} />
 
         {/* Jumlah */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-5 md:mb-8">
           <p className="text-[11px] sm:text-[12px] tracking-[0.12em] uppercase font-ui font-medium" style={{ color: "var(--espresso)" }}>Jumlah</p>
           <div className="flex items-center gap-3">
             <button
@@ -391,7 +396,7 @@ export default function StepProduct({
         </button>
 
         {/* Info tambahan */}
-        <div className="mt-7 space-y-2.5">
+        <div className="mt-5 md:mt-7 space-y-2.5">
           <InfoAccordionItem title="Detail bahan & perawatan">
             Kain premium dengan sirkulasi udara baik, tidak menerawang, dan jatuh rapi. Cuci dengan air dingin, setrika suhu sedang, jangan gunakan pemutih.
           </InfoAccordionItem>
