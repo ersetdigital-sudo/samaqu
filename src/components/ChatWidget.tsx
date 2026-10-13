@@ -285,10 +285,13 @@ export default function ChatWidget() {
       <button
         onClick={() => setOpen(true)}
         aria-label={t("open")}
-        className="fixed right-4 sm:right-6 bottom-[calc(var(--mobile-nav-h)+5.75rem)] z-[95] w-14 h-14 rounded-full flex items-center justify-center text-white shadow-lg transition-transform hover:scale-105"
+        className="fixed right-4 sm:right-6 bottom-[calc(var(--mobile-nav-h)+5.75rem)] z-[95] h-14 inline-flex items-center gap-2.5 rounded-full pl-4 pr-5 text-white shadow-lg transition-transform hover:scale-105"
         style={{ background: "#000" }}
       >
-        <RobotIcon size={26} />
+        <RobotIcon size={24} />
+        <span className="text-[11px] tracking-[0.14em] uppercase font-ui font-medium whitespace-nowrap">
+          {t("fabLabel")}
+        </span>
       </button>
     );
   }

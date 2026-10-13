@@ -471,8 +471,6 @@
     "ctaButton": "Hubungi Admin"
   },
   "autoCTA": {
-    "tooltip": "Butuh bantuan? Chat Admin",
-    "closeLabel": "Tutup",
     "whatsappMsg": "Halo Admin SAMAQU, saya tertarik dengan koleksi Anda dan ingin bertanya soal pemesanan.",
     "ariaLabel": "Chat Admin via WhatsApp"
   },
@@ -703,6 +701,7 @@
     "send": "Kirim",
     "close": "Tutup",
     "open": "Buka chat",
+    "fabLabel": "Butuh bantuan? Chat Admin",
     "handoff": "Lanjut chat ke WhatsApp admin",
     "handoffMessage": "Halo admin SAMAQU, saya mau dibantu soal produk.",
     "error": "Maaf, ada kendala teknis. Coba lagi ya \ud83d\ude4f",

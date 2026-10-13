@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X } from "lucide-react";
 import { getWhatsAppLink } from "@/lib/store-settings";
 import { trackWhatsAppClick } from "@/lib/meta-pixel";
 import { useSafeTranslations } from "@/lib/safe-i18n";
@@ -16,22 +15,21 @@ function WhatsAppIcon() {
 }
 
 /**
- * Tombol WhatsApp mengambang + tooltip yang muncul setelah 5 detik atau 30% scroll.
+ * Tombol WhatsApp mengambang (ikon bulat saja) yang muncul setelah 5 detik atau 30% scroll.
  *
  * Dipaku di kanan bawah dengan jarak dasar `bottom-6` **plus** `--mobile-nav-h`, karena nav
  * bawah mobile (MobileBottomNav, `lg:hidden`) tinggi 62 px di bawah breakpoint `lg` — tanpa
  * offset itu tombolnya menutupi menu "Akun". Variabelnya 0 px di desktop, jadi posisi lama
- * tidak berubah di sana. Tooltip-nya relatif ke tombol ini, jadi ikut naik.
+ * tidak berubah di sana.
+ *
+ * Catatan: label/tooltip teks sengaja dihapus dari tombol ini; teksnya kini ditampilkan
+ * pada tombol chatbot AI (ChatWidget).
  */
 export default function AutoCTA() {
   const t = useSafeTranslations("autoCTA");
   const [visible, setVisible] = useState(false);
-  const [showTooltip, setShowTooltip] = useState(false);
   const showTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const tooltipTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const lastScrollY = useRef(0);
-  const dismissedRef = useRef(false);
 
   /* ── Initial trigger: 5s timer OR 30% scroll ── */
   useEffect(() => {
@@ -52,51 +50,6 @@ export default function AutoCTA() {
     };
   }, [visible]);
 
-  /* ── Show tooltip 2s after visible ── */
-  useEffect(() => {
-    if (!visible) {
-      setShowTooltip(false);
-      return;
-    }
-    tooltipTimerRef.current = setTimeout(() => setShowTooltip(true), 2000);
-    return () => clearTimeout(tooltipTimerRef.current);
-  }, [visible]);
-
-  /* ── Reappear triggers after dismiss ── */
-  useEffect(() => {
-    if (!dismissedRef.current) return;
-
-    // Trigger 1: 10s timer
-    showTimerRef.current = setTimeout(() => {
-      dismissedRef.current = false;
-      setVisible(true);
-    }, 10000);
-
-    // Trigger 2: scroll up 200px
-    function onScroll() {
-      if (lastScrollY.current - window.scrollY > 200) {
-        dismissedRef.current = false;
-        setVisible(true);
-        window.removeEventListener("scroll", onScroll);
-      }
-      lastScrollY.current = window.scrollY;
-    }
-    window.addEventListener("scroll", onScroll, { passive: true });
-    lastScrollY.current = window.scrollY;
-
-    return () => {
-      clearTimeout(showTimerRef.current);
-      window.removeEventListener("scroll", onScroll);
-    };
-  }, [dismissedRef.current]); // eslint-disable-line
-
-  function handleClose() {
-    setVisible(false);
-    setShowTooltip(false);
-    dismissedRef.current = true;
-    lastScrollY.current = window.scrollY;
-  }
-
   return (
     <AnimatePresence>
       {visible && (
@@ -107,40 +60,7 @@ export default function AutoCTA() {
           transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
           className="fixed bottom-[calc(var(--mobile-nav-h)_+_1.5rem)] right-4 sm:right-6 z-[90]"
         >
-          {/* Tooltip — di samping kiri FAB (biar nggak numpuk sama bubble chat AI) */}
-          <AnimatePresence>
-            {showTooltip && (
-              <motion.div
-                initial={{ opacity: 0, y: 8, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 8, scale: 0.95 }}
-                transition={{ duration: 0.3 }}
-                className="absolute right-[calc(100%+12px)] top-1/2 -translate-y-1/2 px-4 py-2.5 rounded-lg w-max max-w-[220px]"
-                style={{
-                  background: "#000000",
-                  boxShadow: "0 4px 20px -4px rgba(0,0,0,.2)",
-                }}
-              >
-                <div
-                  className="absolute -right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 rotate-45"
-                  style={{ background: "#000000" }}
-                />
-                <button
-                  onClick={handleClose}
-                  className="absolute -top-2 -right-2 w-5 h-5 rounded-full flex items-center justify-center transition-opacity hover:opacity-70"
-                  style={{ background: "rgba(255,255,255,.18)", color: "#ffffff" }}
-                  aria-label={t("closeLabel")}
-                >
-                  <X size={10} />
-                </button>
-                <p className="relative text-[12px] sm:text-[13px] font-ui leading-snug" style={{ color: "#ffffff" }}>
-                  {t("tooltip")}
-                </p>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* FAB Button */}
+          {/* FAB Button (ikon saja, tanpa label/tooltip teks) */}
           <a
             href={getWhatsAppLink(t("whatsappMsg"))}
             target="_blank"
