@@ -218,11 +218,11 @@ export default function Hero() {
               <a
                 href="/katalog"
                 className="group relative inline-flex items-center justify-center gap-3 overflow-hidden rounded-full px-8 py-3.5 text-[13px] font-bold tracking-wide font-ui w-full sm:w-auto transition active:scale-[0.97]"
-                style={{ background: "#ffffff", color: "#000000", boxShadow: "0 18px 44px -14px rgba(255,255,255,.28)" }}
+                style={{ background: "#000000", color: "#ffffff", boxShadow: "0 18px 44px -16px rgba(0,0,0,.5)" }}
               >
                 <span
                   className="absolute inset-0 translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]"
-                  style={{ background: "#efd0a0" }}
+                  style={{ background: "#2b2b2b" }}
                   aria-hidden
                 />
                 <span className="relative">{t("cta1")}</span>
