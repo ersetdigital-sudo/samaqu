@@ -17,6 +17,12 @@ di mana letaknya, aturan yang harus dipatuhi, dan jebakan teknis yang sudah pern
 - **Dashboard internal (ops)** `office.samaqu.id` (juga bisa `samaqu.id/ops`) — shell-nya di
   `src/components/ops/OpsShell.tsx` + `src/app/ops/**`. Ini pengganti app Base44 (Base44 **sudah
   tidak dipakai**). Datanya satu sumber: Supabase yang sama dengan website.
+  Ada 3 hal berbeda yang sama-sama bernama "Base44" — jangan ketuker:
+  **(a) platform/sandbox** tempat repo ini dijalankan & di-preview (`docker-compose.base44.yml`,
+  `.base44/env.defaults`, `/run/base44/app.env`) — ini infra, bukan koneksi aplikasi;
+  **(b) app Base44 lama** = dashboard ops versi sebelumnya, sekarang cuma jadi **referensi desain**;
+  **(c) nama shim** `base44` di `src/lib/ops-api.ts` — murni penamaan internal supaya halaman hasil
+  port tidak perlu diubah; tidak ada SDK/env/endpoint Base44 (semua `fetch` ke `/api/ops/*`).
 - **Dashboard admin website** (`/admin`) — punya tema sendiri (`#admin-root`), **jangan diubah**
   kalau tidak diminta.
 
@@ -37,6 +43,7 @@ dan setiap fitur **harus benar-benar berfungsi** (jangan tombol pajangan, jangan
 | Auth ops | `src/lib/ops-auth.ts` (Supabase session + tabel `admins`, hasil di-cache 5 menit) |
 | Aturan bisnis follow-up (WIB, status, outcome) | `src/lib/ops-followup.ts` |
 | Shim data-layer ala Base44 (`base44.entities.X.list()`) | `src/lib/ops-api.ts` — ini **API kita sendiri**, bukan Base44 |
+| Resolusi **stok bersama ala series** (`base_product_id`) | `src/lib/ops-stock.ts` (`resolveStock`) — dipakai bersama oleh `/api/ops/products`, `/api/ops/product-variants`, `/api/ops/dashboard` |
 | Logo resmi | `public/logo.svg` (wordmark, rasio 2560×853) |
 
 ### Tabel database utama
@@ -45,7 +52,9 @@ dan setiap fitur **harus benar-benar berfungsi** (jangan tombol pajangan, jangan
   `followup_status` (`baru`/`dijadwalkan`/`selesai`/`lost`/`dnd`), `outcome`, `note_followup`,
   `lost_reason`, `do_not_contact`.
 - `lead_activities` — timeline follow-up; unik `(lead_id, request_id)` untuk anti duplikat.
-- `products`, `product_variants` (stok per warna × ukuran), `stock_in` (barang masuk),
+- `products`, `product_variants` (stok per warna × ukuran; `base_product_id` = baris menumpang
+  stok produk basis), `jenis_kain` (master jenis kain; relasi `products.jenis_kain_id` — kolom lama
+  `products.kain` sudah tidak dipakai), `stock_in` (barang masuk),
   `orders` + `order_items` (penjualan website, status order bahasa Indonesia: `selesai`,
   `dibatalkan`, `diproses`, `pending`), `admins` (wajib: `user_id`, `email`, `role`).
 
@@ -90,20 +99,49 @@ dan setiap fitur **harus benar-benar berfungsi** (jangan tombol pajangan, jangan
    ada di riwayat kerja: ukur `npx`/Invoke-RestMethod ke `/api/ops/*` 3x, ambil rata-rata).
 7. **Menguji API /ops**: butuh token admin Supabase (dibuat sementara, lalu dihapus) — caranya ada di
    `.agent-secrets.local.md`. Setelah uji, **pulihkan data produksi** dan laporkan kondisi akhir.
+8. **"Stok bersama ala series" — pakai satu resolver, jangan hitung stok mentah sendiri.**
+   Baris `product_variants` yang punya `base_product_id` **tidak memegang stok**; angkanya hidup di
+   produk basisnya (40 dari 61 produk di DB adalah seri turunan). Resolusinya di
+   `src/lib/ops-stock.ts` (`resolveStock`). Kalau pakai `sumStock(v.stock)` mentah, seri turunan
+   terbaca 0 → dulu Laporan Stok bilang "41 varian habis" padahal 40 cuma menumpang stok basis.
+   Keterangan di UI memakai **nama series** ("Bayati mengikuti Jiharkah"), sama seperti panel admin
+   — **bukan** nama produk, karena satu nama produk dipakai banyak series.
+9. **Barang Masuk: stok dinaikkan di SERVER, jangan tulis ulang dari klien.**
+   `POST /api/ops/stock-in` sudah menaikkan `product_variants.stock` lewat RPC
+   `samaqu_increment_stock` (termasuk resolve ke produk basis); form hanya membuat baris `stock_in`.
+   Dulu form ikut menulis lewat `base44.entities.ProductVariant.update` yang **tidak ada** di shim,
+   jadi simpan *selalu* gagal dengan pesan palsu `"ProductVariant.update is not a function"`
+   padahal stoknya sudah tersimpan. Juga: HPP weighted-average wajib dibulatkan (`Math.round`)
+   karena `products.hpp` bertipe **integer** (pecahan ditolak: `invalid input syntax for type integer`).
+10. **`pending` = belum bayar, BUKAN penjualan.** Stok **tetap dipotong** saat order dibuat
+   (checkout website `SMQ-` maupun Open Order `CYO-` → RPC `samaqu_decrement_stock` +
+   `orders.stock_reserved = true`; dilepas lagi oleh `/api/cron/auto-cancel` setelah 24 jam —
+   ini sengaja, untuk cegah oversell). Tapi angka penjualan hanya dari `diproses`/`selesai`:
+   lihat `PAID_ORDER_STATUS` di `src/app/api/ops/dashboard/route.ts`. Di `/api/ops/transactions`
+   status barisnya `return` (batal) / `pending` (belum bayar) / `completed` (lunas).
+   Catatan: pengembalian stok saat batal ditentukan kolom `orders.stock_reserved`, **bukan**
+   awalan nomor pesanan (`src/lib/cancel-order.ts`).
 
 ---
 
 ## 5. Kondisi data yang perlu diketahui (kalau bikin fitur baru)
 
-- `stock_in` **masih 0 baris** → semua KPI "Barang Masuk" bernilai 0 (bukan bug).
+- `stock_in` **masih 0 baris** → semua KPI "Barang Masuk" bernilai 0 (bukan bug). Form Barang
+  Masuk **sudah berfungsi** (stok naik lewat RPC di server — lihat jebakan #9); kalau diuji, hapus
+  lagi baris `stock_in`-nya dan kembalikan stok.
 - `products.hpp` masih **0** di semua produk (HPP belum diisi) → margin/nilai stok ikut 0.
-- `products.kain` **kosong** di semua produk; `products.series` terisi di **60 dari 61** produk
-  (kecuali `Kandora Superblack`) → tampilkan "Belum diatur", jangan dikarang.
+- `products.kain` (kolom LAMA) **kosong di semua produk** — jangan dipakai. Sumber jenis kain
+  sekarang relasi `products.jenis_kain_id` → tabel `jenis_kain` (5 baris: `B-01`, `B-02`, `A-02`,
+  `C.01`, `B02`), terisi di **61/61** produk; di ops tampil sebagai kolom "Jenis Kain".
+  `products.series` terisi di **60 dari 61** produk (kecuali `Kandora Superblack`) → kalau kosong
+  tampilkan "Belum diatur", jangan dikarang.
 - **474 lead lama** belum punya `next_followup_at` → mereka ada di antrean "Perlu Dijadwalkan".
   User belum memutuskan mau jadwalkan massal atau tidak.
-- Tab **Barang Keluar** menghitung **semua** baris order (termasuk order batal) supaya sama dengan
-  tabel di bawahnya; baris order batal ditandai badge "Batal". User belum memutuskan mau
-  mengecualikan order batal dari angka card (opsi A/B sudah ditawarkan).
+- Tab **Barang Keluar** mengambil **semua** baris order supaya sama dengan tabel di bawahnya;
+  baris batal diberi badge "Batal", belum bayar diberi badge "Belum bayar". Angka card-nya ikut
+  menghitung keduanya (stok memang berkurang), sedangkan **angka penjualan** (omset/HPP/laba/
+  terlaris di dashboard, Produk Terlaris, riwayat penjualan detail produk) **hanya dari yang lunas**.
+  User belum memutuskan apakah batal/belum bayar mau dikeluarkan juga dari card Barang Keluar.
 - **Sisa 1 URL gambar lama** Base44 di `src/components/akun/RincianPesanan.tsx` (bukan koneksi data).
 
 ---
@@ -125,5 +163,11 @@ dan setiap fitur **harus benar-benar berfungsi** (jangan tombol pajangan, jangan
 - Template pesan WhatsApp + tombol "Salin Pesan" (butuh tabel `wa_templates`).
 - Upload/assign PIC dari UI di halaman Leads (API `set_pic` sudah ada).
 - Isi `products.hpp` (butuh data) dan `stock_in` (butuh input barang masuk dari produksi).
-- Keputusan user yang masih menggantung: penjadwalan 474 lead lama, aturan order batal di Barang
-  Keluar, dan apakah card tab Daftar Produk/Barang Masuk/Keluar mau diseragamkan jadi putih semua.
+- Keputusan user yang masih menggantung: penjadwalan 474 lead lama, apakah batal/belum bayar
+  dikeluarkan dari card Barang Keluar, dan apakah card tab Daftar Produk/Barang Masuk/Keluar mau
+  diseragamkan jadi putih semua.
+- **Buang shim `base44`** di `/ops` (ganti nama `base44` → mis. `opsApi`, atau panggil `/api/ops/*`
+  langsung dari 11 berkas pemakai) — user minta ditunda. Konsep/klarifikasi Base44 ada di bagian 1.
+- **Kebijakan belum bayar**: sekarang stok dipotong saat order dibuat. Kalau user mau stok baru
+  dipotong saat dibayar, pindahkan `samaqu_decrement_stock` dari `/api/orders` + `/api/open-order`
+  ke saat status jadi `diproses`, lalu sesuaikan `PAID_ORDER_STATUS`.
