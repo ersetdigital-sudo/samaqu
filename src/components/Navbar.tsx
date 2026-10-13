@@ -155,21 +155,14 @@ export default function Navbar() {
         background: "transparent",
         backdropFilter: "none",
         WebkitBackdropFilter: "none",
-        borderBottom: "1px solid rgba(248,245,241,.12)",
+        borderBottom: "1px solid rgba(0,0,0,.06)",
         boxShadow: "none",
       };
 
-  const linkColor = scrolled ? "var(--espresso)" : "rgba(248,245,241,.78)";
-  const ctaColor = scrolled ? "var(--espresso)" : "var(--cream)";
-
-  /* ── Icon chip: frosted pill di belakang ikon saat navbar transparan (di atas hero) ── */
-  const iconChipStyle = scrolled
-    ? undefined
-    : {
-        background: "rgba(0,0,0,.38)",
-        backdropFilter: "blur(8px)",
-        WebkitBackdropFilter: "blur(8px)",
-      };
+  // Hero sekarang terang & teksnya hitam, jadi navbar (transparan di atas hero) juga dibuat
+  // gelap supaya logo & menu tetap kebaca — dulu light karena hero-nya gelap.
+  const linkColor = "var(--espresso)";
+  const ctaColor = "var(--espresso)";
 
   return (
     <MobileDrawerCtx.Provider value={{ open: menuOpen, setOpen: setMenuOpen }}>
@@ -191,10 +184,7 @@ export default function Navbar() {
                 <img
                   src="/logo.svg"
                   alt="SAMAQU"
-                  className="h-8 sm:h-10 w-auto transition-[filter] duration-500"
-                  style={{
-                    filter: !isHome || scrolled ? "none" : "invert(1) brightness(0.95)",
-                  }}
+                  className="h-8 sm:h-10 w-auto"
                 />
               </a>
 
@@ -288,7 +278,7 @@ export default function Navbar() {
               {/* Right: language switcher + profile (desktop) + cart + hamburger */}
               <div className="flex items-center gap-3 sm:gap-4">
                 {/* Language switcher */}
-                <div className="flex items-center rounded-full overflow-hidden" style={{ border: `1px solid ${scrolled ? "rgba(0,0,0,.2)" : "rgba(248,245,241,.25)"}` }}>
+                <div className="flex items-center rounded-full overflow-hidden" style={{ border: "1px solid rgba(0,0,0,.2)" }}>
                   {locales.map((loc) => (
                     <button
                       key={loc}
@@ -297,7 +287,7 @@ export default function Navbar() {
                       title={FLAG_LABELS[loc]}
                       className="grid place-items-center px-2.5 py-1.5 transition-all duration-200"
                       style={{
-                        background: locale === loc ? (scrolled ? "var(--espresso)" : "rgba(248,245,241,.9)") : "transparent",
+                        background: locale === loc ? "var(--espresso)" : "transparent",
                         opacity: locale === loc ? 1 : 0.6,
                       }}
                     >
@@ -310,7 +300,7 @@ export default function Navbar() {
                 <Link
                   href={`/${locale}/akun`}
                   className="lg:hidden grid place-items-center w-10 h-10 rounded-full transition-colors duration-500"
-                  style={{ color: ctaColor, ...iconChipStyle }}
+                  style={{ color: ctaColor }}
                   aria-label="Akun saya"
                 >
                   <User size={20} />
@@ -324,7 +314,7 @@ export default function Navbar() {
                 <button
                   onClick={() => setCartOpen(true)}
                   className="relative grid place-items-center w-10 h-10 rounded-full transition-colors duration-500 cursor-pointer"
-                  style={{ color: ctaColor, ...iconChipStyle }}
+                  style={{ color: ctaColor }}
                   aria-label="Keranjang belanja"
                 >
                   <Bag size={20} />
@@ -332,7 +322,7 @@ export default function Navbar() {
                 </button>
                 <button
                   className="lg:hidden grid place-items-center w-10 h-10 -mr-2 rounded-full transition-colors duration-500"
-                  style={{ color: ctaColor, ...iconChipStyle }}
+                  style={{ color: ctaColor }}
                   aria-label="Buka menu"
                   aria-expanded={menuOpen}
                   onClick={() => setMenuOpen(true)}

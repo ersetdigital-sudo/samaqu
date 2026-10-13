@@ -87,7 +87,7 @@ export default function Hero() {
     <section
       id="hero"
       className="relative w-full overflow-hidden"
-      style={{ background: "#000000", minHeight: "100dvh" }}
+      style={{ background: "#ffffff", minHeight: "100dvh" }}
     >
       {/* ── Video background ──
           Tanpa layer apa pun di atas video (tint, scrim, glow, noise) — video sudah
