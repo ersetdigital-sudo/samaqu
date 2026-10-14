@@ -68,6 +68,13 @@ const varianSearchText = (v) =>
   [v.product_name, v.category, v.jenis_kain_name, v.series_name].map((x) => String(x || "")).join(" ").toLowerCase();
 const STATUS_LABEL = { aman: "Aman", menipis: "Menipis", habis: "Habis" };
 
+/** Pilihan periode kartu "Produk Terlaris" (default 30 hari terakhir). */
+const TOP_PERIODS = [
+  { key: "7", label: "7 hari", full: "7 hari terakhir" },
+  { key: "30", label: "30 hari", full: "30 hari terakhir" },
+  { key: "month", label: "Bulan ini", full: "bulan ini" },
+];
+
 /**
  * Batas kalender menurut WIB (bukan zona waktu browser): tanggal hari ini,
  * awal bulan, dan akhir bulan berjalan dalam format YYYY-MM-DD.
@@ -83,6 +90,13 @@ function wibCalendarRange() {
     monthStart: `${y}-${pad(m + 1)}-01`,
     monthEnd: `${y}-${pad(m + 1)}-${pad(lastDay)}`,
   };
+}
+
+/** Tanggal (YYYY-MM-DD) `days` hari sebelum tanggal WIB `iso`. */
+function wibDateMinus(iso, days) {
+  const d = new Date(`${iso}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - days);
+  return d.toISOString().slice(0, 10);
 }
 
 function AnimatedCounter({ value, prefix = "", suffix = "", duration = 1200, delay = 0 }) {
@@ -545,24 +559,52 @@ export default function MasterProduk() {
     () => (products || []).filter((p) => String(p.status_efektif || p.status || "aman") !== "habis").length,
     [products],
   );
-  // Terlaris = unit TERJUAL dari order website. Yang belum dibayar (status
-  // "pending") belum dianggap terjual (stoknya cuma direservasi), batal
-  // ("return") juga tidak dihitung.
-  const topSeller = useMemo(() => {
-    const sold = {};
-    for (const t of transactions || []) {
-      const st = String(t.status || "").toLowerCase();
-      if (st === "return" || st === "pending") continue;
-      const name = String(t.product_name || "").trim();
-      if (!name) continue;
-      sold[name] = (sold[name] || 0) + (Number(t.qty) || 0);
+  // Kartu "Produk Terlaris" — unit TERJUAL dari order website pada periode terpilih.
+  // Hanya pesanan SAH yang dihitung: status route "completed" (= pesanan `diproses`
+  // yang sudah dibayar, `dikirim`, `selesai`). Belum bayar ("pending") dan batal /
+  // auto-cancel ("return") TIDAK dihitung. Produk Free Gift dilewati.
+  // Dikelompokkan per baris produk lengkap: nama · jenis kain · series, jadi
+  // "Thobe Superblack B-01 Jiharkah" dan "… C-01 Jiharkah" dihitung terpisah, dan
+  // series turunan (Imron/Bayati/Karim/Imalah) dihitung atas namanya sendiri.
+  const [topPeriod, setTopPeriod] = useState("30");
+  const topSellers = useMemo(() => {
+    const tx = Array.isArray(transactions) ? transactions : [];
+    const prods = Array.isArray(products) ? products : [];
+    const prodById = new Map();
+    const orderIndex = new Map();
+    prods.forEach((p, i) => { prodById.set(p.id, p); orderIndex.set(p.id, i); });
+
+    // Periode: default 30 hari terakhir (termasuk hari ini), atau 7 hari / bulan ini.
+    const from = topPeriod === "7" ? wibDateMinus(wib.today, 6)
+      : topPeriod === "30" ? wibDateMinus(wib.today, 29)
+      : wib.monthStart;
+    const to = topPeriod === "month" ? wib.monthEnd : wib.today;
+
+    const agg = new Map();
+    for (const t of tx) {
+      if (String(t.status || "").toLowerCase() !== "completed") continue;
+      const d = String(t.date || "");
+      if (!d || d < from || d > to) continue;
+      const prod = prodById.get(t.product_id);
+      if (prod && prod.product_type === "free_gift") continue;
+      const label = [t.product_name, t.kain, t.series]
+        .map((x) => String(x || "").trim())
+        .filter(Boolean)
+        .join(" · ");
+      if (!label) continue;
+      const cur = agg.get(label);
+      if (cur) cur.units += Number(t.qty) || 0;
+      else agg.set(label, {
+        label,
+        units: Number(t.qty) || 0,
+        // Tie-break: ikut urutan produk yang sudah ada (urutan dari server/ops-order).
+        order: orderIndex.has(t.product_id) ? orderIndex.get(t.product_id) : Number.MAX_SAFE_INTEGER,
+      });
     }
-    let best = null;
-    for (const name of Object.keys(sold)) {
-      if (!best || sold[name] > best.units) best = { name, units: sold[name] };
-    }
-    return best;
-  }, [transactions]);
+    return Array.from(agg.values())
+      .sort((a, b) => (b.units - a.units) || (a.order - b.order))
+      .slice(0, 3);
+  }, [transactions, products, topPeriod, wib]);
 
   // ── Ringkasan stok untuk tab Laporan Stok (dihitung dari data yang sudah dimuat,
   //    bukan angka statis). Satuan = unit stok, bukan jumlah produk. ──
@@ -1029,17 +1071,40 @@ export default function MasterProduk() {
             <div className="col-span-2 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-3.5 py-3 md:px-4 md:py-3.5 hover:bg-white/15 transition-all duration-300">
               <div className="flex items-center gap-2 text-white">
                 <TrendingUp size={15} className="shrink-0 opacity-90" />
-                <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-wide leading-tight min-h-[26px] md:min-h-[15px]">Produk Terlaris</p>
+                <p className="min-w-0 flex-1 truncate text-[10px] md:text-[11px] font-bold uppercase tracking-wide leading-tight">Produk Terlaris</p>
+                <select
+                  value={topPeriod}
+                  onChange={(e) => setTopPeriod(e.target.value)}
+                  aria-label="Periode produk terlaris"
+                  className="shrink-0 rounded-md bg-white/15 border border-white/15 text-white text-[10px] font-bold px-1 py-0.5 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+                >
+                  {TOP_PERIODS.map((p) => (
+                    <option key={p.key} value={p.key} className="text-slate-900">{p.label}</option>
+                  ))}
+                </select>
               </div>
-              <p
-                className="text-lg md:text-2xl font-black text-white font-inter tracking-tight leading-tight break-words mt-2"
-                title={topSeller ? `${topSeller.name} - ${topSeller.units} unit` : undefined}
-              >
-                {topSeller ? topSeller.name : '-'}
-              </p>
-              <p className="mt-1.5 text-[10px] md:text-[11px] text-white/85 leading-tight">
-                {topSeller ? `Terjual ${topSeller.units} unit` : 'Belum ada penjualan'}
-              </p>
+              {topSellers.length > 0 ? (
+                <div className="mt-2 flex flex-col gap-[3px]">
+                  {topSellers.map((p, i) => (
+                    <div key={p.label} className="flex items-center gap-1.5">
+                      <span className={`w-2.5 shrink-0 text-[10px] md:text-[11px] leading-tight ${i === 0 ? "font-black text-white" : "font-bold text-white/80"}`}>{i + 1}</span>
+                      <span
+                        className={`min-w-0 flex-1 truncate text-[10px] md:text-[11px] leading-tight ${i === 0 ? "font-black text-white" : "font-medium text-white/85"}`}
+                        title={p.label}
+                      >
+                        {p.label}
+                      </span>
+                      <span className={`shrink-0 tabular-nums text-[10px] md:text-[11px] leading-tight ${i === 0 ? "font-black text-white" : "font-bold text-white/80"}`}>
+                        {p.units.toLocaleString("id-ID")}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-2 text-[10px] md:text-[11px] text-white/85 leading-tight">
+                  Belum ada penjualan · {TOP_PERIODS.find((p) => p.key === topPeriod)?.full}
+                </p>
+              )}
             </div>
           </>
         ) : activeTab === 'stockin' ? (
