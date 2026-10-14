@@ -37,16 +37,17 @@ import ProductForm from "@/components/admin/ProductForm";
  * ukuran, harga per series — TANPA foto, plus SKU/HPP/Tipe Produk). Produk baru dari ops
  * dibuat `is_published=false` (belum tampil di website).
  *
- * EDIT → tetap memakai form lama di bawah (`OpsTambahProdukForm`), karena `ProductForm`
- * bersama baru mendukung mode tambah. Ini menyusul.
+ * EDIT → sama: memakai `ProductForm` dengan `editProductId` (memuat data lengkap dan
+ * memperbarui baris yang ada, bukan membuat duplikat).
  */
 export default function TambahProdukPage() {
   const location = useLocation();
-  const isEditMode = !!location.state?.product;
-  if (isEditMode) return <OpsTambahProdukForm />;
-  return <ProductForm mode="ops" />;
+  const productToEdit = location.state?.product || null;
+  // Tambah & Edit sama-sama memakai komponen bersama (mode ops); edit mengirim id barisnya.
+  return <ProductForm mode="ops" editProductId={productToEdit?.id} />;
 }
 
+/** LEGACY — tidak dipakai lagi (ops kini memakai `ProductForm`). Dibiarkan sementara. */
 function OpsTambahProdukForm() {
   const navigate = useNavigate();
   const location = useLocation();
