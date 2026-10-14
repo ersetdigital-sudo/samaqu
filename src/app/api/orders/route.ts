@@ -4,6 +4,7 @@ import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { isPaymentMethodId, legacyPaymentType } from "@/lib/payment-methods";
 import { notifyAdminNewOrder } from "@/lib/fonnte";
 import { markLeadBoughtForOrder } from "@/lib/ops-lead-sync";
+import { sumWeightGrams } from "@/lib/shipping-weight";
 
 function generateOrderNumber(): string {
   const d = new Date();
@@ -195,6 +196,23 @@ export async function POST(request: NextRequest) {
 
     console.log("[ORDERS] Final order:", { orderNumber, subtotal, shippingCost: verifiedShippingCost, discount, total });
 
+    // ── Berat kirim (gram): Σ berat produk asli × qty dari DATABASE (bukan nilai dari klien). ──
+    // Sumber kebenaran berat = `products.weight`; berat tidak lagi mengikuti `shipping.weight`
+    // kiriman browser supaya tidak salah kalau katalog statis/di-klien keliru.
+    const weightIds = Array.from(new Set(validatedItems.map((i) => i.productId).filter(Boolean)));
+    const weightById: Record<string, number> = {};
+    if (weightIds.length > 0) {
+      const { data: wRows } = await supabase.from("products").select("id, weight").in("id", weightIds);
+      for (const r of wRows || []) if (r.weight) weightById[String(r.id)] = Number(r.weight);
+    }
+    const { grams: serverWeight, missingQty: weightMissing } = sumWeightGrams(
+      validatedItems.map((i) => ({ productId: i.productId, quantity: i.quantity })),
+      weightById
+    );
+    const weightGrams = weightMissing === 0 && serverWeight > 0
+      ? serverWeight
+      : (Number(shipping.weight) || serverWeight || 0);
+
     // Insert order
     const { data: order, error: orderError } = await supabase
       .from("orders")
@@ -218,7 +236,7 @@ export async function POST(request: NextRequest) {
         status: "pending",
         // Stok sudah dipotong di atas → pembatalan wajib mengembalikannya (lihat src/lib/cancel-order.ts).
         stock_reserved: true,
-        weight: shipping.weight || null,
+        weight: weightGrams || null,
       })
       .select()
       .single();
