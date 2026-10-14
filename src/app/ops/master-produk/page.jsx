@@ -75,6 +75,14 @@ const TOP_PERIODS = [
   { key: "month", label: "Bulan ini", full: "bulan ini" },
 ];
 
+/** Judul & subjudul header mengikuti tab yang aktif (berubah tanpa reload). */
+const TAB_HEADERS = {
+  produk: { title: "Master Produk", sub: "Kelola produk dan stok barang" },
+  report: { title: "Laporan Stok", sub: "Pantau sisa stok per produk, kain, series, dan ukuran" },
+  stockin: { title: "Barang Masuk", sub: "Riwayat stok yang masuk ke gudang" },
+  stockout: { title: "Barang Keluar", sub: "Riwayat stok yang keluar dari gudang" },
+};
+
 /**
  * Batas kalender menurut WIB (bukan zona waktu browser): tanggal hari ini,
  * awal bulan, dan akhir bulan berjalan dalam format YYYY-MM-DD.
@@ -334,16 +342,16 @@ function ProductDetailModal({ isOpen, onClose, product, stockIns = [], transacti
               {/* Stok per varian */}
               <section>
                 <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">
-                  Stok per Varian ({pv.length})
+                  Stok per Warna ({pv.length})
                 </p>
                 {product.stok_bersama ? (
                   <p className="text-[12px] text-slate-500 dark:text-slate-400 mb-2">
-                    Varian di bawah tidak memegang stok sendiri — stoknya mengikuti{" "}
+                    Baris di bawah tidak memegang stok sendiri — stoknya mengikuti{" "}
                     <span className="font-semibold text-slate-700 dark:text-slate-200">{product.stok_bersama.mengikuti}</span>.
                   </p>
                 ) : null}
                 {pv.length === 0 ? (
-                  <p className="text-sm text-slate-500">Belum ada varian untuk produk ini.</p>
+                  <p className="text-sm text-slate-500">Belum ada stok warna untuk produk ini.</p>
                 ) : (
                   <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
                     <div className="overflow-x-auto">
@@ -450,7 +458,7 @@ function ProductDetailModal({ isOpen, onClose, product, stockIns = [], transacti
             {/* ── Footer ── */}
             <div className="px-5 py-3.5 border-t border-slate-200 dark:border-slate-800 shrink-0 flex items-center justify-between gap-2">
               <p className="text-[11px] text-slate-400">
-                {pv.length} varian · {statusLabel}
+                {pv.length} warna · {statusLabel}
               </p>
               <button
                 onClick={onClose}
@@ -911,10 +919,10 @@ export default function MasterProduk() {
                 </div>
                 <div>
                   <h1 className="text-3xl font-bold tracking-tight font-jakarta text-white">
-                    Master Produk
+                    {(TAB_HEADERS[activeTab] || TAB_HEADERS.produk).title}
                   </h1>
                   <p className="text-blue-100 font-medium mt-1 font-inter">
-                    Kelola produk dan stok barang
+                    {(TAB_HEADERS[activeTab] || TAB_HEADERS.produk).sub}
                   </p>
                 </div>
               </div>
@@ -972,7 +980,7 @@ export default function MasterProduk() {
               type="button"
               onClick={() => setStockFilter('all')}
               className="col-span-2 lg:col-span-1 text-left bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-3.5 py-3 md:px-4 md:py-3.5 hover:bg-white/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 active:scale-[0.99] transition-all duration-300"
-              title="Tampilkan semua varian"
+              title="Tampilkan semua stok"
             >
               <div className="flex items-center gap-2 text-white">
                 <IconBoxes size={15} className="shrink-0 opacity-90" />
@@ -981,23 +989,23 @@ export default function MasterProduk() {
               <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none mt-2">
                 {totalStockUnits.toLocaleString('id-ID')}<span className="text-xs md:text-sm font-bold"> unit</span>
               </p>
-              <p className="mt-1.5 text-[10px] md:text-[11px] text-white/85 leading-tight">Total unit tersedia</p>
+              <p className="mt-1.5 text-[10px] md:text-[11px] text-white/85 leading-tight">Total unit di gudang</p>
             </button>
 
             <button
               type="button"
               onClick={() => setStockFilter('menipis')}
               className="col-span-1 lg:col-span-1 text-left bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-3.5 py-3 md:px-4 md:py-3.5 hover:bg-white/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 active:scale-[0.99] transition-all duration-300"
-              title="Filter varian yang perlu restock"
+              title="Filter produk yang stoknya menipis"
             >
               <div className="flex items-center gap-2 text-white">
                 <IconAlertTriangle size={15} className="shrink-0 opacity-90" />
                 <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-wide leading-tight min-h-[26px] md:min-h-[15px]">Stok Menipis</p>
               </div>
               <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none mt-2">
-                {lowStockVariantCount.toLocaleString('id-ID')}<span className="text-xs md:text-sm font-bold"> varian</span>
+                {lowStockVariantCount.toLocaleString('id-ID')}<span className="text-xs md:text-sm font-bold"> produk</span>
               </p>
-              <p className="mt-1.5 text-[10px] md:text-[11px] text-white/85 leading-tight">Perlu restock</p>
+              <p className="mt-1.5 text-[10px] md:text-[11px] text-white/85 leading-tight">Sisa 5 unit atau kurang</p>
             </button>
 
             <button
@@ -1013,23 +1021,23 @@ export default function MasterProduk() {
               <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none mt-2">
                 {stockInMonthUnits.toLocaleString('id-ID')}<span className="text-xs md:text-sm font-bold"> unit</span>
               </p>
-              <p className="mt-1.5 text-[10px] md:text-[11px] text-white/85 leading-tight">Bulan berjalan (WIB)</p>
+              <p className="mt-1.5 text-[10px] md:text-[11px] text-white/85 leading-tight">Masuk bulan ini (WIB)</p>
             </button>
 
             <button
               type="button"
               onClick={() => setStockFilter('habis')}
               className="col-span-2 lg:col-span-1 text-left bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-3.5 py-3 md:px-4 md:py-3.5 hover:bg-white/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 active:scale-[0.99] transition-all duration-300"
-              title="Filter varian yang stoknya habis"
+              title="Filter produk yang stoknya habis"
             >
               <div className="flex items-center gap-2 text-white">
                 <IconPackageX size={15} className="shrink-0 opacity-90" />
                 <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-wide leading-tight min-h-[26px] md:min-h-[15px]">Stok Habis</p>
               </div>
               <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none mt-2">
-                {outOfStockVariantCount.toLocaleString('id-ID')}<span className="text-xs md:text-sm font-bold"> varian</span>
+                {outOfStockVariantCount.toLocaleString('id-ID')}<span className="text-xs md:text-sm font-bold"> produk</span>
               </p>
-              <p className="mt-1.5 text-[10px] md:text-[11px] text-white/85 leading-tight">Tidak ada stok tersedia</p>
+              <p className="mt-1.5 text-[10px] md:text-[11px] text-white/85 leading-tight">Stok sudah 0</p>
             </button>
           </>
         ) : activeTab === 'produk' ? (
@@ -1059,13 +1067,13 @@ export default function MasterProduk() {
 
             <div className="col-span-1 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-3.5 py-3 md:px-4 md:py-3.5 hover:bg-white/15 transition-all duration-300">
               <div className="flex items-center gap-2 text-white">
-                <IconLayers size={15} className="shrink-0 opacity-90" />
-                <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-wide leading-tight min-h-[26px] md:min-h-[15px]">Total Varian</p>
+                <IconBoxes size={15} className="shrink-0 opacity-90" />
+                <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-wide leading-tight min-h-[26px] md:min-h-[15px]">Total Stok</p>
               </div>
               <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none mt-2">
-                {(variants || []).length.toLocaleString('id-ID')}
+                {totalStockUnits.toLocaleString('id-ID')}<span className="text-xs md:text-sm font-bold"> unit</span>
               </p>
-              <p className="mt-1.5 text-[10px] md:text-[11px] text-white/85 leading-tight">Varian unik</p>
+              <p className="mt-1.5 text-[10px] md:text-[11px] text-white/85 leading-tight">Total unit di gudang</p>
             </div>
 
             <div className="col-span-2 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-3.5 py-3 md:px-4 md:py-3.5 hover:bg-white/15 transition-all duration-300">
@@ -1135,12 +1143,12 @@ export default function MasterProduk() {
                   <div className="col-span-1 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-3.5 py-3 md:px-4 md:py-3.5 hover:bg-white/15 transition-all duration-300">
                     <div className="flex items-center gap-2 text-white">
                       <IconBoxes size={15} className="shrink-0 opacity-90" />
-                      <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-wide leading-tight min-h-[26px] md:min-h-[15px]">Varian Diterima</p>
+                      <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-wide leading-tight min-h-[26px] md:min-h-[15px]">SKU Diterima</p>
                     </div>
                     <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none mt-2">
-                      {stockInMonthVariantCount.toLocaleString('id-ID')}<span className="text-xs md:text-sm font-bold"> varian</span>
+                      {stockInMonthVariantCount.toLocaleString('id-ID')}<span className="text-xs md:text-sm font-bold"> SKU</span>
                     </p>
-                    <p className="mt-1.5 text-[10px] md:text-[11px] text-white/85 leading-tight">SKU unik bulan ini</p>
+                    <p className="mt-1.5 text-[10px] md:text-[11px] text-white/85 leading-tight">Warna &amp; ukuran unik bulan ini</p>
                   </div>
 
                   <div className="col-span-2 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-3.5 py-3 md:px-4 md:py-3.5 hover:bg-white/15 transition-all duration-300">
@@ -1171,12 +1179,12 @@ export default function MasterProduk() {
                   <div className="col-span-1 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-3.5 py-3 md:px-4 md:py-3.5 hover:bg-white/15 transition-all duration-300">
                     <div className="flex items-center gap-2 text-white">
                       <ClipboardList size={15} className="shrink-0 opacity-90" />
-                      <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-wide leading-tight min-h-[26px] md:min-h-[15px]">Total Transaksi</p>
+                      <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-wide leading-tight min-h-[26px] md:min-h-[15px]">Total Item Terjual</p>
                     </div>
                     <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none mt-2">
                       {(transactions || []).length.toLocaleString('id-ID')}
                     </p>
-                    <p className="mt-1.5 text-[10px] md:text-[11px] text-white/85 leading-tight">Transaksi penjualan</p>
+                    <p className="mt-1.5 text-[10px] md:text-[11px] text-white/85 leading-tight">Baris item dari pesanan</p>
                   </div>
 
                   <div className="col-span-1 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-3.5 py-3 md:px-4 md:py-3.5 hover:bg-white/15 transition-all duration-300">
@@ -1663,7 +1671,7 @@ export default function MasterProduk() {
                         <tr>
                           <td colSpan={4 + SIZES.length + 1} className="px-6 py-12 text-center font-inter text-sm text-gray-400 dark:text-slate-500">
                             <div className="flex flex-col items-center gap-3">
-                              <span>{hasReportFilter ? 'Tidak ada baris yang cocok dengan pencarian/filter.' : 'Belum ada variant — tambahkan produk dengan warna & ukuran dulu'}</span>
+                              <span>{hasReportFilter ? 'Tidak ada baris yang cocok dengan pencarian/filter.' : 'Belum ada baris — tambahkan produk dengan warna & ukuran dulu'}</span>
                               {hasReportFilter && (
                                 <button
                                   type="button"
@@ -1733,7 +1741,7 @@ export default function MasterProduk() {
                 {reportRows.length === 0 ? (
                   <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center">
                     <p className="font-inter text-sm text-gray-400 mb-3">
-                      {hasReportFilter ? 'Tidak ada baris yang cocok dengan pencarian/filter.' : 'Belum ada variant'}
+                      {hasReportFilter ? 'Tidak ada baris yang cocok dengan pencarian/filter.' : 'Belum ada baris'}
                     </p>
                     {hasReportFilter && (
                       <button
