@@ -319,7 +319,7 @@ function AdminPageInner() {
     async function fetchData() {
       try {
         const [ordersRes, productsRes, variantsRes] = await Promise.all([
-          supabase.from("orders").select("*, order_items(product_name, color, size, series, kain, quantity, price, customer_price, minimum_price, product_image)").order("created_at", { ascending: false }).limit(50),
+          supabase.from("orders").select("*, order_items(product_id, product_name, color, size, series, kain, quantity, price, customer_price, minimum_price, product_image)").order("created_at", { ascending: false }).limit(50),
           supabase.from("products").select("*").order("created_at", { ascending: true }),
           supabase.from("product_variants").select("product_id, stock, base_product_id"),
         ]);
