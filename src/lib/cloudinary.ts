@@ -19,7 +19,15 @@ export interface CloudinaryUrlOptions {
   quality?: string | number;
   /** Crop mode, default "limit" supaya gambar asli tidak diperbesar. */
   crop?: string;
-  /** Format, default "auto" (f_auto → WebP/AVIF sesuai browser). */
+  /**
+   * Format, default "webp".
+   *
+   * Sengaja `f_webp`, bukan `f_auto`: menurut aturan penagihan Cloudinary, `f_auto`
+   * bisa menghasilkan BEBERAPA derived asset untuk URL yang sama (satu per format per
+   * browser — WebP + AVIF), dan tiap derived asset dihitung satu transformasi. `f_webp`
+   * = satu derived asset per URL, jadi biaya transformasi sekitar separuh. Kualitas
+   * praktis sama di `q_auto`; bedanya cuma berkas sedikit lebih besar dari AVIF.
+   */
   format?: string;
   /** dpr, mis. "auto" untuk retina. */
   dpr?: string;
@@ -35,9 +43,12 @@ const CLOUDINARY_TRANSFORM_SEGMENT = /^(f_|q_|w_|h_|c_|dpr_|g_|t_|e_|ar_|vc_|b_|
  *
  * Contoh:
  *   https://res.cloudinary.com/demo/image/upload/v1/a.jpg
- *   → https://res.cloudinary.com/demo/image/upload/f_auto,q_auto,w_600,c_limit/v1/a.jpg
+ *   → https://res.cloudinary.com/demo/image/upload/f_webp,q_auto,w_600,c_limit/v1/a.jpg
  *
- * URL non-Cloudinary (aset lokal / video) dikembalikan apa adanya.
+ * `f_webp` dipakai sebagai default (bukan `f_auto`) supaya satu URL hanya menghasilkan
+ * satu derived asset — lihat catatan biaya di `CloudinaryUrlOptions.format`.
+ *
+ * URL non-Cloudinary (aset lokal, media Supabase, atau video) dikembalikan apa adanya.
  */
 export function cloudinaryUrl(src: string, opts: CloudinaryUrlOptions = {}): string {
   if (!src || !src.includes("res.cloudinary.com")) return src;
@@ -56,7 +67,7 @@ export function cloudinaryUrl(src: string, opts: CloudinaryUrlOptions = {}): str
   if (CLOUDINARY_TRANSFORM_SEGMENT.test(firstSegment)) return src;
 
   const parts: string[] = [
-    `f_${opts.format ?? "auto"}`,
+    `f_${opts.format ?? "webp"}`,
     `q_${opts.quality ?? "auto"}`,
   ];
   if (opts.width) parts.push(`w_${opts.width}`);
