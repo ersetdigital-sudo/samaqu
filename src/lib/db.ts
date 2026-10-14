@@ -26,6 +26,8 @@ export interface DbProduct {
   cyp_microcopy_override: string | null;
   // Open Order
   open_order_enabled?: boolean | null;
+  // Tampil di website (katalog). Kolom `products.is_published`.
+  is_published?: boolean | null;
   // Weight
   weight: number | null;
   // Joined relation (optional, only when fetched with join)
@@ -133,6 +135,71 @@ export async function getProductById(id: string): Promise<Product | null> {
   const product = dbProductToProduct(data as DbProduct);
 
   // If product_images has data, use it for media (more accurate video detection)
+  if (images && images.length > 0) {
+    product.media = images.map((img: { url: string; is_video: boolean }) => ({
+      src: img.url,
+      type: (img.is_video ? "video" : "image") as "video" | "image",
+    }));
+    product.images = images.map((img: { url: string }) => img.url);
+  }
+
+  return product;
+}
+
+/**
+ * Katalog publik — HANYA produk yang penanda "tampil di website" aktif
+ * (`products.is_published`). Dipakai daftar katalog & Open Order.
+ *
+ * Sengaja fungsi terpisah dari `getProducts()`: `getProducts()` tetap tanpa filter
+ * karena dipakai riwayat pesanan (akun/pesanan) yang tidak boleh rusak kalau produk
+ * disembunyikan di kemudian hari.
+ */
+export async function getCatalogProducts(category?: string): Promise<Product[]> {
+  try {
+    let query = supabase
+      .from("products")
+      .select("*, jenis_kain(*)")
+      .eq("is_published", true)
+      .order("created_at", { ascending: true });
+
+    if (category && category !== "Semua") {
+      query = query.eq("category", category);
+    }
+
+    const { data, error } = await query;
+    if (error) {
+      console.error("[getCatalogProducts] Supabase error:", error.message, error);
+      return [];
+    }
+    return (data as DbProduct[]).map(dbProductToProduct);
+  } catch (err) {
+    console.error("[getCatalogProducts] Unexpected error:", err);
+    return [];
+  }
+}
+
+/**
+ * Detail produk katalog — null kalau produk belum "tampil" (dipakai untuk 404).
+ * Terpisah dari `getProductById()` yang tetap tanpa filter (dipakai checkout/keranjang).
+ */
+export async function getCatalogProductById(id: string): Promise<Product | null> {
+  const { data, error } = await supabase
+    .from("products")
+    .select("*, jenis_kain(*)")
+    .eq("id", id)
+    .eq("is_published", true)
+    .maybeSingle();
+
+  if (error || !data) return null;
+
+  const { data: images } = await supabase
+    .from("product_images")
+    .select("url, is_video, color, display_order")
+    .eq("product_id", id)
+    .order("display_order");
+
+  const product = dbProductToProduct(data as DbProduct);
+
   if (images && images.length > 0) {
     product.media = images.map((img: { url: string; is_video: boolean }) => ({
       src: img.url,

@@ -14,7 +14,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Calendar, ChevronLeft, X } from "lucide-react";
-import { getProducts } from "@/lib/db";
+import { getCatalogProducts } from "@/lib/db";
 import type { Product } from "@/lib/katalog-data";
 import { OPEN_ORDER_ADDON, OPEN_ORDER_PERIOD } from "@/lib/open-order-config";
 import {
@@ -151,7 +151,7 @@ export default function OpenOrderWizard() {
   // stok). Produk yang diikutkan admin (`open_order_enabled`) yang tampil di sini.
   useEffect(() => {
     let active = true;
-    getProducts()
+    getCatalogProducts()
       .then((products) => {
         if (active) setCatalog(products);
       })

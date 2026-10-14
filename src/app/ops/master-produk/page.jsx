@@ -1304,6 +1304,9 @@ export default function MasterProduk() {
                                     ikut {product.stok_bersama.mengikuti}
                                   </p>
                                 ) : null}
+                                <span className={`mt-0.5 inline-flex px-1.5 py-0.5 rounded-md text-[10px] font-bold border ${product.is_published === false ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-900' : 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-900'}`}>
+                                  {product.is_published === false ? 'Belum tampil' : 'Tampil di website'}
+                                </span>
                               </td>
                               <td className="px-4 py-3.5 text-left align-middle font-inter text-sm font-medium text-gray-600 dark:text-slate-300 border-r border-gray-100 dark:border-slate-800/50">
                                 <span className="whitespace-nowrap" title={product.jenis_kain?.material || undefined}>
@@ -1411,6 +1414,9 @@ export default function MasterProduk() {
                               ikut {product.stok_bersama.mengikuti}
                             </p>
                           ) : null}
+                          <span className={`mt-1 inline-flex px-1.5 py-0.5 rounded-md text-[10px] font-bold border ${product.is_published === false ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-900' : 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-900'}`}>
+                            {product.is_published === false ? 'Belum tampil' : 'Tampil di website'}
+                          </span>
                         </div>
                         {renderStockIndicator(product)}
                         </div>

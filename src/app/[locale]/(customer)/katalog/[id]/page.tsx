@@ -8,7 +8,7 @@ import ImageZoom, { type ZoomMedia } from "@/components/ImageZoom";
 import KainSeriesModal, { getKainSwatchColor } from "@/components/KainSeriesModal";
 import Breadcrumb from "@/components/Breadcrumb";
 import { colorMap, type Product, type MediaItem } from "@/lib/katalog-data";
-import { getProductById, getAvailableSeries, getProducts, type SeriesOption } from "@/lib/db";
+import { getCatalogProductById, getCatalogProducts, getAvailableSeries, type SeriesOption } from "@/lib/db";
 import { cloudinaryUrl } from "@/lib/cloudinary";
 import { useCart } from "@/lib/cart-context";
 import { useToast } from "@/components/Toast";
@@ -234,7 +234,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   useEffect(() => {
     if (!product) return;
-    getProducts().then((all) => {
+    getCatalogProducts().then((all) => {
       const sameKain = all.filter((p) => p.id !== product.id && product.kain && p.kain === product.kain);
       const others = all.filter((p) => p.id !== product.id && (!product.kain || p.kain !== product.kain));
       setRelatedProducts([...sameKain, ...others].slice(0, 4));
@@ -242,7 +242,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   }, [product]);
 
   useEffect(() => {
-    getProductById(id).then((p) => {
+    getCatalogProductById(id).then((p) => {
       setProduct(p);
       setActiveSeriesId(id);
       loadedSeriesIdRef.current = id;
@@ -298,7 +298,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     // TETAP harus me-refresh foto & data (fix bug: foto tidak berganti).
     if (!activeSeriesId || loadedSeriesIdRef.current === activeSeriesId) return;
     loadedSeriesIdRef.current = activeSeriesId;
-    getProductById(activeSeriesId).then((p) => {
+    getCatalogProductById(activeSeriesId).then((p) => {
       if (p) {
         setProduct(p);
         // Fetch color hex for the new product

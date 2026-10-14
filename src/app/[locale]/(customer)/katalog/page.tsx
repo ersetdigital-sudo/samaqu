@@ -14,7 +14,7 @@ import {
   type Category,
   type Product,
 } from "@/lib/katalog-data";
-import { getProducts } from "@/lib/db";
+import { getCatalogProducts } from "@/lib/db";
 import { cloudinaryUrl } from "@/lib/cloudinary";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/Toast";
@@ -346,7 +346,7 @@ export default function KatalogPage() {
 
   /* Fetch products from database */
   useEffect(() => {
-    getProducts().then((data) => {
+    getCatalogProducts().then((data) => {
       setProducts(data);
       setLoading(false);
       // Warna hex tersimpan (hex bebas dari admin) → fallback colorMap

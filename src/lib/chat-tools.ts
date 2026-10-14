@@ -153,7 +153,8 @@ async function cariProduk(args: Record<string, unknown>): Promise<ChatToolResult
 
   let query = admin
     .from("products")
-    .select("id, name, category, kain, series, price, minimum_price, create_your_price_enabled, colors, image, jenis_kain(name, material)");
+    .select("id, name, category, kain, series, price, minimum_price, create_your_price_enabled, colors, image, jenis_kain(name, material)")
+    .eq("is_published", true);
 
   if (term) query = query.or(`name.ilike.%${term}%,category.ilike.%${term}%,kain.ilike.%${term}%,series.ilike.%${term}%`);
   if (kategori) query = query.ilike("category", `%${kategori}%`);

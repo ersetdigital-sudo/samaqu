@@ -32,7 +32,7 @@ export default function WishlistPage() {
       const { data: rows } = await supabase.from("wishlists").select("product_id").eq("customer_id", c.id);
       const ids = (rows || []).map((r) => r.product_id);
       if (ids.length === 0) { setLoading(false); return; }
-      const { data: prods } = await supabase.from("products").select("id, name, category, price, image, minimum_price, create_your_price_enabled").in("id", ids);
+      const { data: prods } = await supabase.from("products").select("id, name, category, price, image, minimum_price, create_your_price_enabled").eq("is_published", true).in("id", ids);
       setItems((prods as WProduct[]) || []);
       const { data: imgs } = await supabase.from("product_images").select("product_id, url, is_video").in("product_id", ids).order("display_order");
       if (imgs) {

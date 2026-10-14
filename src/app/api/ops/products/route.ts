@@ -25,6 +25,7 @@ const PRODUCT_FIELDS = [
   "colors",
   "image",
   "weight",
+  "is_published",
 ] as const;
 
 async function withTotals(admin: ReturnType<typeof getSupabaseAdmin>, products: any[]) {
@@ -92,6 +93,8 @@ async function withTotals(admin: ReturnType<typeof getSupabaseAdmin>, products: 
       series: p.series,
       colors: p.colors,
       image: p.image,
+      // Penanda "tampil di website" (kolom `products.is_published`, default true).
+      is_published: p.is_published !== false,
     };
   });
 }
@@ -154,6 +157,8 @@ export async function POST(req: NextRequest) {
     const id = body.id || (await buildProductId(admin, body.name, body.series));
     const row: Record<string, unknown> = { ...CREATE_DEFAULTS, id, name: body.name };
     for (const f of PRODUCT_FIELDS) if (body[f] !== undefined) row[f] = body[f];
+    // Produk baru dari ops BELUM tampil di website — admin yang menerbitkannya.
+    row.is_published = false;
     const { data, error } = await admin.from("products").insert(row).select().maybeSingle();
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ item: data });

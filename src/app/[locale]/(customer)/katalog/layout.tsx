@@ -31,7 +31,7 @@ export default async function KatalogLayout({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
-  const { data: products } = await supabase.from("products").select("id, name, category, price, image").order("created_at", { ascending: true }).limit(50);
+  const { data: products } = await supabase.from("products").select("id, name, category, price, image").eq("is_published", true).order("created_at", { ascending: true }).limit(50);
 
   const jsonLd = {
     "@context": "https://schema.org",

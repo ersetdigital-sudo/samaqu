@@ -76,6 +76,8 @@ interface Product {
   kain?: string | null;
   colors?: string[];
   jenis_kain?: { name: string } | null;
+  /** Tampil di katalog website (kolom `products.is_published`, default true). */
+  is_published?: boolean | null;
 }
 
 interface AdminCatalogProduct extends Product {
@@ -84,6 +86,8 @@ interface AdminCatalogProduct extends Product {
   totalStock?: number;
   matchedSeries?: string;
   seriesStock?: { name: string; stock: number; isDerived: boolean; follows?: string }[];
+  /** true kalau SEMUA baris (series) produk ini tampil di website. */
+  isPublished?: boolean;
 }
 
 // Sidebar dikelompokkan: alur jualan (pesanan/produk/pelanggan) dipisah dari konten
@@ -151,7 +155,7 @@ function groupByMainProduct(raw: Product[]): AdminCatalogProduct[] {
 
   const items: AdminCatalogProduct[] = [];
   for (const group of groups.values()) {
-    const rep: AdminCatalogProduct = { ...group[0], memberIds: group.map((m) => m.id) };
+    const rep: AdminCatalogProduct = { ...group[0], memberIds: group.map((m) => m.id), isPublished: group.every((m) => m.is_published !== false) };
 
     if (group.length > 1) {
       let cheapest = group[0];

@@ -164,6 +164,7 @@ export async function POST(request: NextRequest) {
     const { data: catalogRows, error: catalogError } = await supabaseAdmin
       .from("products")
       .select("*, jenis_kain(*)")
+      .eq("is_published", true)
       .order("created_at", { ascending: true });
 
     if (catalogError) {
