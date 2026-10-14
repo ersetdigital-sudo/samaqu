@@ -31,6 +31,13 @@ export default function LabelPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [paymentType, setPaymentType] = useState<string | null>(null);
+  // Ukuran label yang dipilih: "100x150" (desain existing) atau "78x100" (format baru).
+  const [size, setSize] = useState<"100x150" | "78x100">("100x150");
+  const LABEL_SIZES = {
+    "100x150": { w: 100, h: 150, label: "100 × 150 mm" },
+    "78x100": { w: 78, h: 100, label: "78 × 100 mm" },
+  } as const;
+  const dims = LABEL_SIZES[size];
   const barcodeRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -85,10 +92,10 @@ export default function LabelPage() {
       JsBarcode(svg, order.awb_no!, {
         format: "CODE128",
         width: 2.5,
-        height: 50,
+        height: size === "78x100" ? 38 : 50,
         displayValue: true,
         font: "monospace",
-        fontSize: 15,
+        fontSize: size === "78x100" ? 12 : 15,
         fontOptions: "bold",
         textMargin: 2,
         margin: 0,
@@ -96,7 +103,7 @@ export default function LabelPage() {
         lineColor: "#000000",
       });
     });
-  }, [order]);
+  }, [order, size]);
 
   if (loading) return <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", fontFamily: "sans-serif" }}>Memuat label...</div>;
   if (error || !order) return <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", fontFamily: "sans-serif", color: "red" }}>{error || "Pesanan tidak ditemukan"}</div>;
@@ -109,30 +116,45 @@ export default function LabelPage() {
   return (
     <>
       <style>{`
-        @page { width: 100mm; height: 150mm; margin: 0; }
-        @media print {
-          body { margin: 0 !important; padding: 0 !important; background: white !important; }
-          .no-print { display: none !important; }
-          .label-wrap { box-shadow: none !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
-        }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: Arial, Helvetica, sans-serif; background: #e8e8e8; -webkit-font-smoothing: antialiased; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; text-rendering: optimizeLegibility; }
         svg { shape-rendering: crispEdges; }
+        /* Ukuran halaman mengikuti pilihan label (100×150 atau 78×100). */
+        @page { size: ${dims.w}mm ${dims.h}mm; margin: 0; }
         @media print {
+          body { margin: 0 !important; padding: 0 !important; background: white !important; }
+          .no-print { display: none !important; }
+          .label-wrap { box-shadow: none !important; }
+          .label-wrap, .label-wrap * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
           svg { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-          .label-wrap { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
-          .label-wrap * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
-          @page { size: 100mm 150mm; margin: 0; }
         }
       `}</style>
 
       <div className="no-print" style={{ padding: "16px", textAlign: "center" }}>
-        <button onClick={() => window.print()} style={{ padding: "10px 24px", fontSize: "14px", cursor: "pointer", background: "#333", color: "#fff", border: "none", borderRadius: "6px" }}>
-          Cetak Label
-        </button>
-        <span style={{ marginLeft: "12px", fontSize: "12px", color: "#666" }}>Label 100×150mm</span>
+        <div style={{ display: "inline-flex", border: "1px solid #c8c8c8", borderRadius: "8px", overflow: "hidden", marginBottom: "12px" }}>
+          {(["100x150", "78x100"] as const).map((k) => (
+            <button
+              key={k}
+              onClick={() => setSize(k)}
+              style={{
+                padding: "9px 18px", fontSize: "13px", cursor: "pointer", border: "none",
+                background: size === k ? "#333" : "#fff", color: size === k ? "#fff" : "#333",
+                fontWeight: size === k ? 700 : 500,
+              }}
+            >
+              {LABEL_SIZES[k].label}
+            </button>
+          ))}
+        </div>
+        <div>
+          <button onClick={() => window.print()} style={{ padding: "10px 24px", fontSize: "14px", cursor: "pointer", background: "#333", color: "#fff", border: "none", borderRadius: "6px" }}>
+            Cetak Label
+          </button>
+          <span style={{ marginLeft: "12px", fontSize: "12px", color: "#666" }}>Label {dims.label}</span>
+        </div>
       </div>
 
+      {size === "100x150" ? (
       <div className="label-wrap" style={{
         width: "100mm", minHeight: "150mm", margin: "0 auto", background: "#fff",
         boxShadow: "0 2px 8px rgba(0,0,0,.15)", display: "flex", flexDirection: "column",
@@ -246,6 +268,104 @@ export default function LabelPage() {
           <div style={{ fontSize: "7px", fontWeight: "600", color: "#000", lineHeight: "1.25" }}>Pastikan label ditempel pada paket dengan rapi dan tidak terlipet agar barcode dapat terbaca dengan baik.</div>
         </div>
       </div>
+      ) : (
+      <div className="label-wrap" style={{
+        width: "78mm", minHeight: "100mm", margin: "0 auto", background: "#fff",
+        boxShadow: "0 2px 8px rgba(0,0,0,.15)", display: "flex", flexDirection: "column",
+        overflow: "hidden", fontSize: "8px", lineHeight: "1.25", color: "#000",
+      }}>
+        {/* Header ringkas — nama toko + layanan J&T sebaris */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1.1mm 2.5mm 0.9mm", borderBottom: "2px solid #000" }}>
+          <div style={{ fontSize: "12px", fontWeight: "900", letterSpacing: "1px" }}>SAMAQU</div>
+          <div style={{ textAlign: "right", lineHeight: "1.12" }}>
+            <div style={{ fontSize: "8px", fontWeight: "900" }}>J&amp;T <span style={{ fontSize: "6px", fontWeight: "400" }}>EXPRESS</span></div>
+            <div style={{ fontSize: "6px", fontWeight: "700", marginTop: "0.1mm" }}>{serviceLabel} · REGULAR SERVICE</div>
+          </div>
+        </div>
+
+        {/* Barcode + nomor resi */}
+        <div style={{ textAlign: "center", padding: "1mm 2.5mm", borderBottom: "1.5px solid #000", display: "flex", justifyContent: "center" }}>
+          <div ref={barcodeRef} style={{ lineHeight: 0 }} />
+        </div>
+
+        {/* Penerima */}
+        <div style={{ padding: "1.1mm 2.5mm", border: "1.5px solid #000", margin: "1mm 2.5mm", borderRadius: "1mm" }}>
+          <div style={{ display: "inline-block", fontSize: "6px", fontWeight: "800", background: "#000", color: "#fff", padding: "0.25mm 1.5mm", borderRadius: "0.8mm", marginBottom: "0.6mm", textTransform: "uppercase" }}>Penerima</div>
+          <div style={{ fontSize: "11px", fontWeight: "800", lineHeight: "1.15", wordBreak: "break-word" }}>{order.customer_name}</div>
+          <div style={{ fontSize: "9px", fontWeight: "700", marginTop: "0.3mm" }}>{order.customer_whatsapp}</div>
+          <div style={{ fontSize: "8px", fontWeight: "600", marginTop: "0.3mm", lineHeight: "1.2", wordBreak: "break-word" }}>
+            {order.shipping_address}, {order.shipping_city}{order.shipping_postal_code ? ` ${order.shipping_postal_code}` : ""}
+          </div>
+        </div>
+
+        {/* Isi kiriman + berat */}
+        <div style={{ display: "flex", margin: "0 2.5mm", borderTop: "1.5px solid #000", borderBottom: "1.5px solid #000" }}>
+          <div style={{ flex: 1, padding: "0.7mm 2mm 0.7mm 0", borderRight: "1px solid #000" }}>
+            <div style={{ fontSize: "6px", fontWeight: "800", textTransform: "uppercase", letterSpacing: "0.3px" }}>Isi Kiriman</div>
+            <div style={{ fontSize: "8.5px", fontWeight: "700", marginTop: "0.2mm" }}>Pakaian</div>
+          </div>
+          <div style={{ flex: 1, padding: "0.7mm 0 0.7mm 2mm" }}>
+            <div style={{ fontSize: "6px", fontWeight: "800", textTransform: "uppercase", letterSpacing: "0.3px" }}>Berat</div>
+            <div style={{ fontSize: "8.5px", fontWeight: "700", marginTop: "0.2mm" }}>{weightKg} KG</div>
+          </div>
+        </div>
+
+        {/* Pesanan — daftar ringkas, tinggi menyesuaikan jumlah item */}
+        <div style={{ padding: "1mm 2.5mm", borderBottom: "1.5px solid #000" }}>
+          <div style={{ fontSize: "6px", fontWeight: "800", textTransform: "uppercase", letterSpacing: "0.3px", marginBottom: "0.4mm" }}>Pesanan</div>
+          {(order.order_items || []).map((it, i) => {
+            const rawColor = it.color && it.color !== "default" && it.color !== "-" ? it.color : "";
+            const showColor = rawColor && !it.product_name.toLowerCase().includes(rawColor.toLowerCase());
+            const meta = [
+              it.kain ? `Varian: ${it.kain}` : null,
+              showColor ? `Warna: ${rawColor}` : null,
+              it.size ? `Ukuran: ${it.size}` : null,
+              `Qty: ${it.quantity}`,
+            ].filter(Boolean).join(" · ");
+            return (
+              <div
+                key={i}
+                style={{
+                  display: "flex", gap: "1mm", alignItems: "flex-start",
+                  paddingTop: i > 0 ? "0.5mm" : "0.15mm", marginTop: i > 0 ? "0.5mm" : 0,
+                  borderTop: i > 0 ? "0.5px dotted #999" : "none",
+                }}
+              >
+                <span style={{ fontSize: "8px", fontWeight: "800", lineHeight: "1.15", minWidth: "2.4mm" }}>{i + 1}.</span>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ fontSize: "8px", fontWeight: "800", lineHeight: "1.15", wordBreak: "break-word" }}>
+                    {it.product_name}{it.series ? ` ${it.series}` : ""}
+                  </div>
+                  <div style={{ fontSize: "6.5px", fontWeight: "600", color: "#222", lineHeight: "1.15", marginTop: "0.15mm", wordBreak: "break-word" }}>
+                    {meta}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Info grid */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", margin: "0 2.5mm", marginTop: "auto" }}>
+          <div style={{ padding: "0.8mm 2mm 0.8mm 0", borderRight: "1px solid #000", borderBottom: "1.5px solid #000" }}>
+            <div style={{ fontSize: "5.5px", fontWeight: "700", color: "#333", textTransform: "uppercase", letterSpacing: "0.3px" }}>Order ID</div>
+            <div style={{ fontSize: "7.5px", fontWeight: "800", fontFamily: "'Courier New', monospace", wordBreak: "break-all" }}>{order.order_number}</div>
+          </div>
+          <div style={{ padding: "0.8mm 0 0.8mm 2mm", borderBottom: "1.5px solid #000" }}>
+            <div style={{ fontSize: "5.5px", fontWeight: "700", color: "#333", textTransform: "uppercase", letterSpacing: "0.3px" }}>Layanan</div>
+            <div style={{ fontSize: "7.5px", fontWeight: "800" }}>{serviceLabel} / Regular</div>
+          </div>
+          <div style={{ padding: "0.8mm 2mm 0.8mm 0", borderRight: "1px solid #000" }}>
+            <div style={{ fontSize: "5.5px", fontWeight: "700", color: "#333", textTransform: "uppercase", letterSpacing: "0.3px" }}>Biaya (Ongkir)</div>
+            <div style={{ fontSize: "7.5px", fontWeight: "800" }}>Rp {order.shipping_cost.toLocaleString("id-ID")}</div>
+          </div>
+          <div style={{ padding: "0.8mm 0 0.8mm 2mm" }}>
+            <div style={{ fontSize: "5.5px", fontWeight: "700", color: "#333", textTransform: "uppercase", letterSpacing: "0.3px" }}>Tanggal Cetak</div>
+            <div style={{ fontSize: "7.5px", fontWeight: "800" }}>{printDate}</div>
+          </div>
+        </div>
+      </div>
+      )}
     </>
   );
 }
