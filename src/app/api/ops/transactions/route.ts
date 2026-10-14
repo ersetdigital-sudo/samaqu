@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
 
   const { data: items } = await admin
     .from("order_items")
-    .select("id, order_id, product_id, product_name, color, size, series, quantity, price")
+    .select("id, order_id, product_id, product_name, color, size, series, kain, quantity, price")
     .in("order_id", orderList.map((o) => o.id));
 
   const byOrder: Record<string, any> = {};
@@ -58,6 +58,7 @@ export async function GET(req: NextRequest) {
       variant_color: it.color,
       variant_size: it.size,
       series: it.series,
+      kain: it.kain ?? null,
       qty,
       price,
       total: qty * price,
