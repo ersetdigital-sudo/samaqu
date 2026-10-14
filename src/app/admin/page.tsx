@@ -61,7 +61,7 @@ interface Order {
   cancelled_at?: string | null;
   /** Jam perubahan terakhir; cadangan jam pembatalan kalau `cancelled_at` masih kosong. */
   updated_at?: string;
-  order_items?: { product_name: string; color: string; size: string; series?: string | null; kain?: string | null; quantity: number; price: number; customer_price: number | null; minimum_price: number | null; product_image?: string | null }[];
+  order_items?: { product_id?: string | null; product_name: string; color: string; size: string; series?: string | null; kain?: string | null; quantity: number; price: number; customer_price: number | null; minimum_price: number | null; product_image?: string | null }[];
 }
 
 interface Product {
@@ -78,6 +78,8 @@ interface Product {
   jenis_kain?: { name: string } | null;
   /** Tampil di katalog website (kolom `products.is_published`, default true). */
   is_published?: boolean | null;
+  /** "free_gift" = produk bonus (tidak dihitung di Produk Terlaris). */
+  product_type?: string | null;
 }
 
 interface AdminCatalogProduct extends Product {
@@ -211,30 +213,44 @@ function AdminPageInner() {
   }), [orders, products]);
 
   const topProducts = useMemo(() => {
-    // Grup per SERIES + WARNA, bukan per nama produk: satu thobe dijual per
-    // series (Imron, Jiharkah, …), jadi "Thobe Broken White" menggabungkan
-    // pembelian yang sebenarnya produk berbeda.
-    const counts: Record<string, { name: string; sub: string | null; count: number }> = {};
+    // Hitung per BARIS PRODUK LENGKAP: nama produk + jenis kain + series — jadi
+    // "Thobe Superblack B-01 Jiharkah" dan "… C-01 Jiharkah" dihitung terpisah.
+    // Penjualan lewat series turunan (Imron/Bayati/Karim/Imalah) dihitung atas
+    // nama series itu sendiri.
+    // Hanya pesanan SAH: batal ("dibatalkan"/"cancel") & belum bayar ("pending")
+    // tidak dihitung, dan produk Free Gift dilewati.
+    const freeGift = new Set(
+      (products || []).filter((p) => p.product_type === "free_gift").map((p) => p.id)
+    );
+    // Urutan produk yang sudah ada (urutan `products`) dipakai untuk tie-break unit sama.
+    const productOrder = new Map((products || []).map((p, i) => [p.id, i]));
+    const counts: Record<string, { name: string; sub: string | null; count: number; order: number }> = {};
     orders.forEach((o) => {
+      const status = String(o.status || "").toLowerCase();
+      if (status === "pending" || status.includes("batal") || status.includes("cancel")) return;
       o.order_items?.forEach((item) => {
+        if (item.product_id && freeGift.has(item.product_id)) return;
+        const name = (item.product_name || "").trim() || "Tanpa nama";
+        const kain = (item.kain || "").trim();
         const series = (item.series || "").trim();
-        const color = (item.color || "").trim();
-        // Produk tanpa series (mis. Kandora) tetap tampil memakai nama produknya.
-        const name = series || item.product_name || "Tanpa nama";
-        const key = `${name}||${color.toLowerCase()}`;
+        const key = `${name}||${kain.toLowerCase()}||${series.toLowerCase()}`;
+        const productIdx = item.product_id ? productOrder.get(item.product_id) : undefined;
         if (!counts[key]) {
-          // "default" = placeholder karena pembeli tidak memilih warna, jadi
-          // jangan ditampilkan; dan bila nama produk sudah memuat warnanya,
-          // jangan ditulis dua kali.
-          const showColor =
-            !!color && color.toLowerCase() !== "default" && !name.toLowerCase().includes(color.toLowerCase());
-          counts[key] = { name, sub: showColor ? color : null, count: 0 };
+          counts[key] = {
+            name,
+            // Baris bawah pil: "jenis kain · series" (bagian yang kosong dibuang).
+            sub: [kain, series].filter(Boolean).join(" · ") || null,
+            count: 0,
+            order: productIdx ?? Number.MAX_SAFE_INTEGER,
+          };
         }
         counts[key].count += item.quantity;
       });
     });
-    return Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 5);
-  }, [orders]);
+    return Object.values(counts)
+      .sort((a, b) => b.count - a.count || a.order - b.order)
+      .slice(0, 4);
+  }, [orders, products]);
 
   const catalogItems = useMemo(() => groupByMainProduct(products), [products]);
 
