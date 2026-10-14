@@ -146,21 +146,14 @@ function niceTop(rawMax: number, ticks = 4): number {
   return nf * pow * ticks;
 }
 
-/** Path batang dengan HANYA sudut atas yang membulat (radius `r`). */
-function barPath(x: number, y: number, w: number, h: number, r: number): string {
-  const rr = Math.max(0, Math.min(r, w / 2, h));
-  return [
-    `M ${x} ${y + h}`,
-    `L ${x} ${y + rr}`,
-    `Q ${x} ${y} ${x + rr} ${y}`,
-    `L ${x + w - rr} ${y}`,
-    `Q ${x + w} ${y} ${x + w} ${y + rr}`,
-    `L ${x + w} ${y + h}`,
-    "Z",
-  ].join(" ");
-}
-
-/** Grafik batang vertikal 7 hari terakhir + gradient biru, grid putus-putus, label sumbu. */
+/**
+ * Grafik batang tren penjualan — mengikuti wireframe "sales-analytics-view"
+ * (Weekly Revenue / Chart.js):
+ *  - semua batang tipis transparan dengan tepi 1,5px, HANYA batang tertinggi yang solid
+ *  - sudut membulat (borderRadius 8, borderSkipped false)
+ *  - garis grid X disembunyikan, grid Y tipis rata (bukan putus-putus), tanpa legend
+ * Warna disesuaikan ke palet dashboard ops (biru), bukan palet wireframe.
+ */
 function TrendChart({ trend }: { trend: TrendHarian[] }) {
   const max = (trend || []).reduce((m, d) => Math.max(m, Number(d.omset) || 0), 0);
   if (!trend || trend.length === 0 || max <= 0) {
@@ -171,7 +164,7 @@ function TrendChart({ trend }: { trend: TrendHarian[] }) {
   const VB_H = 300;
   const padL = 54; // ruang label sumbu Y
   const padR = 14;
-  const padT = 18; // sedikit ruang di atas batang tertinggi
+  const padT = 14;
   const padB = 30; // ruang label sumbu X
   const plotW = VB_W - padL - padR;
   const plotH = VB_H - padT - padB;
@@ -179,32 +172,29 @@ function TrendChart({ trend }: { trend: TrendHarian[] }) {
   const top = niceTop(max);
   const n = trend.length;
   const slot = plotW / n;
-  const barW = Math.min(slot * 0.58, 66); // batang melebar, tidak kurus
-  const radius = 7;
-  const hMin = 3; // nilai 0 tetap digambar tipis menempel garis dasar
+  const barW = Math.min(slot * 0.72, 84);
+  const radius = 8;
+  const hMin = 3; // nilai 0 tetap tampak tipis menempel garis dasar
+  const peakIdx = trend.reduce(
+    (best, d, i) => ((Number(d.omset) || 0) > (Number(trend[best]?.omset) || 0) ? i : best),
+    0
+  );
 
   return (
     <svg
       viewBox={`0 0 ${VB_W} ${VB_H}`}
       preserveAspectRatio="xMidYMid meet"
-      className="w-full h-[220px] md:h-[260px]"
+      className="w-full h-64"
       role="img"
       aria-label="Tren penjualan 7 hari terakhir"
     >
-      <defs>
-        <linearGradient id="trendBarGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#93c5fd" />
-          <stop offset="100%" stopColor="#3b82f6" />
-        </linearGradient>
-      </defs>
-
-      {/* Grid horizontal putus-putus + label sumbu Y: 0 dan 4 tick ke atas */}
+      {/* Grid horizontal rata + label sumbu Y (5 tick seperti wireframe) */}
       {[0, 1, 2, 3, 4].map((i) => {
         const value = (top / 4) * i;
         const y = baseY - (value / top) * plotH;
         return (
           <g key={`grid-${i}`}>
-            <line x1={padL} y1={y} x2={VB_W - padR} y2={y} stroke="#e5e7eb" strokeWidth="1" strokeDasharray="4 4" />
+            <line x1={padL} y1={y} x2={VB_W - padR} y2={y} stroke="#eceae4" strokeWidth="1" />
             <text x={padL - 9} y={y} textAnchor="end" dominantBaseline="middle" fontSize="12" fill="#94a3b8">
               {fmtSumbu(value)}
             </text>
@@ -212,18 +202,26 @@ function TrendChart({ trend }: { trend: TrendHarian[] }) {
         );
       })}
 
-      {/* Batang + label sumbu X (DD/MM) */}
+      {/* Batang + label sumbu X (tanpa garis grid vertikal) */}
       {trend.map((d, i) => {
         const value = Number(d.omset) || 0;
         const h = value > 0 ? Math.max((value / top) * plotH, hMin) : hMin;
         const x = padL + i * slot + (slot - barW) / 2;
         const y = baseY - h;
+        const peak = value > 0 && i === peakIdx;
         return (
           <g key={d.tanggal}>
-            <g>
-              <title>{`${tanggalRingkas(d.tanggal)} · ${rp(value)}`}</title>
-              <path d={barPath(x, y, barW, h, radius)} fill="url(#trendBarGrad)" />
-            </g>
+            <title>{`${tanggalRingkas(d.tanggal)} · ${rp(value)}`}</title>
+            <rect
+              x={x}
+              y={y}
+              width={barW}
+              height={h}
+              rx={radius}
+              fill={peak ? "#2563eb" : "rgba(37,99,235,0.12)"}
+              stroke="#2563eb"
+              strokeWidth="1.5"
+            />
             <text x={x + barW / 2} y={baseY + 20} textAnchor="middle" fontSize="12" fill="#64748b">
               {d.label}
             </text>

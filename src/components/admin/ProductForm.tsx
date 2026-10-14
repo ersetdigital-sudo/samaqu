@@ -1982,27 +1982,29 @@ export default function TambahProdukPage({
         .pf-bulkbar-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin-left: auto; }
         .pf-bulkbar-actions .pf-adorn { width: 104px; flex: none; }
         .pf-bulk-apply { min-height: 44px; }
-        /* Isian polos tanpa kotak: menempel di sel tabel, akhiran "g" / awalan "Rp" di dalamnya.
-           Fokus ditandai cincin tipis di dalam sel supaya tetap terlihat oleh pengguna keyboard. */
+        /* Isian bergaya "form line": TIDAK ada kotak sama sekali — hanya garis bawah tipis.
+           Semua isian di bagian ukuran (termasuk yang berdiri sendiri seperti SKU/harga)
+           memakai satu gaya yang sama, jadi jelas bisa diketik dan tidak ada yang terpotong. */
+        .pf-sizes .pf-cell {
+          border: 0; border-bottom: 1px solid #d4d4d8; border-radius: 0;
+          background: transparent; box-shadow: none; width: 100%;
+          padding: .45rem .15rem; min-height: 40px; min-width: 92px;
+        }
+        .pf-sizes .pf-cell:hover { border-bottom-color: #a1a1aa; }
+        .pf-sizes .pf-cell:focus { border-bottom: 2px solid var(--gold); box-shadow: none; outline: none; }
         .pf-adorn {
-          display: flex; align-items: center; gap: .25rem; min-width: 0; min-height: 44px;
-          padding: 0 .5rem; border-radius: .45rem;
-          border: 0; background: transparent;
-          transition: background .15s ease, box-shadow .15s ease;
+          display: flex; align-items: center; gap: .3rem; min-width: 0; min-height: 44px;
+          padding: 0 .15rem; border: 0; background: transparent; border-radius: 0;
         }
-        .pf-adorn:hover { background: #f7f7f8; }
-        .pf-adorn:focus-within { background: #fff; box-shadow: inset 0 0 0 2px var(--gold); }
-        .pf-adorn.invalid { background: #fef2f2; box-shadow: inset 0 0 0 2px #dc2626; }
-        .pf-adorn .pf-cell {
-          flex: 1 1 auto; min-width: 0; padding: .5rem 0; min-height: 42px;
-          border: 0; border-radius: 0; box-shadow: none; background: transparent;
-        }
-        .pf-adorn .pf-cell:focus { border: 0; box-shadow: none; }
+        .pf-adorn .pf-cell { flex: 1 1 auto; min-width: 0; }
+        .pf-adorn:hover .pf-cell { border-bottom-color: #a1a1aa; }
+        .pf-adorn:focus-within .pf-cell { border-bottom: 2px solid var(--gold); }
         .pf-suffix, .pf-prefix { flex: none; font-size: .72rem; font-weight: 700; color: var(--text-muted); }
         .pf-cell-num { text-align: right; }
         .pf-cell-center { text-align: center; }
-        /* Berat belum diisi: latar kuning lembut + titik kuning (tanpa kotak; tinggi baris tetap) */
-        .pf-adorn.is-missing { background: #fffbeb; }
+        /* Berat belum diisi: garis bawah kuning + titik kuning (tanpa kotak; tinggi baris tetap) */
+        .pf-adorn.is-missing .pf-cell { border-bottom-color: #f59e0b; }
+        .pf-adorn.invalid .pf-cell { border-bottom: 2px solid #dc2626; }
         .pf-dot-warn { flex: none; width: .45rem; height: .45rem; border-radius: 999px; background: #f59e0b; }
         /* Stok terkunci (series turunan): latar redup + ikon gembok + label "ikut <series>" */
         .pf-adorn.is-locked { background: #f4f4f5; gap: .35rem; padding: 0 .5rem; color: var(--text-muted); }
@@ -2013,10 +2015,7 @@ export default function TambahProdukPage({
         }
         .pf-rowdel { min-width: 44px; min-height: 44px; }
         .pf-rowdel:focus-visible { outline: 2px solid #dc2626; outline-offset: 2px; }
-        /* Ponsel: isian diberi latar lembut (tetap tanpa garis kotak) supaya jelas bisa diisi. */
-        @media (max-width: 767px) {
-          .pf-adorn { background: #f7f7f8; }
-        }
+        /* Ponsel: tanpa latar kotak, isian tetap bergaris bawah. */
         /* Ponsel sempit (≤419px): satu kolom penuh + bar aksi melebar, jadi tidak mungkin
            meluber keluar layar. Dua kolom dipakai mulai 420px. */
         @media (max-width: 419px) {
@@ -2049,7 +2048,7 @@ export default function TambahProdukPage({
              Pemisah pakai garis antarkolom (gaya tabel), bukan kotak di tiap isian. */
           .pf-sizes-head {
             display: grid;
-            grid-template-columns: minmax(0, .7fr) minmax(0, .85fr) minmax(0, 1fr) minmax(0, 1.35fr) minmax(0, 1.15fr) 52px;
+            grid-template-columns: minmax(84px, .7fr) minmax(96px, .85fr) minmax(120px, 1fr) minmax(150px, 1.3fr) minmax(128px, 1.1fr) 48px;
             gap: 0; border-bottom: 1px solid var(--bd);
             font-size: .68rem; font-weight: 700; letter-spacing: .02em;
             text-transform: uppercase; color: var(--text-muted);
@@ -2060,7 +2059,7 @@ export default function TambahProdukPage({
           .pf-size-row {
             /* WAJIB display:grid — tanpa itu baris kembali menumpuk vertikal seperti block. */
             display: grid;
-            grid-template-columns: minmax(0, .7fr) minmax(0, .85fr) minmax(0, 1fr) minmax(0, 1.35fr) minmax(0, 1.15fr) 52px;
+            grid-template-columns: minmax(84px, .7fr) minmax(96px, .85fr) minmax(120px, 1fr) minmax(150px, 1.3fr) minmax(128px, 1.1fr) 48px;
             gap: 0; align-items: center;
             padding: .3rem 0; border-bottom: 1px solid #f1f1f3;
           }
