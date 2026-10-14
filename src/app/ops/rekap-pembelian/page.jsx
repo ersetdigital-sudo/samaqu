@@ -122,7 +122,7 @@ export default function RekapPembelian() {
 
       <div className="max-w-[1400px] mx-auto space-y-8">
         {/* Header - SAME AS DASHBOARD */}
-        <div className="bg-gradient-to-br from-blue-600 to-indigo-600 dark:from-[#1a1d28] dark:to-[#1e222d] rounded-3xl p-6 md:p-8 text-white shadow-xl relative overflow-hidden transition-colors duration-300">
+        <div className="bg-gradient-to-br from-[#18181b] to-[#27272a] dark:from-[#1a1d28] dark:to-[#1e222d] rounded-3xl p-6 md:p-8 text-white shadow-xl relative overflow-hidden transition-colors duration-300">
           {/* Decorative background elements */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -mr-16 -mt-16"></div>
           <div className="absolute bottom-0 left-0 w-40 h-40 bg-white/5 rounded-full blur-2xl -ml-10 -mb-10"></div>

@@ -20,7 +20,7 @@ export default function OpsPelangganPage() {
 
   return (
     <div className="space-y-5">
-      <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-3xl relative overflow-hidden p-6 md:p-8 text-white">
+      <div className="bg-gradient-to-br from-[#18181b] to-[#27272a] rounded-3xl relative overflow-hidden p-6 md:p-8 text-white">
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -mr-16 -mt-16" />
         <div className="relative z-10 flex items-center gap-4">
           <div className="w-14 h-14 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/10 shrink-0">
