@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useSafeLocale } from "@/lib/safe-i18n";
 import { strukStatus, strukSteps, tglJamID, rupiah } from "@/lib/akun-format";
+import { formatWeight } from "@/lib/shipping-weight";
 import { usePaymentMethodName } from "@/lib/use-payment-methods";
 import { supabase } from "@/lib/supabase";
 import ConfirmModal from "@/components/ConfirmModal";
@@ -34,6 +35,8 @@ export interface RincianOrder {
   awb_no?: string | null;
   payment_method?: string | null;
   shipping_method?: string | null;
+  /** Berat kirim pesanan (gram) — kolom `orders.weight`. */
+  weight?: number | null;
   customer_name?: string | null;
   customer_whatsapp?: string | null;
   shipping_address?: string | null;
@@ -421,6 +424,9 @@ export default function RincianPesanan({ order }: { order: RincianOrder }) {
               ) : null}
               {order.shipping_method ? (
                 <div className="rp-row"><span>Pengiriman</span><span>{order.shipping_method}</span></div>
+              ) : null}
+              {order.weight && order.weight > 0 ? (
+                <div className="rp-row"><span>Berat</span><span className="rp-mono">{formatWeight(order.weight)}</span></div>
               ) : null}
               {resi ? (
                 <div className="rp-row"><span>Nomor Resi</span><span>{resi}</span></div>

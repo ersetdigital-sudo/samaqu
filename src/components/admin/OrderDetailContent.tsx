@@ -8,6 +8,7 @@ import { PaymentMethodValue } from "@/components/admin/PaymentMethodsManager";
 import { RINCIAN_CSS, FALLBACK_PHOTO } from "@/components/akun/RincianPesanan";
 import { waNumber, waLink, pesanPembayaran } from "@/lib/whatsapp";
 import { supabase } from "@/lib/supabase";
+import { formatWeight } from "@/lib/shipping-weight";
 
 /**
  * Isi detail pesanan untuk dashboard admin — memakai susunan & gaya yang sama dengan
@@ -48,6 +49,8 @@ export interface AdminDetailOrder {
   shipping_method?: string | null;
   payment_method?: string | null;
   awb_no?: string | null;
+  /** Berat kirim pesanan (gram) — kolom `orders.weight`. */
+  weight?: number | null;
   /** Status pengiriman terpisah dari status pesanan (menunggu_pickup | dikirim | selesai). */
   shipping_status?: string | null;
   tracking_status_text?: string | null;
@@ -259,6 +262,12 @@ export default function OrderDetailContent({
                 <div className="rp-line" style={{ marginTop: 8 }}>
                   <span className="rp-sub">{order.shipping_method || "Pengiriman"}</span>
                 </div>
+                {order.weight && order.weight > 0 ? (
+                  <div className="rp-line" style={{ marginTop: 8 }}>
+                    <span className="rp-sub">Berat</span>
+                    <span className="rp-strong rp-mono" style={{ marginLeft: "auto" }}>{formatWeight(order.weight)}</span>
+                  </div>
+                ) : null}
                 {/* Nomor resi J&T tampil sebagai baris tersendiri (dulu cuma ditempel di belakang
                     nama kurir, jadi terlihat seperti hilang). Resi tidak lagi terbit saat
                     checkout: admin menerbitkannya lewat tombol "Atur Pesanan" di bawah. */}
