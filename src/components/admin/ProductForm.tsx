@@ -117,9 +117,13 @@ function SizeGrid({
   );
 }
 
-export default function TambahProdukPage() {
+export default function TambahProdukPage({ mode = "admin" }: { mode?: "admin" | "ops" } = {}) {
   const router = useRouter();
   const storeSettings = useStoreSettings();
+  // Dua mode satu komponen: "admin" (katalog lengkap, dengan foto) dan "ops" (internal:
+  // tanpa foto, plus SKU/HPP/Tipe Produk, dan produk baru BELUM tampil di website).
+  const isOps = mode === "ops";
+  const backHref = isOps ? "/ops/master-produk" : "/admin";
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -140,6 +144,10 @@ export default function TambahProdukPage() {
   const [badgeType, setBadgeType] = useState<string>("");
   // Ikut Open Order: produk baru default tampil di /open-order (bisa dimatikan kapan saja).
   const [openOrderEnabled, setOpenOrderEnabled] = useState(true);
+
+  // ── Field khusus mode ops (dipakai laporan internal) ──
+  const [productType, setProductType] = useState<"normal" | "free_gift">("normal");
+  const [hpp, setHpp] = useState("");
 
   // Series list (dari produk yang sudah ada) + tambah baru
   const [seriesList, setSeriesList] = useState<string[]>([]);
@@ -200,6 +208,13 @@ export default function TambahProdukPage() {
       .replace(/\s+/g, "-")
       .replace(/-+/g, "-")
       .replace(/^-|-$/g, "");
+  }
+
+  /** Nama series induk dari `baseProductId` (untuk label "ikut <series>"). */
+  function parentSeriesName(baseId: string): string {
+    if (!baseId) return "";
+    const baseSlug = generateSlug(name);
+    return selectedSeries.find((s) => `${baseSlug}-${s.toLowerCase().replace(/\s+/g, "-")}` === baseId) || "";
   }
 
   // Add color variant
@@ -519,6 +534,9 @@ export default function TambahProdukPage() {
     if (!name.trim()) e.name = "Nama produk wajib diisi";
     if (!category) e.category = "Kategori wajib dipilih";
     if ((category === "Thobe" || category === "Kandora") && !selectedJenisKainId) e.jenisKain = "Jenis Kain wajib dipilih";
+    // Ops: SKU wajib (ditulis ke products.sku). Harga mengikuti aturan admin (tidak
+    // dilonggarkan) supaya produk yang dibuat dari ops tetap siap terbit.
+    if (isOps && !sku.trim()) e.sku = "SKU wajib diisi";
 
     if (category === "Thobe") {
       // Multi-series validation
@@ -526,25 +544,29 @@ export default function TambahProdukPage() {
       for (const sn of selectedSeries) {
         const block = seriesBlocks[sn];
         if (!block) continue;
-        if (!block.price || parseInt(block.price) <= 0) e[`series_${sn}_price`] = `Harga ${sn} wajib diisi`;
+        if (!isOps && (!block.price || parseInt(block.price) <= 0)) e[`series_${sn}_price`] = `Harga ${sn} wajib diisi`;
         if (block.cypEnabled && (!block.minimumPrice || parseInt(block.minimumPrice) <= 0)) e[`series_${sn}_min`] = `Harga Minimum ${sn} wajib diisi`;
-        const uploadedMedia = block.media.filter((m) => m.url && !m.uploading);
-        if (uploadedMedia.length === 0) e[`series_${sn}_media`] = `Media ${sn} wajib diisi (min 1)`;
+        if (!isOps) {
+          const uploadedMedia = block.media.filter((m) => m.url && !m.uploading);
+          if (uploadedMedia.length === 0) e[`series_${sn}_media`] = `Media ${sn} wajib diisi (min 1)`;
+        }
         const hasStock = block.variants.some((v) => v.sizes.some((s) => s.stock > 0));
         const isLinked = !!block.baseProductId;
         if (!hasStock && !isLinked) e[`series_${sn}_stock`] = `Stok ${sn} wajib ada minimal 1 ukuran`;
       }
     } else {
       // Non-Thobe: existing validation
-      if (!cypEnabled && (!basePrice || parseInt(basePrice) <= 0)) e.basePrice = "Harga wajib diisi";
+      if (!isOps && !cypEnabled && (!basePrice || parseInt(basePrice) <= 0)) e.basePrice = "Harga wajib diisi";
       if (cypEnabled && (!minimumPrice || parseInt(minimumPrice) <= 0)) e.minimumPrice = "Harga Minimum wajib diisi jika Create Your Price aktif";
       if (cypEnabled && minimumPrice && basePrice && parseInt(minimumPrice) > parseInt(basePrice)) e.minimumPrice = "Harga Minimum tidak boleh lebih besar dari Harga Dasar";
       if (cypEnabled && recommendedPrice && minimumPrice && parseInt(recommendedPrice) < parseInt(minimumPrice)) e.recommendedPrice = "Harga Rekomendasi tidak boleh kurang dari Harga Minimum";
       if (variants.length === 0) e.variants = "Minimal 1 varian warna";
       const hasSize = variants.some((v) => v.sizes.some((s) => s.stock > 0));
       if (!hasSize) e.variants = "Minimal 1 ukuran dengan stok > 0";
-      const uploadedMedia = media.filter((m) => m.url && !m.uploading);
-      if (uploadedMedia.length === 0) e.media = "Minimal 1 media (gambar/video)";
+      if (!isOps) {
+        const uploadedMedia = media.filter((m) => m.url && !m.uploading);
+        if (uploadedMedia.length === 0) e.media = "Minimal 1 media (gambar/video)";
+      }
     }
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -556,6 +578,11 @@ export default function TambahProdukPage() {
     setSaving(true);
 
     try {
+      // Field khusus ops (dipakai laporan internal): tipe produk, HPP, SKU produk, dan
+      // penanda "belum tampil" — produk baru dari ops tidak langsung masuk katalog.
+      const opsProductFields = isOps
+        ? { product_type: productType, hpp: parseInt(hpp) || 0, sku: sku.trim() || null, is_published: false }
+        : {};
       if (category === "Thobe" && selectedSeries.length > 0) {
         // ── Thobe multi-series: create 1 product row per series ──
         for (const seriesName of selectedSeries) {
@@ -564,7 +591,7 @@ export default function TambahProdukPage() {
           const seriesSlug = `${slug}-${seriesName.toLowerCase().replace(/\s+/g, "-")}`;
           const blockPrice = block.cypEnabled
             ? (parseInt(block.price) || parseInt(block.minimumPrice) || 0)
-            : parseInt(block.price);
+            : (parseInt(block.price) || 0);
 
           const { error: productError } = await supabase.from("products").upsert({
             id: seriesSlug,
@@ -585,6 +612,7 @@ export default function TambahProdukPage() {
             catatan_harga: catatanHarga.trim() || null,
             badge_type: badgeType || null,
             open_order_enabled: openOrderEnabled,
+            ...opsProductFields,
           }, { onConflict: "id" });
           if (productError) throw productError;
 
@@ -627,7 +655,7 @@ export default function TambahProdukPage() {
           name,
           category,
           description: description || null,
-          price: cypEnabled ? (parseInt(basePrice) || parseInt(minimumPrice) || 0) : parseInt(basePrice),
+          price: cypEnabled ? (parseInt(basePrice) || parseInt(minimumPrice) || 0) : (parseInt(basePrice) || 0),
           minimum_price: minimumPrice ? parseInt(minimumPrice) : null,
           recommended_price: recommendedPrice ? parseInt(recommendedPrice) : null,
           create_your_price_enabled: cypEnabled,
@@ -641,6 +669,7 @@ export default function TambahProdukPage() {
           catatan_harga: catatanHarga.trim() || null,
           badge_type: badgeType || null,
           open_order_enabled: openOrderEnabled,
+          ...opsProductFields,
         }, { onConflict: "id" });
         if (productError) throw productError;
 
@@ -674,7 +703,7 @@ export default function TambahProdukPage() {
         }
       }
 
-      router.push("/admin");
+      router.push(backHref);
     } catch (err) {
       console.error("Save error:", err);
       alert("Gagal menyimpan produk");
@@ -688,13 +717,12 @@ export default function TambahProdukPage() {
     ? seriesBlocks[activeSeriesTab].media
     : category === "Thobe" ? media : media.filter((m) => m.color === activeColor);
 
-  return (
-    <AdminShell>
-    <section className="min-h-screen" style={{ background: "var(--cream)" }}>
+  const content = (
+    <section className="min-h-screen" style={{ background: isOps ? "transparent" : "var(--cream)" }}>
       {/* Header */}
       <div className="sticky top-0 z-20 backdrop-blur" style={{ background: "rgba(255,255,255,.85)", borderBottom: "1px solid rgba(0,0,0,.06)" }}>
         <div className="max-w-6xl mx-auto px-5 lg:px-8 py-4 flex items-center gap-4">
-          <button onClick={() => router.push("/admin")} title="Kembali" className="p-2.5 -ml-2 rounded-xl bg-white transition-colors hover:bg-[var(--bg-secondary)]" style={{ border: "1px solid #e4e4e7", color: "var(--espresso)" }}>
+          <button onClick={() => router.push(backHref)} title="Kembali" className="p-2.5 -ml-2 rounded-xl bg-white transition-colors hover:bg-[var(--bg-secondary)]" style={{ border: "1px solid #e4e4e7", color: "var(--espresso)" }}>
             <ArrowLeft size={18} />
           </button>
           <div className="min-w-0">
@@ -702,7 +730,7 @@ export default function TambahProdukPage() {
             <h1 className="text-2xl italic leading-none truncate" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>Tambah Produk</h1>
           </div>
           <div className="ml-auto flex items-center gap-2.5">
-            <button onClick={() => router.push("/admin")} className="pf-btn pf-btn-ghost">Batal</button>
+            <button onClick={() => router.push(backHref)} className="pf-btn pf-btn-ghost">Batal</button>
             <button onClick={handleSubmit} disabled={saving} className="pf-btn pf-btn-primary">
               {saving ? <><Loader2 size={14} className="animate-spin" /> Menyimpan...</> : <><Check size={14} /> Simpan Produk</>}
             </button>
@@ -757,11 +785,40 @@ export default function TambahProdukPage() {
                     <p className="pf-hint">URL: /katalog/{slug || "..."}</p>
                   </div>
                   <div>
-                    <label className="pf-label">SKU Produk</label>
-                    <input value={sku} onChange={(e) => setSku(e.target.value)} className="pf-input" placeholder="SMQ-THB-JHK" />
+                    <label className="pf-label">SKU Produk {isOps && <span className="pf-req">*</span>}</label>
+                    <input value={sku} onChange={(e) => setSku(e.target.value)} className={`pf-input${errors.sku ? " invalid" : ""}`} placeholder="SMQ-THB-JHK" />
+                    {errors.sku && <p className="pf-error">{errors.sku}</p>}
                     <p className="pf-hint">Tampil di detail produk. Dipakai ukuran yang SKU-nya dikosongkan.</p>
                   </div>
                 </div>
+                {isOps && (() => {
+                  const refPrice = category === "Thobe" && activeSeriesTab && seriesBlocks[activeSeriesTab]
+                    ? parseInt(seriesBlocks[activeSeriesTab].price) || 0
+                    : parseInt(basePrice) || 0;
+                  const hppNum = parseInt(hpp) || 0;
+                  const profit = refPrice - hppNum;
+                  const margin = refPrice > 0 ? Math.round((profit / refPrice) * 100) : 0;
+                  return (
+                    <div className="pf-panel">
+                      <p className="text-sm font-semibold mb-3" style={{ color: "var(--espresso)" }}>Data Internal (Ops)</p>
+                      <div className="grid sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="pf-label">HPP per Unit (Rp)</label>
+                          <input type="text" inputMode="numeric" value={formatRupiah(hpp)} onChange={(e) => setHpp(parseRupiah(e.target.value))} className="pf-input" placeholder="150.000" />
+                          <p className="pf-hint">Modal per unit — dipakai laporan margin.</p>
+                        </div>
+                        <div>
+                          <label className="pf-label">Tipe Produk</label>
+                          <div className="flex gap-2">
+                            <button type="button" onClick={() => setProductType("normal")} className={`pf-chip${productType === "normal" ? " active" : ""}`}>Normal</button>
+                            <button type="button" onClick={() => setProductType("free_gift")} className={`pf-chip${productType === "free_gift" ? " active" : ""}`}>Free Gift</button>
+                          </div>
+                        </div>
+                      </div>
+                      <p className="pf-hint mt-3">Margin otomatis: <b>{refPrice > 0 ? `${margin}%` : "—"}</b> · profit/unit {refPrice > 0 ? `Rp ${formatRupiah(String(profit))}` : "—"}</p>
+                    </div>
+                  );
+                })()}
                 {/* Baris 3: Deskripsi */}
                 <div>
                   <label className="pf-label">Deskripsi</label>
@@ -1025,7 +1082,8 @@ export default function TambahProdukPage() {
                         </div>
                       </div>
 
-                      {/* ── Media ── */}
+                      {/* ── Media (mode admin saja) ── */}
+                      {!isOps && (
                       <div>
                         <p className="text-sm font-semibold mb-3" style={{ color: "var(--espresso)" }}>
                           <span style={{ color: "var(--gold)" }}>{sn}</span> — Foto &amp; Video
@@ -1063,7 +1121,7 @@ export default function TambahProdukPage() {
                             </div>
                           )}
                         </div>
-                      </div>
+                      </div>)}
 
                       {/* ── Shared Stock Pool ── */}
                       <div>
@@ -1113,9 +1171,9 @@ export default function TambahProdukPage() {
                         </p>
                         {errors[`series_${sn}_stock`] && <p className="pf-error mb-2">{errors[`series_${sn}_stock`]}</p>}
                         {block.baseProductId ? (
-                          <div className="pf-panel">
+                          <div className="pf-panel" style={{ background: "var(--bg-secondary)" }}>
                             <p className="text-sm text-center py-4" style={{ color: "var(--text-muted)" }}>
-                              Stok dikelola di produk dasar. Ubah stok di tab produk dasar.
+                              Stok dikunci — <b>ikut {parentSeriesName(block.baseProductId) || "produk dasar"}</b>. Ubah stoknya di tab {parentSeriesName(block.baseProductId) || "produk dasar"}.
                             </p>
                           </div>
                         ) : (
@@ -1186,7 +1244,8 @@ export default function TambahProdukPage() {
                 )}
               </div>
 
-              {/* Non-Thobe: Media */}
+              {/* Non-Thobe: Media (mode admin saja) */}
+              {!isOps && (
               <div className="pf-card p-5 lg:p-6">
                 <div className="pf-head">
                   <div className="pf-num">3</div>
@@ -1239,12 +1298,13 @@ export default function TambahProdukPage() {
                     )}
                   </div>
                 )}
-              </div>
+              </div>)}
               </>
             )}
           </div>
 
-          {/* Right: Preview sidebar */}
+          {/* Right: Preview sidebar (mode admin saja) */}
+          {!isOps && (
           <div className="hidden lg:block sticky top-24">
             <div className="pf-card p-5">
               <div className="flex items-center justify-between mb-4">
@@ -1325,6 +1385,7 @@ export default function TambahProdukPage() {
               )}
             </div>
           </div>
+          )}
         </div>
       </main>
 
@@ -1513,6 +1574,6 @@ export default function TambahProdukPage() {
         .pf-add:hover { color: var(--gold); }
       `}</style>
     </section>
-    </AdminShell>
   );
+  return isOps ? content : <AdminShell>{content}</AdminShell>;
 }
