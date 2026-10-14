@@ -27,8 +27,27 @@ import {
 import { createPageUrl } from "@/lib/ops-router";
 import { useToast } from "@/components/ops/ui/use-toast";
 import { SIZES, emptyStock, normalizeStock, sumStock, stockStatus } from "@/lib/ops-variants";
+import ProductForm from "@/components/admin/ProductForm";
 
-export default function TambahProduk() {
+/**
+ * Halaman "Tambah Produk" ops.
+ *
+ * TAMBAH baru → memakai komponen bersama `ProductForm` dengan `mode="ops"` (struktur sama
+ * dengan form admin: Jenis Kain, Kategori, banyak series sekaligus, Produk Dasar, stok per
+ * ukuran, harga per series — TANPA foto, plus SKU/HPP/Tipe Produk). Produk baru dari ops
+ * dibuat `is_published=false` (belum tampil di website).
+ *
+ * EDIT → tetap memakai form lama di bawah (`OpsTambahProdukForm`), karena `ProductForm`
+ * bersama baru mendukung mode tambah. Ini menyusul.
+ */
+export default function TambahProdukPage() {
+  const location = useLocation();
+  const isEditMode = !!location.state?.product;
+  if (isEditMode) return <OpsTambahProdukForm />;
+  return <ProductForm mode="ops" />;
+}
+
+function OpsTambahProdukForm() {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
