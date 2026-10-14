@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { base44 } from "@/lib/ops-api";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
@@ -60,6 +60,16 @@ import { IconBoxes, IconLayers, IconCalendarClock, IconPackageX, IconArrowDownTo
 const stokVarianMap = (v) => normalizeStock(v.stock_efektif ?? v.stock);
 const stokVarianTotal = (v) => sumStock(v.stock_efektif ?? v.stock);
 
+/* ── Bantu pencarian & filter Laporan Stok (semua dari data yang ada) ── */
+const varianKategori = (v) => String(v.category || "").trim();
+const varianKain = (v) => String(v.jenis_kain_name || "").trim();
+const varianSeries = (v) => String(v.series_name || "").trim();
+/** Status varian = aturan kartu ringkasan: 0 habis, 1..5 menipis, sisa aman. */
+const varianStatus = (v) => { const t = stokVarianTotal(v); return t === 0 ? "habis" : t <= 5 ? "menipis" : "aman"; };
+const varianSearchText = (v) =>
+  [v.product_name, v.category, v.jenis_kain_name, v.series_name].map((x) => String(x || "")).join(" ").toLowerCase();
+const STATUS_LABEL = { aman: "Aman", menipis: "Menipis", habis: "Habis" };
+
 /**
  * Batas kalender menurut WIB (bukan zona waktu browser): tanggal hari ini,
  * awal bulan, dan akhir bulan berjalan dalam format YYYY-MM-DD.
@@ -118,6 +128,78 @@ function AnimatedCounter({ value, prefix = "", suffix = "", duration = 1200, del
     <span>
       {prefix}{count.toLocaleString('id-ID')}{suffix}
     </span>
+  );
+}
+
+/** Tombol hapus-satu filter (chip). */
+function FilterChip({ label, onRemove }) {
+  return (
+    <button
+      type="button"
+      onClick={onRemove}
+      title="Hapus filter ini"
+      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition-colors dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-900"
+    >
+      {label} <X size={12} />
+    </button>
+  );
+}
+
+/** Dropdown filter multi-pilih (checkbox) — bisa dipakai keyboard & layar kecil. */
+function MultiFilter({ label, options, selected, onChange }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    const onKey = (e) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("mousedown", onDoc); document.removeEventListener("keydown", onKey); };
+  }, [open]);
+
+  const toggle = (opt) => onChange(selected.includes(opt) ? selected.filter((s) => s !== opt) : [...selected, opt]);
+  const count = selected.length;
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        className={`inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl border text-sm font-semibold shadow-sm transition-all ${
+          count
+            ? "bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/30 dark:border-blue-900 dark:text-blue-300"
+            : "bg-white border-gray-200 text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200"
+        }`}
+      >
+        {label}
+        {count > 0 && <span className="px-1.5 rounded-full bg-blue-600 text-white text-[10px] font-bold">{count}</span>}
+        <ChevronDown size={14} className={`transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div
+          role="listbox"
+          className="absolute z-30 mt-1 right-0 min-w-[200px] max-h-72 overflow-auto rounded-xl border border-gray-200 bg-white shadow-lg dark:bg-slate-800 dark:border-slate-700 p-1.5"
+        >
+          {options.length === 0 ? (
+            <p className="px-3 py-2 text-xs text-gray-400 dark:text-slate-500">Tidak ada pilihan</p>
+          ) : (
+            options.map((opt) => (
+              <label
+                key={opt}
+                className="flex items-center gap-2 px-2.5 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer text-sm text-gray-700 dark:text-slate-200"
+              >
+                <input type="checkbox" checked={selected.includes(opt)} onChange={() => toggle(opt)} className="rounded" />
+                <span>{opt}</span>
+              </label>
+            ))
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -486,7 +568,9 @@ export default function MasterProduk() {
 
   // ── Ringkasan stok untuk tab Laporan Stok (dihitung dari data yang sudah dimuat,
   //    bukan angka statis). Satuan = unit stok, bukan jumlah produk. ──
-  const [stockFilter, setStockFilter] = useState("all"); // all | menipis | habis
+  const [stockFilter, setStockFilter] = useState("all"); // all | aman | menipis | habis
+  const [reportSearch, setReportSearch] = useState("");
+  const [reportFilters, setReportFilters] = useState({ kategori: [], kain: [], series: [] });
 
   // Pakai stok efektif (sama dengan Daftar Produk) supaya produk series yang
   // menumpang stok basisnya tidak dihitung sebagai varian habis.
@@ -515,13 +599,56 @@ export default function MasterProduk() {
     [stokPemilikSaja],
   );
 
-  const reportVariants = useMemo(() => {
-    if (stockFilter === "all") return variants || [];
+  // ── Laporan Stok: pencarian + filter (kategori/jenis kain/series/status) ──
+  // Urutan baris TIDAK diubah filter — hanya menyaring (urutan tetap dari server).
+  // Status memakai aturan kartu ringkasan (0 habis; 1..5 menipis; sisa aman); baris series
+  // turunan otomatis ikut status induknya karena stok efektifnya = stok induk.
+  const reportRows = useMemo(() => {
+    const q = reportSearch.trim().toLowerCase();
     return (variants || []).filter((v) => {
-      const t = stokVarianTotal(v);
-      return stockFilter === "habis" ? t === 0 : t > 0 && t <= 5;
+      if (stockFilter !== "all" && varianStatus(v) !== stockFilter) return false;
+      if (reportFilters.kategori.length && !reportFilters.kategori.includes(varianKategori(v))) return false;
+      if (reportFilters.kain.length && !reportFilters.kain.includes(varianKain(v))) return false;
+      if (reportFilters.series.length && !reportFilters.series.includes(varianSeries(v))) return false;
+      if (q && !varianSearchText(v).includes(q)) return false;
+      return true;
     });
-  }, [variants, stockFilter]);
+  }, [variants, stockFilter, reportSearch, reportFilters]);
+
+  const reportKategoriOptions = useMemo(
+    () => Array.from(new Set((variants || []).map(varianKategori).filter(Boolean))).sort((a, b) => a.localeCompare(b, "id")),
+    [variants],
+  );
+  const reportKainOptions = useMemo(
+    () => Array.from(new Set((variants || []).map(varianKain).filter(Boolean))).sort((a, b) => a.localeCompare(b, "id")),
+    [variants],
+  );
+  const reportSeriesOptions = useMemo(() => {
+    const order = ["Jiharkah", "Imron", "Bayati", "Nahawand", "Karim", "Imalah"];
+    return Array.from(new Set((variants || []).map(varianSeries).filter(Boolean))).sort((a, b) => {
+      const ia = order.indexOf(a); const ib = order.indexOf(b);
+      return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || a.localeCompare(b, "id");
+    });
+  }, [variants]);
+
+  const reportTotal = (variants || []).length;
+  // Total unit hasil filter — HANYA baris induk (tanpa `base_product_id`) supaya tidak dobel.
+  const reportUnits = useMemo(
+    () => reportRows.filter((v) => !v.base_product_id).reduce((s, v) => s + stokVarianTotal(v), 0),
+    [reportRows],
+  );
+  const hasReportFilter =
+    stockFilter !== "all" ||
+    reportSearch.trim() !== "" ||
+    reportFilters.kategori.length > 0 ||
+    reportFilters.kain.length > 0 ||
+    reportFilters.series.length > 0;
+
+  const resetReportFilters = () => {
+    setStockFilter("all");
+    setReportSearch("");
+    setReportFilters({ kategori: [], kain: [], series: [] });
+  };
 
   const totalProducts = useMemo(() => products?.length || 0, [products]);
   const totalStock = useMemo(() => (products || []).reduce((sum, p) => sum + (p.stock_efektif ?? p.stock ?? 0), 0), [products]);
@@ -1424,33 +1551,88 @@ export default function MasterProduk() {
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
             >
-              {/* Info count + filter aktif */}
+              {/* Toolbar: search (kiri) + filter (kanan) */}
+              <div className="flex flex-col lg:flex-row lg:items-center gap-2 mb-3">
+                <div className="relative flex-1 min-w-[200px]">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500" size={17} />
+                  <input
+                    type="text"
+                    value={reportSearch}
+                    onChange={(e) => setReportSearch(e.target.value)}
+                    placeholder="Cari produk, kain, atau series..."
+                    className="w-full pl-10 pr-10 py-2.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm placeholder:text-gray-400 dark:placeholder:text-slate-500 text-gray-900 dark:text-slate-100 font-inter transition-all"
+                    style={{ fontSize: '14px', fontWeight: 500 }}
+                  />
+                  {reportSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setReportSearch("")}
+                      aria-label="Hapus pencarian"
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 w-6 h-6 grid place-items-center rounded-full text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <MultiFilter label="Kategori" options={reportKategoriOptions} selected={reportFilters.kategori} onChange={(next) => setReportFilters((f) => ({ ...f, kategori: next }))} />
+                  <MultiFilter label="Jenis Kain" options={reportKainOptions} selected={reportFilters.kain} onChange={(next) => setReportFilters((f) => ({ ...f, kain: next }))} />
+                  <MultiFilter label="Series" options={reportSeriesOptions} selected={reportFilters.series} onChange={(next) => setReportFilters((f) => ({ ...f, series: next }))} />
+                  <select
+                    value={stockFilter}
+                    onChange={(e) => setStockFilter(e.target.value)}
+                    aria-label="Status stok"
+                    className="px-3 py-2.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-gray-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-sm transition-all"
+                  >
+                    <option value="all">Semua Status</option>
+                    <option value="aman">Aman</option>
+                    <option value="menipis">Menipis</option>
+                    <option value="habis">Habis</option>
+                  </select>
+                  {hasReportFilter && (
+                    <button
+                      type="button"
+                      onClick={resetReportFilters}
+                      className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-bold bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600 transition-colors"
+                    >
+                      Reset
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Ringkasan hasil + chip filter aktif */}
               <div className="flex flex-wrap items-center gap-2 mb-3">
                 <p className="text-sm text-gray-600 dark:text-slate-400 font-inter">
-                  Menampilkan <span className="text-blue-600 dark:text-blue-400 font-bold">{reportVariants.length}</span> variant (warna) • {products.length} produk
+                  Menampilkan <span className="text-blue-600 dark:text-blue-400 font-bold">{reportRows.length}</span> dari {reportTotal} baris
+                  <span className="text-gray-400 dark:text-slate-500"> · </span>
+                  <span className="text-blue-600 dark:text-blue-400 font-bold">{reportUnits.toLocaleString('id-ID')}</span> unit
                 </p>
                 {stockFilter !== 'all' && (
-                  <button
-                    type="button"
-                    onClick={() => setStockFilter('all')}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition-colors"
-                    title="Hapus filter"
-                  >
-                    Filter: {stockFilter === 'habis' ? 'Stok habis' : 'Perlu restock'} <X size={12} />
-                  </button>
+                  <FilterChip label={`Status: ${STATUS_LABEL[stockFilter] || stockFilter}`} onRemove={() => setStockFilter('all')} />
                 )}
+                {reportFilters.kategori.map((k) => (
+                  <FilterChip key={`kat-${k}`} label={k} onRemove={() => setReportFilters((f) => ({ ...f, kategori: f.kategori.filter((x) => x !== k) }))} />
+                ))}
+                {reportFilters.kain.map((k) => (
+                  <FilterChip key={`kain-${k}`} label={`Kain ${k}`} onRemove={() => setReportFilters((f) => ({ ...f, kain: f.kain.filter((x) => x !== k) }))} />
+                ))}
+                {reportFilters.series.map((s) => (
+                  <FilterChip key={`ser-${s}`} label={s} onRemove={() => setReportFilters((f) => ({ ...f, series: f.series.filter((x) => x !== s) }))} />
+                ))}
               </div>
 
               {/* Desktop: Tabel stok per variant & ukuran */}
               <div className="hidden md:block bg-white dark:bg-[#1a1d28] rounded-xl shadow-sm border border-gray-200 dark:border-slate-800 overflow-hidden transition-colors duration-300">
-                <div className="overflow-x-auto">
+                <div className="overflow-auto max-h-[70vh]">
                   <table className="w-full border-collapse">
                     <thead>
-                      <tr className="bg-[#1e3a5f]">
+                      <tr className="bg-[#1e3a5f] [&>th]:sticky [&>th]:top-0 [&>th]:z-10 [&>th]:bg-[#1e3a5f]">
                         <th className="px-4 py-3.5 text-left font-inter text-xs font-bold text-white uppercase tracking-wide border-r border-[#2d4a6f]">Produk</th>
+                        <th className="px-4 py-3.5 text-left font-inter text-xs font-bold text-white uppercase tracking-wide border-r border-[#2d4a6f] whitespace-nowrap">Kategori</th>
                         <th className="px-4 py-3.5 text-left font-inter text-xs font-bold text-white uppercase tracking-wide border-r border-[#2d4a6f] whitespace-nowrap">Jenis Kain</th>
                         <th className="px-4 py-3.5 text-left font-inter text-xs font-bold text-white uppercase tracking-wide border-r border-[#2d4a6f]">Series</th>
-                        <th className="px-4 py-3.5 text-left font-inter text-xs font-bold text-white uppercase tracking-wide border-r border-[#2d4a6f]">Warna</th>
                         {SIZES.map((size) => (
                           <th key={size} className="px-3 py-3.5 text-center font-inter text-xs font-bold text-white uppercase tracking-wide border-r border-[#2d4a6f]">{size}</th>
                         ))}
@@ -1458,16 +1640,25 @@ export default function MasterProduk() {
                       </tr>
                     </thead>
                     <tbody>
-                      {reportVariants.length === 0 ? (
+                      {reportRows.length === 0 ? (
                         <tr>
                           <td colSpan={4 + SIZES.length + 1} className="px-6 py-12 text-center font-inter text-sm text-gray-400 dark:text-slate-500">
-                            {stockFilter === 'all'
-                              ? 'Belum ada variant — tambahkan produk dengan warna & ukuran dulu'
-                              : 'Tidak ada varian yang cocok dengan filter ini'}
+                            <div className="flex flex-col items-center gap-3">
+                              <span>{hasReportFilter ? 'Tidak ada baris yang cocok dengan pencarian/filter.' : 'Belum ada variant — tambahkan produk dengan warna & ukuran dulu'}</span>
+                              {hasReportFilter && (
+                                <button
+                                  type="button"
+                                  onClick={resetReportFilters}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                                >
+                                  Reset filter
+                                </button>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       ) : (
-                        reportVariants.map((v, index) => {
+                        reportRows.map((v, index) => {
                           const product = products.find(p => p.id === v.product_id);
                           const st = stokVarianMap(v);
                           const total = SIZES.reduce((s, sz) => s + st[sz], 0);
@@ -1482,22 +1673,30 @@ export default function MasterProduk() {
                                   </span>
                                 ) : null}
                               </td>
+                              <td className="px-4 py-3.5 text-left align-middle border-r border-gray-100 dark:border-slate-800/50">
+                                {varianKategori(v) ? (
+                                  <span className="inline-flex px-2 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600">
+                                    {varianKategori(v)}
+                                  </span>
+                                ) : (
+                                  <span className="text-gray-400 dark:text-slate-500">-</span>
+                                )}
+                              </td>
                               <td className="px-4 py-3.5 text-left align-middle font-inter text-sm text-gray-600 dark:text-slate-300 border-r border-gray-100 dark:border-slate-800/50 whitespace-nowrap">
-                                {product?.jenis_kain?.name || <span className="text-gray-400 dark:text-slate-500">Belum diatur</span>}
+                                {varianKain(v) || <span className="text-gray-400 dark:text-slate-500">Belum diatur</span>}
                               </td>
                               <td className="px-4 py-3.5 text-left align-middle font-inter text-sm text-gray-600 dark:text-slate-300 border-r border-gray-100 dark:border-slate-800/50">
-                                {v.series_name || '-'}
+                                {varianSeries(v) || '-'}
                               </td>
-                              <td className="px-4 py-3.5 text-left align-middle font-inter text-sm font-medium text-gray-700 dark:text-slate-300 border-r border-gray-100 dark:border-slate-800/50">
-                                {v.color && String(v.color).toLowerCase() !== 'default'
-                                  ? v.color
-                                  : <span className="text-gray-400 dark:text-slate-500 italic">Belum diatur</span>}
-                              </td>
-                              {SIZES.map((sz) => (
-                                <td key={sz} className={`px-3 py-3.5 text-center align-middle font-inter text-sm font-semibold border-r border-gray-100 dark:border-slate-800/50 ${st[sz] === 0 ? 'text-red-500 dark:text-red-400' : 'text-gray-800 dark:text-slate-200'}`}>
-                                  {st[sz]}
-                                </td>
-                              ))}
+                              {SIZES.map((sz) => {
+                                const val = st[sz];
+                                const cls = val === 0 ? 'text-red-500 dark:text-red-400' : (val <= 5 ? 'text-amber-500 dark:text-amber-400' : 'text-gray-800 dark:text-slate-200');
+                                return (
+                                  <td key={sz} className={`px-3 py-3.5 text-center align-middle font-inter text-sm font-semibold border-r border-gray-100 dark:border-slate-800/50 ${cls}`}>
+                                    {val}
+                                  </td>
+                                );
+                              })}
                               <td className="px-4 py-3.5 text-center align-middle font-inter text-sm font-black text-blue-600 dark:text-blue-400">
                                 {total}
                               </td>
@@ -1512,14 +1711,23 @@ export default function MasterProduk() {
 
               {/* Mobile: Card per variant */}
               <div className="md:hidden space-y-3">
-                {reportVariants.length === 0 ? (
+                {reportRows.length === 0 ? (
                   <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center">
-                      <p className="font-inter text-sm text-gray-400">
-                        {stockFilter === 'all' ? 'Belum ada variant' : 'Tidak ada varian yang cocok dengan filter ini'}
-                      </p>
+                    <p className="font-inter text-sm text-gray-400 mb-3">
+                      {hasReportFilter ? 'Tidak ada baris yang cocok dengan pencarian/filter.' : 'Belum ada variant'}
+                    </p>
+                    {hasReportFilter && (
+                      <button
+                        type="button"
+                        onClick={resetReportFilters}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                      >
+                        Reset filter
+                      </button>
+                    )}
                   </div>
                 ) : (
-                  reportVariants.map((v) => {
+                  reportRows.map((v) => {
                     const product = products.find(p => p.id === v.product_id);
                     const st = stokVarianMap(v);
                     const total = SIZES.reduce((s, sz) => s + st[sz], 0);
@@ -1533,23 +1741,28 @@ export default function MasterProduk() {
                                 ikut {v.base_series_name || v.base_product_name}
                               </p>
                             ) : null}
-                            <p className="text-xs text-gray-500">
-                        {product?.jenis_kain?.name ? `${product.jenis_kain.name} • ` : ''}
-                        {v.color && String(v.color).toLowerCase() !== 'default'
-                          ? v.color
-                          : <span className="italic">Belum diatur</span>}
-                        {v.series_name ? ` • ${v.series_name}` : ''}
-                      </p>
+                            <p className="text-xs text-gray-500 flex items-center gap-1.5 flex-wrap">
+                              {varianKategori(v) ? (
+                                <span className="inline-flex px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">{varianKategori(v)}</span>
+                              ) : null}
+                              {varianKain(v) ? <span>{varianKain(v)}</span> : null}
+                              {varianSeries(v) ? <span>• {varianSeries(v)}</span> : null}
+                            </p>
                           </div>
                           <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-black">{total} pcs</span>
                         </div>
                         <div className="grid grid-cols-3 gap-2">
-                          {SIZES.map((sz) => (
-                            <div key={sz} className={`rounded-xl p-2 border text-center ${st[sz] === 0 ? 'bg-red-50/60 border-red-100' : 'bg-gray-50/60 border-gray-200/60'}`}>
-                              <p className="text-[10px] font-bold text-gray-500 uppercase">{sz}</p>
-                              <p className={`text-base font-black ${st[sz] === 0 ? 'text-red-500' : 'text-gray-700'}`}>{st[sz]}</p>
-                            </div>
-                          ))}
+                          {SIZES.map((sz) => {
+                            const val = st[sz];
+                            const box = val === 0 ? 'bg-red-50/60 border-red-100' : (val <= 5 ? 'bg-amber-50/60 border-amber-100' : 'bg-gray-50/60 border-gray-200/60');
+                            const txt = val === 0 ? 'text-red-500' : (val <= 5 ? 'text-amber-600' : 'text-gray-700');
+                            return (
+                              <div key={sz} className={`rounded-xl p-2 border text-center ${box}`}>
+                                <p className="text-[10px] font-bold text-gray-500 uppercase">{sz}</p>
+                                <p className={`text-base font-black ${txt}`}>{val}</p>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     );
