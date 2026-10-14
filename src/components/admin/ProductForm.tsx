@@ -1139,7 +1139,10 @@ export default function TambahProdukPage({
       </div>
 
       <main className="max-w-6xl mx-auto px-5 lg:px-8 py-6 lg:py-8 pb-28 lg:pb-10">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6 lg:gap-8 items-start">
+        {/* Kolom kiri `minmax(0,1fr)` supaya tabel ukuran boleh menyusut dan tidak pernah
+            mendorong kolom preview keluar layar. Preview tampil mulai 1440px — di bawah itu
+            form pakai lebar penuh supaya isinya tidak terpotong. */}
+        <div className="grid grid-cols-1 min-[1440px]:grid-cols-[minmax(0,1fr)_320px] gap-6 lg:gap-8 items-start">
 
           {/* Left: Form */}
           <div className="space-y-6">
@@ -1718,7 +1721,7 @@ export default function TambahProdukPage({
 
           {/* Right: Preview sidebar (mode admin saja) */}
           {!isOps && (
-          <div className="hidden lg:block sticky top-24">
+          <div className="hidden min-[1440px]:block sticky top-24">
             <div className="pf-card p-5">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-serif italic text-lg" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>Preview Produk</h3>
@@ -1988,7 +1991,7 @@ export default function TambahProdukPage({
         .pf-sizes .pf-cell {
           border: 0; border-bottom: 1px solid #d4d4d8; border-radius: 0;
           background: transparent; box-shadow: none; width: 100%;
-          padding: .45rem .15rem; min-height: 40px; min-width: 92px;
+          padding: .45rem .15rem; min-height: 40px; min-width: 84px;
         }
         .pf-sizes .pf-cell:hover { border-bottom-color: #a1a1aa; }
         .pf-sizes .pf-cell:focus { border-bottom: 2px solid var(--gold); box-shadow: none; outline: none; }
@@ -2048,7 +2051,7 @@ export default function TambahProdukPage({
              Pemisah pakai garis antarkolom (gaya tabel), bukan kotak di tiap isian. */
           .pf-sizes-head {
             display: grid;
-            grid-template-columns: minmax(84px, .7fr) minmax(96px, .85fr) minmax(120px, 1fr) minmax(150px, 1.3fr) minmax(128px, 1.1fr) 48px;
+            grid-template-columns: minmax(76px, .7fr) minmax(84px, .85fr) minmax(108px, 1fr) minmax(128px, 1.3fr) minmax(110px, 1.1fr) 44px;
             gap: 0; border-bottom: 1px solid var(--bd);
             font-size: .68rem; font-weight: 700; letter-spacing: .02em;
             text-transform: uppercase; color: var(--text-muted);
@@ -2059,7 +2062,7 @@ export default function TambahProdukPage({
           .pf-size-row {
             /* WAJIB display:grid — tanpa itu baris kembali menumpuk vertikal seperti block. */
             display: grid;
-            grid-template-columns: minmax(84px, .7fr) minmax(96px, .85fr) minmax(120px, 1fr) minmax(150px, 1.3fr) minmax(128px, 1.1fr) 48px;
+            grid-template-columns: minmax(76px, .7fr) minmax(84px, .85fr) minmax(108px, 1fr) minmax(128px, 1.3fr) minmax(110px, 1.1fr) 44px;
             gap: 0; align-items: center;
             padding: .3rem 0; border-bottom: 1px solid #f1f1f3;
           }
