@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { isOpsAdmin, unauthorized, stockStatus } from "@/lib/ops-auth";
 import { ownSizeMap, resolveStock } from "@/lib/ops-stock";
+import { compareOpsRows, variantSortKey } from "@/lib/ops-order";
 
 /**
  * Varian stok untuk dashboard internal.
@@ -98,7 +99,7 @@ export async function GET(req: NextRequest) {
 
   const admin = getSupabaseAdmin();
   const [{ data: products }, { data: rows }] = await Promise.all([
-    admin.from("products").select("id, name, series, price, hpp"),
+    admin.from("products").select("id, name, series, price, hpp, category, jenis_kain(name)"),
     admin.from("product_variants").select("product_id, color, size, stock, price_override, hex, display_order, base_product_id"),
   ]);
 
@@ -120,6 +121,8 @@ export async function GET(req: NextRequest) {
         product_id: r.product_id,
         product_name: prod.name || r.product_id,
         series_name: prod.series || "",
+        category: prod.category || null,
+        jenis_kain_name: prod.jenis_kain?.name || null,
         color: r.color || "default",
         hex: r.hex || null,
         price: prod.price ?? 0,
@@ -149,6 +152,10 @@ export async function GET(req: NextRequest) {
       status_efektif: stockStatus(totalEfektif),
     };
   });
+
+  // Urutan tampil pakai aturan bersama dengan Daftar Produk: kategori → jenis kain (A-Z)
+  // → warna → series urut tetap. Lihat src/lib/ops-order.ts.
+  items.sort((a, b) => compareOpsRows(variantSortKey(a), variantSortKey(b)));
 
   return NextResponse.json({ items });
 }

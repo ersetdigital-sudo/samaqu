@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { isOpsAdmin, unauthorized, stockStatus } from "@/lib/ops-auth";
+import { compareOpsRows, productSortKey } from "@/lib/ops-order";
 
 /**
  * Produk untuk dashboard internal.
@@ -101,6 +102,9 @@ export async function GET(req: NextRequest) {
   const { data, error } = await admin.from("products").select("*, jenis_kain(*)").order("name", { ascending: true });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   const items = await withTotals(admin, data || []);
+  // Urutan tampil pakai aturan bersama dengan Laporan Stok: kategori → jenis kain (A-Z)
+  // → warna → series urut tetap. Lihat src/lib/ops-order.ts.
+  items.sort((a, b) => compareOpsRows(productSortKey(a), productSortKey(b)));
   return NextResponse.json({ items });
 }
 
