@@ -13,18 +13,27 @@ export function isDelivered(data: { history?: TrackHistoryItem[] | null } | null
 }
 
 /**
- * Kode tracking J&T yang **bukan** bukti paket bergerak — artefak saat resi dibuat.
+ * Kode tracking J&T yang **bukan** bukti paket bergerak — artefak saat resi dibuat, atau kejadian
+ * yang justru berarti paket TIDAK diserahkan ke J&T.
+ *
+ * Sumber: tabel **Status Code** di dokumen resmi "J&T API Platform" (Tracking API).
  *
  * `101` = "Manifes": J&T mencatatnya otomatis begitu resi terbit. Terbukti saat uji produksi
- * (2026-10-13): resi baru dibuat langsung punya satu entri "Manifes" di detik yang sama —
- * jadi kode ini TIDAK boleh mengubah status ke "Dikirim" (kalau tidak, resi terbit = langsung
- * tampak dikirim, persis bug yang diperbaiki).
+ * (2026-10-13): resi baru dibuat langsung punya satu entri "Manifes" di detik yang sama — jadi
+ * kode ini TIDAK boleh mengubah status ke "Dikirim" (kalau tidak, resi terbit = langsung tampak
+ * dikirim, persis bug yang diperbaiki).
  *
- * `162` = "Cancelled AWB by Seller": muncul setelah resi di-void — jelas bukan "dikirim".
+ * `162` = "Cancelled AWB by Seller" dan `163` = "Cancelled AWB" (dibatalkan J&T): resi mati —
+ * jelas bukan "dikirim". (163 dulu belum dikecualikan, jadi AWB yang dibatalkan J&T sempat bikin
+ * pesanan tampak "Dikirim".)
  *
- * Tambahkan kode lain di sini kalau nanti terbukti juga artefak (bukan pemindaian nyata).
+ * `151` = "Pickup Failed": paket tidak pernah diambil J&T, jadi belum "dikirim".
+ *
+ * `150`/`152` ("Paket disimpan di gudang J&T" / onhold) sengaja TIDAK dikecualikan — paketnya
+ * sudah bersama J&T, cuma tertahan, jadi tetap dianggap masuk proses kirim. `401`/`402` (retur)
+ * juga tidak: paket memang sudah dikirim, cuma arahnya balik.
  */
-export const JNT_NON_SHIPPING_CODES: ReadonlySet<number> = new Set([101, 162]);
+export const JNT_NON_SHIPPING_CODES: ReadonlySet<number> = new Set([101, 151, 162, 163]);
 
 /**
  * Paket dianggap **sudah dikirim** (diserahkan ke J&T / dipindai kurir) bila J&T memuat minimal
@@ -45,23 +54,37 @@ export function isShipped(data: { history?: TrackHistoryItem[] | null } | null |
  * Label tampilan untuk satu entri riwayat J&T — SATU sumber, dipakai bareng admin (drawer
  * pesanan) dan customer (detail pesanan + halaman lacak) supaya kalimatnya konsisten.
  *
- * Track API J&T mengirim teks mentah yang bisa menyesatkan: `status_code` 100 berbunyi
- * "Paket telah diterima oleh <gerai>" — itu paket diterima di **gerai/drop point**, bukan oleh
- * penerima (lihat catatan `isDelivered`). Untuk kode yang sudah dikenal, tampilkan kalimat yang
- * lebih jelas (searah istilah portal J&T); kode lain tampil apa adanya tanpa ditebak.
+ * Track API J&T mengirim teks mentah yang sebagian menyesatkan (mis. "Paket telah diterima oleh
+ * <gerai>" = paket dipungut J&T di gerai, BUKAN diterima penerima). Pemetaannya karena itu
+ * memakai **teks** resmi dari tabel Status Code dokumen "J&T API Platform", BUKAN `status_code`:
+ * satu kode dipakai untuk beberapa status berbeda (kode 100 mencakup "diterima gerai", "dikirim
+ * ke gerai", "sampai di gerai", sampai "sedang diantar ke alamat penerima") — memetakan per kode
+ * akan salah untuk sebagian entri. Teks yang tak dikenal tampil apa adanya tanpa ditebak.
  */
-const TRACK_STATUS_LABEL: Record<number, string> = {
-  100: "Diterima di gerai J&T",
-  101: "Resi dibuat (manifes)",
-  162: "Resi dibatalkan",
-  200: "Paket diterima penerima",
-};
+const TRACK_STATUS_TEXT_LABEL: { prefix: string; label: string }[] = [
+  { prefix: "Paket telah diterima oleh", label: "Paket diserahkan ke J&T (drop point)" },
+  { prefix: "Paket telah diterima", label: "Paket diterima penerima" },
+  { prefix: "Paket akan dikirimkan ke", label: "Dikirim ke gerai berikutnya" },
+  { prefix: "Paket telah sampai di", label: "Sampai di gerai transit" },
+  { prefix: "Paket akan dikirim ke alamat penerima", label: "Sedang diantar ke alamat penerima" },
+  { prefix: "Manifes", label: "Resi dibuat (manifes)" },
+  { prefix: "Cancelled AWB by Seller", label: "Resi dibatalkan (oleh penjual)" },
+  { prefix: "Cancelled AWB", label: "Resi dibatalkan (oleh J&T)" },
+  { prefix: "Paket disimpan di gudang J&T", label: "Ditahan di gudang J&T" },
+  { prefix: "Pickup Failed", label: "Gagal pickup" },
+  { prefix: "Paket akan diretur", label: "Paket akan diretur ke pengirim" },
+  { prefix: "Package returned to seller", label: "Paket dikembalikan ke pengirim" },
+];
 
 /** Teks entri riwayat untuk ditampilkan (fallback ke teks J&T mentah, lalu teks umum). */
 export function trackingLabel(item: { status?: string | null; status_code?: number | null } | null | undefined): string {
-  if (!item) return "";
-  const mapped = typeof item.status_code === "number" ? TRACK_STATUS_LABEL[item.status_code] : undefined;
-  return mapped || item.status || "Update pengiriman";
+  const text = item?.status?.trim() ?? "";
+  // 200 = "Paket telah diterima" (delivered) — dibedakan dari "Paket telah diterima oleh <gerai>"
+  // (kode 100) yang berarti paket baru diserahkan ke J&T.
+  if (Number(item?.status_code) === 200) return "Paket diterima penerima";
+  if (!text) return "Update pengiriman";
+  const hit = TRACK_STATUS_TEXT_LABEL.find((e) => text.startsWith(e.prefix));
+  return hit ? hit.label : text;
 }
 
 /** Urutan tahap pengiriman (maju-saja). `null` = belum diatur. */
