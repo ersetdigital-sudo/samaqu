@@ -68,13 +68,6 @@ const varianSearchText = (v) =>
   [v.product_name, v.category, v.jenis_kain_name, v.series_name].map((x) => String(x || "")).join(" ").toLowerCase();
 const STATUS_LABEL = { aman: "Aman", menipis: "Menipis", habis: "Habis" };
 
-/** Pilihan periode kartu "Produk Terlaris" (default 30 hari terakhir). */
-const TOP_PERIODS = [
-  { key: "7", label: "7 hari", full: "7 hari terakhir" },
-  { key: "30", label: "30 hari", full: "30 hari terakhir" },
-  { key: "month", label: "Bulan ini", full: "bulan ini" },
-];
-
 /** Judul & subjudul header mengikuti tab yang aktif (berubah tanpa reload). */
 const TAB_HEADERS = {
   produk: { title: "Master Produk", sub: "Kelola produk dan stok barang" },
@@ -98,13 +91,6 @@ function wibCalendarRange() {
     monthStart: `${y}-${pad(m + 1)}-01`,
     monthEnd: `${y}-${pad(m + 1)}-${pad(lastDay)}`,
   };
-}
-
-/** Tanggal (YYYY-MM-DD) `days` hari sebelum tanggal WIB `iso`. */
-function wibDateMinus(iso, days) {
-  const d = new Date(`${iso}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() - days);
-  return d.toISOString().slice(0, 10);
 }
 
 function AnimatedCounter({ value, prefix = "", suffix = "", duration = 1200, delay = 0 }) {
@@ -567,52 +553,12 @@ export default function MasterProduk() {
     () => (products || []).filter((p) => String(p.status_efektif || p.status || "aman") !== "habis").length,
     [products],
   );
-  // Kartu "Produk Terlaris" — unit TERJUAL dari order website pada periode terpilih.
-  // Hanya pesanan SAH yang dihitung: status route "completed" (= pesanan `diproses`
-  // yang sudah dibayar, `dikirim`, `selesai`). Belum bayar ("pending") dan batal /
-  // auto-cancel ("return") TIDAK dihitung. Produk Free Gift dilewati.
-  // Dikelompokkan per baris produk lengkap: nama · jenis kain · series, jadi
-  // "Thobe Superblack B-01 Jiharkah" dan "… C-01 Jiharkah" dihitung terpisah, dan
-  // series turunan (Imron/Bayati/Karim/Imalah) dihitung atas namanya sendiri.
-  const [topPeriod, setTopPeriod] = useState("30");
-  const topSellers = useMemo(() => {
-    const tx = Array.isArray(transactions) ? transactions : [];
-    const prods = Array.isArray(products) ? products : [];
-    const prodById = new Map();
-    const orderIndex = new Map();
-    prods.forEach((p, i) => { prodById.set(p.id, p); orderIndex.set(p.id, i); });
-
-    // Periode: default 30 hari terakhir (termasuk hari ini), atau 7 hari / bulan ini.
-    const from = topPeriod === "7" ? wibDateMinus(wib.today, 6)
-      : topPeriod === "30" ? wibDateMinus(wib.today, 29)
-      : wib.monthStart;
-    const to = topPeriod === "month" ? wib.monthEnd : wib.today;
-
-    const agg = new Map();
-    for (const t of tx) {
-      if (String(t.status || "").toLowerCase() !== "completed") continue;
-      const d = String(t.date || "");
-      if (!d || d < from || d > to) continue;
-      const prod = prodById.get(t.product_id);
-      if (prod && prod.product_type === "free_gift") continue;
-      const label = [t.product_name, t.kain, t.series]
-        .map((x) => String(x || "").trim())
-        .filter(Boolean)
-        .join(" · ");
-      if (!label) continue;
-      const cur = agg.get(label);
-      if (cur) cur.units += Number(t.qty) || 0;
-      else agg.set(label, {
-        label,
-        units: Number(t.qty) || 0,
-        // Tie-break: ikut urutan produk yang sudah ada (urutan dari server/ops-order).
-        order: orderIndex.has(t.product_id) ? orderIndex.get(t.product_id) : Number.MAX_SAFE_INTEGER,
-      });
-    }
-    return Array.from(agg.values())
-      .sort((a, b) => (b.units - a.units) || (a.order - b.order))
-      .slice(0, 1);
-  }, [transactions, products, topPeriod, wib]);
+  // "Habis" = produk yang stok efektifnya 0 (aturan status yang sama dengan server).
+  // Kartu pelengkap "Produk Aktif": aktif + habis = total produk.
+  const outOfStockProductCount = useMemo(
+    () => (products || []).filter((p) => String(p.status_efektif || p.status || "aman") === "habis").length,
+    [products],
+  );
 
   // ── Ringkasan stok untuk tab Laporan Stok (dihitung dari data yang sudah dimuat,
   //    bukan angka statis). Satuan = unit stok, bukan jumlah produk. ──
@@ -1078,33 +1024,13 @@ export default function MasterProduk() {
 
             <div className="col-span-2 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-3.5 py-3 md:px-4 md:py-3.5 hover:bg-white/15 transition-all duration-300">
               <div className="flex items-center gap-2 text-white">
-                <TrendingUp size={15} className="shrink-0 opacity-90" />
-                <p className="min-w-0 flex-1 truncate text-[10px] md:text-[11px] font-bold uppercase tracking-wide leading-tight">Produk Terlaris</p>
-                <select
-                  value={topPeriod}
-                  onChange={(e) => setTopPeriod(e.target.value)}
-                  aria-label="Periode produk terlaris"
-                  className="shrink-0 rounded-md bg-white/15 border border-white/15 text-white text-[10px] font-bold px-1 py-0.5 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
-                >
-                  {TOP_PERIODS.map((p) => (
-                    <option key={p.key} value={p.key} className="text-slate-900">{p.label}</option>
-                  ))}
-                </select>
+                <IconPackageX size={15} className="shrink-0 opacity-90" />
+                <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-wide leading-tight min-h-[26px] md:min-h-[15px]">Produk Habis</p>
               </div>
-              {topSellers.length > 0 ? (
-                <>
-                  <p className="mt-2 truncate text-lg md:text-2xl font-black text-white font-inter tracking-tight leading-tight" title={topSellers[0].label}>
-                    {topSellers[0].label}
-                  </p>
-                  <p className="mt-1.5 text-[10px] md:text-[11px] text-white/85 leading-tight">
-                    Terjual {topSellers[0].units.toLocaleString("id-ID")} unit
-                  </p>
-                </>
-              ) : (
-                <p className="mt-2 text-[10px] md:text-[11px] text-white/85 leading-tight">
-                  Belum ada penjualan · {TOP_PERIODS.find((p) => p.key === topPeriod)?.full}
-                </p>
-              )}
+              <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none mt-2">
+                {outOfStockProductCount.toLocaleString('id-ID')}<span className="text-xs md:text-sm font-bold"> produk</span>
+              </p>
+              <p className="mt-1.5 text-[10px] md:text-[11px] text-white/85 leading-tight">Stok sudah 0</p>
             </div>
           </>
         ) : activeTab === 'stockin' ? (
