@@ -94,25 +94,26 @@ async function fetchDashboard(month: string): Promise<DashboardData> {
 
 function GlassCard({ icon: Icon, label, value, caption }: { icon: any; label: string; value: string; caption: string }) {
   return (
-    <div className="bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-5">
-      <div className="flex items-center gap-2 text-blue-100">
-        <Icon size={16} />
-        <span className="text-[11px] font-bold uppercase tracking-wider">{label}</span>
+    <div className="bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-5 flex flex-col">
+      {/* Irama kartu dikunci: baris label (tidak wrap) → nilai (selalu 1 baris) → caption
+          yang ditempel ke dasar kartu. Jadi keempat kartu selalu sejajar, berapa pun
+          panjang nominalnya. */}
+      <div className="flex items-center gap-2 text-blue-100 min-h-[20px]">
+        <Icon size={16} className="shrink-0" />
+        <span className="text-[11px] font-bold uppercase tracking-wider truncate">{label}</span>
       </div>
-      {/* Nominal WAJIB satu baris ("Rp" tidak boleh terpisah dari angkanya) —
-          ukuran font fluid supaya nominal panjang tetap muat di layar sempit. */}
-      <p className="font-black text-white mt-3 whitespace-nowrap text-[clamp(1.05rem,1.5vw,1.8rem)]">{value}</p>
-      <p className="text-blue-100 text-xs mt-1">{caption}</p>
+      <p className="font-black text-white mt-3 whitespace-nowrap leading-tight text-[clamp(1.05rem,1.5vw,1.75rem)]">{value}</p>
+      <p className="text-blue-100 text-xs mt-auto pt-1.5">{caption}</p>
     </div>
   );
 }
 
 function StatCard({ label, value, caption, tone }: { label: string; value: string; caption: string; tone?: string }) {
   return (
-    <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
-      <p className="text-[11px] font-bold uppercase tracking-wider text-gray-500">{label}</p>
-      <p className={`font-black mt-2 whitespace-nowrap text-[clamp(1.15rem,1.6vw,1.75rem)] ${tone || "text-slate-900"}`}>{value}</p>
-      <p className="text-xs text-gray-500 mt-1">{caption}</p>
+    <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200 flex flex-col">
+      <p className="text-[11px] font-bold uppercase tracking-wider text-gray-500 min-h-[16px] truncate">{label}</p>
+      <p className={`font-black mt-2 whitespace-nowrap leading-tight text-[clamp(1.15rem,1.6vw,1.75rem)] ${tone || "text-slate-900"}`}>{value}</p>
+      <p className="text-xs text-gray-500 mt-auto pt-1.5">{caption}</p>
     </div>
   );
 }
@@ -391,7 +392,7 @@ export default function OpsDashboardPage() {
             <GlassCard icon={IconPackage} label="Total HPP" value={rp(r.hpp)} caption="Modal produk terjual" />
             <GlassCard icon={IconReceipt} label="Total Biaya" value={rp(r.biaya)} caption="Operasional & packing" />
 
-            <div className="relative bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-5">
+            <div className="relative bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-5 flex flex-col">
               <span
                 className={`absolute top-3 right-3 px-2 py-0.5 rounded-md text-[10px] font-black tracking-wider ${
                   profit ? "bg-emerald-400/90 text-emerald-950" : "bg-red-400/90 text-red-950"
@@ -399,14 +400,14 @@ export default function OpsDashboardPage() {
               >
                 {profit ? "PROFIT" : "RUGI"}
               </span>
-              <div className="flex items-center gap-2 text-blue-100">
-                <IconProfit size={16} />
-                <span className="text-[11px] font-bold uppercase tracking-wider">Net Profit</span>
+              <div className="flex items-center gap-2 text-blue-100 min-h-[20px] pr-16">
+                <IconProfit size={16} className="shrink-0" />
+                <span className="text-[11px] font-bold uppercase tracking-wider truncate">Net Profit</span>
               </div>
-              <p className={`font-black mt-3 whitespace-nowrap text-[clamp(1.05rem,1.5vw,1.8rem)] ${profit ? "text-emerald-300" : "text-red-300"}`}>
+              <p className={`font-black mt-3 whitespace-nowrap leading-tight text-[clamp(1.05rem,1.5vw,1.75rem)] ${profit ? "text-emerald-300" : "text-red-300"}`}>
                 {rp(r.netProfit)}
               </p>
-              <p className="text-blue-100 text-xs mt-1">Keuntungan bersih</p>
+              <p className="text-blue-100 text-xs mt-auto pt-1.5">Keuntungan bersih</p>
             </div>
           </div>
         </div>
@@ -427,16 +428,19 @@ export default function OpsDashboardPage() {
       {/* ── Tren Penjualan · Produk Terlaris ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
-          <div className="flex items-center gap-2 mb-1">
-            <IconProfit size={18} className="text-blue-600" />
-            <h2 className="font-bold text-slate-900">Tren Penjualan</h2>
+          <div className="flex items-center gap-2 h-11 mb-4">
+            <IconProfit size={18} className="text-blue-600 shrink-0" />
+            <div className="min-w-0">
+              <h2 className="font-bold text-slate-900 leading-tight">Tren Penjualan</h2>
+              <p className="text-[11px] uppercase tracking-wide text-gray-500 font-semibold leading-tight">7 HARI TERAKHIR</p>
+            </div>
           </div>
-          <p className="text-[11px] uppercase tracking-wide text-gray-500 font-semibold mb-4">7 HARI TERAKHIR</p>
           <TrendChart trend={trendHarian} />
         </div>
 
         <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
-          <div className="flex items-start justify-between gap-3 mb-4">
+          {/* Tinggi header dikunci (h-11) supaya sejajar dengan kartu "Tren Penjualan". */}
+          <div className="flex items-center justify-between gap-3 h-11 mb-4">
             <div className="flex items-center gap-2.5 min-w-0">
               <span className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 grid place-items-center shrink-0">
                 <IconProfit size={17} />
