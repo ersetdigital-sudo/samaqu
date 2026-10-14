@@ -1,456 +1,272 @@
-# SAMAQU — E-Commerce & Business System
+# SAMAQU
 
-> Production e-commerce platform for SAMAQU, a Muslim menswear brand specializing in Thobe, Kandora, Koko, Vest, Kabak, and garment accessories.
+**E-Commerce & Business System** — platform produksi untuk SAMAQU, brand pakaian muslim pria
+(Thobe · Kandora · Koko · Vest · Kabak · Cover & Hanger).
 
-**Live website:** [https://www.samaqu.id/](https://www.samaqu.id/)
+![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)
+![React](https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
+![Tailwind](https://img.shields.io/badge/Tailwind-4-38BDF8?logo=tailwindcss&logoColor=white)
+![Supabase](https://img.shields.io/badge/Supabase-Postgres-3ECF8E?logo=supabase&logoColor=white)
+![Deploy](https://img.shields.io/badge/Deploy-Vercel-000000?logo=vercel&logoColor=white)
 
----
-
-## Overview
-
-SAMAQU is a production e-commerce platform built to support product catalog management, custom pricing, checkout, order processing, payment verification, voucher management, and multi-courier shipping integration. The system serves both customers (browse, checkout, track orders) and administrators (manage products, orders, content, and shipping configuration).
-
-## Key Engineering Highlights
-
-- **Hierarchical product catalog** — Category → Jenis Kain → Series → Product/Variant structure with color, size, and fabric attributes
-- **Create Your Price (CYP)** — Customer-defined pricing with server-side minimum price validation
-- **Custom checkout flow** — Multi-step checkout with saved addresses, real-time shipping calculation, and voucher application
-- **Manual payment + proof upload** — One admin-managed payment list (bank transfer, QRIS, e-wallet, COD, or custom) with built-in icons; only active methods show at checkout
-- **Order management** — Full order lifecycle from creation to fulfillment with admin status control
-- **Voucher system** — Percentage/fixed discounts with usage limits, min purchase, and per-WhatsApp restrictions
-- **J&T Express API integration** — Tariff Check, Order Creation, Cancellation, and Tracking with 7,128-area code mapping
-- **RajaOngkir API V2 integration** — Shipping cost calculation, destination search, and district-level caching
-- **Server-side validation** — CYP price validation, shipping cost verification, and atomic stock decrement with rollback
-- **Admin dashboard** — Business operations layer for orders, products, customers, content, vouchers, and shipping configuration
-- **Internationalization** — Full ID/EN language support via next-intl
-- **Meta Pixel tracking** — E-commerce events (ViewContent, AddToCart, InitiateCheckout, Purchase) with CAPI support
+> **Live:** <https://www.samaqu.id/>
 
 ---
 
-## Product Catalog
+## Ringkasan
 
-The catalog uses a hierarchical taxonomy system:
+SAMAQU adalah satu sistem yang melayani **tiga sisi** sekaligus: **storefront** untuk pelanggan,
+**dashboard admin** untuk operasional penjualan, dan **dashboard ops** untuk CRM, stok, dan
+follow-up. Semuanya berbagi satu sumber data di **Supabase (PostgreSQL)** — tidak ada duplikasi
+aturan bisnis antar sisi.
 
-```
-Category (Thobe, Kandora, Koko, Vest, Kabak, Cover & Hanger)
-  └── Jenis Kain (Fabric Type — B-01, B-02, A-02, C-01, etc.)
-        └── Series (Jiharkah, Imron, Bayati, Zahwan, Duha, etc.)
-              └── Product / Variant (Color × Size)
-```
-
-Each product carries:
-- **Category** — Product classification
-- **Kain** — Fabric code reference
-- **Series** — Design series name
-- **Colors** — Available color variants with hex mappings
-- **Price** — Base price or minimum price (CYP products)
-- **Weight** — Used for shipping cost calculation (grams)
-- **Media** — Images and videos per color variant
-
-Products are stored in Supabase with `product_images` and `product_variants` tables for media and stock management. The `jenis_kain` table provides structured fabric metadata (material, texture, care instructions).
+| Sisi | Untuk | Isi utama |
+|------|-------|-----------|
+| 🛍️ **Storefront** | Pelanggan | Katalog, Create Your Price, Open Order, keranjang, checkout, akun & lacak pesanan, halaman konten, live chat AI |
+| 🧑💼 **Admin** | Pemilik / admin | Pesanan (termasuk resi J&T & label), produk, Open Order, pelanggan, live chat, voucher, seluruh konten website, pengaturan |
+| 📊 **Ops** | Tim operasional | Leads & follow-up (CRM), pelanggan, produk & stok, pembelian, laporan |
 
 ---
 
-## Create Your Price
+## ✨ Fitur Unggulan
 
-Create Your Price (CYP) is a pricing model where customers can set their own price within a defined range. This is one of the most distinctive engineering features of the platform.
-
-### Flow
-
-```
-Product Page (CYP enabled)
-  ↓
-Customer sees minimum price + recommended range
-  ↓
-Customer enters custom price via slider/input
-  ↓
-Client-side validation (price >= minimum_price)
-  ↓
-Price added to cart as customer_price
-  ↓
-Price carried through checkout
-  ↓
-Server-side validation against database minimum_price
-  ↓
-Order created with customer_price persisted
-  ↓
-Admin sees custom price on order detail
-```
-
-### Implementation
-
-- **Product-level toggle** — `create_your_price_enabled` boolean per product
-- **Minimum price** — `minimum_price` field stored in database, never trusted from client
-- **Client validation** — Cart rejects prices below minimum (`cart-context.tsx:68`)
-- **Server validation** — Order API fetches `minimum_price` from DB and compares (`api/orders/route.ts:64-88`)
-- **Order persistence** — `customer_price` and `minimum_price` stored on `order_items` table
-- **Admin visibility** — Order detail shows both customer-selected price and minimum price
-
-> Client-provided pricing is validated server-side before being accepted as an order value. The server fetches the minimum price from the database and rejects any order where the customer price falls below it.
-
-```mermaid
-flowchart LR
-    A[Product Page] --> B[Create Your Price]
-    B --> C[Price Validation]
-    C --> D[Cart]
-    D --> E[Checkout]
-    E --> F[Server Validation]
-    F --> G[Order]
-    G --> H[Admin Order Detail]
-```
+| Fitur | Kenapa Istimewa |
+|-------|-----------------|
+| **Hierarchical catalog** | Taksonomi `Kategori → Jenis Kain → Series → Produk/Varian` (warna × ukuran), lengkap dengan media per varian |
+| **Create Your Price (CYP)** | Pelanggan menentukan harganya sendiri; **divalidasi ulang di server** terhadap harga minimum di database — harga dari klien tidak pernah dipercaya |
+| **Open Order wizard** | Alur 6 langkah terpisah dengan harga minimum per series, memotong **stok yang sama** dengan katalog, dan wajib punya akun |
+| **Atomic stock** | `samaqu_decrement_stock` dengan row-lock; kalau ada satu item gagal, semua decrement di-rollback |
+| **Status pesanan ≠ status pengiriman** | `orders.status` dan `orders.shipping_status` dipisah; resi terbit ≠ paket berangkat |
+| **J&T lifecycle penuh** | Tariff, Order (AWB), Cancel (void), Track — dengan **pemetaan 7.128 baris** area |
+| **RajaOngkir V2** | Ongkir + pencarian tujuan dengan caching bertingkat |
+| **Live Chat AI** | Asisten AI (Xiaomi MiMo) di storefront, dengan log & pengaturan dari admin |
+| **CRM internal** | Leads, Follow-up Center, dan sinkronisasi otomatis order → lead |
+| **Shared admin & ops** | Pusat data pelanggan, aturan urutan, dan filter — **satu modul**, dua dashboard |
 
 ---
 
-## Checkout & Order Management
+## 🛍️ Fitur Storefront
 
-### Checkout Flow
+| Halaman / Fitur | Rute | Keterangan |
+|-----------------|------|------------|
+| Home | `/` | Hero, koleksi, jaminan, testimoni, Instagram |
+| Katalog | `/katalog` | Daftar produk lintas kategori + filter jenis kain |
+| Detail produk | `/katalog/[id]` | Galeri per varian, pemilih warna/series/ukuran, harga minimum (CYP) |
+| Create Your Price | `/create-your-price` | Halaman promo + alur CYP |
+| Open Order | `/open-order` | Wizard 6 langkah: produk → detail → keranjang → data pemesan → review → sukses |
+| Keranjang | `/cart` | State keranjang + add-on Cover & Hanger |
+| Checkout | `/checkout` | Multi-langkah: alamat tersimpan/manual, ongkir otomatis, voucher, metode pembayaran |
+| Sukses | `/checkout/success` | Nomor pesanan + status "Menunggu Konfirmasi Admin" |
+| Akun & pesanan | `/akun`, `/akun/pesanan`, `/akun/pesanan/[no]`, `.../lacak` | Dashboard, daftar pesanan (tab Semua/Belum Bayar/Diproses/Dikirim/Selesai), detail bergaya marketplace, lacak paket |
+| Alamat & profil | `/akun/alamat`, `/akun/profil` | Alamat tersimpan (kota/kecamatan RajaOngkir), profil read-only + Edit |
+| Wishlist | `/akun/wishlist` | Produk favorit |
+| Konten | `/tentang-kami`, `/faq`, `/panduan-ukuran`, `/testimoni`, `/cara-pesan`, `/garansi-retur`, `/sama-quran`, `/bio` | Halaman konten yang diatur dari admin |
+| Live Chat AI | widget | Asisten AI + eskalasi ke WhatsApp toko |
 
-```
-Cart / Product Page
-  ↓
-Customer Information (Name, Email, WhatsApp)
-  ↓
-Shipping Address (Saved or Manual)
-  ↓
-Shipping Method (Auto-calculated via RajaOngkir or J&T)
-  ↓
-Payment Method (Bank Transfer / QRIS / COD)
-  ↓
-Voucher Application (Optional)
-  ↓
-Order Submission
-  ↓
-Server-side Validation (CYP, Stock, Shipping)
-  ↓
-Order Created + J&T AWB Generated
-  ↓
-Redirect to Success Page
-```
-
-### Order Processing
-
-- **Order number** — Generated as `SMQ-YYYYMMDD-XXX`
-- **Payment status** — Manual verification by admin
-- **Proof upload** — Customer uploads payment proof via WhatsApp
-- **Order status** — `pending` → `diproses` → `dikirim` → `selesai` / `dibatalkan`
-- **Stock management** — Atomic decrement via `samaqu_decrement_stock` RPC with `FOR UPDATE` row locking; automatic rollback on any failure
-- **Voucher tracking** — Usage count incremented, per-WhatsApp usage recorded
-
-### Stock Validation
-
-Stock is decremented atomically before order creation. If any item fails validation, all decrements are rolled back and the order is rejected. This prevents race conditions when multiple customers checkout simultaneously for the last item.
+- **Dwibahasa** (ID / EN) lewat `next-intl`.
+- **Meta Pixel + CAPI** — ViewContent, AddToCart, InitiateCheckout, Purchase.
+- **Nav bawah ala aplikasi** di mobile (Beranda · Kategori · Open Order · Pesanan · Akun).
 
 ---
 
-## J&T Express Integration
+## 🧑💼 Dashboard Admin
 
-Full integration with J&T Express API covering the complete shipment lifecycle.
+Tiga grup menu di sidebar:
 
-### Tariff Check
-
-Calculates shipping costs using J&T's Tariff Check API. Resolves local city/district names to J&T's internal code system via a 7,128-area mapping dataset.
-
-- **Endpoint:** `POST /api/shipping/jnt-cost`
-- **Input:** City name, district name, weight (grams)
-- **Output:** Available services with costs
-- **Caching:** In-memory cache with 10-minute TTL
-
-### Order API
-
-Creates shipment orders on J&T and retrieves AWB (waybill) numbers.
-
-- **Triggered:** Automatically during order creation (`api/orders/route.ts:244-289`)
-- **Input:** Order details, sender/receiver info, package details
-- **Output:** AWB number stored on order record
-- **Signature:** `base64(hex(md5(data + key)))` — PHP-compatible signature format
-
-### Cancellation API
-
-Cancels J&T shipments from the admin dashboard.
-
-- **Triggered:** Admin clicks "Batalkan di J&T" on order detail
-- **Endpoint:** `PATCH /api/admin/orders` with `action: "cancelJnt"`
-- **Flow:** Fetch AWB → Call J&T Cancel → Update order status to `dibatalkan`
-
-### Tracking API
-
-Retrieves shipment status from J&T using Basic Auth (different from Order/Tariff which use signature-based auth).
-
-- **Endpoint:** `GET /api/jnt/track`
-- **Input:** AWB number
-- **Output:** Tracking detail + history
-
-### Area Mapping
-
-A comprehensive mapping system translates local (RajaOngkir-compatible) city/district names to J&T's internal codes:
-
-| Code Type | Purpose | Example |
-|-----------|---------|---------|
-| `sendSiteCode` | Tariff Check origin | `DEPOK` |
-| `code3` | Order origin/destination | `DPK` |
-| `destAreaCode` | Tariff Check destination | `DPK001` |
-| `receiverArea` | Order receiver area | `DPK001` |
-
-The mapping dataset contains 7,128 area rows with multi-level fallback: exact district+city → district-only → city-only.
-
-```mermaid
-flowchart LR
-    A[Customer Address] --> B[Area Mapping]
-    B --> C{J&T API}
-    C -->|Tariff| D[Shipping Cost]
-    C -->|Order| E[AWB Number]
-    C -->|Track| F[Shipment Status]
-    C -->|Cancel| G[Cancelled]
-```
-
----
-
-## RajaOngkir Integration
-
-Integration with RajaOngkir API V2 (komerce.id) for shipping cost calculation and destination resolution.
-
-### Shipping Cost Calculation
-
-- **Endpoint:** `POST /api/shipping/cost`
-- **Input:** Origin subdistrict ID, destination subdistrict ID, weight, couriers
-- **Output:** Multiple courier options with costs
-- **Caching:** In-memory cache with 10-minute TTL
-- **Supported couriers:** JNE, SiCepat, J&T, Ninja, Tiki, Wahana, Pos, Lion, Anteraja
-
-### Destination Search
-
-Smart destination resolution with 5-priority matching:
-
-1. Exact kecamatan + city + province
-2. Exact kecamatan + city
-3. Partial kecamatan + city
-4. Exact kecamatan name only
-5. First result (fallback)
-
-Results are cached in Supabase `destination_cache` table for future lookups.
-
-### District ID Caching
-
-- **Saved addresses** — `district_id` cached on address record
-- **Supabase cache** — `destination_cache` table shared across users
-- **In-memory** — Shipping options cached per origin-destination-weight-courier key
-
-> Shipping costs received from the client are not treated as trusted values. The server revalidates shipping information before creating the order.
-
-```mermaid
-flowchart LR
-    A[Customer Address] --> B[Region Selection]
-    B --> C[RajaOngkir API]
-    C --> D[Shipping Options]
-    D --> E[Checkout]
-    E --> F[Server Revalidation]
-    F --> G[Create Order]
-```
-
----
-
-## Admin Dashboard
-
-The admin dashboard serves as the business operations layer, not just a CRUD interface.
-
-### Panels
-
-| Panel | Function |
-|-------|----------|
-| Dashboard | Revenue stats, pending orders, top products |
-| Pesanan | Order list with status filtering, detail modal, J&T cancellation |
-| Produk | Product catalog management with grouping, CYP toggle |
-| Pelanggan | Customer data aggregated from orders |
-| Konten Website | CMS for hero, collection, testimonials |
-| Produk Pilihan | Featured products for customer dashboard |
-| Pengaturan | Store info, shipping origin, provider toggle, couriers, API keys, payment methods |
+**Menu Utama** — Dashboard · Order Management · Open Order · Produk · Pelanggan · Live Chat
+**Konten** — Konten Website · Biolink · Foto Carousel · Testimoni · Panduan Ukuran · Halaman Garansi & Retur
+**Lainnya** — Voucher · Pengaturan
 
 ### Order Management
 
-- Status updates: `pending` → `diproses` → `selesai` / `dibatalkan`
-- J&T cancellation directly from admin
-- Order detail shows CYP prices (customer_price vs minimum_price)
-- Voucher usage tracking
+- Daftar pesanan ala Shopee Seller Centre: sub-tab **Pesanan Website / Open Order**, kotak cari, dan tahap **Semua · Belum Bayar · Perlu Dikirim · Dikirim · Selesai · Dibatalkan**.
+- **Drawer detail pesanan** berisi banner status → Info Pengiriman (kurir + nomor resi + status pengiriman) → Metode Pembayaran → Alamat → produk → Total → linimasa status → aksi.
+- **Atur Pesanan** menerbitkan resi J&T (khusus status `diproses`), **Lacak Paket** menyinkronkan tracking dari J&T, **Batalkan J&T** mem-void resi, **Cetak Label** membuka `/admin/label/[orderNumber]`.
+- Aksi hanya ada di drawer detail (tabel daftar tetap bersih).
 
-### Shipping Configuration
+### Produk & konten
 
-- **Provider toggle** — Switch between RajaOngkir and J&T Direct API
-- **Origin setting** — Configure store's subdistrict for shipping calculation
-- **Courier selection** — Enable/disable specific couriers
-- **API key management** — RajaOngkir API key stored in database (not environment)
+- Form produk bersama (tambah/edit) dengan grid ukuran, SKU per ukuran, berat per size, dan toggle **Tampilkan di Open Order**.
+- Drawer detail produk: stok & SKU per varian, harga, riwayat penjualan.
+- CMS konten: hero, koleksi, testimoni, panduan ukuran, biolink, foto carousel, halaman garansi & retur.
+- **Voucher**: diskon persen/nominal, minimal belanja, batas pemakaian, dan batas per nomor WhatsApp.
 
 ---
 
-## Business Process
+## 📊 Dashboard Ops
+
+Dashboard terpisah (`/ops`) untuk tim operasional:
+
+| Menu | Isi |
+|------|-----|
+| **Dashboard** | Ringkasan penjualan, tren harian, stok menipis |
+| **Leads** / **Laporan Leads** | Daftar lead + statistik konversi, closing, nominal |
+| **Follow-up** | Follow-up Center: Perlu Dijadwalkan · Hari Ini · Terlambat · Riwayat |
+| **Pelanggan** | Pusat data pelanggan (modul yang sama dengan admin) |
+| **Produk** | Master produk & stok, barang masuk/keluar, rekap pembelian |
+
+> Order baru **tidak** membuat lead baru. Kalau nomor order cocok dengan lead aktif, lead itu
+> otomatis ditandai `closing` + `outcome: buy` (`src/lib/ops-lead-sync.ts`) — idempoten.
+
+---
+
+## 🔌 Integrasi
+
+| Layanan | Fungsi | Auth |
+|---------|--------|------|
+| **Supabase (PostgreSQL)** | Seluruh data + Auth | anon key (publik) & service role (server-only) |
+| **J&T Express** | Tariff, Order/AWB, Cancel, Track | Signature `base64(md5(data + key))` (order/tariff/cancel) & Basic Auth (track) |
+| **RajaOngkir V2** | Ongkir + pencarian tujuan (cached) | API key (DB, env sebagai fallback) |
+| **Cloudinary** | Media produk & konten (+ akun terpisah untuk gambar live chat) | signed upload |
+| **Fonnte** | Notifikasi WhatsApp ke admin saat ada pesanan baru | token (DB/env) |
+| **Xiaomi MiMo** | Asisten Live Chat AI (OpenAI-compatible) | API key (DB/env) |
+| **Meta Pixel + CAPI** | Tracking event e-commerce | Pixel ID + access token |
+
+### J&T — pemetaan area
+
+Nama wilayah RajaOngkir diterjemahkan ke kode internal J&T lewat dataset **7.128 baris**
+(`src/lib/jnt/area-data.json`), dengan fallback bertingkat: kecamatan+kota → kecamatan → kota.
+
+---
+
+## 🤖 Otomasi (Cron)
+
+Tanpa webhook dari J&T — sinkronisasi memakai **polling** dari penjadwal eksternal
+(cron-job.org), diakses dengan header `Authorization: Bearer $CRON_SECRET`:
+
+| Endpoint | Fungsi | Jadwal saran |
+|----------|--------|--------------|
+| `GET /api/cron/sync-tracking` | Tarik tracking J&T → naikkan status (`dikirim`) & tandai `selesai` saat paket diterima | tiap jam |
+| `GET /api/cron/auto-cancel` | Batalkan pesanan yang melewati batas waktu pembayaran | tiap jam |
+
+---
+
+## 🚚 Alur Pesanan
+
+```mermaid
+stateDiagram-v2
+    [*] --> pending: checkout / open order
+    pending --> diproses: pembayaran diverifikasi admin
+    diproses --> diproses: "Atur Pesanan" terbitkan resi
+    diproses --> dikirim: J&T memindai paket
+    dikirim --> selesai: paket diterima penerima
+    pending --> dibatalkan
+    diproses --> dibatalkan
+```
+
+**Dua status yang dipisah** (`orders.status` vs `orders.shipping_status`):
+
+| | Nilai |
+|---|---|
+| `orders.status` | `pending` → `diproses` → `dikirim` → `selesai` (+ `dibatalkan`) |
+| `orders.shipping_status` | `NULL` (belum ada resi) → `menunggu_pickup` → `dikirim` → `selesai` |
+
+- **Resi diterbitkan admin** lewat **Atur Pesanan**, bukan saat checkout (`awb_no` awalnya `null`).
+- **Nomor pesanan**: `SMQ-` (checkout website) dan `CYO-` (Open Order).
+- **Stok**: dipotong atomik sebelum pesanan ditulis, dengan rollback bila ada yang gagal;
+  dikembalikan saat pembatalan **hanya jika** `orders.stock_reserved` bernilai true.
+- **Satu jalur pembatalan** — `cancelOrderCompletely()`: void resi J&T → kembalikan stok → status `dibatalkan`.
+
+---
+
+## 🧱 Arsitektur
 
 ```mermaid
 flowchart TB
-    A[Customer] --> B[Browse Catalog]
-    B --> C[Select Product]
-    C --> D{CYP Enabled?}
-    D -->|Yes| E[Set Custom Price]
-    D -->|No| F[Standard Price]
-    E --> G[Add to Cart]
-    F --> G
-    G --> H[Checkout]
-    H --> I[Enter Address]
-    I --> J[Auto-Calculate Shipping]
-    J --> K[Select Payment]
-    K --> L[Apply Voucher]
-    L --> M[Submit Order]
-    M --> N[Server Validation]
-    N --> O[Stock Decrement]
-    O --> P[Order Created]
-    P --> Q[J&T AWB Generated]
-    Q --> R[Customer Notification]
-    R --> S[Admin Processing]
-    S --> T[Payment Verification]
-    T --> U[Shipment]
-    U --> V[Tracking]
+    C[Pelanggan] --> SF[Storefront]
+    A[Admin] --> AD[Admin Dashboard]
+    O[Ops] --> OP[Ops Dashboard]
+
+    SF --> API[API Routes]
+    AD --> API
+    OP --> API
+
+    API --> DB[(Supabase / PostgreSQL)]
+    API --> JNT[J&T Express API]
+    API --> RO[RajaOngkir API]
+    API --> CL[Cloudinary]
+    API --> AI[Live Chat AI]
+    API --> FN[Fonnte]
+
+    CRON[Penjadwal eksternal] --> API
+```
+
+| Layer | Isi |
+|-------|-----|
+| **Presentation** | Next.js App Router, React 19, Tailwind 4, Framer Motion |
+| **Application** | API Routes (validasi bisnis & integrasi) |
+| **Data** | Supabase / PostgreSQL (+ RLS) |
+| **External** | J&T, RajaOngkir, Cloudinary, Fonnte, MiMo, Meta |
+| **Auth** | Supabase Auth — sesi admin & pelanggan dipisah |
+
+---
+
+## 📦 Tech Stack
+
+| Kategori | Teknologi |
+|----------|-----------|
+| Framework | Next.js 16 (App Router, Turbopack) |
+| UI | React 19, Tailwind CSS 4, Framer Motion, Radix/Ark/Base UI, Lucide + Phosphor |
+| Data | Supabase (PostgreSQL), `@supabase/supabase-js` |
+| Data fetching | TanStack Query |
+| Chart | Recharts |
+| PDF / Barcode | `pdf-lib`, `pdfjs-dist`, `jsbarcode` |
+| i18n | next-intl (ID/EN) |
+| Deploy | Vercel |
+
+---
+
+## 🔐 Keamanan
+
+- **Harga CYP divalidasi di server** — harga minimum selalu dibaca dari database.
+- **Ongkir tidak dipercaya dari klien** — dihitung/diverifikasi lewat API.
+- **Stok atomik** dengan row-lock + rollback.
+- **Kredensial sensitif hanya di server** — service role key, kredensial J&T, token Fonnte, dan API key live chat tidak pernah dikirim ke browser (tabel pengaturan bersifat service-role-only).
+- **Admin & ops diverifikasi** lewat tabel `admins` + sesi Supabase.
+- **Rahasia tidak ada di repo** — `.env*` di-`.gitignore`, tidak ada token di kode maupun riwayat commit.
+
+---
+
+## 🗂️ Struktur Proyek
+
+```
+src/
+├── app/
+│   ├── (customer)/         # Storefront (root, redirect ke /<locale>)
+│   ├── [locale]/           # Storefront + akun pelanggan (ID/EN)
+│   │   ├── (customer)/     # katalog, cart, checkout, open-order, konten…
+│   │   ├── akun/           # dashboard pelanggan, pesanan, lacak, alamat, profil
+│   │   └── admin/          # salinan subhalaman admin (route /admin juga ada)
+│   ├── admin/              # Dashboard admin (+ label, produk, konten, voucher…)
+│   ├── ops/                # Dashboard ops (leads, follow-up, pelanggan, stok)
+│   └── api/                # API routes
+│       ├── admin/          # orders, customers, chat/fonnte/jnt settings
+│       ├── ops/            # leads, followups, customers, products, stock-in
+│       ├── jnt/            # track, mapping, test
+│       ├── shipping/       # cost, jnt-cost, provinces, districts, search
+│       ├── cron/           # sync-tracking, auto-cancel
+│       └── orders/, open-order/, chat/, cloudinary/, meta-events/
+├── components/             # UI (admin/, ops/, akun/, open-order/…)
+├── lib/                    # Logika bisnis & integrasi (jnt/, cancel-order, order-flow…)
+├── i18n/                   # Pesan ID/EN
+└── middleware.ts           # Routing locale
+supabase/                   # SQL migrasi (dijalankan manual) + RPC stok
+public/                     # Aset statis
 ```
 
 ---
 
-## Architecture
-
-```mermaid
-flowchart TB
-    A[Customer] --> B[Next.js App]
-    B --> C[App Router Pages]
-
-    C --> D[Product Catalog]
-    C --> E[Cart System]
-    C --> F[Checkout Flow]
-    C --> G[Order Tracking]
-
-    B --> H[API Routes]
-    H --> I[Orders API]
-    H --> J[Shipping API]
-    H --> K[J&T API]
-    H --> L[Admin API]
-
-    I --> M[(Supabase DB)]
-    J --> N[RajaOngkir API]
-    K --> O[J&T Express API]
-
-    P[Admin] --> Q[Admin Dashboard]
-    Q --> H
-
-    R[Cloudinary] --> D
-    S[Meta Pixel] --> C
-```
-
-### Layers
-
-| Layer | Description |
-|-------|-------------|
-| **Presentation** | Next.js App Router with React 19, Tailwind CSS, Framer Motion |
-| **Application** | Server-side API routes handling business logic |
-| **Data** | Supabase (PostgreSQL) with RLS policies |
-| **External** | J&T Express API, RajaOngkir API, Cloudinary, Meta Pixel |
-| **Auth** | Supabase Auth with admin/customer role separation |
-
----
-
-## Security Considerations
-
-- **Server-side CYP validation** — Minimum price fetched from database, never trusted from client
-- **Server-side shipping validation** — Shipping cost verified via API before order creation
-- **Atomic stock management** — `FOR UPDATE` row locking with automatic rollback on failure
-- **Admin role verification** — Admin access checked against `admins` table with role field
-- **API key isolation** — J&T credentials in environment variables, RajaOngkir key in database
-- **Session separation** — Admin and customer auth sessions are isolated (sign out before switching)
-- **Input validation** — Phone number regex, required field checks, payment method whitelist
-- **Environment protection** — `.env*` files gitignored, no secrets in repository
-
----
-
-## Tech Stack
-
-| Layer | Technology |
-|-------|------------|
-| Framework | Next.js 16 (App Router) |
-| Frontend | React 19, Tailwind CSS 4, Framer Motion |
-| UI Components | Radix UI, Ark UI, Base UI, Lucide Icons |
-| Database | Supabase (PostgreSQL) |
-| Authentication | Supabase Auth |
-| Image/Video | Cloudinary |
-| Payment | Bank Transfer, QRIS/E-Wallet, COD (Manual) |
-| Shipping | J&T Express API, RajaOngkir API V2 |
-| Analytics | Meta Pixel + CAPI |
-| Internationalization | next-intl (ID/EN) |
-| Deployment | Vercel |
-| Barcode | JsBarcode |
-
----
-
-## Project Structure
-
-```
-.
-├── src/
-│   ├── app/
-│   │   ├── (customer)/          # Customer-facing pages
-│   │   │   ├── cart/            # Shopping cart
-│   │   │   ├── checkout/        # Checkout flow
-│   │   │   ├── create-your-price/  # CYP landing page
-│   │   │   ├── katalog/         # Product catalog
-│   │   │   └── ...
-│   │   ├── admin/               # Admin dashboard
-│   │   ├── api/                 # API routes
-│   │   │   ├── admin/           # Admin APIs (orders, bio-links)
-│   │   │   ├── jnt/             # J&T integration endpoints
-│   │   │   ├── orders/          # Order creation
-│   │   │   ├── shipping/        # Shipping calculation
-│   │   │   └── ...
-│   │   └── layout.tsx           # Root layout with SEO
-│   ├── components/              # Reusable UI components
-│   │   ├── CreateYourPrice.tsx  # CYP hero section
-│   │   ├── Dashboard/           # Customer dashboard
-│   │   ├── ui/                  # Base UI components
-│   │   └── ...
-│   ├── hooks/                   # Custom React hooks
-│   ├── i18n/                    # Internationalization config
-│   ├── lib/                     # Business logic & integrations
-│   │   ├── jnt/                 # J&T Express API module
-│   │   │   ├── area-mapping.ts  # 7,128-area code mapping
-│   │   │   ├── tariff.ts        # Tariff Check API
-│   │   │   ├── order.ts         # Order Creation API
-│   │   │   ├── cancel.ts        # Cancellation API
-│   │   │   ├── track.ts         # Tracking API
-│   │   │   ├── signature.ts     # MD5+Base64 signature
-│   │   │   └── config.ts        # Environment config
-│   │   ├── cart-context.tsx     # Cart state management
-│   │   ├── shipping-utils.ts    # RajaOngkir integration
-│   │   ├── voucher-utils.ts     # Voucher validation
-│   │   ├── db.ts                # Database queries
-│   │   └── ...
-│   └── middleware.ts             # i18n routing middleware
-├── supabase/                    # SQL migrations & schema
-│   ├── schema.sql               # Base schema
-│   ├── create-your-price.sql    # CYP migration
-│   ├── payment-methods-unified.sql  # Unified payment methods (bank/QRIS/ewallet/COD) — run before deploy
-│   └── ...                      # Feature-specific migrations
-├── public/                      # Static assets
-│   ├── fonts/                   # Custom fonts
-│   ├── images/                  # Product images
-│   └── products/                # Product media
-├── package.json
-└── README.md
-```
-
----
-
-## Environment Variables
+## ⚙️ Environment Variables
 
 ```env
-# Supabase
+# ── Supabase (wajib) ──
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
+SUPABASE_SERVICE_ROLE_KEY=        # atau SUPABASE_SECRET_KEY
 
-# J&T Express
-JNT_ENV=testing|production
+# ── J&T Express ──
+JNT_ENV=production
 JNT_ORDER_USERNAME=
 JNT_ORDER_API_KEY=
 JNT_ORDER_KEY=
@@ -460,59 +276,60 @@ JNT_TRACK_USERNAME=
 JNT_TRACK_PASSWORD=
 JNT_COMPANY_ID=
 
-# RajaOngkir (stored in database, env as fallback)
+# ── RajaOngkir (tersimpan di DB, env sebagai fallback) ──
 RAJAONGKIR_API_KEY=
 
-# Cloudinary (signed upload — butuh API key & secret dari Console > Settings > API Keys)
+# ── Cloudinary (upload bertanda tangan) ──
 NEXT_PUBLIC_CLOUDINARY_CLOUD=
 CLOUDINARY_API_KEY=
 CLOUDINARY_API_SECRET=
 
-# Cloudinary khusus gambar live chat (opsional — akun terpisah; kosong = ikut akun di atas)
+# ── Cloudinary khusus gambar live chat (opsional; kosong = ikut akun di atas) ──
 CHAT_CLOUDINARY_CLOUD=
 CHAT_CLOUDINARY_API_KEY=
 CHAT_CLOUDINARY_API_SECRET=
 
-# Meta Pixel
+# ── Meta Pixel ──
 NEXT_PUBLIC_META_PIXEL_ID=
 META_ACCESS_TOKEN=
 META_TEST_EVENT_CODE=
 
-# Fonnte — notifikasi WhatsApp ke admin saat ada pesanan baru
-# FONNTE_TOKEN: token device dari dashboard Fonnte.
-# ADMIN_WHATSAPP_NUMBER: nomor admin (boleh beberapa, dipisah koma). Kalau kosong,
-#   notifikasi jatuh ke nomor toko di store_settings.whatsapp.
+# ── Fonnte — notifikasi WhatsApp ke admin ──
 FONNTE_TOKEN=
-ADMIN_WHATSAPP_NUMBER=
+ADMIN_WHATSAPP_NUMBER=            # boleh beberapa, dipisah koma
 
-# Live Chat AI — Xiaomi MiMo (OpenAI-compatible). Bisa juga diatur dari menu admin.
+# ── Live Chat AI — Xiaomi MiMo (bisa juga diatur dari admin) ──
 MIMO_API_KEY=
 MIMO_MODEL=mimo-v2.6-flash
 MIMO_BASE_URL=https://api.xiaomimimo.com/v1
 
-# App
+# ── Internal ──
+CRON_SECRET=
+REVALIDATE_SECRET=
 NEXT_PUBLIC_SITE_URL=
 ```
 
----
-
-## Development Highlights
-
-| Milestone | Description |
-|-----------|-------------|
-| Initial architecture | Next.js App Router + Supabase + Tailwind CSS setup |
-| Product catalog | Hierarchical Category → Kain → Series → Variant structure |
-| Create Your Price | Custom pricing model with client + server validation |
-| Checkout system | Multi-step checkout with saved addresses |
-| J&T Express integration | Tariff, Order, Cancel, Track APIs with area mapping |
-| RajaOngkir integration | Shipping cost calculation with destination caching |
-| Admin dashboard | Full business operations panel |
-| Voucher system | Discount codes with usage limits |
-| Internationalization | Full ID/EN language support |
-| Meta Pixel | E-commerce event tracking with CAPI |
+> `NEXT_PUBLIC_*` di-*inline* saat build — pastikan sudah diisi **sebelum** deploy.
 
 ---
 
-## License
+## 🚀 Menjalankan & Deploy
 
-Private — SAMAQU Business System
+```bash
+npm install
+npm run dev      # http://localhost:3000
+npm run build
+```
+
+- **Database**: proyek ini memakai Supabase ter-hosting. File di `supabase/*.sql` (skema, kolom
+  baru, RPC stok, tabel pengaturan) dijalankan **manual** di SQL Editor Supabase.
+- **Deploy**: Vercel — import repo ini, isi environment variables, deploy.
+- **Cron**: daftarkan `/api/cron/sync-tracking` & `/api/cron/auto-cancel` di penjadwal eksternal
+  (mis. cron-job.org) dengan header `Authorization: Bearer <CRON_SECRET>`.
+- **Domain**: pasang di Vercel → Settings → Domains (apex `A 76.76.21.21`, subdomain `CNAME cname.vercel-dns.com`).
+
+---
+
+## 📄 License
+
+Private — SAMAQU Business System. All rights reserved.
