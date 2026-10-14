@@ -255,7 +255,7 @@ export default function DashboardView({
         {loading ? (
           <p className="text-xs font-bold" style={{ color: "var(--fg3)" }}>Memuat…</p>
         ) : topProducts.length === 0 ? (
-          <p className="text-xs font-bold" style={{ color: "var(--fg3)" }}>Belum ada data penjualan</p>
+          <p className="text-xs font-bold" style={{ color: "var(--fg3)" }}>Belum ada penjualan</p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 text-xs">
             {topProducts.slice(0, 4).map((p, i) => (
@@ -263,15 +263,14 @@ export default function DashboardView({
                 key={`${p.name}||${p.sub || ""}`}
                 className="p-3.5 rounded-2xl flex items-center justify-between gap-2"
                 style={{ background: "var(--sub)", border: "1px solid var(--bd)" }}
+                title={p.sub ? `${p.name} — ${p.sub}` : p.name}
               >
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="text-[11px] font-extrabold shrink-0" style={{ color: "var(--fg3)" }}>#{i + 1}</span>
                   <div className="min-w-0">
-                    {/* series (atau nama produk bila tanpa series) */}
+                    {/* baris 1: nama produk lengkap — baris 2: jenis kain · series */}
                     <p className="font-extrabold truncate" style={{ color: "var(--fg)" }}>{p.name}</p>
-                    {p.sub && (
-                      <p className="text-[10px] font-bold truncate mt-0.5" style={{ color: "var(--fg3)" }}>{p.sub}</p>
-                    )}
+                    <p className="text-[10px] font-bold truncate mt-0.5" style={{ color: "var(--fg3)" }}>{p.sub || "—"}</p>
                   </div>
                 </div>
                 <span
