@@ -130,30 +130,37 @@ function SizeGrid({
 
   return (
     <div className="pf-sizes">
-      {/* Bar isi massal */}
-      <div className="pf-sizes-bar">
-        <span className="pf-bulk-label">Berat semua ukuran</span>
-        <span className={`pf-adorn pf-adorn--g${bulkError ? " invalid" : ""}`}>
-          <input
-            type="number"
-            min={100}
-            max={5000}
-            inputMode="numeric"
-            value={bulkWeight}
-            onChange={(e) => { setBulkWeight(e.target.value); if (bulkError) setBulkError(""); }}
-            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyBulkWeight(); } }}
-            placeholder="500"
-            aria-label="Berat untuk semua ukuran (gram)"
-            className="pf-cell pf-cell-num"
-          />
-          <span className="pf-suffix">g</span>
-        </span>
-        <button type="button" className="pf-btn pf-btn-outline pf-bulk-apply" onClick={applyBulkWeight}>
-          Terapkan
-        </button>
+      {/* Bar isi massal — grup sendiri supaya jelas apa yang berubah saat ditekan */}
+      <div className="pf-bulkbar">
+        <div className="pf-bulkbar-text">
+          <span className="pf-bulkbar-title">Isi berat sekaligus</span>
+          <span className="pf-bulkbar-hint">
+            Diterapkan ke {sizes.length} ukuran di bawah · ukuran tanpa berat memakai berat default
+          </span>
+        </div>
+        <div className="pf-bulkbar-actions">
+          <span className={`pf-adorn pf-adorn--g${bulkError ? " invalid" : ""}`}>
+            <input
+              type="number"
+              min={100}
+              max={5000}
+              inputMode="numeric"
+              value={bulkWeight}
+              onChange={(e) => { setBulkWeight(e.target.value); if (bulkError) setBulkError(""); }}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyBulkWeight(); } }}
+              placeholder="500"
+              aria-label="Berat untuk semua ukuran (gram)"
+              className="pf-cell pf-cell-num"
+            />
+            <span className="pf-suffix">g</span>
+          </span>
+          <button type="button" className="pf-btn pf-btn-primary pf-bulk-apply" onClick={applyBulkWeight}>
+            Terapkan
+          </button>
+        </div>
       </div>
       {bulkError ? <p className="pf-error pf-sizes-msg">{bulkError}</p> : null}
-      {!bulkError && bulkDone ? <p className="pf-sizes-done pf-sizes-msg">{bulkDone}</p> : null}
+      {!bulkError && bulkDone ? <p className="pf-sizes-done pf-sizes-msg">✓ {bulkDone}</p> : null}
 
       {/* Header kolom (layar ≥768px) */}
       <div className="pf-sizes-head">
@@ -165,6 +172,7 @@ function SizeGrid({
         <span className="pf-sizes-head-act" />
       </div>
 
+      <div className="pf-sizes-list">
       {sizes.map((s, i) => {
         const weightEmpty = String(s.weight ?? "").trim() === "";
         return (
@@ -250,6 +258,7 @@ function SizeGrid({
           </div>
         );
       })}
+      </div>
 
       <datalist id="size-suggestions">{SIZES.map((sz) => <option key={sz} value={sz} />)}</datalist>
 
@@ -1948,12 +1957,11 @@ export default function TambahProdukPage({
         .pf-sizes-done { font-size: .72rem; font-weight: 700; color: #047857; }
         .pf-sizes-head { display: none; }
         .pf-size-row {
-          display: block; padding: .7rem; margin-bottom: .55rem;
-          border: 1px solid #ececef; border-radius: .85rem; background: #fff;
+          display: block; padding: .75rem 0; border-bottom: 1px solid #ececef;
         }
-        .pf-size-row:last-of-type { margin-bottom: 0; }
-        /* Layar sempit: kartu = judul (ukuran + hapus) lalu isian 2 kolom */
-        .pf-size-head { display: flex; align-items: center; gap: .5rem; margin-bottom: .55rem; }
+        .pf-sizes-list { border-top: 1px solid #ececef; }
+        /* Layar sempit: baris gepeng ala tabel (bukan kartu di dalam kartu panel) */
+        .pf-size-head { display: flex; align-items: flex-end; gap: .5rem; margin-bottom: .55rem; }
         .pf-f-size { flex: 1 1 auto; }
         .pf-size-body { display: flex; flex-wrap: wrap; gap: .5rem .6rem; }
         .pf-size-body > .pf-size-field { flex: 1 1 calc(50% - .3rem); min-width: 0; max-width: calc(50% - .3rem); }
@@ -1963,6 +1971,17 @@ export default function TambahProdukPage({
           display: block; margin-bottom: .3rem; font-size: .62rem; font-weight: 700;
           letter-spacing: .04em; text-transform: uppercase; color: var(--text-muted);
         }
+        /* Bar isi massal: grup sendiri — judul + akibat + tombol commit, bukan isian nyempil. */
+        .pf-bulkbar {
+          display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+          gap: .6rem .9rem; padding: .7rem .85rem; margin-bottom: .85rem;
+          border: 1px solid #ececef; border-radius: .7rem; background: #f7f7f8;
+        }
+        .pf-bulkbar-title { display: block; font-size: .78rem; font-weight: 700; color: var(--espresso); }
+        .pf-bulkbar-hint { display: block; margin-top: .1rem; font-size: .68rem; color: var(--text-muted); }
+        .pf-bulkbar-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin-left: auto; }
+        .pf-bulkbar-actions .pf-adorn { width: 104px; flex: none; }
+        .pf-bulk-apply { min-height: 44px; }
         /* Isian dengan akhiran "g" / awalan "Rp" di DALAM kontrol */
         .pf-adorn {
           display: flex; align-items: center; gap: .3rem; min-width: 0; min-height: 44px;
@@ -1970,8 +1989,9 @@ export default function TambahProdukPage({
           border: 1px solid rgba(0,0,0,.12); background: #fff;
           transition: border-color .18s ease, box-shadow .18s ease, background .18s ease;
         }
-        .pf-adorn:focus-within { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(0,0,0,.07); }
-        .pf-adorn.invalid { border-color: #dc2626; }
+        .pf-adorn:hover { border-color: rgba(0,0,0,.3); }
+        .pf-adorn:focus-within { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(150,116,47,.28); }
+        .pf-adorn.invalid { border-color: #dc2626; box-shadow: 0 0 0 3px rgba(220,38,38,.16); }
         .pf-adorn .pf-cell {
           flex: 1 1 auto; min-width: 0; padding: .5rem 0; min-height: 42px;
           border: 0; border-radius: 0; box-shadow: none; background: transparent;
@@ -1991,6 +2011,18 @@ export default function TambahProdukPage({
           font-size: .72rem; font-weight: 700; color: var(--text-muted);
         }
         .pf-rowdel { min-width: 44px; min-height: 44px; }
+        .pf-rowdel:focus-visible { outline: 2px solid #dc2626; outline-offset: 2px; }
+        /* Ponsel sempit (≤419px): satu kolom penuh + bar aksi melebar, jadi tidak mungkin
+           meluber keluar layar. Dua kolom dipakai mulai 420px. */
+        @media (max-width: 419px) {
+          .pf-size-body > .pf-size-field { flex: 1 1 100%; max-width: 100%; }
+          .pf-bulkbar-actions { width: 100%; margin-left: 0; }
+          .pf-bulkbar-actions .pf-adorn { flex: 1 1 auto; width: auto; }
+        }
+        /* iOS Safari: input ber-font < 16px memicu zoom otomatis saat difokus. */
+        @media (max-width: 640px) {
+          .pf-sizes .pf-cell { font-size: 1rem; }
+        }
         .pf-sizes-foot { display: block; margin-top: .7rem; }
         .pf-sizes-foot .pf-add { display: flex; width: 100%; margin: 0 0 .5rem; }
         .pf-sizes-foot .pf-missing-chip { display: block; width: auto; }
@@ -2008,17 +2040,21 @@ export default function TambahProdukPage({
 
         @media (min-width: 768px) {
           .pf-sizes-head {
-            display: grid; grid-template-columns: 84px 120px 104px minmax(110px, 1fr) minmax(110px, 1fr) 44px;
-            gap: .5rem; padding: 0 .15rem; margin-bottom: .4rem;
-            font-size: .68rem; font-weight: 700; letter-spacing: .02em; color: var(--text-muted);
+            display: grid; grid-template-columns: 76px 108px 112px minmax(110px, 1fr) minmax(110px, 1fr) 52px;
+            gap: .6rem; padding: 0 .15rem .45rem; border-bottom: 1px solid #ececef;
+            font-size: .68rem; font-weight: 700; letter-spacing: .02em;
+            text-transform: uppercase; color: var(--text-muted);
           }
           .pf-sizes-head-act { text-align: right; }
+          .pf-sizes-list { border-top: 0; }
           .pf-size-row {
-            grid-template-columns: 84px 120px 104px minmax(110px, 1fr) minmax(110px, 1fr) 44px;
-            gap: .5rem; align-items: center;
-            padding: .2rem .15rem; margin-bottom: .35rem;
-            border: 0; border-radius: 0; background: transparent;
+            /* WAJIB display:grid — tanpa itu baris kembali menumpuk vertikal seperti block. */
+            display: grid;
+            grid-template-columns: 76px 108px 112px minmax(110px, 1fr) minmax(110px, 1fr) 52px;
+            gap: .6rem; align-items: center;
+            padding: .4rem .15rem; border-bottom: 1px solid #f4f4f5;
           }
+          .pf-size-row:hover { background: #fafafa; }
           /* head & body jadi transparan → 6 isian sejajar dalam satu baris grid */
           .pf-size-head, .pf-size-body { display: contents; }
           .pf-f-size { flex: none; order: 1; }
