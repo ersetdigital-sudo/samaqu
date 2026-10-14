@@ -89,9 +89,8 @@ export default function LabelPage() {
     // @ts-ignore
     import("jsbarcode").then((mod) => {
       const JsBarcode = mod.default;
-      JsBarcode(svg, order.awb_no!, {
+      const base = {
         format: "CODE128",
-        width: 2.5,
         height: size === "78x100" ? 38 : 50,
         displayValue: true,
         font: "monospace",
@@ -101,7 +100,19 @@ export default function LabelPage() {
         margin: 0,
         background: "#FFFFFF",
         lineColor: "#000000",
-      });
+      };
+      if (size === "78x100") {
+        // Label 100x150 punya lebar 2.5px/bar dan muat; label 78mm TIDAK — lebar bar
+        // dihitung dari lebar area cetak sebenarnya (78mm dikurangi padding kiri-kanan
+        // 2.5mm) supaya barcode berada penuh di dalam label, tidak terpotong.
+        const availPx = ((dims.w - 5) / 25.4) * 96;
+        JsBarcode(svg, order.awb_no!, { ...base, width: 1 });
+        const measured = Number(svg.getAttribute("width")) || svg.getBoundingClientRect().width || 0;
+        const barWidth = measured > 0 ? Math.min(2.5, (availPx * 0.98) / measured) : 1.5;
+        JsBarcode(svg, order.awb_no!, { ...base, width: barWidth });
+      } else {
+        JsBarcode(svg, order.awb_no!, { ...base, width: 2.5 });
+      }
     });
   }, [order, size]);
 
@@ -269,10 +280,10 @@ export default function LabelPage() {
         </div>
       </div>
       ) : (
-      <div className="label-wrap" style={{
-        width: "78mm", minHeight: "100mm", margin: "0 auto", background: "#fff",
-        boxShadow: "0 2px 8px rgba(0,0,0,.15)", display: "flex", flexDirection: "column",
-        overflow: "hidden", fontSize: "8px", lineHeight: "1.25", color: "#000",
+      <div className="label-wrap label-wrap--78" style={{
+        width: "78mm", margin: "0 auto", background: "#fff",
+        display: "flex", flexDirection: "column",
+        fontSize: "8px", lineHeight: "1.25", color: "#000",
       }}>
         {/* Header ringkas — nama toko + layanan J&T sebaris */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1.1mm 2.5mm 0.9mm", borderBottom: "2px solid #000" }}>
@@ -346,7 +357,7 @@ export default function LabelPage() {
         </div>
 
         {/* Info grid */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", margin: "0 2.5mm", marginTop: "auto" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", margin: "0 2.5mm" }}>
           <div style={{ padding: "0.8mm 2mm 0.8mm 0", borderRight: "1px solid #000", borderBottom: "1.5px solid #000" }}>
             <div style={{ fontSize: "5.5px", fontWeight: "700", color: "#333", textTransform: "uppercase", letterSpacing: "0.3px" }}>Order ID</div>
             <div style={{ fontSize: "7.5px", fontWeight: "800", fontFamily: "'Courier New', monospace", wordBreak: "break-all" }}>{order.order_number}</div>
