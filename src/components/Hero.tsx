@@ -4,9 +4,13 @@ import { useState, useEffect, useRef } from "react";
 import { useSafeTranslations } from "@/lib/safe-i18n";
 import { getWhatsAppLink } from "@/lib/store-settings";
 import { trackWhatsAppClick } from "@/lib/meta-pixel";
+import { supabase } from "@/lib/supabase";
 
-/* ── Video sources ── */
-const HERO_VIDEO = "https://res.cloudinary.com/kq5d3al5/video/upload/v1791866370/KONTEN_VIDEO_WEBSITE.mp4";
+/* ── Video hero ──
+   URL-nya diganti dari dashboard admin: Konten Website → Hero / Banner Utama →
+   "Video Hero (link Cloudinary)", disimpan di `hero_content.video_url`.
+   Kalau kolomnya kosong atau videonya gagal dimuat, dipakai video bawaan di bawah. */
+const HERO_VIDEO_DEFAULT = "https://res.cloudinary.com/kq5d3al5/video/upload/v1791866370/KONTEN_VIDEO_WEBSITE.mp4";
 
 /** Semua teks hero hitam (video sudah final, terang) — lihat permintaan pemilik. */
 const HERO_TEXT = "#000000";
@@ -17,6 +21,25 @@ export default function Hero() {
   const [muted, setMuted] = useState(true);
   const [showUnmuteHint, setShowUnmuteHint] = useState(true);
   const hasInteracted = useRef(false);
+
+  // Sumber video hero: dibaca dari DB, fallback ke video bawaan kalau kosong/gagal.
+  // Video dipasang `absolute inset-0 object-cover`, jadi mengganti link TIDAK mengubah layout.
+  const [videoSrc, setVideoSrc] = useState(HERO_VIDEO_DEFAULT);
+  useEffect(() => {
+    let alive = true;
+    supabase
+      .from("hero_content")
+      .select("video_url")
+      .eq("id", 1)
+      .maybeSingle()
+      .then(({ data }) => {
+        const url = (data as { video_url?: string | null } | null)?.video_url?.trim();
+        if (alive && url) setVideoSrc(url);
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   // Start video playback (always muted first for autoplay policy)
   useEffect(() => {
@@ -94,6 +117,7 @@ export default function Hero() {
           final dari editor, jadi ditampilkan apa adanya. */}
       <div className="absolute inset-0 overflow-hidden">
         <video
+          key={videoSrc}
           ref={videoRef}
           className="absolute inset-0 w-full h-full object-cover"
           autoPlay
@@ -102,7 +126,14 @@ export default function Hero() {
           playsInline
           preload="auto"
         >
-          <source src={HERO_VIDEO} type="video/mp4" />
+          <source
+            src={videoSrc}
+            type="video/mp4"
+            onError={() => {
+              // Link yang rusak tidak boleh bikin hero kosong — balik ke video bawaan.
+              if (videoSrc !== HERO_VIDEO_DEFAULT) setVideoSrc(HERO_VIDEO_DEFAULT);
+            }}
+          />
         </video>
       </div>
 
