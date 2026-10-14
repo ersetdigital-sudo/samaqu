@@ -9,6 +9,7 @@ import { usePaymentMethodName } from "@/lib/use-payment-methods";
 import { supabase } from "@/lib/supabase";
 import ConfirmModal from "@/components/ConfirmModal";
 import type { TrackHistoryItem } from "@/lib/jnt/types";
+import { trackingLabel } from "@/lib/jnt/track-status";
 
 export interface RincianOrderItem {
   product_id?: string | null;
@@ -378,7 +379,7 @@ export default function RincianPesanan({ order }: { order: RincianOrder }) {
               <>
                 <div className="rp-line" style={{ color: "#666666", fontWeight: 600 }}>
                   <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7h11v9H3z" /><path d="M14 10h4l3 3v3h-7z" /><circle cx="7" cy="18" r="1.5" /><circle cx="17.5" cy="18" r="1.5" /></svg>
-                  <span>{[latest.status, latest.city_name].filter(Boolean).join(" — ")}</span>
+                  <span>{[trackingLabel(latest), latest.city_name].filter(Boolean).join(" — ")}</span>
                 </div>
                 <div className="rp-line rp-sub" style={{ marginLeft: 27 }}>
                   <span>{latest.date_time}</span>

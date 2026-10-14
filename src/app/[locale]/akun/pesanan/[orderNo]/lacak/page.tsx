@@ -6,6 +6,7 @@ import { getCurrentCustomer, getCustomerOrders } from "@/lib/customer-auth";
 import { useSafeLocale } from "@/lib/safe-i18n";
 import { strukStatus, tglJamID } from "@/lib/akun-format";
 import type { TrackHistoryItem } from "@/lib/jnt/types";
+import { trackingLabel } from "@/lib/jnt/track-status";
 import { STRUK_CSS, StrukHeader, StrukTitle } from "@/components/akun/StrukShell";
 
 interface Order {
@@ -205,7 +206,7 @@ export default function LacakPage() {
                       {i < updates.length - 1 ? <span className="sk-line" /> : null}
                     </div>
                     <div className="sk-txt">
-                      <b>{update.status || "Update pengiriman"}</b>
+                      <b>{trackingLabel(update)}</b>
                       <i>{[update.city_name, updateTime(update.date_time)].filter(Boolean).join(" • ")}</i>
                     </div>
                   </div>

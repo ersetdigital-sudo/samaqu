@@ -41,6 +41,29 @@ export function isShipped(data: { history?: TrackHistoryItem[] | null } | null |
   });
 }
 
+/**
+ * Label tampilan untuk satu entri riwayat J&T — SATU sumber, dipakai bareng admin (drawer
+ * pesanan) dan customer (detail pesanan + halaman lacak) supaya kalimatnya konsisten.
+ *
+ * Track API J&T mengirim teks mentah yang bisa menyesatkan: `status_code` 100 berbunyi
+ * "Paket telah diterima oleh <gerai>" — itu paket diterima di **gerai/drop point**, bukan oleh
+ * penerima (lihat catatan `isDelivered`). Untuk kode yang sudah dikenal, tampilkan kalimat yang
+ * lebih jelas (searah istilah portal J&T); kode lain tampil apa adanya tanpa ditebak.
+ */
+const TRACK_STATUS_LABEL: Record<number, string> = {
+  100: "Diterima di gerai J&T",
+  101: "Resi dibuat (manifes)",
+  162: "Resi dibatalkan",
+  200: "Paket diterima penerima",
+};
+
+/** Teks entri riwayat untuk ditampilkan (fallback ke teks J&T mentah, lalu teks umum). */
+export function trackingLabel(item: { status?: string | null; status_code?: number | null } | null | undefined): string {
+  if (!item) return "";
+  const mapped = typeof item.status_code === "number" ? TRACK_STATUS_LABEL[item.status_code] : undefined;
+  return mapped || item.status || "Update pengiriman";
+}
+
 /** Urutan tahap pengiriman (maju-saja). `null` = belum diatur. */
 export const SHIPPING_STATUS_RANK: Record<string, number> = {
   menunggu_pickup: 1,

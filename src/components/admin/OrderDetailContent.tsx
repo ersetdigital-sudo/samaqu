@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { strukStatus, strukSteps, tglJamID, rupiah } from "@/lib/akun-format";
 import type { TrackHistoryItem } from "@/lib/jnt/types";
+import { trackingLabel } from "@/lib/jnt/track-status";
 import { shippingStatusOf, SHIPPING_STATUS_LABEL } from "@/lib/order-flow";
 import { PaymentMethodValue } from "@/components/admin/PaymentMethodsManager";
 import { RINCIAN_CSS, FALLBACK_PHOTO } from "@/components/akun/RincianPesanan";
@@ -55,6 +56,8 @@ export interface AdminDetailOrder {
   /** Status pengiriman terpisah dari status pesanan (menunggu_pickup | dikirim | selesai). */
   shipping_status?: string | null;
   tracking_status_text?: string | null;
+  /** Kode pemindaian terakhir — dasar `trackingLabel` supaya kalimat tampilannya konsisten. */
+  tracking_status_code?: number | null;
   tracking_city?: string | null;
   tracking_updated_at?: string | null;
   customer_name?: string | null;
@@ -370,7 +373,7 @@ export default function OrderDetailContent({
                   <div className="rp-line" style={{ marginTop: 8 }}>
                     <span className="rp-sub">Tracking terakhir</span>
                     <span className="rp-strong" style={{ marginLeft: "auto", textAlign: "right" }}>
-                      {order.tracking_status_text}
+                      {trackingLabel({ status_code: order.tracking_status_code, status: order.tracking_status_text })}
                       {order.tracking_city ? ` · ${order.tracking_city}` : ""}
                     </span>
                   </div>
@@ -553,7 +556,7 @@ export default function OrderDetailContent({
                         <div key={`${u.date_time}-${i}`} className={`od-up${i === 0 ? " is-first" : ""}`}>
                           <span className="od-up-dot" />
                           <div>
-                            <b>{u.status || "Update pengiriman"}</b>
+                            <b>{trackingLabel(u)}</b>
                             <i>{[u.city_name, waktu(u.date_time)].filter(Boolean).join(" • ")}</i>
                           </div>
                         </div>
