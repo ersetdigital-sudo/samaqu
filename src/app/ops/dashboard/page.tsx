@@ -26,7 +26,16 @@ const IconProfit: any = (LucideIcons as any).TrendingUp ?? (LucideIcons as any).
    data hardcode / dummy. Grafik tren pakai SVG inline (tanpa dependency baru).
    ────────────────────────────────────────────────────────────────────────── */
 
-type TopProduct = { name: string; qty: number; total: number; sku: string };
+type TopProduct = {
+  name: string;
+  kain: string;
+  series: string;
+  /** "B-01 · Imalah" — baris bawah kartu. */
+  sub: string;
+  units: number;
+  /** Omzet baris (Rp) dari harga tercatat di item pesanan. */
+  revenue: number;
+};
 type TrendPoint = { tanggal: string; hari: string; omset: number };
 type TrendHarian = { tanggal: string; label: string; omset: number };
 
@@ -454,8 +463,9 @@ export default function OpsDashboardPage() {
           ) : (
             <ol className="space-y-2.5">
               {topProducts.slice(0, 5).map((p, i) => {
-                const maxQty = Math.max(1, topProducts[0]?.qty || 1);
-                const pct = Math.max(6, Math.round((p.qty / maxQty) * 100));
+                const maxQty = Math.max(1, topProducts[0]?.units || 1);
+                const pct = Math.max(6, Math.round((p.units / maxQty) * 100));
+                const subline = [p.sub, p.revenue > 0 ? rp(p.revenue) : ""].filter(Boolean).join(" · ");
                 const rankCls =
                   i === 0
                     ? "bg-amber-400 text-amber-950"
@@ -466,7 +476,7 @@ export default function OpsDashboardPage() {
                     : "bg-gray-100 text-gray-600";
                 return (
                   <li
-                    key={`${p.name}-${i}`}
+                    key={`${p.name}-${p.kain}-${p.series}-${i}`}
                     className="relative overflow-hidden rounded-xl border border-gray-100 px-3 py-2.5"
                   >
                     <span
@@ -479,16 +489,15 @@ export default function OpsDashboardPage() {
                         {i + 1}
                       </span>
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-bold text-slate-900 truncate" title={p.name}>
+                        <p className="text-sm font-bold text-slate-900 truncate" title={subline ? `${p.name} — ${subline}` : p.name}>
                           {p.name}
                         </p>
-                        <p className="text-[11px] text-gray-500 truncate">
-                          {p.sku && p.sku !== "-" ? `${p.sku} · ` : ""}
-                          {rp(p.total)}
+                        <p className="text-[11px] text-gray-500 truncate" title={subline || undefined}>
+                          {subline || "—"}
                         </p>
                       </div>
                       <div className="shrink-0 text-right">
-                        <p className="text-base font-black text-slate-900 leading-none tabular-nums">{nfmt(p.qty)}</p>
+                        <p className="text-base font-black text-slate-900 leading-none tabular-nums">{nfmt(p.units)}</p>
                         <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mt-0.5">terjual</p>
                       </div>
                     </div>

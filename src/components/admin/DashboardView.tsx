@@ -38,11 +38,13 @@ export interface DashboardProduct {
   category?: string | null;
 }
 export interface TopProduct {
-  /** Series (Imron, Jiharkah, …); produk tanpa series memakai nama produk. */
+  /** Nama produk lengkap (baris atas pil). */
   name: string;
-  /** Warna terjual — null bila "default" (pembeli tidak memilih). */
-  sub?: string | null;
-  count: number;
+  /** Baris bawah pil: "jenis kain · series" (kosong kalau dua-duanya kosong). */
+  sub: string;
+  units: number;
+  /** Omzet baris (Rp) dari harga tercatat di item pesanan. */
+  revenue: number;
 }
 
 export default function DashboardView({
@@ -251,19 +253,25 @@ export default function DashboardView({
 
       {/* ── produk terlaris (grid 4 kolom ala wireframe) ── */}
       <div className="p-6" style={{ background: "var(--card)", border: "1px solid var(--bd)", borderRadius: "var(--rad3)" }}>
-        <h3 className="font-extrabold text-sm mb-4" style={{ color: "var(--fg)" }}>Produk Terlaris</h3>
+        <h3 className="font-extrabold text-sm" style={{ color: "var(--fg)" }}>Produk Terlaris</h3>
+        <p className="text-[11px] font-semibold uppercase tracking-wide mb-4 mt-0.5" style={{ color: "var(--fg3)" }}>Sepanjang waktu</p>
         {loading ? (
           <p className="text-xs font-bold" style={{ color: "var(--fg3)" }}>Memuat…</p>
         ) : topProducts.length === 0 ? (
-          <p className="text-xs font-bold" style={{ color: "var(--fg3)" }}>Belum ada penjualan</p>
+          <div>
+            <p className="text-xs font-bold" style={{ color: "var(--fg3)" }}>Belum ada penjualan</p>
+            <p className="text-[11px] mt-0.5" style={{ color: "var(--fg3)" }}>Periode sepanjang waktu</p>
+          </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 text-xs">
-            {topProducts.slice(0, 4).map((p, i) => (
+            {topProducts.slice(0, 4).map((p, i) => {
+              const tooltip = [p.sub, p.revenue > 0 ? `Rp ${p.revenue.toLocaleString("id-ID")}` : ""].filter(Boolean).join(" · ");
+              return (
               <div
-                key={`${p.name}||${p.sub || ""}`}
+                key={`${p.name}||${p.sub}`}
                 className="p-3.5 rounded-2xl flex items-center justify-between gap-2"
                 style={{ background: "var(--sub)", border: "1px solid var(--bd)" }}
-                title={p.sub ? `${p.name} — ${p.sub}` : p.name}
+                title={tooltip ? `${p.name} — ${tooltip}` : p.name}
               >
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="text-[11px] font-extrabold shrink-0" style={{ color: "var(--fg3)" }}>#{i + 1}</span>
@@ -277,10 +285,11 @@ export default function DashboardView({
                   className="font-bold px-2.5 py-1 shrink-0"
                   style={{ color: "var(--fg)", background: "var(--card)", borderRadius: 8, border: "1px solid var(--bd)" }}
                 >
-                  {p.count}
+                  {p.units}
                 </span>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

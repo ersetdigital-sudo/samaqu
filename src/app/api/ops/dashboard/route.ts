@@ -3,6 +3,7 @@ import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { isOpsAdmin, unauthorized } from "@/lib/ops-auth";
 import { jakartaDayBounds, BIZ_OFFSET_MS } from "@/lib/ops-followup";
 import { resolveStock } from "@/lib/ops-stock";
+import { rankTopProducts, isSaleOrder } from "@/lib/top-products";
 
 /**
  * Dashboard ops — ringkasan lintas modul dalam satu request.
@@ -103,62 +104,56 @@ export async function GET(req: NextRequest) {
   // Penjualan = hanya pesanan lunas (`diproses`/`selesai`). `pending` (menunggu
   // transfer) dan `dibatalkan` tidak dihitung — lihat PAID_ORDER_STATUS di atas.
   const valid = orders.filter(isPaidOrder);
+  const validIds = valid.map((o) => o.id);
   const omset = valid.reduce((s, o) => s + (Number(o.total) || 0), 0);
   const transaksi = valid.length;
   const rataRata = transaksi > 0 ? Math.round(omset / transaksi) : 0;
 
-  /* ── Baris order_items bulan terpilih (dipakai topProducts + HPP) ── */
-  // `select("*")` dipakai supaya aman kalau skema order_items berbeda antar
-  // environment (mis. ada/tidak ada kolom `quantity`/`qty`/`total`/`hpp`).
-  let items: any[] = [];
-  const validIds = valid.map((o) => o.id);
-  if (validIds.length > 0) {
-    const { data } = await admin.from("order_items").select("*").in("order_id", validIds);
-    items = (data || []) as any[];
+  /* ── Baris order_items untuk ranking "Produk Terlaris" (pesanan SAH bulan terpilih) ──
+     Ranking memakai FUNGSI PUSAT `rankTopProducts` — sama dengan kartu di dashboard admin —
+     supaya angkanya tidak bisa berbeda. Pesanan sah = dibayar (`diproses`), `dikirim`,
+     `selesai`; batal/belum bayar/auto-cancel & produk Free Gift tidak dihitung. */
+  const saleOrders = orders.filter((o) => isSaleOrder(o.status));
+  const saleIds = saleOrders.map((o) => o.id);
+  let saleItems: any[] = [];
+  if (saleIds.length > 0) {
+    const { data } = await admin.from("order_items").select("*").in("order_id", saleIds);
+    saleItems = (data || []) as any[];
   }
 
-  // ── Sumber HPP ──
-  // Skema order_items tidak punya kolom `hpp`. Kalau runtime menyediakannya
-  // (per baris) nilainya dipakai; kalau kosong, jatuh ke `products.hpp` — kolom
-  // HPP per produk yang juga dipakai halaman Master Produk (`/api/ops/product-variants`
-  // & `/api/ops/transactions`). Kalau keduanya kosong → HPP = 0 (apa adanya,
-  // tidak dikarang).
-  const productIds = Array.from(new Set(items.map((it) => it.product_id).filter(Boolean))) as string[];
-  const hppByProduct = new Map<string, number>();
-  const skuByProduct = new Map<string, string>();
+  /* ── Sumber HPP ──
+     Skema order_items tidak punya kolom `hpp`. Kalau runtime menyediakannya (per baris)
+     nilainya dipakai; kalau kosong, jatuh ke `products.hpp`. Perhitungan HPP TIDAK berubah:
+     tetap hanya dari pesanan `valid` lama (`diproses`/`selesai`) supaya angka profit sama. */
+  const validIdSet = new Set(validIds);
+  const hppItems = saleItems.filter((it) => validIdSet.has(String(it.order_id)));
+  const productIds = Array.from(new Set(saleItems.map((it) => it.product_id).filter(Boolean))) as string[];
+  let productRows: any[] = [];
   if (productIds.length > 0) {
-    const { data: prods } = await admin.from("products").select("id, hpp, sku").in("id", productIds);
-    for (const p of (prods || []) as any[]) {
-      hppByProduct.set(String(p.id), Number(p.hpp) || 0);
-      const sku = String(p.sku ?? "").trim();
-      if (sku) skuByProduct.set(String(p.id), sku);
-    }
+    const { data: prods } = await admin
+      .from("products")
+      .select("id, hpp, sku, product_type")
+      .in("id", productIds);
+    productRows = (prods || []) as any[];
   }
+  const hppByProduct = new Map<string, number>();
+  for (const p of productRows) hppByProduct.set(String(p.id), Number(p.hpp) || 0);
 
   let hpp = 0;
-  const agg = new Map<string, { name: string; qty: number; total: number; productId: string }>();
-  for (const it of items) {
+  for (const it of hppItems) {
     const qty = Number(it.quantity ?? it.qty) || 0;
-    const price = Number(it.price) || 0;
-    const lineTotal = Number(it.total) || qty * price;
-
     const perLineHpp = Number(it.hpp);
     const unitHpp = Number.isFinite(perLineHpp) && perLineHpp > 0 ? perLineHpp : hppByProduct.get(String(it.product_id)) || 0;
     hpp += unitHpp * qty;
-
-    const key = it.product_name || "(tanpa nama)";
-    const cur = agg.get(key) || { name: key, qty: 0, total: 0, productId: "" };
-    cur.qty += qty;
-    cur.total += lineTotal;
-    if (!cur.productId && it.product_id) cur.productId = String(it.product_id);
-    agg.set(key, cur);
   }
 
-  // SKU di-join dari `products.sku` lewat product_id (kosong → "-").
-  const topProducts = Array.from(agg.values())
-    .sort((a, b) => b.qty - a.qty)
-    .slice(0, 5)
-    .map((p) => ({ name: p.name, qty: p.qty, total: p.total, sku: skuByProduct.get(p.productId) || "-" }));
+  // Ranking terlaris — periode = BULAN TERPILIH (batas bulan sudah dipakai di query orders).
+  const topProducts = rankTopProducts({
+    orders,
+    items: saleItems,
+    products: productRows,
+    limit: 5,
+  });
 
   // BIAYA operasional & packing: belum ada modul Pengeluaran → 0.
   // (Menunggu modul Pengeluaran supaya netProfit tidak dikarang.)
