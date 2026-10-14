@@ -255,6 +255,56 @@ export default function OrderDetailContent({
   // J&T mengirim riwayat dari kejadian terlama; yang terbaru tampil di atas.
   const trackUpdates = trackHistory ? [...trackHistory].reverse() : [];
 
+  // "Dikirim" dibaca dari kolom database (`orders.shipping_status`, cadangan `orders.status`),
+  // bukan dari teks label: paket sudah diserahkan ke kurir dan perjalanannya dikabarkan otomatis
+  // oleh sinkronisasi tracking J&T. Pada tahap itu area aksi hanya menyisakan dua aksi pelacakan.
+  const shipped = shippingStatusOf(order) === "dikirim" || order.status === "dikirim";
+
+  // Tombol aksi admin dipecah jadi variabel supaya bisa disusun ulang per kondisi (dua aksi saat
+  // paket dikirim, aksi lengkap sebelum dikirim) tanpa menyalin markahnya.
+  const arrangeAction = canArrange ? (
+    <button type="button" className="od-a od-a-primary" onClick={handleArrange} disabled={arranging}>
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M21 8 12 3 3 8v8l9 5 9-5z" />
+        <path d="m3 8 9 5 9-5" />
+        <path d="M12 13v8" />
+      </svg>
+      {arranging ? "Memproses…" : "Atur Pesanan"}
+    </button>
+  ) : null;
+
+  const whatsappAction = wa ? (
+    <a href={waLink(order.customer_whatsapp, waPesan)} target="_blank" rel="noopener noreferrer" className="od-a">
+      <svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24"><path d={WHATSAPP_PATH} /></svg>
+      Hubungi via WhatsApp
+    </a>
+  ) : null;
+
+  const lacakAction = resi ? (
+    <button type="button" className={`od-a${showTrack ? " is-on" : ""}`} onClick={openTrack}>
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7h11v9H3z" /><path d="M14 10h4l3 3v3h-7z" /><circle cx="7" cy="18" r="1.5" /><circle cx="17.5" cy="18" r="1.5" /></svg>
+      {showTrack ? "Tutup Lacak" : "Lacak Paket"}
+    </button>
+  ) : null;
+
+  const cancelJntAction = resi && order.status !== "dibatalkan" && onCancelJnt ? (
+    <button type="button" className="od-a od-a-danger" onClick={onCancelJnt}>
+      Batalkan J&amp;T
+    </button>
+  ) : null;
+
+  const labelAction = resi ? (
+    <a href={`/admin/label/${order.order_number}`} target="_blank" rel="noopener noreferrer" className="od-a">
+      Cetak Label
+    </a>
+  ) : null;
+
+  const deleteAction = (
+    <button type="button" className="od-a od-a-danger" onClick={onDelete}>
+      Hapus Pesanan
+    </button>
+  );
+
   return (
     <div className="od-root">
       <style>{RINCIAN_CSS}</style>
@@ -445,56 +495,47 @@ export default function OrderDetailContent({
 
             {/* Kontrol admin — bagian yang tidak ada di halaman customer. */}
             <div className="rp-act">
-              <p className="od-title">Ubah Status</p>
-              <div className="od-chips">
-                {["pending", "diproses", "selesai", "dibatalkan"].map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    className={`od-chip${order.status === s ? " is-on" : ""}`}
-                    onClick={() => onStatusChange(s)}
-                  >
-                    {s.charAt(0).toUpperCase() + s.slice(1)}
-                  </button>
-                ))}
-              </div>
+              {/* Pesanan yang paketnya sudah dikirim ("Dikirim") tidak lagi menampilkan kontrol
+                  ubah status manual: pada tahap itu status pesanan dikabarkan otomatis oleh
+                  sinkronisasi tracking J&T, jadi chip manual bisa bertentangan dengannya. */}
+              {!shipped ? (
+                <>
+                  <p className="od-title">Ubah Status</p>
+                  <div className="od-chips">
+                    {["pending", "diproses", "selesai", "dibatalkan"].map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        className={`od-chip${order.status === s ? " is-on" : ""}`}
+                        onClick={() => onStatusChange(s)}
+                      >
+                        {s.charAt(0).toUpperCase() + s.slice(1)}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              ) : null}
 
               <div className="od-acts">
-                {canArrange ? (
-                  <button type="button" className="od-a od-a-primary" onClick={handleArrange} disabled={arranging}>
-                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <path d="M21 8 12 3 3 8v8l9 5 9-5z" />
-                      <path d="m3 8 9 5 9-5" />
-                      <path d="M12 13v8" />
-                    </svg>
-                    {arranging ? "Memproses…" : "Atur Pesanan"}
-                  </button>
-                ) : null}
-                {wa ? (
-                  <a href={waLink(order.customer_whatsapp, waPesan)} target="_blank" rel="noopener noreferrer" className="od-a">
-                    <svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24"><path d={WHATSAPP_PATH} /></svg>
-                    Hubungi via WhatsApp
-                  </a>
-                ) : null}
-                {resi ? (
-                  <button type="button" className={`od-a${showTrack ? " is-on" : ""}`} onClick={openTrack}>
-                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7h11v9H3z" /><path d="M14 10h4l3 3v3h-7z" /><circle cx="7" cy="18" r="1.5" /><circle cx="17.5" cy="18" r="1.5" /></svg>
-                    {showTrack ? "Tutup Lacak" : "Lacak Paket"}
-                  </button>
-                ) : null}
-                {resi && order.status !== "dibatalkan" && onCancelJnt ? (
-                  <button type="button" className="od-a od-a-danger" onClick={onCancelJnt}>
-                    Batalkan J&amp;T
-                  </button>
-                ) : null}
-                {resi ? (
-                  <a href={`/admin/label/${order.order_number}`} target="_blank" rel="noopener noreferrer" className="od-a">
-                    Cetak Label
-                  </a>
-                ) : null}
-                <button type="button" className="od-a od-a-danger" onClick={onDelete}>
-                  Hapus Pesanan
-                </button>
+                {/* Paket sudah dikirim → hanya dua aksi utama (Lacak Paket + Hubungi via
+                    WhatsApp). Pembatalan J&T, cetak label, dan hapus pesanan dikeluarkan dari
+                    area aksi utama; kemampuan backend-nya tetap ada di /api/admin/orders &
+                    /admin/label untuk kondisi khusus yang lolos validasi status. */}
+                {shipped ? (
+                  <>
+                    {lacakAction}
+                    {whatsappAction}
+                  </>
+                ) : (
+                  <>
+                    {arrangeAction}
+                    {whatsappAction}
+                    {lacakAction}
+                    {cancelJntAction}
+                    {labelAction}
+                    {deleteAction}
+                  </>
+                )}
               </div>
 
               {/* Pelacakan J&T: riwayat perjalanan paket. Begitu J&T melaporkan paket
