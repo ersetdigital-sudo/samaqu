@@ -94,16 +94,16 @@ async function fetchDashboard(month: string): Promise<DashboardData> {
 
 function GlassCard({ icon: Icon, label, value, caption }: { icon: any; label: string; value: string; caption: string }) {
   return (
-    <div className="bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-5 flex flex-col">
+    <div className="bg-white border border-slate-200 rounded-2xl p-5 flex flex-col">
       {/* Irama kartu dikunci: baris label (tidak wrap) → nilai (selalu 1 baris) → caption
           yang ditempel ke dasar kartu. Jadi keempat kartu selalu sejajar, berapa pun
           panjang nominalnya. */}
-      <div className="flex items-center gap-2 text-blue-100 min-h-[20px]">
+      <div className="flex items-center gap-2 text-slate-500 min-h-[20px]">
         <Icon size={16} className="shrink-0" />
         <span className="text-[11px] font-bold uppercase tracking-wider truncate">{label}</span>
       </div>
-      <p className="font-black text-white mt-3 whitespace-nowrap leading-tight text-[clamp(1.05rem,1.5vw,1.75rem)]">{value}</p>
-      <p className="text-blue-100 text-xs mt-auto pt-1.5">{caption}</p>
+      <p className="font-black text-slate-900 mt-3 whitespace-nowrap leading-tight text-[clamp(1.05rem,1.5vw,1.75rem)]">{value}</p>
+      <p className="text-slate-500 text-xs mt-auto pt-1.5">{caption}</p>
     </div>
   );
 }
@@ -195,7 +195,7 @@ function TrendChart({ trend }: { trend: TrendHarian[] }) {
         return (
           <g key={`grid-${i}`}>
             <line x1={padL} y1={y} x2={VB_W - padR} y2={y} stroke="#eceae4" strokeWidth="1" />
-            <text x={padL - 9} y={y} textAnchor="end" dominantBaseline="middle" fontSize="12" fill="#94a3b8">
+            <text x={padL - 9} y={y} textAnchor="end" dominantBaseline="middle" fontSize="12" fill="#9a9a98">
               {fmtSumbu(value)}
             </text>
           </g>
@@ -218,11 +218,11 @@ function TrendChart({ trend }: { trend: TrendHarian[] }) {
               width={barW}
               height={h}
               rx={radius}
-              fill={peak ? "#2563eb" : "rgba(37,99,235,0.12)"}
-              stroke="#2563eb"
+              fill={peak ? "#1c1c1c" : "rgba(28,28,28,0.10)"}
+              stroke="#1c1c1c"
               strokeWidth="1.5"
             />
-            <text x={x + barW / 2} y={baseY + 20} textAnchor="middle" fontSize="12" fill="#64748b">
+            <text x={x + barW / 2} y={baseY + 20} textAnchor="middle" fontSize="12" fill="#9a9a98">
               {d.label}
             </text>
           </g>
@@ -263,21 +263,21 @@ export default function OpsDashboardPage() {
   if (isLoading) {
     return (
       <div className="space-y-5">
-        <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-3xl relative overflow-hidden p-6 md:p-8">
+        <div className="bg-white border border-slate-200 rounded-3xl relative overflow-hidden p-6 md:p-8">
           <div className="relative z-10 space-y-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="flex items-start gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-white/10 animate-pulse" />
+                <div className="w-14 h-14 rounded-2xl bg-slate-100 animate-pulse" />
                 <div className="space-y-2 pt-1">
-                  <div className="h-7 w-44 rounded-lg bg-white/20 animate-pulse" />
-                  <div className="h-4 w-72 max-w-full rounded bg-white/10 animate-pulse" />
+                  <div className="h-7 w-44 rounded-lg bg-slate-200 animate-pulse" />
+                  <div className="h-4 w-72 max-w-full rounded bg-slate-100 animate-pulse" />
                 </div>
               </div>
-              <div className="h-11 w-64 rounded-xl bg-white/10 animate-pulse" />
+              <div className="h-11 w-64 rounded-xl bg-slate-100 animate-pulse" />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {[0, 1, 2, 3].map((i) => (
-                <div key={i} className="h-32 rounded-2xl bg-white/10 animate-pulse" />
+                <div key={i} className="h-32 rounded-2xl bg-slate-100 animate-pulse" />
               ))}
             </div>
           </div>
@@ -307,7 +307,7 @@ export default function OpsDashboardPage() {
         <p className="text-sm text-gray-500 mt-1">Periksa koneksi lalu coba lagi.</p>
         <button
           onClick={() => refetch()}
-          className="mt-4 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 transition-all"
+          className="mt-4 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-slate-800 transition-all"
         >
           <IconRefresh size={14} /> Coba Lagi
         </button>
@@ -320,29 +320,27 @@ export default function OpsDashboardPage() {
 
   return (
     <div className="space-y-5">
-      {/* ── Header gradient + 4 card kaca ── */}
-      <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-3xl relative overflow-hidden p-6 md:p-8">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -mr-16 -mt-16" />
-        <div className="absolute bottom-0 left-0 w-40 h-40 bg-white/5 rounded-full blur-2xl -ml-10 -mb-10" />
+      {/* ── Header + 4 kartu ringkasan — palet netral, sama seperti dashboard admin ── */}
+      <div className="bg-white border border-slate-200 rounded-3xl relative overflow-hidden p-6 md:p-8">
         <div className="relative z-10 space-y-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex items-start gap-4">
-              <div className="w-14 h-14 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/10 shadow-inner shrink-0">
-                <IconDashboard size={26} className="text-white" />
+              <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center border border-slate-200 shrink-0">
+                <IconDashboard size={26} className="text-slate-900" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold tracking-tight text-white">Dashboard</h1>
-                <p className="text-blue-100 font-medium mt-1">Ringkasan aktivitas bisnis Anda</p>
+                <h1 className="text-3xl font-bold tracking-tight text-slate-900">Dashboard</h1>
+                <p className="text-slate-500 font-medium mt-1">Ringkasan aktivitas bisnis Anda</p>
               </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
-              <div className="flex items-center gap-1 rounded-xl bg-white/10 border border-white/20 backdrop-blur-md p-1">
+              <div className="flex items-center gap-1 rounded-xl bg-slate-50 border border-slate-200 p-1">
                 <button
                   type="button"
                   onClick={pick.onPrev}
                   aria-label="Bulan sebelumnya"
-                  className="w-8 h-8 grid place-items-center rounded-lg text-white/90 hover:bg-white/15 transition-all"
+                  className="w-8 h-8 grid place-items-center rounded-lg text-slate-500 hover:bg-slate-200 transition-all"
                 >
                   <IconChevronLeft size={16} />
                 </button>
@@ -351,16 +349,16 @@ export default function OpsDashboardPage() {
                     type="button"
                     onClick={() => setBulanValue(currentMonthValue())}
                     title="Kembali ke bulan ini"
-                    className="px-2.5 py-1.5 rounded-lg bg-white/10 text-[11px] font-bold text-white hover:bg-white/20 transition-all"
+                    className="px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-[11px] font-bold text-slate-700 hover:bg-slate-100 transition-all"
                   >
                     {monthName}
                   </button>
-                  <span className="text-white/40 text-[11px]">|</span>
+                  <span className="text-slate-300 text-[11px]">|</span>
                   <button
                     type="button"
                     onClick={() => setBulanValue(currentMonthValue())}
                     title="Kembali ke bulan ini"
-                    className="px-2.5 py-1.5 rounded-lg bg-white/10 text-[11px] font-bold text-white hover:bg-white/20 transition-all"
+                    className="px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-[11px] font-bold text-slate-700 hover:bg-slate-100 transition-all"
                   >
                     {yearLabel}
                   </button>
@@ -369,7 +367,7 @@ export default function OpsDashboardPage() {
                   type="button"
                   onClick={pick.onNext}
                   aria-label="Bulan berikutnya"
-                  className="w-8 h-8 grid place-items-center rounded-lg text-white/90 hover:bg-white/15 transition-all"
+                  className="w-8 h-8 grid place-items-center rounded-lg text-slate-500 hover:bg-slate-200 transition-all"
                 >
                   <IconChevronRight size={16} />
                 </button>
@@ -377,7 +375,7 @@ export default function OpsDashboardPage() {
 
               <button
                 onClick={() => refetch()}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-md text-white text-sm font-bold transition-all"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-slate-800 transition-all"
               >
                 <IconRefresh size={16} className={isFetching ? "animate-spin" : ""} />
                 Muat ulang
@@ -390,22 +388,22 @@ export default function OpsDashboardPage() {
             <GlassCard icon={IconPackage} label="Total HPP" value={rp(r.hpp)} caption="Modal produk terjual" />
             <GlassCard icon={IconReceipt} label="Total Biaya" value={rp(r.biaya)} caption="Operasional & packing" />
 
-            <div className="relative bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-5 flex flex-col">
+            <div className="relative bg-white border border-slate-200 rounded-2xl p-5 flex flex-col">
               <span
                 className={`absolute top-3 right-3 px-2 py-0.5 rounded-md text-[10px] font-black tracking-wider ${
-                  profit ? "bg-emerald-400/90 text-emerald-950" : "bg-red-400/90 text-red-950"
+                  profit ? "bg-emerald-50 text-emerald-700 border border-emerald-100" : "bg-red-50 text-red-700 border border-red-100"
                 }`}
               >
                 {profit ? "PROFIT" : "RUGI"}
               </span>
-              <div className="flex items-center gap-2 text-blue-100 min-h-[20px] pr-16">
+              <div className="flex items-center gap-2 text-slate-500 min-h-[20px] pr-16">
                 <IconProfit size={16} className="shrink-0" />
                 <span className="text-[11px] font-bold uppercase tracking-wider truncate">Net Profit</span>
               </div>
-              <p className={`font-black mt-3 whitespace-nowrap leading-tight text-[clamp(1.05rem,1.5vw,1.75rem)] ${profit ? "text-emerald-300" : "text-red-300"}`}>
+              <p className={`font-black mt-3 whitespace-nowrap leading-tight text-[clamp(1.05rem,1.5vw,1.75rem)] ${profit ? "text-emerald-600" : "text-red-600"}`}>
                 {rp(r.netProfit)}
               </p>
-              <p className="text-blue-100 text-xs mt-auto pt-1.5">Keuntungan bersih</p>
+              <p className="text-slate-500 text-xs mt-auto pt-1.5">Keuntungan bersih</p>
             </div>
           </div>
         </div>
@@ -427,7 +425,7 @@ export default function OpsDashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
           <div className="flex items-center gap-2 h-11 mb-4">
-            <IconProfit size={18} className="text-blue-600 shrink-0" />
+            <IconProfit size={18} className="text-slate-700 shrink-0" />
             <div className="min-w-0">
               <h2 className="font-bold text-slate-900 leading-tight">Tren Penjualan</h2>
               <p className="text-[11px] uppercase tracking-wide text-gray-500 font-semibold leading-tight">7 HARI TERAKHIR</p>
@@ -440,7 +438,7 @@ export default function OpsDashboardPage() {
           {/* Tinggi header dikunci (h-11) supaya sejajar dengan kartu "Tren Penjualan". */}
           <div className="flex items-center justify-between gap-3 h-11 mb-4">
             <div className="flex items-center gap-2.5 min-w-0">
-              <span className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 grid place-items-center shrink-0">
+              <span className="w-9 h-9 rounded-xl bg-slate-100 text-slate-700 grid place-items-center shrink-0">
                 <IconProfit size={17} />
               </span>
               <div className="min-w-0">
@@ -470,14 +468,7 @@ export default function OpsDashboardPage() {
                 const maxQty = Math.max(1, topProducts[0]?.units || 1);
                 const pct = Math.max(6, Math.round((p.units / maxQty) * 100));
                 const subline = [p.sub, p.revenue > 0 ? rp(p.revenue) : ""].filter(Boolean).join(" · ");
-                const rankCls =
-                  i === 0
-                    ? "bg-amber-400 text-amber-950"
-                    : i === 1
-                    ? "bg-slate-300 text-slate-800"
-                    : i === 2
-                    ? "bg-orange-300 text-orange-950"
-                    : "bg-gray-100 text-gray-600";
+                const rankCls = i === 0 ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-500";
                 return (
                   <li
                     key={`${p.name}-${p.kain}-${p.series}-${i}`}
@@ -485,7 +476,7 @@ export default function OpsDashboardPage() {
                   >
                     <span
                       aria-hidden
-                      className={`absolute inset-y-0 left-0 ${i === 0 ? "bg-amber-50" : "bg-blue-50/70"}`}
+                      className={`absolute inset-y-0 left-0 ${i === 0 ? "bg-slate-200/70" : "bg-slate-100"}`}
                       style={{ width: `${pct}%` }}
                     />
                     <div className="relative flex items-center gap-3">
