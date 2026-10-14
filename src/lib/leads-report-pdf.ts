@@ -322,14 +322,32 @@ function textCenter(page: PDFPage, font: PDFFont, value: string, o: { center: nu
 }
 
 function wrap(value: string, font: PDFFont, size: number, maxWidth: number): string[] {
-  const words = String(value).split(/\s+/);
+  // Normalisasi spasi tak biasa (NBSP / narrow no-break space dari toLocaleString).
+  const clean = String(value).replace(/[\u00a0\u202f\u2009\u2007\u2060]/g, " ").replace(/\s+/g, " ").trim();
+  // Batas aman 6%: sebagian glyph (tanda hubung panjang / tanda kurung) diukur lebih kecil
+  // oleh fontkit daripada lebar gambar sebenarnya, jadi jangan pas-pasan.
+  const limit = maxWidth * 0.94;
+  const words = clean.split(" ");
   const out: string[] = [];
   let line = "";
   for (const w of words) {
     const candidate = line ? `${line} ${w}` : w;
-    if (font.widthOfTextAtSize(candidate, size) <= maxWidth) line = candidate;
-    else {
-      if (line) out.push(line);
+    if (font.widthOfTextAtSize(candidate, size) <= limit) {
+      line = candidate;
+      continue;
+    }
+    if (line) out.push(line);
+    if (font.widthOfTextAtSize(w, size) > limit) {
+      let chunk = "";
+      for (const ch of w) {
+        if (font.widthOfTextAtSize(chunk + ch, size) <= limit) chunk += ch;
+        else {
+          out.push(chunk);
+          chunk = ch;
+        }
+      }
+      line = chunk;
+    } else {
       line = w;
     }
   }
@@ -435,7 +453,7 @@ function weeklyBlocks(rows: DailyLeadRow[]) {
     const b = Number(chunk[chunk.length - 1].tanggal.slice(8, 10));
     const month = MONTHS_ID_SHORT[Number(chunk[0].tanggal.slice(5, 7)) - 1];
     out.push({
-      label: a === b ? `${a} ${month}` : `${a}–${b} ${month}`,
+      label: a === b ? `${a} ${month}` : `${a}-${b} ${month}`,
       days: chunk.length,
       total,
       closing,
@@ -487,7 +505,7 @@ function highlightLines(summary: LeadsSummary, rows: DailyLeadRow[]): string[] {
     const diff = b.total - a.total;
     const pct = a.total > 0 ? (diff / a.total) * 100 : 0;
     lines.push(
-      `Perbandingan dua blok terakhir: ${a.label} ${nfmt(a.total)} leads (${a.rate.toFixed(1)}% konversi) dan ${b.label} ${nfmt(b.total)} leads (${b.rate.toFixed(1)}% konversi). Selisih ${diff >= 0 ? "+" : ""}${nfmt(diff)} leads (${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%).`
+      `Perbandingan dua blok terakhir: ${a.label} ${nfmt(a.total)} leads (konversi ${a.rate.toFixed(1)}%) dan ${b.label} ${nfmt(b.total)} leads (konversi ${b.rate.toFixed(1)}%). Selisih ${diff >= 0 ? "+" : "-"}${nfmt(Math.abs(diff))} leads (${pct >= 0 ? "+" : "-"}${Math.abs(pct).toFixed(1)}%).`
     );
   } else if (blocks.length === 1) {
     lines.push(`Periode ini hanya mencakup satu blok mingguan (${blocks[0].label}) sehingga belum ada pembanding.`);
@@ -640,8 +658,11 @@ export async function buildLeadsReportPdf(
   const fonts = input.fonts ?? loadReportFonts();
   const doc = await PDFDocument.create();
   doc.registerFontkit(fontkit);
-  const regular = await doc.embedFont(fonts.regular, { subset: true });
-  const bold = await doc.embedFont(fonts.bold, { subset: true });
+  // PENTING: subset TIDAK dipakai. Subsetting pdf-lib memutus sebagian glyph Inter
+  // (huruf/angka hilang di hasil render), jadi font di-embed utuh — ukuran PDF tetap
+  // di bawah 1 MB dan teksnya benar.
+  const regular = await doc.embedFont(fonts.regular, { subset: false });
+  const bold = await doc.embedFont(fonts.bold, { subset: false });
 
   /* ═══ Halaman 1 — ringkasan eksekutif ═══ */
   const ctx: Ctx = { doc, regular, bold, page: doc.addPage([PAGE_W, PAGE_H]), y: PAGE_H - MARGIN };
