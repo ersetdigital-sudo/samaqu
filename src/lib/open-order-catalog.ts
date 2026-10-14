@@ -7,7 +7,7 @@
  * helper ini jalan untuk semua kategori.
  */
 
-import { openOrderVariantFor, type OpenOrderProduct } from "@/lib/open-order-offering";
+import { openOrderVariantFor, type OpenOrderMedia, type OpenOrderProduct } from "@/lib/open-order-offering";
 
 /** Format harga seragam untuk seluruh alur: "Rp329.000". */
 export const money = (value: number) => `Rp${value.toLocaleString("id-ID")}`;
@@ -21,19 +21,20 @@ export function priceRange(product: OpenOrderProduct): string {
   return min === max ? money(min) : `${money(min)} - ${money(max)}`;
 }
 
-/** Foto utama untuk kombinasi warna (+ series); fallback foto produk. */
+/** Foto utama (gambar) untuk kombinasi warna (+ series); fallback foto produk. */
 export function openOrderImage(product: OpenOrderProduct, color: string, series?: string | null): string {
-  return openOrderVariantFor(product, color, series)?.media[0] ?? product.image ?? "";
+  const media = openOrderVariantFor(product, color, series)?.media ?? [];
+  return media.find((item) => item.type === "image")?.src ?? media[0]?.src ?? product.image ?? "";
 }
 
 /**
- * Galeri (gambar saja) untuk kombinasi warna + series — sumbernya baris katalog yang sama dengan
- * yang dipakai halaman detail katalog, supaya fotonya sama persis.
+ * Galeri (gambar + video) untuk kombinasi warna + series — sumbernya baris katalog yang sama
+ * dengan halaman detail katalog, jadi medianya sama persis (termasuk video).
  */
-export function openOrderGallery(product: OpenOrderProduct, color: string, series?: string | null): string[] {
+export function openOrderGallery(product: OpenOrderProduct, color: string, series?: string | null): OpenOrderMedia[] {
   const media = openOrderVariantFor(product, color, series)?.media ?? [];
   if (media.length > 0) return media;
-  return product.image ? [product.image] : [];
+  return product.image ? [{ src: product.image, type: "image" }] : [];
 }
 
 export interface OpenOrderVariantCard {
@@ -58,7 +59,7 @@ export function openOrderVariants(products: OpenOrderProduct[]): OpenOrderVarian
         product,
         color,
         label: variant?.label ?? color,
-        image: variant?.media[0] ?? product.image ?? "",
+        image: openOrderImage(product, color),
         sizes: variant?.sizes ?? [],
       };
     })
