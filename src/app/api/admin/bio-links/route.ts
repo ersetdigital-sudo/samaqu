@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { isOpsAdmin, unauthorized } from "@/lib/ops-auth";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  if (!(await isOpsAdmin(req))) return unauthorized();
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from("bio_links")
@@ -14,6 +16,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  if (!(await isOpsAdmin(req))) return unauthorized();
   const supabase = getSupabaseAdmin();
   const body = await req.json();
 
@@ -37,6 +40,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+  if (!(await isOpsAdmin(req))) return unauthorized();
   const supabase = getSupabaseAdmin();
   const body = await req.json();
   const { id, ...updates } = body;
@@ -55,6 +59,7 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  if (!(await isOpsAdmin(req))) return unauthorized();
   const supabase = getSupabaseAdmin();
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");

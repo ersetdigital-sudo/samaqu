@@ -6,8 +6,10 @@ import { applyTrackingToOrder } from "@/lib/jnt/tracking-sync";
 import { cancelOrderCompletely } from "@/lib/cancel-order";
 import { notifyCustomerOrderPaid } from "@/lib/fonnte";
 import { SITE_URL } from "@/lib/site-config";
+import { isOpsAdmin, unauthorized } from "@/lib/ops-auth";
 
 export async function PATCH(request: NextRequest) {
+  if (!(await isOpsAdmin(request))) return unauthorized();
   try {
     const { orderId, orderNumber, status, action } = await request.json();
     const identifier = orderNumber || orderId;
@@ -221,6 +223,7 @@ export async function PATCH(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  if (!(await isOpsAdmin(request))) return unauthorized();
   try {
     const { orderId, orderNumber } = await request.json();
     const identifier = orderNumber || orderId;

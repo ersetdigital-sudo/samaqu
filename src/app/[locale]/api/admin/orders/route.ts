@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { isOpsAdmin, unauthorized } from "@/lib/ops-auth";
 
 export async function PATCH(request: NextRequest) {
+  if (!(await isOpsAdmin(request))) return unauthorized();
   try {
     const { orderId, orderNumber, status, action } = await request.json();
     const identifier = orderNumber || orderId;
@@ -78,6 +80,7 @@ export async function PATCH(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  if (!(await isOpsAdmin(request))) return unauthorized();
   try {
     const { orderId, orderNumber } = await request.json();
     const identifier = orderNumber || orderId;
