@@ -423,10 +423,10 @@ export default function RincianPesanan({ order }: { order: RincianOrder }) {
               </div>
               <div style={{ minWidth: 0, flex: 1 }}>
                 <p className="rp-nm">{item.product_name}</p>
-                <p className="rp-var">
-                  {VARIAN_LINE(item)}
-                  {item.product_id && itemWeights[item.product_id] ? <> &middot; {formatWeight(itemWeights[item.product_id])}</> : null}
-                </p>
+                <p className="rp-var">{VARIAN_LINE(item)}</p>
+                {item.product_id && itemWeights[item.product_id] ? (
+                  <p className="rp-var">Berat: <b>{formatWeight(itemWeights[item.product_id])}</b></p>
+                ) : null}
                 <p className="rp-pr rp-mono">{rupiah(item.price)}</p>
               </div>
             </div>
