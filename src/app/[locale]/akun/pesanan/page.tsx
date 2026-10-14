@@ -28,6 +28,7 @@ interface Order {
 
 const TABS = [
   { key: "semua", label: "Semua" },
+  { key: "pending", label: "Belum Bayar" },
   { key: "diproses", label: "Diproses" },
   { key: "dikirim", label: "Dikirim" },
   { key: "selesai", label: "Selesai" },
@@ -53,7 +54,8 @@ export default function PesananPage() {
 
   const filtered = useMemo(() => {
     if (tab === "semua") return orders;
-    if (tab === "diproses") return orders.filter((o) => o.status === "pending" || o.status === "diproses");
+    // Tiap tab = satu status pesanan; "pending" punya tabnya sendiri ("Belum Bayar"), jadi
+    // "Diproses" tidak lagi ikut menampung pesanan yang belum dibayar.
     return orders.filter((o) => o.status === tab);
   }, [orders, tab]);
 
@@ -61,7 +63,9 @@ export default function PesananPage() {
     <>
       <AkunHeader title="Pesanan Saya" back="/akun" />
 
-      <div className="flex gap-6 border-b border-[#e6dfd2] mb-5 md:mb-7 text-sm md:text-base overflow-x-auto">
+      {/* Baris tab dibuat wrap (pola sama seperti tab tahap di admin) supaya lima tab tetap
+          muat utuh & rapih di layar sempit tanpa scroll samping. */}
+      <div className="flex flex-wrap gap-x-4 gap-y-1 sm:gap-x-6 border-b border-[#e6dfd2] mb-5 md:mb-7 text-sm md:text-base">
         {TABS.map((t) => (
           <button
             key={t.key}
