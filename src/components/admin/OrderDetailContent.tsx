@@ -7,6 +7,7 @@ import { shippingStatusOf, SHIPPING_STATUS_LABEL } from "@/lib/order-flow";
 import { PaymentMethodValue } from "@/components/admin/PaymentMethodsManager";
 import { RINCIAN_CSS, FALLBACK_PHOTO } from "@/components/akun/RincianPesanan";
 import { waNumber, waLink, pesanPembayaran } from "@/lib/whatsapp";
+import { supabase } from "@/lib/supabase";
 
 /**
  * Isi detail pesanan untuk dashboard admin — memakai susunan & gaya yang sama dengan
@@ -208,9 +209,10 @@ export default function OrderDetailContent({
       // Server yang menyinkronkan status (ambil tracking + transisi maju-saja, lihat
       // src/lib/jnt/tracking-sync.ts) supaya logikanya satu tempat dengan cron. Klien tidak
       // lagi menulis status sendiri.
+      const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch("/api/admin/orders", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token || ""}` },
         body: JSON.stringify({ orderNumber: order.order_number, action: "syncTracking" }),
       });
       const json = await res.json();

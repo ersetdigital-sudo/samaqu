@@ -26,6 +26,13 @@ import { ADMIN_WF_VARS } from "@/components/admin/admin-theme";
 
 type Panel = "dashboard" | "orders" | "products" | "customers" | "chats" | "content" | "settings";
 
+// Route /api/admin/* digerbangi isOpsAdmin (sesi admin terdaftar di tabel `admins`),
+// jadi setiap request admin wajib membawa Bearer token.
+async function authHeaders(): Promise<Record<string, string>> {
+  const { data: { session } } = await supabase.auth.getSession();
+  return { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token || ""}` };
+}
+
 interface Order {
   id: string;
   order_number: string;
@@ -439,7 +446,7 @@ function AdminPageInner() {
     try {
       const res = await fetch("/api/admin/orders", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: await authHeaders(),
         body: JSON.stringify({ orderNumber, status: newStatus }),
       });
       const data = await res.json();
@@ -474,7 +481,7 @@ function AdminPageInner() {
         try {
           const res = await fetch("/api/admin/orders", {
             method: "PATCH",
-            headers: { "Content-Type": "application/json" },
+            headers: await authHeaders(),
             body: JSON.stringify({ orderNumber: order.order_number, action: "createJnt" }),
           });
           const data = await res.json();
@@ -503,7 +510,7 @@ function AdminPageInner() {
       try {
         const res = await fetch("/api/admin/orders", {
           method: "DELETE",
-          headers: { "Content-Type": "application/json" },
+          headers: await authHeaders(),
           body: JSON.stringify({ orderNumber }),
         });
         const data = await res.json();
@@ -527,7 +534,7 @@ function AdminPageInner() {
       try {
         const res = await fetch("/api/admin/orders", {
           method: "PATCH",
-          headers: { "Content-Type": "application/json" },
+          headers: await authHeaders(),
           body: JSON.stringify({ orderNumber: order.order_number, action: "cancelJnt" }),
         });
         const data = await res.json();

@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { isOpsAdmin, unauthorized } from "@/lib/ops-auth";
 
 export async function GET(req: NextRequest) {
+  if (!(await isOpsAdmin(req))) return unauthorized();
   const supabaseAdmin = getSupabaseAdmin();
   const { searchParams } = new URL(req.url);
   const category = searchParams.get("category");
@@ -15,6 +17,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  if (!(await isOpsAdmin(req))) return unauthorized();
   const supabaseAdmin = getSupabaseAdmin();
   const body = await req.json();
   const { category, type, image_url, alt_text, sort_order } = body;
@@ -34,6 +37,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  if (!(await isOpsAdmin(req))) return unauthorized();
   const supabaseAdmin = getSupabaseAdmin();
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
