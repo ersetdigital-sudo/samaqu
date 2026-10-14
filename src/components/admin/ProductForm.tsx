@@ -57,6 +57,8 @@ interface SeriesBlock {
   // Shared stock pool: link this series to a base product
   baseProductId: string;   // product_id of the base series (e.g., "thobe-b01-jiharkah")
   baseSize: string;        // size mapping (e.g., "M" → pulls from base product's M stock)
+  /** id baris `products` tersimpan (mode edit) — dipakai saat update agar tidak bikin duplikat. */
+  productId: string;
 }
 
 type SizeRow = { size: string; stock: number; priceOverride: string; sku: string };
@@ -117,14 +119,19 @@ function SizeGrid({
   );
 }
 
-export default function TambahProdukPage({ mode = "admin" }: { mode?: "admin" | "ops" } = {}) {
+export default function TambahProdukPage({
+  mode = "admin",
+  editProductId,
+}: { mode?: "admin" | "ops"; editProductId?: string } = {}) {
   const router = useRouter();
   const storeSettings = useStoreSettings();
   // Dua mode satu komponen: "admin" (katalog lengkap, dengan foto) dan "ops" (internal:
   // tanpa foto, plus SKU/HPP/Tipe Produk, dan produk baru BELUM tampil di website).
   const isOps = mode === "ops";
+  const isEdit = !!editProductId;
   const backHref = isOps ? "/ops/master-produk" : "/admin";
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(!!editProductId);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Basic fields
@@ -178,6 +185,10 @@ export default function TambahProdukPage({ mode = "admin" }: { mode?: "admin" | 
   const [selectedSeries, setSelectedSeries] = useState<string[]>([]);
   const [seriesBlocks, setSeriesBlocks] = useState<Record<string, SeriesBlock>>({});
   const [activeSeriesTab, setActiveSeriesTab] = useState<string | null>(null);
+  // Mode edit: nama asli + series asli yang ter-load — dipakai untuk rename & menentukan
+  // baris series mana yang boleh dihapus saat dicabut dari checklist.
+  const [originalName, setOriginalName] = useState("");
+  const [originalSelectedSeries, setOriginalSelectedSeries] = useState<string[]>([]);
 
   // Fetch jenis_kain list + daftar series dari tabel product_series
   useEffect(() => {
@@ -192,6 +203,119 @@ export default function TambahProdukPage({ mode = "admin" }: { mode?: "admin" | 
       }
     });
   }, []);
+
+  // ── Mode edit: muat data produk yang ada (produk, series, varian, media, Produk Dasar) ──
+  useEffect(() => {
+    if (!editProductId) return;
+    let alive = true;
+    async function loadProduct() {
+      try {
+        const { data: product } = await supabase.from("products").select("*").eq("id", editProductId).single();
+        if (!product) { router.push(backHref); return; }
+        if (!alive) return;
+        setName(product.name);
+        setOriginalName(product.name);
+        setSlug(product.id);
+        setCategory(product.category);
+        setDescription(product.description || "");
+        setBasePrice(product.price != null ? String(product.price) : "");
+        setWeight(product.weight ? String(product.weight) : "");
+        setSeries(product.series || "");
+        setCatatanHarga(product.catatan_harga || "");
+        setBadgeType(product.badge_type || "");
+        setOpenOrderEnabled(product.open_order_enabled ?? true);
+        setSelectedJenisKainId(product.jenis_kain_id || "");
+        setCypEnabled(product.create_your_price_enabled || false);
+        setMinimumPrice(product.minimum_price ? String(product.minimum_price) : "");
+        setRecommendedPrice(product.recommended_price ? String(product.recommended_price) : "");
+        setCypMicrocopyOverride(product.cyp_microcopy_override || "");
+        setUseCustomCypMicrocopy(!!product.cyp_microcopy_override);
+        setSku(product.sku || "");
+        setHpp(product.hpp ? String(product.hpp) : "");
+        setProductType(product.product_type === "free_gift" ? "free_gift" : "normal");
+
+        // Thobe multi-series: muat semua baris senama (satu block per series).
+        if (product.category === "Thobe" && product.name) {
+          const { data: siblings } = await supabase
+            .from("products")
+            .select("id, name, series, price, minimum_price, recommended_price, create_your_price_enabled, cyp_microcopy_override, image, images")
+            .eq("category", "Thobe")
+            .eq("name", product.name)
+            .order("created_at", { ascending: true });
+          const blocks: Record<string, SeriesBlock> = {};
+          const seriesNames: string[] = [];
+          for (const sib of siblings || []) {
+            if (!sib.series || blocks[sib.series]) continue;
+            const { data: sibVariants } = await supabase.from("product_variants").select("*").eq("product_id", sib.id).order("display_order");
+            const colorGroups: Record<string, Variant> = {};
+            let baseProductId = "";
+            let baseSize = "";
+            (sibVariants || []).forEach((v: { color: string; hex: string | null; size: string; stock: number; price_override: number | null; sku: string | null; base_product_id: string | null; base_size: string | null }) => {
+              if (!colorGroups[v.color]) colorGroups[v.color] = { color: v.color, hex: v.hex || "#141414", sizes: [] };
+              colorGroups[v.color].sizes.push({ size: v.size, stock: v.stock, priceOverride: v.price_override ? String(v.price_override) : "", sku: v.sku || "" });
+              if (v.base_product_id && !baseProductId) { baseProductId = v.base_product_id; baseSize = v.base_size || ""; }
+            });
+            const { data: sibImages } = await supabase.from("product_images").select("*").eq("product_id", sib.id).order("display_order");
+            const sibMedia: MediaFile[] = (sibImages || []).map((img: { id: string; url: string; is_video: boolean; color: string }) => ({
+              id: img.id, url: img.url, isVideo: img.is_video, color: img.color, preview: img.url, uploading: false,
+            }));
+            const varList = Object.values(colorGroups);
+            seriesNames.push(sib.series);
+            blocks[sib.series] = {
+              productId: sib.id,
+              price: sib.price ? String(sib.price) : "",
+              cypEnabled: sib.create_your_price_enabled || false,
+              minimumPrice: sib.minimum_price ? String(sib.minimum_price) : "",
+              recommendedPrice: sib.recommended_price ? String(sib.recommended_price) : "",
+              useCustomCypMicrocopy: !!sib.cyp_microcopy_override,
+              cypMicrocopyOverride: sib.cyp_microcopy_override || "",
+              media: sibMedia,
+              variants: varList.length > 0 ? varList : [{ color: "default", hex: "#141414", sizes: [{ size: "M", stock: 0, priceOverride: "", sku: "" }] }],
+              activeColor: varList[0]?.color || "default",
+              baseProductId,
+              baseSize,
+            };
+          }
+          if (seriesNames.length > 0) {
+            setSelectedSeries(seriesNames);
+            setOriginalSelectedSeries(seriesNames);
+            setSeriesBlocks(blocks);
+            setActiveSeriesTab(blocks[product.series] ? product.series : seriesNames[0]);
+            setVariants([]);
+            setMedia([]);
+            if (alive) setLoading(false);
+            return;
+          }
+        }
+
+        // Non-Thobe (atau Thobe tanpa series): varian & media global.
+        const { data: dbVariants } = await supabase.from("product_variants").select("*").eq("product_id", editProductId).order("display_order");
+        if (dbVariants && dbVariants.length > 0) {
+          const colorGroups: Record<string, Variant> = {};
+          dbVariants.forEach((v: { color: string; hex: string | null; size: string; stock: number; price_override: number | null; sku: string | null }) => {
+            if (!colorGroups[v.color]) colorGroups[v.color] = { color: v.color, hex: v.hex || colorMap[v.color] || "#141414", sizes: [] };
+            colorGroups[v.color].sizes.push({ size: v.size, stock: v.stock, priceOverride: v.price_override ? String(v.price_override) : "", sku: v.sku || "" });
+          });
+          const varList = Object.values(colorGroups);
+          setVariants(varList);
+          setActiveColor(varList[0]?.color || null);
+        }
+        const { data: dbImages } = await supabase.from("product_images").select("*").eq("product_id", editProductId).order("display_order");
+        if (dbImages) {
+          setMedia(dbImages.map((img: { id: string; url: string; is_video: boolean; color: string }) => ({
+            id: img.id, url: img.url, isVideo: img.is_video, color: img.color, preview: img.url, uploading: false,
+          })));
+        }
+      } catch (err) {
+        console.error("Load produk error:", err);
+      } finally {
+        if (alive) setLoading(false);
+      }
+    }
+    loadProduct();
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editProductId]);
 
   // Auto-generate slug from name
   function handleNameChange(val: string) {
@@ -362,6 +486,7 @@ export default function TambahProdukPage({ mode = "admin" }: { mode?: "admin" | 
             activeColor: "default",
             baseProductId: "",
             baseSize: "",
+            productId: "",
           },
         }));
         setActiveSeriesTab(seriesName);
@@ -581,14 +706,16 @@ export default function TambahProdukPage({ mode = "admin" }: { mode?: "admin" | 
       // Field khusus ops (dipakai laporan internal): tipe produk, HPP, SKU produk, dan
       // penanda "belum tampil" — produk baru dari ops tidak langsung masuk katalog.
       const opsProductFields = isOps
-        ? { product_type: productType, hpp: parseInt(hpp) || 0, sku: sku.trim() || null, is_published: false }
+        ? { product_type: productType, hpp: parseInt(hpp) || 0, sku: sku.trim() || null, ...(isEdit ? {} : { is_published: false }) }
         : {};
       if (category === "Thobe" && selectedSeries.length > 0) {
         // ── Thobe multi-series: create 1 product row per series ──
         for (const seriesName of selectedSeries) {
           const block = seriesBlocks[seriesName];
           if (!block) continue;
-          const seriesSlug = `${slug}-${seriesName.toLowerCase().replace(/\s+/g, "-")}`;
+          const seriesNameSlug = seriesName.toLowerCase().replace(/\s+/g, "-");
+          // Mode edit: pakai id baris tersimpan (stabil) → update, bukan bikin duplikat.
+          const seriesSlug = isEdit && block.productId ? block.productId : `${slug}-${seriesNameSlug}`;
           const blockPrice = block.cypEnabled
             ? (parseInt(block.price) || parseInt(block.minimumPrice) || 0)
             : (parseInt(block.price) || 0);
@@ -632,6 +759,11 @@ export default function TambahProdukPage({ mode = "admin" }: { mode?: "admin" | 
               base_size: isDerived ? s.size : null,  // 1:1 mapping: each size maps to same size in base
             }))
           );
+          // Mode edit: tulis ulang varian & media baris ini (bukan menumpuk).
+          if (isEdit) {
+            await supabase.from("product_variants").delete().eq("product_id", seriesSlug);
+            await supabase.from("product_images").delete().eq("product_id", seriesSlug);
+          }
           if (variantRows.length > 0) {
             await supabase.from("product_variants").upsert(variantRows, { onConflict: "product_id,color,size" });
           }
@@ -646,6 +778,20 @@ export default function TambahProdukPage({ mode = "admin" }: { mode?: "admin" | 
           }));
           if (imageRows.length > 0) {
             await supabase.from("product_images").insert(imageRows);
+          }
+        }
+
+        // Mode edit: hapus baris series yang dicabut dari checklist — HANYA yang semula
+        // ter-load, supaya hydrate parsial tidak menghapus data yang tidak dimaksud.
+        if (isEdit) {
+          const namesToCheck = Array.from(new Set([name, originalName].filter(Boolean)));
+          const { data: oldSiblings } = await supabase.from("products").select("id, series").eq("category", "Thobe").in("name", namesToCheck);
+          for (const old of oldSiblings || []) {
+            if (old.series && originalSelectedSeries.includes(old.series) && !selectedSeries.includes(old.series)) {
+              await supabase.from("product_variants").delete().eq("product_id", old.id);
+              await supabase.from("product_images").delete().eq("product_id", old.id);
+              await supabase.from("products").delete().eq("id", old.id);
+            }
           }
         }
       } else {
@@ -686,6 +832,10 @@ export default function TambahProdukPage({ mode = "admin" }: { mode?: "admin" | 
             display_order: vi * 100 + si,
           }))
         );
+        if (isEdit) {
+          await supabase.from("product_variants").delete().eq("product_id", slug);
+          await supabase.from("product_images").delete().eq("product_id", slug);
+        }
         if (variantRows.length > 0) {
           await supabase.from("product_variants").upsert(variantRows, { onConflict: "product_id,color,size" });
         }
@@ -717,6 +867,12 @@ export default function TambahProdukPage({ mode = "admin" }: { mode?: "admin" | 
     ? seriesBlocks[activeSeriesTab].media
     : category === "Thobe" ? media : media.filter((m) => m.color === activeColor);
 
+  if (loading) {
+    return isOps
+      ? <div className="grid min-h-[40vh] place-items-center"><Loader2 size={22} className="animate-spin text-blue-600" /></div>
+      : <AdminShell><section className="min-h-screen flex items-center justify-center" style={{ background: "var(--cream)" }}><Loader2 size={24} className="animate-spin" style={{ color: "var(--gold)" }} /></section></AdminShell>;
+  }
+
   const content = (
     <section className={`min-h-screen${isOps ? " pf--ops" : ""}`} style={{ background: isOps ? "transparent" : "var(--cream)" }}>
       {/* Header */}
@@ -727,12 +883,12 @@ export default function TambahProdukPage({ mode = "admin" }: { mode?: "admin" | 
           </button>
           <div className="min-w-0">
             <p className="hidden sm:block text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: "var(--text-muted)" }}>Produk</p>
-            <h1 className={`text-2xl leading-none truncate${isOps ? "" : " italic"}`} style={isOps ? { fontFamily: "var(--font-inter), system-ui, sans-serif", fontWeight: 800, color: "#0f172a" } : { fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>Tambah Produk</h1>
+            <h1 className={`text-2xl leading-none truncate${isOps ? "" : " italic"}`} style={isOps ? { fontFamily: "var(--font-inter), system-ui, sans-serif", fontWeight: 800, color: "#0f172a" } : { fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>{isEdit ? "Edit Produk" : "Tambah Produk"}</h1>
           </div>
           <div className="ml-auto flex items-center gap-2.5">
             <button onClick={() => router.push(backHref)} className="pf-btn pf-btn-ghost">Batal</button>
             <button onClick={handleSubmit} disabled={saving} className="pf-btn pf-btn-primary">
-              {saving ? <><Loader2 size={14} className="animate-spin" /> Menyimpan...</> : <><Check size={14} /> Simpan Produk</>}
+              {saving ? <><Loader2 size={14} className="animate-spin" /> Menyimpan...</> : <><Check size={14} /> {isEdit ? "Simpan Perubahan" : "Simpan Produk"}</>}
             </button>
           </div>
         </div>
@@ -1392,7 +1548,7 @@ export default function TambahProdukPage({ mode = "admin" }: { mode?: "admin" | 
       {/* Mobile sticky save button */}
       <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 px-4 pb-4 pt-3" style={{ background: "linear-gradient(to top, var(--cream) 70%, transparent)" }}>
         <button onClick={handleSubmit} disabled={saving} className="pf-btn pf-btn-primary w-full" style={{ paddingTop: ".85rem", paddingBottom: ".85rem", fontSize: ".9rem" }}>
-          {saving ? <><Loader2 size={14} className="animate-spin" /> Menyimpan...</> : <><Check size={14} /> Simpan Produk</>}
+          {saving ? <><Loader2 size={14} className="animate-spin" /> Menyimpan...</> : <><Check size={14} /> {isEdit ? "Simpan Perubahan" : "Simpan Produk"}</>}
         </button>
       </div>
 
