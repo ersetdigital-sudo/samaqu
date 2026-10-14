@@ -99,7 +99,9 @@ function GlassCard({ icon: Icon, label, value, caption }: { icon: any; label: st
         <Icon size={16} />
         <span className="text-[11px] font-bold uppercase tracking-wider">{label}</span>
       </div>
-      <p className="text-2xl md:text-3xl font-black text-white mt-3 break-words">{value}</p>
+      {/* Nominal WAJIB satu baris ("Rp" tidak boleh terpisah dari angkanya) —
+          ukuran font fluid supaya nominal panjang tetap muat di layar sempit. */}
+      <p className="font-black text-white mt-3 whitespace-nowrap text-[clamp(1.05rem,1.5vw,1.8rem)]">{value}</p>
       <p className="text-blue-100 text-xs mt-1">{caption}</p>
     </div>
   );
@@ -109,7 +111,7 @@ function StatCard({ label, value, caption, tone }: { label: string; value: strin
   return (
     <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
       <p className="text-[11px] font-bold uppercase tracking-wider text-gray-500">{label}</p>
-      <p className={`text-2xl font-black mt-2 break-words ${tone || "text-slate-900"}`}>{value}</p>
+      <p className={`font-black mt-2 whitespace-nowrap text-[clamp(1.15rem,1.6vw,1.75rem)] ${tone || "text-slate-900"}`}>{value}</p>
       <p className="text-xs text-gray-500 mt-1">{caption}</p>
     </div>
   );
@@ -401,7 +403,7 @@ export default function OpsDashboardPage() {
                 <IconProfit size={16} />
                 <span className="text-[11px] font-bold uppercase tracking-wider">Net Profit</span>
               </div>
-              <p className={`text-2xl md:text-3xl font-black mt-3 break-words ${profit ? "text-emerald-300" : "text-red-300"}`}>
+              <p className={`font-black mt-3 whitespace-nowrap text-[clamp(1.05rem,1.5vw,1.8rem)] ${profit ? "text-emerald-300" : "text-red-300"}`}>
                 {rp(r.netProfit)}
               </p>
               <p className="text-blue-100 text-xs mt-1">Keuntungan bersih</p>

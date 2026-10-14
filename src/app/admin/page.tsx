@@ -182,6 +182,41 @@ function groupByMainProduct(raw: Product[]): AdminCatalogProduct[] {
   return items;
 }
 
+/* ── Periode bulan (WIB) untuk filter dashboard — pola sama dengan dashboard ops ── */
+
+const MONTH_NAMES_ID = [
+  "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+  "Juli", "Agustus", "September", "Oktober", "November", "Desember",
+];
+
+/** Bulan WIB sekarang dalam format "YYYY-MM". */
+function currentMonthValue(): string {
+  const wib = new Date(Date.now() + 7 * 60 * 60 * 1000);
+  return `${wib.getUTCFullYear()}-${String(wib.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
+/** "2026-10" → { name: "Oktober", year: "2026" }. */
+function monthLabelParts(value: string): { name: string; year: string } {
+  const m = /^(\d{4})-(\d{2})$/.exec(value || "");
+  const now = new Date(Date.now() + 7 * 60 * 60 * 1000);
+  const year = m ? m[1] : String(now.getUTCFullYear());
+  const idx = m ? Number(m[2]) - 1 : now.getUTCMonth();
+  return { name: MONTH_NAMES_ID[idx] || MONTH_NAMES_ID[now.getUTCMonth()], year };
+}
+
+/** Rentang UTC [awal, akhir) untuk bulan WIB terpilih (00:00 WIB = 17:00 UTC hari sebelumnya). */
+function monthRangeUTC(value: string): { startISO: string; endISO: string } {
+  const m = /^(\d{4})-(\d{2})$/.exec(value || "");
+  const now = new Date(Date.now() + 7 * 60 * 60 * 1000);
+  const y = m ? Number(m[1]) : now.getUTCFullYear();
+  const mi = m ? Number(m[2]) - 1 : now.getUTCMonth();
+  const WIB_MS = 7 * 60 * 60 * 1000;
+  return {
+    startISO: new Date(Date.UTC(y, mi, 1) - WIB_MS).toISOString(),
+    endISO: new Date(Date.UTC(y, mi + 1, 1) - WIB_MS).toISOString(),
+  };
+}
+
 function AdminPageInner() {
   // ALL hooks must be declared BEFORE any early returns
   const [user, setUser] = useState<User | null>(null);
@@ -205,27 +240,37 @@ function AdminPageInner() {
   const [productVariants, setProductVariants] = useState<{ product_id: string; stock: number; base_product_id: string | null }[]>([]);
   const [hoveredSeriesCard, setHoveredSeriesCard] = useState<string | null>(null);
 
+  // Filter bulan dashboard (YYYY-MM, WIB) — sama pola dengan dashboard ops.
+  // `dashOrders` diambil terpisah dari server per bulan, jadi kartu dashboard tidak
+  // bergantung pada 50 pesanan terakhir yang dipakai panel Order Management.
+  const [bulanValue, setBulanValue] = useState<string>(() => currentMonthValue());
+  const [dashOrders, setDashOrders] = useState<Order[]>([]);
+  const [dashLoading, setDashLoading] = useState(true);
+
   // All useMemo/useCallback hooks
-  const stats = useMemo(() => ({
-    revenue: orders.filter((o) => o.status !== "pending").reduce((sum, o) => sum + o.total, 0),
-    totalOrders: orders.length,
-    pendingOrders: orders.filter((o) => o.status === "pending").length,
-    totalProducts: products.length,
-  }), [orders, products]);
+  const periodLabel = useMemo(() => {
+    const p = monthLabelParts(bulanValue);
+    return `${p.name} ${p.year}`;
+  }, [bulanValue]);
+
+  /** Pendapatan periode terpilih (aturan lama: pesanan pending tidak dihitung). */
+  const dashRevenue = useMemo(
+    () => dashOrders.filter((o) => o.status !== "pending").reduce((sum, o) => sum + o.total, 0),
+    [dashOrders]
+  );
 
   // Kartu "Produk Terlaris" memakai FUNGSI PUSAT yang sama dengan dashboard ops
-  // (`rankTopProducts`, src/lib/top-products.ts) — jadi aturan hitungnya identik dan
-  // angkanya tidak bisa berbeda. Bedanya hanya PERIODE: kartu admin ini memakai SEMUA
-  // pesanan yang termuat (tanpa batas tanggal), sedangkan kartu ops memakai bulan terpilih.
+  // (`rankTopProducts`, src/lib/top-products.ts) — aturan hitungnya identik, dan sekarang
+  // periodenya juga sama: bulan yang sedang dipilih di bar periode dashboard.
   const topProducts = useMemo(
     () =>
       rankTopProducts({
-        orders: orders.map((o) => ({ id: o.id, status: o.status, created_at: o.created_at })),
-        items: orders.flatMap((o) => (o.order_items || []).map((it) => ({ ...it, order_id: o.id }))),
+        orders: dashOrders.map((o) => ({ id: o.id, status: o.status, created_at: o.created_at })),
+        items: dashOrders.flatMap((o) => (o.order_items || []).map((it) => ({ ...it, order_id: o.id }))),
         products: products.map((p) => ({ id: p.id, product_type: p.product_type })),
         limit: 4,
       }),
-    [orders, products]
+    [dashOrders, products]
   );
 
   const catalogItems = useMemo(() => groupByMainProduct(products), [products]);
@@ -348,6 +393,34 @@ function AdminPageInner() {
     return () => { mounted = false; };
   }, [user, role]);
 
+  // Pesanan bulan terpilih untuk dashboard — diambil langsung dari server (bukan disaring
+  // dari 50 pesanan terakhir), supaya bulan lama tetap punya data walau pesanan baru menumpuk.
+  useEffect(() => {
+    if (!user || role !== "admin") return;
+    let mounted = true;
+    async function fetchDashMonth() {
+      setDashLoading(true);
+      try {
+        const { startISO, endISO } = monthRangeUTC(bulanValue);
+        const { data } = await supabase
+          .from("orders")
+          .select("*, order_items(product_id, product_name, color, size, series, kain, quantity, price)")
+          .gte("created_at", startISO)
+          .lt("created_at", endISO)
+          .order("created_at", { ascending: false })
+          .limit(1000);
+        if (mounted) setDashOrders((data as Order[]) || []);
+      } catch (err) {
+        console.error("Error fetching dashboard month:", err);
+        if (mounted) setDashOrders([]);
+      } finally {
+        if (mounted) setDashLoading(false);
+      }
+    }
+    fetchDashMonth();
+    return () => { mounted = false; };
+  }, [user, role, bulanValue]);
+
   // Debounce product search (200ms)
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(productSearch), 200);
@@ -366,6 +439,16 @@ function AdminPageInner() {
   }, []);
 
   // Handler functions (not hooks)
+  function shiftDashMonth(delta: number) {
+    setBulanValue((prev) => {
+      const m = /^(\d{4})-(\d{2})$/.exec(prev);
+      const now = new Date(Date.now() + 7 * 60 * 60 * 1000);
+      const y = m ? Number(m[1]) : now.getUTCFullYear();
+      const mi = m ? Number(m[2]) - 1 : now.getUTCMonth();
+      const d = new Date(Date.UTC(y, mi + delta, 1));
+      return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+    });
+  }
   async function handleAuth(e: React.FormEvent) {
     e.preventDefault();
     setAuthError("");
@@ -803,11 +886,16 @@ function AdminPageInner() {
               {/* DASHBOARD */}
               {activePanel === "dashboard" && (
                 <DashboardView
-                  revenue={stats.revenue}
-                  orders={orders}
+                  revenue={dashRevenue}
+                  orders={dashOrders}
+                  chartOrders={orders}
                   products={products}
                   topProducts={topProducts}
-                  loading={loading}
+                  loading={loading || dashLoading}
+                  periodLabel={periodLabel}
+                  onPrevMonth={() => shiftDashMonth(-1)}
+                  onNextMonth={() => shiftDashMonth(1)}
+                  onThisMonth={() => setBulanValue(currentMonthValue())}
                 />
               )}
 

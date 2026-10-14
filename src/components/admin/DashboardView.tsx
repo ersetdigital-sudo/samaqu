@@ -50,16 +50,29 @@ export interface TopProduct {
 export default function DashboardView({
   revenue,
   orders,
+  chartOrders,
   products,
   topProducts,
   loading = false,
+  periodLabel,
+  onPrevMonth,
+  onNextMonth,
+  onThisMonth,
 }: {
-  /** Total pendapatan — dihitung caller (tetap pakai aturan lama: tanpa pesanan pending). */
+  /** Total pendapatan periode terpilih — dihitung caller (aturan lama: tanpa pesanan pending). */
   revenue: number;
+  /** Pesanan PERIODE TERPILIH — dipakai kartu metrik, donut status, dan Produk Terlaris. */
   orders: DashboardOrder[];
+  /** Sumber deret 6 bulan grafik "Pendapatan Bulanan" (default: `orders`). */
+  chartOrders?: DashboardOrder[];
   products: DashboardProduct[];
   topProducts: TopProduct[];
   loading?: boolean;
+  /** Label periode terpilih, mis. "Oktober 2026". */
+  periodLabel: string;
+  onPrevMonth: () => void;
+  onNextMonth: () => void;
+  onThisMonth: () => void;
 }) {
   /* ── metrik ── */
   const orderCount = orders.length;
@@ -74,9 +87,10 @@ export default function DashboardView({
   const topCategory = Object.entries(categoryCount).sort((a, b) => b[1] - a[1])[0];
 
   /* ── deret pendapatan bulanan (jendela 6 bulan sampai bulan pesanan terbaru) ── */
+  const chartSource = chartOrders ?? orders;
   const monthly = (() => {
-    if (orders.length === 0) return [] as { label: string; revenue: number; orders: number }[];
-    const stamps = orders.map((o) => new Date(o.created_at).getTime());
+    if (chartSource.length === 0) return [] as { label: string; revenue: number; orders: number }[];
+    const stamps = chartSource.map((o) => new Date(o.created_at).getTime());
     const latest = new Date(Math.max(...stamps));
     const LABELS = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
     const keys: string[] = [];
@@ -89,7 +103,7 @@ export default function DashboardView({
       rev[key] = 0;
       cnt[key] = 0;
     }
-    for (const o of orders) {
+    for (const o of chartSource) {
       const d = new Date(o.created_at);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
       if (key in rev) {
@@ -143,6 +157,43 @@ export default function DashboardView({
 
   return (
     <div className="p-5 lg:p-8 space-y-6 lg:space-y-8">
+      {/* ── Bar periode: pemilih bulan (sama seperti dashboard ops) ── */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="font-extrabold text-sm" style={{ color: "var(--fg)" }}>Ringkasan Periode</h2>
+          <p className="text-[11px] font-semibold uppercase tracking-wide mt-0.5" style={{ color: "var(--fg3)" }}>{periodLabel}</p>
+        </div>
+        <div className="flex items-center gap-1 rounded-xl p-1" style={{ background: "var(--card)", border: "1px solid var(--bd)" }}>
+          <button
+            type="button"
+            onClick={onPrevMonth}
+            aria-label="Bulan sebelumnya"
+            className="w-8 h-8 grid place-items-center rounded-lg transition-colors hover:bg-[var(--sub)]"
+            style={{ color: "var(--fg2)" }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
+          </button>
+          <button
+            type="button"
+            onClick={onThisMonth}
+            title="Kembali ke bulan ini"
+            className="px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-colors hover:bg-[var(--sub)]"
+            style={{ background: "var(--sub)", color: "var(--fg)" }}
+          >
+            {periodLabel}
+          </button>
+          <button
+            type="button"
+            onClick={onNextMonth}
+            aria-label="Bulan berikutnya"
+            className="w-8 h-8 grid place-items-center rounded-lg transition-colors hover:bg-[var(--sub)]"
+            style={{ color: "var(--fg2)" }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6l6 6-6 6" /></svg>
+          </button>
+        </div>
+      </div>
+
       {/* ── 4 kartu metrik ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-5">
         {metrics.map((m) => (
@@ -254,13 +305,13 @@ export default function DashboardView({
       {/* ── produk terlaris (grid 4 kolom ala wireframe) ── */}
       <div className="p-6" style={{ background: "var(--card)", border: "1px solid var(--bd)", borderRadius: "var(--rad3)" }}>
         <h3 className="font-extrabold text-sm" style={{ color: "var(--fg)" }}>Produk Terlaris</h3>
-        <p className="text-[11px] font-semibold uppercase tracking-wide mb-4 mt-0.5" style={{ color: "var(--fg3)" }}>Sepanjang waktu</p>
+        <p className="text-[11px] font-semibold uppercase tracking-wide mb-4 mt-0.5" style={{ color: "var(--fg3)" }}>{periodLabel}</p>
         {loading ? (
           <p className="text-xs font-bold" style={{ color: "var(--fg3)" }}>Memuat…</p>
         ) : topProducts.length === 0 ? (
           <div>
             <p className="text-xs font-bold" style={{ color: "var(--fg3)" }}>Belum ada penjualan</p>
-            <p className="text-[11px] mt-0.5" style={{ color: "var(--fg3)" }}>Periode sepanjang waktu</p>
+            <p className="text-[11px] mt-0.5" style={{ color: "var(--fg3)" }}>Periode {periodLabel}</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 text-xs">
