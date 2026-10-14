@@ -377,8 +377,10 @@ export default function OrderDetailContent({
                       <p className="rp-nm">{item.product_name}</p>
                       <p className="rp-var">
                         {[item.kain ? `Kain ${item.kain}` : null, item.series, item.color && item.color !== "default" ? item.color : null, item.size].filter(Boolean).join(" · ")} &times; {item.quantity}
-                        {item.product_id && itemWeights[item.product_id] ? <> &middot; {formatWeight(itemWeights[item.product_id])}</> : null}
                       </p>
+                      {item.product_id && itemWeights[item.product_id] ? (
+                        <p className="rp-var">Berat: <b>{formatWeight(itemWeights[item.product_id])}</b></p>
+                      ) : null}
                       <p className="rp-pr rp-mono">{rupiah(item.price * item.quantity)}</p>
                       {item.customer_price && item.minimum_price ? (
                         <p className="rp-var" style={{ color: "#B4552F", fontWeight: 600 }}>
