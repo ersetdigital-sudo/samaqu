@@ -1,15 +1,17 @@
 /**
- * Laporan Leads & Closing → PDF (A4 portrait, vektor, font ter-embed).
+ * Laporan Leads & Closing → PDF (A4 portrait, vektor, font Inter ter-embed).
  *
  * Dipakai endpoint `GET /api/ops/leads/report?bulan=YYYY-MM`.
  *
- * Pustaka: pdf-lib + @pdf-lib/fontkit (murni JS → aman di Vercel serverless).
- * Gradasi, kartu rounded, grafik dua sumbu, heatmap tabel semuanya digambar VEKTOR oleh
- * modul ini (tanpa headless browser), jadi hasilnya tajam dan ringan (~20-40 KB).
+ * Gaya: laporan bisnis formal — latar putih, teks charcoal, aksen brand seperlunya.
+ * TIDAK ada grafik, progress bar, gradient, atau ornamen dekoratif: semua informasi
+ * disampaikan sebagai angka, tabel, dan catatan teks.
  *
- * Catatan penting soal ANGKA: agregasi di sini memakai definisi yang sama persis dengan
- * halaman /ops/leads/laporan (lihat buildDailyRows/buildTotals). Modul ini TIDAK menulis
- * apa pun ke database.
+ * Pustaka: pdf-lib + @pdf-lib/fontkit (murni JS → aman di Vercel serverless). Font Inter
+ * di-embed (subset) dari src/assets/fonts.
+ *
+ * Angka & definisi: agregasi memakai definisi yang sama persis dengan halaman
+ * /ops/leads/laporan (buildDailyRows/buildTotals). Modul ini tidak menulis apa pun.
  */
 
 import fs from "node:fs";
@@ -17,7 +19,7 @@ import path from "node:path";
 import { PDFDocument, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
 
-/* ────────────────────────────── data & agregasi ────────────────────────────── */
+/* ────────────────────────────── data & agregasi (tidak berubah) ────────────────────────────── */
 
 export interface LeadRow {
   tanggal: string;
@@ -64,6 +66,14 @@ export interface LeadsSummary {
 
 export const REPORT_SOURCES = ["Meta ads", "WA", "IG", "Website"] as const;
 
+/** Nama tampilan sumber untuk laporan formal. */
+const SOURCE_LABEL: Record<string, string> = {
+  "Meta ads": "Meta Ads",
+  WA: "WhatsApp",
+  IG: "Instagram",
+  Website: "Website",
+};
+
 const MONTHS_ID = [
   "Januari", "Februari", "Maret", "April", "Mei", "Juni",
   "Juli", "Agustus", "September", "Oktober", "November", "Desember",
@@ -74,26 +84,23 @@ const DAY_SHORT = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
 const pad = (n: number) => String(n).padStart(2, "0");
 const nfmt = (n: number) => n.toLocaleString("id-ID");
 
-/** "2026-10-13" → "13 Oktober 2026". */
 export function tanggalID(iso: string): string {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || "");
   if (!m) return iso || "-";
   return `${Number(m[3])} ${MONTHS_ID[Number(m[2]) - 1] || m[2]} ${m[1]}`;
 }
 
-/** Tanggal (YYYY-MM-DD) untuk "hari ini" menurut WIB (UTC+7). */
 export function todayWib(now: Date = new Date()): string {
   const wib = new Date(now.getTime() + 7 * 60 * 60 * 1000);
   return `${wib.getUTCFullYear()}-${pad(wib.getUTCMonth() + 1)}-${pad(wib.getUTCDate())}`;
 }
 
-/** Waktu pembuatan: "14 Oktober 2026, 16.04 WIB". */
+/** "14 Oktober 2026, 16.04 WIB" */
 export function generatedAtID(now: Date): string {
   const wib = new Date(now.getTime() + 7 * 60 * 60 * 1000);
   return `${wib.getUTCDate()} ${MONTHS_ID[wib.getUTCMonth()]} ${wib.getUTCFullYear()}, ${pad(wib.getUTCHours())}.${pad(wib.getUTCMinutes())} WIB`;
 }
 
-/** Rekap per tanggal — definisi identik dengan halaman Laporan Leads. */
 export function buildDailyRows(leads: LeadRow[]): DailyLeadRow[] {
   const map: Record<string, DailyLeadRow> = {};
   for (const lead of leads) {
@@ -129,7 +136,6 @@ export function buildTotals(rows: DailyLeadRow[]): LeadsTotals {
 }
 
 export interface LeadsReportInput {
-  /** "YYYY-MM" */
   month: string;
   leads: LeadRow[];
   now?: Date;
@@ -189,12 +195,12 @@ export function summarizeLeadsReport({ month, leads, now = new Date() }: LeadsRe
   );
   highlights.push(
     (sources[0]?.count || 0) > 0
-      ? `Sumber terbesar: ${topSource} dengan ${nfmt(sources[0].count)} leads (${sources[0].pct.toFixed(1)}% dari total).`
+      ? `Sumber terbesar: ${SOURCE_LABEL[topSource] || topSource} dengan ${nfmt(sources[0].count)} leads (${sources[0].pct.toFixed(1)}%).`
       : "Sumber leads belum ada datanya pada periode ini."
   );
 
   const periodLabel = running
-    ? `${Number(first.slice(8, 10))} sampai ${Number(periodEnd.slice(8, 10))} ${MONTHS_ID[monthIdx]} ${year} (data berjalan)`
+    ? `${Number(first.slice(8, 10))} sampai ${Number(periodEnd.slice(8, 10))} ${MONTHS_ID[monthIdx]} ${year}`
     : monthLabel;
 
   return {
@@ -218,56 +224,49 @@ export function summarizeLeadsReport({ month, leads, now = new Date() }: LeadsRe
   };
 }
 
-/** Teks ringkas siap tempel ke WhatsApp (tanpa emoji). */
 export function summaryText(summary: LeadsSummary): string {
   return [
     `Laporan Leads SAMAQU — ${summary.monthLabel}`,
     `Total leads: ${nfmt(summary.totals.total)}`,
     `Total closing: ${nfmt(summary.totals.closing)}`,
     `Konversi: ${summary.conversion.toFixed(1)}%`,
-    `Sumber terbesar: ${summary.topSource} (${nfmt(summary.sources[0]?.count || 0)})`,
+    `Sumber terbesar: ${SOURCE_LABEL[summary.topSource] || summary.topSource} (${nfmt(summary.sources[0]?.count || 0)})`,
   ].join("\n");
 }
 
-/** Nama file unduhan: "Laporan-Leads-SAMAQU-Oktober-2026.pdf". */
 export function reportFileName(summary: LeadsSummary): string {
   const [y, mm] = summary.month.split("-");
   return `Laporan-Leads-SAMAQU-${MONTHS_ID[Number(mm) - 1]}-${y}.pdf`;
 }
 
-/* ────────────────────────────── palet & tata letak ────────────────────────────── */
+/* ────────────────────────────── tipografi & palet ────────────────────────────── */
 
 const PAGE_W = 595.28;
 const PAGE_H = 841.89;
-const M = 36; // margin halaman (lega, kelipatan 4)
-const CW = PAGE_W - M * 2; // 523.28
-const FOOTER_Y = 26;
+const MARGIN = 48; // ≈ 17 mm
+const CW = PAGE_W - MARGIN * 2; // 499.28
+const FOOTER_Y = 32;
+
+const INK = "#1f2937"; // charcoal
+const SUB = "#6b7280";
+const FAINT = "#9ca3af";
+const RULE = "#e5e7eb";
+const ZEBRA = "#f7f8fa";
+const HEAD_BG = "#eef1f5";
+const BRAND = "#2563eb"; // aksen brand, dipakai hemat
+
+const S = {
+  title: 24,
+  section: 13,
+  body: 10.5,
+  table: 10,
+  small: 8.5,
+  kpi: 24,
+};
 
 const hex = (h: string) => {
   const s = h.replace("#", "");
   return rgb(parseInt(s.slice(0, 2), 16) / 255, parseInt(s.slice(2, 4), 16) / 255, parseInt(s.slice(4, 6), 16) / 255);
-};
-const mix = (a: string, b: string, t: number) => {
-  const pa = hex(a);
-  const pb = hex(b);
-  return rgb(pa.red + (pb.red - pa.red) * t, pa.green + (pb.green - pa.green) * t, pa.blue + (pb.blue - pa.blue) * t);
-};
-
-const BLUE = "#2563eb";
-const INDIGO = "#4f46e5";
-const EMERALD = "#10b981";
-const INK = "#0f172a";
-const SLATE = "#475569";
-const MUTED = "#94a3b8";
-const LINE = "#e2e8f0";
-const SOFT = "#f8fafc";
-const TOTAL_BG = "#1e3a8a";
-
-const SOURCE_COLOR: Record<string, string> = {
-  "Meta ads": "#4f46e5",
-  WA: "#10b981",
-  IG: "#ec4899",
-  Website: "#2563eb",
 };
 
 export interface ReportFonts {
@@ -275,11 +274,12 @@ export interface ReportFonts {
   bold: Uint8Array | ArrayBuffer;
 }
 
+/** Font Inter di-embed dari repo (bukan font bawaan PDF viewer). */
 export function loadReportFonts(): ReportFonts {
   const dir = path.join(process.cwd(), "src", "assets", "fonts");
   return {
-    regular: fs.readFileSync(path.join(dir, "PlusJakartaSans-Regular.ttf")),
-    bold: fs.readFileSync(path.join(dir, "PlusJakartaSans-Bold.ttf")),
+    regular: fs.readFileSync(path.join(dir, "Inter-Regular.ttf")),
+    bold: fs.readFileSync(path.join(dir, "Inter-SemiBold.ttf")),
   };
 }
 
@@ -291,247 +291,137 @@ interface Ctx {
   y: number;
 }
 
-/* ── primitif gambar ── */
-
-function roundedRect(
-  page: PDFPage,
-  o: { x: number; y: number; w: number; h: number; r?: number; fill?: string; border?: string; borderWidth?: number; opacity?: number }
-) {
-  const r = Math.min(o.r ?? 12, o.w / 2, o.h / 2);
-  const p = [
-    `M ${r} 0`,
-    `H ${o.w - r}`,
-    `A ${r} ${r} 0 0 1 ${o.w} ${r}`,
-    `V ${o.h - r}`,
-    `A ${r} ${r} 0 0 1 ${o.w - r} ${o.h}`,
-    `H ${r}`,
-    `A ${r} ${r} 0 0 1 0 ${o.h - r}`,
-    `V ${r}`,
-    `A ${r} ${r} 0 0 1 ${r} 0`,
-    "Z",
-  ].join(" ");
-  page.drawSvgPath(p, {
+function rect(page: PDFPage, o: { x: number; y: number; w: number; h: number; fill?: string; border?: string; borderWidth?: number }) {
+  page.drawRectangle({
     x: o.x,
-    y: o.y + o.h, // drawSvgPath menggambar ke arah bawah dari titik y
+    y: o.y,
+    width: o.w,
+    height: o.h,
     color: o.fill ? hex(o.fill) : undefined,
     borderColor: o.border ? hex(o.border) : undefined,
-    borderWidth: o.borderWidth ?? (o.border ? 0.8 : 0),
-    opacity: o.opacity,
+    borderWidth: o.border ? o.borderWidth ?? 0.7 : 0,
   });
 }
 
-/** Gradasi horizontal (kiri→kanan) dengan beberapa pita. */
-function hGradient(page: PDFPage, o: { x: number; y: number; w: number; h: number; from: string; to: string; steps?: number }) {
-  const steps = o.steps ?? 48;
-  const sw = o.w / steps;
-  for (let i = 0; i < steps; i++) {
-    page.drawRectangle({ x: o.x + i * sw, y: o.y, width: sw + 0.6, height: o.h, color: mix(o.from, o.to, i / (steps - 1)) });
+function rule(page: PDFPage, y: number, x1 = MARGIN, x2 = MARGIN + CW, color = RULE, thickness = 0.7) {
+  page.drawLine({ start: { x: x1, y }, end: { x: x2, y }, thickness, color: hex(color) });
+}
+
+function text(page: PDFPage, font: PDFFont, value: string, o: { x: number; y: number; size?: number; color?: string }) {
+  page.drawText(value, { x: o.x, y: o.y, size: o.size ?? S.body, font, color: hex(o.color ?? INK) });
+}
+
+function textRight(page: PDFPage, font: PDFFont, value: string, o: { right: number; y: number; size?: number; color?: string }) {
+  const size = o.size ?? S.body;
+  page.drawText(value, { x: o.right - font.widthOfTextAtSize(value, size), y: o.y, size, font, color: hex(o.color ?? INK) });
+}
+
+function textCenter(page: PDFPage, font: PDFFont, value: string, o: { center: number; y: number; size?: number; color?: string }) {
+  const size = o.size ?? S.body;
+  page.drawText(value, { x: o.center - font.widthOfTextAtSize(value, size) / 2, y: o.y, size, font, color: hex(o.color ?? INK) });
+}
+
+function wrap(value: string, font: PDFFont, size: number, maxWidth: number): string[] {
+  const words = String(value).split(/\s+/);
+  const out: string[] = [];
+  let line = "";
+  for (const w of words) {
+    const candidate = line ? `${line} ${w}` : w;
+    if (font.widthOfTextAtSize(candidate, size) <= maxWidth) line = candidate;
+    else {
+      if (line) out.push(line);
+      line = w;
+    }
   }
+  if (line) out.push(line);
+  return out;
 }
 
-/** Gradasi vertikal (atas→bawah) di dalam kotak — dipakai batang grafik. */
-function vGradient(page: PDFPage, o: { x: number; y: number; w: number; h: number; from: string; to: string; steps?: number }) {
-  const steps = Math.max(6, Math.min(16, Math.round(o.h / 12)));
-  const sh = o.h / steps;
-  for (let i = 0; i < steps; i++) {
-    page.drawRectangle({
-      x: o.x,
-      y: o.y + o.h - (i + 1) * sh,
-      width: o.w,
-      height: sh + 0.6,
-      color: mix(o.from, o.to, i / (steps - 1)),
-    });
-  }
+/** Judul bagian: teks charcoal + garis tipis di bawahnya (pemisah, bukan dekorasi). */
+function sectionTitle(ctx: Ctx, title: string) {
+  text(ctx.page, ctx.bold, title, { x: MARGIN, y: ctx.y, size: S.section, color: INK });
+  ctx.y -= 8;
+  rule(ctx.page, ctx.y);
+  ctx.y -= 16;
 }
 
-/** Garis putus-putus (emulasi dash pdf-lib). */
-function dottedLine(page: PDFPage, x1: number, x2: number, y: number, color = LINE, dash = 1.6, gap = 2.6, thickness = 0.6) {
-  for (let x = x1; x < x2; x += dash + gap) {
-    page.drawLine({ start: { x, y }, end: { x: Math.min(x + dash, x2), y }, thickness, color: hex(color) });
-  }
-}
+/* ────────────────────────────── blok halaman 1 ────────────────────────────── */
 
-/* ── helper teks ── */
-
-function label(page: PDFPage, font: PDFFont, value: string, o: { x: number; y: number; size?: number; color?: string }) {
-  const size = o.size ?? 10;
-  page.drawText(value, { x: o.x, y: o.y, size, font, color: hex(o.color ?? INK) });
-}
-
-function labelRight(page: PDFPage, font: PDFFont, value: string, o: { right: number; y: number; size?: number; color?: string }) {
-  const size = o.size ?? 10;
-  const w = font.widthOfTextAtSize(value, size);
-  page.drawText(value, { x: o.right - w, y: o.y, size, font, color: hex(o.color ?? INK) });
-}
-
-function labelCenter(page: PDFPage, font: PDFFont, value: string, o: { center: number; y: number; size?: number; color?: string }) {
-  const size = o.size ?? 10;
-  const w = font.widthOfTextAtSize(value, size);
-  page.drawText(value, { x: o.center - w / 2, y: o.y, size, font, color: hex(o.color ?? INK) });
-}
-
-const spaced = (s: string) => s.split("").join(" ");
-
-/* ────────────────────────────── kartu ringkasan ────────────────────────────── */
-
-function statCard(
-  ctx: Ctx,
-  o: { x: number; y: number; w: number; h: number; label: string; value: string; note: string; dot: string; big?: boolean; progress?: number }
-) {
-  roundedRect(ctx.page, { x: o.x, y: o.y, w: o.w, h: o.h, r: 12, fill: "#ffffff", border: LINE });
-  ctx.page.drawCircle({ x: o.x + 20, y: o.y + o.h - 22, size: 3.2, color: hex(o.dot) });
-  label(ctx.page, ctx.bold, spaced(o.label.toUpperCase()), { x: o.x + 30, y: o.y + o.h - 25, size: 8, color: MUTED });
-  label(ctx.page, ctx.bold, o.value, { x: o.x + 20, y: o.y + o.h - (o.big ? 62 : 54), size: o.big ? 32 : 24, color: INK });
-  label(ctx.page, ctx.regular, o.note, { x: o.x + 20, y: o.y + 10, size: 9, color: SLATE });
-  if (typeof o.progress === "number") {
-    const px = o.x + 20;
-    const pw = o.w - 40;
-    roundedRect(ctx.page, { x: px, y: o.y + 22, w: pw, h: 5, r: 3, fill: "#eef2f7" });
-    const fillW = Math.max(3, Math.min(pw, (Math.min(o.progress, 100) / 100) * pw));
-    roundedRect(ctx.page, { x: px, y: o.y + 22, w: fillW, h: 5, r: 3, fill: INDIGO });
-  }
-}
-
-/* ────────────────────────────── grafik dua sumbu ────────────────────────────── */
-
-function drawChart(ctx: Ctx, rows: DailyLeadRow[], peakTotal: number) {
+function drawMasthead(ctx: Ctx, summary: LeadsSummary, generatedAt: string) {
   const page = ctx.page;
-  const top = ctx.y;
-  const titleH = 20;
-  const plotH = 190; // ≈ 67 mm — memenuhi minimal ~70 mm bersama label
-  const labelH = 16;
-  const plotLeft = M + 34;
-  const plotRight = M + CW - 30;
-  const plotW = plotRight - plotLeft;
-  const plotBottom = top - titleH - plotH;
+  text(page, ctx.bold, "SAMAQU", { x: MARGIN, y: ctx.y, size: 15, color: INK });
+  const wm = ctx.bold.widthOfTextAtSize("SAMAQU", 15);
+  text(page, ctx.regular, "Laporan internal", { x: MARGIN + wm + 10, y: ctx.y + 1, size: S.small, color: FAINT });
+  textRight(page, ctx.regular, `Dibuat ${generatedAt}`, { right: MARGIN + CW, y: ctx.y + 1, size: S.small, color: FAINT });
 
-  label(page, ctx.bold, "Leads Masuk vs Closing per Tanggal", { x: M, y: top - 10, size: 10, color: INK });
+  // aksen brand tunggal (tipis & pendek)
+  ctx.y -= 14;
+  page.drawRectangle({ x: MARGIN, y: ctx.y, width: 40, height: 2.5, color: hex(BRAND) });
 
-  // legenda di kanan
-  const legendY = top - 8;
-  labelRight(page, ctx.bold, "Closing", { right: M + CW - 2, y: legendY, size: 8, color: SLATE });
-  const closingLegendW = ctx.bold.widthOfTextAtSize("Closing", 8);
-  const legendLineRight = M + CW - 2 - closingLegendW - 6;
-  page.drawLine({ start: { x: legendLineRight - 14, y: legendY + 3.5 }, end: { x: legendLineRight, y: legendY + 3.5 }, thickness: 1.6, color: hex(EMERALD) });
-  page.drawCircle({ x: legendLineRight - 7, y: legendY + 3.5, size: 2, color: hex(EMERALD) });
-  labelRight(page, ctx.bold, "Leads Masuk", { right: legendLineRight - 22, y: legendY, size: 8, color: SLATE });
-  const leadsLegendW = ctx.bold.widthOfTextAtSize("Leads Masuk", 8);
-  const swatchRight = legendLineRight - 22 - leadsLegendW - 6;
-  vGradient(page, { x: swatchRight - 9, y: legendY, w: 9, h: 9, from: "#8fb2fb", to: INDIGO });
-
-  const maxLeads = Math.max(1, rows.reduce((m, r) => Math.max(m, r.total), 0));
-  const maxClosing = Math.max(1, rows.reduce((m, r) => Math.max(m, r.closing), 0));
-  const niceLeads = Math.ceil(maxLeads / 4) * 4;
-
-  // grid + tick kiri (leads) & kanan (closing)
-  for (let i = 0; i <= 4; i++) {
-    const fy = plotBottom + (i / 4) * plotH;
-    dottedLine(page, plotLeft, plotRight, fy);
-    labelRight(page, ctx.regular, String((niceLeads / 4) * i), { right: plotLeft - 6, y: fy - 3.5, size: 8, color: MUTED });
-    const closingTick = Math.round((maxClosing / 4) * i);
-    label(page, ctx.regular, String(closingTick), { x: plotRight + 6, y: fy - 3.5, size: 8, color: EMERALD });
-  }
-
-  const n = Math.max(1, rows.length);
-  const slot = plotW / n;
-  const barW = Math.max(4, Math.min(slot * 0.62, n > 20 ? 12 : 22));
-  const labelStep = n > 20 ? 3 : n > 12 ? 2 : 1;
-
-  rows.forEach((row, i) => {
-    const cx = plotLeft + slot * i + slot / 2;
-    const h = Math.max((row.total / niceLeads) * plotH, row.total > 0 ? 2 : 0);
-    if (h > 0) {
-      const isPeak = row.total === peakTotal && row.total > 0;
-      vGradient(page, {
-        x: cx - barW / 2,
-        y: plotBottom,
-        w: barW,
-        h,
-        from: isPeak ? "#3b82f6" : "#c9dbfe",
-        to: isPeak ? INDIGO : "#8fb2fb",
-      });
-      if (isPeak) {
-        labelCenter(page, ctx.bold, `Puncak ${row.total}`, { center: cx, y: plotBottom + h + 5, size: 8, color: BLUE });
-      }
-    }
-    if (i % labelStep === 0 || i === n - 1) {
-      labelCenter(page, ctx.regular, String(Number(row.tanggal.slice(8, 10))), { center: cx, y: plotBottom - 11, size: 8, color: MUTED });
-    }
+  ctx.y -= 30;
+  text(page, ctx.bold, "Laporan Leads dan Closing", { x: MARGIN, y: ctx.y, size: S.title, color: INK });
+  ctx.y -= 20;
+  const period = `Periode ${summary.periodLabel}${summary.running ? " · data berjalan" : ""}`;
+  text(page, ctx.regular, period, { x: MARGIN, y: ctx.y, size: S.body, color: SUB });
+  ctx.y -= 16;
+  text(page, ctx.regular, `${summary.dayCount} hari · sumber data: tabel leads dashboard internal SAMAQU`, {
+    x: MARGIN,
+    y: ctx.y,
+    size: S.small,
+    color: FAINT,
   });
-
-  // garis closing: spline Catmull-Rom disampel → segmen pendek (halus, tanpa menembus 0)
-  const pts = rows.map((row, i) => ({
-    x: plotLeft + slot * i + slot / 2,
-    y: plotBottom + (row.closing / maxClosing) * plotH,
-  }));
-  const curve: { x: number; y: number }[] = [];
-  for (let i = 0; i < pts.length - 1; i++) {
-    const p0 = pts[i - 1] ?? pts[i];
-    const p1 = pts[i];
-    const p2 = pts[i + 1];
-    const p3 = pts[i + 2] ?? p2;
-    for (let s = 0; s < 8; s++) {
-      const t = s / 8;
-      const t2 = t * t;
-      const t3 = t2 * t;
-      curve.push({
-        x: 0.5 * ((2 * p1.x) + (-p0.x + p2.x) * t + (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 + (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3),
-        y: 0.5 * ((2 * p1.y) + (-p0.y + p2.y) * t + (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 + (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3),
-      });
-    }
-  }
-  curve.push(pts[pts.length - 1]);
-  for (let i = 1; i < curve.length; i++) {
-    if (!curve[i - 1] || !curve[i]) continue;
-    page.drawLine({ start: curve[i - 1], end: curve[i], thickness: 1.8, color: hex(EMERALD) });
-  }
-  for (const p of pts) {
-    page.drawCircle({ x: p.x, y: p.y, size: 2.4, color: hex("#ffffff"), borderColor: hex(EMERALD), borderWidth: 1.2 });
-  }
-
-  ctx.y = plotBottom - labelH - 6;
+  ctx.y -= 14;
+  rule(page, ctx.y, MARGIN, MARGIN + CW, RULE);
 }
 
-/* ────────────────────────────── blok lain halaman 1 ────────────────────────────── */
-
-function drawSources(ctx: Ctx, summary: LeadsSummary, x: number, y: number, w: number) {
-  const page = ctx.page;
-  label(page, ctx.bold, spaced("SUMBER LEADS"), { x, y, size: 8, color: MUTED });
-  let ry = y - 18;
-  const maxCount = Math.max(1, summary.sources.reduce((m, s) => Math.max(m, s.count), 0));
-  const nameW = 62;
-  const valueW = 74;
-  const barW = w - nameW - valueW;
-  summary.sources.forEach((s) => {
-    label(page, ctx.bold, s.name, { x, y: ry, size: 9.5, color: INK });
-    const bx = x + nameW;
-    roundedRect(page, { x: bx, y: ry - 1, w: barW, h: 9, r: 4.5, fill: "#eef2f7" });
-    const fw = Math.max((s.count / maxCount) * (barW - 4), s.count > 0 ? 4 : 0);
-    if (fw > 0) roundedRect(page, { x: bx + 2, y: ry, w: fw, h: 7, r: 3.5, fill: SOURCE_COLOR[s.name] || INDIGO });
-    labelRight(page, ctx.regular, `${nfmt(s.count)} · ${s.pct.toFixed(1)}%`, { right: x + w, y: ry, size: 9, color: SLATE });
-    ry -= 24;
-  });
-  return ry;
-}
-
-function drawHighlights(ctx: Ctx, summary: LeadsSummary, x: number, y: number, w: number) {
-  const page = ctx.page;
-  label(page, ctx.bold, spaced("SOROTAN"), { x, y, size: 8, color: MUTED });
+function drawKpi(ctx: Ctx, summary: LeadsSummary) {
   const cards = [
-    { value: summary.peakLeads || 0, note: summary.peakLeadsDate ? `puncak ${DAY_SHORT[new Date(`${summary.peakLeadsDate}T00:00:00Z`).getUTCDay()]}, ${Number(summary.peakLeadsDate.slice(8, 10))} ${MONTHS_ID_SHORT[Number(summary.peakLeadsDate.slice(5, 7)) - 1]}` : "belum ada", label: "leads terbanyak" },
-    { value: summary.peakClosing || 0, note: summary.peakClosingDate ? `${Number(summary.peakClosingDate.slice(8, 10))} ${MONTHS_ID_SHORT[Number(summary.peakClosingDate.slice(5, 7)) - 1]}` : "belum ada", label: "closing terbanyak" },
-    { value: summary.sources[0]?.count || 0, note: summary.topSource, label: "sumber terbesar" },
+    { label: "Total leads", value: nfmt(summary.totals.total), note: `${summary.dayCount} hari periode` },
+    { label: "Total closing", value: nfmt(summary.totals.closing), note: "status closing" },
+    { label: "Tingkat konversi", value: `${summary.conversion.toFixed(1)}%`, note: "closing ÷ leads" },
+    { label: "Closing Meta Ads", value: nfmt(summary.totals.closingMetaAds), note: "dari total closing" },
+    { label: "Rata-rata per hari", value: summary.averagePerDay.toFixed(1), note: "leads per hari" },
   ];
-  let cy = y - 14;
-  const h = 34;
-  cards.forEach((c) => {
-    roundedRect(page, { x, y: cy - h, w, h, r: 10, fill: SOFT, border: LINE });
-    label(page, ctx.bold, nfmt(c.value), { x: x + 12, y: cy - 24, size: 17, color: INK });
-    label(page, ctx.regular, c.label, { x: x + 12, y: cy - 31, size: 8, color: MUTED });
-    labelRight(page, ctx.bold, c.note, { right: x + w - 12, y: cy - 20, size: 8.5, color: SLATE });
-    cy -= h + 8;
+  const h = 76;
+  rect(ctx.page, { x: MARGIN, y: ctx.y - h, w: CW, h, border: RULE });
+  const colW = CW / cards.length;
+  cards.forEach((c, i) => {
+    const x = MARGIN + i * colW;
+    if (i > 0) ctx.page.drawLine({ start: { x, y: ctx.y - h + 12 }, end: { x, y: ctx.y - 12 }, thickness: 0.6, color: hex(RULE) });
+    text(ctx.page, ctx.regular, c.label, { x: x + 14, y: ctx.y - 22, size: S.small, color: SUB });
+    text(ctx.page, ctx.bold, c.value, { x: x + 14, y: ctx.y - 48, size: S.kpi, color: INK });
+    text(ctx.page, ctx.regular, c.note, { x: x + 14, y: ctx.y - 64, size: 8, color: FAINT });
   });
-  return cy;
+  ctx.y -= h;
+}
+
+function drawSourceTable(ctx: Ctx, summary: LeadsSummary) {
+  const page = ctx.page;
+  const cols = { sumber: MARGIN, leads: MARGIN + 300, pct: MARGIN + CW };
+  const headH = 22;
+  rect(page, { x: MARGIN, y: ctx.y - headH, w: CW, h: headH, fill: HEAD_BG });
+  text(page, ctx.bold, "Sumber", { x: cols.sumber + 12, y: ctx.y - 15, size: S.table, color: INK });
+  textRight(page, ctx.bold, "Total leads", { right: cols.leads, y: ctx.y - 15, size: S.table, color: INK });
+  textRight(page, ctx.bold, "Persentase", { right: cols.pct - 12, y: ctx.y - 15, size: S.table, color: INK });
+  ctx.y -= headH;
+
+  const rowH = 21;
+  summary.sources.forEach((s, i) => {
+    if (i % 2 === 1) rect(page, { x: MARGIN, y: ctx.y - rowH, w: CW, h: rowH, fill: ZEBRA });
+    text(page, ctx.regular, SOURCE_LABEL[s.name] || s.name, { x: cols.sumber + 12, y: ctx.y - 14, size: S.table, color: INK });
+    textRight(page, ctx.regular, nfmt(s.count), { right: cols.leads, y: ctx.y - 14, size: S.table, color: INK });
+    textRight(page, ctx.regular, `${s.pct.toFixed(1)}%`, { right: cols.pct - 12, y: ctx.y - 14, size: S.table, color: SUB });
+    ctx.y -= rowH;
+    rule(page, ctx.y, MARGIN, MARGIN + CW, "#f1f3f6", 0.6);
+  });
+
+  const sum = summary.sources.reduce((t, s) => t + s.count, 0);
+  rule(page, ctx.y, MARGIN, MARGIN + CW, RULE, 1);
+  const totalH = 24;
+  text(page, ctx.bold, "Total sumber", { x: cols.sumber + 12, y: ctx.y - 15, size: S.table, color: INK });
+  textRight(page, ctx.bold, nfmt(sum), { right: cols.leads, y: ctx.y - 15, size: S.table, color: INK });
+  textRight(page, ctx.regular, "100,0%", { right: cols.pct - 12, y: ctx.y - 15, size: S.table, color: SUB });
+  ctx.y -= totalH;
 }
 
 function weeklyBlocks(rows: DailyLeadRow[]) {
@@ -556,168 +446,154 @@ function weeklyBlocks(rows: DailyLeadRow[]) {
   return out;
 }
 
-function drawWeekly(ctx: Ctx, rows: DailyLeadRow[]) {
+function drawWeeklyTable(ctx: Ctx, rows: DailyLeadRow[]) {
   const page = ctx.page;
   const blocks = weeklyBlocks(rows);
-  label(page, ctx.bold, spaced("PERBANDINGAN MINGGUAN"), { x: M, y: ctx.y, size: 8, color: MUTED });
-  ctx.y -= 16;
+  const cols = { periode: MARGIN, hari: MARGIN + 190, leads: MARGIN + 290, closing: MARGIN + 380, rate: MARGIN + CW };
+  const headH = 20;
+  rect(page, { x: MARGIN, y: ctx.y - headH, w: CW, h: headH, fill: HEAD_BG });
+  text(page, ctx.bold, "Periode", { x: cols.periode + 12, y: ctx.y - 14, size: S.table, color: INK });
+  text(page, ctx.bold, "Hari", { x: cols.hari, y: ctx.y - 14, size: S.table, color: INK });
+  textRight(page, ctx.bold, "Leads", { right: cols.leads, y: ctx.y - 14, size: S.table, color: INK });
+  textRight(page, ctx.bold, "Closing", { right: cols.closing, y: ctx.y - 14, size: S.table, color: INK });
+  textRight(page, ctx.bold, "Konversi", { right: cols.rate - 12, y: ctx.y - 14, size: S.table, color: INK });
+  ctx.y -= headH;
+
   if (blocks.length === 0) {
-    label(page, ctx.regular, "Belum ada data pada periode ini.", { x: M, y: ctx.y, size: 9, color: SLATE });
-    ctx.y -= 18;
+    text(page, ctx.regular, "Belum ada data pada periode ini.", { x: cols.periode + 12, y: ctx.y - 14, size: S.table, color: SUB });
+    ctx.y -= 22;
     return;
   }
-  const gap = 8;
-  const cardW = (CW - gap * (blocks.length - 1)) / blocks.length;
-  const h = 62;
+
+  const rowH = 20;
   blocks.forEach((b, i) => {
-    const x = M + i * (cardW + gap);
-    roundedRect(page, { x, y: ctx.y - h, w: cardW, h, r: 10, fill: "#ffffff", border: LINE });
-    label(page, ctx.bold, `${b.label}`, { x: x + 10, y: ctx.y - 16, size: 9.5, color: INK });
-    label(page, ctx.bold, nfmt(b.total), { x: x + 10, y: ctx.y - 36, size: 18, color: BLUE });
-    labelRight(page, ctx.bold, `${b.rate.toFixed(1)}%`, { right: x + cardW - 10, y: ctx.y - 36, size: 9, color: EMERALD });
-    label(page, ctx.regular, `${nfmt(b.closing)} closing`, { x: x + 10, y: ctx.y - 48, size: 8, color: SLATE });
-    if (b.partial) labelRight(page, ctx.regular, `${b.days} hari`, { right: x + cardW - 10, y: ctx.y - 16, size: 8, color: MUTED });
+    if (i % 2 === 1) rect(page, { x: MARGIN, y: ctx.y - rowH, w: CW, h: rowH, fill: ZEBRA });
+    text(page, ctx.regular, b.label, { x: cols.periode + 12, y: ctx.y - 14, size: S.table, color: INK });
+    text(page, ctx.regular, b.partial ? `${b.days} (sebagian)` : String(b.days), { x: cols.hari, y: ctx.y - 14, size: S.table, color: SUB });
+    textRight(page, ctx.regular, nfmt(b.total), { right: cols.leads, y: ctx.y - 14, size: S.table, color: INK });
+    textRight(page, ctx.regular, nfmt(b.closing), { right: cols.closing, y: ctx.y - 14, size: S.table, color: INK });
+    textRight(page, ctx.regular, `${b.rate.toFixed(1)}%`, { right: cols.rate - 12, y: ctx.y - 14, size: S.table, color: SUB });
+    ctx.y -= rowH;
+    rule(page, ctx.y, MARGIN, MARGIN + CW, "#f1f3f6", 0.6);
   });
-  ctx.y -= h + 10;
 }
 
-/* ────────────────────────────── halaman 1 ────────────────────────────── */
-
-function drawHeaderBand(ctx: Ctx, summary: LeadsSummary, generatedAt: string) {
-  const page = ctx.page;
-  const bandH = 122;
-  hGradient(page, { x: 0, y: PAGE_H - bandH, w: PAGE_W, h: bandH, from: BLUE, to: INDIGO });
-
-  label(page, ctx.bold, "SAMAQU", { x: M, y: PAGE_H - 44, size: 18, color: "#ffffff" });
-  const wm = ctx.bold.widthOfTextAtSize("SAMAQU", 18);
-  label(page, ctx.bold, spaced("INTERNAL"), { x: M + wm + 10, y: PAGE_H - 41, size: 8, color: "#c7d7fd" });
-  labelRight(page, ctx.regular, `Dibuat ${generatedAt}`, { right: PAGE_W - M, y: PAGE_H - 42, size: 9, color: "#dbe4ff" });
-
-  label(page, ctx.bold, "Laporan Leads dan Closing", { x: M, y: PAGE_H - 76, size: 24, color: "#ffffff" });
-  label(page, ctx.regular, summary.periodLabel, { x: M, y: PAGE_H - 99, size: 11, color: "#e3e9ff" });
-
-  const foot = summary.running
-    ? `${summary.dayCount} hari berjalan · sumber data: tabel leads dashboard internal`
-    : `${summary.dayCount} hari · sumber data: tabel leads dashboard internal`;
-  label(page, ctx.regular, foot, { x: M, y: PAGE_H - 115, size: 8, color: "#c7d7fd" });
-
-  ctx.y = PAGE_H - bandH - 20;
+function highlightLines(summary: LeadsSummary, rows: DailyLeadRow[]): string[] {
+  const blocks = weeklyBlocks(rows);
+  const lines = [...summary.highlights];
+  if (blocks.length >= 2) {
+    const a = blocks[blocks.length - 2];
+    const b = blocks[blocks.length - 1];
+    const diff = b.total - a.total;
+    const pct = a.total > 0 ? (diff / a.total) * 100 : 0;
+    lines.push(
+      `Perbandingan dua blok terakhir: ${a.label} ${nfmt(a.total)} leads (${a.rate.toFixed(1)}% konversi) dan ${b.label} ${nfmt(b.total)} leads (${b.rate.toFixed(1)}% konversi). Selisih ${diff >= 0 ? "+" : ""}${nfmt(diff)} leads (${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%).`
+    );
+  } else if (blocks.length === 1) {
+    lines.push(`Periode ini hanya mencakup satu blok mingguan (${blocks[0].label}) sehingga belum ada pembanding.`);
+  }
+  return lines;
 }
 
-/* ────────────────────────────── halaman 2: tabel ────────────────────────────── */
+function analysisNote(summary: LeadsSummary, rows: DailyLeadRow[]): string[] {
+  const blocks = weeklyBlocks(rows);
+  const out: string[] = [];
+  if (summary.totals.total === 0) {
+    out.push("Tidak ada leads tercatat pada periode ini, sehingga belum ada angka yang bisa dianalisis.");
+    return out;
+  }
+  out.push(
+    `Fakta: ${nfmt(summary.totals.total)} leads masuk dengan ${nfmt(summary.totals.closing)} closing (konversi ${summary.conversion.toFixed(1)}%), rata-rata ${summary.averagePerDay.toFixed(1)} leads per hari.`
+  );
+  if (blocks.length >= 2) {
+    const a = blocks[blocks.length - 2];
+    const b = blocks[blocks.length - 1];
+    const dLeads = b.total - a.total;
+    const dClose = b.closing - a.closing;
+    out.push(
+      `${b.label} dibanding ${a.label}: leads ${dLeads >= 0 ? "naik" : "turun"} ${nfmt(Math.abs(dLeads))}, closing ${dClose >= 0 ? "naik" : "turun"} ${nfmt(Math.abs(dClose))}.`
+    );
+  }
+  out.push(
+    "Catatan: bagian ini hanya memuat perbandingan angka dari data yang sama. Belum ada analisis penyebab karena tidak ada data pendukung lain di laporan ini."
+  );
+  return out;
+}
 
-const COL_TANGGAL = 112;
-const COL_SOURCE = 54;
-const COL_TOTAL = 66;
-const COL_CLOSING = 66;
-const ROW_H = 28; // ≈ 9,9 mm
+/* ────────────────────────────── halaman 2: tabel harian ────────────────────────────── */
+
+const COL_TANGGAL = 92;
+const COL_SOURCE = 52;
+const COL_TOTAL = 64;
+const COL_CLOSING = 64;
 
 function tableColumns() {
-  const x0 = M;
-  const sources = REPORT_SOURCES.map((_, i) => x0 + COL_TANGGAL + i * COL_SOURCE);
-  const total = x0 + COL_TANGGAL + REPORT_SOURCES.length * COL_SOURCE;
+  const tanggal = MARGIN;
+  const sources = REPORT_SOURCES.map((_, i) => tanggal + COL_TANGGAL + i * COL_SOURCE);
+  const total = tanggal + COL_TANGGAL + REPORT_SOURCES.length * COL_SOURCE;
   const closing = total + COL_TOTAL;
-  return { tanggal: x0, sources, total, closing, right: M + CW };
+  const closingMeta = closing + COL_CLOSING;
+  return { tanggal, sources, total, closing, closingMeta, right: closingMeta + (MARGIN + CW - closingMeta) };
 }
 
-function drawTableHeader(ctx: Ctx) {
+function drawTableHeader(ctx: Ctx, h: number) {
   const page = ctx.page;
   const cols = tableColumns();
-  const h = 30;
-  const y = ctx.y - h;
-  // SATU latar untuk semua kolom (dulu separuh kanan beda warna = terlihat glitch)
-  page.drawRectangle({ x: M, y, width: CW, height: h, color: hex("#1e3a8a") });
-  page.drawRectangle({ x: M, y: y + h - 3, width: CW, height: 3, color: hex(INDIGO) });
-
-  const size = 8;
-  const center = y + h / 2;
-  label(page, ctx.bold, spaced("TANGGAL"), { x: cols.tanggal + 10, y: center - 3, size, color: "#ffffff" });
+  rect(page, { x: MARGIN, y: ctx.y - h, w: CW, h, fill: HEAD_BG });
+  const right = MARGIN + CW;
+  text(page, ctx.bold, "Tanggal", { x: cols.tanggal + 10, y: ctx.y - h + 9, size: S.table, color: INK });
   REPORT_SOURCES.forEach((s, i) => {
-    labelRight(page, ctx.bold, spaced(s.toUpperCase()), { right: cols.sources[i] + COL_SOURCE - 8, y: center - 3, size, color: "#dbe4ff" });
+    textRight(page, ctx.bold, SOURCE_LABEL[s], { right: cols.sources[i] + COL_SOURCE - 8, y: ctx.y - h + 9, size: S.table, color: INK });
   });
-  const twoLine = (lines: string[], right: number, color = "#dbe4ff") => {
-    labelRight(page, ctx.bold, lines[0], { right, y: center + 1, size, color });
-    labelRight(page, ctx.bold, lines[1], { right, y: center - 9, size, color });
+  const two = (l1: string, l2: string, r: number) => {
+    textRight(page, ctx.bold, l1, { right: r, y: ctx.y - h + 13, size: S.table, color: INK });
+    textRight(page, ctx.bold, l2, { right: r, y: ctx.y - h + 4.5, size: S.table, color: INK });
   };
-  twoLine(["TOTAL", "LEADS"], cols.total + COL_TOTAL - 8, "#ffffff");
-  twoLine(["TOTAL", "CLOSING"], cols.closing + COL_CLOSING - 8, "#ffffff");
-  twoLine(["CLOSING", "META ADS"], cols.right - 10);
-  ctx.y = y;
+  two("Total", "leads", cols.total + COL_TOTAL - 8);
+  two("Total", "closing", cols.closing + COL_CLOSING - 8);
+  two("Closing", "Meta Ads", right - 10);
+  ctx.y -= h;
 }
 
-function drawTableRow(ctx: Ctx, row: DailyLeadRow, o: { zebra: boolean; heat: number; maxLeads: number; total?: boolean }) {
+function drawTableRow(ctx: Ctx, row: DailyLeadRow, o: { zebra: boolean; rowH: number; total?: boolean }) {
   const page = ctx.page;
   const cols = tableColumns();
-  const y = ctx.y - ROW_H;
+  const right = MARGIN + CW;
+  const y = ctx.y - o.rowH;
+  const baseline = y + (o.rowH - S.table) / 2 + 1;
   const dow = new Date(`${row.tanggal}T00:00:00Z`).getUTCDay();
-  const weekend = dow === 0 || dow === 6;
 
   if (o.total) {
-    page.drawRectangle({ x: M, y, width: CW, height: ROW_H, color: hex(TOTAL_BG) });
-  } else if (weekend) {
-    page.drawRectangle({ x: M, y, width: CW, height: ROW_H, color: hex("#f6f8fc") });
+    rect(page, { x: MARGIN, y, w: CW, h: o.rowH, fill: ZEBRA });
+    rule(page, ctx.y, MARGIN, MARGIN + CW, INK, 1);
   } else if (o.zebra) {
-    page.drawRectangle({ x: M, y, width: CW, height: ROW_H, color: hex("#fbfcfe") });
+    rect(page, { x: MARGIN, y, w: CW, h: o.rowH, fill: ZEBRA });
   }
 
-  const ty = y + (ROW_H - 10) / 2 + 1;
-  const bold = o.total ? ctx.bold : ctx.bold;
-  const ink = o.total ? "#ffffff" : INK;
-  const plain = o.total ? "#e3e9ff" : SLATE;
+  const font = o.total ? ctx.bold : ctx.regular;
+  const color = o.total ? INK : INK;
+  const sourceColor = o.total ? INK : INK;
 
   if (o.total) {
-    label(page, ctx.bold, spaced("TOTAL"), { x: cols.tanggal + 10, y: ty, size: 10, color: "#ffffff" });
+    text(page, ctx.bold, "Total", { x: cols.tanggal + 10, y: baseline, size: S.table, color: INK });
   } else {
     const day = Number(row.tanggal.slice(8, 10));
-    label(page, ctx.bold, `${day} ${MONTHS_ID_SHORT[Number(row.tanggal.slice(5, 7)) - 1]} · ${DAY_SHORT[dow]}`, { x: cols.tanggal + 10, y: ty, size: 10, color: INK });
-  }
-
-  REPORT_SOURCES.forEach((s, i) => {
-    labelRight(page, ctx.regular, nfmt(row.perSumber[s] || 0), { right: cols.sources[i] + COL_SOURCE - 8, y: ty, size: 10, color: plain });
-  });
-
-  // Total Leads: tebal + shading biru sesuai nilai (heatmap halus)
-  const heat = o.total ? 1 : o.maxLeads > 0 ? row.total / o.maxLeads : 0;
-  if (!o.total) {
-    roundedRect(page, {
-      x: cols.total + 4,
-      y: y + 5,
-      w: COL_TOTAL - 12,
-      h: ROW_H - 10,
-      r: 6,
-      fill: BLUE,
-      opacity: 0.06 + heat * 0.16,
+    text(page, ctx.regular, `${day} ${MONTHS_ID_SHORT[Number(row.tanggal.slice(5, 7)) - 1]} · ${DAY_SHORT[dow]}`, {
+      x: cols.tanggal + 10,
+      y: baseline,
+      size: S.table,
+      color: INK,
     });
   }
-  labelRight(page, ctx.bold, nfmt(row.total), { right: cols.total + COL_TOTAL - 8, y: ty, size: 10.5, color: o.total ? "#ffffff" : "#1d4ed8" });
+  REPORT_SOURCES.forEach((s, i) => {
+    textRight(page, font, nfmt(row.perSumber[s] || 0), { right: cols.sources[i] + COL_SOURCE - 8, y: baseline, size: S.table, color: sourceColor });
+  });
+  textRight(page, font, nfmt(row.total), { right: cols.total + COL_TOTAL - 8, y: baseline, size: S.table, color });
+  textRight(page, font, nfmt(row.closing), { right: cols.closing + COL_CLOSING - 8, y: baseline, size: S.table, color });
+  textRight(page, font, nfmt(row.closingMetaAds), { right: right - 10, y: baseline, size: S.table, color });
 
-  // Closing: chip hijau lembut kalau > 0
-  if (!o.total && row.closing > 0) {
-    const chipW = 26;
-    const cx = cols.closing + COL_CLOSING - 8 - chipW;
-    roundedRect(page, { x: cx, y: y + 5.5, w: chipW, h: ROW_H - 11, r: 7, fill: "#dcfce7" });
-    labelCenter(page, ctx.bold, nfmt(row.closing), { center: cx + chipW / 2, y: ty, size: 10, color: "#047857" });
-  } else {
-    labelRight(page, o.total ? ctx.bold : ctx.regular, nfmt(row.closing), { right: cols.closing + COL_CLOSING - 8, y: ty, size: 10, color: o.total ? "#ffffff" : MUTED });
-  }
-  labelRight(page, ctx.regular, nfmt(row.closingMetaAds), { right: cols.right - 10, y: ty, size: 10, color: plain });
-
-  if (!o.total) {
-    page.drawLine({ start: { x: M, y }, end: { x: M + CW, y }, thickness: 0.5, color: hex("#eef2f7") });
-  }
   ctx.y = y;
-}
-
-function drawTableNotes(ctx: Ctx) {
-  const notes = [
-    "Konversi = Total Closing dibagi Total Leads (periode laporan). Closing Meta Ads = leads berstatus closing dengan sumber Meta ads.",
-    "Hari tanpa data tetap ditampilkan dengan angka 0. Sumber: tabel leads pada dashboard internal SAMAQU (/ops/leads).",
-  ];
-  ctx.y -= 12;
-  for (const note of notes) {
-    label(ctx.page, ctx.regular, note, { x: M, y: ctx.y, size: 8, color: MUTED });
-    ctx.y -= 11;
-  }
+  if (!o.total) rule(page, ctx.y, MARGIN, MARGIN + CW, "#f1f3f6", 0.5);
 }
 
 /* ────────────────────────────── footer ────────────────────────────── */
@@ -725,11 +601,10 @@ function drawTableNotes(ctx: Ctx) {
 function drawFooters(doc: PDFDocument, regular: PDFFont) {
   const pages = doc.getPages();
   pages.forEach((page, i) => {
-    page.drawLine({ start: { x: M, y: FOOTER_Y + 12 }, end: { x: PAGE_W - M, y: FOOTER_Y + 12 }, thickness: 0.6, color: hex(LINE) });
-    page.drawText("SAMAQU Internal, rahasia", { x: M, y: FOOTER_Y, size: 8, font: regular, color: hex(MUTED) });
+    rule(page, FOOTER_Y + 14, MARGIN, MARGIN + CW, RULE, 0.6);
+    page.drawText("SAMAQU Internal · rahasia", { x: MARGIN, y: FOOTER_Y, size: S.small, font: regular, color: hex(FAINT) });
     const t = `Halaman ${i + 1} dari ${pages.length}`;
-    const w = regular.widthOfTextAtSize(t, 8);
-    page.drawText(t, { x: PAGE_W - M - w, y: FOOTER_Y, size: 8, font: regular, color: hex(MUTED) });
+    page.drawText(t, { x: MARGIN + CW - regular.widthOfTextAtSize(t, S.small), y: FOOTER_Y, size: S.small, font: regular, color: hex(FAINT) });
   });
 }
 
@@ -760,7 +635,7 @@ export async function buildLeadsReportPdf(
   const allDaily = buildDailyRows(input.leads || []).filter((r) => r.tanggal >= summary.periodStart && r.tanggal <= summary.periodEnd);
   const full = { ...summary, dailyRowsInPeriod: allDaily };
   const rows = tableRows(summary, allDaily);
-  const maxLeads = Math.max(1, allDaily.reduce((m, r) => Math.max(m, r.total), 0));
+  const blocks = weeklyBlocks(allDaily);
 
   const fonts = input.fonts ?? loadReportFonts();
   const doc = await PDFDocument.create();
@@ -768,60 +643,83 @@ export async function buildLeadsReportPdf(
   const regular = await doc.embedFont(fonts.regular, { subset: true });
   const bold = await doc.embedFont(fonts.bold, { subset: true });
 
-  const ctx: Ctx = { doc, regular, bold, page: doc.addPage([PAGE_W, PAGE_H]), y: PAGE_H };
-  const generatedAt = generatedAtID(now);
+  /* ═══ Halaman 1 — ringkasan eksekutif ═══ */
+  const ctx: Ctx = { doc, regular, bold, page: doc.addPage([PAGE_W, PAGE_H]), y: PAGE_H - MARGIN };
+  drawMasthead(ctx, summary, generatedAtID(now));
 
-  /* ── halaman 1 ── */
-  drawHeaderBand(ctx, summary, generatedAt);
+  // Jarak antar bagian dibagi rata supaya halaman tetap seimbang untuk dataset apa pun
+  const highlights = highlightLines(summary, allDaily);
+  const notes = analysisNote(summary, allDaily);
+  const baselineGap = 26;
+  const fixedHeight = 20 + S.section + 8 + 76; // KPI
+  const sourcesHeight = (summary.sources.length + 2) * 21 + 22;
+  const weeklyHeight = (blocks.length + 1) * 20 + 22;
+  const highlightsHeight = highlights.length * 15;
+  const notesHeight = notes.reduce((t, n) => t + wrap(n, regular, S.body, CW).length * 14, 0);
+  const contentHeight =
+    S.section + 8 + fixedHeight +
+    S.section + 8 + sourcesHeight +
+    S.section + 8 + highlightsHeight +
+    S.section + 8 + weeklyHeight +
+    S.section + 8 + notesHeight;
+  const available = ctx.y - (FOOTER_Y + 34);
+  const gap = Math.max(18, Math.min(34, (available - contentHeight) / 5));
 
-  const bigGap = 12;
-  const bigW = (CW - bigGap * 2) / 3;
-  const bigH = 92;
-  const rowTop = ctx.y;
-  [
-    { label: "Total Leads", value: nfmt(summary.totals.total), note: `${summary.dayCount} hari periode`, dot: BLUE },
-    { label: "Total Closing", value: nfmt(summary.totals.closing), note: "status closing", dot: EMERALD },
-    { label: "Konversi", value: `${summary.conversion.toFixed(1)}%`, note: "closing / leads", dot: INDIGO, progress: summary.conversion },
-  ].forEach((c, i) => {
-    statCard(ctx, { x: M + i * (bigW + bigGap), y: rowTop - bigH, w: bigW, h: bigH, ...c, big: true });
+  ctx.y -= 22;
+  sectionTitle(ctx, "Ringkasan KPI");
+  drawKpi(ctx, summary);
+
+  ctx.y -= gap;
+  sectionTitle(ctx, "Ringkasan sumber leads");
+  drawSourceTable(ctx, summary);
+
+  ctx.y -= gap;
+  sectionTitle(ctx, "Sorotan periode");
+  highlights.forEach((line) => {
+    ctx.page.drawCircle({ x: MARGIN + 3, y: ctx.y + 3.5, size: 1.4, color: hex(FAINT) });
+    wrap(line, regular, S.body, CW - 16).forEach((l) => {
+      text(ctx.page, regular, l, { x: MARGIN + 14, y: ctx.y, size: S.body, color: INK });
+      ctx.y -= 15;
+    });
   });
-  ctx.y = rowTop - bigH - 12;
 
-  const smallGap = 12;
-  const smallW = (CW - smallGap) / 2;
-  const smallH = 66;
-  const row2 = ctx.y;
-  [
-    { label: "Closing Meta Ads", value: nfmt(summary.totals.closingMetaAds), note: "dari total closing", dot: "#8b5cf6" },
-    { label: "Rata-rata / Hari", value: summary.averagePerDay.toFixed(1), note: "leads per hari", dot: "#0ea5e9" },
-  ].forEach((c, i) => {
-    statCard(ctx, { x: M + i * (smallW + smallGap), y: row2 - smallH, w: smallW, h: smallH, ...c });
+  ctx.y -= gap;
+  sectionTitle(ctx, "Perbandingan mingguan");
+  drawWeeklyTable(ctx, allDaily);
+
+  ctx.y -= gap;
+  sectionTitle(ctx, "Catatan analisis");
+  notes.forEach((note) => {
+    wrap(note, regular, S.body, CW).forEach((l) => {
+      text(ctx.page, regular, l, { x: MARGIN, y: ctx.y, size: S.body, color: SUB });
+      ctx.y -= 14;
+    });
+    ctx.y -= 4;
   });
-  ctx.y = row2 - smallH - 20;
 
-  drawChart(ctx, allDaily, maxLeads);
-
-  // dua kolom: sumber (kiri) + sorotan (kanan)
-  const colGap = 16;
-  const leftW = Math.round(CW * 0.56);
-  const rightW = CW - leftW - colGap;
-  const colTop = ctx.y;
-  const afterSources = drawSources(ctx, summary, M, colTop, leftW);
-  const afterHighlights = drawHighlights(ctx, summary, M + leftW + colGap, colTop, rightW);
-  ctx.y = Math.min(afterSources, afterHighlights) - 10;
-
-  drawWeekly(ctx, allDaily);
-
-  /* ── halaman 2: tabel ── */
-  const tableTop = PAGE_H - M;
+  /* ═══ Halaman 2 — rekap data harian ═══ */
   ctx.page = doc.addPage([PAGE_W, PAGE_H]);
-  ctx.y = tableTop;
-  label(ctx.page, bold, "Data Rekap Harian", { x: M, y: ctx.y, size: 14, color: INK });
-  ctx.y -= 14;
-  label(ctx.page, regular, `${summary.periodLabel} · ${summary.dayCount} hari`, { x: M, y: ctx.y, size: 9, color: SLATE });
-  ctx.y -= 16;
+  ctx.y = PAGE_H - MARGIN;
 
-  drawTableHeader(ctx);
+  text(ctx.page, bold, "Rekap Data Harian", { x: MARGIN, y: ctx.y, size: 15, color: INK });
+  ctx.y -= 16;
+  text(ctx.page, regular, `${summary.periodLabel}${summary.running ? " · data berjalan" : ""} · ${summary.dayCount} hari`, {
+    x: MARGIN,
+    y: ctx.y,
+    size: S.small,
+    color: SUB,
+  });
+  ctx.y -= 14;
+  rule(ctx.page, ctx.y);
+  ctx.y -= 18;
+
+  const headH = 26;
+  const footerTop = FOOTER_Y + 34;
+  const notesBlock = 46;
+  const availRows = ctx.y - headH - footerTop - notesBlock - 30; // 30 = baris total
+  const rowH = Math.max(26, Math.min(36, Math.floor(availRows / Math.max(1, rows.length))));
+
+  drawTableHeader(ctx, headH);
   const totals = summary.totals;
   const totalRow: DailyLeadRow = {
     tanggal: summary.periodEnd,
@@ -833,24 +731,37 @@ export async function buildLeadsReportPdf(
   };
 
   rows.forEach((row, i) => {
-    const reserve = i === rows.length - 1 ? ROW_H + 46 : ROW_H;
-    if (ctx.y - reserve < M + 16) {
+    const last = i === rows.length - 1;
+    const needed = rowH + (last ? rowH + 20 : 0);
+    if (ctx.y - needed < footerTop) {
       ctx.page = doc.addPage([PAGE_W, PAGE_H]);
-      ctx.y = tableTop;
-      label(ctx.page, bold, "Data Rekap Harian (lanjutan)", { x: M, y: ctx.y, size: 12, color: INK });
+      ctx.y = PAGE_H - MARGIN;
+      text(ctx.page, bold, "Rekap Data Harian (lanjutan)", { x: MARGIN, y: ctx.y, size: 12, color: INK });
       ctx.y -= 14;
-      drawTableHeader(ctx);
+      drawTableHeader(ctx, headH);
     }
-    drawTableRow(ctx, row, { zebra: i % 2 === 1, heat: 0, maxLeads });
+    drawTableRow(ctx, row, { zebra: i % 2 === 1, rowH });
   });
 
-  if (ctx.y - ROW_H - 50 < M + 16) {
+  if (ctx.y - rowH - 20 < footerTop) {
     ctx.page = doc.addPage([PAGE_W, PAGE_H]);
-    ctx.y = tableTop;
-    drawTableHeader(ctx);
+    ctx.y = PAGE_H - MARGIN;
+    drawTableHeader(ctx, headH);
   }
-  drawTableRow(ctx, totalRow, { zebra: false, heat: 1, maxLeads, total: true });
-  drawTableNotes(ctx);
+  drawTableRow(ctx, totalRow, { zebra: false, rowH, total: true });
+
+  // Catatan definisi & sumber data
+  ctx.y -= 16;
+  const notesText = [
+    "Konversi = Total closing ÷ Total leads pada periode laporan. Closing Meta Ads = leads berstatus closing dengan sumber Meta Ads.",
+    "Hari tanpa data tetap ditampilkan dengan angka 0. Sumber data: tabel leads pada dashboard internal SAMAQU (/ops/leads).",
+  ];
+  notesText.forEach((n) => {
+    wrap(n, regular, S.small, CW).forEach((l) => {
+      text(ctx.page, regular, l, { x: MARGIN, y: ctx.y, size: S.small, color: FAINT });
+      ctx.y -= 11;
+    });
+  });
 
   drawFooters(doc, regular);
 
