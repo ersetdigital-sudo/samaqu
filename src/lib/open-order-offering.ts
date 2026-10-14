@@ -257,9 +257,10 @@ export function buildOpenOrderProducts(
       category: group.category,
       kain: group.kain,
       colors: [...group.colors].filter(Boolean),
-      series: [...group.series]
-        .map(([name, price]) => ({ name, price }))
-        .sort((a, b) => a.price - b.price || a.name.localeCompare(b.name)),
+      // Urutan series HARUS sama dengan halaman detail katalog: urutan baris `products`
+      // (`created_at` naik) seperti yang dipakai `getAvailableSeries()`. Sengaja tidak
+      // diurutkan ulang berdasarkan harga.
+      series: [...group.series].map(([name, price]) => ({ name, price })),
       price: group.price,
       minimumPrice: group.minimumPrice,
       cypEnabled: group.cypEnabled,
