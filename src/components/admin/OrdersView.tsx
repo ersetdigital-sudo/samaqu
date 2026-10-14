@@ -124,32 +124,32 @@ export default function OrdersView({
         </div>
       </div>
       <div className="p-5" style={{ borderBottom: "1px solid #f1f1f3" }}>
-        <div className="flex flex-wrap items-center gap-3 justify-between">
-          <h2 className="text-xl font-extrabold" style={{ color: "var(--fg)" }}>{listTitle}</h2>
-          {/* Tab tahap: urutannya mengikuti pekerjaan penjual, dan "Perlu Dikirim" disorot
-              (amber) selama masih ada pesanan yang menunggu resi dibuat. */}
-          <div className="flex flex-wrap gap-2">
-            {ORDER_STAGE_TABS.map((t) => {
-              const active = orderFilter === t.key;
-              const count = t.key === "semua" ? searchedOrders.length : stageCounts[t.key] || 0;
-              const attention = !active && count > 0 && stageNeedsAdminAction(t.key);
-              const style = active
-                ? { background: "var(--gold)", color: "#fff", border: "1px solid var(--gold)" }
-                : attention
-                  ? { background: "#fff7ed", color: "#c2410c", border: "1px solid #ffedd5" }
-                  : { background: "transparent", color: "var(--text-secondary)", border: "1px solid #d4d4d8" };
-              return (
-                <button
-                  key={t.key}
-                  onClick={() => setOrderFilter(t.key)}
-                  className="text-sm px-3 py-1.5 rounded-lg font-medium transition-colors"
-                  style={style}
-                >
-                  {t.label} ({count})
-                </button>
-              );
-            })}
-          </div>
+        {/* Judul bagian — area tersendiri supaya panjang judul tidak menggeser deretan tab. */}
+        <h2 className="text-xl font-extrabold" style={{ color: "var(--fg)" }}>{listTitle}</h2>
+        {/* Tab tahap: area TETAP di bawah judul — posisinya tidak berubah walau judul atau tab
+            aktif berganti. Urutannya mengikuti pekerjaan penjual; "Perlu Dikirim" disorot (amber)
+            selama masih ada pesanan yang menunggu resi dibuat. */}
+        <div className="flex flex-wrap gap-2 mt-3">
+          {ORDER_STAGE_TABS.map((t) => {
+            const active = orderFilter === t.key;
+            const count = t.key === "semua" ? searchedOrders.length : stageCounts[t.key] || 0;
+            const attention = !active && count > 0 && stageNeedsAdminAction(t.key);
+            const style = active
+              ? { background: "var(--gold)", color: "#fff", border: "1px solid var(--gold)" }
+              : attention
+                ? { background: "#fff7ed", color: "#c2410c", border: "1px solid #ffedd5" }
+                : { background: "transparent", color: "var(--text-secondary)", border: "1px solid #d4d4d8" };
+            return (
+              <button
+                key={t.key}
+                onClick={() => setOrderFilter(t.key)}
+                className="text-sm px-3 py-1.5 rounded-lg font-medium transition-colors"
+                style={style}
+              >
+                {t.label} ({count})
+              </button>
+            );
+          })}
         </div>
         <div className="relative mt-4 w-full sm:max-w-sm">
           <Search className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2" size={16} strokeWidth={2} style={{ color: "var(--fg3)" }} />
