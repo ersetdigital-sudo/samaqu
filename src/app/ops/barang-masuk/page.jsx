@@ -168,7 +168,7 @@ export default function TambahBarangMasuk() {
     if (!formData.variant_id || !formData.size) {
       toast({
         title: "⚠️ Form tidak lengkap",
-        description: "Pilih warna dan ukuran variant",
+        description: "Pilih warna dan ukuran",
         variant: "destructive",
       });
       return;
@@ -342,7 +342,7 @@ export default function TambahBarangMasuk() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label className="block font-inter tracking-label" style={{ fontSize: '13px', fontWeight: 700, color: '#1E293B', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-                    Warna Variant <span className="text-red-500">*</span>
+                    Warna <span className="text-red-500">*</span>
                   </label>
                   <select
                     required
