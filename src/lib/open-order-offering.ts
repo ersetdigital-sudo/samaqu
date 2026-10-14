@@ -32,6 +32,8 @@ export interface OpenOrderVariant {
   sizes: string[];
   /** Total stok semua ukuran di baris + warna ini (0 kalau variannya tidak dikelola). */
   stock: number;
+  /** Berat per ukuran (gram) dari `product_variants.weight`; kosong = ikut berat produk. */
+  sizeWeights: Record<string, number>;
   /** Foto (gambar saja) baris ini — sumber galeri di langkah detail. */
   media: string[];
 }
@@ -89,6 +91,8 @@ export interface OpenOrderStockRow {
   color: string;
   size: string;
   stock?: number | null;
+  /** Berat per ukuran (gram) dari `product_variants.weight` — kosong = pakai berat produk. */
+  weight?: number | null;
 }
 
 /** Berat kirim default kalau baris katalog tidak punya `weight` (gram). */
@@ -144,6 +148,8 @@ export function buildOpenOrderProducts(
 ): OpenOrderProduct[] {
   const sizesByRow = new Map<string, Map<string, string[]>>();
   const stockByRow = new Map<string, Map<string, number>>();
+  /** Berat per ukuran: product_id → color → size → gram (hanya yang terisi). */
+  const weightByRow = new Map<string, Map<string, Record<string, number>>>();
   for (const row of stockRows) {
     if (!row.product_id || !row.color || !row.size) continue;
     const byColor = sizesByRow.get(row.product_id) ?? new Map<string, string[]>();
@@ -155,6 +161,15 @@ export function buildOpenOrderProducts(
     const stockByColor = stockByRow.get(row.product_id) ?? new Map<string, number>();
     stockByRow.set(row.product_id, stockByColor);
     stockByColor.set(row.color, (stockByColor.get(row.color) ?? 0) + (row.stock ?? 0));
+
+    const weight = Number(row.weight);
+    if (Number.isFinite(weight) && weight > 0) {
+      const byRowColor = weightByRow.get(row.product_id) ?? new Map<string, Record<string, number>>();
+      weightByRow.set(row.product_id, byRowColor);
+      const sizeWeights = byRowColor.get(row.color) ?? {};
+      sizeWeights[row.size] = weight;
+      byRowColor.set(row.color, sizeWeights);
+    }
   }
 
   interface Group {
@@ -232,6 +247,7 @@ export function buildOpenOrderProducts(
         productId: row.id,
         sizes: sizesByRow.get(row.id)?.get(color) ?? [],
         stock,
+        sizeWeights: { ...(weightByRow.get(row.id)?.get(color) ?? {}) },
         media,
       });
     }

@@ -3,7 +3,7 @@ import { isPaymentMethodId, legacyPaymentType } from "../payment-methods";
 import { createOrder } from "./order";
 import { getDestinationCode, getOriginCode, getReceiverArea } from "./area-mapping";
 import type { OrderResponse } from "./types";
-import { sumWeightGrams } from "../shipping-weight";
+import { sumWeightGramsBySize, productWeightMapFromRows, variantWeightMapFromRows } from "../shipping-weight";
 
 /**
  * Buat pesanan J&T (Order Create API) dari baris `orders` + `order_items` yang SUDAH tersimpan.
@@ -31,6 +31,9 @@ export interface JntOrderSourceItem {
   product_id?: string | null;
   product_name: string;
   quantity: number;
+  /** Warna & ukuran dipakai untuk berat per varian (`product_variants.weight`). */
+  color?: string | null;
+  size?: string | null;
 }
 
 export interface JntOrderSource {
@@ -85,24 +88,35 @@ async function resolveCod(paymentMethod: string | null | undefined, total: numbe
   return data?.method_type === "cod" ? total : 0;
 }
 
-/** Berat kirim (gram): berat tersimpan di pesanan, kalau tidak ada dijumlah dari berat katalog. */
+/** Berat kirim (gram): berat tersimpan di pesanan, kalau tidak ada dijumlah dari berat varian/produk. */
 async function resolveWeightGrams(order: JntOrderSource, items: JntOrderSourceItem[]): Promise<number> {
   if (order.weight && order.weight > 0) return order.weight;
 
   // id produk di tabel ini berupa SLUG (mis. "thobe-navy-karim"), bukan UUID — jangan difilter UUID.
   const productIds = Array.from(new Set(items.map((item) => item.product_id).filter((id): id is string => !!id)));
 
-  const weights: Record<string, number> = {};
+  let weights: Record<string, number> = {};
+  let variantWeights: Record<string, number> = {};
   if (productIds.length > 0) {
-    const { data } = await getSupabaseAdmin().from("products").select("id, weight").in("id", productIds);
-    for (const row of data ?? []) {
-      if (row.weight) weights[String(row.id)] = Number(row.weight);
-    }
+    const admin = getSupabaseAdmin();
+    const [{ data: pRows }, { data: vRows }] = await Promise.all([
+      admin.from("products").select("id, weight").in("id", productIds),
+      admin.from("product_variants").select("product_id, color, size, weight").in("product_id", productIds),
+    ]);
+    weights = productWeightMapFromRows(pRows);
+    variantWeights = variantWeightMapFromRows(vRows);
   }
 
-  const { grams, missingQty } = sumWeightGrams(
-    items.map((item) => ({ productId: item.product_id, quantity: item.quantity })),
-    weights
+  // Prioritas sama dengan checkout: berat varian (per ukuran) → berat produk → fallback default.
+  const { grams, missingQty } = sumWeightGramsBySize(
+    items.map((item) => ({
+      productId: item.product_id,
+      color: item.color,
+      size: item.size,
+      quantity: item.quantity,
+    })),
+    weights,
+    variantWeights
   );
   return grams + missingQty * DEFAULT_ITEM_WEIGHT;
 }

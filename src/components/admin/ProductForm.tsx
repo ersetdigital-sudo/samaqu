@@ -30,7 +30,7 @@ function parseRupiah(formatted: string): string {
 interface Variant {
   color: string;
   hex: string;
-  sizes: { size: string; stock: number; priceOverride: string; sku: string }[];
+  sizes: SizeRow[];
 }
 
 interface MediaFile {
@@ -61,7 +61,7 @@ interface SeriesBlock {
   productId: string;
 }
 
-type SizeRow = { size: string; stock: number; priceOverride: string; sku: string };
+type SizeRow = { size: string; stock: number; priceOverride: string; sku: string; weight?: string };
 
 /**
  * Tabel ukuran yang dipakai dua tempat (blok series Thobe & varian biasa).
@@ -81,10 +81,34 @@ function SizeGrid({
   onAdd: () => void;
   skuFallback?: string;
 }) {
+  // "Isi semua size": berat (gram) yang sama untuk seluruh ukuran di tabel ini.
+  const [bulkWeight, setBulkWeight] = useState("");
+  function fillAllWeights() {
+    const w = Number(String(bulkWeight).trim());
+    if (!Number.isInteger(w) || w < 100 || w > 5000) return;
+    sizes.forEach((_, i) => onUpdate(i, "weight", w));
+  }
   return (
     <div className="pf-sizes">
+      <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 8, marginBottom: 6 }}>
+        <input
+          type="number"
+          min={100}
+          max={5000}
+          inputMode="numeric"
+          value={bulkWeight}
+          onChange={(e) => setBulkWeight(e.target.value)}
+          placeholder="gram"
+          aria-label="Berat untuk semua ukuran"
+          className="pf-cell text-center"
+          style={{ width: 90 }}
+        />
+        <button type="button" className="pf-add" style={{ margin: 0 }} onClick={fillAllWeights}>
+          <Plus size={14} /> Isi semua size
+        </button>
+      </div>
       <div className="pf-size-head">
-        <span>Ukuran</span><span>Stok</span><span>Harga Khusus</span><span>SKU</span><span />
+        <span>Ukuran</span><span>Stok</span><span>Berat (gram)</span><span>Harga Khusus</span><span>SKU</span><span />
       </div>
       {sizes.map((s, i) => (
         <div key={i} className="pf-size-row">
@@ -97,6 +121,11 @@ function SizeGrid({
             <span className="pf-size-label">Stok</span>
             <input type="number" value={s.stock || ""} onChange={(e) => onUpdate(i, "stock", parseInt(e.target.value) || 0)}
               placeholder="0" className="pf-cell text-center" />
+          </label>
+          <label className="pf-size-field">
+            <span className="pf-size-label">Berat (gram)</span>
+            <input type="number" min={100} max={5000} inputMode="numeric" value={s.weight ?? ""}
+              onChange={(e) => onUpdate(i, "weight", e.target.value)} placeholder="—" className="pf-cell text-center" />
           </label>
           <label className="pf-size-field">
             <span className="pf-size-label">Harga khusus</span>
@@ -250,9 +279,9 @@ export default function TambahProdukPage({
             const colorGroups: Record<string, Variant> = {};
             let baseProductId = "";
             let baseSize = "";
-            (sibVariants || []).forEach((v: { color: string; hex: string | null; size: string; stock: number; price_override: number | null; sku: string | null; base_product_id: string | null; base_size: string | null }) => {
+            (sibVariants || []).forEach((v: { color: string; hex: string | null; size: string; stock: number; weight: number | null; price_override: number | null; sku: string | null; base_product_id: string | null; base_size: string | null }) => {
               if (!colorGroups[v.color]) colorGroups[v.color] = { color: v.color, hex: v.hex || "#141414", sizes: [] };
-              colorGroups[v.color].sizes.push({ size: v.size, stock: v.stock, priceOverride: v.price_override ? String(v.price_override) : "", sku: v.sku || "" });
+              colorGroups[v.color].sizes.push({ size: v.size, stock: v.stock, weight: v.weight ? String(v.weight) : "", priceOverride: v.price_override ? String(v.price_override) : "", sku: v.sku || "" });
               if (v.base_product_id && !baseProductId) { baseProductId = v.base_product_id; baseSize = v.base_size || ""; }
             });
             const { data: sibImages } = await supabase.from("product_images").select("*").eq("product_id", sib.id).order("display_order");
@@ -292,9 +321,9 @@ export default function TambahProdukPage({
         const { data: dbVariants } = await supabase.from("product_variants").select("*").eq("product_id", editProductId).order("display_order");
         if (dbVariants && dbVariants.length > 0) {
           const colorGroups: Record<string, Variant> = {};
-          dbVariants.forEach((v: { color: string; hex: string | null; size: string; stock: number; price_override: number | null; sku: string | null }) => {
+          dbVariants.forEach((v: { color: string; hex: string | null; size: string; stock: number; weight: number | null; price_override: number | null; sku: string | null }) => {
             if (!colorGroups[v.color]) colorGroups[v.color] = { color: v.color, hex: v.hex || colorMap[v.color] || "#141414", sizes: [] };
-            colorGroups[v.color].sizes.push({ size: v.size, stock: v.stock, priceOverride: v.price_override ? String(v.price_override) : "", sku: v.sku || "" });
+            colorGroups[v.color].sizes.push({ size: v.size, stock: v.stock, weight: v.weight ? String(v.weight) : "", priceOverride: v.price_override ? String(v.price_override) : "", sku: v.sku || "" });
           });
           const varList = Object.values(colorGroups);
           setVariants(varList);
@@ -678,6 +707,17 @@ export default function TambahProdukPage({
         const hasStock = block.variants.some((v) => v.sizes.some((s) => s.stock > 0));
         const isLinked = !!block.baseProductId;
         if (!hasStock && !isLinked) e[`series_${sn}_stock`] = `Stok ${sn} wajib ada minimal 1 ukuran`;
+        // Berat per ukuran (opsional): kalau diisi harus bilangan bulat 100–5000 gram.
+        for (const v of block.variants) {
+          for (const s of v.sizes) {
+            const raw = String(s.weight ?? "").trim();
+            if (raw === "") continue;
+            const w = Number(raw);
+            if (!Number.isInteger(w) || w < 100 || w > 5000) {
+              e[`series_${sn}_weight`] = `Berat ${sn} harus bilangan bulat 100–5000 gram`;
+            }
+          }
+        }
       }
     } else {
       // Non-Thobe: existing validation
@@ -688,6 +728,17 @@ export default function TambahProdukPage({
       if (variants.length === 0) e.variants = "Minimal 1 varian warna";
       const hasSize = variants.some((v) => v.sizes.some((s) => s.stock > 0));
       if (!hasSize) e.variants = "Minimal 1 ukuran dengan stok > 0";
+      // Berat per ukuran (opsional): kalau diisi harus bilangan bulat 100–5000 gram.
+      for (const v of variants) {
+        for (const s of v.sizes) {
+          const raw = String(s.weight ?? "").trim();
+          if (raw === "") continue;
+          const w = Number(raw);
+          if (!Number.isInteger(w) || w < 100 || w > 5000) {
+            e.variants = "Berat per ukuran harus bilangan bulat 100–5000 gram";
+          }
+        }
+      }
       if (!isOps) {
         const uploadedMedia = media.filter((m) => m.url && !m.uploading);
         if (uploadedMedia.length === 0) e.media = "Minimal 1 media (gambar/video)";
@@ -752,6 +803,7 @@ export default function TambahProdukPage({
               hex: v.hex || null,
               size: s.size,
               stock: isDerived ? 0 : s.stock,  // Derived series: stock lives in base product
+              weight: s.weight !== undefined && String(s.weight).trim() !== "" ? parseInt(String(s.weight)) : null,
               price_override: s.priceOverride ? parseInt(s.priceOverride) : null,
               sku: s.sku.trim() || sku.trim() || null,
               display_order: vi * 100 + si,
@@ -827,6 +879,7 @@ export default function TambahProdukPage({
             hex: v.hex || null,
             size: s.size,
             stock: s.stock,
+            weight: s.weight !== undefined && String(s.weight).trim() !== "" ? parseInt(String(s.weight)) : null,
             price_override: s.priceOverride ? parseInt(s.priceOverride) : null,
             sku: s.sku.trim() || sku.trim() || null,
             display_order: vi * 100 + si,
@@ -1326,6 +1379,7 @@ export default function TambahProdukPage({
                           <span style={{ color: "var(--gold)" }}>{sn}</span> — Stok Ukuran
                         </p>
                         {errors[`series_${sn}_stock`] && <p className="pf-error mb-2">{errors[`series_${sn}_stock`]}</p>}
+                        {errors[`series_${sn}_weight`] && <p className="pf-error mb-2">{errors[`series_${sn}_weight`]}</p>}
                         {block.baseProductId ? (
                           <div className="pf-panel" style={{ background: "var(--bg-secondary)" }}>
                             <p className="text-sm text-center py-4" style={{ color: "var(--text-muted)" }}>

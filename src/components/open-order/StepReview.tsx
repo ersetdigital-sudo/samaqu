@@ -18,6 +18,7 @@ export default function StepReview({
   lines,
   products,
   subtotal,
+  totalWeight,
   extraCover,
   shipping,
   loadingOngkir,
@@ -34,6 +35,8 @@ export default function StepReview({
   lines: CartLine[];
   products: OpenOrderProduct[];
   subtotal: number;
+  /** Berat kirim total (gram, apa adanya — tanpa pembulatan). */
+  totalWeight: number;
   extraCover: boolean;
   shipping: DraftShipping | null;
   loadingOngkir: boolean;
@@ -89,6 +92,10 @@ export default function StepReview({
         <SummaryRow
           label={shipping ? `Ongkir (J&T — ${shipping.service})` : "Ongkir"}
           value={loadingOngkir ? "Menghitung…" : shipping ? money(ongkir) : "—"}
+        />
+        <SummaryRow
+          label="Total berat"
+          value={`${totalWeight.toLocaleString("id-ID")} g (${(totalWeight / 1000).toLocaleString("id-ID", { maximumFractionDigits: 3 })} kg)`}
         />
         {ongkirError && (
           <p className="text-[11px] leading-relaxed" style={{ color: MUTED }}>
