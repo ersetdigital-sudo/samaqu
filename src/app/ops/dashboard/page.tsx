@@ -425,35 +425,76 @@ export default function OpsDashboardPage() {
         </div>
 
         <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
-          <div className="flex items-center gap-2 mb-2">
-            <IconProfit size={18} className="text-blue-600" />
-            <h2 className="font-bold text-slate-900">Produk Terlaris</h2>
+          <div className="flex items-start justify-between gap-3 mb-4">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <span className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 grid place-items-center shrink-0">
+                <IconProfit size={17} />
+              </span>
+              <div className="min-w-0">
+                <h2 className="font-bold text-slate-900 leading-tight truncate">Produk Terlaris</h2>
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 truncate">
+                  {monthName} {yearLabel}
+                </p>
+              </div>
+            </div>
+            {topProducts.length > 0 && (
+              <span className="shrink-0 px-2.5 py-1 rounded-full bg-gray-100 text-gray-600 text-[11px] font-bold whitespace-nowrap">
+                Top {Math.min(topProducts.length, 5)}
+              </span>
+            )}
           </div>
+
           {topProducts.length === 0 ? (
-            <p className="text-sm text-gray-500">Belum ada penjualan bulan ini</p>
+            <div className="py-10 text-center">
+              <p className="text-sm font-bold text-slate-800">Belum ada penjualan</p>
+              <p className="text-xs text-gray-500 mt-1">
+                Periode {monthName} {yearLabel}
+              </p>
+            </div>
           ) : (
-            <ol>
-              {topProducts.slice(0, 5).map((p, i) => (
-                <li
-                  key={`${p.name}-${i}`}
-                  className="flex items-center gap-3 py-3 border-b border-gray-100 last:border-0"
-                >
-                  <span
-                    className={`w-7 h-7 rounded-full text-xs font-black flex items-center justify-center shrink-0 ${
-                      i === 0 ? "bg-amber-400 text-amber-950" : "bg-gray-200 text-gray-600"
-                    }`}
+            <ol className="space-y-2.5">
+              {topProducts.slice(0, 5).map((p, i) => {
+                const maxQty = Math.max(1, topProducts[0]?.qty || 1);
+                const pct = Math.max(6, Math.round((p.qty / maxQty) * 100));
+                const rankCls =
+                  i === 0
+                    ? "bg-amber-400 text-amber-950"
+                    : i === 1
+                    ? "bg-slate-300 text-slate-800"
+                    : i === 2
+                    ? "bg-orange-300 text-orange-950"
+                    : "bg-gray-100 text-gray-600";
+                return (
+                  <li
+                    key={`${p.name}-${i}`}
+                    className="relative overflow-hidden rounded-xl border border-gray-100 px-3 py-2.5"
                   >
-                    {i + 1}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-bold text-slate-900 truncate">{p.name}</p>
-                    <p className="text-xs text-gray-500 truncate">Kode: {p.sku || "-"}</p>
-                  </div>
-                  <span className="shrink-0 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold whitespace-nowrap">
-                    {nfmt(p.qty)} terjual
-                  </span>
-                </li>
-              ))}
+                    <span
+                      aria-hidden
+                      className={`absolute inset-y-0 left-0 ${i === 0 ? "bg-amber-50" : "bg-blue-50/70"}`}
+                      style={{ width: `${pct}%` }}
+                    />
+                    <div className="relative flex items-center gap-3">
+                      <span className={`w-6 h-6 rounded-lg text-[11px] font-black grid place-items-center shrink-0 ${rankCls}`}>
+                        {i + 1}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-bold text-slate-900 truncate" title={p.name}>
+                          {p.name}
+                        </p>
+                        <p className="text-[11px] text-gray-500 truncate">
+                          {p.sku && p.sku !== "-" ? `${p.sku} · ` : ""}
+                          {rp(p.total)}
+                        </p>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <p className="text-base font-black text-slate-900 leading-none tabular-nums">{nfmt(p.qty)}</p>
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mt-0.5">terjual</p>
+                      </div>
+                    </div>
+                  </li>
+                );
+              })}
             </ol>
           )}
         </div>
