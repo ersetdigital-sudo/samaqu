@@ -26,7 +26,7 @@ function parseRupiah(formatted: string): string {
 interface Variant {
   color: string;
   hex: string;
-  sizes: { size: string; stock: number; priceOverride: string; sku: string }[];
+  sizes: { size: string; stock: number; priceOverride: string; sku: string; weight?: string }[];
 }
 
 interface MediaFile {
@@ -129,13 +129,14 @@ function EditSeriesBlock({ sn, block, errors, updateSeriesBlock, addSizeToSeries
         <p className="text-sm font-semibold mb-3" style={{ color: "var(--espresso)" }}><span style={{ color: "var(--gold)" }}>{sn}</span> — Stok Ukuran</p>
         {errors[`series_${sn}_stock`] && <p className="text-[11px] mb-2" style={{ color: "#dc2626" }}>{errors[`series_${sn}_stock`]}</p>}
         <div className="p-4 rounded-xl" style={{ background: "rgba(255,255,255,.6)", border: "1px solid #f1f1f3" }}>
-          <div className="grid grid-cols-[72px_80px_112px_112px_36px] gap-2 text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>
-            <span>Ukuran</span><span>Stok</span><span>Harga Khusus</span><span>SKU</span><span></span>
+          <div className="grid grid-cols-[72px_72px_84px_112px_112px_36px] gap-2 text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>
+            <span>Ukuran</span><span>Stok</span><span>Berat (g)</span><span>Harga Khusus</span><span>SKU</span><span></span>
           </div>
           {v0.sizes.map((s, i) => (
-            <div key={i} className="grid grid-cols-[72px_80px_112px_112px_36px] gap-2 items-center mb-1.5">
+            <div key={i} className="grid grid-cols-[72px_72px_84px_112px_112px_36px] gap-2 items-center mb-1.5">
               <input value={s.size} onChange={(e) => updateSeriesBlockSizeField(sn, i, "size", e.target.value.toUpperCase())} onFocus={(e) => e.target.select()} list="size-suggestions" className="rounded-lg px-2.5 py-2 text-sm outline-none text-center" style={{ border: "1px solid #d4d4d8", background: "white", color: "var(--espresso)" }} placeholder="—" />
               <input type="number" value={s.stock || ""} onChange={(e) => updateSeriesBlockSizeField(sn, i, "stock", parseInt(e.target.value) || 0)} placeholder="0" className="rounded-lg px-2.5 py-2 text-sm outline-none text-center" style={{ border: "1px solid #d4d4d8", background: "white", color: "var(--espresso)" }} />
+              <input type="number" min={100} max={5000} inputMode="numeric" value={s.weight ?? ""} onChange={(e) => updateSeriesBlockSizeField(sn, i, "weight", e.target.value)} placeholder="gram" title="Berat ukuran ini (gram, 100–5000). Kosong = pakai berat produk." className="rounded-lg px-2.5 py-2 text-sm outline-none text-center" style={{ border: "1px solid #d4d4d8", background: "white", color: "var(--espresso)" }} />
               <input type="text" inputMode="numeric" value={formatRupiah(s.priceOverride)} onChange={(e) => updateSeriesBlockSizeField(sn, i, "priceOverride", parseRupiah(e.target.value))} placeholder="—" className="rounded-lg px-2.5 py-2 text-sm outline-none" style={{ border: "1px solid #d4d4d8", background: "white", color: "var(--espresso)" }} />
               <input value={s.sku} onChange={(e) => updateSeriesBlockSizeField(sn, i, "sku", e.target.value)} placeholder="—" className="rounded-lg px-2.5 py-2 text-sm outline-none" style={{ border: "1px solid #d4d4d8", background: "white", color: "var(--espresso)" }} />
               {v0.sizes.length > 1 && <button onClick={() => removeSizeFromSeriesBlock(sn, i)} className="p-1.5 rounded-lg hover:bg-red-50 transition-colors" style={{ color: "#dc2626" }}><Trash2 size={14} /></button>}
@@ -287,9 +288,9 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
               const { data: sibVariants } = await supabase.from("product_variants").select("*").eq("product_id", sib.id);
               const colorGroups: Record<string, Variant> = {};
               if (sibVariants) {
-                sibVariants.forEach((v: { color: string; hex: string | null; size: string; stock: number; price_override: number | null; sku: string | null }) => {
+                sibVariants.forEach((v: { color: string; hex: string | null; size: string; stock: number; weight: number | null; price_override: number | null; sku: string | null }) => {
                   if (!colorGroups[v.color]) colorGroups[v.color] = { color: v.color, hex: v.hex || "#141414", sizes: [] };
-                  colorGroups[v.color].sizes.push({ size: v.size, stock: v.stock, priceOverride: v.price_override ? String(v.price_override) : "", sku: v.sku || "" });
+                  colorGroups[v.color].sizes.push({ size: v.size, stock: v.stock, weight: v.weight ? String(v.weight) : "", priceOverride: v.price_override ? String(v.price_override) : "", sku: v.sku || "" });
                 });
               }
 
@@ -346,11 +347,12 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
         const { data: dbVariants } = await supabase.from("product_variants").select("*").eq("product_id", id);
         if (dbVariants && dbVariants.length > 0) {
           const colorGroups: Record<string, Variant> = {};
-          dbVariants.forEach((v: { color: string; hex: string | null; size: string; stock: number; price_override: number | null; sku: string | null }) => {
+          dbVariants.forEach((v: { color: string; hex: string | null; size: string; stock: number; weight: number | null; price_override: number | null; sku: string | null }) => {
             if (!colorGroups[v.color]) colorGroups[v.color] = { color: v.color, hex: v.hex || colorMap[v.color] || "#141414", sizes: [] };
             colorGroups[v.color].sizes.push({
               size: v.size,
               stock: v.stock,
+              weight: v.weight ? String(v.weight) : "",
               priceOverride: v.price_override ? String(v.price_override) : "",
               sku: v.sku || "",
             });
@@ -683,6 +685,7 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
           await supabase.from("product_variants").delete().eq("product_id", seriesSlug);
           const variantRows = block.variants.flatMap((v, vi) => v.sizes.map((s, si) => ({
             product_id: seriesSlug, color: v.color, hex: v.hex || null, size: s.size, stock: s.stock,
+            weight: s.weight !== undefined && String(s.weight).trim() !== "" ? parseInt(String(s.weight)) : null,
             price_override: s.priceOverride ? parseInt(s.priceOverride) : null, sku: s.sku || null,
             display_order: vi * 100 + si,
           })));
@@ -735,6 +738,7 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
         await supabase.from("product_variants").delete().eq("product_id", slug);
         const variantRows = variants.flatMap((v, vi) => v.sizes.map((s, si) => ({
           product_id: slug, color: v.color, hex: v.hex || null, size: s.size, stock: s.stock,
+          weight: s.weight !== undefined && String(s.weight).trim() !== "" ? parseInt(String(s.weight)) : null,
           price_override: s.priceOverride ? parseInt(s.priceOverride) : null, sku: s.sku || null,
           display_order: vi * 100 + si,
         })));
@@ -910,10 +914,11 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
                   <PresetColorPicker existing={variants.map((v) => v.color)} onAdd={addColor} />
                 </div>
                 {activeVariant && (<div className="space-y-3"><p className="text-sm font-medium" style={{ color: "var(--espresso)" }}>Ukuran untuk <span style={{ color: "var(--gold)" }}>{activeColor}</span></p>
-                  <div className="grid grid-cols-[72px_80px_112px_112px_36px] gap-2 text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}><span>Ukuran</span><span>Stok</span><span>Harga Khusus</span><span>SKU</span><span></span></div>
-                  {activeVariant.sizes.map((s, i) => (<div key={i} className="grid grid-cols-[72px_80px_112px_112px_36px] gap-2 items-center">
+                  <div className="grid grid-cols-[72px_72px_84px_112px_112px_36px] gap-2 text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}><span>Ukuran</span><span>Stok</span><span>Berat (g)</span><span>Harga Khusus</span><span>SKU</span><span></span></div>
+                  {activeVariant.sizes.map((s, i) => (<div key={i} className="grid grid-cols-[72px_72px_84px_112px_112px_36px] gap-2 items-center">
                     <input value={s.size} onChange={(e) => updateSizeField(activeColor!, i, "size", e.target.value.toUpperCase())} onFocus={(e) => e.target.select()} list="size-suggestions" className="rounded-lg px-2.5 py-2 text-sm outline-none text-center" style={{ border: "1px solid #d4d4d8", background: "white", color: "var(--espresso)" }} placeholder="—" />
                     <input type="number" value={s.stock || ""} onChange={(e) => updateSizeField(activeColor!, i, "stock", parseInt(e.target.value) || 0)} placeholder="0" className="rounded-lg px-2.5 py-2 text-sm outline-none text-center" style={{ border: "1px solid #d4d4d8", background: "white", color: "var(--espresso)" }} />
+                    <input type="number" min={100} max={5000} inputMode="numeric" value={s.weight ?? ""} onChange={(e) => updateSizeField(activeColor!, i, "weight", e.target.value)} placeholder="gram" title="Berat ukuran ini (gram, 100–5000). Kosong = pakai berat produk." className="rounded-lg px-2.5 py-2 text-sm outline-none text-center" style={{ border: "1px solid #d4d4d8", background: "white", color: "var(--espresso)" }} />
                     <input type="text" inputMode="numeric" value={formatRupiah(s.priceOverride)} onChange={(e) => updateSizeField(activeColor!, i, "priceOverride", parseRupiah(e.target.value))} placeholder="—" className="rounded-lg px-2.5 py-2 text-sm outline-none" style={{ border: "1px solid #d4d4d8", background: "white", color: "var(--espresso)" }} />
                     <input value={s.sku} onChange={(e) => updateSizeField(activeColor!, i, "sku", e.target.value)} placeholder="—" className="rounded-lg px-2.5 py-2 text-sm outline-none" style={{ border: "1px solid #d4d4d8", background: "white", color: "var(--espresso)" }} />
                     {activeVariant.sizes.length > 1 && <button onClick={() => removeSize(activeColor!, i)} className="p-1.5 rounded-lg hover:bg-red-50 transition-colors" style={{ color: "#dc2626" }}><Trash2 size={14} /></button>}
