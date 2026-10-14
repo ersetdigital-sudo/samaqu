@@ -171,7 +171,38 @@ export async function getCatalogProducts(category?: string): Promise<Product[]> 
       console.error("[getCatalogProducts] Supabase error:", error.message, error);
       return [];
     }
-    return (data as DbProduct[]).map(dbProductToProduct);
+
+    const products = (data as DbProduct[]).map(dbProductToProduct);
+
+    // Media asli dari `product_images` (punya flag `is_video`) supaya video ikut tampil di
+    // galeri Open Order. Query terpisah — sama polanya dengan halaman detail katalog — jadi
+    // tidak bergantung pada resolusi relasi embed PostgREST.
+    const ids = products.map((p) => p.id);
+    if (ids.length > 0) {
+      const { data: imageRows, error: imageError } = await supabase
+        .from("product_images")
+        .select("product_id, url, is_video, display_order")
+        .in("product_id", ids)
+        .order("display_order");
+
+      if (imageError) {
+        console.error("[getCatalogProducts] Gagal ambil product_images:", imageError.message);
+      } else if (imageRows && imageRows.length > 0) {
+        const mediaByProduct = new Map<string, { src: string; type: "image" | "video" }[]>();
+        for (const row of imageRows as { product_id: string; url: string; is_video: boolean | null }[]) {
+          if (!row.url) continue;
+          const list = mediaByProduct.get(row.product_id) ?? [];
+          list.push({ src: row.url, type: row.is_video ? "video" : "image" });
+          mediaByProduct.set(row.product_id, list);
+        }
+        for (const product of products) {
+          const media = mediaByProduct.get(product.id);
+          if (media && media.length > 0) product.media = media;
+        }
+      }
+    }
+
+    return products;
   } catch (err) {
     console.error("[getCatalogProducts] Unexpected error:", err);
     return [];

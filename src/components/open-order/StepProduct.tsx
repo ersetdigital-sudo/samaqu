@@ -81,7 +81,7 @@ export default function StepProduct({
 
   const gallery = product ? openOrderGallery(product, draft.color, series?.name ?? null) : [];
   const activePhoto = Math.min(photo, Math.max(gallery.length - 1, 0));
-  const currentPhoto = gallery[activePhoto] ?? "";
+  const currentMedia = gallery[activePhoto] ?? null;
 
   // Produk/warna/series berganti → harga & foto ikut menyesuaikan.
   useEffect(() => {
@@ -124,17 +124,26 @@ export default function StepProduct({
       <div>
         <div className="relative w-full aspect-[3/4] rounded-3xl overflow-hidden" style={{ background: "#e5e5e5" }}>
           <div className="absolute inset-0" style={{ background: "linear-gradient(135deg,rgba(232,223,209,.5),rgba(0,0,0,.28))" }} />
-          {currentPhoto && (
+          {currentMedia?.type === "video" ? (
+            <video
+              key={currentMedia.src}
+              src={currentMedia.src}
+              controls
+              playsInline
+              preload="metadata"
+              className="absolute inset-0 w-full h-full object-contain"
+            />
+          ) : currentMedia ? (
             <img
-              key={currentPhoto}
-              src={cloudinaryUrl(currentPhoto, { width: 1200 })}
+              key={currentMedia.src}
+              src={cloudinaryUrl(currentMedia.src, { width: 1200 })}
               alt={`${product.name} ${colorLabel}${series ? ` — ${series.name}` : ""}`}
               className="absolute inset-0 w-full h-full object-contain"
               onError={(e) => {
                 (e.target as HTMLImageElement).style.display = "none";
               }}
             />
-          )}
+          ) : null}
           {gallery.length > 1 && (
             <>
               <button
@@ -162,12 +171,12 @@ export default function StepProduct({
         {/* Titik navigasi */}
         {gallery.length > 1 && (
           <div className="flex justify-center gap-1.5 mt-3">
-            {gallery.map((src, i) => (
+            {gallery.map((item, i) => (
               <button
-                key={src}
+                key={item.src}
                 type="button"
                 onClick={() => setPhoto(i)}
-                aria-label={`Foto ${i + 1}`}
+                aria-label={`Media ${i + 1}`}
                 className="rounded-full transition-all duration-300"
                 style={{ background: i === activePhoto ? "var(--gold)" : "rgba(0,0,0,.4)", width: i === activePhoto ? 16 : 6, height: 6 }}
               />
@@ -178,16 +187,27 @@ export default function StepProduct({
         {/* Thumbnail */}
         {gallery.length > 1 && (
           <div className="hidden md:grid mt-4 grid-cols-4 gap-2">
-            {gallery.map((src, i) => (
+            {gallery.map((item, i) => (
               <button
-                key={src}
+                key={item.src}
                 type="button"
                 onClick={() => setPhoto(i)}
-                aria-label={`Foto ${i + 1}`}
+                aria-label={`Media ${i + 1}`}
                 className="relative aspect-square rounded-lg overflow-hidden transition-all duration-200"
                 style={{ boxShadow: i === activePhoto ? "0 0 0 2px var(--espresso)" : "0 0 0 1px rgba(0,0,0,.3)" }}
               >
-                <img src={cloudinaryUrl(src, { width: 300 })} alt="" className="w-full h-full object-cover" loading="lazy" />
+                {item.type === "video" ? (
+                  <>
+                    <video src={item.src} muted playsInline preload="metadata" className="w-full h-full object-cover" />
+                    <span className="absolute inset-0 grid place-items-center" style={{ background: "rgba(0,0,0,.28)" }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden>
+                        <path d="M8 5v14l11-7z" fill="#fff" />
+                      </svg>
+                    </span>
+                  </>
+                ) : (
+                  <img src={cloudinaryUrl(item.src, { width: 300 })} alt="" className="w-full h-full object-cover" loading="lazy" />
+                )}
               </button>
             ))}
           </div>

@@ -19,6 +19,12 @@ export interface OpenOrderSeriesOption {
   price: number;
 }
 
+/** Satu item media varian — gambar atau video (dari tabel `product_images`). */
+export interface OpenOrderMedia {
+  src: string;
+  type: "image" | "video";
+}
+
 /** Kombinasi warna (+ series) → baris `products` asli, untuk foto, stok, dan order_items. */
 export interface OpenOrderVariant {
   /** Warna seperti tersimpan di varian (`product_variants.color`) — nilai yang dipakai stok. */
@@ -32,8 +38,8 @@ export interface OpenOrderVariant {
   sizes: string[];
   /** Total stok semua ukuran di baris + warna ini (0 kalau variannya tidak dikelola). */
   stock: number;
-  /** Foto (gambar saja) baris ini — sumber galeri di langkah detail. */
-  media: string[];
+  /** Media baris ini (gambar + video) — sumber galeri di langkah detail. */
+  media: OpenOrderMedia[];
 }
 
 export interface OpenOrderProduct {
@@ -100,13 +106,18 @@ function kainOf(row: OpenOrderCatalogRow): string {
   return (row.jenis_kain?.name ?? row.kain ?? "").trim();
 }
 
-/** Foto baris katalog: `media` (gambar saja) → `images` → `image`. */
-function mediaOf(row: OpenOrderCatalogRow): string[] {
-  const fromMedia = (row.media ?? []).filter((item) => item.type !== "video" && item.src).map((item) => item.src);
+/** Media baris katalog (gambar + video) — `media` → `images` → `image`. */
+function mediaOf(row: OpenOrderCatalogRow): OpenOrderMedia[] {
+  const fromMedia = (row.media ?? [])
+    .filter((item) => !!item?.src)
+    .map((item) => ({
+      src: item.src,
+      type: item.type === "video" ? ("video" as const) : ("image" as const),
+    }));
   if (fromMedia.length > 0) return fromMedia;
-  const fromImages = (row.images ?? []).filter(Boolean);
+  const fromImages = (row.images ?? []).filter(Boolean).map((src) => ({ src, type: "image" as const }));
   if (fromImages.length > 0) return fromImages;
-  return row.image ? [row.image] : [];
+  return row.image ? [{ src: row.image, type: "image" as const }] : [];
 }
 
 /**
@@ -212,7 +223,7 @@ export function buildOpenOrderProducts(
     group.price = Math.min(group.price, price);
     group.minimumPrice = Math.min(group.minimumPrice, price);
     if (row.create_your_price_enabled) group.cypEnabled = true;
-    if (!group.image) group.image = mediaOf(row)[0] ?? "";
+    if (!group.image) group.image = mediaOf(row)[0]?.src ?? "";
     if (!group.description && row.description) group.description = row.description.trim();
     if (row.weight) group.weight = Math.max(group.weight, row.weight);
     if (series) {
