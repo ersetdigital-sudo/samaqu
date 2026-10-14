@@ -490,21 +490,29 @@ export default function MasterProduk() {
 
   // Pakai stok efektif (sama dengan Daftar Produk) supaya produk series yang
   // menumpang stok basisnya tidak dihitung sebagai varian habis.
-  const totalStockUnits = useMemo(
-    () => (variants || []).reduce((s, v) => s + stokVarianTotal(v), 0),
+  // Hanya varian yang MEMEGANG stoknya sendiri yang dihitung. Baris series turunan
+  // (punya `base_product_id`) memakai stok basisnya — kalau ikut dijumlah, Total Stok
+  // jadi dobel. Jadi kartu Total Stok / Menipis / Habis menghitung baris basis saja.
+  const stokPemilikSaja = useMemo(
+    () => (variants || []).filter((v) => !v.base_product_id),
     [variants],
+  );
+
+  const totalStockUnits = useMemo(
+    () => stokPemilikSaja.reduce((s, v) => s + stokVarianTotal(v), 0),
+    [stokPemilikSaja],
   );
 
   // "Menipis" memakai ambang yang sudah dipakai sistem: total 1..5 (0 = habis, lihat lib/ops-variants).
   // Sengaja tidak memakai <= 5 agar tidak menghitung dua kali dengan card "Stok Habis".
   const lowStockVariantCount = useMemo(
-    () => (variants || []).filter((v) => { const t = stokVarianTotal(v); return t > 0 && t <= 5; }).length,
-    [variants],
+    () => stokPemilikSaja.filter((v) => { const t = stokVarianTotal(v); return t > 0 && t <= 5; }).length,
+    [stokPemilikSaja],
   );
 
   const outOfStockVariantCount = useMemo(
-    () => (variants || []).filter((v) => stokVarianTotal(v) === 0).length,
-    [variants],
+    () => stokPemilikSaja.filter((v) => stokVarianTotal(v) === 0).length,
+    [stokPemilikSaja],
   );
 
   const reportVariants = useMemo(() => {
@@ -1155,7 +1163,7 @@ export default function MasterProduk() {
                           return (
                            <tr 
                              key={product.id} 
-                             className={`${rowBg} hover:bg-blue-100/50 dark:hover:bg-slate-800 transition-colors border-b border-gray-100 dark:border-slate-800/50 ${product.product_type === 'free_gift' ? 'border-l-4 border-l-indigo-400' : ''}`}
+                              className={`${rowBg} hover:bg-blue-100/50 dark:hover:bg-slate-800 transition-colors border-b border-gray-100 dark:border-slate-800/50 ${product.product_type === 'free_gift' ? 'border-l-4 border-l-indigo-400' : ''} ${product.stok_bersama ? 'opacity-60' : ''}`}
                            >
                               <td className="px-4 py-3.5 text-left align-middle font-inter text-sm font-medium text-gray-700 dark:text-slate-300 border-r border-gray-100 dark:border-slate-800/50">
                                 <div className="flex items-center gap-2 min-w-0 max-w-[280px]" title={product.name}>
@@ -1165,8 +1173,8 @@ export default function MasterProduk() {
                                   ) : null}
                                 </div>
                                 {product.stok_bersama ? (
-                                  <p className="mt-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400 truncate" title={`${product.series || product.name} mengikuti ${product.stok_bersama.mengikuti}`}>
-                                    {product.series || product.name} mengikuti {product.stok_bersama.mengikuti}
+                                  <p className="mt-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400 truncate" title={`ikut ${product.stok_bersama.mengikuti}`}>
+                                    ikut {product.stok_bersama.mengikuti}
                                   </p>
                                 ) : null}
                               </td>
@@ -1252,7 +1260,7 @@ export default function MasterProduk() {
                       animate={{ opacity: 1, y: 0 }}
                       whileHover={{ scale: 1.01 }}
                       whileTap={{ scale: 0.99 }}
-                      className={`bg-gradient-to-br from-white to-gray-50/50 dark:from-[#2d3748] dark:to-slate-700/50 rounded-2xl shadow-md border border-gray-200/80 dark:border-slate-600 p-4 backdrop-blur-sm transition-colors duration-300 ${product.product_type === 'free_gift' ? 'border-l-4 border-l-indigo-400' : ''}`}
+                      className={`bg-gradient-to-br from-white to-gray-50/50 dark:from-[#2d3748] dark:to-slate-700/50 rounded-2xl shadow-md border border-gray-200/80 dark:border-slate-600 p-4 backdrop-blur-sm transition-colors duration-300 ${product.product_type === 'free_gift' ? 'border-l-4 border-l-indigo-400' : ''} ${product.stok_bersama ? 'opacity-60' : ''}`}
                       style={{ boxShadow: '0 4px 12px rgba(0, 0, 0, 0.06)' }}
                     >
                       <div className="flex items-start justify-between mb-3 pb-3 border-b border-gray-200/60 dark:border-slate-600">
@@ -1273,7 +1281,7 @@ export default function MasterProduk() {
                           </p>
                           {product.stok_bersama ? (
                             <p className="font-inter text-amber-600 truncate whitespace-nowrap mt-0.5" style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '0.01em' }}>
-                              {product.series || product.name} mengikuti {product.stok_bersama.mengikuti}
+                              ikut {product.stok_bersama.mengikuti}
                             </p>
                           ) : null}
                         </div>
@@ -1465,12 +1473,12 @@ export default function MasterProduk() {
                           const total = SIZES.reduce((s, sz) => s + st[sz], 0);
                           const rowBg = index % 2 === 0 ? 'bg-white dark:bg-[#16171d]' : 'bg-blue-50/30 dark:bg-[#1a1d28]';
                           return (
-                            <tr key={v.id} className={`${rowBg} hover:bg-blue-100/50 dark:hover:bg-slate-800 transition-colors border-b border-gray-100 dark:border-slate-800/50`}>
+                            <tr key={v.id} className={`${rowBg} hover:bg-blue-100/50 dark:hover:bg-slate-800 transition-colors border-b border-gray-100 dark:border-slate-800/50 ${v.base_product_id ? 'opacity-60' : ''}`}>
                               <td className="px-4 py-3.5 text-left align-middle font-inter text-sm font-semibold text-gray-900 dark:text-white border-r border-gray-100 dark:border-slate-800/50">
                                 {product?.name || v.product_name || '-'}
                                 {(v.base_series_name || v.base_product_name) ? (
                                   <span className="block text-[10px] font-medium text-amber-600 dark:text-amber-400">
-                                    {v.series_name || product?.name || v.product_name} mengikuti {v.base_series_name || v.base_product_name}
+                                    ikut {v.base_series_name || v.base_product_name}
                                   </span>
                                 ) : null}
                               </td>
@@ -1516,13 +1524,13 @@ export default function MasterProduk() {
                     const st = stokVarianMap(v);
                     const total = SIZES.reduce((s, sz) => s + st[sz], 0);
                     return (
-                      <div key={v.id} className="bg-white rounded-2xl shadow-md border border-gray-200/80 p-4">
+                      <div key={v.id} className={`bg-white rounded-2xl shadow-md border border-gray-200/80 p-4 ${v.base_product_id ? 'opacity-60' : ''}`}>
                         <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-200/60">
                           <div>
                             <p className="font-inter text-sm font-semibold text-gray-900">{product?.name || v.product_name || '-'}</p>
                             {(v.base_series_name || v.base_product_name) ? (
                               <p className="text-[10px] font-medium text-amber-600">
-                                {v.series_name || product?.name || v.product_name} mengikuti {v.base_series_name || v.base_product_name}
+                                ikut {v.base_series_name || v.base_product_name}
                               </p>
                             ) : null}
                             <p className="text-xs text-gray-500">
