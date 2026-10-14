@@ -15,12 +15,15 @@ import {
   BarChart3,
   Database,
   TrendingUp,
+  CalendarDays,
+  RotateCcw,
 } from "lucide-react";
 import {
   ResponsiveContainer,
   ComposedChart,
   Bar,
   Line,
+  Cell,
   XAxis,
   YAxis,
   Tooltip,
@@ -55,6 +58,9 @@ export default function LaporanLeads() {
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth());
   const [year, setYear] = useState(now.getFullYear());
+  // Filter per tanggal (YYYY-MM-DD). Kosong = seluruh bulan terpilih.
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
   const start = `${year}-${pad(month + 1)}-01`;
   const end = `${year}-${pad(month + 1)}-${pad(new Date(year, month + 1, 0).getDate())}`;
@@ -88,8 +94,28 @@ export default function LaporanLeads() {
     return Object.values(map).sort((a, b) => a.tanggal.localeCompare(b.tanggal));
   }, [leads]);
 
+  // Filter per tanggal (dari–sampai) di dalam bulan terpilih. Kosong = seluruh bulan.
+  const rangeActive = Boolean(dateFrom || dateTo);
+  const rangeInvalid = Boolean(dateFrom && dateTo && dateFrom > dateTo);
+  const rowsInRange = useMemo(
+    () =>
+      dailyRows.filter((row) => {
+        if (dateFrom && row.tanggal < dateFrom) return false;
+        if (dateTo && row.tanggal > dateTo) return false;
+        return true;
+      }),
+    [dailyRows, dateFrom, dateTo]
+  );
+  /** Label rentang untuk judul kartu: "1 – 13 Oktober 2026" atau "1 Oktober 2026". */
+  const rangeLabel = (() => {
+    if (!rangeActive) return `${MONTHS[month]} ${year}`;
+    const from = dateFrom || start;
+    const to = dateTo || end;
+    return from === to ? formatTanggalID(from) : `${formatTanggalID(from)} – ${formatTanggalID(to)}`;
+  })();
+
   const totals = useMemo(() => {
-    return dailyRows.reduce(
+    return rowsInRange.reduce(
       (acc, r) => {
         SOURCES.forEach((s) => {
           acc.perSumber[s] = (acc.perSumber[s] || 0) + (r.perSumber[s] || 0);
@@ -104,7 +130,7 @@ export default function LaporanLeads() {
       },
       { perSumber: {}, perSumberClosing: {}, perSumberNominal: {}, total: 0, closing: 0, closingMetaAds: 0, nominal: 0 }
     );
-  }, [dailyRows]);
+  }, [rowsInRange]);
 
   const rate = totals.total ? (totals.closing / totals.total) * 100 : 0;
   const bestSource = SOURCES.reduce((best, s) => ((totals.perSumber[s] || 0) > (totals.perSumber[best] || 0) ? s : best), SOURCES[0]);
@@ -117,9 +143,11 @@ export default function LaporanLeads() {
   ];
 
   const prevMonth = () => {
+    setDateFrom(""); setDateTo("");
     if (month === 0) { setMonth(11); setYear(year - 1); } else { setMonth(month - 1); }
   };
   const nextMonth = () => {
+    setDateFrom(""); setDateTo("");
     if (month === 11) { setMonth(0); setYear(year + 1); } else { setMonth(month + 1); }
   };
 
@@ -130,11 +158,13 @@ export default function LaporanLeads() {
     "Website": { icon: Users, chip: "bg-blue-500" },
   };
 
-  const chartData = dailyRows.map((r) => ({
+  const chartData = rowsInRange.map((r) => ({
     tanggal: formatTanggalPendek(r.tanggal),
     leads: r.total,
     closing: r.closing,
   }));
+  // Batang puncak (leads terbanyak) yang digambar solid — sama seperti grafik dashboard.
+  const peakLeads = chartData.reduce((max, d) => Math.max(max, d.leads), 0);
 
   return (
     <div className="space-y-6">
@@ -162,6 +192,56 @@ export default function LaporanLeads() {
             </button>
           </div>
         </div>
+      </div>
+
+      {/* Filter per tanggal */}
+      <div className="bg-white dark:bg-[#1a1d28] rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm">
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="flex items-center gap-2 mr-1 text-slate-500 dark:text-slate-400">
+            <CalendarDays size={16} />
+            <span className="text-[11px] font-bold uppercase tracking-wider">Filter per tanggal</span>
+          </div>
+          <label className="flex flex-col gap-1">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Dari</span>
+            <input
+              type="date"
+              value={dateFrom}
+              min={start}
+              max={dateTo || end}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1a1d28] px-3 py-2 text-sm text-slate-900 dark:text-white outline-none focus:border-blue-500"
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Sampai</span>
+            <input
+              type="date"
+              value={dateTo}
+              min={dateFrom || start}
+              max={end}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1a1d28] px-3 py-2 text-sm text-slate-900 dark:text-white outline-none focus:border-blue-500"
+            />
+          </label>
+          <button
+            type="button"
+            onClick={() => { setDateFrom(""); setDateTo(""); }}
+            disabled={!rangeActive}
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm font-semibold text-slate-700 dark:text-slate-200 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <RotateCcw size={14} /> Reset
+          </button>
+          {rangeActive && !rangeInvalid && (
+            <span className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300">
+              {rangeLabel}
+            </span>
+          )}
+        </div>
+        {rangeInvalid && (
+          <p className="mt-2 text-xs font-semibold text-red-600 dark:text-red-400">
+            Tanggal &quot;Dari&quot; lebih besar dari &quot;Sampai&quot; — perbaiki dulu.
+          </p>
+        )}
       </div>
 
       {/* Stat Cards */}
@@ -240,9 +320,16 @@ export default function LaporanLeads() {
       <div className="bg-white dark:bg-[#1a1d28] rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
           <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Leads Masuk vs Closing per Tanggal</p>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Sumber terbanyak: <span className="font-bold text-slate-900 dark:text-white">{bestSource}</span>
-          </p>
+          <div className="flex items-center gap-2">
+            {rangeActive && !rangeInvalid && (
+              <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300">
+                {rangeLabel}
+              </span>
+            )}
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Sumber terbanyak: <span className="font-bold text-slate-900 dark:text-white">{bestSource}</span>
+            </p>
+          </div>
         </div>
           {isLoading ? (
             <div className="h-64 flex items-center justify-center">
@@ -251,21 +338,34 @@ export default function LaporanLeads() {
           ) : chartData.length === 0 ? (
             <div className="h-64 flex flex-col items-center justify-center text-center">
               <Database size={26} className="text-slate-300 dark:text-slate-600 mb-2" />
-              <p className="text-sm text-slate-500 dark:text-slate-400">Belum ada leads bulan ini</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                {rangeActive ? "Tidak ada leads di rentang tanggal ini" : "Belum ada leads bulan ini"}
+              </p>
             </div>
           ) : (
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-                  <XAxis dataKey="tanggal" tick={{ fontSize: 11, fill: '#64748b' }} tickLine={false} axisLine={false} />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#64748b' }} tickLine={false} axisLine={false} width={30} />
+                  {/* Grid horizontal rata tipis (#eceae4), garis vertikal dimatikan —
+                      sama seperti grafik dashboard (wireframe sales-analytics-view). */}
+                  <CartesianGrid strokeDasharray="0" stroke="#eceae4" vertical={false} />
+                  <XAxis dataKey="tanggal" tick={{ fontSize: 11, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#94a3b8' }} tickLine={false} axisLine={false} width={30} />
                   <Tooltip
                     contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 12 }}
                     formatter={(value, name) => [value, name === 'leads' ? 'Leads Masuk' : 'Closing']}
                   />
                   <Legend formatter={(v) => (v === 'leads' ? 'Leads Masuk' : 'Closing')} wrapperStyle={{ fontSize: 11 }} />
-                  <Bar dataKey="leads" name="leads" fill="#6366f1" radius={[6, 6, 0, 0]} maxBarSize={28} />
+                  {/* Batang: semua tipis transparan bertepi 1,5px, hanya batang tertinggi solid,
+                      sudut membulat (radius 8) — gaya yang sama dengan dashboard ops. */}
+                  <Bar dataKey="leads" name="leads" maxBarSize={28} radius={[8, 8, 8, 8]} stroke="#2563eb" strokeWidth={1.5}>
+                    {chartData.map((entry, index) => (
+                      <Cell
+                        key={`bar-${entry.tanggal}-${index}`}
+                        fill={entry.leads > 0 && entry.leads === peakLeads ? '#2563eb' : 'rgba(37,99,235,0.12)'}
+                      />
+                    ))}
+                  </Bar>
                   <Line type="monotone" dataKey="closing" name="closing" stroke="#10b981" strokeWidth={2.5} dot={{ r: 3, fill: '#10b981' }} />
                 </ComposedChart>
               </ResponsiveContainer>
@@ -276,19 +376,25 @@ export default function LaporanLeads() {
       {/* Tabel Rekap per Tanggal */}
       <div className="bg-white dark:bg-[#1a1d28] rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
         <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 bg-gradient-to-r from-blue-600 to-indigo-600">
-          <h2 className="font-heading font-bold text-white">Data Rekap Leads Closing — {MONTHS[month]} {year}</h2>
+          <h2 className="font-heading font-bold text-white">Data Rekap Leads Closing — {rangeLabel}</h2>
         </div>
         {isLoading ? (
           <div className="p-12 flex items-center justify-center">
             <div className="w-8 h-8 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin" />
           </div>
-        ) : dailyRows.length === 0 ? (
+        ) : rowsInRange.length === 0 ? (
           <div className="p-12 text-center">
             <div className="w-14 h-14 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <Database size={26} className="text-slate-400" />
             </div>
-            <p className="font-bold text-slate-900 dark:text-white">Belum ada data bulan ini</p>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Pindahkan bulan atau tambahkan leads dulu di menu Leads</p>
+            <p className="font-bold text-slate-900 dark:text-white">
+              {rangeActive ? "Tidak ada data di rentang tanggal ini" : "Belum ada data bulan ini"}
+            </p>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+              {rangeActive
+                ? "Ubah atau reset filter tanggal di atas"
+                : "Pindahkan bulan atau tambahkan leads dulu di menu Leads"}
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -305,7 +411,7 @@ export default function LaporanLeads() {
                 </tr>
               </thead>
               <tbody>
-                {dailyRows.map((r, idx) => (
+                {rowsInRange.map((r, idx) => (
                   <motion.tr
                     key={r.tanggal}
                     initial={{ opacity: 0 }}
