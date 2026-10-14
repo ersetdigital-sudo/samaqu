@@ -17,6 +17,7 @@ import { Calendar, ChevronLeft, X } from "lucide-react";
 import { getCatalogProducts } from "@/lib/db";
 import type { Product } from "@/lib/katalog-data";
 import { OPEN_ORDER_ADDON, OPEN_ORDER_PERIOD } from "@/lib/open-order-config";
+import { sumWeightGramsBySize, variantWeightKey } from "@/lib/shipping-weight";
 import {
   buildOpenOrderProducts,
   findOpenOrderProduct,
@@ -158,7 +159,7 @@ export default function OpenOrderWizard() {
       .catch(() => {});
     supabase
       .from("product_variants")
-      .select("product_id, color, size, stock")
+      .select("product_id, color, size, stock, weight")
       .then(({ data }) => {
         if (active && data) setStockRows(data as OpenOrderStockRow[]);
       });
@@ -212,12 +213,37 @@ export default function OpenOrderWizard() {
   const subtotal = lines.reduce((sum, line) => sum + line.price * line.quantity, 0);
   const total = subtotal + (extraCover ? OPEN_ORDER_ADDON.price : 0) + (shipping?.cost ?? 0);
 
-  // Berat kirim = berat produk (gram) × jumlah + Cover & Hanger kalau dipilih, minimum 300 g.
-  const totalWeight = Math.max(
-    300,
-    lines.reduce((sum, line) => sum + (findOpenOrderProduct(products, line.productId)?.weight ?? 1200) * line.quantity, 0) +
-      (extraCover ? OPEN_ORDER_ADDON.weight : 0)
-  );
+  // Berat kirim (gram) memakai FUNGSI PUSAT `sumWeightGramsBySize`: berat varian per ukuran
+  // (dari warna/series yang dipilih) → berat produk → fallback default wizard. Add-on Extra
+  // Cover & Hanger tetap +300 g dan minimum 300 g tetap.
+  const { productWeights, variantWeights } = useMemo(() => {
+    const pw: Record<string, number> = {};
+    const vw: Record<string, number> = {};
+    for (const product of products) {
+      for (const variant of product.variants) {
+        if (product.weight > 0) pw[variant.productId] = product.weight;
+        for (const [size, gram] of Object.entries(variant.sizeWeights || {})) {
+          vw[variantWeightKey(variant.productId, variant.color, size)] = gram;
+        }
+      }
+    }
+    return { productWeights: pw, variantWeights: vw };
+  }, [products]);
+
+  const totalWeight = useMemo(() => {
+    const weightLines = lines.map((line) => {
+      const product = findOpenOrderProduct(products, line.productId);
+      const variant = product ? openOrderVariantFor(product, line.color, line.series) : undefined;
+      return {
+        productId: variant?.productId ?? line.productId,
+        color: line.color,
+        size: line.size,
+        quantity: line.quantity,
+      };
+    });
+    const { grams, missingQty } = sumWeightGramsBySize(weightLines, productWeights, variantWeights);
+    return Math.max(300, grams + missingQty * 1200 + (extraCover ? OPEN_ORDER_ADDON.weight : 0));
+  }, [lines, products, productWeights, variantWeights, extraCover]);
 
   /**
    * Ongkir yang sudah pernah dihitung (kunci: kota|kecamatan|berat). Menghindari menunggu
@@ -648,6 +674,7 @@ export default function OpenOrderWizard() {
                 lines={lines}
                 products={products}
                 subtotal={subtotal}
+                totalWeight={totalWeight}
                 extraCover={extraCover}
                 shipping={shipping}
                 loadingOngkir={loadingOngkir}

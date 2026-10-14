@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Lock, Truck, Loader2, RefreshCw } from "lucide-react";
 import { getProductById } from "@/lib/katalog-data";
-import { sumWeightGrams } from "@/lib/shipping-weight";
+import { sumWeightGramsBySize, productWeightMapFromRows, variantWeightMapFromRows, variantWeightKey } from "@/lib/shipping-weight";
 import { useCart } from "@/lib/cart-context";
 import { supabase } from "@/lib/supabase";
 import { getWhatsAppLink } from "@/lib/store-settings";
@@ -191,6 +191,8 @@ function CheckoutContent() {
   // Berat unit tiap produk (gram) dari DATABASE, di-key id produk (slug). Sumber kebenaran
   // berat kirim = `products.weight`, bukan katalog statis.
   const [productWeights, setProductWeights] = useState<Record<string, number>>({});
+  /** Berat per varian (produk+warna+ukuran) dari `product_variants.weight` — kosong = pakai berat produk. */
+  const [variantWeights, setVariantWeights] = useState<Record<string, number>>({});
   const [shipOptions, setShipOptions] = useState<ShipOpt[]>([]);
   const [loadingCost, setLoadingCost] = useState(false);
   const [shippingError, setShippingError] = useState<string | null>(null);
@@ -307,7 +309,8 @@ function CheckoutContent() {
     fetchAddresses();
   }, []);
 
-  // Ambil berat asli tiap produk (gram) dari DATABASE untuk id yang dipakai (keranjang / produk).
+  // Ambil berat asli (gram) dari DATABASE: berat produk + berat per VARIAN (produk+warna+ukuran).
+  // Berat varian yang kosong otomatis jatuh ke berat produk — perilaku lama tidak berubah.
   useEffect(() => {
     const ids = Array.from(new Set([
       ...(isCartMode ? items.map((i) => i.id) : []),
@@ -315,30 +318,34 @@ function CheckoutContent() {
     ].filter(Boolean)));
     if (ids.length === 0) return;
     let active = true;
-    supabase.from("products").select("id, weight").in("id", ids).then(({ data }) => {
-      if (!active || !data) return;
-      const map: Record<string, number> = {};
-      for (const row of data) if (row.weight) map[row.id as string] = Number(row.weight);
-      setProductWeights(map);
+    Promise.all([
+      supabase.from("products").select("id, weight").in("id", ids),
+      supabase.from("product_variants").select("product_id, color, size, weight").in("product_id", ids),
+    ]).then(([prodRes, varRes]) => {
+      if (!active) return;
+      setProductWeights(productWeightMapFromRows(prodRes.data));
+      setVariantWeights(variantWeightMapFromRows(varRes.data));
     });
     return () => { active = false; };
   }, [isCartMode, items, productId]);
 
-  // Berat kirim = Σ (berat produk asli × qty), satuan gram. Fallback 800 g/unit HANYA untuk
-  // produk yang beratnya memang belum ada di database (bukan menutupi bug).
+  // Berat kirim = Σ (berat VARIAN ukuran → berat produk → 800 g) × qty, satuan gram.
+  // Fallback 800 g/unit HANYA untuk item yang beratnya memang belum ada di database.
   useEffect(() => {
     if (isCartMode) {
-      const { grams, missingQty } = sumWeightGrams(items.map((i) => ({ productId: i.id, quantity: i.qty })), productWeights);
+      const lines = items.map((i) => ({ productId: i.id, color: i.color, size: i.size, quantity: i.qty }));
+      const { grams, missingQty } = sumWeightGramsBySize(lines, productWeights, variantWeights);
       const w = Math.max(300, grams + missingQty * 800);
       setBerat(w);
       console.log("[CHECKOUT] ⚖️ Weight (cart mode):", w, "g", { grams, missingQty });
     } else if (productId) {
-      const { grams, missingQty } = sumWeightGrams([{ productId, quantity: qty }], productWeights);
+      const lines = [{ productId, color: colorParam, size: sizeParam, quantity: qty }];
+      const { grams, missingQty } = sumWeightGramsBySize(lines, productWeights, variantWeights);
       const w = Math.max(300, grams + missingQty * 800);
       setBerat(w);
       console.log("[CHECKOUT] ⚖️ Weight (product mode):", w, "g");
     }
-  }, [isCartMode, items, qty, productId, productWeights]);
+  }, [isCartMode, items, qty, productId, colorParam, sizeParam, productWeights, variantWeights]);
 
   // Meta Pixel: InitiateCheckout (fire once on mount)
   useEffect(() => {
@@ -963,7 +970,7 @@ function CheckoutContent() {
                         {[item.kain ? `Kain ${item.kain}` : null, item.series, (item.color !== "-" && item.color !== "default") ? `Warna: ${item.color}` : null, `Ukuran: ${item.size}`, `×${item.qty}`].filter(Boolean).join(' · ')}
                       </p>
                       <p className="text-[10px] sm:text-[11px] font-ui mt-0.5" style={{ color: "var(--text-muted)" }}>
-                        Berat: {(() => { const w = productWeights[item.id] ?? 800; return w >= 1000 ? `${(w/1000).toFixed(1)} kg` : `${w} g`; })()} / item
+                        Berat: {(() => { const w = variantWeights[variantWeightKey(item.id, item.color, item.size)] ?? productWeights[item.id] ?? 800; return w >= 1000 ? `${(w/1000).toFixed(1)} kg` : `${w} g`; })()} / item
                       </p>
                       {item.create_your_price_enabled && item.customer_price && (
                         <p className="text-[10px] sm:text-[11px] font-ui mt-0.5" style={{ color: "var(--gold)" }}>Harga pilihanmu</p>
@@ -986,7 +993,7 @@ function CheckoutContent() {
                   <p className="text-[13px] sm:text-sm font-ui font-medium leading-snug" style={{ color: "var(--espresso)" }}>{product!.name}</p>
                   <p className="text-[11px] sm:text-xs font-ui mt-0.5" style={{ color: "var(--text-muted)" }}>Warna: {selectedColor} · Ukuran: {selectedSize}</p>
                   <p className="text-[10px] sm:text-[11px] font-ui mt-0.5" style={{ color: "var(--text-muted)" }}>
-                    Berat: {(() => { const w = (productId ? productWeights[productId] : undefined) ?? 800; return w >= 1000 ? `${(w/1000).toFixed(1)} kg` : `${w} g`; })()} / item
+                    Berat: {(() => { const w = variantWeights[variantWeightKey(productId, colorParam, sizeParam)] ?? productWeights[productId] ?? 800; return w >= 1000 ? `${(w/1000).toFixed(1)} kg` : `${w} g`; })()} / item
                   </p>
                   <div className="flex items-center justify-between mt-2 sm:mt-2.5">
                     <div className="inline-flex items-center rounded-lg" style={{ border: "1px solid rgba(0,0,0,.25)" }}>
@@ -1026,6 +1033,10 @@ function CheckoutContent() {
               </div>
               <div className="flex justify-between" style={{ color: "var(--text-secondary)" }}>
                 <span>Pengiriman</span><span>{selectedShipping ? `Rp ${shippingCost.toLocaleString("id-ID")}` : "—"}</span>
+              </div>
+              <div className="flex justify-between" style={{ color: "var(--text-secondary)" }}>
+                <span>Total berat</span>
+                <span>{berat.toLocaleString("id-ID")} g ({(berat / 1000).toLocaleString("id-ID", { maximumFractionDigits: 3 })} kg)</span>
               </div>
               {promoApplied && (
                 <div className="flex justify-between" style={{ color: "var(--gold)" }}>

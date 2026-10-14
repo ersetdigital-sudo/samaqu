@@ -56,3 +56,84 @@ export function formatWeight(grams?: number | null): string {
   return `${g.toLocaleString("id-ID")} g`;
 }
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   Berat per SIZE (kolom `product_variants.weight`, nullable).
+
+   Urutan prioritas berat satu item:
+     1. berat varian (`product_variants.weight`) — per produk + warna + ukuran,
+     2. berat produk (`products.weight`) — perilaku lama,
+     3. kalau dua-duanya kosong → dihitung `missingQty` (pemanggil menentukan
+        fallback default-nya sendiri, sama seperti `sumWeightGrams`).
+   Semua satuan GRAM. Tidak ada pembulatan: gram bulat, apa adanya.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/** Peta berat varian: kunci `productId|color|size` → gram. */
+export type VariantWeightMap = Record<string, number>;
+
+/** Kunci berat varian. Nilai kosong jadi string kosong supaya kuncinya tetap stabil. */
+export function variantWeightKey(
+  productId?: string | null,
+  color?: string | null,
+  size?: string | null
+): string {
+  return `${String(productId ?? "")}|${String(color ?? "")}|${String(size ?? "")}`;
+}
+
+export interface SizeWeightLine {
+  /** id baris `products` (slug). */
+  productId?: string | null;
+  /** warna varian (`product_variants.color`); "default" untuk produk Thobe. */
+  color?: string | null;
+  /** ukuran (`product_variants.size`, mis. "M"). */
+  size?: string | null;
+  /** kuantitas; default 1 kalau kosong. */
+  quantity?: number | null;
+}
+
+/** Σ berat kirim (gram) per baris item memakai prioritas berat varian → berat produk. */
+export function sumWeightGramsBySize(
+  lines: SizeWeightLine[],
+  productWeights: WeightMap,
+  variantWeights: VariantWeightMap
+): WeightResult {
+  let grams = 0;
+  let missingQty = 0;
+  let countedQty = 0;
+  for (const line of lines || []) {
+    const qty = Number(line?.quantity) || 1;
+    countedQty += qty;
+    const vw = Number(variantWeights?.[variantWeightKey(line?.productId, line?.color, line?.size)]);
+    const pw = Number(productWeights?.[String(line?.productId ?? "")]);
+    const w = Number.isFinite(vw) && vw > 0 ? vw : Number.isFinite(pw) && pw > 0 ? pw : 0;
+    if (w > 0) grams += w * qty;
+    else missingQty += qty;
+  }
+  return { grams, missingQty, countedQty };
+}
+
+/** Peta berat produk dari baris `products` (kolom `id`,`weight`). */
+export function productWeightMapFromRows(
+  rows?: { id?: string | null; weight?: number | null }[] | null
+): WeightMap {
+  const map: WeightMap = {};
+  for (const row of rows || []) {
+    const w = Number(row?.weight);
+    if (row?.id && Number.isFinite(w) && w > 0) map[String(row.id)] = w;
+  }
+  return map;
+}
+
+/** Peta berat varian dari baris `product_variants` (kolom `product_id`,`color`,`size`,`weight`). */
+export function variantWeightMapFromRows(
+  rows?: { product_id?: string | null; color?: string | null; size?: string | null; weight?: number | null }[] | null
+): VariantWeightMap {
+  const map: VariantWeightMap = {};
+  for (const row of rows || []) {
+    const w = Number(row?.weight);
+    if (Number.isFinite(w) && w > 0) {
+      map[variantWeightKey(row?.product_id, row?.color, row?.size)] = w;
+    }
+  }
+  return map;
+}
+

@@ -4,7 +4,7 @@ import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { isPaymentMethodId, legacyPaymentType } from "@/lib/payment-methods";
 import { notifyAdminNewOrder } from "@/lib/fonnte";
 import { markLeadBoughtForOrder } from "@/lib/ops-lead-sync";
-import { sumWeightGrams } from "@/lib/shipping-weight";
+import { sumWeightGramsBySize, productWeightMapFromRows, variantWeightMapFromRows } from "@/lib/shipping-weight";
 
 function generateOrderNumber(): string {
   const d = new Date();
@@ -196,22 +196,38 @@ export async function POST(request: NextRequest) {
 
     console.log("[ORDERS] Final order:", { orderNumber, subtotal, shippingCost: verifiedShippingCost, discount, total });
 
-    // ── Berat kirim (gram): Σ berat produk asli × qty dari DATABASE (bukan nilai dari klien). ──
-    // Sumber kebenaran berat = `products.weight`; berat tidak lagi mengikuti `shipping.weight`
-    // kiriman browser supaya tidak salah kalau katalog statis/di-klien keliru.
+    // ── Berat kirim (gram): berat VARIAN (per produk+warna+ukuran) → berat produk → nilai klien. ──
+    // Dihitung ULANG dari DATABASE memakai fungsi pusat yang sama dengan checkout saat meminta
+    // ongkir (`sumWeightGramsBySize`), jadi berat untuk ongkir = yang disimpan = yang dikirim ke resi.
     const weightIds = Array.from(new Set(validatedItems.map((i) => i.productId).filter(Boolean)));
-    const weightById: Record<string, number> = {};
+    let productWeights: Record<string, number> = {};
+    let variantWeights: Record<string, number> = {};
     if (weightIds.length > 0) {
-      const { data: wRows } = await supabase.from("products").select("id, weight").in("id", weightIds);
-      for (const r of wRows || []) if (r.weight) weightById[String(r.id)] = Number(r.weight);
+      const [{ data: pRows }, { data: vRows }] = await Promise.all([
+        supabase.from("products").select("id, weight").in("id", weightIds),
+        supabase.from("product_variants").select("product_id, color, size, weight").in("product_id", weightIds),
+      ]);
+      productWeights = productWeightMapFromRows(pRows);
+      variantWeights = variantWeightMapFromRows(vRows);
     }
-    const { grams: serverWeight, missingQty: weightMissing } = sumWeightGrams(
-      validatedItems.map((i) => ({ productId: i.productId, quantity: i.quantity })),
-      weightById
+    const { grams: serverWeight, missingQty: weightMissing } = sumWeightGramsBySize(
+      validatedItems.map((i) => ({ productId: i.productId, color: i.color, size: i.size, quantity: i.quantity })),
+      productWeights,
+      variantWeights
     );
     const weightGrams = weightMissing === 0 && serverWeight > 0
       ? serverWeight
       : (Number(shipping.weight) || serverWeight || 0);
+    // Konsistensi tiga angka: berat yang dipakai client saat meminta ongkir harus sama dengan
+    // hitungan server (yang disimpan ke `orders.weight` dan dipakai untuk resi).
+    const clientWeight = Number(shipping.weight) || 0;
+    if (clientWeight > 0 && clientWeight !== weightGrams) {
+      console.warn("[ORDERS] ⚠️ Berat client ≠ berat server:", {
+        orderNumber,
+        client: clientWeight,
+        server: weightGrams,
+      });
+    }
 
     // Insert order
     const { data: order, error: orderError } = await supabase

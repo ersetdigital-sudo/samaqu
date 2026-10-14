@@ -56,7 +56,7 @@ export async function PATCH(request: NextRequest) {
       const { data: order, error: fetchError } = await supabaseAdmin
         .from("orders")
         .select(
-          "id, order_number, customer_name, customer_whatsapp, shipping_address, shipping_city, shipping_postal_code, total, weight, payment_method, awb_no, status, order_items(product_id, product_name, quantity)"
+          "id, order_number, customer_name, customer_whatsapp, shipping_address, shipping_city, shipping_postal_code, total, weight, payment_method, awb_no, status, order_items(product_id, product_name, color, size, quantity)"
         )
         .eq("order_number", identifier)
         .single();

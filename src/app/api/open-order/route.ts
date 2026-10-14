@@ -5,9 +5,11 @@ import {
   buildOpenOrderProducts,
   findOpenOrderProduct,
   openOrderVariantFor,
+  DEFAULT_OPEN_ORDER_WEIGHT,
   type OpenOrderCatalogRow,
   type OpenOrderStockRow,
 } from "@/lib/open-order-offering";
+import { sumWeightGramsBySize, productWeightMapFromRows, variantWeightMapFromRows } from "@/lib/shipping-weight";
 import { markLeadBoughtForOrder } from "@/lib/ops-lead-sync";
 import {
   notifyAdminNewOrder,
@@ -174,7 +176,7 @@ export async function POST(request: NextRequest) {
 
     const { data: stockRows } = await supabaseAdmin
       .from("product_variants")
-      .select("product_id, color, size, stock");
+      .select("product_id, color, size, stock, weight");
 
     const products = buildOpenOrderProducts(
       (catalogRows ?? []) as OpenOrderCatalogRow[],
@@ -336,6 +338,30 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // ── Berat kirim (gram): FUNGSI PUSAT yang sama dengan wizard (berat varian → produk). ──
+    // Add-on Extra Cover & Hanger +300 g dan minimum 300 g sama persis dengan wizard, supaya
+    // berat untuk ongkir = yang disimpan = yang dipakai resi.
+    const weightIds = Array.from(new Set(validatedItems.map((i) => i.productId).filter(Boolean)));
+    let productWeights: Record<string, number> = {};
+    let variantWeights: Record<string, number> = {};
+    if (weightIds.length > 0) {
+      const [{ data: pRows }, { data: vRows }] = await Promise.all([
+        supabaseAdmin.from("products").select("id, weight").in("id", weightIds),
+        supabaseAdmin.from("product_variants").select("product_id, color, size, weight").in("product_id", weightIds),
+      ]);
+      productWeights = productWeightMapFromRows(pRows);
+      variantWeights = variantWeightMapFromRows(vRows);
+    }
+    const { grams: itemsWeight, missingQty: itemsWeightMissing } = sumWeightGramsBySize(
+      validatedItems.map((i) => ({ productId: i.productId, color: i.color, size: i.size, quantity: i.quantity })),
+      productWeights,
+      variantWeights
+    );
+    const weightGrams = Math.max(
+      300,
+      itemsWeight + itemsWeightMissing * DEFAULT_OPEN_ORDER_WEIGHT + (extraCover ? OPEN_ORDER_ADDON.weight : 0)
+    );
+
     const { data: order, error: orderError } = await supabaseAdmin
       .from("orders")
       .insert({
@@ -354,6 +380,7 @@ export async function POST(request: NextRequest) {
         discount: 0,
         total,
         status: "pending",
+        weight: weightGrams,
         // Pesanan ini sudah memotong stok → pembatalan wajib mengembalikannya.
         stock_reserved: true,
         shipping_notes: shippingNotes,
