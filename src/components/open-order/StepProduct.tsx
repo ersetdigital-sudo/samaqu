@@ -78,15 +78,21 @@ export default function StepProduct({
 
   const [price, setPrice] = useState(draft.price);
   const [photo, setPhoto] = useState(0);
+  // Video: tampilkan poster + tombol play dulu (sama seperti halaman katalog), supaya
+  // tidak ada kotak hitam saat frame video belum ter-paint.
+  const [playing, setPlaying] = useState(false);
 
   const gallery = product ? openOrderGallery(product, draft.color, series?.name ?? null) : [];
   const activePhoto = Math.min(photo, Math.max(gallery.length - 1, 0));
   const currentMedia = gallery[activePhoto] ?? null;
+  /** Foto yang dipakai sebagai cover video — foto pertama di galeri. */
+  const videoPoster = gallery.find((item) => item.type === "image")?.src ?? product?.image ?? "";
 
   // Produk/warna/series berganti → harga & foto ikut menyesuaikan.
   useEffect(() => {
     setPrice(draft.price);
     setPhoto(0);
+    setPlaying(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draft.productId, draft.color, series?.name]);
 
@@ -125,14 +131,46 @@ export default function StepProduct({
         <div className="relative w-full aspect-[3/4] rounded-3xl overflow-hidden" style={{ background: "#e5e5e5" }}>
           <div className="absolute inset-0" style={{ background: "linear-gradient(135deg,rgba(232,223,209,.5),rgba(0,0,0,.28))" }} />
           {currentMedia?.type === "video" ? (
-            <video
-              key={currentMedia.src}
-              src={currentMedia.src}
-              controls
-              playsInline
-              preload="metadata"
-              className="absolute inset-0 w-full h-full object-contain"
-            />
+            playing ? (
+              <video
+                key={currentMedia.src}
+                src={currentMedia.src}
+                loop
+                playsInline
+                autoPlay
+                preload="auto"
+                onClick={() => setPlaying(false)}
+                className="absolute inset-0 w-full h-full object-cover cursor-pointer"
+              />
+            ) : (
+              <>
+                {videoPoster ? (
+                  <img
+                    src={cloudinaryUrl(videoPoster, { width: 1200 })}
+                    alt={`${product.name} ${colorLabel}${series ? ` — ${series.name}` : ""}`}
+                    className="absolute inset-0 w-full h-full object-contain"
+                  />
+                ) : (
+                  <div className="absolute inset-0" style={{ background: "#e5e5e5" }} />
+                )}
+                <button
+                  type="button"
+                  onClick={() => setPlaying(true)}
+                  aria-label="Putar video"
+                  className="absolute inset-0 z-10 flex items-center justify-center"
+                  style={{ background: "rgba(0,0,0,.08)" }}
+                >
+                  <span
+                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-full grid place-items-center transition-transform hover:scale-110"
+                    style={{ background: "#ffffff", backdropFilter: "blur(8px)" }}
+                  >
+                    <svg width="24" height="24" viewBox="0 0 24 24" className="ml-1" aria-hidden>
+                      <path d="M8 5v14l11-7z" fill="#000000" />
+                    </svg>
+                  </span>
+                </button>
+              </>
+            )
           ) : currentMedia ? (
             <img
               key={currentMedia.src}
@@ -198,7 +236,8 @@ export default function StepProduct({
               >
                 {item.type === "video" ? (
                   <>
-                    <video src={item.src} muted playsInline preload="metadata" className="w-full h-full object-cover" />
+                    {/* Thumbnail video memakai poster foto (bukan elemen video) + ikon play. */}
+                    <img src={cloudinaryUrl(videoPoster || item.src, { width: 300 })} alt="" className="w-full h-full object-cover" loading="lazy" />
                     <span className="absolute inset-0 grid place-items-center" style={{ background: "rgba(0,0,0,.28)" }}>
                       <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden>
                         <path d="M8 5v14l11-7z" fill="#fff" />
