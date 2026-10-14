@@ -90,7 +90,16 @@ export interface SizeWeightLine {
   quantity?: number | null;
 }
 
-/** Σ berat kirim (gram) per baris item memakai prioritas berat varian → berat produk. */
+/**
+ * Σ berat kirim (gram) per baris item. Prioritas satu item:
+ *   1. berat varian milik baris itu sendiri (`product_variants.weight`),
+ *   2. berat produk (`products.weight`),
+ *   3. kalau dua-duanya kosong → dicatat `missingQty` (pemanggil menentukan fallback default).
+ *
+ * Catatan: berat TIDAK pernah menumpang baris induk. Stok bisa dibagi antar-series
+ * (`base_product_id`), tapi berat tiap series berbeda (potongan & kerah beda), jadi
+ * series turunan tetap memakai beratnya sendiri.
+ */
 export function sumWeightGramsBySize(
   lines: SizeWeightLine[],
   productWeights: WeightMap,

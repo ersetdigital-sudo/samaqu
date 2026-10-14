@@ -74,12 +74,17 @@ function SizeGrid({
   onRemove,
   onAdd,
   skuFallback,
+  stockLocked,
+  stockLockedLabel,
 }: {
   sizes: SizeRow[];
   onUpdate: (idx: number, field: keyof SizeRow, value: string | number) => void;
   onRemove: (idx: number) => void;
   onAdd: () => void;
   skuFallback?: string;
+  /** Baris turunan (stok menumpang series induk): kolom STOK dikunci, kolom BERAT tetap bisa diisi. */
+  stockLocked?: boolean;
+  stockLockedLabel?: string;
 }) {
   // "Isi semua size": berat (gram) yang sama untuk seluruh ukuran di tabel ini.
   const [bulkWeight, setBulkWeight] = useState("");
@@ -119,13 +124,16 @@ function SizeGrid({
           </label>
           <label className="pf-size-field">
             <span className="pf-size-label">Stok</span>
-            <input type="number" value={s.stock || ""} onChange={(e) => onUpdate(i, "stock", parseInt(e.target.value) || 0)}
-              placeholder="0" className="pf-cell text-center" />
+            <input type="number" value={stockLocked ? "" : (s.stock || "")} disabled={stockLocked}
+              onChange={(e) => onUpdate(i, "stock", parseInt(e.target.value) || 0)}
+              placeholder={stockLocked ? "—" : "0"} title={stockLocked ? stockLockedLabel : undefined}
+              className="pf-cell text-center" style={stockLocked ? { background: "#f4f4f5", color: "var(--text-muted)" } : undefined} />
           </label>
           <label className="pf-size-field">
             <span className="pf-size-label">Berat (gram)</span>
             <input type="number" min={100} max={5000} inputMode="numeric" value={s.weight ?? ""}
               onChange={(e) => onUpdate(i, "weight", e.target.value)} placeholder="—" className="pf-cell text-center" />
+            {String(s.weight ?? "").trim() === "" ? <span className="pf-weight-warn">belum diisi</span> : null}
           </label>
           <label className="pf-size-field">
             <span className="pf-size-label">Harga khusus</span>
@@ -369,6 +377,35 @@ export default function TambahProdukPage({
     const baseSlug = generateSlug(name);
     return selectedSeries.find((s) => `${baseSlug}-${s.toLowerCase().replace(/\s+/g, "-")}` === baseId) || "";
   }
+
+  /** Berat ukuran terbesar yang terisi pada satu daftar ukuran (0 = belum ada yang diisi). */
+  function maxSizeWeight(rows: SizeRow[]): number {
+    let max = 0;
+    for (const r of rows) {
+      const n = Number(String(r?.weight ?? "").trim());
+      if (Number.isInteger(n) && n > 0) max = Math.max(max, n);
+    }
+    return max;
+  }
+
+  /** Berat default (read-only) yang dipakai ukuran tanpa berat — dari `products.weight`. */
+  const defaultWeightGrams = Number(String(weight).trim()) || 0;
+
+  /** Rentang berat dari ukuran yang sudah diisi (kosong kalau belum ada yang diisi). */
+  const weightRange = useMemo(() => {
+    const rows = category === "Thobe" && activeSeriesTab && seriesBlocks[activeSeriesTab]
+      ? seriesBlocks[activeSeriesTab].variants.flatMap((v) => v.sizes)
+      : variants.flatMap((v) => v.sizes);
+    const nums = rows
+      .map((s) => Number(String(s.weight ?? "").trim()))
+      .filter((n) => Number.isInteger(n) && n > 0);
+    if (nums.length === 0) return "";
+    const min = Math.min(...nums);
+    const max = Math.max(...nums);
+    return min === max
+      ? `Berat ${min.toLocaleString("id-ID")} g`
+      : `Berat ${min.toLocaleString("id-ID")} sampai ${max.toLocaleString("id-ID")} g`;
+  }, [category, activeSeriesTab, seriesBlocks, variants]);
 
   // Add color variant
   function addColor(color: string, hex?: string) {
@@ -770,6 +807,10 @@ export default function TambahProdukPage({
           const blockPrice = block.cypEnabled
             ? (parseInt(block.price) || parseInt(block.minimumPrice) || 0)
             : (parseInt(block.price) || 0);
+          // products.weight = berat ukuran TERBESAR yang terisi pada baris ini (angka
+          // konservatif untuk fallback ongkir + tampilan katalog). Kalau belum ada ukuran
+          // yang diisi → kolom TIDAK ditulis supaya nilai lama (mis. 1.200 g) tidak berubah.
+          const rowWeight = maxSizeWeight(block.variants.flatMap((v) => v.sizes));
 
           const { error: productError } = await supabase.from("products").upsert({
             id: seriesSlug,
@@ -781,7 +822,7 @@ export default function TambahProdukPage({
             recommended_price: block.recommendedPrice ? parseInt(block.recommendedPrice) : null,
             create_your_price_enabled: block.cypEnabled,
             cyp_microcopy_override: block.useCustomCypMicrocopy && block.cypMicrocopyOverride.trim() ? block.cypMicrocopyOverride.trim() : null,
-            weight: weight ? parseInt(weight) : null,
+            ...(rowWeight > 0 ? { weight: rowWeight } : {}),
             image: block.media.find((m) => m.url)?.url || "",
             images: block.media.filter((m) => m.url).map((m) => m.url),
             colors: block.variants.map((v) => v.color),
@@ -848,6 +889,8 @@ export default function TambahProdukPage({
         }
       } else {
         // ── Non-Thobe: existing single-product logic ──
+        // products.weight = berat ukuran terbesar yang terisi (lihat catatan di cabang Thobe).
+        const rowWeight = maxSizeWeight(variants.flatMap((v) => v.sizes));
         const { error: productError } = await supabase.from("products").upsert({
           id: slug,
           name,
@@ -858,7 +901,7 @@ export default function TambahProdukPage({
           recommended_price: recommendedPrice ? parseInt(recommendedPrice) : null,
           create_your_price_enabled: cypEnabled,
           cyp_microcopy_override: useCustomCypMicrocopy && cypMicrocopyOverride.trim() ? cypMicrocopyOverride.trim() : null,
-          weight: weight ? parseInt(weight) : null,
+          ...(rowWeight > 0 ? { weight: rowWeight } : {}),
           image: media.find((m) => m.url)?.url || "",
           images: media.filter((m) => m.url).map((m) => m.url),
           colors: variants.map((v) => v.color),
@@ -1033,22 +1076,17 @@ export default function TambahProdukPage({
                   <label className="pf-label">Deskripsi</label>
                   <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className="pf-textarea" placeholder="Deskripsi produk..." />
                 </div>
-                {/* Baris 4: Harga Dasar (non-Thobe) + Berat — selalu satu baris dua kolom */}
-                <div className="grid sm:grid-cols-2 gap-4">
-                  {category !== "Thobe" && !cypEnabled && (
-                    <div>
-                      <label className="pf-label">Harga Dasar (Rp) <span className="pf-req">*</span></label>
-                      <input type="text" inputMode="numeric" value={formatRupiah(basePrice)} onChange={(e) => setBasePrice(parseRupiah(e.target.value))} className={`pf-input${errors.basePrice ? " invalid" : ""}`} placeholder="389.000" />
-                      <p className="pf-hint">Harga terendah / yang tampil di katalog. Angka saja, contoh 249000.</p>
-                      {errors.basePrice && <p className="pf-error">{errors.basePrice}</p>}
-                    </div>
-                  )}
+                {/* Baris 4: Harga Dasar (non-Thobe).
+                    Berat TIDAK diisi di sini lagi — berat per ukuran ada di blok ukuran
+                    (itulah yang dipakai menghitung ongkir J&T). */}
+                {category !== "Thobe" && !cypEnabled && (
                   <div>
-                    <label className="pf-label">Berat (gram)</label>
-                    <input type="number" value={weight} onChange={(e) => setWeight(e.target.value)} className="pf-input" placeholder="800" />
-                    <p className="pf-hint">Untuk hitung ongkir. Kosongkan = default per kategori.</p>
+                    <label className="pf-label">Harga Dasar (Rp) <span className="pf-req">*</span></label>
+                    <input type="text" inputMode="numeric" value={formatRupiah(basePrice)} onChange={(e) => setBasePrice(parseRupiah(e.target.value))} className={`pf-input${errors.basePrice ? " invalid" : ""}`} placeholder="389.000" />
+                    <p className="pf-hint">Harga terendah / yang tampil di katalog. Angka saja, contoh 249000.</p>
+                    {errors.basePrice && <p className="pf-error">{errors.basePrice}</p>}
                   </div>
-                </div>
+                )}
                 {/* Badge Katalog */}
                 <div>
                   <label className="pf-label">Badge Katalog (opsional)</label>
@@ -1373,18 +1411,32 @@ export default function TambahProdukPage({
                         </div>
                       </div>
 
-                      {/* ── Stok per Ukuran ── */}
+                      {/* ── Stok dan Berat per Ukuran ── */}
                       <div>
-                        <p className="text-sm font-semibold mb-3" style={{ color: "var(--espresso)" }}>
-                          <span style={{ color: "var(--gold)" }}>{sn}</span> — Stok Ukuran
+                        <p className="text-sm font-semibold mb-1" style={{ color: "var(--espresso)" }}>
+                          <span style={{ color: "var(--gold)" }}>{sn}</span> — Stok dan Berat per Ukuran
+                        </p>
+                        <p className="pf-hint mb-3">
+                          Berat dipakai untuk hitung ongkir J&T. Ukuran tanpa berat memakai berat default{" "}
+                          {defaultWeightGrams > 0 ? `${defaultWeightGrams.toLocaleString("id-ID")} g` : "1.200 g"}.
                         </p>
                         {errors[`series_${sn}_stock`] && <p className="pf-error mb-2">{errors[`series_${sn}_stock`]}</p>}
                         {errors[`series_${sn}_weight`] && <p className="pf-error mb-2">{errors[`series_${sn}_weight`]}</p>}
                         {block.baseProductId ? (
-                          <div className="pf-panel" style={{ background: "var(--bg-secondary)" }}>
-                            <p className="text-sm text-center py-4" style={{ color: "var(--text-muted)" }}>
-                              Stok dikunci — <b>ikut {parentSeriesName(block.baseProductId) || "produk dasar"}</b>. Ubah stoknya di tab {parentSeriesName(block.baseProductId) || "produk dasar"}.
+                          <div className="pf-panel">
+                            <p className="pf-hint mb-2.5">
+                              Stok dikunci — <b>ikut {parentSeriesName(block.baseProductId) || "produk dasar"}</b> (ubah di tab itu).
+                              Berat tetap diisi per series ini karena potongan &amp; kerahnya berbeda.
                             </p>
+                            <SizeGrid
+                              sizes={v0.sizes}
+                              onUpdate={(i, field, value) => updateSeriesBlockSizeField(sn, i, field, value)}
+                              onRemove={(i) => removeSizeFromSeriesBlock(sn, i)}
+                              onAdd={() => addSizeToSeriesBlock(sn)}
+                              skuFallback={sku}
+                              stockLocked
+                              stockLockedLabel={`ikut ${parentSeriesName(block.baseProductId) || "produk dasar"}`}
+                            />
                           </div>
                         ) : (
                         <div className="pf-panel">
@@ -1566,6 +1618,7 @@ export default function TambahProdukPage({
               <p className="text-sm font-medium" style={{ color: "var(--espresso)" }}>{name || "Nama Produk"}</p>
               <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{category || "Kategori"}{activeSeriesTab && category === "Thobe" ? ` · ${activeSeriesTab}` : ""}</p>
               <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>SKU: {sku.trim() || "—"}</p>
+              {weightRange ? <p className="text-[11px] mt-0.5 font-semibold" style={{ color: "var(--gold-deep)" }}>{weightRange}</p> : null}
               <p className="text-xl font-serif italic mt-1.5" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--gold)" }}>
                 {category === "Thobe" && activeSeriesTab && seriesBlocks[activeSeriesTab] ? (
                   (() => {
@@ -1651,6 +1704,7 @@ export default function TambahProdukPage({
         }
         .pf-input.invalid, .pf-select.invalid, .pf-textarea.invalid { border-color: #dc2626; }
         .pf-hint { font-size: .7rem; color: var(--text-muted); margin-top: .35rem; }
+        .pf-weight-warn { display: block; margin-top: .2rem; font-size: .6rem; font-weight: 700; color: #b45309; }
         .pf-error { font-size: .72rem; color: #dc2626; margin-top: .35rem; }
         .pf-selectwrap { position: relative; }
         .pf-selectico {

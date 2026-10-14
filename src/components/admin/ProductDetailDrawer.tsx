@@ -214,6 +214,31 @@ export function ProductDetailPanel({
         alert("Isi harga produk (lebih dari 0) dulu sebelum menampilkan di website.");
         return;
       }
+      // Peringatan LUNAK (tidak memblokir): ukuran berstok yang beratnya belum diisi akan
+      // memakai berat default saat menghitung ongkir J&T.
+      try {
+        const { data: rows } = await supabase
+          .from("products")
+          .select("id")
+          .eq("category", product.category)
+          .eq("name", product.name);
+        const ids = (rows || []).map((r: { id: string }) => r.id);
+        if (ids.length > 0) {
+          const { data: vars } = await supabase
+            .from("product_variants")
+            .select("stock, weight")
+            .in("product_id", ids);
+          const missing = (vars || []).filter(
+            (v: { stock: number | null; weight: number | null }) =>
+              (Number(v.stock) || 0) > 0 && !(Number(v.weight) > 0)
+          ).length;
+          if (missing > 0) {
+            alert(`${missing} ukuran belum punya berat, ongkir memakai berat default.`);
+          }
+        }
+      } catch {
+        /* peringatan lunak — jangan sampai menghalangi penerbitan */
+      }
     }
     setSavingPublish(true);
     const { error } = await supabase

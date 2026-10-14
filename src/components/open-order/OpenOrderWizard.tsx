@@ -17,7 +17,7 @@ import { Calendar, ChevronLeft, X } from "lucide-react";
 import { getCatalogProducts } from "@/lib/db";
 import type { Product } from "@/lib/katalog-data";
 import { OPEN_ORDER_ADDON, OPEN_ORDER_PERIOD } from "@/lib/open-order-config";
-import { sumWeightGramsBySize, variantWeightKey } from "@/lib/shipping-weight";
+import { sumWeightGramsBySize, variantWeightMapFromRows } from "@/lib/shipping-weight";
 import {
   buildOpenOrderProducts,
   findOpenOrderProduct,
@@ -213,22 +213,21 @@ export default function OpenOrderWizard() {
   const subtotal = lines.reduce((sum, line) => sum + line.price * line.quantity, 0);
   const total = subtotal + (extraCover ? OPEN_ORDER_ADDON.price : 0) + (shipping?.cost ?? 0);
 
-  // Berat kirim (gram) memakai FUNGSI PUSAT `sumWeightGramsBySize`: berat varian per ukuran
-  // (dari warna/series yang dipilih) → berat produk → fallback default wizard. Add-on Extra
-  // Cover & Hanger tetap +300 g dan minimum 300 g tetap.
+  // Berat kirim (gram) memakai FUNGSI PUSAT `sumWeightGramsBySize`: berat varian per ukuran →
+  // berat produk → default wizard. Tiap series (termasuk turunan) memakai beratnya SENDIRI.
+  // Add-on Extra Cover & Hanger tetap +300 g dan minimum 300 g tetap.
   const { productWeights, variantWeights } = useMemo(() => {
     const pw: Record<string, number> = {};
-    const vw: Record<string, number> = {};
     for (const product of products) {
       for (const variant of product.variants) {
         if (product.weight > 0) pw[variant.productId] = product.weight;
-        for (const [size, gram] of Object.entries(variant.sizeWeights || {})) {
-          vw[variantWeightKey(variant.productId, variant.color, size)] = gram;
-        }
       }
     }
-    return { productWeights: pw, variantWeights: vw };
-  }, [products]);
+    return {
+      productWeights: pw,
+      variantWeights: variantWeightMapFromRows(stockRows),
+    };
+  }, [products, stockRows]);
 
   const totalWeight = useMemo(() => {
     const weightLines = lines.map((line) => {
