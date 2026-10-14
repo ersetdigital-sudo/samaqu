@@ -19,6 +19,7 @@ import CustomersView from "@/components/admin/CustomersView";
 import SettingsPanel from "@/components/admin/SettingsSections";
 import OrdersView from "@/components/admin/OrdersView";
 import DashboardView from "@/components/admin/DashboardView";
+import { rankTopProducts } from "@/lib/top-products";
 import ProductsCatalog from "@/components/admin/ProductsCatalog";
 import ProductDetailDrawer from "@/components/admin/ProductDetailDrawer";
 import LiveChatView from "@/components/admin/LiveChatView";
@@ -212,45 +213,20 @@ function AdminPageInner() {
     totalProducts: products.length,
   }), [orders, products]);
 
-  const topProducts = useMemo(() => {
-    // Hitung per BARIS PRODUK LENGKAP: nama produk + jenis kain + series — jadi
-    // "Thobe Superblack B-01 Jiharkah" dan "… C-01 Jiharkah" dihitung terpisah.
-    // Penjualan lewat series turunan (Imron/Bayati/Karim/Imalah) dihitung atas
-    // nama series itu sendiri.
-    // Hanya pesanan SAH: batal ("dibatalkan"/"cancel") & belum bayar ("pending")
-    // tidak dihitung, dan produk Free Gift dilewati.
-    const freeGift = new Set(
-      (products || []).filter((p) => p.product_type === "free_gift").map((p) => p.id)
-    );
-    // Urutan produk yang sudah ada (urutan `products`) dipakai untuk tie-break unit sama.
-    const productOrder = new Map((products || []).map((p, i) => [p.id, i]));
-    const counts: Record<string, { name: string; sub: string | null; count: number; order: number }> = {};
-    orders.forEach((o) => {
-      const status = String(o.status || "").toLowerCase();
-      if (status === "pending" || status.includes("batal") || status.includes("cancel")) return;
-      o.order_items?.forEach((item) => {
-        if (item.product_id && freeGift.has(item.product_id)) return;
-        const name = (item.product_name || "").trim() || "Tanpa nama";
-        const kain = (item.kain || "").trim();
-        const series = (item.series || "").trim();
-        const key = `${name}||${kain.toLowerCase()}||${series.toLowerCase()}`;
-        const productIdx = item.product_id ? productOrder.get(item.product_id) : undefined;
-        if (!counts[key]) {
-          counts[key] = {
-            name,
-            // Baris bawah pil: "jenis kain · series" (bagian yang kosong dibuang).
-            sub: [kain, series].filter(Boolean).join(" · ") || null,
-            count: 0,
-            order: productIdx ?? Number.MAX_SAFE_INTEGER,
-          };
-        }
-        counts[key].count += item.quantity;
-      });
-    });
-    return Object.values(counts)
-      .sort((a, b) => b.count - a.count || a.order - b.order)
-      .slice(0, 4);
-  }, [orders, products]);
+  // Kartu "Produk Terlaris" memakai FUNGSI PUSAT yang sama dengan dashboard ops
+  // (`rankTopProducts`, src/lib/top-products.ts) — jadi aturan hitungnya identik dan
+  // angkanya tidak bisa berbeda. Bedanya hanya PERIODE: kartu admin ini memakai SEMUA
+  // pesanan yang termuat (tanpa batas tanggal), sedangkan kartu ops memakai bulan terpilih.
+  const topProducts = useMemo(
+    () =>
+      rankTopProducts({
+        orders: orders.map((o) => ({ id: o.id, status: o.status, created_at: o.created_at })),
+        items: orders.flatMap((o) => (o.order_items || []).map((it) => ({ ...it, order_id: o.id }))),
+        products: products.map((p) => ({ id: p.id, product_type: p.product_type })),
+        limit: 4,
+      }),
+    [orders, products]
+  );
 
   const catalogItems = useMemo(() => groupByMainProduct(products), [products]);
 
