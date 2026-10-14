@@ -34,8 +34,6 @@ import {
   ArrowUp,
   ArrowDown,
   Gift,
-  ChevronLeft,
-  ChevronRight,
   Upload, // Added for import button
   FileSpreadsheet,
   CheckCircle,
@@ -709,20 +707,8 @@ export default function MasterProduk() {
     setSortConfig({ key, direction });
   };
 
-  // Pagination State
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
-
-  // Reset page when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, statusFilter, activeTab, sortConfig]);
-
-  const totalPages = Math.ceil(sortedProducts.length / itemsPerPage);
-  const paginatedProducts = sortedProducts.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  // Ringkasan daftar produk: "Menampilkan X dari Y produk" — Y = totalProducts (lihat KPI di atas).
+  const hasProductFilter = searchTerm.trim() !== '' || statusFilter !== 'all';
 
   // Status stok untuk tabel & kartu — satu baris, tanpa bar persentase.
   // Dasarnya stok EFEKTIF (sudah memperhitungkan stok bersama antar-series).
@@ -1244,10 +1230,10 @@ export default function MasterProduk() {
               </div>
 
               {/* DESKTOP: TABLE VIEW */}
-              <div className="hidden md:block bg-white dark:bg-[#1a1d28] rounded-xl shadow-sm border border-gray-200 dark:border-slate-800 overflow-hidden transition-colors duration-300">
-                <div className="overflow-x-auto">
+              <div className="hidden md:block bg-white dark:bg-[#1a1d28] rounded-xl shadow-sm border border-gray-200 dark:border-slate-800 overflow-hidden min-[1300px]:overflow-visible transition-colors duration-300">
+                <div className="overflow-x-auto min-[1300px]:overflow-visible">
                   <table className="w-full border-collapse">
-                    <thead>
+                    <thead className="sticky top-0 z-20">
                       <tr className="bg-[#1e3a5f]">
                         <th className="px-4 py-3.5 text-left font-inter text-xs font-bold text-white uppercase tracking-wide border-r border-[#2d4a6f]">
                           Nama Produk
@@ -1278,14 +1264,14 @@ export default function MasterProduk() {
                       </tr>
                     </thead>
                     <tbody>
-                      {paginatedProducts.length === 0 ? (
+                      {sortedProducts.length === 0 ? (
                         <tr>
                           <td colSpan="7" className="px-6 py-12 text-center font-inter text-sm text-gray-400 dark:text-slate-500">
-                            {filteredProducts.length === 0 ? "Belum ada produk" : "Tidak ada produk di halaman ini"}
+                            Belum ada produk
                           </td>
                         </tr>
                       ) : (
-                        paginatedProducts.map((product, index) => {
+                        sortedProducts.map((product, index) => {
                           const rowBg = index % 2 === 0 ? 'bg-white dark:bg-[#16171d]' : 'bg-blue-50/30 dark:bg-[#1a1d28]';
                           return (
                            <tr 
@@ -1376,14 +1362,14 @@ export default function MasterProduk() {
 
               {/* MOBILE: CARD LIST VIEW */}
               <div className="md:hidden space-y-3">
-                {paginatedProducts.length === 0 ? (
+                {sortedProducts.length === 0 ? (
                   <div className="bg-white dark:bg-[#1a1d28] rounded-2xl shadow-sm border border-gray-200 dark:border-slate-800 p-8 text-center transition-colors duration-300">
                     <p className="font-inter text-gray-400 dark:text-slate-500" style={{ fontSize: '14px', fontWeight: 500, letterSpacing: '0.01em' }}>
-                      {filteredProducts.length === 0 ? "Belum ada produk" : "Tidak ada produk di halaman ini"}
+                      Belum ada produk
                     </p>
                   </div>
                 ) : (
-                  paginatedProducts.map((product) => (
+                  sortedProducts.map((product) => (
                     <motion.div
                       key={product.id}
                       initial={{ opacity: 0, y: 10 }}
@@ -1494,55 +1480,17 @@ export default function MasterProduk() {
                 )}
               </div>
 
-              {/* Pagination Controls */}
-              {filteredProducts.length > 0 && (
+              {/* Ringkasan daftar — tanpa tombol halaman */}
+              {totalProducts > 0 && (
                 <div className="flex flex-col md:flex-row justify-between items-center gap-4 mt-6 bg-white dark:bg-[#1a1d28] p-4 rounded-xl border border-gray-200 dark:border-slate-800 shadow-sm transition-colors duration-300">
                   <p className="text-sm text-gray-600 dark:text-slate-400 font-inter">
-                    Menampilkan <span className="font-bold text-gray-900 dark:text-white">{(currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, filteredProducts.length)}</span> dari <span className="font-bold text-gray-900 dark:text-white">{filteredProducts.length}</span> produk
+                    {hasProductFilter ? (
+                      <>Menampilkan <span className="font-bold text-gray-900 dark:text-white">{filteredProducts.length}</span> dari <span className="font-bold text-gray-900 dark:text-white">{totalProducts}</span> produk</>
+                    ) : (
+                      <>Menampilkan <span className="font-bold text-gray-900 dark:text-white">{totalProducts}</span> produk</>
+                    )}
                   </p>
                   
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                      disabled={currentPage === 1}
-                      className="p-2 rounded-lg border border-gray-200 dark:border-slate-600/50 hover:bg-gray-50 dark:hover:bg-[#374151] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      <ChevronLeft size={18} className="text-gray-600 dark:text-slate-300" />
-                    </button>
-                    
-                    <div className="flex items-center gap-1">
-                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                        // Logic to show simplified page numbers if many pages
-                        let pageNum = i + 1;
-                        if (totalPages > 5 && currentPage > 3) {
-                          pageNum = currentPage - 2 + i;
-                          if (pageNum > totalPages) pageNum = totalPages - (4 - i);
-                        }
-                        
-                        return (
-                          <button
-                            key={pageNum}
-                            onClick={() => setCurrentPage(pageNum)}
-                            className={`w-8 h-8 rounded-lg text-sm font-bold transition-all ${
-                              currentPage === pageNum
-                                ? 'bg-blue-600 text-white shadow-md'
-                                : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700'
-                            }`}
-                          >
-                            {pageNum}
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                      disabled={currentPage === totalPages}
-                      className="p-2 rounded-lg border border-gray-200 dark:border-slate-600/50 hover:bg-gray-50 dark:hover:bg-[#374151] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      <ChevronRight size={18} className="text-gray-600 dark:text-slate-300" />
-                    </button>
-                  </div>
                 </div>
               )}
             </motion.div>
@@ -1630,10 +1578,10 @@ export default function MasterProduk() {
               </div>
 
               {/* Desktop: Tabel stok per variant & ukuran */}
-              <div className="hidden md:block bg-white dark:bg-[#1a1d28] rounded-xl shadow-sm border border-gray-200 dark:border-slate-800 overflow-hidden transition-colors duration-300">
-                <div className="overflow-x-auto">
+              <div className="hidden md:block bg-white dark:bg-[#1a1d28] rounded-xl shadow-sm border border-gray-200 dark:border-slate-800 overflow-hidden min-[1300px]:overflow-visible transition-colors duration-300">
+                <div className="overflow-x-auto min-[1300px]:overflow-visible">
                   <table className="w-full border-collapse">
-                    <thead>
+                    <thead className="sticky top-0 z-20">
                       <tr className="bg-[#1e3a5f]">
                         <th className="px-3 py-3.5 text-left font-inter text-xs font-bold text-white uppercase tracking-wide border-r border-[#2d4a6f]">Produk</th>
                         <th className="px-3 py-3.5 text-left font-inter text-xs font-bold text-white uppercase tracking-wide border-r border-[#2d4a6f] whitespace-nowrap">Kategori</th>
