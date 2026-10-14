@@ -103,9 +103,6 @@ export default function LabelPage() {
 
   const isCod = paymentType === "cod";
   const weightKg = order.weight ? (order.weight / 1000).toFixed(2) : "1.00";
-  const itemsSummary = order.order_items
-    ? order.order_items.map((i) => `${i.product_name}${i.series ? ` ${i.series}` : ""}${i.kain ? ` (${i.kain})` : ""} ${i.color !== "-" && i.color !== "default" ? i.color : ""} ${i.size} ×${i.quantity}`).join(", ")
-    : "-";
   const printDate = new Date().toLocaleString("id-ID", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
   const serviceLabel = order.shipping_method?.toUpperCase() || "EZ";
 
@@ -137,7 +134,7 @@ export default function LabelPage() {
       </div>
 
       <div className="label-wrap" style={{
-        width: "100mm", height: "150mm", margin: "0 auto", background: "#fff",
+        width: "100mm", minHeight: "150mm", margin: "0 auto", background: "#fff",
         boxShadow: "0 2px 8px rgba(0,0,0,.15)", display: "flex", flexDirection: "column",
         overflow: "hidden", fontSize: "9px", lineHeight: "1.3", color: "#000",
       }}>
@@ -183,10 +180,44 @@ export default function LabelPage() {
           </div>
         </div>
 
-        {/* Pesanan */}
-        <div style={{ padding: "2mm 3.5mm", borderBottom: "2px dashed #000" }}>
-          <div style={{ display: "inline-block", fontSize: "7.5px", fontWeight: "800", background: "#000", color: "#fff", padding: "0.4mm 2mm", borderRadius: "1mm", marginBottom: "0.8mm" }}>Pesanan</div>
-          <div style={{ fontSize: "10px", fontWeight: "700", fontFamily: "'Courier New', Courier, monospace", wordBreak: "break-word" }}>{itemsSummary}</div>
+        {/* Pesanan — satu blok per item (nama tebal + baris varian/ukuran/qty) */}
+        <div style={{ padding: "1.6mm 3.5mm", borderBottom: "2px dashed #000" }}>
+          <div style={{ display: "inline-block", fontSize: "7.5px", fontWeight: "800", background: "#000", color: "#fff", padding: "0.4mm 2mm", borderRadius: "1mm", marginBottom: "0.5mm" }}>Pesanan</div>
+          <div>
+            {(order.order_items || []).map((it, i) => {
+              const rawColor = it.color && it.color !== "default" && it.color !== "-" ? it.color : "";
+              const showColor = rawColor && !it.product_name.toLowerCase().includes(rawColor.toLowerCase());
+              const meta = [
+                it.kain ? `Varian: ${it.kain}` : null,
+                showColor ? `Warna: ${rawColor}` : null,
+                it.size ? `Ukuran: ${it.size}` : null,
+                `Qty: ${it.quantity}`,
+              ].filter(Boolean).join(" · ");
+              return (
+                <div
+                  key={i}
+                  style={{
+                    display: "flex",
+                    gap: "1.2mm",
+                    alignItems: "flex-start",
+                    paddingTop: i > 0 ? "0.9mm" : "0.3mm",
+                    marginTop: i > 0 ? "0.9mm" : 0,
+                    borderTop: i > 0 ? "0.6px dotted #999" : "none",
+                  }}
+                >
+                  <span style={{ fontSize: "9px", fontWeight: "800", lineHeight: "1.2", minWidth: "3.2mm" }}>{i + 1}.</span>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ fontSize: "10px", fontWeight: "800", lineHeight: "1.2", wordBreak: "break-word" }}>
+                      {it.product_name}{it.series ? ` ${it.series}` : ""}
+                    </div>
+                    <div style={{ fontSize: "8px", fontWeight: "600", color: "#222", lineHeight: "1.25", marginTop: "0.3mm", wordBreak: "break-word" }}>
+                      {meta}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         {/* Info Grid */}
