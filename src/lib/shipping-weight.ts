@@ -44,3 +44,15 @@ export function sumWeightGrams(lines: WeightLine[], weights: WeightMap): WeightR
   }
   return { grams, missingQty, countedQty };
 }
+
+/**
+ * Format berat (gram) untuk tampilan: "2,4 kg" kalau ≥ 1 kg, selain itu "800 g".
+ * Kosong/0 → "-". Dipakai di detail pesanan & label.
+ */
+export function formatWeight(grams?: number | null): string {
+  const g = Number(grams);
+  if (!Number.isFinite(g) || g <= 0) return "-";
+  if (g >= 1000) return `${(g / 1000).toLocaleString("id-ID", { maximumFractionDigits: 2 })} kg`;
+  return `${g.toLocaleString("id-ID")} g`;
+}
+
