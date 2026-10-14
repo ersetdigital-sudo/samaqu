@@ -3,6 +3,7 @@ import { isPaymentMethodId, legacyPaymentType } from "../payment-methods";
 import { createOrder } from "./order";
 import { getDestinationCode, getOriginCode, getReceiverArea } from "./area-mapping";
 import type { OrderResponse } from "./types";
+import { sumWeightGrams } from "../shipping-weight";
 
 /**
  * Buat pesanan J&T (Order Create API) dari baris `orders` + `order_items` yang SUDAH tersimpan.
@@ -25,8 +26,6 @@ export const SAMAQU_ORIGIN = {
 
 /** Berat fallback per item (gram) kalau baris katalog tidak punya `weight` — sama dengan wizard Open Order. */
 const DEFAULT_ITEM_WEIGHT = 1200;
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export interface JntOrderSourceItem {
   product_id?: string | null;
@@ -90,22 +89,22 @@ async function resolveCod(paymentMethod: string | null | undefined, total: numbe
 async function resolveWeightGrams(order: JntOrderSource, items: JntOrderSourceItem[]): Promise<number> {
   if (order.weight && order.weight > 0) return order.weight;
 
-  const productIds = items
-    .map((item) => item.product_id)
-    .filter((id): id is string => !!id && UUID_RE.test(id));
+  // id produk di tabel ini berupa SLUG (mis. "thobe-navy-karim"), bukan UUID — jangan difilter UUID.
+  const productIds = Array.from(new Set(items.map((item) => item.product_id).filter((id): id is string => !!id)));
 
-  const weights = new Map<string, number>();
+  const weights: Record<string, number> = {};
   if (productIds.length > 0) {
     const { data } = await getSupabaseAdmin().from("products").select("id, weight").in("id", productIds);
     for (const row of data ?? []) {
-      if (row.weight) weights.set(row.id as string, row.weight as number);
+      if (row.weight) weights[String(row.id)] = Number(row.weight);
     }
   }
 
-  return items.reduce(
-    (sum, item) => sum + (weights.get(item.product_id ?? "") ?? DEFAULT_ITEM_WEIGHT) * (item.quantity || 1),
-    0
+  const { grams, missingQty } = sumWeightGrams(
+    items.map((item) => ({ productId: item.product_id, quantity: item.quantity })),
+    weights
   );
+  return grams + missingQty * DEFAULT_ITEM_WEIGHT;
 }
 
 export async function createJntOrderForOrder(order: JntOrderSource): Promise<JntOrderResult> {
