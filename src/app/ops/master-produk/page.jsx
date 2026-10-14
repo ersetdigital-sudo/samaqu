@@ -611,7 +611,7 @@ export default function MasterProduk() {
     }
     return Array.from(agg.values())
       .sort((a, b) => (b.units - a.units) || (a.order - b.order))
-      .slice(0, 3);
+      .slice(0, 1);
   }, [transactions, products, topPeriod, wib]);
 
   // ── Ringkasan stok untuk tab Laporan Stok (dihitung dari data yang sudah dimuat,
@@ -1092,22 +1092,14 @@ export default function MasterProduk() {
                 </select>
               </div>
               {topSellers.length > 0 ? (
-                <div className="mt-2 flex flex-col gap-[3px]">
-                  {topSellers.map((p, i) => (
-                    <div key={p.label} className="flex items-center gap-1.5">
-                      <span className={`w-2.5 shrink-0 text-[10px] md:text-[11px] leading-tight ${i === 0 ? "font-black text-white" : "font-bold text-white/80"}`}>{i + 1}</span>
-                      <span
-                        className={`min-w-0 flex-1 truncate text-[10px] md:text-[11px] leading-tight ${i === 0 ? "font-black text-white" : "font-medium text-white/85"}`}
-                        title={p.label}
-                      >
-                        {p.label}
-                      </span>
-                      <span className={`shrink-0 tabular-nums text-[10px] md:text-[11px] leading-tight ${i === 0 ? "font-black text-white" : "font-bold text-white/80"}`}>
-                        {p.units.toLocaleString("id-ID")}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+                <>
+                  <p className="mt-2 truncate text-lg md:text-2xl font-black text-white font-inter tracking-tight leading-tight" title={topSellers[0].label}>
+                    {topSellers[0].label}
+                  </p>
+                  <p className="mt-1.5 text-[10px] md:text-[11px] text-white/85 leading-tight">
+                    Terjual {topSellers[0].units.toLocaleString("id-ID")} unit
+                  </p>
+                </>
               ) : (
                 <p className="mt-2 text-[10px] md:text-[11px] text-white/85 leading-tight">
                   Belum ada penjualan · {TOP_PERIODS.find((p) => p.key === topPeriod)?.full}
