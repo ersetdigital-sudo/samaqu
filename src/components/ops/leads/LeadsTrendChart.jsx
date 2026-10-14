@@ -32,10 +32,10 @@ import {
   LabelList,
 } from "recharts";
 
-const BLUE = "#2563eb";
-const INDIGO = "#4f46e5";
-const EMERALD = "#10b981";
-
+// Palet disamakan dengan dashboard admin: monokrom (tinta gelap + abu), bukan biru/hijau.
+const INK = "#1c1c1c";
+const GREY = "#8a8a88";
+const GREY_DARK = "#5f5f5d";
 const LEADS_LABEL = "Leads Masuk";
 const CLOSING_LABEL = "Closing";
 
@@ -68,7 +68,9 @@ function AnimatedBar(props) {
   return (
     <motion.path
       d={roundedPath(Number(x), Number(y), Number(width), Number(height), radius)}
-      fill={peak ? "url(#leadsBarPeak)" : "url(#leadsBarSoft)"}
+      fill={peak ? INK : "#ececeb"}
+      stroke={INK}
+      strokeWidth={1.4}
       initial={reduce ? false : { scaleY: 0 }}
       animate={{ scaleY: 1, opacity: dim ? 0.35 : 1 }}
       transition={{
@@ -92,13 +94,13 @@ function ChartTooltip({ active, payload }) {
       <div className="mt-1 space-y-0.5">
         <p className="text-xs font-bold text-slate-900 dark:text-white flex items-center justify-between gap-3">
           <span className="inline-flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-[2px]" style={{ background: BLUE }} /> {LEADS_LABEL}
+            <span className="w-2 h-2 rounded-[2px] border" style={{ background: "#ececeb", borderColor: INK }} /> {LEADS_LABEL}
           </span>
           <span>{row.leads}</span>
         </p>
-        <p className="text-xs font-bold flex items-center justify-between gap-3" style={{ color: EMERALD }}>
+        <p className="text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center justify-between gap-3">
           <span className="inline-flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full" style={{ background: EMERALD }} /> {CLOSING_LABEL}
+            <span className="w-2 h-2 rounded-full" style={{ background: GREY_DARK }} /> {CLOSING_LABEL}
           </span>
           <span>{row.closing}</span>
         </p>
@@ -176,8 +178,8 @@ export default function LeadsTrendChart({ data = [], subtitle = "", emptyMessage
       <div className="flex flex-wrap items-start justify-between gap-3">
         {subtitle && <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{subtitle}</p>}
         <div className="flex items-center gap-3 shrink-0">
-          {legendButton("leads", LEADS_LABEL, BLUE, false)}
-          {legendButton("closing", CLOSING_LABEL, EMERALD, true)}
+          {legendButton("leads", LEADS_LABEL, "#ececeb", false)}
+          {legendButton("closing", CLOSING_LABEL, GREY_DARK, true)}
         </div>
       </div>
 
@@ -189,26 +191,11 @@ export default function LeadsTrendChart({ data = [], subtitle = "", emptyMessage
             onMouseMove={(state) => setActiveIndex(state?.activeTooltipIndex ?? null)}
             onMouseLeave={() => setActiveIndex(null)}
           >
-            <defs>
-              <linearGradient id="leadsBarSoft" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#93b4fb" />
-                <stop offset="100%" stopColor="#c7d7fd" />
-              </linearGradient>
-              <linearGradient id="leadsBarPeak" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#2563eb" />
-                <stop offset="100%" stopColor={INDIGO} />
-              </linearGradient>
-              <linearGradient id="closingArea" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={EMERALD} stopOpacity={0.28} />
-                <stop offset="100%" stopColor={EMERALD} stopOpacity={0} />
-              </linearGradient>
-            </defs>
-
-            <CartesianGrid strokeDasharray="3 4" stroke="#eef2f7" vertical={false} />
+            <CartesianGrid strokeDasharray="3 4" stroke="#eceae4" vertical={false} />
 
             <XAxis
               dataKey="label"
-              tick={{ fontSize: 11, fill: "#94a3b8" }}
+              tick={{ fontSize: 11, fill: GREY }}
               tickLine={false}
               axisLine={false}
               tickMargin={8}
@@ -217,7 +204,7 @@ export default function LeadsTrendChart({ data = [], subtitle = "", emptyMessage
             <YAxis
               yAxisId="leads"
               allowDecimals={false}
-              tick={{ fontSize: 11, fill: "#93a3b8" }}
+              tick={{ fontSize: 11, fill: GREY }}
               tickLine={false}
               axisLine={false}
               width={40}
@@ -227,7 +214,7 @@ export default function LeadsTrendChart({ data = [], subtitle = "", emptyMessage
               orientation="right"
               allowDecimals={false}
               domain={[0, "dataMax"]}
-              tick={{ fontSize: 11, fill: EMERALD }}
+              tick={{ fontSize: 11, fill: GREY }}
               tickLine={false}
               axisLine={false}
               width={30}
@@ -260,7 +247,7 @@ export default function LeadsTrendChart({ data = [], subtitle = "", emptyMessage
                         textAnchor="middle"
                         fontSize="10"
                         fontWeight="700"
-                        fill={BLUE}
+                        fill={INK}
                       >
                         {`Puncak ${value}`}
                       </text>
@@ -275,14 +262,15 @@ export default function LeadsTrendChart({ data = [], subtitle = "", emptyMessage
                 yAxisId="closing"
                 type="monotone"
                 dataKey="closing"
-                stroke={EMERALD}
-                strokeWidth={2.5}
-                fill="url(#closingArea)"
+                stroke={GREY_DARK}
+                strokeWidth={2}
+                fill="#f1f1f0"
+                fillOpacity={0.9}
                 isAnimationActive={!reduce}
                 animationDuration={900}
                 animationBegin={reduce ? 0 : 260}
-                dot={{ r: 3, fill: EMERALD, strokeWidth: 0 }}
-                activeDot={{ r: 6, fill: EMERALD, stroke: "#ffffff", strokeWidth: 2 }}
+                dot={{ r: 3, fill: GREY_DARK, strokeWidth: 0 }}
+                activeDot={{ r: 6, fill: GREY_DARK, stroke: "#ffffff", strokeWidth: 2 }}
               />
             )}
           </ComposedChart>
