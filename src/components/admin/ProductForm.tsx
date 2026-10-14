@@ -718,7 +718,7 @@ export default function TambahProdukPage({ mode = "admin" }: { mode?: "admin" | 
     : category === "Thobe" ? media : media.filter((m) => m.color === activeColor);
 
   const content = (
-    <section className="min-h-screen" style={{ background: isOps ? "transparent" : "var(--cream)" }}>
+    <section className={`min-h-screen${isOps ? " pf--ops" : ""}`} style={{ background: isOps ? "transparent" : "var(--cream)" }}>
       {/* Header */}
       <div className="sticky top-0 z-20 backdrop-blur" style={{ background: "rgba(255,255,255,.85)", borderBottom: "1px solid rgba(0,0,0,.06)" }}>
         <div className="max-w-6xl mx-auto px-5 lg:px-8 py-4 flex items-center gap-4">
@@ -727,7 +727,7 @@ export default function TambahProdukPage({ mode = "admin" }: { mode?: "admin" | 
           </button>
           <div className="min-w-0">
             <p className="hidden sm:block text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: "var(--text-muted)" }}>Produk</p>
-            <h1 className="text-2xl italic leading-none truncate" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>Tambah Produk</h1>
+            <h1 className={`text-2xl leading-none truncate${isOps ? "" : " italic"}`} style={isOps ? { fontFamily: "var(--font-inter), system-ui, sans-serif", fontWeight: 800, color: "#0f172a" } : { fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>Tambah Produk</h1>
           </div>
           <div className="ml-auto flex items-center gap-2.5">
             <button onClick={() => router.push(backHref)} className="pf-btn pf-btn-ghost">Batal</button>
@@ -1572,6 +1572,27 @@ export default function TambahProdukPage({ mode = "admin" }: { mode?: "admin" | 
           font-size: .8rem; font-weight: 600; color: var(--gold-deep); margin-top: .35rem;
         }
         .pf-add:hover { color: var(--gold); }
+
+        /* ── Tema ops: kartu putih + aksen biru (menu ops). Hanya warna/bentuk, bukan struktur. ── */
+        .pf--ops .pf-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 1rem; box-shadow: 0 1px 2px rgba(15,23,42,.05); }
+        .pf--ops .pf-head { border-bottom: 1px solid #e2e8f0; }
+        .pf--ops .pf-num { color: #1d4ed8; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: .7rem; }
+        .pf--ops .pf-title { font-family: var(--font-inter), system-ui, sans-serif; font-style: normal; font-weight: 800; color: #0f172a; font-size: 1.15rem; }
+        .pf--ops .pf-sub, .pf--ops .pf-label, .pf--ops .pf-hint { color: #64748b; }
+        .pf--ops .pf-input, .pf--ops .pf-select, .pf--ops .pf-textarea, .pf--ops .pf-cell { border-color: #cbd5e1; color: #0f172a; }
+        .pf--ops .pf-input:focus, .pf--ops .pf-select:focus, .pf--ops .pf-textarea:focus, .pf--ops .pf-cell:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,.15); }
+        .pf--ops .pf-panel { border-color: #e2e8f0; background: #f8fafc; }
+        .pf--ops .pf-btn-primary { background: linear-gradient(135deg, #3b82f6, #2563eb); box-shadow: 0 10px 22px -12px rgba(37,99,235,.7); }
+        .pf--ops .pf-btn-ghost { border-color: #cbd5e1; color: #334155; background: #fff; }
+        .pf--ops .pf-btn-outline { border-color: #cbd5e1; color: #1d4ed8; }
+        .pf--ops .pf-chip { border-color: #cbd5e1; color: #334155; }
+        .pf--ops .pf-chip.active { background: #2563eb; border-color: #2563eb; color: #fff; }
+        .pf--ops .pf-tab { border-color: #cbd5e1; color: #334155; }
+        .pf--ops .pf-tab.active { background: #2563eb; border-color: #2563eb; color: #fff; }
+        .pf--ops .pf-add { color: #1d4ed8; }
+        .pf--ops .pf-add:hover { color: #2563eb; }
+        .pf--ops .pf-selectico { color: #64748b; }
+        .pf--ops .pf-size-row { border-color: #e2e8f0; }
       `}</style>
     </section>
   );
