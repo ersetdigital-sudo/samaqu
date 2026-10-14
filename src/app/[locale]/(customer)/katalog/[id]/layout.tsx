@@ -1,10 +1,11 @@
 import { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { SITE_URL, SITE_NAME, SITE_DESCRIPTION, localeAlternates } from "@/lib/site-config";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string; id: string }> }): Promise<Metadata> {
   const { locale, id } = await params;
-  const { data: product } = await supabase.from("products").select("id, name, description, category, image, price, colors").eq("id", id).single();
+  const { data: product } = await supabase.from("products").select("id, name, description, category, image, price, colors").eq("id", id).eq("is_published", true).maybeSingle();
 
   if (!product) {
     return { title: "Produk Tidak Ditemukan — SAMAQU" };
@@ -44,7 +45,9 @@ export default async function ProductLayout({
   params: Promise<{ locale: string; id: string }>;
 }) {
   const { locale, id } = await params;
-  const { data: product } = await supabase.from("products").select("id, name, description, category, image, price, colors").eq("id", id).single();
+  const { data: product } = await supabase.from("products").select("id, name, description, category, image, price, colors").eq("id", id).eq("is_published", true).maybeSingle();
+  // Produk belum "tampil di website" (atau tidak ada) → 404 untuk customer.
+  if (!product) notFound();
 
   const jsonLd = product ? {
     "@context": "https://schema.org",

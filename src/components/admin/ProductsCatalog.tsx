@@ -37,6 +37,8 @@ export interface CatalogCard {
   seriesStock?: { name: string; stock: number; isDerived: boolean; follows?: string }[];
   /** Status keikutsertaan di /open-order (kolom `products.open_order_enabled`, default true). */
   openOrderEnabled?: boolean;
+  /** Tampil di katalog website (kolom `products.is_published`). false = "Dari Ops, belum tampil". */
+  isPublished?: boolean;
 }
 
 /**
@@ -203,6 +205,15 @@ function CardBody({
       <h3 className="text-sm font-extrabold mt-1 leading-snug" style={{ color: "var(--fg)" }}>
         {p.name}
       </h3>
+
+      {p.isPublished === false && (
+        <span
+          className="mt-1.5 inline-flex items-center self-start px-1.5 py-0.5 rounded text-[9px] font-bold"
+          style={{ background: "#fff7ed", color: "#c2410c", border: "1px solid #fed7aa" }}
+        >
+          Dari Ops, belum tampil
+        </span>
+      )}
 
       {/* Baris meta — data nyata; nama series ditampilkan lengkap sebagai chip di bawah */}
       <p className="text-[10px] font-bold mt-1" style={{ color: "var(--fg3)" }}>

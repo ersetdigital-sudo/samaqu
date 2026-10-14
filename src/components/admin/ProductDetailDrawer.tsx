@@ -39,6 +39,8 @@ interface ProductData {
   kain?: string | null;
   /** Ikut tampil di katalog /open-order (kolom `products.open_order_enabled`, default true). */
   open_order_enabled?: boolean | null;
+  /** Tampil di katalog website (kolom `products.is_published`, default true). */
+  is_published?: boolean | null;
 }
 
 interface Variant {
@@ -102,6 +104,7 @@ export function ProductDetailPanel({
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const [savingOpenOrder, setSavingOpenOrder] = useState(false);
+  const [savingPublish, setSavingPublish] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -169,6 +172,7 @@ export function ProductDetailPanel({
   const sku = tabVariants.map((v) => v.sku).find(Boolean) || variants.map((v) => v.sku).find(Boolean) || "—";
   const activeTag = showSeriesTabs ? activeTab : uniqueColors.length === 1 ? uniqueColors[0] : activeTab;
   const openOrderEnabled = product?.open_order_enabled !== false;
+  const isPublished = product?.is_published !== false;
 
   /**
    * Sakelar Open Order dari panel detail — produk yang dimatikan hilang dari katalog
@@ -190,6 +194,39 @@ export function ProductDetailPanel({
       return;
     }
     setProduct((prev) => (prev ? { ...prev, open_order_enabled: next } : prev));
+  }
+
+  /**
+   * Sakelar "tampil di website" — mengubah `products.is_published` untuk SEMUA baris satu
+   * nama + kategori (satu produk di katalog). Menyalakan hanya boleh kalau sudah ada foto
+   * asli (bukan logo default) DAN harga > 0; kalau belum, tampilkan pesan yang jelas.
+   */
+  async function togglePublish() {
+    if (!product) return;
+    const next = !(product.is_published !== false);
+    if (next) {
+      const hasRealPhoto = !!product.image && !/(^|\/)logo\.svg$/i.test(product.image);
+      if (!hasRealPhoto) {
+        alert("Lengkapi foto produk dulu (bukan logo bawaan) sebelum menampilkan di website.");
+        return;
+      }
+      if (!(effectivePrice(product) > 0)) {
+        alert("Isi harga produk (lebih dari 0) dulu sebelum menampilkan di website.");
+        return;
+      }
+    }
+    setSavingPublish(true);
+    const { error } = await supabase
+      .from("products")
+      .update({ is_published: next })
+      .eq("category", product.category)
+      .eq("name", product.name);
+    setSavingPublish(false);
+    if (error) {
+      console.error("[PD] Gagal mengubah status tampil:", error);
+      return;
+    }
+    setProduct((prev) => (prev ? { ...prev, is_published: next } : prev));
   }
 
   return (
@@ -271,6 +308,31 @@ export function ProductDetailPanel({
                 {openOrderEnabled
                   ? "Produk ini muncul di katalog Open Order."
                   : "Produk ini disembunyikan dari katalog Open Order."}
+              </p>
+            </div>
+
+            {/* Tampil di website */}
+            <div className="pd-card pd-stats">
+              <p className="pd-section-title">
+                <ImageIcon size={14} strokeWidth={2.2} /> Tampilkan di website
+              </p>
+              <div className="pd-row">
+                <span>Muncul di katalog website</span>
+                <button
+                  type="button"
+                  onClick={togglePublish}
+                  disabled={savingPublish}
+                  aria-pressed={isPublished}
+                  aria-label="Tampilkan produk ini di katalog website"
+                  className={`pd-oo${isPublished ? " is-on" : ""}`}
+                >
+                  {savingPublish ? "…" : isPublished ? "Tampil" : "Belum tampil"}
+                </button>
+              </div>
+              <p className="pd-empty">
+                {isPublished
+                  ? "Produk ini tampil di katalog website."
+                  : "Produk ini belum tampil di katalog website — lengkapi foto & harga, lalu tampilkan."}
               </p>
             </div>
 
