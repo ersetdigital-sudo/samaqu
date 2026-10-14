@@ -67,7 +67,7 @@ export async function getCurrentCustomer() {
 export async function getCustomerOrders(customerId: string) {
   const { data } = await supabase
     .from("orders")
-    .select("*, order_items(product_name, color, size, quantity, price, product_image, kain, series)")
+    .select("*, order_items(product_id, product_name, color, size, quantity, price, product_image, kain, series)")
     .eq("customer_id", customerId)
     .order("created_at", { ascending: false });
   return data || [];

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { strukStatus, strukSteps, tglJamID, rupiah } from "@/lib/akun-format";
 import type { TrackHistoryItem } from "@/lib/jnt/types";
 import { shippingStatusOf, SHIPPING_STATUS_LABEL } from "@/lib/order-flow";
@@ -22,6 +22,7 @@ import { formatWeight } from "@/lib/shipping-weight";
  */
 
 export interface AdminDetailItem {
+  product_id?: string | null;
   product_name: string;
   color: string;
   size: string;
@@ -198,6 +199,22 @@ export default function OrderDetailContent({
   const [trackHistory, setTrackHistory] = useState<TrackHistoryItem[] | null>(null);
   const [trackError, setTrackError] = useState<string | null>(null);
 
+  // Berat per produk (gram) untuk tiap item — diambil dari `products.weight` (order_items
+  // tidak menyimpan berat). Dipakai menampilkan berat di samping tiap produk.
+  const [itemWeights, setItemWeights] = useState<Record<string, number>>({});
+  useEffect(() => {
+    const ids = Array.from(new Set((order.order_items || []).map((it) => it.product_id).filter((x): x is string => !!x)));
+    if (ids.length === 0) return;
+    let active = true;
+    supabase.from("products").select("id, weight").in("id", ids).then(({ data }) => {
+      if (!active || !data) return;
+      const m: Record<string, number> = {};
+      for (const r of data) if (r.weight) m[r.id as string] = Number(r.weight);
+      setItemWeights(m);
+    });
+    return () => { active = false; };
+  }, [order.order_items]);
+
   async function openTrack() {
     if (showTrack) {
       setShowTrack(false);
@@ -360,6 +377,7 @@ export default function OrderDetailContent({
                       <p className="rp-nm">{item.product_name}</p>
                       <p className="rp-var">
                         {[item.kain ? `Kain ${item.kain}` : null, item.series, item.color && item.color !== "default" ? item.color : null, item.size].filter(Boolean).join(" · ")} &times; {item.quantity}
+                        {item.product_id && itemWeights[item.product_id] ? <> &middot; {formatWeight(itemWeights[item.product_id])}</> : null}
                       </p>
                       <p className="rp-pr rp-mono">{rupiah(item.price * item.quantity)}</p>
                       {item.customer_price && item.minimum_price ? (
@@ -392,6 +410,9 @@ export default function OrderDetailContent({
                   ) : null}
                   {order.shipping_method ? (
                     <div className="rp-row"><span>Pengiriman</span><span>{order.shipping_method}</span></div>
+                  ) : null}
+                  {order.weight && order.weight > 0 ? (
+                    <div className="rp-row"><span>Berat</span><span className="rp-mono">{formatWeight(order.weight)}</span></div>
                   ) : null}
                   {resi ? <div className="rp-row"><span>Nomor Resi</span><span>{resi}</span></div> : null}
                 </div>

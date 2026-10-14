@@ -11,6 +11,7 @@ import ConfirmModal from "@/components/ConfirmModal";
 import type { TrackHistoryItem } from "@/lib/jnt/types";
 
 export interface RincianOrderItem {
+  product_id?: string | null;
   product_name: string;
   color: string;
   size: string;
@@ -264,6 +265,22 @@ export default function RincianPesanan({ order }: { order: RincianOrder }) {
     .filter(Boolean)
     .join(", ");
 
+  // Berat per produk (gram) untuk tiap item — diambil dari `products.weight` (order_items
+  // tidak menyimpan berat). Dipakai menampilkan berat di samping tiap produk.
+  const [itemWeights, setItemWeights] = useState<Record<string, number>>({});
+  useEffect(() => {
+    const ids = Array.from(new Set((order.order_items || []).map((it) => it.product_id).filter((x): x is string => !!x)));
+    if (ids.length === 0) return;
+    let alive = true;
+    supabase.from("products").select("id, weight").in("id", ids).then(({ data }) => {
+      if (!alive || !data) return;
+      const m: Record<string, number> = {};
+      for (const r of data) if (r.weight) m[r.id as string] = Number(r.weight);
+      setItemWeights(m);
+    });
+    return () => { alive = false; };
+  }, [order.order_items]);
+
   /** Batalkan pesanan: pengiriman di J&T dibatalkan dulu di server, baru status jadi `dibatalkan`. */
   async function cancelOrder() {
     setConfirmOpen(false);
@@ -351,6 +368,12 @@ export default function RincianPesanan({ order }: { order: RincianOrder }) {
                 {resi ? `: ${resi}` : ""}
               </span>
             </div>
+            {order.weight && order.weight > 0 ? (
+              <div className="rp-line" style={{ marginTop: 8 }}>
+                <span className="rp-sub">Berat</span>
+                <span className="rp-strong rp-mono" style={{ marginLeft: "auto" }}>{formatWeight(order.weight)}</span>
+              </div>
+            ) : null}
             {latest ? (
               <>
                 <div className="rp-line" style={{ color: "#666666", fontWeight: 600 }}>
@@ -400,7 +423,10 @@ export default function RincianPesanan({ order }: { order: RincianOrder }) {
               </div>
               <div style={{ minWidth: 0, flex: 1 }}>
                 <p className="rp-nm">{item.product_name}</p>
-                <p className="rp-var">{VARIAN_LINE(item)}</p>
+                <p className="rp-var">
+                  {VARIAN_LINE(item)}
+                  {item.product_id && itemWeights[item.product_id] ? <> &middot; {formatWeight(itemWeights[item.product_id])}</> : null}
+                </p>
                 <p className="rp-pr rp-mono">{rupiah(item.price)}</p>
               </div>
             </div>
