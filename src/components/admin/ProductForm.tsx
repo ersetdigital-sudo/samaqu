@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   ArrowLeft, Plus, X, Upload, Image as ImageIcon, Video, GripVertical,
-  ChevronDown, Check, Loader2, Trash2,
+  ChevronDown, Check, Loader2, Trash2, Lock,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import AdminShell from "@/components/AdminShell";
@@ -71,6 +71,7 @@ type SizeRow = { size: string; stock: number; priceOverride: string; sku: string
 function SizeGrid({
   sizes,
   onUpdate,
+  onUpdateAll,
   onRemove,
   onAdd,
   skuFallback,
@@ -79,6 +80,8 @@ function SizeGrid({
 }: {
   sizes: SizeRow[];
   onUpdate: (idx: number, field: keyof SizeRow, value: string | number) => void;
+  /** Ubah SATU field untuk SEMUA baris sekaligus (satu update state, bukan loop per baris). */
+  onUpdateAll: (field: keyof SizeRow, value: string | number) => void;
   onRemove: (idx: number) => void;
   onAdd: () => void;
   skuFallback?: string;
@@ -86,72 +89,181 @@ function SizeGrid({
   stockLocked?: boolean;
   stockLockedLabel?: string;
 }) {
-  // "Isi semua size": berat (gram) yang sama untuk seluruh ukuran di tabel ini.
+  // ── Bar isi massal: berat yang sama untuk semua ukuran (SATU update state) ──
   const [bulkWeight, setBulkWeight] = useState("");
-  function fillAllWeights() {
-    const w = Number(String(bulkWeight).trim());
-    if (!Number.isInteger(w) || w < 100 || w > 5000) return;
-    sizes.forEach((_, i) => onUpdate(i, "weight", w));
+  const [bulkError, setBulkError] = useState("");
+  const [bulkDone, setBulkDone] = useState("");
+  const bulkTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function applyBulkWeight() {
+    if (bulkTimer.current) clearTimeout(bulkTimer.current);
+    setBulkDone("");
+    const raw = String(bulkWeight).trim();
+    if (raw === "") {
+      setBulkError("Isi beratnya dulu.");
+      return;
+    }
+    const w = Number(raw);
+    if (!Number.isInteger(w) || w < 100 || w > 5000) {
+      setBulkError("Berat harus bilangan bulat 100–5000 gram.");
+      return;
+    }
+    setBulkError("");
+    onUpdateAll("weight", w);
+    setBulkDone(`Berat ${w.toLocaleString("id-ID")} g diisi ke ${sizes.length} ukuran`);
+    bulkTimer.current = setTimeout(() => setBulkDone(""), 3000);
   }
+
+  // ── "Tambah ukuran": tambah ukuran standar berikutnya + fokus ke isian stok baris baru ──
+  const stockRefs = useRef<Array<HTMLInputElement | null>>([]);
+  const prevCount = useRef(sizes.length);
+  useEffect(() => {
+    if (sizes.length > prevCount.current) {
+      const el = stockRefs.current[sizes.length - 1];
+      if (el) el.focus();
+    }
+    prevCount.current = sizes.length;
+  }, [sizes.length]);
+  const allStandardUsed = SIZES.every((sz) => sizes.some((s) => String(s.size).toUpperCase() === sz));
+
+  const missingWeight = sizes.filter((s) => String(s.weight ?? "").trim() === "").length;
+
   return (
     <div className="pf-sizes">
-      <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 8, marginBottom: 6 }}>
-        <input
-          type="number"
-          min={100}
-          max={5000}
-          inputMode="numeric"
-          value={bulkWeight}
-          onChange={(e) => setBulkWeight(e.target.value)}
-          placeholder="gram"
-          aria-label="Berat untuk semua ukuran"
-          className="pf-cell text-center"
-          style={{ width: 90 }}
-        />
-        <button type="button" className="pf-add" style={{ margin: 0 }} onClick={fillAllWeights}>
-          <Plus size={14} /> Isi semua size
+      {/* Bar isi massal */}
+      <div className="pf-sizes-bar">
+        <span className="pf-bulk-label">Berat semua ukuran</span>
+        <span className={`pf-adorn pf-adorn--g${bulkError ? " invalid" : ""}`}>
+          <input
+            type="number"
+            min={100}
+            max={5000}
+            inputMode="numeric"
+            value={bulkWeight}
+            onChange={(e) => { setBulkWeight(e.target.value); if (bulkError) setBulkError(""); }}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyBulkWeight(); } }}
+            placeholder="500"
+            aria-label="Berat untuk semua ukuran (gram)"
+            className="pf-cell pf-cell-num"
+          />
+          <span className="pf-suffix">g</span>
+        </span>
+        <button type="button" className="pf-btn pf-btn-outline pf-bulk-apply" onClick={applyBulkWeight}>
+          Terapkan
         </button>
       </div>
-      <div className="pf-size-head">
-        <span>Ukuran</span><span>Stok</span><span>Berat (gram)</span><span>Harga Khusus</span><span>SKU</span><span />
+      {bulkError ? <p className="pf-error pf-sizes-msg">{bulkError}</p> : null}
+      {!bulkError && bulkDone ? <p className="pf-sizes-done pf-sizes-msg">{bulkDone}</p> : null}
+
+      {/* Header kolom (layar ≥768px) */}
+      <div className="pf-sizes-head">
+        <span>Ukuran</span>
+        <span>Stok</span>
+        <span>Berat</span>
+        <span>Harga Khusus</span>
+        <span>SKU</span>
+        <span className="pf-sizes-head-act" />
       </div>
-      {sizes.map((s, i) => (
-        <div key={i} className="pf-size-row">
-          <label className="pf-size-field">
-            <span className="pf-size-label">Ukuran</span>
-            <input value={s.size} onChange={(e) => onUpdate(i, "size", e.target.value.toUpperCase())}
-              onFocus={(e) => e.target.select()} list="size-suggestions" className="pf-cell text-center" placeholder="—" />
-          </label>
-          <label className="pf-size-field">
-            <span className="pf-size-label">Stok</span>
-            <input type="number" value={stockLocked ? "" : (s.stock || "")} disabled={stockLocked}
-              onChange={(e) => onUpdate(i, "stock", parseInt(e.target.value) || 0)}
-              placeholder={stockLocked ? "—" : "0"} title={stockLocked ? stockLockedLabel : undefined}
-              className="pf-cell text-center" style={stockLocked ? { background: "#f4f4f5", color: "var(--text-muted)" } : undefined} />
-          </label>
-          <label className="pf-size-field">
-            <span className="pf-size-label">Berat (gram)</span>
-            <input type="number" min={100} max={5000} inputMode="numeric" value={s.weight ?? ""}
-              onChange={(e) => onUpdate(i, "weight", e.target.value)} placeholder="—" className="pf-cell text-center" />
-            {String(s.weight ?? "").trim() === "" ? <span className="pf-weight-warn">belum diisi</span> : null}
-          </label>
-          <label className="pf-size-field">
-            <span className="pf-size-label">Harga khusus</span>
-            <input type="text" inputMode="numeric" value={formatRupiah(s.priceOverride)}
-              onChange={(e) => onUpdate(i, "priceOverride", parseRupiah(e.target.value))} placeholder="—" className="pf-cell" />
-          </label>
-          <label className="pf-size-field">
-            <span className="pf-size-label">SKU</span>
-            <input value={s.sku} onChange={(e) => onUpdate(i, "sku", e.target.value)}
-              placeholder={skuFallback?.trim() || "—"} className="pf-cell" />
-          </label>
-          {sizes.length > 1 ? (
-            <button type="button" onClick={() => onRemove(i)} className="pf-rowdel" title="Hapus ukuran"><Trash2 size={14} /></button>
-          ) : <span />}
-        </div>
-      ))}
+
+      {sizes.map((s, i) => {
+        const weightEmpty = String(s.weight ?? "").trim() === "";
+        return (
+          <div key={i} className="pf-size-row">
+            <div className="pf-size-head">
+              <label className="pf-size-field pf-f-size">
+                <span className="pf-size-label">Ukuran</span>
+                <input value={s.size} onChange={(e) => onUpdate(i, "size", e.target.value.toUpperCase())}
+                  onFocus={(e) => e.target.select()} list="size-suggestions" className="pf-cell pf-cell-center" placeholder="—" />
+              </label>
+              <div className="pf-size-act">
+                {sizes.length > 1 ? (
+                  <button type="button" onClick={() => onRemove(i)} className="pf-rowdel" title="Hapus ukuran" aria-label={`Hapus ukuran ${s.size || i + 1}`}>
+                    <Trash2 size={15} />
+                  </button>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="pf-size-body">
+              <div className="pf-size-field pf-f-stock">
+                <span className="pf-size-label">Stok</span>
+                {stockLocked ? (
+                  <span className="pf-adorn is-locked" title={stockLockedLabel}>
+                    <Lock size={12} aria-hidden />
+                    <span className="pf-locked-text">{stockLockedLabel}</span>
+                  </span>
+                ) : (
+                  <span className="pf-adorn">
+                    <input
+                      ref={(el) => { stockRefs.current[i] = el; }}
+                      type="number"
+                      inputMode="numeric"
+                      value={s.stock || ""}
+                      onChange={(e) => onUpdate(i, "stock", parseInt(e.target.value) || 0)}
+                      placeholder="0"
+                      className="pf-cell pf-cell-num"
+                    />
+                  </span>
+                )}
+              </div>
+
+              <div className="pf-size-field pf-f-weight">
+                <span className="pf-size-label">Berat</span>
+                <span className={`pf-adorn pf-adorn--g${weightEmpty ? " is-missing" : ""}`}>
+                  {weightEmpty ? <span className="pf-dot-warn" title="belum diisi" aria-label="belum diisi" /> : null}
+                  <input
+                    type="number"
+                    min={100}
+                    max={5000}
+                    inputMode="numeric"
+                    value={s.weight ?? ""}
+                    onChange={(e) => onUpdate(i, "weight", e.target.value)}
+                    placeholder="—"
+                    title={weightEmpty ? "belum diisi" : undefined}
+                    className="pf-cell pf-cell-num"
+                  />
+                  <span className="pf-suffix">g</span>
+                </span>
+              </div>
+
+              <label className="pf-size-field pf-f-price">
+                <span className="pf-size-label">Harga khusus</span>
+                <span className="pf-adorn pf-adorn--rp">
+                  <span className="pf-prefix">Rp</span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={formatRupiah(s.priceOverride)}
+                    onChange={(e) => onUpdate(i, "priceOverride", parseRupiah(e.target.value))}
+                    placeholder="—"
+                    className="pf-cell pf-cell-num"
+                  />
+                </span>
+              </label>
+
+              <label className="pf-size-field pf-f-sku">
+                <span className="pf-size-label">SKU</span>
+                <input value={s.sku} onChange={(e) => onUpdate(i, "sku", e.target.value)}
+                  placeholder={skuFallback?.trim() || "—"} className="pf-cell" />
+              </label>
+            </div>
+          </div>
+        );
+      })}
+
       <datalist id="size-suggestions">{SIZES.map((sz) => <option key={sz} value={sz} />)}</datalist>
-      <button type="button" onClick={onAdd} className="pf-add"><Plus size={14} /> Tambah Ukuran</button>
+
+      <div className="pf-sizes-foot">
+        <button type="button" onClick={onAdd} className="pf-add" disabled={allStandardUsed}
+          title={allStandardUsed ? "Semua ukuran standar sudah ada" : "Tambah ukuran standar berikutnya"}>
+          <Plus size={14} /> Tambah ukuran
+        </button>
+        {missingWeight > 0 ? (
+          <span className="pf-missing-chip" title="Ukuran ini memakai berat default saat menghitung ongkir">
+            {missingWeight} dari {sizes.length} ukuran belum ada berat
+          </span>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -467,6 +579,15 @@ export default function TambahProdukPage({
     }));
   }
 
+  /** Ubah satu field untuk SEMUA ukuran warna ini sekaligus — SATU update state. */
+  function updateSizesBulk(color: string, field: string, value: string | number) {
+    setVariants((prev) =>
+      prev.map((v) =>
+        v.color === color ? { ...v, sizes: v.sizes.map((s) => ({ ...s, [field]: value })) } : v
+      )
+    );
+  }
+
   // Toggle CYP: rekomendasi otomatis Harga Dasar + Rp 30.000 kalau masih kosong (seperti HTML)
   function toggleCyp() {
     const next = !cypEnabled;
@@ -630,6 +751,24 @@ export default function TambahProdukPage({
         [seriesName]: {
           ...block,
           variants: [{ ...v, sizes }],
+        },
+      };
+    });
+  }
+
+  /** Ubah satu field untuk SEMUA ukuran series sekaligus — SATU update state. */
+  function updateSeriesBlockSizesBulk(seriesName: string, field: string, value: string | number) {
+    setSeriesBlocks((prev) => {
+      const block = prev[seriesName];
+      if (!block) return prev;
+      return {
+        ...prev,
+        [seriesName]: {
+          ...block,
+          variants: block.variants.map((v) => ({
+            ...v,
+            sizes: v.sizes.map((s) => ({ ...s, [field]: value })),
+          })),
         },
       };
     });
@@ -1431,6 +1570,7 @@ export default function TambahProdukPage({
                             <SizeGrid
                               sizes={v0.sizes}
                               onUpdate={(i, field, value) => updateSeriesBlockSizeField(sn, i, field, value)}
+                              onUpdateAll={(field, value) => updateSeriesBlockSizesBulk(sn, field, value)}
                               onRemove={(i) => removeSizeFromSeriesBlock(sn, i)}
                               onAdd={() => addSizeToSeriesBlock(sn)}
                               skuFallback={sku}
@@ -1443,6 +1583,7 @@ export default function TambahProdukPage({
                           <SizeGrid
                             sizes={v0.sizes}
                             onUpdate={(i, field, value) => updateSeriesBlockSizeField(sn, i, field, value)}
+                            onUpdateAll={(field, value) => updateSeriesBlockSizesBulk(sn, field, value)}
                             onRemove={(i) => removeSizeFromSeriesBlock(sn, i)}
                             onAdd={() => addSizeToSeriesBlock(sn)}
                             skuFallback={sku}
@@ -1493,6 +1634,7 @@ export default function TambahProdukPage({
                       <SizeGrid
                         sizes={activeVariant.sizes}
                         onUpdate={(i, field, value) => updateSizeField(activeColor!, i, field, value)}
+                        onUpdateAll={(field, value) => updateSizesBulk(activeColor!, field, value)}
                         onRemove={(i) => removeSize(activeColor!, i)}
                         onAdd={() => addSize(activeColor!)}
                         skuFallback={sku}
@@ -1704,7 +1846,6 @@ export default function TambahProdukPage({
         }
         .pf-input.invalid, .pf-select.invalid, .pf-textarea.invalid { border-color: #dc2626; }
         .pf-hint { font-size: .7rem; color: var(--text-muted); margin-top: .35rem; }
-        .pf-weight-warn { display: block; margin-top: .2rem; font-size: .6rem; font-weight: 700; color: #b45309; }
         .pf-error { font-size: .72rem; color: #dc2626; margin-top: .35rem; }
         .pf-selectwrap { position: relative; }
         .pf-selectico {
@@ -1791,33 +1932,105 @@ export default function TambahProdukPage({
           padding: .1rem .35rem; font-size: .55rem; font-weight: 600; letter-spacing: .02em;
           color: #fff; background: rgba(0,0,0,.65);
         }
-        /* Tabel ukuran: kartu berlabel di layar sempit, satu baris 5 kolom di sm+ */
-        .pf-size-head { display: none; }
+        /* ── Tabel ukuran (SizeGrid) ──
+           <768px: kartu per ukuran (judul + tombol hapus di kanan atas, isian 2 kolom).
+           ≥768px: tabel grid berkolom lurus, semua isian & tombol hapus sebaris. */
+        .pf-sizes { min-width: 0; }
+        /* Guard: apa pun isinya tidak boleh melebar melewati section (anti scroll samping). */
+        .pf-sizes, .pf-sizes * { min-width: 0; max-width: 100%; }
+        .pf-sizes-bar {
+          display: flex; flex-wrap: wrap; align-items: center; gap: .5rem;
+          justify-content: flex-end; margin-bottom: .55rem;
+        }
+        .pf-bulk-label { font-size: .72rem; font-weight: 600; color: var(--text-muted); }
+        .pf-bulk-apply { padding: .5rem 1rem; }
+        .pf-sizes-msg { margin: 0 0 .55rem; }
+        .pf-sizes-done { font-size: .72rem; font-weight: 700; color: #047857; }
+        .pf-sizes-head { display: none; }
         .pf-size-row {
-          display: grid; grid-template-columns: 1fr 1fr; gap: .55rem;
-          padding: .7rem; margin-bottom: .55rem;
+          display: block; padding: .7rem; margin-bottom: .55rem;
           border: 1px solid #ececef; border-radius: .85rem; background: #fff;
         }
         .pf-size-row:last-of-type { margin-bottom: 0; }
+        /* Layar sempit: kartu = judul (ukuran + hapus) lalu isian 2 kolom */
+        .pf-size-head { display: flex; align-items: center; gap: .5rem; margin-bottom: .55rem; }
+        .pf-f-size { flex: 1 1 auto; }
+        .pf-size-body { display: flex; flex-wrap: wrap; gap: .5rem .6rem; }
+        .pf-size-body > .pf-size-field { flex: 1 1 calc(50% - .3rem); min-width: 0; max-width: calc(50% - .3rem); }
         .pf-size-field { display: block; min-width: 0; }
+        .pf-size-act { flex: none; display: flex; align-items: center; justify-content: flex-end; }
         .pf-size-label {
-          display: block; margin-bottom: .25rem; font-size: .6rem; font-weight: 700;
+          display: block; margin-bottom: .3rem; font-size: .62rem; font-weight: 700;
           letter-spacing: .04em; text-transform: uppercase; color: var(--text-muted);
         }
-        .pf-size-row > .pf-rowdel { grid-column: 1 / -1; justify-self: end; }
-        @media (min-width: 640px) {
-          .pf-size-head {
-            display: grid; grid-template-columns: 84px 84px 1fr 1fr 34px;
+        /* Isian dengan akhiran "g" / awalan "Rp" di DALAM kontrol */
+        .pf-adorn {
+          display: flex; align-items: center; gap: .3rem; min-width: 0; min-height: 44px;
+          padding: 0 .6rem; border-radius: .6rem;
+          border: 1px solid rgba(0,0,0,.12); background: #fff;
+          transition: border-color .18s ease, box-shadow .18s ease, background .18s ease;
+        }
+        .pf-adorn:focus-within { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(0,0,0,.07); }
+        .pf-adorn.invalid { border-color: #dc2626; }
+        .pf-adorn .pf-cell {
+          flex: 1 1 auto; min-width: 0; padding: .5rem 0; min-height: 42px;
+          border: 0; border-radius: 0; box-shadow: none; background: transparent;
+        }
+        .pf-adorn .pf-cell:focus { border: 0; box-shadow: none; }
+        .pf-suffix, .pf-prefix { flex: none; font-size: .72rem; font-weight: 700; color: var(--text-muted); }
+        .pf-cell-num { text-align: right; }
+        .pf-cell-center { text-align: center; }
+        /* Berat belum diisi: tepi kuning lembut + titik kuning kecil (tanpa teks; tinggi baris tetap) */
+        .pf-adorn.is-missing { border-color: #f59e0b; background: #fffbeb; }
+        .pf-dot-warn { flex: none; width: .45rem; height: .45rem; border-radius: 999px; background: #f59e0b; }
+        /* Stok terkunci (series turunan): latar redup + ikon gembok + label "ikut <series>" */
+        .pf-adorn.is-locked { background: #f4f4f5; gap: .35rem; padding: 0 .55rem; color: var(--text-muted); }
+        .pf-locked-text {
+          min-width: 0;
+          overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+          font-size: .72rem; font-weight: 700; color: var(--text-muted);
+        }
+        .pf-rowdel { min-width: 44px; min-height: 44px; }
+        .pf-sizes-foot { display: block; margin-top: .7rem; }
+        .pf-sizes-foot .pf-add { display: flex; width: 100%; margin: 0 0 .5rem; }
+        .pf-sizes-foot .pf-missing-chip { display: block; width: auto; }
+        .pf-add:disabled { opacity: .5; cursor: not-allowed; }
+        .pf-missing-chip {
+          display: inline-block; max-width: 100%; overflow-wrap: anywhere;
+          padding: .3rem .7rem; border-radius: 999px;
+          font-size: .7rem; font-weight: 700; color: #b45309;
+          background: #fffbeb; border: 1px solid #fcd34d;
+        }
+        /* Sembunyikan panah spinner bawaan browser pada isian angka */
+        .pf-sizes input[type="number"]::-webkit-outer-spin-button,
+        .pf-sizes input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .pf-sizes input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+
+        @media (min-width: 768px) {
+          .pf-sizes-head {
+            display: grid; grid-template-columns: 84px 120px 104px minmax(110px, 1fr) minmax(110px, 1fr) 44px;
             gap: .5rem; padding: 0 .15rem; margin-bottom: .4rem;
-            font-size: .68rem; font-weight: 600; letter-spacing: .02em; color: var(--text-muted);
+            font-size: .68rem; font-weight: 700; letter-spacing: .02em; color: var(--text-muted);
           }
+          .pf-sizes-head-act { text-align: right; }
           .pf-size-row {
-            grid-template-columns: 84px 84px 1fr 1fr 34px; align-items: center;
-            gap: .5rem; padding: .15rem; margin-bottom: .4rem;
+            grid-template-columns: 84px 120px 104px minmax(110px, 1fr) minmax(110px, 1fr) 44px;
+            gap: .5rem; align-items: center;
+            padding: .2rem .15rem; margin-bottom: .35rem;
             border: 0; border-radius: 0; background: transparent;
           }
+          /* head & body jadi transparan → 6 isian sejajar dalam satu baris grid */
+          .pf-size-head, .pf-size-body { display: contents; }
+          .pf-f-size { flex: none; order: 1; }
+          .pf-f-stock { order: 2; }
+          .pf-f-weight { order: 3; }
+          .pf-f-price { order: 4; }
+          .pf-f-sku { order: 5; }
+          .pf-size-act { order: 6; }
           .pf-size-label { display: none; }
-          .pf-size-row > .pf-rowdel { grid-column: auto; justify-self: auto; }
+          .pf-adorn { min-height: 40px; }
+          .pf-adorn .pf-cell { min-height: 38px; }
+          .pf-rowdel { min-width: 40px; min-height: 40px; }
         }
         .pf-cell {
           border-radius: .6rem; border: 1px solid rgba(0,0,0,.12);
