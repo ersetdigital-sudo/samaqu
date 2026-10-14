@@ -1226,89 +1226,80 @@ export default function MasterProduk() {
                   <table className="w-full border-collapse">
                     <thead className="sticky top-0 z-20">
                       <tr className="bg-[#1e3a5f]">
-                        <th className="px-4 py-3.5 text-left font-inter text-xs font-bold text-white uppercase tracking-wide border-r border-[#2d4a6f]">
-                          Nama Produk
-                        </th>
-                        <th className="px-4 py-3.5 text-left font-inter text-xs font-bold text-white uppercase tracking-wide border-r border-[#2d4a6f] whitespace-nowrap">
-                          Jenis Kain
-                        </th>
-                        <th className="px-4 py-3.5 text-center font-inter text-xs font-bold text-white uppercase tracking-wide border-r border-[#2d4a6f] whitespace-nowrap">
-                          Stok
-                        </th>
-                        <th className="px-4 py-3.5 text-right font-inter text-xs font-bold text-white uppercase tracking-wide border-r border-[#2d4a6f]">
-                          HPP
-                        </th>
-                        <th className="px-4 py-3.5 text-right font-inter text-xs font-bold text-white uppercase tracking-wide border-r border-[#2d4a6f]">
-                          Harga Jual
-                        </th>
-                        <th className="px-4 py-3.5 text-center font-inter text-xs font-bold text-white uppercase tracking-wide border-r border-[#2d4a6f] cursor-pointer hover:bg-[#2d4a6f] transition-colors"
-                            onClick={() => handleSort('stockPercentage')}
+                        <th className="px-4 py-3.5 text-left font-inter text-xs font-bold text-white uppercase tracking-wide">Produk</th>
+                        <th className="px-4 py-3.5 text-left font-inter text-xs font-bold text-white uppercase tracking-wide whitespace-nowrap">Jenis Kain</th>
+                        <th className="px-4 py-3.5 text-center font-inter text-xs font-bold text-white uppercase tracking-wide whitespace-nowrap">Stok</th>
+                        <th
+                          className="px-4 py-3.5 text-center font-inter text-xs font-bold text-white uppercase tracking-wide whitespace-nowrap cursor-pointer select-none hover:bg-[#2d4a6f] transition-colors"
+                          onClick={() => handleSort('stockPercentage')}
                         >
-                          <div className="flex items-center justify-center gap-1">
-                            STATUS
+                          <span className="inline-flex items-center justify-center gap-1">
+                            Status
                             <ArrowUpDown className="w-3 h-3 opacity-70" />
-                          </div>
+                          </span>
                         </th>
-                        <th className="px-4 py-3.5 text-center font-inter text-xs font-bold text-white uppercase tracking-wide">
-                          Aksi
-                        </th>
+                        <th className="px-4 py-3.5 text-center font-inter text-xs font-bold text-white uppercase tracking-wide">Aksi</th>
                       </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="divide-y divide-gray-100 dark:divide-slate-800/60">
                       {sortedProducts.length === 0 ? (
                         <tr>
-                          <td colSpan="7" className="px-6 py-12 text-center font-inter text-sm text-gray-400 dark:text-slate-500">
+                          <td colSpan="5" className="px-6 py-16 text-center font-inter text-sm text-gray-400 dark:text-slate-500">
                             Belum ada produk
                           </td>
                         </tr>
                       ) : (
-                        sortedProducts.map((product, index) => {
-                          const rowBg = index % 2 === 0 ? 'bg-white dark:bg-[#16171d]' : 'bg-blue-50/30 dark:bg-[#1a1d28]';
-                          return (
-                           <tr 
-                             key={product.id} 
-                              className={`${rowBg} hover:bg-blue-100/50 dark:hover:bg-slate-800 transition-colors border-b border-gray-100 dark:border-slate-800/50 ${product.product_type === 'free_gift' ? 'border-l-4 border-l-indigo-400' : ''} ${product.stok_bersama ? 'opacity-60' : ''}`}
+                        sortedProducts.map((product) => (
+                           <tr
+                             key={product.id}
+                              className={`bg-white dark:bg-[#16171d] hover:bg-blue-50/60 dark:hover:bg-slate-800/60 transition-colors ${product.product_type === 'free_gift' ? 'border-l-4 border-l-indigo-400' : ''} ${product.stok_bersama ? 'opacity-60' : ''}`}
                            >
-                              <td className="px-4 py-3.5 text-left align-middle font-inter text-sm font-medium text-gray-700 dark:text-slate-300 border-r border-gray-100 dark:border-slate-800/50">
-                                <div className="flex items-center gap-2 min-w-0 max-w-[280px]" title={product.name}>
-                                  <span className="truncate whitespace-nowrap">{product.name}</span>
+                              <td className="px-4 py-4 align-middle">
+                                <div className="flex items-center gap-2 min-w-0 max-w-[320px]" title={product.name}>
+                                  <span className="truncate whitespace-nowrap font-inter text-sm font-bold text-gray-900 dark:text-white">{product.name}</span>
                                   {product.series ? (
                                     <span className="shrink-0 px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-100 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-900">{product.series}</span>
                                   ) : null}
                                 </div>
-                                {product.stok_bersama ? (
-                                  <p className="mt-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400 truncate" title={`ikut ${product.stok_bersama.mengikuti}`}>
-                                    ikut {product.stok_bersama.mengikuti}
-                                  </p>
-                                ) : null}
-                                <span className={`mt-0.5 inline-flex px-1.5 py-0.5 rounded-md text-[10px] font-bold border ${product.is_published === false ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-900' : 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-900'}`}>
-                                  {product.is_published === false ? 'Belum tampil' : 'Tampil di website'}
-                                </span>
+                                <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+                                  {product.sku ? (
+                                    <span className="font-outfit text-[11px] font-semibold text-gray-400 dark:text-slate-500 whitespace-nowrap">{product.sku}</span>
+                                  ) : null}
+                                  <span className={`inline-flex px-1.5 py-0.5 rounded-md text-[10px] font-bold border ${product.is_published === false ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-900' : 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-900'}`}>
+                                    {product.is_published === false ? 'Belum tampil' : 'Tampil di website'}
+                                  </span>
+                                  {product.stok_bersama ? (
+                                    <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 truncate" title={`ikut ${product.stok_bersama.mengikuti}`}>ikut {product.stok_bersama.mengikuti}</span>
+                                  ) : null}
+                                  {product.product_type === 'free_gift' ? (
+                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-indigo-50 text-indigo-600 border border-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-900">
+                                      <Gift size={11} /> Free Gift
+                                    </span>
+                                  ) : null}
+                                </div>
                               </td>
-                              <td className="px-4 py-3.5 text-left align-middle font-inter text-sm font-medium text-gray-600 dark:text-slate-300 border-r border-gray-100 dark:border-slate-800/50">
-                                <span className="whitespace-nowrap" title={product.jenis_kain?.material || undefined}>
-                                  {product.jenis_kain?.name || <span className="text-gray-400 dark:text-slate-500">Belum diatur</span>}
-                                </span>
-                              </td>
-                              <td className="px-4 py-3.5 text-center align-middle font-inter text-sm font-bold text-gray-900 dark:text-white border-r border-gray-100 dark:border-slate-800/50 whitespace-nowrap" title={product.stok_bersama ? `Stok bersama: mengikuti ${product.stok_bersama.mengikuti}` : undefined}>
-                                {stokProduk(product).nilai}
-                              </td>
-                              <td className="px-4 py-3.5 text-right align-middle font-inter text-sm font-medium text-gray-600 dark:text-slate-300 border-r border-gray-100 dark:border-slate-800/50">
-                                Rp {product.hpp.toLocaleString('id-ID')}
-                              </td>
-                              <td className="px-4 py-3.5 text-right align-middle font-inter text-sm font-bold border-r border-gray-100 dark:border-slate-800/50">
-                                {product.product_type === 'free_gift' ? (
-                                  <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-50 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 rounded-full text-xs font-bold">
-                                    <Gift size={12} /> Free Gift
+                              <td className="px-4 py-4 align-middle">
+                                {product.jenis_kain?.name ? (
+                                  <span
+                                    className="inline-flex px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200 dark:bg-slate-700/50 dark:text-slate-200 dark:border-slate-600 whitespace-nowrap"
+                                    title={product.jenis_kain?.material || undefined}
+                                  >
+                                    {product.jenis_kain.name}
                                   </span>
                                 ) : (
-                                  <span className="text-emerald-600 dark:text-emerald-400">Rp {product.price.toLocaleString('id-ID')}</span>
+                                  <span className="text-xs font-medium text-gray-400 dark:text-slate-500 whitespace-nowrap">Belum diatur</span>
                                 )}
                               </td>
-                              <td className="px-4 py-3.5 text-center align-middle border-r border-gray-100">
+                              <td className="px-4 py-4 text-center align-middle whitespace-nowrap" title={product.stok_bersama ? `Stok bersama: mengikuti ${product.stok_bersama.mengikuti}` : undefined}>
+                                <span className={`font-outfit font-tabular text-lg font-black ${stokProduk(product).nilai === 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'}`}>
+                                  {stokProduk(product).nilai}
+                                </span>
+                                <span className="ml-1 text-[10px] font-semibold text-gray-400 dark:text-slate-500">unit</span>
+                              </td>
+                              <td className="px-4 py-4 text-center align-middle">
                                 {renderStockIndicator(product)}
                               </td>
-                              <td className="px-4 py-3.5 text-center align-middle">
+                              <td className="px-4 py-4 text-center align-middle">
                                 <div className="flex items-center justify-center gap-1.5">
                                   <button
                                     onClick={(e) => {
@@ -1342,9 +1333,8 @@ export default function MasterProduk() {
                                   </button>
                                 </div>
                               </td>
-                            </tr>
-                          );
-                        })
+                           </tr>
+                        ))
                       )}
                     </tbody>
                   </table>
@@ -1398,35 +1388,12 @@ export default function MasterProduk() {
                         {renderStockIndicator(product)}
                         </div>
 
-                        <div className="grid grid-cols-2 gap-3 mb-3">
-                        <div className="bg-blue-50/50 dark:bg-[#404B5C] rounded-xl p-3 border border-blue-100/60 dark:border-slate-600/50 transition-colors duration-300">
+                        <div className="bg-blue-50/50 dark:bg-[#404B5C] rounded-xl p-3 mb-3 border border-blue-100/60 dark:border-slate-600/50 transition-colors duration-300">
                           <p className="font-inter text-xs text-blue-600 dark:text-blue-400 mb-1 font-semibold">Stok</p>
                           <p className="font-outfit font-tabular text-blue-600 dark:text-blue-400" style={{ fontSize: '18px', fontWeight: 800, letterSpacing: '0.01em' }} title={product.stok_bersama ? `Stok bersama: mengikuti ${product.stok_bersama.mengikuti}` : undefined}>
-                            {stokProduk(product).nilai}
+                            {stokProduk(product).nilai}<span className="text-xs font-bold"> unit</span>
                           </p>
                         </div>
-                        <div className="bg-orange-50/50 dark:bg-[#404B5C] rounded-xl p-3 border border-orange-100/60 dark:border-slate-600/50 transition-colors duration-300">
-                          <p className="font-inter text-xs text-orange-600 dark:text-orange-400 mb-1 font-semibold">HPP</p>
-                          <p className="font-outfit font-tabular text-orange-600 dark:text-orange-400" style={{ fontSize: '14px', fontWeight: 700, letterSpacing: '0.01em' }}>
-                            Rp {product.hpp.toLocaleString('id-ID')}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className={`rounded-xl p-3 mb-3 border transition-colors duration-300 ${product.product_type === 'free_gift' ? 'bg-indigo-50/80 dark:bg-[#404B5C] border-indigo-100/60 dark:border-slate-600/50' : 'bg-gradient-to-r from-green-50/80 to-emerald-50/80 dark:from-[#404B5C] dark:to-[#404B5C] border-green-100/60 dark:border-slate-600/50'}`}>
-                        <div className="flex justify-between items-center">
-                          <p className={`font-inter text-xs font-semibold ${product.product_type === 'free_gift' ? 'text-indigo-700 dark:text-indigo-400' : 'text-green-700 dark:text-green-400'}`}>Harga Jual</p>
-                          {product.product_type === 'free_gift' ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 rounded-full text-xs font-bold">
-                              <Gift size={12} /> Free Gift
-                            </span>
-                          ) : (
-                            <p className="font-outfit font-tabular text-emerald-600 dark:text-emerald-400" style={{ fontSize: '18px', fontWeight: 800, letterSpacing: '0.01em' }}>
-                              Rp {product.price.toLocaleString('id-ID')}
-                            </p>
-                          )}
-                        </div>
-                      </div>
 
                       <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-200/60 dark:border-slate-600">
                         <motion.button
