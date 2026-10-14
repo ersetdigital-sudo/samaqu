@@ -22,6 +22,11 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ["framer-motion", "lucide-react"],
   },
+  // Font laporan PDF dibaca dari filesystem saat request (bukan lewat import), jadi
+  // perlu didaftarkan eksplisit supaya ikut ter-bundle di deploy serverless.
+  outputFileTracingIncludes: {
+    "/api/ops/leads/report": ["./src/assets/fonts/**"],
+  },
   ...(allowedDevOrigins ? { allowedDevOrigins } : {}),
 };
 

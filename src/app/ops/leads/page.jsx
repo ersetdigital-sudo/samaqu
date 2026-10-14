@@ -1,13 +1,15 @@
 "use client";
 
-import { useState, useMemo, useDeferredValue } from "react";
+import { useState, useMemo, useDeferredValue, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/lib/ops-api";
+import DateFilter, { formatTanggalID } from "@/components/ops/leads/DateFilter";
 import { motion } from "framer-motion";
 import {
   Users,
   ChevronLeft,
   ChevronRight,
+  CalendarDays,
   Plus,
   Pencil,
   Trash2,
@@ -59,6 +61,25 @@ export default function Leads() {
   const [searchInput, setSearchInput] = useState('');
   const search = useDeferredValue(searchInput).trim();
 
+  // Filter TANGGAL (satu hari, WIB). Disimpan di URL (?tanggal=YYYY-MM-DD) supaya bertahan
+  // saat dimuat ulang; memuat halaman dengan parameter itu langsung memakai tanggalnya.
+  const [selectedDate, setSelectedDate] = useState("");
+  useEffect(() => {
+    const param = new URLSearchParams(window.location.search).get("tanggal") || "";
+    if (/^\d{4}-\d{2}-\d{2}$/.test(param)) {
+      setSelectedDate(param);
+      setYear(Number(param.slice(0, 4)));
+      setMonth(Number(param.slice(5, 7)) - 1);
+    }
+  }, []);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (selectedDate) params.set("tanggal", selectedDate);
+    else params.delete("tanggal");
+    const qs = params.toString();
+    window.history.replaceState(null, "", `${window.location.pathname}${qs ? `?${qs}` : ""}`);
+  }, [selectedDate]);
+
   const { data: leads = [], isLoading } = useQuery({
     queryKey: ['leads', start, end, search],
     queryFn: async () => {
@@ -72,16 +93,31 @@ export default function Leads() {
     },
   });
 
+  // Yang tampil = hasil pencarian (dari server) + filter tanggal; kartu ringkasan ikut keduanya.
+  const visibleLeads = useMemo(
+    () => (selectedDate ? leads.filter((l) => l.tanggal === selectedDate) : leads),
+    [leads, selectedDate]
+  );
+
   const stats = useMemo(() => {
-    const closing = leads.filter((l) => l.status === 'closing');
+    const closing = visibleLeads.filter((l) => l.status === 'closing');
     return {
-      total: leads.length,
+      total: visibleLeads.length,
       closing: closing.length,
-      belum: leads.length - closing.length,
-      rate: leads.length ? (closing.length / leads.length) * 100 : 0,
+      belum: visibleLeads.length - closing.length,
+      rate: visibleLeads.length ? (closing.length / visibleLeads.length) * 100 : 0,
       nominal: closing.reduce((s, l) => s + (l.nominal || 0), 0),
     };
-  }, [leads]);
+  }, [visibleLeads]);
+
+  /** Tanggal yang punya leads di bulan ini — untuk titik penanda di kalender. */
+  const markedDates = useMemo(
+    () => [...new Set(leads.map((l) => l.tanggal).filter(Boolean))],
+    [leads]
+  );
+
+  /** Keterangan cakupan kartu ringkasan. */
+  const coverageLabel = selectedDate ? formatTanggalID(selectedDate) : `${MONTHS[month]} ${year}`;
 
   const [formOpen, setFormOpen] = useState(false);
   const [pasteOpen, setPasteOpen] = useState(false);
@@ -90,9 +126,11 @@ export default function Leads() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const prevMonth = () => {
+    setSelectedDate("");
     if (month === 0) { setMonth(11); setYear(year - 1); } else { setMonth(month - 1); }
   };
   const nextMonth = () => {
+    setSelectedDate("");
     if (month === 11) { setMonth(0); setYear(year + 1); } else { setMonth(month + 1); }
   };
 
@@ -169,12 +207,23 @@ export default function Leads() {
         })}
       </div>
 
+      {/* Cakupan kartu ringkasan (ikut filter tanggal + pencarian) */}
+      <p className="text-xs text-slate-500 dark:text-slate-400 px-1 -mt-3">
+        Cakupan: <span className="font-bold text-slate-900 dark:text-white">{coverageLabel}</span>
+        {search ? ` · pencarian "${search}"` : ""}
+      </p>
+
       {/* Table */}
       <div className="bg-white dark:bg-[#1a1d28] rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-slate-200 dark:border-slate-800">
-          <h2 className="font-heading font-bold text-slate-900 dark:text-white">Daftar Leads</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="font-heading font-bold text-slate-900 dark:text-white">Daftar Leads</h2>
+            <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-[11px] font-bold text-slate-600 dark:text-slate-300">
+              {visibleLeads.length} leads
+            </span>
+          </div>
           {/* Pencarian kontak */}
-          <div className="relative ml-auto mr-2 w-full max-w-[220px]">
+          <div className="relative ml-auto mr-2 w-full sm:w-auto sm:max-w-[220px]">
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               value={searchInput}
@@ -203,18 +252,49 @@ export default function Leads() {
               <ChevronRight size={16} className="text-slate-600 dark:text-slate-300" />
             </button>
           </div>
+          {/* Filter satu tanggal (jamak dengan pencarian & pemilih bulan) */}
+          <DateFilter
+            value={selectedDate}
+            onChange={setSelectedDate}
+            month={month}
+            year={year}
+            onMonthChange={(y, m) => { setYear(y); setMonth(m); }}
+            markedDates={markedDates}
+          />
         </div>
 
         {isLoading ? (
           <div className="p-12 flex items-center justify-center">
             <div className="w-8 h-8 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin" />
           </div>
-        ) : leads.length === 0 ? (
+        ) : visibleLeads.length === 0 ? (
           <div className="p-12 text-center">
             <div className="w-14 h-14 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              {search ? <Search size={26} className="text-slate-400" /> : <Database size={26} className="text-slate-400" />}
+              {selectedDate ? (
+                <CalendarDays size={26} className="text-slate-400" />
+              ) : search ? (
+                <Search size={26} className="text-slate-400" />
+              ) : (
+                <Database size={26} className="text-slate-400" />
+              )}
             </div>
-            {search ? (
+            {selectedDate ? (
+              <>
+                <p className="font-bold text-slate-900 dark:text-white">
+                  Tidak ada leads pada {formatTanggalID(selectedDate)}
+                </p>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                  {search ? `Pencarian "${search}" tidak menemukan hasil di tanggal ini` : "Coba pilih tanggal lain"}
+                </p>
+                <button
+                  onClick={() => setSelectedDate("")}
+                  className="mt-4 inline-flex items-center gap-2 px-4 py-2.5 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
+                >
+                  <CalendarDays size={16} />
+                  Tampilkan semua tanggal
+                </button>
+              </>
+            ) : search ? (
               <>
                 <p className="font-bold text-slate-900 dark:text-white">Tidak ada hasil</p>
                 <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Nomor {search} tidak ditemukan di bulan ini</p>
@@ -222,14 +302,18 @@ export default function Leads() {
             ) : (
               <p className="font-bold text-slate-900 dark:text-white">Belum ada leads bulan ini</p>
             )}
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Klik "Tambah Lead" untuk mulai mencatat leads masuk</p>
-            <button
-              onClick={() => { setEditing(null); setFormOpen(true); }}
-              className="mt-4 inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all"
-            >
-              <UserPlus size={16} />
-              Tambah Lead
-            </button>
+            {!selectedDate && (
+              <>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Klik "Tambah Lead" untuk mulai mencatat leads masuk</p>
+                <button
+                  onClick={() => { setEditing(null); setFormOpen(true); }}
+                  className="mt-4 inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all"
+                >
+                  <UserPlus size={16} />
+                  Tambah Lead
+                </button>
+              </>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -246,7 +330,7 @@ export default function Leads() {
                 </tr>
               </thead>
               <tbody>
-                {leads.map((lead, idx) => (
+                {visibleLeads.map((lead, idx) => (
                   <motion.tr
                     key={lead.id}
                     initial={{ opacity: 0, y: 4 }}

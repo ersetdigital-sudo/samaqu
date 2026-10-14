@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/lib/ops-api";
+import { supabase } from "@/lib/supabase";
 import { motion } from "framer-motion";
 import {
   Users,
@@ -15,19 +16,20 @@ import {
   BarChart3,
   Database,
   TrendingUp,
-  CalendarDays,
-  RotateCcw,
+  FileDown,
+  Loader2,
+  Check,
+  Copy,
 } from "lucide-react";
 import {
   ResponsiveContainer,
   ComposedChart,
   Bar,
-  Line,
+  Area,
   Cell,
   XAxis,
   YAxis,
   Tooltip,
-  Legend,
   CartesianGrid,
 } from "recharts";
 
@@ -47,6 +49,28 @@ const formatTanggalPendek = (d) => {
   return parts.length < 3 ? d : `${parts[2]}/${parts[1]}`;
 };
 
+/** Tooltip chart: kartu putih membulat dengan ringkasan hari + konversi. */
+function LeadsChartTooltip({ active, payload, label }) {
+  if (!active || !payload || payload.length === 0) return null;
+  const leads = payload.find((p) => p.dataKey === 'leads')?.value ?? 0;
+  const closing = payload.find((p) => p.dataKey === 'closing')?.value ?? 0;
+  const conv = leads > 0 ? ((closing / leads) * 100).toFixed(1) : '0.0';
+  return (
+    <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-[#1a1d28]/95 backdrop-blur px-3 py-2 shadow-lg shadow-slate-900/5">
+      <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400">{label}</p>
+      <div className="mt-1 space-y-0.5">
+        <p className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-sm bg-blue-500/60" /> Leads Masuk: {leads}
+        </p>
+        <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-emerald-500" /> Closing: {closing}
+        </p>
+      </div>
+      <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">Konversi: {conv}%</p>
+    </div>
+  );
+}
+
 const SUMBER_STYLES = {
   "Meta ads": "bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300",
   "WA": "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300",
@@ -58,9 +82,12 @@ export default function LaporanLeads() {
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth());
   const [year, setYear] = useState(now.getFullYear());
-  // Filter per tanggal (YYYY-MM-DD). Kosong = seluruh bulan terpilih.
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  // Filter per tanggal: SATU hari di dalam bulan terpilih (kosong = seluruh bulan).
+  const [selectedDay, setSelectedDay] = useState("");
+  // Status tombol Export PDF / Salin ringkasan.
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState("");
+  const [copied, setCopied] = useState(false);
 
   const start = `${year}-${pad(month + 1)}-01`;
   const end = `${year}-${pad(month + 1)}-${pad(new Date(year, month + 1, 0).getDate())}`;
@@ -94,25 +121,21 @@ export default function LaporanLeads() {
     return Object.values(map).sort((a, b) => a.tanggal.localeCompare(b.tanggal));
   }, [leads]);
 
-  // Filter per tanggal (dari–sampai) di dalam bulan terpilih. Kosong = seluruh bulan.
-  const rangeActive = Boolean(dateFrom || dateTo);
-  const rangeInvalid = Boolean(dateFrom && dateTo && dateFrom > dateTo);
+  // Filter per tanggal: satu hari di dalam bulan terpilih (kosong = seluruh bulan).
+  const rangeActive = selectedDay !== "";
+  const dayOptions = useMemo(() => {
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const withData = new Set(dailyRows.map((row) => Number(row.tanggal.slice(8, 10))));
+    return Array.from({ length: daysInMonth }, (_, i) => ({ day: i + 1, hasData: withData.has(i + 1) }));
+  }, [dailyRows, month, year]);
   const rowsInRange = useMemo(
-    () =>
-      dailyRows.filter((row) => {
-        if (dateFrom && row.tanggal < dateFrom) return false;
-        if (dateTo && row.tanggal > dateTo) return false;
-        return true;
-      }),
-    [dailyRows, dateFrom, dateTo]
+    () => (rangeActive ? dailyRows.filter((row) => Number(row.tanggal.slice(8, 10)) === Number(selectedDay)) : dailyRows),
+    [dailyRows, selectedDay, rangeActive]
   );
-  /** Label rentang untuk judul kartu: "1 – 13 Oktober 2026" atau "1 Oktober 2026". */
-  const rangeLabel = (() => {
-    if (!rangeActive) return `${MONTHS[month]} ${year}`;
-    const from = dateFrom || start;
-    const to = dateTo || end;
-    return from === to ? formatTanggalID(from) : `${formatTanggalID(from)} – ${formatTanggalID(to)}`;
-  })();
+  /** Label periode aktif: "13 Oktober 2026" saat difilter satu hari, kalau tidak nama bulan. */
+  const rangeLabel = rangeActive
+    ? formatTanggalID(`${year}-${pad(month + 1)}-${pad(selectedDay)}`)
+    : `${MONTHS[month]} ${year}`;
 
   const totals = useMemo(() => {
     return rowsInRange.reduce(
@@ -143,13 +166,65 @@ export default function LaporanLeads() {
   ];
 
   const prevMonth = () => {
-    setDateFrom(""); setDateTo("");
+    setSelectedDay("");
     if (month === 0) { setMonth(11); setYear(year - 1); } else { setMonth(month - 1); }
   };
   const nextMonth = () => {
-    setDateFrom(""); setDateTo("");
+    setSelectedDay("");
     if (month === 11) { setMonth(0); setYear(year + 1); } else { setMonth(month + 1); }
   };
+
+  /** Export PDF bulan terpilih — dibuat di server (data & definisi sama dengan halaman). */
+  async function handleExportPdf() {
+    setExportError("");
+    setExporting(true);
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      const bulan = `${year}-${pad(month + 1)}`;
+      const res = await fetch(`/api/ops/leads/report?bulan=${bulan}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null);
+        throw new Error(payload?.error || `Gagal membuat laporan (${res.status})`);
+      }
+      const blob = await res.blob();
+      const match = /filename="([^"]+)"/.exec(res.headers.get("Content-Disposition") || "");
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = match?.[1] || `Laporan-Leads-SAMAQU-${MONTHS[month]}-${year}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setExportError(err?.message || "Gagal membuat laporan PDF");
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  /** Salin ringkasan teks (tanpa emoji) untuk caption WhatsApp. */
+  async function handleCopySummary() {
+    setExportError("");
+    const lines = [
+      `Laporan Leads SAMAQU — ${MONTHS[month]} ${year}`,
+      `Periode: ${rangeActive ? rangeLabel : `${MONTHS[month]} ${year}`}`,
+      `Total leads: ${totals.total}`,
+      `Total closing: ${totals.closing}`,
+      `Konversi: ${rate.toFixed(1)}%`,
+      `Sumber terbesar: ${bestSource} (${totals.perSumber[bestSource] || 0})`,
+    ];
+    try {
+      await navigator.clipboard.writeText(lines.join("\n"));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setExportError("Gagal menyalin. Browser memblokir akses clipboard.");
+    }
+  }
 
   const SOURCE_CARD_CONFIG = {
     "Meta ads": { icon: Megaphone, chip: "bg-indigo-500" },
@@ -165,6 +240,8 @@ export default function LaporanLeads() {
   }));
   // Batang puncak (leads terbanyak) yang digambar solid — sama seperti grafik dashboard.
   const peakLeads = chartData.reduce((max, d) => Math.max(max, d.leads), 0);
+  const peakPoint = chartData.reduce((best, d) => (d.leads > (best?.leads ?? -1) ? d : best), null);
+  const peakLabel = peakPoint && peakPoint.leads > 0 ? `${peakPoint.tanggal} · ${peakPoint.leads} leads` : "";
 
   return (
     <div className="space-y-6">
@@ -180,68 +257,90 @@ export default function LaporanLeads() {
               <p className="text-white/80 text-sm font-medium mt-1">Rekap leads & closing bulanan</p>
             </div>
           </div>
-          <div className="flex items-center gap-1 bg-white/15 backdrop-blur-sm rounded-xl p-1 border border-white/20">
-            <button onClick={prevMonth} className="p-2 rounded-lg hover:bg-white/20 transition-colors" aria-label="Bulan sebelumnya">
-              <ChevronLeft size={18} />
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1 bg-white/15 backdrop-blur-sm rounded-xl p-1 border border-white/20">
+              <button onClick={prevMonth} className="p-2 rounded-lg hover:bg-white/20 transition-colors" aria-label="Bulan sebelumnya">
+                <ChevronLeft size={18} />
+              </button>
+              <span className="px-3 text-sm font-bold min-w-[130px] text-center">
+                {MONTHS[month]} {year}
+              </span>
+              <button onClick={nextMonth} className="p-2 rounded-lg hover:bg-white/20 transition-colors" aria-label="Bulan berikutnya">
+                <ChevronRight size={18} />
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={handleExportPdf}
+              disabled={exporting}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-blue-700 text-sm font-bold shadow-sm transition-colors hover:bg-blue-50 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {exporting ? <Loader2 size={16} className="animate-spin" /> : <FileDown size={16} />}
+              {exporting ? "Menyiapkan laporan..." : "Export PDF"}
             </button>
-            <span className="px-3 text-sm font-bold min-w-[130px] text-center">
-              {MONTHS[month]} {year}
-            </span>
-            <button onClick={nextMonth} className="p-2 rounded-lg hover:bg-white/20 transition-colors" aria-label="Bulan berikutnya">
-              <ChevronRight size={18} />
+            <button
+              type="button"
+              onClick={handleCopySummary}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/15 border border-white/25 backdrop-blur-sm text-white text-sm font-bold transition-colors hover:bg-white/25"
+            >
+              {copied ? <Check size={16} /> : <Copy size={16} />}
+              {copied ? "Tersalin" : "Salin ringkasan"}
             </button>
           </div>
         </div>
-      </div>
-
-      {/* Filter per tanggal */}
-      <div className="bg-white dark:bg-[#1a1d28] rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm">
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="flex items-center gap-2 mr-1 text-slate-500 dark:text-slate-400">
-            <CalendarDays size={16} />
-            <span className="text-[11px] font-bold uppercase tracking-wider">Filter per tanggal</span>
-          </div>
-          <label className="flex flex-col gap-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Dari</span>
-            <input
-              type="date"
-              value={dateFrom}
-              min={start}
-              max={dateTo || end}
-              onChange={(e) => setDateFrom(e.target.value)}
-              className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1a1d28] px-3 py-2 text-sm text-slate-900 dark:text-white outline-none focus:border-blue-500"
-            />
-          </label>
-          <label className="flex flex-col gap-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Sampai</span>
-            <input
-              type="date"
-              value={dateTo}
-              min={dateFrom || start}
-              max={end}
-              onChange={(e) => setDateTo(e.target.value)}
-              className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1a1d28] px-3 py-2 text-sm text-slate-900 dark:text-white outline-none focus:border-blue-500"
-            />
-          </label>
-          <button
-            type="button"
-            onClick={() => { setDateFrom(""); setDateTo(""); }}
-            disabled={!rangeActive}
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm font-semibold text-slate-700 dark:text-slate-200 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            <RotateCcw size={14} /> Reset
-          </button>
-          {rangeActive && !rangeInvalid && (
-            <span className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300">
-              {rangeLabel}
-            </span>
-          )}
-        </div>
-        {rangeInvalid && (
-          <p className="mt-2 text-xs font-semibold text-red-600 dark:text-red-400">
-            Tanggal &quot;Dari&quot; lebih besar dari &quot;Sampai&quot; — perbaiki dulu.
+        {exportError && (
+          <p className="mt-3 text-xs font-semibold text-red-50 bg-red-500/25 border border-red-200/40 rounded-lg px-3 py-2">
+            {exportError}
           </p>
         )}
+      </div>
+
+      {/* Filter per tanggal: pilih satu hari lewat chip tanggal */}
+      <div className="bg-white dark:bg-[#1a1d28] rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Pilih tanggal</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            {rangeActive ? (
+              <>Difilter: <span className="font-bold text-slate-900 dark:text-white">{rangeLabel}</span></>
+            ) : (
+              "Menampilkan seluruh bulan"
+            )}
+          </p>
+        </div>
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          <button
+            type="button"
+            onClick={() => setSelectedDay("")}
+            className={`shrink-0 px-4 py-2 rounded-xl text-xs font-bold border transition-colors ${
+              !rangeActive
+                ? "bg-blue-600 border-blue-600 text-white shadow-sm shadow-blue-600/25"
+                : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-blue-400"
+            }`}
+          >
+            Semua
+          </button>
+          {dayOptions.map((d) => {
+            const active = Number(selectedDay) === d.day;
+            return (
+              <button
+                key={d.day}
+                type="button"
+                onClick={() => setSelectedDay(pad(d.day))}
+                title={formatTanggalID(`${year}-${pad(month + 1)}-${pad(d.day)}`)}
+                aria-pressed={active}
+                className={`shrink-0 w-11 py-2 rounded-xl text-xs font-bold border transition-colors ${
+                  active
+                    ? "bg-blue-600 border-blue-600 text-white shadow-sm shadow-blue-600/25"
+                    : d.hasData
+                      ? "bg-blue-50 dark:bg-blue-950/40 border-blue-100 dark:border-blue-900 text-blue-700 dark:text-blue-300 hover:border-blue-400"
+                      : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:border-slate-300"
+                }`}
+              >
+                {d.day}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Stat Cards */}
@@ -318,55 +417,73 @@ export default function LaporanLeads() {
 
       {/* Sumber Terbaik + Chart */}
       <div className="bg-white dark:bg-[#1a1d28] rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Leads Masuk vs Closing per Tanggal</p>
-          <div className="flex items-center gap-2">
-            {rangeActive && !rangeInvalid && (
-              <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300">
-                {rangeLabel}
-              </span>
-            )}
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Sumber terbanyak: <span className="font-bold text-slate-900 dark:text-white">{bestSource}</span>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-sm font-bold text-slate-900 dark:text-white">Leads Masuk vs Closing</p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+              {rangeActive ? rangeLabel : `Per tanggal · ${MONTHS[month]} ${year}`}
+              {peakLabel ? ` · puncak ${peakLabel}` : ""}
             </p>
+          </div>
+          <div className="flex items-center gap-3 shrink-0">
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+              <span className="w-2.5 h-2.5 rounded-[3px] bg-blue-500/50 border border-blue-500" /> Leads Masuk
+            </span>
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Closing
+            </span>
           </div>
         </div>
           {isLoading ? (
-            <div className="h-64 flex items-center justify-center">
+            <div className="h-72 flex items-center justify-center">
               <div className="w-8 h-8 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin" />
             </div>
           ) : chartData.length === 0 ? (
-            <div className="h-64 flex flex-col items-center justify-center text-center">
+            <div className="h-72 flex flex-col items-center justify-center text-center">
               <Database size={26} className="text-slate-300 dark:text-slate-600 mb-2" />
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                {rangeActive ? "Tidak ada leads di rentang tanggal ini" : "Belum ada leads bulan ini"}
+                {rangeActive ? "Tidak ada leads pada tanggal ini" : "Belum ada leads bulan ini"}
               </p>
             </div>
           ) : (
-            <div className="h-64">
+            <div className="h-72 mt-3">
               <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={chartData}>
-                  {/* Grid horizontal rata tipis (#eceae4), garis vertikal dimatikan —
-                      sama seperti grafik dashboard (wireframe sales-analytics-view). */}
-                  <CartesianGrid strokeDasharray="0" stroke="#eceae4" vertical={false} />
-                  <XAxis dataKey="tanggal" tick={{ fontSize: 11, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#94a3b8' }} tickLine={false} axisLine={false} width={30} />
-                  <Tooltip
-                    contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 12 }}
-                    formatter={(value, name) => [value, name === 'leads' ? 'Leads Masuk' : 'Closing']}
-                  />
-                  <Legend formatter={(v) => (v === 'leads' ? 'Leads Masuk' : 'Closing')} wrapperStyle={{ fontSize: 11 }} />
-                  {/* Batang: semua tipis transparan bertepi 1,5px, hanya batang tertinggi solid,
-                      sudut membulat (radius 8) — gaya yang sama dengan dashboard ops. */}
-                  <Bar dataKey="leads" name="leads" maxBarSize={28} radius={[8, 8, 8, 8]} stroke="#2563eb" strokeWidth={1.5}>
+                <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: -14, bottom: 0 }}>
+                  <defs>
+                    {/* Gradasi halus: batang puncak + area di bawah garis closing. */}
+                    <linearGradient id="leadsPeak" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#3b82f6" />
+                      <stop offset="100%" stopColor="#2563eb" />
+                    </linearGradient>
+                    <linearGradient id="closingFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#10b981" stopOpacity={0.3} />
+                      <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="0" stroke="#eef2f7" vertical={false} />
+                  <XAxis dataKey="tanggal" tick={{ fontSize: 11, fill: '#94a3b8' }} tickLine={false} axisLine={false} tickMargin={8} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#94a3b8' }} tickLine={false} axisLine={false} width={38} />
+                  <Tooltip content={<LeadsChartTooltip />} cursor={{ fill: 'rgba(37,99,235,0.05)' }} />
+                  {/* Batang: tipis transparan, hanya puncak yang solid bergradasi, sudut membulat. */}
+                  <Bar dataKey="leads" name="leads" maxBarSize={30} radius={[8, 8, 8, 8]}>
                     {chartData.map((entry, index) => (
                       <Cell
                         key={`bar-${entry.tanggal}-${index}`}
-                        fill={entry.leads > 0 && entry.leads === peakLeads ? '#2563eb' : 'rgba(37,99,235,0.12)'}
+                        fill={entry.leads > 0 && entry.leads === peakLeads ? 'url(#leadsPeak)' : 'rgba(37,99,235,0.12)'}
                       />
                     ))}
                   </Bar>
-                  <Line type="monotone" dataKey="closing" name="closing" stroke="#10b981" strokeWidth={2.5} dot={{ r: 3, fill: '#10b981' }} />
+                  {/* Garis closing dengan area gradasi supaya terbaca sebagai tren. */}
+                  <Area
+                    type="monotone"
+                    dataKey="closing"
+                    name="closing"
+                    stroke="#10b981"
+                    strokeWidth={2.5}
+                    fill="url(#closingFill)"
+                    dot={{ r: 3, fill: '#10b981', strokeWidth: 0 }}
+                    activeDot={{ r: 5, fill: '#10b981', stroke: '#fff', strokeWidth: 2 }}
+                  />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
