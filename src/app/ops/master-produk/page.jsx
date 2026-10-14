@@ -1552,8 +1552,8 @@ export default function MasterProduk() {
               transition={{ duration: 0.2 }}
             >
               {/* Toolbar: search (kiri) + filter (kanan) */}
-              <div className="flex flex-col lg:flex-row lg:items-center gap-2 mb-3">
-                <div className="relative flex-1 min-w-[200px]">
+              <div className="flex flex-wrap items-center gap-2 mb-3">
+                <div className="relative flex-1 min-w-[240px]">
                   <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500" size={17} />
                   <input
                     type="text"
@@ -1625,18 +1625,18 @@ export default function MasterProduk() {
 
               {/* Desktop: Tabel stok per variant & ukuran */}
               <div className="hidden md:block bg-white dark:bg-[#1a1d28] rounded-xl shadow-sm border border-gray-200 dark:border-slate-800 overflow-hidden transition-colors duration-300">
-                <div className="overflow-auto max-h-[70vh]">
+                <div className="overflow-x-auto">
                   <table className="w-full border-collapse">
                     <thead>
-                      <tr className="bg-[#1e3a5f] [&>th]:sticky [&>th]:top-0 [&>th]:z-10 [&>th]:bg-[#1e3a5f]">
-                        <th className="px-4 py-3.5 text-left font-inter text-xs font-bold text-white uppercase tracking-wide border-r border-[#2d4a6f]">Produk</th>
-                        <th className="px-4 py-3.5 text-left font-inter text-xs font-bold text-white uppercase tracking-wide border-r border-[#2d4a6f] whitespace-nowrap">Kategori</th>
-                        <th className="px-4 py-3.5 text-left font-inter text-xs font-bold text-white uppercase tracking-wide border-r border-[#2d4a6f] whitespace-nowrap">Jenis Kain</th>
-                        <th className="px-4 py-3.5 text-left font-inter text-xs font-bold text-white uppercase tracking-wide border-r border-[#2d4a6f]">Series</th>
+                      <tr className="bg-[#1e3a5f]">
+                        <th className="px-3 py-3.5 text-left font-inter text-xs font-bold text-white uppercase tracking-wide border-r border-[#2d4a6f]">Produk</th>
+                        <th className="px-3 py-3.5 text-left font-inter text-xs font-bold text-white uppercase tracking-wide border-r border-[#2d4a6f] whitespace-nowrap">Kategori</th>
+                        <th className="px-3 py-3.5 text-left font-inter text-xs font-bold text-white uppercase tracking-wide border-r border-[#2d4a6f] whitespace-nowrap">Jenis Kain</th>
+                        <th className="px-3 py-3.5 text-left font-inter text-xs font-bold text-white uppercase tracking-wide border-r border-[#2d4a6f]">Series</th>
                         {SIZES.map((size) => (
-                          <th key={size} className="px-3 py-3.5 text-center font-inter text-xs font-bold text-white uppercase tracking-wide border-r border-[#2d4a6f]">{size}</th>
+                          <th key={size} className="w-11 px-2 py-3.5 text-center font-inter text-xs font-bold text-white uppercase tracking-wide border-r border-[#2d4a6f]">{size}</th>
                         ))}
-                        <th className="px-4 py-3.5 text-center font-inter text-xs font-bold text-white uppercase tracking-wide">Total</th>
+                        <th className="w-16 px-3 py-3.5 text-center font-inter text-xs font-bold text-white uppercase tracking-wide">Total</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1665,7 +1665,7 @@ export default function MasterProduk() {
                           const rowBg = index % 2 === 0 ? 'bg-white dark:bg-[#16171d]' : 'bg-blue-50/30 dark:bg-[#1a1d28]';
                           return (
                             <tr key={v.id} className={`${rowBg} hover:bg-blue-100/50 dark:hover:bg-slate-800 transition-colors border-b border-gray-100 dark:border-slate-800/50 ${v.base_product_id ? 'opacity-60' : ''}`}>
-                              <td className="px-4 py-3.5 text-left align-middle font-inter text-sm font-semibold text-gray-900 dark:text-white border-r border-gray-100 dark:border-slate-800/50">
+                              <td className="px-3 py-3.5 text-left align-middle font-inter text-sm font-semibold text-gray-900 dark:text-white border-r border-gray-100 dark:border-slate-800/50">
                                 {product?.name || v.product_name || '-'}
                                 {(v.base_series_name || v.base_product_name) ? (
                                   <span className="block text-[10px] font-medium text-amber-600 dark:text-amber-400">
@@ -1673,7 +1673,7 @@ export default function MasterProduk() {
                                   </span>
                                 ) : null}
                               </td>
-                              <td className="px-4 py-3.5 text-left align-middle border-r border-gray-100 dark:border-slate-800/50">
+                              <td className="px-3 py-3.5 text-left align-middle border-r border-gray-100 dark:border-slate-800/50">
                                 {varianKategori(v) ? (
                                   <span className="inline-flex px-2 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600">
                                     {varianKategori(v)}
@@ -1682,22 +1682,22 @@ export default function MasterProduk() {
                                   <span className="text-gray-400 dark:text-slate-500">-</span>
                                 )}
                               </td>
-                              <td className="px-4 py-3.5 text-left align-middle font-inter text-sm text-gray-600 dark:text-slate-300 border-r border-gray-100 dark:border-slate-800/50 whitespace-nowrap">
+                              <td className="px-3 py-3.5 text-left align-middle font-inter text-sm text-gray-600 dark:text-slate-300 border-r border-gray-100 dark:border-slate-800/50 whitespace-nowrap">
                                 {varianKain(v) || <span className="text-gray-400 dark:text-slate-500">Belum diatur</span>}
                               </td>
-                              <td className="px-4 py-3.5 text-left align-middle font-inter text-sm text-gray-600 dark:text-slate-300 border-r border-gray-100 dark:border-slate-800/50">
+                              <td className="px-3 py-3.5 text-left align-middle font-inter text-sm text-gray-600 dark:text-slate-300 border-r border-gray-100 dark:border-slate-800/50">
                                 {varianSeries(v) || '-'}
                               </td>
                               {SIZES.map((sz) => {
                                 const val = st[sz];
                                 const cls = val === 0 ? 'text-red-500 dark:text-red-400' : (val <= 5 ? 'text-amber-500 dark:text-amber-400' : 'text-gray-800 dark:text-slate-200');
                                 return (
-                                  <td key={sz} className={`px-3 py-3.5 text-center align-middle font-inter text-sm font-semibold border-r border-gray-100 dark:border-slate-800/50 ${cls}`}>
+                                  <td key={sz} className={`px-2 py-3.5 text-center align-middle font-inter text-sm font-semibold border-r border-gray-100 dark:border-slate-800/50 ${cls}`}>
                                     {val}
                                   </td>
                                 );
                               })}
-                              <td className="px-4 py-3.5 text-center align-middle font-inter text-sm font-black text-blue-600 dark:text-blue-400">
+                              <td className="px-3 py-3.5 text-center align-middle font-inter text-sm font-black text-blue-600 dark:text-blue-400">
                                 {total}
                               </td>
                             </tr>
