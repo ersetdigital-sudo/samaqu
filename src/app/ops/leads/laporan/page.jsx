@@ -215,7 +215,7 @@ export default function LaporanLeads() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-6 md:p-8 text-white shadow-xl shadow-blue-600/20">
+      <div className="bg-gradient-to-r from-[#18181b] to-[#27272a] rounded-3xl p-6 md:p-8 text-white shadow-lg shadow-black/10">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
@@ -378,7 +378,7 @@ export default function LaporanLeads() {
 
       {/* Tabel Rekap per Tanggal */}
       <div className="bg-white dark:bg-[#1a1d28] rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
-        <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 bg-gradient-to-r from-blue-600 to-indigo-600">
+        <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 bg-gradient-to-r from-[#18181b] to-[#27272a]">
           <h2 className="font-heading font-bold text-white">Data Rekap Leads Closing — {rangeLabel}</h2>
         </div>
         {isLoading ? (

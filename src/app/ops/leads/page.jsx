@@ -143,39 +143,40 @@ export default function Leads() {
     toast({ title: "✅ Lead dihapus", variant: "success" });
   };
 
+  // Kartu ringkasan: palet netral (putih + border slate), sama seperti dashboard admin.
   const statCards = [
-    { label: "Total Leads", value: stats.total, icon: Users, chip: "bg-gradient-to-br from-blue-500 to-blue-600", wash: "from-blue-500/10 to-blue-500/0 dark:from-blue-500/20", glow: "bg-blue-400" },
-    { label: "Closing", value: stats.closing, icon: CheckCircle2, chip: "bg-gradient-to-br from-emerald-500 to-teal-600", wash: "from-emerald-500/10 to-emerald-500/0 dark:from-emerald-500/20", glow: "bg-emerald-400" },
-    { label: "Belum Closing", value: stats.belum, icon: Clock, chip: "bg-gradient-to-br from-amber-400 to-orange-500", wash: "from-amber-500/10 to-amber-500/0 dark:from-amber-500/20", glow: "bg-amber-400" },
-    { label: "Konversi", value: `${stats.rate.toFixed(1)}%`, icon: Target, chip: "bg-gradient-to-br from-purple-500 to-fuchsia-600", wash: "from-purple-500/10 to-purple-500/0 dark:from-purple-500/20", glow: "bg-purple-400" },
-    { label: "Nominal Closing", value: `Rp ${formatRupiah(stats.nominal)}`, icon: Wallet, chip: "bg-gradient-to-br from-rose-500 to-pink-600", wash: "from-rose-500/10 to-rose-500/0 dark:from-rose-500/20", glow: "bg-rose-400" },
+    { label: "Total Leads", value: stats.total, icon: Users },
+    { label: "Closing", value: stats.closing, icon: CheckCircle2 },
+    { label: "Belum Closing", value: stats.belum, icon: Clock },
+    { label: "Konversi", value: `${stats.rate.toFixed(1)}%`, icon: Target },
+    { label: "Nominal Closing", value: `Rp ${formatRupiah(stats.nominal)}`, icon: Wallet },
   ];
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-6 md:p-8 text-white shadow-xl shadow-blue-600/20">
+      {/* Header — palet netral seperti dashboard admin */}
+      <div className="bg-white dark:bg-[#1a1d28] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 md:p-8 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
-              <Users size={28} />
+            <div className="w-14 h-14 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center border border-slate-200 dark:border-slate-700">
+              <Users size={28} className="text-slate-900 dark:text-white" />
             </div>
             <div>
-              <h1 className="text-2xl md:text-3xl font-extrabold font-heading">Database Leads</h1>
-              <p className="text-white/80 text-sm font-medium mt-1">Catat leads masuk & pantau closing</p>
+              <h1 className="text-2xl md:text-3xl font-extrabold font-heading text-slate-900 dark:text-white">Database Leads</h1>
+              <p className="text-slate-500 dark:text-slate-400 text-sm font-medium mt-1">Catat leads masuk & pantau closing</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setPasteOpen(true)}
-              className="flex items-center gap-2 px-4 py-3 bg-white/15 backdrop-blur-sm border border-white/30 text-white font-bold rounded-xl hover:bg-white/25 transition-all active:scale-95"
+              className="flex items-center gap-2 px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-all active:scale-95"
             >
               <ClipboardPaste size={18} />
               Import Paste
             </button>
             <button
               onClick={() => { setEditing(null); setFormOpen(true); }}
-              className="flex items-center gap-2 px-5 py-3 bg-white text-blue-700 font-bold rounded-xl hover:bg-blue-50 shadow-md transition-all active:scale-95"
+              className="flex items-center gap-2 px-5 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold rounded-xl hover:bg-slate-800 dark:hover:bg-slate-100 shadow-sm transition-all active:scale-95"
             >
               <Plus size={18} />
               Tambah Lead
@@ -189,19 +190,15 @@ export default function Leads() {
         {statCards.map((c, i) => {
           const Icon = c.icon;
           return (
-            <div key={c.label} className="relative overflow-hidden bg-white dark:bg-[#1a1d28] rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
-              <div className={`absolute inset-0 bg-gradient-to-br ${c.wash}`} />
-              <div className={`absolute -top-6 -right-6 w-20 h-20 rounded-full blur-2xl opacity-25 ${c.glow}`} />
-              <div className="relative">
-                <div className="flex items-start justify-between mb-3">
-                  <div className={`w-10 h-10 ${c.chip} rounded-xl flex items-center justify-center shadow-lg shadow-slate-900/10`}>
-                    <Icon size={19} className="text-white" />
-                  </div>
-                  <span className="text-[9px] font-black text-slate-300 dark:text-slate-600 tracking-widest">{String(i + 1).padStart(2, '0')}</span>
+            <div key={c.label} className="bg-white dark:bg-[#1a1d28] rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm hover:shadow-md transition-shadow duration-300">
+              <div className="flex items-start justify-between mb-3">
+                <div className="w-10 h-10 bg-slate-100 dark:bg-slate-800 rounded-xl flex items-center justify-center">
+                  <Icon size={19} className="text-slate-700 dark:text-slate-200" />
                 </div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{c.label}</p>
-                <p className="text-2xl font-black font-heading text-slate-900 dark:text-white mt-0.5 tracking-tight">{c.value}</p>
+                <span className="text-[9px] font-black text-slate-300 dark:text-slate-600 tracking-widest">{String(i + 1).padStart(2, '0')}</span>
               </div>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{c.label}</p>
+              <p className="text-2xl font-black font-heading text-slate-900 dark:text-white mt-0.5 tracking-tight">{c.value}</p>
             </div>
           );
         })}
