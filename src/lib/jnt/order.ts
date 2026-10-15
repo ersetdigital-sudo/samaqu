@@ -37,7 +37,17 @@ export async function createOrder(params: {
 
   const now = new Date();
   const pad = (n: number) => String(n).padStart(2, "0");
-  const orderDate = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+  // Dokumen J&T: `orderdate` memakai format "YYYY-MM-DD hh:mm:ss" dan **UTC+7 (WIB)**.
+  // Server produksi (Vercel) berjalan di UTC, jadi jamnya digeser +7 dulu supaya tanggal resi
+  // tidak meleset 7 jam.
+  const wib = new Date(now.getTime() + 7 * 60 * 60 * 1000);
+  const orderDate = `${wib.getUTCFullYear()}-${pad(wib.getUTCMonth() + 1)}-${pad(wib.getUTCDate())} ${pad(wib.getUTCHours())}:${pad(wib.getUTCMinutes())}:${pad(wib.getUTCSeconds())}`;
+
+  /** Dokumen J&T: `item_name` tidak boleh memakai karakter khusus. */
+  const itemNameSafe = String(params.itemName || "")
+    .replace(/[^\p{L}\p{N} .-]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 
   const detail: OrderRequest = {
     username: config.orderUsername,
@@ -60,7 +70,7 @@ export async function createOrder(params: {
     servicetype: params.serviceType ?? 6,
     insurance: params.insurance ?? 0,
     orderdate: orderDate,
-    item_name: params.itemName.slice(0, 50),
+    item_name: itemNameSafe.slice(0, 50),
     cod: params.cod ?? 0,
     sendstarttime: "",
     sendendtime: "",
