@@ -131,6 +131,11 @@ export default function CartPage() {
                           <span className="text-[10px]" style={{ color: "var(--clay)" }}>|</span>
                           <span className="text-[11px] font-ui" style={{ color: "var(--coffee)" }}>UK {item.size}</span>
                         </div>
+                        {/* Catatan per item: hanya dari keranjang lama (field di detail produk sudah
+dihapus); ditampilkan aman kalau ada, tidak dipakai lagi di alur beli. */}
+                        {item.notes && (
+                          <p className="text-[11px] font-ui mt-0.5" style={{ color: "var(--stone)" }}>Catatan: {item.notes}</p>
+                        )}
                         {/* CYP price or fixed price */}
                         {item.create_your_price_enabled ? (
                           <CartCYPPrice item={item} index={i} updatePrice={updatePrice} />
