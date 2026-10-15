@@ -519,6 +519,13 @@ export async function POST(request: NextRequest) {
         customerEmail: authData?.user?.email ?? null,
         customerWhatsapp: whatsapp,
         total,
+        items: [
+          ...validatedItems.map((item) => ({
+            label: `${item.productName}${item.size ? ` (Uk. ${item.size})` : ""}`,
+            quantity: item.quantity || 1,
+          })),
+          ...(extraCover ? [{ label: OPEN_ORDER_ADDON.name, quantity: 1 }] : []),
+        ],
       });
     }
 
