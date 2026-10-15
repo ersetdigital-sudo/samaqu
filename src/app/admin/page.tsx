@@ -513,6 +513,16 @@ function AdminPageInner() {
     });
   }
 
+  /** Setelah status "tampil di website" disimpan dari drawer detail, samakan daftar produk
+   *  di dashboard supaya badge "Dari Ops, belum tampil" langsung hilang tanpa refresh. */
+  function handleProductPublished(published: boolean, target: { name: string; category: string }) {
+    setProducts((prev) =>
+      prev.map((p) =>
+        p.name === target.name && p.category === target.category ? { ...p, is_published: published } : p
+      )
+    );
+  }
+
   async function updateOrderStatus(orderNumber: string, newStatus: string) {
     // Pesanan yang sudah punya resi J&T: `dibatalkan` wajib lewat jalur void resi yang sama
     // seperti tombol "Batalkan di J&T" (termasuk konfirmasinya), supaya pengiriman di J&T
@@ -958,7 +968,7 @@ function AdminPageInner() {
       </div>
 
       {/* Drawer detail produk — dibuka dari kartu katalog (tombol mata) */}
-      <ProductDetailDrawer productId={selectedProductId} onClose={() => setSelectedProductId(null)} />
+      <ProductDetailDrawer productId={selectedProductId} onClose={() => setSelectedProductId(null)} onPublishedChange={handleProductPublished} />
 
       {/* Drawer detail pesanan — meluncur dari kanan, sama seperti drawer detail produk */}
       <OrderDetailDrawer
