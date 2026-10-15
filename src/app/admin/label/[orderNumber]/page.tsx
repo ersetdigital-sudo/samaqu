@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { fetchPaymentMethodById, isPaymentMethodId, legacyPaymentType, normalizeMethodType } from "@/lib/payment-methods";
+import { sumWeightGramsBySize, productWeightMapFromRows, variantWeightMapFromRows } from "@/lib/shipping-weight";
 
 interface OrderData {
   order_number: string;
@@ -49,21 +50,26 @@ export default function LabelPage() {
         .single();
       if (fetchErr || !data) { setError("Pesanan tidak ditemukan"); setLoading(false); return; }
 
-      // If weight is null (old order), calculate from order items + products
+      // Berat kosong (pesanan lama) → hitung dari berat per ukuran (`product_variants.weight`),
+      // dengan berat produk sebagai cadangan — fungsi pusat yang sama dengan checkout.
       if (!data.weight && data.order_items && data.order_items.length > 0) {
         const productIds = [...new Set(data.order_items.map((item: any) => item.product_id).filter(Boolean))];
         if (productIds.length > 0) {
-          const { data: products } = await supabase.from("products").select("id, weight, category").in("id", productIds);
-          const weightMap: Record<string, number> = {};
-          const defaultWeights: Record<string, number> = { Thobe: 800, Kandora: 600, Koko: 500, Vest: 400, "Cover Thobe": 300, Kabak: 700 };
-          for (const p of products || []) {
-            weightMap[p.id] = p.weight || defaultWeights[p.category] || 800;
-          }
-          let totalGrams = 0;
-          for (const item of data.order_items) {
-            totalGrams += (weightMap[item.product_id] || 800) * item.quantity;
-          }
-          data.weight = Math.max(300, totalGrams);
+          const [pRes, vRes] = await Promise.all([
+            supabase.from("products").select("id, weight").in("id", productIds),
+            supabase.from("product_variants").select("product_id, color, size, weight").in("product_id", productIds),
+          ]);
+          const { grams, missingQty } = sumWeightGramsBySize(
+            data.order_items.map((item: any) => ({
+              productId: item.product_id,
+              color: item.color,
+              size: item.size,
+              quantity: item.quantity,
+            })),
+            productWeightMapFromRows(pRes.data),
+            variantWeightMapFromRows(vRes.data)
+          );
+          data.weight = Math.max(300, grams + missingQty * 1200);
         }
       }
 

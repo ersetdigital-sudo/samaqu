@@ -4,7 +4,13 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useSafeLocale, useSafeTranslations } from "@/lib/safe-i18n";
 import { strukStatus, strukSteps, tglJamID, rupiah } from "@/lib/akun-format";
-import { formatWeight } from "@/lib/shipping-weight";
+import {
+  formatWeightExact,
+  productWeightMapFromRows,
+  resolveLineWeight,
+  variantWeightMapFromRows,
+  type ResolvedLineWeight,
+} from "@/lib/shipping-weight";
 import { usePaymentMethodName } from "@/lib/use-payment-methods";
 import { supabase } from "@/lib/supabase";
 import ConfirmModal from "@/components/ConfirmModal";
@@ -267,18 +273,30 @@ export default function RincianPesanan({ order }: { order: RincianOrder }) {
     .filter(Boolean)
     .join(", ");
 
-  // Berat per produk (gram) untuk tiap item — diambil dari `products.weight` (order_items
-  // tidak menyimpan berat). Dipakai menampilkan berat di samping tiap produk.
-  const [itemWeights, setItemWeights] = useState<Record<string, number>>({});
+  // Berat per ITEM (gram) — dari `product_variants.weight` (per produk + warna + ukuran),
+  // `products.weight` hanya cadangan. Sama seperti tampilan admin (satu fungsi pusat).
+  const [itemWeights, setItemWeights] = useState<Record<string, ResolvedLineWeight>>({});
   useEffect(() => {
-    const ids = Array.from(new Set((order.order_items || []).map((it) => it.product_id).filter((x): x is string => !!x)));
+    const items = order.order_items || [];
+    const ids = Array.from(new Set(items.map((it) => it.product_id).filter((x): x is string => !!x)));
     if (ids.length === 0) return;
     let alive = true;
-    supabase.from("products").select("id, weight").in("id", ids).then(({ data }) => {
-      if (!alive || !data) return;
-      const m: Record<string, number> = {};
-      for (const r of data) if (r.weight) m[r.id as string] = Number(r.weight);
-      setItemWeights(m);
+    Promise.all([
+      supabase.from("products").select("id, weight").in("id", ids),
+      supabase.from("product_variants").select("product_id, color, size, weight").in("product_id", ids),
+    ]).then(([pRes, vRes]) => {
+      if (!alive) return;
+      const productWeights = productWeightMapFromRows(pRes.data);
+      const variantWeights = variantWeightMapFromRows(vRes.data);
+      const map: Record<string, ResolvedLineWeight> = {};
+      for (const it of items) {
+        map[`${it.product_id}|${it.color}|${it.size}`] = resolveLineWeight(
+          { productId: it.product_id, color: it.color, size: it.size },
+          productWeights,
+          variantWeights
+        );
+      }
+      setItemWeights(map);
     });
     return () => { alive = false; };
   }, [order.order_items]);
@@ -376,7 +394,7 @@ export default function RincianPesanan({ order }: { order: RincianOrder }) {
             {order.weight && order.weight > 0 ? (
               <div className="rp-line" style={{ marginTop: 8 }}>
                 <span className="rp-sub">Berat</span>
-                <span className="rp-strong rp-mono" style={{ marginLeft: "auto" }}>{formatWeight(order.weight)}</span>
+                <span className="rp-strong rp-mono" style={{ marginLeft: "auto" }}>{formatWeightExact(order.weight)}</span>
               </div>
             ) : null}
             {latestRow ? (
@@ -434,8 +452,10 @@ export default function RincianPesanan({ order }: { order: RincianOrder }) {
               <div style={{ minWidth: 0, flex: 1 }}>
                 <p className="rp-nm">{item.product_name}</p>
                 <p className="rp-var">{VARIAN_LINE(item)}</p>
-                {item.product_id && itemWeights[item.product_id] ? (
-                  <p className="rp-var">Berat: <b>{formatWeight(itemWeights[item.product_id])}</b></p>
+                {item.product_id && itemWeights[`${item.product_id}|${item.color}|${item.size}`] ? (
+                  <p className="rp-var">
+                    Berat: <b>{itemWeights[`${item.product_id}|${item.color}|${item.size}`].source === "missing" ? "-" : formatWeightExact(itemWeights[`${item.product_id}|${item.color}|${item.size}`].grams)}</b>
+                  </p>
                 ) : null}
                 <p className="rp-pr rp-mono">{rupiah(item.price)}</p>
               </div>
@@ -462,7 +482,7 @@ export default function RincianPesanan({ order }: { order: RincianOrder }) {
                 <div className="rp-row"><span>Pengiriman</span><span>{order.shipping_method}</span></div>
               ) : null}
               {order.weight && order.weight > 0 ? (
-                <div className="rp-row"><span>Berat</span><span className="rp-mono">{formatWeight(order.weight)}</span></div>
+                <div className="rp-row"><span>Berat</span><span className="rp-mono">{formatWeightExact(order.weight)}</span></div>
               ) : null}
               {resi ? (
                 <div className="rp-row"><span>Nomor Resi</span><span>{resi}</span></div>
