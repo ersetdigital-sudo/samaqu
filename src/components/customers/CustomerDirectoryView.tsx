@@ -126,14 +126,17 @@ export default function CustomerDirectoryView({
   loading = false,
   showExport = false,
   emptyText = "Belum ada pelanggan",
+  initialQuery = "",
 }: {
   customers: DirectoryCustomer[];
   loading?: boolean;
   /** Tampilkan tombol Export CSV (dipakai panel admin). */
   showExport?: boolean;
   emptyText?: string;
+  /** Pencarian awal — dipakai tautan dari menu lain (mis. Database Kota → profil pelanggan). */
+  initialQuery?: string;
 }) {
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialQuery);
   const [account, setAccount] = useState<AccountFilter>("all");
   const [period, setPeriod] = useState<PeriodFilter>("all");
   const [city, setCity] = useState("all");

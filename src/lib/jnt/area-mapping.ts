@@ -27,9 +27,11 @@ const norm = (s: string) => s.trim().toUpperCase();
  * supaya kota yang sama bisa dicocokkan — penting untuk nama kecamatan yang muncul di lebih
  * dari satu kota (mis. "CIPAYUNG" ada di Depok dan Jakarta Timur).
  */
-const stripCityPrefix = (city: string) =>
+export const stripCityPrefix = (city: string) =>
   norm(city)
-    .replace(/^(KOTA|KAB\.|KABUPATEN)?\s*(ADM\.)?\s*/, "")
+    // Urutan penting: "KABUPATEN" harus dicek sebelum "KAB" supaya tidak menyisakan "UPATEN".
+    // "KAB" tanpa titik pun ikut dibuang karena data alamat di lapangan sering menulis "Kab Bogor".
+    .replace(/^(KOTA|KABUPATEN|KAB\.?)?\s*(ADM\.?)?\s*/, "")
     .trim();
 
 // ─── Indexes (built once at module load) ───

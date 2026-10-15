@@ -20,12 +20,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, Pencil, Plus, Save, Trash2, X } from "lucide-react";
+import { AlertCircle, Check, Pencil, Plus, Save, Trash2, X } from "lucide-react";
 import { base44 } from "@/lib/ops-api";
 import { MANUAL_SOURCE_KEYS, SOURCE_LABEL } from "@/lib/transaksi";
 import { OPS_STOCK_SIZES } from "@/lib/ops-stock";
 import { categoryRank, seriesRank, variantSortKey } from "@/lib/ops-order";
 import { formatRupiah, isoToWibInput, wibNow, wibToIso } from "@/components/ops/transaksi/transaksi-format";
+import WilayahSelect from "@/components/ops/transaksi/WilayahSelect";
 import { useToast } from "@/components/ops/ui/use-toast";
 
 const inputClass =
@@ -35,6 +36,11 @@ const sectionClass = "text-[11px] font-black uppercase tracking-wider text-slate
 const cmpId = (a, b) => String(a).localeCompare(String(b), "id", { sensitivity: "base" });
 
 const digits = (value) => String(value ?? "").replace(/\D/g, "");
+
+/** Nomor HP tanpa peduli 08… / 628… / 8… — untuk mendeteksi pelanggan yang sudah terdaftar. */
+const phoneKey = (value) => digits(value).replace(/^0+/, "").replace(/^62/, "");
+
+const ADDRESS_FIELDS = ["address", "province", "city", "kecamatan", "postal_code"];
 
 /** Satu baris item yang masih kosong (semua langkah belum dipilih). */
 const emptyRow = () => ({
@@ -62,6 +68,9 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
   const [saveError, setSaveError] = useState("");
   const [touched, setTouched] = useState(false);
   const [confirmClose, setConfirmClose] = useState(false);
+  const [saveAttempted, setSaveAttempted] = useState(false);
+  /** Alamat diketik baru (bukan dari daftar tersimpan) → ikut masuk buku alamat pelanggan. */
+  const [newAddressForCustomer, setNewAddressForCustomer] = useState(false);
   const prefilledFor = useRef(null);
 
   const { data: variants = [] } = useQuery({
@@ -75,6 +84,33 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
     queryFn: () => base44.entities.Customer.list(),
     enabled: isOpen,
     staleTime: 60_000,
+  });
+
+  // Alamat tersimpan pelanggan yang dipilih + pilihan wilayah (provinsi/kota/kecamatan).
+  const selectedCustomerId = form?.customer_mode === "existing" ? form?.customer_id || "" : "";
+  const { data: savedAddresses = [], isSuccess: addressesLoaded } = useQuery({
+    queryKey: ["transaksi", "alamat", selectedCustomerId],
+    queryFn: () => base44.entities.Transaction.addresses(selectedCustomerId),
+    enabled: isOpen && Boolean(selectedCustomerId),
+    staleTime: 30_000,
+  });
+  const { data: provinces = [] } = useQuery({
+    queryKey: ["transaksi", "wilayah", "provinsi"],
+    queryFn: () => base44.entities.Wilayah.provinces(),
+    enabled: isOpen,
+    staleTime: 24 * 60 * 60 * 1000,
+  });
+  const { data: cities = [] } = useQuery({
+    queryKey: ["transaksi", "wilayah", "kota", form?.province || ""],
+    queryFn: () => base44.entities.Wilayah.cities(form.province),
+    enabled: isOpen && Boolean(form?.province),
+    staleTime: 24 * 60 * 60 * 1000,
+  });
+  const { data: districts = [] } = useQuery({
+    queryKey: ["transaksi", "wilayah", "kecamatan", form?.city || ""],
+    queryFn: () => base44.entities.Wilayah.districts(form.city),
+    enabled: isOpen && Boolean(form?.city),
+    staleTime: 24 * 60 * 60 * 1000,
   });
 
   /**
@@ -108,8 +144,12 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
     }
     setSaveError("");
     setTouched(false);
+    setSaveAttempted(false);
+    setNewAddressForCustomer(false);
     if (initialData) {
       const parts = isoToWibInput(initialData.created_at);
+      const kecamatan = String(initialData.shipping_kecamatan || "").trim()
+        || String(initialData.shipping_city || "").split(",")[0].trim();
       setForm({
         customer_mode: initialData.customer_id ? "existing" : "new",
         customer_id: initialData.customer_id || "",
@@ -121,6 +161,14 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
         shipping_cost: String(initialData.shipping_cost || ""),
         discount: String(initialData.discount || ""),
         notes: initialData.notes || "",
+        // Alamat transaksi ini sudah tersimpan di pesanan, jadi isiannya langsung terisi.
+        address_mode: "new",
+        saved_address_id: "",
+        address: initialData.shipping_address || "",
+        province: initialData.shipping_province || "",
+        city: initialData.kota || "",
+        kecamatan,
+        postal_code: initialData.shipping_postal_code || "",
       });
     } else {
       const now = wibNow();
@@ -135,11 +183,34 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
         shipping_cost: "",
         discount: "",
         notes: "",
+        address_mode: "saved",
+        saved_address_id: "",
+        address: "",
+        province: "",
+        city: "",
+        kecamatan: "",
+        postal_code: "",
       });
       setItems([emptyRow()]);
       prefilledFor.current = null;
     }
   }, [isOpen, initialData]);
+
+  /* ── Pelanggan terdaftar: alamat utama langsung terpilih ── */
+  useEffect(() => {
+    if (!isOpen || form?.customer_mode !== "existing" || form?.address_mode !== "saved") return;
+    if (form?.saved_address_id || savedAddresses.length === 0) return;
+    applySavedAddress(savedAddresses.find((address) => address.is_default) || savedAddresses[0]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, form?.customer_mode, form?.address_mode, form?.saved_address_id, savedAddresses]);
+
+  /* ── Pelanggan terdaftar tanpa alamat tersimpan: isian alamat langsung tampil & ikut disimpan ── */
+  useEffect(() => {
+    if (!isOpen || isEdit) return;
+    if (form?.customer_mode !== "existing" || !form?.customer_id) return;
+    if (!addressesLoaded || savedAddresses.length > 0) return;
+    setNewAddressForCustomer(true);
+  }, [isOpen, isEdit, form?.customer_mode, form?.customer_id, addressesLoaded, savedAddresses.length]);
 
   /* ── Baris item diubah → telusuri balik jadi langkah bertahapnya ── */
   useEffect(() => {
@@ -271,6 +342,61 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
     [customers],
   );
 
+  /* ── Alamat pengiriman (sama seperti checkout website) ── */
+  const addressErrors = {
+    address: String(form?.address || "").trim() ? "" : "Alamat lengkap wajib diisi",
+    province: String(form?.province || "").trim() ? "" : "Provinsi wajib dipilih",
+    city: String(form?.city || "").trim() ? "" : "Kota/Kabupaten wajib dipilih",
+    kecamatan: String(form?.kecamatan || "").trim() ? "" : "Kecamatan wajib diisi",
+    postal_code: String(form?.postal_code || "").trim() ? "" : "Kode pos wajib diisi",
+  };
+  const addressIncomplete = ADDRESS_FIELDS.some((field) => addressErrors[field]);
+  const addressErrorText = (field) => (saveAttempted ? addressErrors[field] : "");
+
+  /** Pelanggan terdaftar: pilih dari alamat tersimpan; kalau belum ada, isian langsung tampil. */
+  const pickingSavedAddress = form?.customer_mode === "existing" && form?.address_mode === "saved" && savedAddresses.length > 0;
+  const showAddressForm = !pickingSavedAddress;
+
+  /** Nomor HP yang sudah terdaftar → tawarkan pakai pelanggan itu daripada bikin ganda. */
+  const duplicateCustomer = useMemo(() => {
+    if (form?.customer_mode !== "new") return null;
+    const key = phoneKey(form?.customer_whatsapp || "");
+    if (key.length < 8) return null;
+    return customerOptions.find((customer) => phoneKey(customer.whatsapp) === key) || null;
+  }, [form?.customer_mode, form?.customer_whatsapp, customerOptions]);
+
+  const applySavedAddress = (address) => {
+    setForm((current) => ({
+      ...current,
+      saved_address_id: address?.id || "",
+      address: address?.address || "",
+      province: address?.province || "",
+      city: address?.city || "",
+      kecamatan: address?.kecamatan || "",
+      postal_code: address?.postal_code || "",
+    }));
+  };
+
+  const useExistingCustomer = (customer) => {
+    setTouched(true);
+    setNewAddressForCustomer(false);
+    setForm((current) => ({
+      ...current,
+      customer_mode: "existing",
+      customer_id: customer.id || "",
+      customer_name: customer.name || "",
+      customer_whatsapp: customer.whatsapp || "",
+      address_mode: "saved",
+      saved_address_id: "",
+    }));
+  };
+
+  const startNewAddress = () => {
+    setTouched(true);
+    setNewAddressForCustomer(true);
+    setForm((current) => ({ ...current, address_mode: "new", saved_address_id: "" }));
+  };
+
   /* ── Aksi ── */
   const updateForm = (patch) => {
     setForm((current) => ({ ...current, ...patch }));
@@ -311,6 +437,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
 
   const save = () => {
     if (!form) return;
+    setSaveAttempted(true);
     setSaveError("");
     if (incomplete) {
       setSaveError("Lengkapi dulu produknya (dan periksa baris yang stoknya tidak cukup).");
@@ -318,6 +445,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
     }
     if (!form.customer_name.trim()) return setSaveError("Nama pelanggan wajib diisi.");
     if (!form.customer_whatsapp.trim()) return setSaveError("Nomor HP pelanggan wajib diisi.");
+    if (addressIncomplete) return setSaveError("Alamat pengiriman wajib diisi lengkap.");
     const createdAt = wibToIso(form.date, form.time);
     if (!createdAt) return setSaveError("Tanggal/jam transaksi tidak valid.");
 
@@ -330,6 +458,15 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
       shipping_cost: shippingValue,
       discount: Math.min(discountValue, subtotal),
       notes: form.notes.trim(),
+      // Alamat yang dipakai transaksi ini tersimpan di pesanan (dan di buku alamat kalau baru).
+      shipping: {
+        address: form.address.trim(),
+        province: form.province.trim(),
+        city: form.city.trim(),
+        kecamatan: form.kecamatan.trim(),
+        postal_code: form.postal_code.trim(),
+      },
+      save_address: newAddressForCustomer && form.customer_mode === "existing" && Boolean(form.customer_id),
       items: items.map((row) => {
         const product = resolveProduct(row);
         const [color, size] = String(row.variant).split("||");
@@ -415,7 +552,22 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                 <div className="flex gap-2">
                   <button
                     type="button"
-                    onClick={() => updateForm({ customer_mode: "existing", customer_id: "", customer_name: "", customer_whatsapp: "" })}
+                    onClick={() => {
+                      setNewAddressForCustomer(false);
+                      updateForm({
+                        customer_mode: "existing",
+                        customer_id: "",
+                        customer_name: "",
+                        customer_whatsapp: "",
+                        address_mode: "saved",
+                        saved_address_id: "",
+                        address: "",
+                        province: "",
+                        city: "",
+                        kecamatan: "",
+                        postal_code: "",
+                      });
+                    }}
                     className={`flex-1 px-4 py-2 rounded-lg border-2 text-sm font-bold transition-all ${
                       form.customer_mode === "existing"
                         ? "bg-slate-100 dark:bg-slate-800 border-slate-400 dark:border-slate-500 text-slate-900 dark:text-white"
@@ -442,10 +594,19 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                     value={form.customer_id}
                     onChange={(event) => {
                       const picked = customerOptions.find((entry) => (entry.id || entry.key) === event.target.value);
+                      setNewAddressForCustomer(false);
+                      // Ganti pelanggan → alamat ikut diganti (alamat utama terpilih otomatis).
                       updateForm({
                         customer_id: picked?.id || "",
                         customer_name: picked?.name || "",
                         customer_whatsapp: picked?.whatsapp || "",
+                        address_mode: "saved",
+                        saved_address_id: "",
+                        address: "",
+                        province: "",
+                        city: "",
+                        kecamatan: "",
+                        postal_code: "",
                       });
                     }}
                     className={inputClass}
@@ -477,13 +638,158 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                     />
                   </div>
                 )}
+
+                {/* Nomor HP yang sudah terdaftar → tawarkan pakai pelanggan itu supaya tidak ganda */}
+                {duplicateCustomer && (
+                  <div className="flex flex-wrap items-center gap-2 rounded-xl border-2 border-amber-200 bg-amber-50 px-3.5 py-2.5">
+                    <AlertCircle size={15} className="shrink-0 text-amber-600" />
+                    <p className="text-sm font-semibold text-amber-800">
+                      Nomor ini sudah terdaftar{duplicateCustomer.name ? `: ${duplicateCustomer.name}` : ""}.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => useExistingCustomer(duplicateCustomer)}
+                      className="ml-auto text-xs font-bold px-2.5 py-1.5 rounded-lg bg-amber-600 text-white hover:bg-amber-700 transition-colors"
+                    >
+                      Pakai pelanggan ini
+                    </button>
+                  </div>
+                )}
+
                 <p className="text-xs text-slate-500 dark:text-slate-400">
                   {form.customer_mode === "existing"
                     ? form.customer_name
                       ? `Terpilih: ${form.customer_name} · ${form.customer_whatsapp || "nomor belum ada"}`
                       : "Pilih salah satu pelanggan, atau ganti ke Pelanggan baru."
-                    : "Pelanggan baru otomatis muncul di menu Pelanggan."}
+                    : "Pelanggan baru dan alamatnya otomatis tersimpan di menu Pelanggan."}
                 </p>
+
+                {/* Alamat Pengiriman */}
+                <div className="pt-3 mt-1 border-t border-slate-100 dark:border-slate-800 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <h5 className={sectionClass}>Alamat Pengiriman</h5>
+                    {form.customer_mode === "existing" && form.address_mode === "new" && savedAddresses.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setForm((current) => ({ ...current, address_mode: "saved", saved_address_id: "" }))}
+                        className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline"
+                      >
+                        Pilih dari alamat tersimpan
+                      </button>
+                    )}
+                  </div>
+
+                  {pickingSavedAddress && (
+                    <div className="space-y-2">
+                      {savedAddresses.map((address) => (
+                        <button
+                          key={address.id}
+                          type="button"
+                          onClick={() => applySavedAddress(address)}
+                          className={`w-full text-left rounded-xl border-2 px-3.5 py-3 transition-colors ${
+                            form.saved_address_id === address.id
+                              ? "border-slate-400 dark:border-slate-500 bg-slate-50 dark:bg-slate-800"
+                              : "border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-bold text-slate-900 dark:text-white truncate">
+                              {address.label || "Alamat"}
+                            </span>
+                            {address.is_default && (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-900 text-white dark:bg-white dark:text-slate-900">
+                                Utama
+                              </span>
+                            )}
+                            {form.saved_address_id === address.id && <Check size={14} className="ml-auto shrink-0 text-blue-600" />}
+                          </div>
+                          <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">{address.address}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
+                            {[address.kecamatan, address.city, address.province, address.postal_code].filter(Boolean).join(", ")}
+                          </p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                            {address.recipient_name} · {address.phone}
+                          </p>
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={startNewAddress}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
+                      >
+                        <Plus size={13} /> Tambah alamat baru
+                      </button>
+                    </div>
+                  )}
+
+                  {showAddressForm && (
+                    <div className="space-y-2">
+                      <div>
+                        <label className={labelClass}>
+                          Alamat Lengkap <span className="text-red-500">*</span>
+                        </label>
+                        <textarea
+                          rows={3}
+                          value={form.address}
+                          onChange={(event) => updateForm({ address: event.target.value })}
+                          placeholder="Nama jalan, nomor rumah, RT/RW, patokan"
+                          className={`${inputClass} ${saveAttempted && addressErrors.address ? "border-red-300 dark:border-red-900/60" : ""}`}
+                        />
+                        {addressErrorText("address") ? (
+                          <p className="text-xs font-semibold text-red-600 dark:text-red-400 mt-1">{addressErrorText("address")}</p>
+                        ) : null}
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <WilayahSelect
+                          label="Provinsi"
+                          value={form.province}
+                          options={provinces}
+                          onChange={(value) => updateForm({ province: value, city: "", kecamatan: "" })}
+                          error={addressErrorText("province")}
+                        />
+                        <WilayahSelect
+                          label="Kota / Kabupaten"
+                          value={form.city}
+                          options={cities}
+                          disabled={!form.province}
+                          onChange={(value) => updateForm({ city: value, kecamatan: "" })}
+                          error={addressErrorText("city")}
+                        />
+                        <WilayahSelect
+                          label="Kecamatan"
+                          value={form.kecamatan}
+                          options={districts}
+                          disabled={!form.city}
+                          onChange={(value) => updateForm({ kecamatan: value })}
+                          error={addressErrorText("kecamatan")}
+                        />
+                        <div>
+                          <label className={labelClass}>
+                            Kode Pos <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            value={form.postal_code}
+                            onChange={(event) => updateForm({ postal_code: digits(event.target.value) })}
+                            placeholder="55581"
+                            className={`${inputClass} ${saveAttempted && addressErrors.postal_code ? "border-red-300 dark:border-red-900/60" : ""}`}
+                          />
+                          {addressErrorText("postal_code") ? (
+                            <p className="text-xs font-semibold text-red-600 dark:text-red-400 mt-1">{addressErrorText("postal_code")}</p>
+                          ) : null}
+                        </div>
+                      </div>
+
+                      {newAddressForCustomer && form.customer_mode === "existing" && (
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                          Alamat ini akan ditambahkan ke daftar alamat pelanggan.
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
               </section>
 
               {/* Sumber & waktu */}
