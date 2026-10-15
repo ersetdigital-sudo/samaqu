@@ -25,5 +25,9 @@
 .ops-root .no-scrollbar::-webkit-scrollbar { display: none; }
 .ops-root .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
 
+/* Isi drawer Transaksi: scrollbar tidak ditampilkan sama sekali (desktop & HP). */
+.ops-root .transaksi-body::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
+.ops-root .transaksi-body { scrollbar-width: none !important; -ms-overflow-style: none !important; }
+
 /* Input tanggal/native di dalam dashboard: konsisten dengan gaya Base44 */
 .ops-root input[type="date"]::-webkit-calendar-picker-indicator { opacity: .5; }

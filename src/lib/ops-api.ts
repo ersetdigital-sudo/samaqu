@@ -195,12 +195,18 @@ export const base44 = {
         });
       },
 
-      /** Alamat tersimpan milik satu pelanggan (untuk tab "Pelanggan terdaftar"). */
-      async addresses(customerId: string) {
-        if (!customerId) return [];
-        const params = new URLSearchParams({ customer_id: customerId });
-        const json = await call<{ items: any[] }>("GET", `${ALAMAT}?${params.toString()}`);
-        return json.items ?? [];
+      /**
+       * Alamat pelanggan untuk form transaksi: alamat tersimpan (`addresses`) + alamat
+       * pesanan terakhirnya (`last`) supaya isian alamat bisa langsung terisi.
+       */
+      async addresses(params: { customer_id?: string; whatsapp?: string; name?: string }) {
+        const search = new URLSearchParams();
+        if (params?.customer_id) search.set("customer_id", params.customer_id);
+        if (params?.whatsapp) search.set("whatsapp", params.whatsapp);
+        if (params?.name) search.set("name", params.name);
+        if ([...search.keys()].length === 0) return { addresses: [], last: null };
+        const json = await call<{ items: any[]; last: any }>("GET", `${ALAMAT}?${search.toString()}`);
+        return { addresses: json.items ?? [], last: json.last ?? null };
       },
 
       /** Simpan alamat baru ke buku alamat pelanggan. */
