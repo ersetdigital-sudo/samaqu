@@ -42,6 +42,8 @@ export interface JntOrderSource {
   customer_whatsapp: string;
   shipping_address: string;
   shipping_city: string;
+  /** Kecamatan tersimpan terpisah (kolom `orders.shipping_kecamatan`) — dipakai lebih dulu. */
+  shipping_kecamatan?: string | null;
   shipping_postal_code?: string | null;
   total: number;
   weight?: number | null;
@@ -139,7 +141,12 @@ async function resolveWeightGrams(
 
 export async function createJntOrderForOrder(order: JntOrderSource): Promise<JntOrderResult> {
   const items = order.order_items || [];
-  const { city, district } = splitCityDistrict(order.shipping_city);
+  const split = splitCityDistrict(order.shipping_city);
+  const city = split.city;
+  // Kecamatan diambil dari kolom khusus kalau ada (data terverifikasi master wilayah) — baru
+  // jatuh ke teks `shipping_city` ("<kecamatan>, <kota>"). Tanpa keduanya, `getReceiverArea`
+  // memakai kecamatan PERTAMA kota itu, dan kode area resi bisa salah.
+  const district = String(order.shipping_kecamatan || "").trim() || split.district;
 
   const receiverName = (order.customer_name || "").trim();
   const whatsapp = (order.customer_whatsapp || "").trim();
