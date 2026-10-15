@@ -32,14 +32,11 @@ drop policy if exists "instagram_photos_public_read" on public.instagram_photos;
 create policy "instagram_photos_public_read" on public.instagram_photos
   for select using (true);
 
--- 3) Bucket storage publik untuk foto Instagram (nama bisa dioverride via env INSTAGRAM_BUCKET).
-insert into storage.buckets (id, name, public)
-values ('instagram-photos', 'instagram-photos', true)
-on conflict (id) do nothing;
-
-drop policy if exists "instagram_photos_storage_read" on storage.objects;
-create policy "instagram_photos_storage_read" on storage.objects
-  for select using (bucket_id = 'instagram-photos');
+-- 3) Catatan storage: TIDAK pakai Supabase Storage.
+--    Foto diunggah ke Cloudinary (signed upload, akun utama — sama seperti Foto
+--    Carousel & produk) dan kolom `image_url` menyimpan secure_url dari sana.
+--    Baris seed di bawah memakai path lokal yang sedang dipakai website, jadi
+--    tampilan tetap sama persis sebelum ada foto yang diganti.
 
 -- 4) Seed: isi dari 6 foto yang dipakai website saat ini → tampilan tidak berubah.
 insert into public.instagram_photos (posisi, image_url, alt) values

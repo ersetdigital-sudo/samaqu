@@ -13,18 +13,6 @@ export const IMAGE_SQUARE_MAX_BYTES = 10 * 1024 * 1024;
 /** Sisi hasil (px). 1080 = cukup tajam untuk layar @2x, tetap ringan. */
 export const IMAGE_SQUARE_SIZE = 1080;
 
-const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
-
-/** Validasi tipe & ukuran; melempar Error berbahasa Indonesia kalau tidak lolos. */
-export function validateImageFile(file: File): void {
-  if (!ALLOWED_TYPES.includes(file.type)) {
-    throw new Error("Format harus JPG, PNG, atau WebP");
-  }
-  if (file.size > IMAGE_SQUARE_MAX_BYTES) {
-    throw new Error("Ukuran maksimal 10MB");
-  }
-}
-
 /** Resize + crop tengah ke persegi `size`px, hasil JPEG (kecil & seragam). */
 export async function squareResizeImage(file: File, size = IMAGE_SQUARE_SIZE): Promise<Blob> {
   const url = URL.createObjectURL(file);
