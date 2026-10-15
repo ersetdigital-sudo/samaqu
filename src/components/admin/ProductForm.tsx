@@ -964,7 +964,7 @@ export default function TambahProdukPage({
         : {};
       // Kolom harga: katalog biasa ATAU harga khusus Open Order (lihat `priceTarget`). Dipisah
       // supaya menyimpan dari menu Open Order TIDAK mengubah harga di menu Produk.
-      const priceFieldsFor = (p: { price: number; minimum: string; recommended: string; cyp: boolean; microcopy: string; microcopyOn: boolean }) =>
+      const priceFieldsFor = (p: { price: number; minimum: string; recommended: string; cyp: boolean; microcopy: string; microcopyOn: boolean }): Record<string, number | string | boolean | null> =>
         isOpenOrderPrice
           ? {
               open_order_price: p.price,
@@ -996,7 +996,7 @@ export default function TambahProdukPage({
           // yang diisi → kolom TIDAK ditulis supaya nilai lama (mis. 1.200 g) tidak berubah.
           const rowWeight = maxSizeWeight(block.variants.flatMap((v) => v.sizes));
 
-          const { error: productError } = await supabase.from("products").upsert({
+          const productRow = {
             id: seriesSlug,
             name,
             category,
@@ -1019,7 +1019,13 @@ export default function TambahProdukPage({
             badge_type: badgeType || null,
             open_order_enabled: openOrderEnabled,
             ...opsProductFields,
-          }, { onConflict: "id" });
+          };
+          // Mode harga Open Order: baris produk SUDAH ada → pakai `update`, bukan `upsert`.
+          // `upsert` menyiapkan baris INSERT, dan `products.price` NOT NULL membuatnya ditolak
+          // 400 (23502) karena mode ini sengaja tidak menulis kolom harga katalog.
+          const { error: productError } = isOpenOrderPrice
+            ? await supabase.from("products").update(productRow).eq("id", seriesSlug)
+            : await supabase.from("products").upsert(productRow, { onConflict: "id" });
           if (productError) throw productError;
 
           // Insert variants
@@ -1079,7 +1085,7 @@ export default function TambahProdukPage({
         // products.weight = berat ukuran terbesar yang terisi (lihat catatan di cabang Thobe).
         const rowWeight = maxSizeWeight(variants.flatMap((v) => v.sizes));
         const nonThobePrice = cypEnabled ? (parseInt(basePrice) || parseInt(minimumPrice) || 0) : (parseInt(basePrice) || 0);
-        const { error: productError } = await supabase.from("products").upsert({
+        const productRow = {
           id: slug,
           name,
           category,
@@ -1102,7 +1108,12 @@ export default function TambahProdukPage({
           badge_type: badgeType || null,
           open_order_enabled: openOrderEnabled,
           ...opsProductFields,
-        }, { onConflict: "id" });
+        };
+        // Mode harga Open Order: baris produk sudah ada → `update`, bukan `upsert` (lihat catatan
+        // di cabang Thobe: `products.price` NOT NULL menolak baris INSERT dari upsert).
+        const { error: productError } = isOpenOrderPrice
+          ? await supabase.from("products").update(productRow).eq("id", slug)
+          : await supabase.from("products").upsert(productRow, { onConflict: "id" });
         if (productError) throw productError;
 
         // Insert variants
