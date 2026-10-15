@@ -9,7 +9,7 @@ import { usePaymentMethodName } from "@/lib/use-payment-methods";
 import { supabase } from "@/lib/supabase";
 import ConfirmModal from "@/components/ConfirmModal";
 import type { TrackHistoryItem } from "@/lib/jnt/types";
-import { trackingLabel } from "@/lib/jnt/track-status";
+import { formatTrackingTime, sortHistoryDesc, trackingRow } from "@/lib/jnt/track-status";
 
 export interface RincianOrderItem {
   product_id?: string | null;
@@ -324,7 +324,7 @@ export default function RincianPesanan({ order }: { order: RincianOrder }) {
         const res = await fetch(`/api/jnt/track?awb=${encodeURIComponent(resi)}`);
         const json = await res.json();
         const history: TrackHistoryItem[] = json?.data?.history || [];
-        if (alive && history.length) setLatest(history[history.length - 1]);
+        if (alive && history.length) setLatest(sortHistoryDesc(history)[0]);
       } catch {
         /* status kirim cuma pelengkap — biarkan kosong kalau J&T tidak menjawab */
       }
@@ -333,6 +333,9 @@ export default function RincianPesanan({ order }: { order: RincianOrder }) {
       alive = false;
     };
   }, [resi]);
+
+  // Baris status kirim terakhir — teks asli J&T (status tertunda ditandai kuning untuk customer).
+  const latestRow = latest ? trackingRow(latest, "customer") : null;
 
   return (
     <div className="rp-root -mx-4 -mt-4 md:mx-0 md:mt-0">
@@ -375,15 +378,20 @@ export default function RincianPesanan({ order }: { order: RincianOrder }) {
                 <span className="rp-strong rp-mono" style={{ marginLeft: "auto" }}>{formatWeight(order.weight)}</span>
               </div>
             ) : null}
-            {latest ? (
+            {latestRow ? (
               <>
-                <div className="rp-line" style={{ color: "#666666", fontWeight: 600 }}>
+                <div className="rp-line" style={{ color: latestRow.pending ? "#b45309" : "#666666", fontWeight: 600 }}>
                   <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7h11v9H3z" /><path d="M14 10h4l3 3v3h-7z" /><circle cx="7" cy="18" r="1.5" /><circle cx="17.5" cy="18" r="1.5" /></svg>
-                  <span>{[trackingLabel(latest), latest.city_name].filter(Boolean).join(" — ")}</span>
+                  <span>{[latestRow.title, latestRow.location].filter(Boolean).join(" — ")}</span>
                 </div>
                 <div className="rp-line rp-sub" style={{ marginLeft: 27 }}>
-                  <span>{latest.date_time}</span>
+                  <span>{formatTrackingTime(latestRow.dateTime)}</span>
                 </div>
+                {latestRow.note ? (
+                  <div className="rp-line rp-sub" style={{ marginLeft: 27 }}>
+                    <span style={{ color: latestRow.pending ? "#b45309" : undefined }}>{latestRow.note}</span>
+                  </div>
+                ) : null}
               </>
             ) : (
               <div className="rp-line rp-sub" style={{ marginTop: 8 }}>
