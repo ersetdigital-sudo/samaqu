@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { isPaymentMethodId, legacyPaymentType } from "@/lib/payment-methods";
 import { notifyAdminNewOrder } from "@/lib/fonnte";
+import { createOrderPaymentLink } from "@/lib/mayar";
 import { markLeadBoughtForOrder } from "@/lib/ops-lead-sync";
 import { sumWeightGramsBySize, productWeightMapFromRows, variantWeightMapFromRows } from "@/lib/shipping-weight";
 
@@ -339,12 +340,28 @@ export async function POST(request: NextRequest) {
     });
 
     console.log("[ORDERS] === ORDER SUCCESS ===", orderNumber);
+
+    // Pembayaran online (Mayar): invoice dibuat DI SINI (server) supaya checkout tetap jalan untuk
+    // pelanggan tamu (tanpa sesi customer). Gagal → null, dan client lanjut ke halaman sukses biasa.
+    let paymentUrl: string | null = null;
+    if (paymentType === "mayar") {
+      paymentUrl = await createOrderPaymentLink({
+        orderId: order.id,
+        orderNumber,
+        customerName: customer.name,
+        customerEmail: customer.email || null,
+        customerWhatsapp: customer.whatsapp,
+        total,
+      });
+    }
+
     return NextResponse.json({
       success: true,
       orderNumber,
       orderId: order.id,
       total,
       awbNo: null,
+      paymentUrl,
     });
   } catch (error) {
     console.error("[ORDERS] === ORDER FAILED ===", error);

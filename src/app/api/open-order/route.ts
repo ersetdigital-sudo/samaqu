@@ -18,6 +18,7 @@ import {
   type PaymentInstruction,
 } from "@/lib/fonnte";
 import { SITE_URL } from "@/lib/site-config";
+import { createOrderPaymentLink } from "@/lib/mayar";
 
 /**
  * Pesanan dari alur Open Order Samaqu (halaman /open-order, 6 langkah).
@@ -99,7 +100,7 @@ interface PaymentRow {
 
 /** Baris `payment_methods` (dikelola dari dashboard admin) → teks instruksi untuk pesan WA. */
 function toPaymentInstruction(row: PaymentRow): PaymentInstruction {
-  const type = ["qris", "ewallet", "cod", "other"].includes(row.method_type ?? "")
+  const type = ["qris", "ewallet", "cod", "other", "mayar"].includes(row.method_type ?? "")
     ? (row.method_type as string)
     : "bank";
   const label = row.label?.trim() || (row.bank_name ? `Transfer Bank (${row.bank_name})` : "Transfer Bank");
@@ -506,7 +507,22 @@ export async function POST(request: NextRequest) {
     }
 
     console.log("[OPEN-ORDER] Created:", { orderNumber, items: orderItems.length, total });
-    return NextResponse.json({ success: true, orderNumber, total, awbNo: null });
+
+    // Pembayaran online (Mayar): invoice dibuat DI SINI (server) supaya pelanggan tamu (tanpa sesi)
+    // tetap bisa langsung diarahkan ke halaman bayar. Gagal → null, client lanjut ke halaman sukses.
+    let paymentUrl: string | null = null;
+    if (paymentRow?.method_type === "mayar") {
+      paymentUrl = await createOrderPaymentLink({
+        orderId: order.id,
+        orderNumber,
+        customerName: name,
+        customerEmail: authData?.user?.email ?? null,
+        customerWhatsapp: whatsapp,
+        total,
+      });
+    }
+
+    return NextResponse.json({ success: true, orderNumber, total, awbNo: null, paymentUrl });
   } catch (error) {
     console.error("[OPEN-ORDER] Failed:", error);
     return NextResponse.json({ error: "Terjadi kesalahan server" }, { status: 500 });

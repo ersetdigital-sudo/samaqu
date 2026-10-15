@@ -197,3 +197,66 @@ export async function getMayarTransaction(
 export function mayarPlaceholderEmail(orderNumber: string): string {
   return `order+${String(orderNumber).toLowerCase().replace(/[^a-z0-9-]/g, "")}@samaqu.id`;
 }
+
+/** Link bayar kedaluwarsa mengikuti batas auto-cancel pesanan (24 jam). */
+const INVOICE_TTL_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Buat invoice Mayar untuk sebuah pesanan LALU simpan linknya ke kolom pembayaran pesanan.
+ *
+ * Dipanggil dari server saat checkout (website & Open Order) supaya pelanggan **tamu** (tanpa sesi)
+ * tetap bisa diarahkan ke halaman bayar — endpoint publik `/api/payments/mayar/create` sengaja
+ * tetap memerlukan login, karena itu jalur tombol "Bayar Sekarang" di detail pesanan.
+ *
+ * Best-effort: mengembalikan link, atau `null` kalau Mayar belum siap / gagal. Tidak pernah throw —
+ * kegagalan pembayaran tidak boleh menggagalkan pesanan yang sudah tersimpan.
+ */
+export async function createOrderPaymentLink(input: {
+  orderId: string;
+  orderNumber: string;
+  customerName?: string | null;
+  customerEmail?: string | null;
+  customerWhatsapp?: string | null;
+  total: number;
+}): Promise<string | null> {
+  try {
+    const config = await getMayarConfig();
+    if (!mayarReady(config)) return null;
+
+    const amount = Math.round(Number(input.total) || 0);
+    if (amount <= 0) return null;
+
+    const invoice = await createMayarInvoice({
+      name: input.customerName || "Pelanggan SAMAQU",
+      email: input.customerEmail || mayarPlaceholderEmail(input.orderNumber),
+      mobile: input.customerWhatsapp || "08000000000",
+      amount,
+      description: `SAMAQU ${input.orderNumber}`,
+      orderNumber: input.orderNumber,
+      expiresAt: new Date(Date.now() + INVOICE_TTL_MS).toISOString(),
+    });
+
+    if (!invoice.ok || !invoice.data?.link) {
+      console.error("[MAYAR] Gagal membuat invoice:", input.orderNumber, invoice.error);
+      return null;
+    }
+
+    const { error } = await getSupabaseAdmin()
+      .from("orders")
+      .update({
+        payment_provider: "mayar",
+        payment_ref: invoice.data.id,
+        payment_url: invoice.data.link,
+        payment_status: "unpaid",
+      })
+      .eq("id", input.orderId);
+    if (error) {
+      console.error("[MAYAR] Gagal menyimpan link pembayaran:", input.orderNumber, error.message);
+    }
+
+    return invoice.data.link;
+  } catch (e) {
+    console.error("[MAYAR] createOrderPaymentLink error:", input.orderNumber, e);
+    return null;
+  }
+}

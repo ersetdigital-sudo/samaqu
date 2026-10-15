@@ -500,10 +500,11 @@ export default function OpenOrderWizard() {
       }
       setResult({ orderNumber: data.orderNumber, total: data.total });
       setStep(6);
-      // Pembayaran online (Mayar): arahkan customer ke halaman bayar Mayar. Gagal → tetap di
-      // halaman sukses; link bayar juga bisa dibuka dari detail pesanan.
+      // Pembayaran online (Mayar): link bayar dibuat server saat pesanan dibuat, jadi customer
+      // langsung diarahkan ke halaman Mayar. Gagal → tetap di halaman sukses; link bayar juga bisa
+      // dibuka dari detail pesanan.
       if (isOnlinePaymentMethod(paymentMethods.find((m) => m.id === paymentMethod) || null)) {
-        const payUrl = await startOnlinePayment(String(data.orderNumber));
+        const payUrl = data.paymentUrl || (await startOnlinePayment(String(data.orderNumber)));
         if (payUrl) window.location.href = payUrl;
       }
     } catch (err) {

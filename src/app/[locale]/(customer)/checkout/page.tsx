@@ -636,10 +636,11 @@ function CheckoutContent() {
       setOrderPlaced(true);
       clearCart();
       const orderNum = data.orderNumber || generateOrderNumber();
-      // Pembayaran online (Mayar): minta link bayar lalu arahkan customer ke halaman Mayar.
-      // Kalau gagal, lanjut ke halaman sukses biasa — customer masih bisa bayar dari detail pesanan.
+      // Pembayaran online (Mayar): link bayar dibuat server saat pesanan dibuat, jadi customer
+      // (termasuk tamu yang belum masuk) langsung diarahkan ke halaman Mayar. Kalau server tidak
+      // mengirim link, coba minta sekali lagi; kalau tetap gagal lanjut ke halaman sukses biasa.
       if (isOnlinePaymentMethod(paymentMethods.find((m) => m.id === payment) || null)) {
-        const payUrl = await startOnlinePayment(orderNum);
+        const payUrl = data.paymentUrl || (await startOnlinePayment(orderNum));
         if (payUrl) {
           window.location.href = payUrl;
           return;
