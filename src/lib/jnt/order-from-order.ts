@@ -175,7 +175,7 @@ export async function createJntOrderForOrder(order: JntOrderSource): Promise<Jnt
     receiverPhone: whatsapp.startsWith("+") ? whatsapp : `+62${whatsapp.replace(/^0/, "")}`,
     receiverAddress: address.slice(0, 200),
     receiverZip: order.shipping_postal_code || "00000",
-    destinationCode: getDestinationCode(city) || "",
+    destinationCode: getDestinationCode(city, district) || "",
     receiverArea: getReceiverArea(city, district) || "",
     qty: totalQty || 1,
     weight: Math.max(weightGrams / 1000, 0.1),
