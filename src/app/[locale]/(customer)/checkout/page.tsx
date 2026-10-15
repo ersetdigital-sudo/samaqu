@@ -1066,8 +1066,12 @@ function CheckoutContent() {
         </aside>
       </main>
 
+      {/* Spacer (mobile/tablet): supaya konten paling bawah tidak tertutup bar "Buat Pesanan"
+          yang sticky. Tingginya persis setinggi bar (--checkout-bar-h) → tanpa ruang kosong berlebih. */}
+      <div className="lg:hidden" style={{ height: "var(--checkout-bar-h)" }} />
+
       {/* Sticky mobile submit bar */}
-      <div className="lg:hidden fixed bottom-[var(--mobile-nav-h)] inset-x-0 z-40 px-4 pb-4 pt-3" style={{ background: "linear-gradient(to top, var(--cream) 70%, transparent)" }}>
+      <div className="lg:hidden fixed bottom-[var(--mobile-nav-h)] inset-x-0 z-40 px-4 pt-3" style={{ background: "linear-gradient(to top, var(--cream) 70%, transparent)", paddingBottom: "calc(1rem + env(safe-area-inset-bottom))" }}>
         <button type="submit" form="checkout-form" disabled={submitting} className="w-full rounded-xl py-4 text-sm font-ui font-medium tracking-wide transition-all" style={{ background: "var(--espresso)", color: "var(--cream)" }}>
           {submitting ? "Memproses…" : "Buat Pesanan"}
         </button>

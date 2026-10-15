@@ -604,9 +604,9 @@ a { text-decoration: none; }
 /* ── Nav bawah ala aplikasi (mobile, halaman toko) ── */
 /* Tinggi bar dipakai untuk (a) memberi padding bawah pada layout toko dan (b) menggeser bar
    aksi bawah milik halaman (keranjang, checkout, detail produk). 0 px di desktop. */
-:root { --mobile-nav-h: 0px; --action-bar-h: 0px; }
+:root { --mobile-nav-h: 0px; --action-bar-h: 0px; --checkout-bar-h: 0px; }
 @media (max-width: 1023px) {
-  :root { --mobile-nav-h: 62px; }
+  :root { --mobile-nav-h: 62px; --checkout-bar-h: calc(80px + env(safe-area-inset-bottom)); }
 }
 /* Tinggi bar aksi bawah halaman detail produk (mobile, < md). Dipakai untuk padding bawah
    konten dan mengangkat tombol chat agar tepat di atas bar. Bar itu sendiri tidak muncul ≥ md. */
@@ -616,6 +616,12 @@ a { text-decoration: none; }
      layar, tinggi nav di-nol-kan, dan tombol chat diangkat tepat di atas bar harga. */
   .pd-mobile { --mobile-nav-h: 0px; --fab-bottom: calc(var(--action-bar-h) + 0.75rem); }
   .pd-mobile > nav[aria-label="Navigasi bawah"] { display: none; }
+}
+/* Halaman checkout (mobile/tablet < lg): layout tidak merender nav bawah (route-gated), jadi tak
+   ada tumpukan dengan bar "Buat Pesanan"; tinggi nav di-nol-kan supaya bar itu menempel di dasar
+   layar. Desktop ≥1024 tidak berubah. */
+@media (max-width: 1023px) {
+  .checkout-mobile { --mobile-nav-h: 0px; }
 }
 
 /* ── Panel meluncur (drawer) admin: satu scrollbar saja ──
