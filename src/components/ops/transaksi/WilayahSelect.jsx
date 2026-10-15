@@ -21,6 +21,8 @@ export default function WilayahSelect({
   disabled = false,
   loading = false,
   error,
+  /** Keterangan tambahan di bawah isian (mis. penanda hasil tebakan otomatis). */
+  hint = "",
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -124,6 +126,9 @@ export default function WilayahSelect({
       )}
 
       {error ? <p className="text-xs font-semibold text-red-600 dark:text-red-400 mt-1">{error}</p> : null}
+      {!error && hint ? (
+        <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 mt-1">{hint}</p>
+      ) : null}
     </div>
   );
 }

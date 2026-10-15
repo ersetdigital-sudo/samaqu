@@ -77,6 +77,9 @@ export async function GET(req: NextRequest) {
       // Kota ditulis tanpa prefix administratif supaya cocok dengan pilihan di form
       // ("Kota Bekasi" → "Bekasi", "Kab. Bogor" → "Bogor").
       const city = prettifyCity(kotaFromShipping(match.shipping_city, kecamatan));
+      // Kecamatan HANYA diambil dari data yang memang tersimpan (kolom khusus, atau bagian depan
+      // `shipping_city` yang berformat "<kecamatan>, <kota>"). Tidak ada tebakan dari teks alamat —
+      // kalau datanya tidak ada, kecamatan dibiarkan kosong supaya admin mengisi sendiri.
       last = {
         order_number: match.order_number,
         created_at: match.created_at,

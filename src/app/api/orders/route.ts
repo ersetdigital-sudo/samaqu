@@ -254,6 +254,11 @@ export async function POST(request: NextRequest) {
         // Kecamatan + kota disimpan sekaligus (format yang sama dengan /api/open-order): dipakai
         // saat admin membuat resi J&T ("Atur Pesanan"), karena kode area J&T butuh kecamatan.
         shipping_city: [shipping.district, shipping.city].filter(Boolean).join(", "),
+        // Kecamatan & provinsi juga disimpan TERPISAH di kolomnya sendiri (bukan cuma digabung
+        // di `shipping_city`), supaya dashboard ops & form transaksi bisa MEMBACA datanya —
+        // tanpa perlu menebak dari teks alamat.
+        shipping_kecamatan: String(shipping.district || "").trim() || null,
+        shipping_province: String(shipping.province || "").trim() || null,
         shipping_postal_code: shipping.postalCode || null,
         shipping_notes: shipping.notes || null,
         shipping_method: verifiedShippingMethod,
