@@ -245,9 +245,9 @@ export default function FollowUpPage() {
               <button
                 key={t.key}
                 onClick={() => setTab(t.key)}
-                className={`px-3.5 py-2 rounded-xl text-sm font-bold transition-all ${
+                className={`px-3.5 py-2 rounded-xl text-sm font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#18181b]/40 dark:focus-visible:ring-white/60 ${
                   view === t.key
-                    ? "bg-blue-600 text-white shadow-md"
+                    ? "bg-[#18181b] text-white shadow-sm dark:bg-white dark:text-[#18181b]"
                     : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
                 }`}
                 aria-current={view === t.key}
