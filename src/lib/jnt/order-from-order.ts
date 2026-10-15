@@ -180,7 +180,7 @@ export async function createJntOrderForOrder(order: JntOrderSource): Promise<Jnt
     qty: totalQty || 1,
     weight: Math.max(weightGrams / 1000, 0.1),
     goodsDesc: (items[0]?.product_name || "Pesanan SAMAQU").slice(0, 40),
-    itemName: items.map((item) => item.product_name).join(", ").slice(0, 50),
+    itemName: items.map((item) => item.product_name).join(" ").slice(0, 50),
     goodsValue: total,
     cod: await resolveCod(order.payment_method, total),
   });
