@@ -7,13 +7,17 @@ import { customersToCsv } from "@/lib/customer-csv";
 import {
   ACCOUNT_FILTERS,
   CUSTOMER_SORTS,
+  CUSTOMER_TABS,
   PERIOD_FILTERS,
+  countByTab,
   distinctCities,
+  filterByTab,
   filterCustomers,
+  hanyaPesananBatal,
   sortCustomers,
-  withAddress,
   type AccountFilter,
   type CustomerSort,
+  type CustomerTab,
   type DirectoryCustomer,
   type PeriodFilter,
 } from "@/lib/customer-directory";
@@ -79,6 +83,16 @@ function CustomerCard({ c, currentMonth, onDetail }: { c: DirectoryCustomer; cur
                     Belum daftar
                   </span>
                 )}
+                {hanyaPesananBatal(c) && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300">
+                    Hanya pesanan batal
+                  </span>
+                )}
+                {!c.hasAddress && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500">
+                    Belum ada alamat
+                  </span>
+                )}
               </div>
               <p className="text-xs flex items-center gap-1.5 mt-0.5 text-slate-500 dark:text-slate-400">
                 <Phone size={12} strokeWidth={1.9} /> {c.whatsapp || "Tanpa nomor"}
@@ -86,7 +100,10 @@ function CustomerCard({ c, currentMonth, onDetail }: { c: DirectoryCustomer; cur
             </div>
             <div className="text-right shrink-0">
               <p className="text-sm lg:text-base font-extrabold text-slate-900 dark:text-white">{money(c.totalSpend)}</p>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">{c.ordersCount} pesanan</p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                {c.ordersCount} pesanan
+                {c.ordersCount > c.paidOrdersCount ? ` · ${c.paidOrdersCount} lunas` : ""}
+              </p>
             </div>
           </div>
 
@@ -143,19 +160,22 @@ export default function CustomerDirectoryView({
   const [city, setCity] = useState("all");
   const [birthday, setBirthday] = useState(false);
   const [sort, setSort] = useState<CustomerSort>("newest");
+  const [tab, setTab] = useState<CustomerTab>("all");
   const [selected, setSelected] = useState<DirectoryCustomer | null>(null);
 
   const currentMonth = new Date().getMonth() + 1;
 
-  // Yang ditampilkan hanya pelanggan yang sudah punya alamat pengiriman (lihat `withAddress`).
-  const withAddressList = useMemo(() => withAddress(customers), [customers]);
-  const hiddenCount = customers.length - withAddressList.length;
-  const cities = useMemo(() => distinctCities(withAddressList), [withAddressList]);
+  // Tab memisahkan pelanggan; hitungannya diambil dari data yang sama dengan yang ditampilkan.
+  const tabCounts = useMemo(() => countByTab(customers), [customers]);
+  const inTab = useMemo(() => filterByTab(customers, tab), [customers, tab]);
+  const cities = useMemo(() => distinctCities(inTab), [inTab]);
 
   const visible = useMemo(
-    () => sortCustomers(filterCustomers(withAddressList, { query, account, period, city, birthdayThisMonth: birthday }), sort),
-    [withAddressList, query, account, period, city, birthday, sort]
+    () => sortCustomers(filterCustomers(inTab, { query, account, period, city, birthdayThisMonth: birthday }), sort),
+    [inTab, query, account, period, city, birthday, sort]
   );
+
+  const activeFilters = account !== "all" || period !== "all" || city !== "all" || birthday || Boolean(query);
 
   if (loading) {
     return (
@@ -167,6 +187,40 @@ export default function CustomerDirectoryView({
 
   return (
     <div className="space-y-4">
+      {/* Tab: memisahkan pelanggan supaya daftarnya mudah dibaca */}
+      <div className="rounded-2xl border border-slate-200 bg-white p-1.5 dark:border-slate-800 dark:bg-[#1a1d28]">
+        <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center">
+          {CUSTOMER_TABS.map((item) => {
+            const active = item.key === tab;
+            return (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => setTab(item.key)}
+                aria-pressed={active}
+                title={item.hint}
+                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-sm font-bold transition-all ${
+                  active
+                    ? "bg-slate-900 text-white shadow-sm dark:bg-white dark:text-slate-900"
+                    : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+                }`}
+              >
+                <span className="truncate">{item.label}</span>
+                <span
+                  className={`shrink-0 px-1.5 py-0.5 rounded-full text-[11px] font-black ${
+                    active
+                      ? "bg-white/20 text-white dark:bg-slate-900/10 dark:text-slate-900"
+                      : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+                  }`}
+                >
+                  {tabCounts[item.key]}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Cari + filter */}
       <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-[#1a1d28]">
         <div className="relative">
@@ -223,20 +277,35 @@ export default function CustomerDirectoryView({
         </div>
 
         <p className="text-xs mt-3 text-slate-500 dark:text-slate-400">
-          Menampilkan <b className="text-slate-700 dark:text-slate-200">{visible.length}</b> dari {withAddressList.length} pelanggan
-          {hiddenCount > 0 ? (
-            <span className="text-slate-400 dark:text-slate-500"> · {hiddenCount} pelanggan tanpa alamat disembunyikan</span>
-          ) : null}
+          Menampilkan <b className="text-slate-700 dark:text-slate-200">{visible.length}</b> dari {inTab.length} pelanggan
+          {activeFilters ? <span className="text-slate-400 dark:text-slate-500"> · filter aktif</span> : null}
         </p>
       </div>
 
       {/* Daftar */}
       {visible.length === 0 ? (
-        <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-[#1a1d28] dark:text-slate-400">
-          {withAddressList.length === 0 ? emptyText : "Tidak ada pelanggan yang cocok"}
+        <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center dark:border-slate-800 dark:bg-[#1a1d28]">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            {inTab.length === 0 ? emptyText : "Tidak ada pelanggan yang cocok di tab ini"}
+          </p>
+          {activeFilters && inTab.length > 0 ? (
+            <button
+              type="button"
+              onClick={() => {
+                setQuery("");
+                setAccount("all");
+                setPeriod("all");
+                setCity("all");
+                setBirthday(false);
+              }}
+              className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+            >
+              Reset filter
+            </button>
+          ) : null}
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="grid gap-3 xl:grid-cols-2">
           {visible.map((c) => (
             <CustomerCard key={c.key} c={c} currentMonth={currentMonth} onDetail={() => setSelected(c)} />
           ))}

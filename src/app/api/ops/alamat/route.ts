@@ -41,8 +41,9 @@ export async function GET(req: NextRequest) {
     items = data || [];
   }
 
-  // Alamat pesanan terakhir (pesanan batal tidak dipakai) — dicocokkan lewat customer_id,
-  // lalu nomor HP yang sudah dinormalisasi, lalu nama. Hanya pesanan yang alamatnya terisi.
+  // Alamat pesanan terakhir — termasuk pesanan yang DIBATALKAN, karena pelanggan yang hanya
+  // punya pesanan batal tetap harus bisa dipakai lagi nomor HP & alamatnya. Dicocokkan lewat
+  // customer_id, lalu nomor HP yang sudah dinormalisasi, lalu nama.
   let last = null;
   const phone = normPhone(whatsapp);
   const personName = normName(name);
@@ -52,7 +53,6 @@ export async function GET(req: NextRequest) {
       .select(
         "order_number, created_at, customer_id, customer_name, customer_whatsapp, shipping_address, shipping_city, shipping_province, shipping_kecamatan, shipping_postal_code",
       )
-      .neq("status", "dibatalkan")
       .order("created_at", { ascending: false })
       .limit(500);
     if (ordersError) return NextResponse.json({ error: ordersError.message }, { status: 500 });
