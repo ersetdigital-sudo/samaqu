@@ -40,13 +40,16 @@ const byDistrictAndCity = new Map<string, JntAreaRow>(); // "KEC|KOTA-TANPA-PREF
 const byLocalDistrictOnly = new Map<string, JntAreaRow[]>(); // "KEC"
 const byJntDistrict = new Map<string, JntAreaRow>(); // "JNTKEC|JNTKOTA"
 const cityToCode3 = new Map<string, string>(); // "LOCAL_KOTA" | "JNT_KOTA" → code3
-// Kunci tambahan tanpa prefix administratif — supaya kota yang ditulis customer seperti
-// "Kab bogor" / "jakarta barat" tetap ketemu kode kota J&T-nya (dulu cuma exact match).
-const cityToCode3NoPrefix = new Map<string, string>();
+/**
+ * Kunci tambahan tanpa prefix administratif ("KAB. BOGOR" / "KOTA BOGOR" → "BOGOR") supaya nama
+ * kota yang ditulis customer ("Kab bogor", "jakarta barat") tetap ketemu. Nilainya bisa `null`:
+ * artinya nama itu dipakai >1 kota dengan kode BEDA (mis. BEKASI → BKI / CKR) — kalau begitu
+ * kodenya TIDAK ditebak, kecamatan yang dipakai untuk memastikan.
+ */
+const cityToCode3NoPrefix = new Map<string, string | null>();
 const cityToSendSite = new Map<string, string>(); // same keys → JNT city name
 const districtToCode3 = new Map<string, string>(); // "LOCAL_KEC" | "JNT_KEC" → code3
 const districtToSendSite = new Map<string, string>(); // "LOCAL_KEC" | "JNT_KEC" → JNT city name
-const cityToFirstRow = new Map<string, JntAreaRow>(); // "LOCAL_KOTA" | "JNT_KOTA" → first row
 
 for (const r of JNT_AREAS) {
   const k1 = `${norm(r.localDistrict)}|${norm(r.localCity)}`;
@@ -66,8 +69,12 @@ for (const r of JNT_AREAS) {
   if (!cityToCode3.has(kj)) cityToCode3.set(kj, r.code3);
   const kcNo = stripCityPrefix(r.localCity);
   const kjNo = stripCityPrefix(r.jntCity);
-  if (kcNo && !cityToCode3NoPrefix.has(kcNo)) cityToCode3NoPrefix.set(kcNo, r.code3);
-  if (kjNo && !cityToCode3NoPrefix.has(kjNo)) cityToCode3NoPrefix.set(kjNo, r.code3);
+  for (const key of [kcNo, kjNo]) {
+    if (!key) continue;
+    const prev = cityToCode3NoPrefix.get(key);
+    if (prev === undefined) cityToCode3NoPrefix.set(key, r.code3);
+    else if (prev !== null && prev !== r.code3) cityToCode3NoPrefix.set(key, null); // nama ambigu
+  }
   if (!cityToSendSite.has(kc)) cityToSendSite.set(kc, r.jntCity);
   if (!cityToSendSite.has(kj)) cityToSendSite.set(kj, r.jntCity);
   const kd = norm(r.localDistrict);
@@ -76,8 +83,6 @@ for (const r of JNT_AREAS) {
   if (!districtToCode3.has(kjd)) districtToCode3.set(kjd, r.code3);
   if (!districtToSendSite.has(kd)) districtToSendSite.set(kd, r.jntCity);
   if (!districtToSendSite.has(kjd)) districtToSendSite.set(kjd, r.jntCity);
-  if (!cityToFirstRow.has(kc)) cityToFirstRow.set(kc, r);
-  if (!cityToFirstRow.has(kj)) cityToFirstRow.set(kj, r);
 }
 
 function findRow(city: string, district: string): JntAreaRow | null {
@@ -96,28 +101,47 @@ function findRow(city: string, district: string): JntAreaRow | null {
     if (cityAware) return cityAware;
   }
 
-  // 3. District-only match (multiple cities may share a district name)
+  // 3. District-only match — HANYA kalau semua kecamatan dengan nama itu menunjuk kode area yang
+  //    SAMA. 284 kecamatan dipakai di lebih dari satu kota dengan kode berbeda (mis. PASEH ada di
+  //    Bandung & Sumedang) — untuk kasus itu lebih baik KOSONG daripada mengirim kode area yang
+  //    salah (ongkir & resi bisa nyasar).
   if (d) {
-    const districtMatch = byLocalDistrictOnly.get(d)?.[0];
-    if (districtMatch) return districtMatch;
+    const rows = byLocalDistrictOnly.get(d) || [];
+    const areas = new Set(rows.map((row) => norm(row.jntDistrict)));
+    if (rows.length > 0 && areas.size === 1) return rows[0];
   }
 
-  // 4. City-only fallback
-  return cityToFirstRow.get(c) || null;
+  // Kota saja tidak cukup untuk menentukan kecamatan → jangan menebak.
+  return null;
 }
 
-/** Order API: 3-char city code for origin/destination_code */
-export function getOriginCode(city: string): string | null {
-  const key = norm(city);
-  if (cityToCode3.has(key)) return cityToCode3.get(key)!;
-  // Nama dari RajaOngkir/customer sering tanpa prefix administratif ("Bogor") atau pakai
-  // bentuk lain ("Kab bogor", "jakarta barat") — cocokkan dengan aturan prefix yang sama
-  // seperti pencocokan kecamatan.
-  return cityToCode3NoPrefix.get(stripCityPrefix(city)) ?? null;
+/**
+ * Order API: 3-char city code for origin/destination_code.
+ * `district` opsional: dipakai untuk memastikan saat nama kotanya ambigu
+ * (mis. "Bekasi" bisa Kab. atau Kota — kecamatan yang menentukan).
+ */
+export function getOriginCode(city: string, district = ""): string | null {
+  const exact = cityToCode3.get(norm(city));
+  if (exact) return exact;
+
+  const stripped = stripCityPrefix(city);
+  const plain = cityToCode3NoPrefix.get(stripped);
+  if (plain) return plain;
+
+  // Nama kota ambigu (nilai `null`) atau tidak terdaftar → coba pastikan lewat kecamatan.
+  if (district) {
+    const row =
+      byDistrictAndCity.get(`${norm(district)}|${stripped}`) ||
+      byLocalDistrict.get(`${norm(district)}|${norm(city)}`) ||
+      byJntDistrict.get(`${norm(district)}|${norm(city)}`);
+    if (row) return row.code3;
+  }
+
+  return null;
 }
 
-export function getDestinationCode(city: string): string | null {
-  return getOriginCode(city);
+export function getDestinationCode(city: string, district = ""): string | null {
+  return getOriginCode(city, district);
 }
 
 /** Order API: district-level area code e.g. "DPK001" */
