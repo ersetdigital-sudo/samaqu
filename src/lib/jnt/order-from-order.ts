@@ -52,6 +52,8 @@ export interface JntOrderSource {
 export interface JntOrderResult {
   success: boolean;
   awbNo: string | null;
+  /** Berat (gram) yang dipakai pada resi ini — pemanggil boleh menyimpannya ke pesanan. */
+  weightGrams?: number;
   raw?: OrderResponse | null;
   error?: string;
 }
@@ -88,9 +90,19 @@ async function resolveCod(paymentMethod: string | null | undefined, total: numbe
   return data?.method_type === "cod" ? total : 0;
 }
 
-/** Berat kirim (gram): berat tersimpan di pesanan, kalau tidak ada dijumlah dari berat varian/produk. */
-async function resolveWeightGrams(order: JntOrderSource, items: JntOrderSourceItem[]): Promise<number> {
-  if (order.weight && order.weight > 0) return order.weight;
+/**
+ * Berat kirim (gram) untuk pesanan yang AKAN dibuatkan resi.
+ *
+ * Pesanan di tahap ini belum punya resi, jadi beratnya dihitung ULANG dari berat per ukuran
+ * (`product_variants.weight`) dengan berat produk sebagai cadangan — fungsi pusat yang sama
+ * dengan checkout. Kalau ada item yang beratnya belum diketahui sama sekali, berat tersimpan
+ * di pesanan dipakai supaya tidak menebak.
+ */
+async function resolveWeightGrams(
+  order: JntOrderSource,
+  items: JntOrderSourceItem[]
+): Promise<{ grams: number; recomputed: boolean }> {
+  const stored = order.weight && order.weight > 0 ? Number(order.weight) : 0;
 
   // id produk di tabel ini berupa SLUG (mis. "thobe-navy-karim"), bukan UUID — jangan difilter UUID.
   const productIds = Array.from(new Set(items.map((item) => item.product_id).filter((id): id is string => !!id)));
@@ -107,7 +119,6 @@ async function resolveWeightGrams(order: JntOrderSource, items: JntOrderSourceIt
     variantWeights = variantWeightMapFromRows(vRows);
   }
 
-  // Prioritas sama dengan checkout: berat varian (per ukuran) → berat produk → fallback default.
   const { grams, missingQty } = sumWeightGramsBySize(
     items.map((item) => ({
       productId: item.product_id,
@@ -118,7 +129,12 @@ async function resolveWeightGrams(order: JntOrderSource, items: JntOrderSourceIt
     weights,
     variantWeights
   );
-  return grams + missingQty * DEFAULT_ITEM_WEIGHT;
+
+  // Semua item punya berat → pakai hasil hitung ulang (paling akurat).
+  if (missingQty === 0 && grams > 0) return { grams, recomputed: true };
+  // Ada yang belum diketahui → pakai berat tersimpan kalau ada (jangan menebak).
+  if (stored > 0) return { grams: stored, recomputed: false };
+  return { grams: Math.max(grams, DEFAULT_ITEM_WEIGHT), recomputed: false };
 }
 
 export async function createJntOrderForOrder(order: JntOrderSource): Promise<JntOrderResult> {
@@ -139,7 +155,8 @@ export async function createJntOrderForOrder(order: JntOrderSource): Promise<Jnt
 
   const total = Math.max(0, Math.round(Number(order.total) || 0));
   const totalQty = items.reduce((sum, item) => sum + (item.quantity || 1), 0);
-  const weightGrams = await resolveWeightGrams(order, items);
+  const resolved = await resolveWeightGrams(order, items);
+  const weightGrams = resolved.grams;
 
   const result = await createOrder({
     orderId: order.order_number,
@@ -171,5 +188,5 @@ export async function createJntOrderForOrder(order: JntOrderSource): Promise<Jnt
     };
   }
 
-  return { success: true, awbNo: result.awbNo, raw: result.raw };
+  return { success: true, awbNo: result.awbNo, weightGrams, raw: result.raw };
 }

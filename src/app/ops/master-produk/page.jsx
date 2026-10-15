@@ -5,6 +5,7 @@ import { base44 } from "@/lib/ops-api";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 import { useNavigate } from "@/lib/ops-router";
+import { formatWeightExact } from "@/lib/shipping-weight";
 import {
   Package,
   TrendingUp,
@@ -318,7 +319,7 @@ function ProductDetailModal({ isOpen, onClose, product, stockIns = [], transacti
                   {product.stok_bersama ? (
                     <Info label="Stok Bersama" value={`Mengikuti ${product.stok_bersama.mengikuti}`} />
                   ) : null}
-                  {product.weight ? <Info label="Berat" value={`${product.weight} gram`} /> : null}
+                  {product.weight ? <Info label="Berat" value={formatWeightExact(product.weight)} /> : null}
                   {product.created_at ? (
                     <Info label="Dibuat" value={format(new Date(product.created_at), "dd MMM yyyy")} />
                   ) : null}

@@ -104,6 +104,9 @@ export async function PATCH(request: NextRequest) {
           jnt_order_id: order.order_number,
           status: "diproses",
           shipping_status: "menunggu_pickup",
+          // Berat yang benar-benar dipakai resi (dihitung ulang dari berat per ukuran). Pesanan ini
+          // belum punya resi, jadi aman diselaraskan — bukan penulisan ulang massal.
+          ...(result.weightGrams && result.weightGrams !== order.weight ? { weight: result.weightGrams } : {}),
         })
         .eq("id", order.id);
 

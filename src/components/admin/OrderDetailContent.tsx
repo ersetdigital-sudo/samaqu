@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { strukStatus, strukSteps, tglJamID, rupiah } from "@/lib/akun-format";
 import type { TrackHistoryItem } from "@/lib/jnt/types";
 import {
@@ -16,7 +16,13 @@ import { PaymentMethodValue } from "@/components/admin/PaymentMethodsManager";
 import { RINCIAN_CSS, FALLBACK_PHOTO } from "@/components/akun/RincianPesanan";
 import { waNumber, waLink, pesanPembayaran } from "@/lib/whatsapp";
 import { supabase } from "@/lib/supabase";
-import { formatWeight } from "@/lib/shipping-weight";
+import {
+  formatWeightExact,
+  productWeightMapFromRows,
+  resolveLineWeight,
+  variantWeightMapFromRows,
+  type ResolvedLineWeight,
+} from "@/lib/shipping-weight";
 import { OPEN_ORDER_ADDON, resolveAddonWeight } from "@/lib/open-order-config";
 import { useStoreSettings } from "@/lib/store-settings";
 
@@ -217,21 +223,68 @@ export default function OrderDetailContent({
   const [showRaw, setShowRaw] = useState(false);
   const t = useSafeTranslations("tracking");
 
-  // Berat per produk (gram) untuk tiap item — diambil dari `products.weight` (order_items
-  // tidak menyimpan berat). Dipakai menampilkan berat di samping tiap produk.
-  const [itemWeights, setItemWeights] = useState<Record<string, number>>({});
+  // Berat per ITEM (gram) — dihitung dari `product_variants.weight` (per produk + warna + ukuran);
+  // `products.weight` hanya cadangan. `order_items` tidak menyimpan berat, jadi dihitung saat dibuka.
+  const [itemWeights, setItemWeights] = useState<Record<string, ResolvedLineWeight>>({});
   useEffect(() => {
-    const ids = Array.from(new Set((order.order_items || []).map((it) => it.product_id).filter((x): x is string => !!x)));
+    const items = order.order_items || [];
+    const ids = Array.from(new Set(items.map((it) => it.product_id).filter((x): x is string => !!x)));
     if (ids.length === 0) return;
     let active = true;
-    supabase.from("products").select("id, weight").in("id", ids).then(({ data }) => {
-      if (!active || !data) return;
-      const m: Record<string, number> = {};
-      for (const r of data) if (r.weight) m[r.id as string] = Number(r.weight);
-      setItemWeights(m);
+    Promise.all([
+      supabase.from("products").select("id, weight").in("id", ids),
+      supabase.from("product_variants").select("product_id, color, size, weight").in("product_id", ids),
+    ]).then(([pRes, vRes]) => {
+      if (!active) return;
+      const productWeights = productWeightMapFromRows(pRes.data);
+      const variantWeights = variantWeightMapFromRows(vRes.data);
+      const map: Record<string, ResolvedLineWeight> = {};
+      for (const it of items) {
+        const resolved = resolveLineWeight(
+          { productId: it.product_id, color: it.color, size: it.size },
+          productWeights,
+          variantWeights
+        );
+        map[`${it.product_id}|${it.color}|${it.size}`] = resolved;
+        // Fallback TIDAK boleh diam-diam: catat di log supaya ketahuan.
+        if (resolved.source !== "variant") {
+          console.warn("[BERAT] berat per ukuran tidak ditemukan → fallback:", {
+            order: order.order_number,
+            product: it.product_id,
+            color: it.color,
+            size: it.size,
+            source: resolved.source,
+          });
+        }
+      }
+      setItemWeights(map);
     });
     return () => { active = false; };
-  }, [order.order_items]);
+  }, [order.order_items, order.order_number]);
+
+  /**
+   * Total berat pesanan. Pesanan yang BELUM punya resi J&T dihitung ulang dari berat per ukuran
+   * (data terbaru); pesanan yang sudah punya resi memakai berat tersimpan (jangan diubah).
+   */
+  const totalWeight = useMemo(() => {
+    const items = order.order_items || [];
+    const stored = order.weight && order.weight > 0 ? Number(order.weight) : null;
+    if (order.awb_no || items.length === 0) return { grams: stored, fallback: false, recomputed: false };
+
+    let grams = 0;
+    let fallback = false;
+    let incomplete = false;
+    for (const it of items) {
+      const w = itemWeights[`${it.product_id}|${it.color}|${it.size}`];
+      const qty = Number(it.quantity) || 1;
+      if (!w || w.source === "missing") { incomplete = true; continue; }
+      if (w.source === "product") fallback = true;
+      grams += w.grams * qty;
+    }
+    // Kalau ada item yang beratnya belum diketahui, jangan menebak — pakai berat tersimpan.
+    if (incomplete || grams <= 0) return { grams: stored, fallback, recomputed: false };
+    return { grams, fallback, recomputed: true };
+  }, [itemWeights, order]);
 
   async function openTrack(force = false) {
     if (showTrack && !force) {
@@ -350,21 +403,24 @@ export default function OrderDetailContent({
                 <div className="rp-line" style={{ marginTop: 8 }}>
                   <span className="rp-sub">{order.shipping_method || "Pengiriman"}</span>
                 </div>
-                {order.weight && order.weight > 0 ? (
+                {totalWeight.grams && totalWeight.grams > 0 ? (
                   <div className="rp-line" style={{ marginTop: 8 }}>
                     <span className="rp-sub">Berat</span>
-                    <span className="rp-strong rp-mono" style={{ marginLeft: "auto" }}>{formatWeight(order.weight)}</span>
+                    <span className="rp-strong rp-mono" style={{ marginLeft: "auto" }}>
+                      {formatWeightExact(totalWeight.grams)}
+                      {totalWeight.fallback ? <span style={{ color: "#b45309" }}> &middot; fallback produk</span> : null}
+                    </span>
                   </div>
                 ) : null}
-                {order.weight && order.weight > 0 && hasAddon ? (
+                {totalWeight.grams && totalWeight.grams > 0 && hasAddon ? (
                   <>
                     <div className="rp-line" style={{ marginTop: 6 }}>
                       <span className="rp-sub">Berat produk</span>
-                      <span className="rp-mono" style={{ marginLeft: "auto" }}>{formatWeight(Math.max(0, order.weight - addonWeight))}</span>
+                      <span className="rp-mono" style={{ marginLeft: "auto" }}>{formatWeightExact(Math.max(0, totalWeight.grams - addonWeight))}</span>
                     </div>
                     <div className="rp-line" style={{ marginTop: 6 }}>
                       <span className="rp-sub">Extra Cover &amp; Hanger</span>
-                      <span className="rp-mono" style={{ marginLeft: "auto" }}>+{formatWeight(addonWeight)}</span>
+                      <span className="rp-mono" style={{ marginLeft: "auto" }}>+{formatWeightExact(addonWeight)}</span>
                     </div>
                   </>
                 ) : null}
@@ -461,9 +517,19 @@ export default function OrderDetailContent({
                       <p className="rp-var">
                         {[item.kain ? `Kain ${item.kain}` : null, item.series, item.color && item.color !== "default" ? item.color : null, item.size].filter(Boolean).join(" · ")} &times; {item.quantity}
                       </p>
-                      {item.product_id && itemWeights[item.product_id] ? (
-                        <p className="rp-var">Berat: <b>{formatWeight(itemWeights[item.product_id])}</b></p>
-                      ) : null}
+                      {item.product_id && itemWeights[`${item.product_id}|${item.color}|${item.size}`] ? (() => {
+                        const w = itemWeights[`${item.product_id}|${item.color}|${item.size}`];
+                        return (
+                          <p className="rp-var">
+                            Berat: <b>{w.source === "missing" ? "-" : formatWeightExact(w.grams)}</b>
+                            {w.source !== "variant" ? (
+                              <span style={{ color: "#b45309", fontWeight: 700 }}>
+                                {" "}&middot; {w.source === "product" ? "berat memakai fallback produk" : "berat per ukuran belum diisi"}
+                              </span>
+                            ) : null}
+                          </p>
+                        );
+                      })() : null}
                       <p className="rp-pr rp-mono">{rupiah(item.price * item.quantity)}</p>
                       {item.customer_price && item.minimum_price ? (
                         <p className="rp-var" style={{ color: "#B4552F", fontWeight: 600 }}>
@@ -496,8 +562,8 @@ export default function OrderDetailContent({
                   {order.shipping_method ? (
                     <div className="rp-row"><span>Pengiriman</span><span>{order.shipping_method}</span></div>
                   ) : null}
-                  {order.weight && order.weight > 0 ? (
-                    <div className="rp-row"><span>Berat</span><span className="rp-mono">{formatWeight(order.weight)}</span></div>
+                  {totalWeight.grams && totalWeight.grams > 0 ? (
+                    <div className="rp-row"><span>Berat</span><span className="rp-mono">{formatWeightExact(totalWeight.grams)}</span></div>
                   ) : null}
                   {resi ? <div className="rp-row"><span>Nomor Resi</span><span>{resi}</span></div> : null}
                 </div>

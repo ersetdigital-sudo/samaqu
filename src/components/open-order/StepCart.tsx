@@ -8,7 +8,7 @@ import { Trash2 } from "lucide-react";
 import { cloudinaryUrl } from "@/lib/cloudinary";
 import { money, openOrderImage } from "@/lib/open-order-catalog";
 import { OPEN_ORDER_ADDON } from "@/lib/open-order-config";
-import { formatWeight } from "@/lib/shipping-weight";
+import { formatWeightExact } from "@/lib/shipping-weight";
 import { findOpenOrderProduct, openOrderColorLabel, type OpenOrderProduct } from "@/lib/open-order-offering";
 import type { CartLine } from "./types";
 import { Counter, FIELD_BG, GhostButton, LINE, MUTED, PrimaryButton, SummaryRow } from "./ui";
@@ -176,11 +176,11 @@ export default function StepCart({
           <SummaryRow label="Total" value={money(total)} strong />
         </div>
         <div className="mt-3 space-y-2.5 pt-3" style={{ borderTop: `1px solid ${LINE}` }}>
-          <SummaryRow label="Berat produk" value={formatWeight(itemsWeight)} />
+          <SummaryRow label="Berat produk" value={formatWeightExact(itemsWeight)} />
           {extraCover && (
-            <SummaryRow label={OPEN_ORDER_ADDON.name} value={`+${formatWeight(addonWeight)}`} />
+            <SummaryRow label={OPEN_ORDER_ADDON.name} value={`+${formatWeightExact(addonWeight)}`} />
           )}
-          <SummaryRow label="Total berat" value={formatWeight(totalWeight)} strong />
+          <SummaryRow label="Total berat" value={formatWeightExact(totalWeight)} strong />
         </div>
         <p className="mt-2 text-[11.5px] leading-relaxed" style={{ color: MUTED }}>
           Ongkir dihitung otomatis dari kecamatan tujuan di langkah berikutnya.
