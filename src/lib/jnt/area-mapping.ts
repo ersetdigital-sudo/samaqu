@@ -40,6 +40,9 @@ const byDistrictAndCity = new Map<string, JntAreaRow>(); // "KEC|KOTA-TANPA-PREF
 const byLocalDistrictOnly = new Map<string, JntAreaRow[]>(); // "KEC"
 const byJntDistrict = new Map<string, JntAreaRow>(); // "JNTKEC|JNTKOTA"
 const cityToCode3 = new Map<string, string>(); // "LOCAL_KOTA" | "JNT_KOTA" → code3
+// Kunci tambahan tanpa prefix administratif — supaya kota yang ditulis customer seperti
+// "Kab bogor" / "jakarta barat" tetap ketemu kode kota J&T-nya (dulu cuma exact match).
+const cityToCode3NoPrefix = new Map<string, string>();
 const cityToSendSite = new Map<string, string>(); // same keys → JNT city name
 const districtToCode3 = new Map<string, string>(); // "LOCAL_KEC" | "JNT_KEC" → code3
 const districtToSendSite = new Map<string, string>(); // "LOCAL_KEC" | "JNT_KEC" → JNT city name
@@ -61,6 +64,10 @@ for (const r of JNT_AREAS) {
   const kj = norm(r.jntCity);
   if (!cityToCode3.has(kc)) cityToCode3.set(kc, r.code3);
   if (!cityToCode3.has(kj)) cityToCode3.set(kj, r.code3);
+  const kcNo = stripCityPrefix(r.localCity);
+  const kjNo = stripCityPrefix(r.jntCity);
+  if (kcNo && !cityToCode3NoPrefix.has(kcNo)) cityToCode3NoPrefix.set(kcNo, r.code3);
+  if (kjNo && !cityToCode3NoPrefix.has(kjNo)) cityToCode3NoPrefix.set(kjNo, r.code3);
   if (!cityToSendSite.has(kc)) cityToSendSite.set(kc, r.jntCity);
   if (!cityToSendSite.has(kj)) cityToSendSite.set(kj, r.jntCity);
   const kd = norm(r.localDistrict);
@@ -101,7 +108,12 @@ function findRow(city: string, district: string): JntAreaRow | null {
 
 /** Order API: 3-char city code for origin/destination_code */
 export function getOriginCode(city: string): string | null {
-  return cityToCode3.get(norm(city)) ?? null;
+  const key = norm(city);
+  if (cityToCode3.has(key)) return cityToCode3.get(key)!;
+  // Nama dari RajaOngkir/customer sering tanpa prefix administratif ("Bogor") atau pakai
+  // bentuk lain ("Kab bogor", "jakarta barat") — cocokkan dengan aturan prefix yang sama
+  // seperti pencocokan kecamatan.
+  return cityToCode3NoPrefix.get(stripCityPrefix(city)) ?? null;
 }
 
 export function getDestinationCode(city: string): string | null {
