@@ -1,5 +1,6 @@
 import { getJntConfig, getJntBaseUrl } from "./config";
 import { generateSignature } from "./signature";
+import { sanitizeJntItemName, wibOrderDate } from "./format";
 import type { OrderRequest, OrderResponse } from "./types";
 
 /**
@@ -36,18 +37,10 @@ export async function createOrder(params: {
   const url = getJntBaseUrl("order", config.env);
 
   const now = new Date();
-  const pad = (n: number) => String(n).padStart(2, "0");
-  // Dokumen J&T: `orderdate` memakai format "YYYY-MM-DD hh:mm:ss" dan **UTC+7 (WIB)**.
-  // Server produksi (Vercel) berjalan di UTC, jadi jamnya digeser +7 dulu supaya tanggal resi
-  // tidak meleset 7 jam.
-  const wib = new Date(now.getTime() + 7 * 60 * 60 * 1000);
-  const orderDate = `${wib.getUTCFullYear()}-${pad(wib.getUTCMonth() + 1)}-${pad(wib.getUTCDate())} ${pad(wib.getUTCHours())}:${pad(wib.getUTCMinutes())}:${pad(wib.getUTCSeconds())}`;
-
-  /** Dokumen J&T: `item_name` tidak boleh memakai karakter khusus. */
-  const itemNameSafe = String(params.itemName || "")
-    .replace(/[^\p{L}\p{N} .-]/gu, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  // Dokumen J&T: `orderdate` = "YYYY-MM-DD hh:mm:ss" waktu UTC+7 (WIB) — lihat `format.ts`.
+  const orderDate = wibOrderDate(now);
+  /** Dokumen J&T: `item_name` tidak boleh memakai karakter khusus (lihat `format.ts`). */
+  const itemNameSafe = sanitizeJntItemName(params.itemName);
 
   const detail: OrderRequest = {
     username: config.orderUsername,
@@ -70,7 +63,7 @@ export async function createOrder(params: {
     servicetype: params.serviceType ?? 6,
     insurance: params.insurance ?? 0,
     orderdate: orderDate,
-    item_name: itemNameSafe.slice(0, 50),
+    item_name: itemNameSafe,
     cod: params.cod ?? 0,
     sendstarttime: "",
     sendendtime: "",
