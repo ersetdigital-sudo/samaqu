@@ -86,6 +86,16 @@ export interface OpenOrderCatalogRow {
   media?: { src: string; type?: string }[] | null;
   /** Kolom `products.open_order_enabled` — false = disembunyikan dari /open-order. */
   open_order_enabled?: boolean | null;
+  /**
+   * Harga khusus Open Order (semua nullable). Bila `open_order_price` terisi, seluruh set
+   * `open_order_*` menang atas harga katalog — dipakai kampanye Open Order tanpa mengubah
+   * `products.price` (menu Produk).
+   */
+  open_order_price?: number | null;
+  open_order_minimum_price?: number | null;
+  open_order_recommended_price?: number | null;
+  open_order_cyp_enabled?: boolean | null;
+  open_order_cyp_microcopy?: string | null;
   jenis_kain?: { name?: string | null } | null;
 }
 
@@ -137,10 +147,24 @@ function colorLabelOf(row: OpenOrderCatalogRow, color: string): string {
   return color || "";
 }
 
-/** Harga efektif satu baris: harga minimum saat Create Your Price aktif, kalau tidak harga biasa. */
+/** True kalau baris ini punya harga khusus Open Order (menang atas harga katalog). */
+function hasOpenOrderPrice(row: OpenOrderCatalogRow): boolean {
+  return row.open_order_price != null;
+}
+
+/** Create Your Price untuk Open Order: pakai flag khusus bila ada, kalau tidak flag katalog. */
+function rowCypEnabled(row: OpenOrderCatalogRow): boolean {
+  return hasOpenOrderPrice(row) ? !!row.open_order_cyp_enabled : !!row.create_your_price_enabled;
+}
+
+/**
+ * Harga efektif satu baris. Harga khusus Open Order (`open_order_*`) menang atas harga katalog;
+ * saat Create Your Price aktif → harga minimum, kalau tidak → harga biasa.
+ */
 function effectivePrice(row: OpenOrderCatalogRow): number {
-  const price = row.price ?? 0;
-  if (row.create_your_price_enabled && row.minimum_price) return row.minimum_price;
+  const price = (hasOpenOrderPrice(row) ? row.open_order_price : row.price) ?? 0;
+  const minimum = hasOpenOrderPrice(row) ? row.open_order_minimum_price : row.minimum_price;
+  if (rowCypEnabled(row) && minimum) return minimum;
   return price;
 }
 
@@ -222,7 +246,7 @@ export function buildOpenOrderProducts(
 
     group.price = Math.min(group.price, price);
     group.minimumPrice = Math.min(group.minimumPrice, price);
-    if (row.create_your_price_enabled) group.cypEnabled = true;
+    if (rowCypEnabled(row)) group.cypEnabled = true;
     if (!group.image) group.image = mediaOf(row)[0]?.src ?? "";
     if (!group.description && row.description) group.description = row.description.trim();
     if (row.weight) group.weight = Math.max(group.weight, row.weight);

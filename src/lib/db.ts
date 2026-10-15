@@ -29,6 +29,12 @@ export interface DbProduct {
   open_order_enabled?: boolean | null;
   // Tampil di website (katalog). Kolom `products.is_published`.
   is_published?: boolean | null;
+  // Harga khusus Open Order (kampanye) — null = pakai harga katalog biasa.
+  open_order_price?: number | null;
+  open_order_minimum_price?: number | null;
+  open_order_recommended_price?: number | null;
+  open_order_cyp_enabled?: boolean | null;
+  open_order_cyp_microcopy?: string | null;
   // Weight
   weight: number | null;
   // Joined relation (optional, only when fetched with join)
@@ -68,6 +74,12 @@ function dbProductToProduct(db: DbProduct): Product {
     cyp_microcopy_override: db.cyp_microcopy_override || null,
     // Baris lama sebelum kolomnya ada → dianggap ikut Open Order (default kolomnya true).
     open_order_enabled: db.open_order_enabled !== false,
+    // Harga khusus Open Order — diteruskan apa adanya (null = pakai harga katalog).
+    open_order_price: db.open_order_price ?? null,
+    open_order_minimum_price: db.open_order_minimum_price ?? null,
+    open_order_recommended_price: db.open_order_recommended_price ?? null,
+    open_order_cyp_enabled: db.open_order_cyp_enabled ?? null,
+    open_order_cyp_microcopy: db.open_order_cyp_microcopy ?? null,
     tag: (db.tag as Product["tag"]) || undefined,
     badge_type: db.badge_type || null,
     note: db.note || undefined,

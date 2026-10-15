@@ -64,11 +64,16 @@ function groupCatalog(products: Product[]): CatalogCard[] {
 
   const items: CatalogCard[] = [];
   for (const group of groups.values()) {
+    const openOrderPrices = group
+      .map((member) => member.open_order_price)
+      .filter((v): v is number => typeof v === "number");
     const rep: CatalogCard = {
       ...group[0],
       memberIds: group.map((member) => member.id),
       // Produk tampil di /open-order kalau minimal satu barisnya masih diikutkan.
       openOrderEnabled: group.some((member) => member.open_order_enabled !== false),
+      // Harga khusus Open Order (terendah antar series) untuk tampilan kartu — null = harga katalog.
+      openOrderPrice: openOrderPrices.length > 0 ? Math.min(...openOrderPrices) : null,
     };
     if (group.length > 1) {
       let cheapest = group[0];
@@ -554,6 +559,8 @@ export default function OpenOrderSettingsForm() {
           isEnabled: (card) => card.openOrderEnabled !== false,
           onToggle: toggleProduct,
           savingId,
+          // Form produk yang sama dengan menu Produk, tapi harga tersimpan khusus Open Order.
+          editHref: (card) => `/admin/open-order/edit/${card.id}`,
         }}
       />
     </section>
