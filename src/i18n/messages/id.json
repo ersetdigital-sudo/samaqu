@@ -519,6 +519,7 @@
     "address": "Alamat Lengkap",
     "addressHint": "Sertakan RT/RW, kelurahan, dan No rumah (jika ada).",
     "notes": "Catatan (opsional)",
+    "notesPlaceholder": "Misal: titip ke satpam jika tidak ada di rumah",
     "orderTitle": "Pesanan",
     "product": "Produk",
     "series": "Series",

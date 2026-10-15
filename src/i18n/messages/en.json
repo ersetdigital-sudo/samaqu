@@ -519,6 +519,7 @@
     "address": "Full Address",
     "addressHint": "Include RT/RW, sub-district, and house number if any.",
     "notes": "Notes (optional)",
+    "notesPlaceholder": "e.g. Leave with the security guard if no one is home",
     "orderTitle": "Order",
     "product": "Product",
     "series": "Series",
