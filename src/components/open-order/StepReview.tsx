@@ -8,6 +8,7 @@ import { cloudinaryUrl } from "@/lib/cloudinary";
 import { money } from "@/lib/open-order-catalog";
 import { OPEN_ORDER_ADDON } from "@/lib/open-order-config";
 import { normalizeMethodType, paymentMethodLabel, type PaymentMethodRow } from "@/lib/payment-methods";
+import { useSafeTranslations } from "@/lib/safe-i18n";
 import { PaymentIcon } from "@/lib/payment-icons";
 import type { OpenOrderProduct } from "@/lib/open-order-offering";
 import type { CartLine, DraftShipping } from "./types";
@@ -51,6 +52,7 @@ export default function StepReview({
   submitting: boolean;
   error: string;
 }) {
+  const t = useSafeTranslations("openOrder");
   const addonTotal = extraCover ? OPEN_ORDER_ADDON.price : 0;
   const ongkir = shipping?.cost ?? 0;
   const total = subtotal + addonTotal + ongkir;
@@ -160,7 +162,7 @@ export default function StepReview({
             value={notes}
             onChange={(e) => onNotes(e.target.value)}
             rows={3}
-            placeholder="Misal: Warna sedikit lebih gelap"
+            placeholder={t("notesPlaceholder")}
           />
         </Field>
       </div>
