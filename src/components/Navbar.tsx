@@ -18,7 +18,7 @@ import {
 } from "@phosphor-icons/react";
 import HouseIcon from "@/components/icons/HouseIcon";
 import ProfileDropdown from "@/components/ProfileDropdown";
-import { useCart } from "@/lib/cart-context";
+import { CartBadge } from "@/components/CartBadge";
 import CartDrawer from "@/components/CartDrawer";
 import { getWhatsAppLink } from "@/lib/store-settings";
 import { locales, type Locale } from "@/i18n/config";
@@ -528,40 +528,6 @@ function DrawerNavContent({
   );
 }
 
-/* ── Cart badge with bounce animation ── */
-function CartBadge() {
-  const { totalItems } = useCart();
-  const [bump, setBump] = useState(false);
-  const prev = usePrevious(totalItems);
+/* ── Cart badge — pindah ke src/components/CartBadge.tsx (dipakai bersama
+      dengan ikon keranjang halaman detail produk, mobile). ── */
 
-  useEffect(() => {
-    if (prev !== undefined && totalItems > prev) {
-      setBump(true);
-      const t = setTimeout(() => setBump(false), 400);
-      return () => clearTimeout(t);
-    }
-  }, [totalItems, prev]);
-
-  if (totalItems === 0) return null;
-
-  return (
-    <span
-      className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-[10px] font-ui font-bold"
-      style={{
-        background: "var(--gold)",
-        color: "white",
-        transform: bump ? "scale(1.3)" : "scale(1)",
-        transition: "transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
-      }}
-    >
-      {totalItems}
-    </span>
-  );
-}
-
-function usePrevious<T>(value: T): T | undefined {
-  const ref = useState<T | undefined>(undefined);
-  const current = ref[0];
-  ref[0] = value as T;
-  return current;
-}
