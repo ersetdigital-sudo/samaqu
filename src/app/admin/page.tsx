@@ -20,6 +20,7 @@ import SettingsPanel from "@/components/admin/SettingsSections";
 import OrdersView from "@/components/admin/OrdersView";
 import DashboardView from "@/components/admin/DashboardView";
 import { rankTopProducts } from "@/lib/top-products";
+import { SALE_STATUSES } from "@/lib/transaksi";
 import ProductsCatalog from "@/components/admin/ProductsCatalog";
 import ProductDetailDrawer from "@/components/admin/ProductDetailDrawer";
 import LiveChatView from "@/components/admin/LiveChatView";
@@ -256,9 +257,11 @@ function AdminPageInner() {
     return `${p.name} ${p.year}`;
   }, [bulanValue]);
 
-  /** Pendapatan periode terpilih (aturan lama: pesanan pending tidak dihitung). */
+  /** Pendapatan periode terpilih — SATU aturan bersama `SALE_STATUSES` (src/lib/transaksi.ts):
+   *  hanya pesanan yang sudah dibayar (`diproses`/`dikirim`/`selesai`). Dulu filternya
+   *  "bukan pending", jadi pesanan `dibatalkan` ikut dihitung sebagai pendapatan. */
   const dashRevenue = useMemo(
-    () => dashOrders.filter((o) => o.status !== "pending").reduce((sum, o) => sum + o.total, 0),
+    () => dashOrders.filter((o) => SALE_STATUSES.includes(String(o.status || "").toLowerCase())).reduce((sum, o) => sum + o.total, 0),
     [dashOrders]
   );
 
