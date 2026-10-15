@@ -156,6 +156,8 @@ export async function createMayarInvoice(input: {
   description: string;
   orderNumber: string;
   expiresAt?: string;
+  /** Deskripsi baris item di invoice/email Mayar (mis. "SMQ-… — Thobe Superblack (Uk. M) x1"). */
+  itemLabel?: string;
 }): Promise<MayarResult<MayarInvoiceData>> {
   const amount = Math.round(Number(input.amount) || 0);
   if (amount <= 0) return { ok: false, error: "Nominal invoice harus lebih dari 0." };
@@ -166,7 +168,9 @@ export async function createMayarInvoice(input: {
     mobile: input.mobile,
     description: input.description,
     ...(input.expiresAt ? { expiredAt: input.expiresAt } : {}),
-    items: [{ quantity: 1, rate: amount, description: input.description }],
+    // Satu baris item dengan `rate` = total pesanan (nominal invoice tidak boleh meleset):
+    // nama produk ditempel di deskripsi barisnya supaya ikut tampil di email invoice Mayar.
+    items: [{ quantity: 1, rate: amount, description: input.itemLabel || input.description }],
     extraData: { orderNumber: input.orderNumber, source: "samaqu" },
   };
 
@@ -202,6 +206,23 @@ export function mayarPlaceholderEmail(orderNumber: string): string {
 const INVOICE_TTL_MS = 24 * 60 * 60 * 1000;
 
 /**
+ * Keterangan baris item invoice Mayar: nomor pesanan + daftar produk, mis.
+ * `SMQ-20261015-144 — Thobe Superblack (Uk. M) x1, Extra Cover & Hanger x1`.
+ *
+ * Nominal invoice tetap memakai total pesanan (satu baris item), jadi nama produk hanya menempel
+ * di keterangan — tidak ada risiko total invoice meleset.
+ */
+export function mayarItemLabel(
+  orderNumber: string,
+  items?: { label: string; quantity: number }[]
+): string {
+  const list = (items ?? [])
+    .filter((item) => (item?.label || "").trim())
+    .map((item) => `${item.label.trim()} x${item.quantity || 1}`);
+  return list.length ? `${orderNumber} — ${list.join(", ")}` : orderNumber;
+}
+
+/**
  * Buat invoice Mayar untuk sebuah pesanan LALU simpan linknya ke kolom pembayaran pesanan.
  *
  * Dipanggil dari server saat checkout (website & Open Order) supaya pelanggan **tamu** (tanpa sesi)
@@ -218,6 +239,8 @@ export async function createOrderPaymentLink(input: {
   customerEmail?: string | null;
   customerWhatsapp?: string | null;
   total: number;
+  /** Produk yang dipesan — dipakai hanya untuk keterangan baris item di invoice Mayar. */
+  items?: { label: string; quantity: number }[];
 }): Promise<string | null> {
   try {
     const config = await getMayarConfig();
@@ -232,6 +255,7 @@ export async function createOrderPaymentLink(input: {
       mobile: input.customerWhatsapp || "08000000000",
       amount,
       description: `SAMAQU ${input.orderNumber}`,
+      itemLabel: mayarItemLabel(input.orderNumber, input.items),
       orderNumber: input.orderNumber,
       expiresAt: new Date(Date.now() + INVOICE_TTL_MS).toISOString(),
     });

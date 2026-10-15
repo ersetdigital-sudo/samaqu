@@ -352,6 +352,10 @@ export async function POST(request: NextRequest) {
         customerEmail: customer.email || null,
         customerWhatsapp: customer.whatsapp,
         total,
+        items: validatedItems.map((item) => ({
+          label: `${item.name}${item.size ? ` (Uk. ${item.size})` : ""}`,
+          quantity: item.quantity || 1,
+        })),
       });
     }
 
