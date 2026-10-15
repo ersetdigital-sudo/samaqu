@@ -3,16 +3,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { getCurrentCustomer, getCustomerOrders } from "@/lib/customer-auth";
-import { useSafeLocale } from "@/lib/safe-i18n";
+import { useSafeLocale, useSafeTranslations } from "@/lib/safe-i18n";
 import { strukStatus } from "@/lib/akun-format";
 import type { TrackHistoryItem } from "@/lib/jnt/types";
-import {
-  formatTrackingTime,
-  sortHistoryDesc,
-  TRACK_SUMMARY_TONE,
-  trackingRow,
-  trackingSummary,
-} from "@/lib/jnt/track-status";
+import { formatTrackingTime, sortHistoryDesc, trackingRow, trackingSummary } from "@/lib/jnt/track-status";
 import { STRUK_CSS, StrukHeader, StrukTitle } from "@/components/akun/StrukShell";
 
 interface Order {
@@ -28,25 +22,24 @@ interface TrackDetail {
   services_code?: string;
   qty?: number;
   weight?: number;
-  itemname?: string;
-  shipped_date?: string;
   receiver?: { city?: string };
 }
 
 interface TrackPayload {
   awb?: string;
-  orderid?: string;
   detail?: TrackDetail;
   history?: TrackHistoryItem[];
-  /** true = data lama dari database karena J&T tidak bisa dihubungi. */
+  /** Kapan data diambil dari J&T (ISO). */
+  fetchedAt?: string;
+  /** true = data tersimpan karena J&T tidak bisa dihubungi. */
   stale?: boolean;
-  updatedAt?: string | null;
 }
 
 export default function LacakPage() {
   const params = useParams();
   const orderNo = decodeURIComponent(String(params.orderNo));
   const locale = useSafeLocale();
+  const t = useSafeTranslations("tracking");
   const [order, setOrder] = useState<Order | null>(null);
   const [payload, setPayload] = useState<TrackPayload | null>(null);
   const [loading, setLoading] = useState(true);
@@ -65,13 +58,11 @@ export default function LacakPage() {
       const res = await fetch(`/api/jnt/track?awb=${encodeURIComponent(resi)}${refresh ? "&refresh=1" : ""}`);
       const json = await res.json();
       if (json?.success && json?.data) setPayload(json.data as TrackPayload);
-      else setTrackError(json?.error || "Data pelacakan J&T belum bisa diambil.");
+      else setTrackError(json?.error || t("empty"));
     } catch {
-      setTrackError("Tidak bisa menghubungi layanan J&T. Coba lagi sebentar lagi.");
-    } finally {
-      setTracking(false);
+      setTrackError(t("error"));
     }
-  }, [resi]);
+  }, [resi, t]);
 
   useEffect(() => {
     async function init() {
@@ -108,16 +99,14 @@ export default function LacakPage() {
     }
   }
 
-  const tone = summary ? TRACK_SUMMARY_TONE[summary.key] : null;
-
   return (
     <div className="sk-root -mx-4 -mt-4 md:mx-0 md:mt-0">
       <style>{STRUK_CSS}</style>
-      <StrukHeader title="Lacak Pesanan" back={`/akun/pesanan/${orderNo}`} />
+      <StrukHeader title={t("history")} back={`/akun/pesanan/${orderNo}`} />
 
       <div className="sk-wrap sk-body">
         <StrukTitle
-          title="Lacak Pesanan"
+          title={t("history")}
           back={`/${locale}/akun/pesanan/${orderNo}`}
           backLabel="Detail Pesanan"
         />
@@ -192,7 +181,7 @@ export default function LacakPage() {
 
           <section className="sk-card sk-pay sk-up sk-d3">
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <h3 style={{ margin: 0 }}>Riwayat Pengiriman</h3>
+              <h3 style={{ margin: 0 }}>{t("history")}</h3>
               <button
                 type="button"
                 onClick={() => loadTrack(true)}
@@ -200,30 +189,33 @@ export default function LacakPage() {
                 className="sk-bk"
                 style={{ width: "auto", marginLeft: "auto", padding: "0 12px", height: 32, fontSize: 12, fontWeight: 700 }}
               >
-                {tracking ? "Memuat…" : "Perbarui"}
+                {tracking ? t("loading") : t("refresh")}
               </button>
             </div>
 
-            {/* Ringkasan: status terkini + pembaruan terakhir + total waktu perjalanan. */}
+            {/* Ringkasan — semuanya diambil langsung dari event J&T (tanpa teks buatan). */}
             {summary ? (
-              <div style={{ marginTop: 12 }}>
-                <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
-                  <span
-                    className="sk-chip"
-                    style={{ position: "static", background: tone?.bg, color: tone?.color, border: `1px solid ${tone?.border}` }}
-                  >
-                    <span className="sk-dot" style={{ background: tone?.color }} />
-                    {summary.label}
-                  </span>
-                  {summary.updatedAt ? (
-                    <span style={{ fontSize: 12, color: "#666666" }}>
-                      Diperbarui {formatTrackingTime(summary.updatedAt)}
-                    </span>
-                  ) : null}
-                </div>
+              <div style={{ marginTop: 12, display: "grid", gap: 4 }}>
+                <p style={{ fontSize: 12.5, margin: 0 }}>
+                  <span style={{ color: "#666666" }}>{t("statusNow")}: </span>
+                  <b style={{ color: "#1a1a1a" }}>{summary.status}</b>
+                </p>
+                {summary.note ? (
+                  <p style={{ fontSize: 12.5, margin: 0, color: "#666666" }}>
+                    {t("note")}: <span style={{ color: "#1a1a1a" }}>{summary.note}</span>
+                  </p>
+                ) : null}
+                <p style={{ fontSize: 12.5, margin: 0, color: "#666666" }}>
+                  {t("updatedAt")}: <span style={{ color: "#1a1a1a" }}>{formatTrackingTime(summary.updatedAt)}</span>
+                </p>
                 {summary.elapsedLabel ? (
-                  <p style={{ fontSize: 12, color: "#666666", marginTop: 6 }}>
-                    Total waktu perjalanan: <b style={{ color: "#1a1a1a" }}>{summary.elapsedLabel}</b>
+                  <p style={{ fontSize: 12.5, margin: 0, color: "#666666" }}>
+                    {t("duration")}: <span style={{ color: "#1a1a1a" }}>{summary.elapsedLabel}</span>
+                  </p>
+                ) : null}
+                {payload?.fetchedAt ? (
+                  <p style={{ fontSize: 12.5, margin: 0, color: "#666666" }}>
+                    {t("fetchedAt")}: <span style={{ color: "#1a1a1a" }}>{formatTrackingTime(payload.fetchedAt)}</span>
                   </p>
                 ) : null}
               </div>
@@ -232,8 +224,7 @@ export default function LacakPage() {
             {payload?.stale ? (
               <div className="sk-hint" style={{ marginTop: 12 }}>
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="9" /><path d="M12 8v5M12 16h.01" /></svg>
-                Menampilkan data terakhir yang tersimpan
-                {payload.updatedAt ? ` (${formatTrackingTime(payload.updatedAt)})` : ""} — J&amp;T belum bisa dihubungi.
+                {t("stale")}
               </div>
             ) : null}
 
@@ -257,20 +248,19 @@ export default function LacakPage() {
             ) : updates.length > 0 ? (
               <div className="sk-steps">
                 {updates.map((item, i) => {
-                  // Keterangan memakai teks ASLI J&T (tanpa label karangan); status tertunda
-                  // ditampilkan sebagai "Tertunda" + alasan yang sudah disaring untuk customer.
-                  const row = trackingRow(item, "customer");
+                  // Teks status & catatan ditampilkan APA ADANYA dari J&T.
+                  const row = trackingRow(item);
                   return (
                     <div key={`${row.dateTime}-${i}`} className={`sk-step ${i === 0 ? "is-active" : "is-done"}`}>
                       <div className="sk-rail">
-                        <span className="sk-node" />
+                        <span className="sk-node" style={row.warning ? { background: "#d97706" } : undefined} />
                         {i < updates.length - 1 ? <span className="sk-line" /> : null}
                       </div>
                       <div className="sk-txt">
-                        <b style={row.pending ? { color: "#b45309" } : undefined}>{row.title}</b>
+                        <b style={row.warning ? { color: "#b45309" } : undefined}>{row.status}</b>
                         <i>{[row.location, formatTrackingTime(row.dateTime)].filter(Boolean).join(" • ")}</i>
                         {row.note ? (
-                          <i style={{ display: "block", marginTop: 2, color: row.pending ? "#b45309" : undefined }}>{row.note}</i>
+                          <i style={{ display: "block", marginTop: 2 }}>{t("note")}: {row.note}</i>
                         ) : null}
                       </div>
                     </div>
@@ -279,9 +269,7 @@ export default function LacakPage() {
               </div>
             ) : (
               <div className="sk-note" style={{ margin: 0, marginTop: 12 }}>
-                {awb
-                  ? "Belum ada update dari J&T. Riwayat muncul setelah kurir memindai paket."
-                  : "Nomor resi belum tersedia. Kami kabari begitu paket diserahkan ke J&T."}
+                {awb ? t("noUpdate") : t("noResi")}
               </div>
             )}
           </section>
