@@ -19,6 +19,23 @@ function extFor(type: string): string {
   return "jpg";
 }
 
+/**
+ * Bucket belum tentu sudah dibuat di project Supabase (file migrasi bisa saja
+ * belum dijalankan), jadi kalau upload gagal karena "Bucket not found", bucket
+ * publik dibuat dulu lewat service role lalu upload diulang. Idempoten: aman
+ * dipanggil berkali-kali.
+ */
+async function ensureBucket(supabase: ReturnType<typeof getSupabaseAdmin>): Promise<void> {
+  const { error } = await supabase.storage.createBucket(BUCKET, { public: true });
+  if (
+    error &&
+    !/already exists|duplicate/i.test(error.message) &&
+    error.name !== "BucketAlreadyExists"
+  ) {
+    throw new Error(`Gagal membuat bucket: ${error.message}`);
+  }
+}
+
 export async function POST(req: NextRequest) {
   if (!(await isOpsAdmin(req))) return unauthorized();
 
@@ -44,11 +61,22 @@ export async function POST(req: NextRequest) {
   const path = `slot/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${extFor(file.type)}`;
   const bytes = new Uint8Array(await file.arrayBuffer());
 
-  const { error } = await supabase.storage.from(BUCKET).upload(path, bytes, {
+  const opts = {
     contentType: file.type,
     cacheControl: "31536000",
     upsert: false,
-  });
+  };
+
+  let { error } = await supabase.storage.from(BUCKET).upload(path, bytes, opts);
+
+  if (error && /bucket not found|no such bucket|does not exist/i.test(error.message)) {
+    try {
+      await ensureBucket(supabase);
+      ({ error } = await supabase.storage.from(BUCKET).upload(path, bytes, opts));
+    } catch (e) {
+      console.error("[instagram-photos] buat bucket gagal:", e instanceof Error ? e.message : e);
+    }
+  }
 
   if (error) {
     console.error("[instagram-photos] upload error:", error.message);
