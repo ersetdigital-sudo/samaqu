@@ -93,6 +93,11 @@ declare module "lucide-react" {
   export const Target: FC<IconProps>;
   export const Moon: FC<IconProps>;
   export const Sun: FC<IconProps>;
+  // Menu admin "Kelola Foto Instagram" + pengelola foto Instagram
+  export const Camera: FC<IconProps>;
+  export const ArrowDown: FC<IconProps>;
+  export const ArrowUp: FC<IconProps>;
+  export const ExternalLink: FC<IconProps>;
   // Nav bawah mobile + menu admin "Open Order"
   export const AlertTriangle: FC<IconProps>;
   export const LayoutGrid: FC<IconProps>;

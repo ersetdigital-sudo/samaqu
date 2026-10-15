@@ -17,6 +17,8 @@ const nextConfig: NextConfig = {
     formats: ["image/avif", "image/webp"],
     remotePatterns: [
       { protocol: "https", hostname: "res.cloudinary.com" },
+      // Foto Instagram disimpan di Supabase Storage (URL publik *.supabase.co).
+      { protocol: "https", hostname: "**.supabase.co" },
     ],
   },
   experimental: {

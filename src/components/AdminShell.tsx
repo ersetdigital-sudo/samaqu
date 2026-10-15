@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, ShoppingBag, Package, Users, FileText, Settings,
   Search, Bell, Menu, LogOut, X, Ticket, Ruler, Image, Shirt, ChevronDown,
-  MessageCircle, Star,
+  MessageCircle, Star, Camera,
 } from "lucide-react";
 import { ADMIN_SHELL_CSS } from "@/components/admin/admin-theme";
 
@@ -34,6 +34,7 @@ const navGroups = [
       { href: "/admin/konten-website", label: "Konten Website", icon: FileText },
       { href: "/admin/biolink", label: "Biolink", icon: FileText },
       { href: "/admin/bio-carousel", label: "Foto Carousel", icon: Image },
+      { href: "/admin/instagram", label: "Kelola Foto Instagram", icon: Camera },
       { href: "/admin/testimoni", label: "Testimoni", icon: Star },
       { href: "/admin/ukuran-produk", label: "Panduan Ukuran", icon: Ruler },
       { href: "/admin/garansi-retur-page", label: "Halaman Garansi & Retur", icon: FileText },

@@ -7,7 +7,7 @@ import { getThumbnailFromImages } from "@/lib/product-thumbnail";
 import {
   LayoutDashboard, ShoppingBag, Package, Users, FileText, Settings,
   Search, Bell, Menu, X, ChevronDown, Plus, TrendingUp, Eye, Edit,
-  DollarSign, ShoppingCart, UserPlus, Box, LogOut, Lock, Mail, Trash2, Ticket, Star, Ruler, Image, Shirt, MessageCircle,
+  DollarSign, ShoppingCart, UserPlus, Box, LogOut, Lock, Mail, Trash2, Ticket, Star, Ruler, Image, Shirt, MessageCircle, Camera,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { supabase } from "@/lib/supabase";
@@ -121,6 +121,7 @@ const navGroups: { title: string; items: NavItem[] }[] = [
       { label: "Konten Website", icon: FileText, panel: "content" },
       { label: "Biolink", icon: FileText, href: "/admin/biolink" },
       { label: "Foto Carousel", icon: Image, href: "/admin/bio-carousel" },
+      { label: "Kelola Foto Instagram", icon: Camera, href: "/admin/instagram" },
       { label: "Testimoni", icon: Star, href: "/admin/testimoni" },
       { label: "Panduan Ukuran", icon: Ruler, href: "/admin/ukuran-produk" },
       { label: "Halaman Garansi & Retur", icon: FileText, href: "/admin/garansi-retur-page" },
