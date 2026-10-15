@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { supabase } from "@/lib/supabase";
 import { getCurrentCustomer, getCustomerOrders } from "@/lib/customer-auth";
+import { resolveItemPhotos } from "@/lib/order-photo";
+import { itemProductIds, loadOrderPhotoLookup } from "@/lib/order-photo-data";
 import { getWhatsAppLink } from "@/lib/store-settings";
 import { SITE_URL } from "@/lib/site-config";
 import type { Product } from "@/lib/katalog-data";
@@ -13,6 +15,7 @@ import { Search, Bell, Package } from "lucide-react";
 import ProfileDropdown from "@/components/ProfileDropdown";
 
 interface OrderItem {
+  product_id?: string | null;
   product_name: string;
   color: string;
   size: string;
@@ -28,6 +31,17 @@ interface Order {
   status: string;
   created_at: string;
   order_items: OrderItem[];
+}
+
+/**
+ * Foto item pesanan: snapshot di baris pesanan dipakai lebih dulu; kalau kosong diambil dari
+ * katalog lewat fungsi pusat `src/lib/order-photo.ts` (sumber yang sama dengan dashboard admin).
+ */
+async function resolveOrderPhotos(list: Order[]): Promise<Order[]> {
+  const lookup = await loadOrderPhotoLookup(
+    itemProductIds(list.flatMap((order) => order.order_items || []))
+  );
+  return list.map((order) => ({ ...order, order_items: resolveItemPhotos(order.order_items || [], lookup) }));
 }
 
 interface CustomerData {
@@ -63,7 +77,7 @@ export default function DashboardPage() {
         supabase.from("customer_featured_products").select("product_id, products(id, name, category, price, image)").order("display_order").limit(8),
         supabase.from("wishlists").select("product_id").eq("customer_id", c.id),
       ]);
-      setOrders(ordersData as Order[]);
+      setOrders(await resolveOrderPhotos(ordersData as Order[]));
       if (featuredData.data) {
         const fp = featuredData.data.map((r: any) => r.products).filter(Boolean) as Product[];
         setFeaturedProducts(fp);
@@ -262,7 +276,7 @@ export default function DashboardPage() {
                       <div key={order.id} className="flex items-center gap-4 p-4 sm:p-5" style={{ borderBottom: i < Math.min(orders.length, 5) - 1 ? "1px solid rgba(0,0,0,.09)" : undefined }}>
                         <div className="h-14 w-14 rounded-xl overflow-hidden shrink-0" style={{ background: "var(--bg-tertiary, #E2E2E2)" }}>
                           {item?.product_image ? (
-                            <img src={item.product_image} alt={item.product_name} className="h-full w-full object-cover" />
+                            <img src={item.product_image} alt={item.product_name} className="h-full w-full object-cover" loading="lazy" decoding="async" />
                           ) : (
                             <div className="h-full w-full flex items-center justify-center"><Package size={20} style={{ color: "var(--text-muted)" }} /></div>
                           )}

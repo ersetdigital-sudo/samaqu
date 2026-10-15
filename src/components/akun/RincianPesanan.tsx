@@ -17,6 +17,7 @@ import { supabase } from "@/lib/supabase";
 import ConfirmModal from "@/components/ConfirmModal";
 import type { TrackHistoryItem } from "@/lib/jnt/types";
 import { formatTrackingTime, sortHistoryDesc, trackingRow } from "@/lib/jnt/track-status";
+import { NEUTRAL_ITEM_PHOTO } from "@/lib/order-photo";
 
 export interface RincianOrderItem {
   product_id?: string | null;
@@ -58,12 +59,6 @@ export interface RincianOrder {
   payment_status?: string | null;
   paid_at?: string | null;
 }
-
-/** Foto cadangan kalau baris pesanan tidak punya gambar dan katalog tidak ketemu.
-    Dipakai juga oleh OrderDetailContent (modal detail pesanan admin) — jangan diganti
-    tanpa memikirkan kedua tempat. */
-export const FALLBACK_PHOTO =
-  "https://media.base44.com/images/public/6ac9c2148b24683dd1215a67/1c559b304_generated_5f8be940.jpg";
 
 /**
  * Gaya halaman rincian pesanan: kartu putih di atas latar abu terang, mengikuti
@@ -465,7 +460,7 @@ export default function RincianPesanan({ order }: { order: RincianOrder }) {
           {items.map((item, i) => (
             <div key={`${item.product_name}-${i}`} className="rp-it">
               <div className="rp-thumb">
-                <img src={item.product_image || FALLBACK_PHOTO} alt={item.product_name} />
+                <img src={item.product_image || NEUTRAL_ITEM_PHOTO} alt={item.product_name} loading="lazy" decoding="async" />
               </div>
               <div style={{ minWidth: 0, flex: 1 }}>
                 <p className="rp-nm">{item.product_name}</p>

@@ -115,13 +115,29 @@ export function formatTrackingTime(value?: string | null): string {
   return `${day} ${month} ${year}, ${hh}:${mm}`;
 }
 
-/** Durasi perjalanan seperti VIP J&T, mis. "0 hari 10,9 jam". */
-export function formatTrackingDuration(ms: number): string {
-  const totalHours = ms / 3_600_000;
-  const days = Math.floor(totalHours / 24);
-  const hours = totalHours - days * 24;
-  const h = hours.toLocaleString("id-ID", { maximumFractionDigits: 1 });
-  return `${days} hari ${h} jam`;
+/**
+ * Ringkasan status pengiriman untuk ditampilkan di atas riwayat — tiga nilai saja, semuanya
+ * diambil dari event J&T TERBARU (bukan teks buatan kita).
+ */
+export interface TrackingSummary {
+  /** Teks `status` event terbaru, persis dari J&T. */
+  status: string;
+  /** `note` event terbaru (persis), null bila kosong. */
+  note: string | null;
+  /** `date_time` event terbaru — mengikuti timestamp dari sumber API. */
+  updatedAt: string | null;
+}
+
+export function trackingSummary(history: TrackHistoryItem[] | null | undefined): TrackingSummary | null {
+  const desc = sortHistoryDesc(history);
+  if (desc.length === 0) return null;
+
+  const latest = desc[0];
+  return {
+    status: String(latest?.status ?? "").trim(),
+    note: String(latest?.note ?? "").trim() || null,
+    updatedAt: latest?.date_time ?? null,
+  };
 }
 
 /** Riwayat terbaru di atas — diurut dari `date_time` asli J&T. */
@@ -131,44 +147,6 @@ export function sortHistoryDesc(history: TrackHistoryItem[] | null | undefined):
     const tb = parseJntTime(b?.date_time)?.getTime() ?? 0;
     return tb - ta;
   });
-}
-
-/** Ringkasan di atas riwayat — semuanya diambil dari event J&T, tanpa teks buatan. */
-export interface TrackingSummary {
-  /** Teks `status` event terbaru, persis dari J&T. */
-  status: string;
-  /** `note` event terbaru (persis), null bila kosong. */
-  note: string | null;
-  /** `date_time` event terbaru. */
-  updatedAt: string | null;
-  /** Total waktu perjalanan: event pertama SETELAH Manifes → event terbaru. */
-  elapsedMs: number | null;
-  elapsedLabel: string | null;
-}
-
-export function trackingSummary(history: TrackHistoryItem[] | null | undefined): TrackingSummary | null {
-  const desc = sortHistoryDesc(history);
-  if (desc.length === 0) return null;
-
-  const latest = desc[0];
-  // Hitungan durasi mengikuti VIP J&T: mulai dari pemindaian nyata pertama (Manifes dikecualikan).
-  const real = desc.filter((h) => Number(h?.status_code) !== JNT_MANIFEST_CODE);
-  let elapsedMs: number | null = null;
-  if (real.length >= 2) {
-    const newest = parseJntTime(real[0]?.date_time)?.getTime();
-    const oldest = parseJntTime(real[real.length - 1]?.date_time)?.getTime();
-    if (typeof newest === "number" && typeof oldest === "number" && newest > oldest) {
-      elapsedMs = newest - oldest;
-    }
-  }
-
-  return {
-    status: String(latest?.status ?? "").trim(),
-    note: String(latest?.note ?? "").trim() || null,
-    updatedAt: latest?.date_time ?? null,
-    elapsedMs,
-    elapsedLabel: elapsedMs != null ? formatTrackingDuration(elapsedMs) : null,
-  };
 }
 
 /**
