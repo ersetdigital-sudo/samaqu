@@ -1,5 +1,6 @@
 import { supabase } from "./supabase";
 import type { Product, JenisKain } from "./katalog-data";
+import { pickRelatedProducts } from "./related-products";
 
 export interface DbProduct {
   id: string;
@@ -240,6 +241,68 @@ export async function getCatalogProductById(id: string): Promise<Product | null>
   }
 
   return product;
+}
+
+/**
+ * Rekomendasi "Produk lain dari kain ini" untuk halaman detail produk customer.
+ * Hanya produk `is_published = true`; pemilihan warna/jenis kain dilakukan oleh
+ * `pickRelatedProducts` (satu sumber aturan, dipakai semua halaman produk).
+ *
+ * Sengaja fungsi terpisah dari `getProducts()` / `getProductById()` yang tidak
+ * boleh disentuh (dipakai riwayat pesanan & checkout).
+ */
+export async function getRelatedProducts(current: Product, limit = 4): Promise<Product[]> {
+  if (!current) return [];
+  try {
+    const { data, error } = await supabase
+      .from("products")
+      .select("*, jenis_kain(*)")
+      .eq("is_published", true)
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      console.error("[getRelatedProducts] Supabase error:", error.message, error);
+      return [];
+    }
+    if (!data) return [];
+
+    const pool = (data as DbProduct[]).map(dbProductToProduct);
+    const picked = pickRelatedProducts(current, pool, limit);
+    if (picked.length === 0) return [];
+
+    // Foto kartu = foto utama produk terpilih (`product_images`, display_order menaik).
+    const ids = picked.map((p) => p.id);
+    const { data: imageRows, error: imageError } = await supabase
+      .from("product_images")
+      .select("product_id, url, is_video, display_order")
+      .in("product_id", ids)
+      .order("display_order");
+
+    if (imageError) {
+      console.error("[getRelatedProducts] Gagal ambil product_images:", imageError.message);
+    } else if (imageRows && imageRows.length > 0) {
+      const mediaByProduct = new Map<string, { src: string; type: "image" | "video" }[]>();
+      for (const row of imageRows as { product_id: string; url: string; is_video: boolean | null }[]) {
+        if (!row.url) continue;
+        const list = mediaByProduct.get(row.product_id) ?? [];
+        list.push({ src: row.url, type: row.is_video ? "video" : "image" });
+        mediaByProduct.set(row.product_id, list);
+      }
+      for (const product of picked) {
+        const media = mediaByProduct.get(product.id);
+        if (media && media.length > 0) {
+          product.media = media;
+          product.images = media.map((m) => m.src);
+          product.image = media.find((m) => m.type === "image")?.src || media[0].src;
+        }
+      }
+    }
+
+    return picked;
+  } catch (err) {
+    console.error("[getRelatedProducts] Unexpected error:", err);
+    return [];
+  }
 }
 
 export async function getTestimonials(category?: string, type?: string) {
