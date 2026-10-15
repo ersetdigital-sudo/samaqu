@@ -36,6 +36,12 @@ export type DirectoryCustomer = {
   lastOrderAt: string | null;
   /** Kota unik dari alamat pesanan (untuk filter Kota). */
   cities: string[];
+  /**
+   * Punya alamat pengiriman (dari salah satu pesanannya, termasuk yang dibatalkan).
+   * Pelanggan tanpa alamat tidak ditampilkan di daftar Pelanggan supaya admin di menu
+   * Transaksi langsung bisa memakai alamat yang sudah ada.
+   */
+  hasAddress: boolean;
 };
 
 /* ── Agregasi (server) ── */
@@ -106,6 +112,7 @@ export async function buildCustomerDirectory(admin: SupabaseClient): Promise<Dir
       totalSpend: 0,
       lastOrderAt: null,
       cities: [],
+      hasAddress: false,
     });
     const n = norm(c.name);
     if (n && !idByName.has(n)) idByName.set(n, c.id);
@@ -134,6 +141,7 @@ export async function buildCustomerDirectory(admin: SupabaseClient): Promise<Dir
           totalSpend: 0,
           lastOrderAt: null,
           cities: [],
+          hasAddress: false,
         });
       }
     }
@@ -153,6 +161,11 @@ export async function buildCustomerDirectory(admin: SupabaseClient): Promise<Dir
     if (!agg.whatsapp && o.customer_whatsapp) agg.whatsapp = o.customer_whatsapp;
     if (!agg.lastOrderAt || o.created_at > agg.lastOrderAt) agg.lastOrderAt = o.created_at;
 
+    // "Punya alamat" = ada pesanan dengan alamat jalan yang benar-benar terisi. Pesanan
+    // dibatalkan TETAP dihitung, jadi pelanggan lama tidak hilang dari daftar.
+    const street = String(o.shipping_address || "").trim();
+    if (street && street !== "-") agg.hasAddress = true;
+
     const city = (o.shipping_city || "").trim();
     if (city) {
       if (!citySets.has(key)) citySets.set(key, new Set());
@@ -169,6 +182,15 @@ export async function buildCustomerDirectory(admin: SupabaseClient): Promise<Dir
 }
 
 /* ── Filter & sort (murni, bisa di klien) ── */
+
+/**
+ * Daftar pelanggan yang ditampilkan = yang sudah punya alamat pengiriman.
+ * Pelanggan tanpa alamat (mis. akun terdaftar yang belum pernah pesan) disembunyikan
+ * supaya menu Pelanggan & pilihan pelanggan di menu Transaksi tetap rapi.
+ */
+export function withAddress(list: DirectoryCustomer[]): DirectoryCustomer[] {
+  return (list || []).filter((customer) => customer.hasAddress !== false);
+}
 
 export type AccountFilter = "all" | "registered" | "guest";
 export type PeriodFilter = "all" | "30" | "90" | "365";

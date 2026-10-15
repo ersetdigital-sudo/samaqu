@@ -11,6 +11,7 @@ import {
   distinctCities,
   filterCustomers,
   sortCustomers,
+  withAddress,
   type AccountFilter,
   type CustomerSort,
   type DirectoryCustomer,
@@ -145,11 +146,15 @@ export default function CustomerDirectoryView({
   const [selected, setSelected] = useState<DirectoryCustomer | null>(null);
 
   const currentMonth = new Date().getMonth() + 1;
-  const cities = useMemo(() => distinctCities(customers), [customers]);
+
+  // Yang ditampilkan hanya pelanggan yang sudah punya alamat pengiriman (lihat `withAddress`).
+  const withAddressList = useMemo(() => withAddress(customers), [customers]);
+  const hiddenCount = customers.length - withAddressList.length;
+  const cities = useMemo(() => distinctCities(withAddressList), [withAddressList]);
 
   const visible = useMemo(
-    () => sortCustomers(filterCustomers(customers, { query, account, period, city, birthdayThisMonth: birthday }), sort),
-    [customers, query, account, period, city, birthday, sort]
+    () => sortCustomers(filterCustomers(withAddressList, { query, account, period, city, birthdayThisMonth: birthday }), sort),
+    [withAddressList, query, account, period, city, birthday, sort]
   );
 
   if (loading) {
@@ -218,14 +223,17 @@ export default function CustomerDirectoryView({
         </div>
 
         <p className="text-xs mt-3 text-slate-500 dark:text-slate-400">
-          Menampilkan <b className="text-slate-700 dark:text-slate-200">{visible.length}</b> dari {customers.length} pelanggan
+          Menampilkan <b className="text-slate-700 dark:text-slate-200">{visible.length}</b> dari {withAddressList.length} pelanggan
+          {hiddenCount > 0 ? (
+            <span className="text-slate-400 dark:text-slate-500"> · {hiddenCount} pelanggan tanpa alamat disembunyikan</span>
+          ) : null}
         </p>
       </div>
 
       {/* Daftar */}
       {visible.length === 0 ? (
         <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-[#1a1d28] dark:text-slate-400">
-          {customers.length === 0 ? emptyText : "Tidak ada pelanggan yang cocok"}
+          {withAddressList.length === 0 ? emptyText : "Tidak ada pelanggan yang cocok"}
         </div>
       ) : (
         <div className="space-y-3">
