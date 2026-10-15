@@ -1,5 +1,7 @@
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { cancelOrder } from "@/lib/jnt";
+import { notifyAdminOrderCancelled, notifyCustomerOrderCancelled } from "@/lib/fonnte";
+import { claimOrderNotification } from "@/lib/order-notify";
 
 /**
  * Satu jalur pembatalan pesanan untuk semua pemanggil: customer (`/api/orders/cancel`),
@@ -19,6 +21,9 @@ export interface CancelableOrder {
   jnt_order_id: string | null;
   /** Kolom `orders.stock_reserved` — true kalau pesanan ini sudah memotong stok. */
   stock_reserved?: boolean | null;
+  /** Dipakai notifikasi pembatalan (WhatsApp customer + admin). */
+  customer_name?: string | null;
+  customer_whatsapp?: string | null;
 }
 
 export type CancelOrderResult =
@@ -103,5 +108,26 @@ export async function cancelOrderCompletely(
   }
 
   console.log("[CANCEL] Order cancelled:", order.order_number);
+
+  // Notifikasi pembatalan: customer (token Fonnte Customer) dan admin (token Fonnte Admin)
+  // dikirim bersamaan dan saling terpisah. Klaim `cancelled_notified_at` memastikan hanya sekali
+  // per pesanan, dan kegagalan WhatsApp tidak pernah menggagalkan pembatalan yang sudah tersimpan.
+  // Refund tidak dijanjikan di pesan karena status dana tidak tersedia di data pesanan.
+  if (await claimOrderNotification(order.id, "cancelled")) {
+    await Promise.allSettled([
+      notifyCustomerOrderCancelled({
+        orderNumber: order.order_number,
+        customerName: order.customer_name || "",
+        customerWhatsapp: order.customer_whatsapp || "",
+        reason: remark,
+      }),
+      notifyAdminOrderCancelled({
+        orderNumber: order.order_number,
+        customerName: order.customer_name ?? null,
+        reason: remark,
+      }),
+    ]);
+  }
+
   return { success: true, voidedJnt: !!cancelId };
 }

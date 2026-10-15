@@ -105,3 +105,25 @@ export async function fetchPaymentMethodById(id: string): Promise<PaymentMethodR
     return null;
   }
 }
+
+/**
+ * true kalau pesanan ini memakai metode COD — pembayarannya saat paket diterima, jadi TIDAK
+ * boleh dikirimi permintaan transfer, "pembayaran diterima", atau reminder pembayaran.
+ * Tahan terhadap data lama (nilai 'cod' sebelum metode disimpan sebagai id).
+ */
+export async function isCodOrderPayment(value?: string | null): Promise<boolean> {
+  const legacy = legacyPaymentType(value);
+  if (legacy) return legacy === "cod";
+  if (!isPaymentMethodId(value)) return false;
+
+  const pm = await fetchPaymentMethodById(value as string);
+  return normalizeMethodType(pm?.method_type) === "cod";
+}
+
+/** Baris metode pembayaran sebuah pesanan (uuid baru); null untuk nilai lama/legacy. */
+export async function fetchOrderPaymentMethodRow(
+  value?: string | null
+): Promise<PaymentMethodRow | null> {
+  if (!isPaymentMethodId(value)) return null;
+  return fetchPaymentMethodById(value as string);
+}

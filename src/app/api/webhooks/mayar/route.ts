@@ -3,7 +3,7 @@ import { createHash, timingSafeEqual } from "node:crypto";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { getMayarConfig, getMayarInvoice, getMayarTransaction } from "@/lib/mayar";
 import { notifyCustomerOrderPaid } from "@/lib/fonnte";
-import { SITE_URL } from "@/lib/site-config";
+import { sendOnce } from "@/lib/order-notify";
 
 /**
  * POST /api/webhooks/mayar — notifikasi pembayaran dari Mayar.
@@ -75,12 +75,12 @@ export async function POST(request: NextRequest) {
     const supabaseAdmin = getSupabaseAdmin();
 
     // Cocokkan ke pesanan kita: utamakan nomor pesanan dari extraData, lalu id invoice/transaksi.
-    let order: { id: string; order_number: string; status: string; customer_name: string | null; customer_whatsapp: string | null; payment_ref: string | null; paid_at: string | null } | null = null;
+    let order: { id: string; order_number: string; status: string; customer_name: string | null; customer_whatsapp: string | null; payment_ref: string | null; paid_at: string | null; total: number | null } | null = null;
 
     if (extraOrder) {
       const { data: byNumber } = await supabaseAdmin
         .from("orders")
-        .select("id, order_number, status, customer_name, customer_whatsapp, payment_ref, paid_at")
+        .select("id, order_number, status, customer_name, customer_whatsapp, payment_ref, paid_at, total")
         .eq("order_number", extraOrder)
         .maybeSingle();
       order = byNumber ?? null;
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
       }
       const { data: rows } = await supabaseAdmin
         .from("orders")
-        .select("id, order_number, status, customer_name, customer_whatsapp, payment_ref, paid_at")
+        .select("id, order_number, status, customer_name, customer_whatsapp, payment_ref, paid_at, total")
         .in("payment_ref", ids)
         .limit(1);
       order = rows?.[0] ?? null;
@@ -125,30 +125,39 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ignored: true });
     }
 
-    // ── Tandai lunas + naikkan status (maju-saja: hanya dari `pending`) ──
+    // ── Tandai lunas (atomik: hanya proses pertama yang menang) ──
+    // `paid_at is null` di WHERE membuat dua webhook paralel tidak bisa dua-duanya lolos.
     const paidAt = new Date().toISOString();
     const patch: Record<string, unknown> = { payment_status: "paid", paid_at: paidAt };
     if (order.status === "pending") patch.status = "diproses";
-    const { error: updateError } = await supabaseAdmin.from("orders").update(patch).eq("id", order.id);
+    const { data: paidRows, error: updateError } = await supabaseAdmin
+      .from("orders")
+      .update(patch)
+      .eq("id", order.id)
+      .is("paid_at", null)
+      .select("id");
     if (updateError) {
       console.error("[MAYAR] Gagal menandai pesanan lunas:", order.order_number, updateError);
       return NextResponse.json({ error: "Gagal menyimpan status pembayaran" }, { status: 500 });
     }
+    if (!paidRows || paidRows.length === 0) {
+      // Proses lain (webhook ulang / admin) sudah menandai lunas lebih dulu.
+      return NextResponse.json({ success: true, alreadyPaid: true });
+    }
 
     console.log("[MAYAR] Pembayaran diterima:", order.order_number, refId);
 
-    // Kabari customer (best effort — gagal kirim tidak menggagalkan webhook).
+    // Kabari customer — klaim `paid_notified_at` memastikan pesan ini hanya terkirim sekali,
+    // dan kegagalan Fonnte tidak pernah menggagalkan webhook.
     if (order.customer_whatsapp) {
-      try {
-        await notifyCustomerOrderPaid({
+      await sendOnce(order.id, "paid", "WA pembayaran diterima (Mayar)", () =>
+        notifyCustomerOrderPaid({
           orderNumber: order.order_number,
           customerName: order.customer_name || "",
-          customerWhatsapp: order.customer_whatsapp,
-          orderUrl: `${SITE_URL}/akun/pesanan/${order.order_number}`,
-        });
-      } catch (e) {
-        console.error("[MAYAR] Gagal kirim notifikasi WA:", e);
-      }
+          customerWhatsapp: order.customer_whatsapp as string,
+          total: Number(order.total) || 0,
+        })
+      );
     }
 
     return NextResponse.json({ success: true, orderNumber: order.order_number });

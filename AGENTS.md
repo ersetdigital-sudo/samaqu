@@ -1217,3 +1217,42 @@ dashboards ops**; dan "order baru bikin lead". Keputusan user = **"tandai closin
   try/catch supaya tak menggagalkan order).
 - Diuji: filter/urut di dua dashboard (0 error konsol); `markLeadBoughtForOrder` — cocok+aktif →
   closing+buy+aktivitas; terminal / tak cocok / idempoten → tidak berubah.
+
+## Notifikasi WhatsApp (Fonnte) — dua jalur + anti-pesan-ganda (2026-10-15)
+
+Satu modul: `src/lib/fonnte.ts`. Dua jalur token TERPISAH di tabel `fonnte_settings` (satu baris):
+`customer_token` + `customer_number` untuk semua pesan ke pembeli, `admin_token` + `admin_number`
+untuk pesan internal. Diatur di Pengaturan → dua kartu ("Notifikasi WhatsApp — Customer" dan
+"— Admin"), masing-masing punya Simpan + Test Notifikasi. Token tidak pernah dikirim balik ke
+browser (hanya disamarkan); kolom lama `token` tetap jadi cadangan transisi, lalu environment
+`FONNTE_TOKEN`. Migrasi: `supabase/fonnte-settings-split.sql` + `supabase/order-notify-flags.sql`.
+
+Pesan & pemicunya (semua pesan ke customer TANPA emoji, sapaan "Ka"):
+
+| Pesan | Pemicu | Fungsi |
+|-------|--------|--------|
+| Pesanan dibuat | checkout website `/api/orders` & `/api/open-order`, SETELAH invoice Mayar dibuat | `notifyCustomerOrderCreated` |
+| Pembayaran diterima | webhook Mayar terverifikasi ATAU admin ubah status `pending`→`diproses` (bukan COD) | `notifyCustomerOrderPaid` |
+| Pesanan dikirim | scan pertama J&T (status → `dikirim`) | `notifyCustomerOrderShipped` |
+| Paket diterima | tracking J&T `delivered` (status → `selesai`) | `notifyCustomerOrderDelivered` |
+| Reminder bayar | cron `/api/cron/auto-cancel`, jendela 20–24 jam, sekali saja | `notifyCustomerPaymentReminder` |
+| Pesanan dibatalkan | `cancelOrderCompletely()` (admin / customer / auto-cancel) | `notifyCustomerOrderCancelled` + `notifyAdminOrderCancelled` |
+| Pesanan baru (admin) | checkout website & Open Order | `notifyAdminNewOrder` |
+
+Anti-pesan-ganda: satu kolom klaim per peristiwa di `orders` (`notify_created_at`,
+`paid_notified_at`, `shipped_notified_at`, `delivered_notified_at`, `reminded_at`,
+`cancelled_notified_at`). Pengiriman lewat `claimOrderNotification()` / `sendOnce()`
+(`src/lib/order-notify.ts`) — satu `UPDATE ... WHERE kolom IS NULL` di database, jadi webhook,
+cron, dan aksi admin yang berjalan bersamaan tetap mengirim satu kali. Klaim TIDAK dilepas kalau
+Fonnte gagal (lebih baik tidak terkirim daripada dobel): kegagalannya masuk log, dan
+`orders.shipped_notify_status` mencatat `sent`/`failed` untuk notifikasi resi.
+
+Jalur pembayaran manual (admin `pending`→`diproses`) ikut menulis `payment_status='paid'` +
+`paid_at` secara kondisional (`paid_at is null` di WHERE) — itulah penjaga agar webhook Mayar
+yang datang belakangan tidak menandai lunas dua kali. COD dilewati: tanpa instruksi transfer,
+tanpa "pembayaran diterima", tanpa reminder.
+
+Reminder ditempel di cron auto-cancel (bukan endpoint/penjadwal baru) karena jadwalnya sudah tiap
+jam; jendela 20–24 jam dipilih supaya reminder selalu keluar SEBELUM auto-cancel 24 jam. Link
+Mayar diperiksa ulang lewat `validMayarPaymentUrl()` (`src/lib/mayar.ts`) — kalau invoice sudah
+lunas atau kedaluwarsa, pesan TIDAK memuat link dan jatuh ke instruksi "hubungi admin".

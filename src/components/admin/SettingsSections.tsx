@@ -7,6 +7,7 @@ import { useToast } from "@/components/AdminToast";
 import PaymentMethodsManager from "@/components/admin/PaymentMethodsManager";
 import MayarSettingsForm from "@/components/admin/MayarSettingsForm";
 import { SettingsCard, Field } from "@/components/admin/SettingsCard";
+import { FonnteSections } from "@/components/admin/FonnteSettingsCards";
 
 /**
  * Seluruh isi panel "Pengaturan" dashboard admin (dulu ditulis inline di
@@ -25,7 +26,7 @@ export default function SettingsPanel() {
       <ApiKeySection />
       <SocialMediaSection />
       <MetaPixelSection />
-      <FonnteSection />
+      <FonnteSections />
       <PaymentMethodsManager />
       <MayarSettingsForm />
     </div>
@@ -795,192 +796,6 @@ function MetaPixelSection() {
         mono
         hint="Untuk testing di Meta Events Manager → Test Events. Kosongkan di production."
       />
-    </SettingsCard>
-  );
-}
-
-function FonnteSection() {
-  const [enabled, setEnabled] = useState(true);
-  const [adminNumber, setAdminNumber] = useState("");
-  const [token, setToken] = useState("");
-  const [showToken, setShowToken] = useState(false);
-  const [tokenPreview, setTokenPreview] = useState("");
-  const [tableReady, setTableReady] = useState(true);
-  const [envToken, setEnvToken] = useState(false);
-  const [envAdminNumber, setEnvAdminNumber] = useState("");
-  const [original, setOriginal] = useState({ enabled: true, adminNumber: "" });
-  const [editing, setEditing] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [testing, setTesting] = useState(false);
-  const toast = useToast();
-
-  // Pengaturan ini lewat API admin (bukan langsung ke Supabase) karena token disimpan di
-  // tabel `fonnte_settings` yang tanpa policy RLS — hanya service role yang boleh membacanya.
-  async function authHeaders() {
-    const { data: { session } } = await supabase.auth.getSession();
-    return { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token || ""}` };
-  }
-
-  async function load() {
-    const res = await fetch("/api/admin/fonnte-settings", { headers: await authHeaders() });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || "Gagal memuat pengaturan Fonnte");
-    setTableReady(json.tableReady !== false);
-    setEnabled(json.enabled !== false);
-    setAdminNumber(json.adminNumber || "");
-    setTokenPreview(json.tokenPreview || "");
-    setEnvToken(!!json.envToken);
-    setEnvAdminNumber(json.envAdminNumber || "");
-    setOriginal({ enabled: json.enabled !== false, adminNumber: json.adminNumber || "" });
-  }
-
-  useEffect(() => {
-    load()
-      .catch((e) => console.error("[ADMIN] Gagal memuat pengaturan Fonnte:", e))
-      .finally(() => setLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const dirty = enabled !== original.enabled || adminNumber !== original.adminNumber || !!token.trim();
-
-  async function handleSave() {
-    setSaving(true);
-    try {
-      const res = await fetch("/api/admin/fonnte-settings", {
-        method: "POST",
-        headers: await authHeaders(),
-        body: JSON.stringify({ enabled, adminNumber, token }),
-      });
-      const json = await res.json();
-      if (!res.ok || json.error) {
-        toast.showToast("error", json.error || "Gagal menyimpan pengaturan");
-        return;
-      }
-      toast.showToast("success", "Pengaturan notifikasi WhatsApp disimpan");
-      setToken("");
-      setShowToken(false);
-      setEditing(false);
-      await load();
-    } catch (e) {
-      console.error("[ADMIN] Gagal menyimpan pengaturan Fonnte:", e);
-      toast.showToast("error", "Gagal menyimpan pengaturan");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  function handleCancel() {
-    setEnabled(original.enabled);
-    setAdminNumber(original.adminNumber);
-    setToken("");
-    setShowToken(false);
-    setEditing(false);
-  }
-
-  async function handleTest() {
-    setTesting(true);
-    try {
-      const res = await fetch("/api/admin/fonnte-settings", {
-        method: "POST",
-        headers: await authHeaders(),
-        body: JSON.stringify({ action: "test", target: adminNumber }),
-      });
-      const json = await res.json();
-      if (json.ok) toast.showToast("success", `Pesan tes terkirim ke ${json.target}`);
-      else toast.showToast("error", json.error || "Gagal mengirim pesan tes");
-    } catch (e) {
-      console.error("[ADMIN] Gagal mengirim pesan tes:", e);
-      toast.showToast("error", "Gagal mengirim pesan tes");
-    } finally {
-      setTesting(false);
-    }
-  }
-
-  if (loading) return <div className="card p-6 max-w-2xl"><Loader2 size={20} className="animate-spin" style={{ color: "var(--gold)" }} /></div>;
-
-  const tokenLabel = tokenPreview || (envToken ? "(dari environment variable)" : "");
-
-  return (
-    <SettingsCard
-      title="Notifikasi WhatsApp (Fonnte)"
-      description="Kirim notifikasi otomatis ke admin setiap ada pesanan baru."
-      headerRight={
-        <span className="text-[11px] font-medium px-2.5 py-1 rounded-full shrink-0" style={{ background: enabled ? "#f4f4f5" : "#f1f1f3", color: enabled ? "#3f3f46" : "var(--text-muted)" }}>
-          {enabled ? "Aktif" : "Nonaktif"}
-        </span>
-      }
-      editing={editing}
-      onEdit={() => setEditing(true)}
-      onCancel={handleCancel}
-      onSave={handleSave}
-      saving={saving}
-      canSave={tableReady && dirty}
-      saveLabel="Simpan"
-    >
-      {!tableReady && (
-        <p className="text-[11px] rounded-xl px-3 py-2" style={{ background: "#fff7ed", color: "#9a3412" }}>
-          Tabel <code>fonnte_settings</code> belum dibuat. Jalankan <code>supabase/fonnte-settings.sql</code> di Supabase SQL Editor dulu.
-        </p>
-      )}
-
-      {editing && (
-        <div className="flex items-center gap-3">
-          <button onClick={() => setEnabled(!enabled)} className="relative w-11 h-6 rounded-full transition-colors duration-200" style={{ background: enabled ? "var(--gold)" : "#d4d4d8" }}>
-            <span className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200" style={{ transform: enabled ? "translateX(20px)" : "translateX(0)" }} />
-          </button>
-          <span className="text-sm" style={{ color: "var(--text-secondary)" }}>{enabled ? "Notifikasi aktif" : "Notifikasi dimatikan"}</span>
-        </div>
-      )}
-
-      <Field
-        label="Nomor Admin"
-        value={adminNumber}
-        editing={editing}
-        onChange={setAdminNumber}
-        placeholder="0812xxxxxxx"
-        hint={
-          envAdminNumber
-            ? `Boleh beberapa nomor dipisah koma. Kosong = pakai ${envAdminNumber} (env).`
-            : "Boleh beberapa nomor dipisah koma. Kosong = pakai nomor toko di Informasi Toko."
-        }
-      />
-
-      {editing ? (
-        <div>
-          <label className="block text-sm font-semibold" style={{ color: "var(--espresso)" }}>Token Fonnte</label>
-          <div className="relative mt-1.5">
-            <input
-              type={showToken ? "text" : "password"}
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
-              className="w-full rounded-xl px-4 py-2.5 pr-10 bg-white text-sm outline-none font-mono"
-              style={{ border: "1px solid #e4e4e7" }}
-              placeholder={tokenLabel ? "Masukkan token baru untuk mengganti" : "Masukkan token device Fonnte"}
-            />
-            <button type="button" onClick={() => setShowToken(!showToken)} className="absolute right-3 top-1/2 -translate-y-1/2 text-xs" style={{ color: "var(--text-muted)" }}>
-              {showToken ? "🙈" : "👁️"}
-            </button>
-          </div>
-          <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>
-            {tokenLabel ? `Token tersimpan saat ini: ${tokenLabel}` : "Belum ada token tersimpan."} Ambil di dashboard Fonnte → Device.
-          </p>
-        </div>
-      ) : (
-        <Field label="Token Fonnte" value={tokenLabel} editing={false} mono />
-      )}
-
-      <div className="pt-1">
-        <button
-          onClick={handleTest}
-          disabled={testing || !tableReady}
-          className="text-sm font-semibold px-4 py-2 rounded-xl disabled:opacity-40"
-          style={{ border: "1px solid #d4d4d8", color: "var(--espresso)" }}
-        >
-          {testing ? <Loader2 size={14} className="animate-spin inline mr-1.5" /> : null}
-          Kirim Pesan Tes
-        </button>
-      </div>
     </SettingsCard>
   );
 }

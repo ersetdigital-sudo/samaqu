@@ -5,7 +5,8 @@ import { trackShipment } from "@/lib/jnt/track";
 import { applyTrackingToOrder } from "@/lib/jnt/tracking-sync";
 import { cancelOrderCompletely } from "@/lib/cancel-order";
 import { notifyCustomerOrderPaid } from "@/lib/fonnte";
-import { SITE_URL } from "@/lib/site-config";
+import { sendOnce } from "@/lib/order-notify";
+import { isCodOrderPayment } from "@/lib/payment-methods";
 import { isOpsAdmin, unauthorized } from "@/lib/ops-auth";
 
 export async function PATCH(request: NextRequest) {
@@ -25,7 +26,7 @@ export async function PATCH(request: NextRequest) {
     if (action === "cancelJnt") {
       const { data: order, error: fetchError } = await supabaseAdmin
         .from("orders")
-        .select("id, order_number, status, awb_no, jnt_order_id, stock_reserved")
+        .select("id, order_number, status, awb_no, jnt_order_id, stock_reserved, customer_name, customer_whatsapp")
         .eq("order_number", identifier)
         .single();
 
@@ -158,7 +159,7 @@ export async function PATCH(request: NextRequest) {
     if (status === "dibatalkan" || status === "pending") {
       const { data: order } = await supabaseAdmin
         .from("orders")
-        .select("id, order_number, status, awb_no, jnt_order_id, stock_reserved")
+        .select("id, order_number, status, awb_no, jnt_order_id, stock_reserved, customer_name, customer_whatsapp")
         .eq("order_number", identifier)
         .maybeSingle();
 
@@ -183,12 +184,12 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Dipakai untuk notifikasi "pembayaran diterima" (pending → diproses): butuh status SEBELUM
-    // diubah + kontak customer, jadi dibaca dulu.
+    // diubah + kontak customer + total, jadi dibaca dulu.
     const previous = status === "diproses"
       ? (
           await supabaseAdmin
             .from("orders")
-            .select("status, order_number, customer_name, customer_whatsapp")
+            .select("id, status, order_number, customer_name, customer_whatsapp, total, payment_method")
             .eq("order_number", identifier)
             .maybeSingle()
         ).data
@@ -204,19 +205,26 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "Gagal memperbarui status pesanan", detail: error.message, code: error.code }, { status: 500 });
     }
 
-    // Pembayaran baru diverifikasi (pending → diproses) → kabari customer lewat WhatsApp, supaya
-    // admin tidak perlu mengetik pesan satu-satu. Best effort: gagal kirim tidak menggagalkan update.
-    if (previous && previous.status === "pending" && previous.customer_whatsapp) {
-      const number = previous.order_number || identifier;
-      try {
-        await notifyCustomerOrderPaid({
-          orderNumber: number,
-          customerName: previous.customer_name || "",
-          customerWhatsapp: previous.customer_whatsapp,
-          orderUrl: `${SITE_URL}/akun/pesanan/${number}`,
-        });
-      } catch (e) {
-        console.error("[ADMIN] Notif pembayaran ke customer gagal:", e);
+    // Pembayaran manual diverifikasi (pending → diproses) → catat lunas + kabari customer.
+    // COD dilewati: pembayarannya saat paket diterima, jadi tidak ada "pembayaran diterima".
+    // `paid_at is null` di WHERE membuat jalur ini aman walau webhook Mayar berjalan bersamaan.
+    if (previous && previous.status === "pending" && !(await isCodOrderPayment(previous.payment_method))) {
+      const { data: paidRows } = await supabaseAdmin
+        .from("orders")
+        .update({ payment_status: "paid", paid_at: new Date().toISOString() })
+        .eq("id", previous.id)
+        .is("paid_at", null)
+        .select("id");
+
+      if (paidRows && paidRows.length > 0 && previous.customer_whatsapp) {
+        await sendOnce(previous.id, "paid", "WA pembayaran diterima (verifikasi admin)", () =>
+          notifyCustomerOrderPaid({
+            orderNumber: previous.order_number || identifier,
+            customerName: previous.customer_name || "",
+            customerWhatsapp: previous.customer_whatsapp as string,
+            total: Number(previous.total) || 0,
+          })
+        );
       }
     }
 
