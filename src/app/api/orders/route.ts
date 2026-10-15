@@ -2,7 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { isPaymentMethodId, legacyPaymentType } from "@/lib/payment-methods";
-import { notifyAdminNewOrder } from "@/lib/fonnte";
+import {
+  notifyAdminNewOrder,
+  notifyCustomerOrderCreated,
+  paymentInstructionFrom,
+  type PaymentInstruction,
+} from "@/lib/fonnte";
+import { sendOnce } from "@/lib/order-notify";
 import { createOrderPaymentLink } from "@/lib/mayar";
 import { markLeadBoughtForOrder } from "@/lib/ops-lead-sync";
 import { sumWeightGramsBySize, productWeightMapFromRows, variantWeightMapFromRows } from "@/lib/shipping-weight";
@@ -42,11 +48,14 @@ export async function POST(request: NextRequest) {
     const rawPayment = typeof body.paymentMethod === "string" ? body.paymentMethod : "";
     let paymentValue = "";
     let paymentType = "";
+    let paymentInstruction: PaymentInstruction | null = null;
 
     if (isPaymentMethodId(rawPayment)) {
       const { data: pm } = await supabase
         .from("payment_methods")
-        .select("id, method_type, is_active")
+        .select(
+          "id, label, method_type, is_active, bank_name, account_name, account_number, account_info, instructions"
+        )
         .eq("id", rawPayment)
         .maybeSingle();
 
@@ -56,6 +65,7 @@ export async function POST(request: NextRequest) {
       }
       paymentValue = pm.id as string;
       paymentType = (pm.method_type as string) || "bank";
+      paymentInstruction = paymentInstructionFrom(pm);
       console.log("[ORDERS] Payment method from DB:", paymentType, paymentValue);
     } else if (legacyPaymentType(rawPayment)) {
       // pesanan lama (client versi lama) masih kirim 'bank' / 'qris' / 'cod'
@@ -319,30 +329,11 @@ export async function POST(request: NextRequest) {
       console.error("[ORDERS] Lead sync gagal:", e);
     }
 
-    // Notifikasi WhatsApp ke admin via Fonnte (aktif kalau FONNTE_TOKEN diisi). Di-await
-    // supaya tetap terkirim di runtime serverless, tapi kegagalannya ditelan di dalam modul
-    // fonnte sehingga tidak pernah menggagalkan pesanan yang sudah tersimpan.
-    await notifyAdminNewOrder({
-      orderNumber,
-      customerName: customer.name,
-      customerWhatsapp: customer.whatsapp,
-      total,
-      paymentType,
-      items: validatedItems.map((item) => ({
-        name: item.name,
-        color: item.color,
-        size: item.size,
-        quantity: item.quantity,
-        price: item.price,
-      })),
-      shippingCity: [shipping.district, shipping.city].filter(Boolean).join(", "),
-      notes: shipping.notes || null,
-    });
-
     console.log("[ORDERS] === ORDER SUCCESS ===", orderNumber);
 
-    // Pembayaran online (Mayar): invoice dibuat DI SINI (server) supaya checkout tetap jalan untuk
-    // pelanggan tamu (tanpa sesi customer). Gagal → null, dan client lanjut ke halaman sukses biasa.
+    // Pembayaran online (Mayar): invoice dibuat DULU (di server) supaya link-nya bisa ikut dikirim
+    // di pesan WA customer dan pelanggan tamu (tanpa sesi) tetap diarahkan ke halaman bayar.
+    // Gagal → null: pesanan tetap tersimpan dan pesan dikirim TANPA link (tidak ada link karangan).
     let paymentUrl: string | null = null;
     if (paymentType === "mayar") {
       paymentUrl = await createOrderPaymentLink({
@@ -358,6 +349,45 @@ export async function POST(request: NextRequest) {
         })),
       });
     }
+
+    // Notifikasi customer (token Fonnte Customer) & admin (token Fonnte Admin) dikirim bersamaan,
+    // saling terpisah: kegagalan salah satu tidak memengaruhi yang lain maupun pesanan yang sudah
+    // tersimpan. Klaim `notify_created_at` memastikan pesan checkout tidak pernah dobel.
+    await Promise.allSettled([
+      sendOnce(order.id, "created", "WA pesanan dibuat (checkout website)", () =>
+        notifyCustomerOrderCreated({
+          orderNumber,
+          customerName: customer.name,
+          customerWhatsapp: customer.whatsapp,
+          items: validatedItems.map((item) => ({
+            name: item.name,
+            color: item.color,
+            size: item.size,
+            quantity: item.quantity,
+            price: item.price,
+          })),
+          total,
+          paymentMethod: paymentInstruction,
+          paymentUrl,
+        })
+      ),
+      notifyAdminNewOrder({
+        orderNumber,
+        customerName: customer.name,
+        customerWhatsapp: customer.whatsapp,
+        total,
+        paymentType: paymentInstruction?.label || paymentType,
+        items: validatedItems.map((item) => ({
+          name: item.name,
+          color: item.color,
+          size: item.size,
+          quantity: item.quantity,
+          price: item.price,
+        })),
+        shippingCity: [shipping.district, shipping.city].filter(Boolean).join(", "),
+        notes: shipping.notes || null,
+      }),
+    ]);
 
     return NextResponse.json({
       success: true,

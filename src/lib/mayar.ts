@@ -181,8 +181,40 @@ export async function createMayarInvoice(input: {
 }
 
 /** Detail invoice — dipakai untuk MEMVERIFIKASI status sebelum menandai pesanan lunas. */
-export async function getMayarInvoice(id: string): Promise<MayarResult<{ id: string; status?: string; amount?: number }>> {
-  return mayarFetch<{ id: string; status?: string; amount?: number }>(`/invoices/${encodeURIComponent(id)}`);
+export async function getMayarInvoice(
+  id: string
+): Promise<MayarResult<{ id: string; status?: string; amount?: number; link?: string; expiredAt?: number }>> {
+  return mayarFetch<{ id: string; status?: string; amount?: number; link?: string; expiredAt?: number }>(
+    `/invoices/${encodeURIComponent(id)}`
+  );
+}
+
+/**
+ * Link bayar yang MASIH bisa dipakai untuk sebuah pesanan.
+ *
+ * Dipakai reminder pembayaran: link Mayar kedaluwarsa mengikuti masa berlaku invoice (± 24 jam),
+ * jadi sebelum link dikirim kita tanya ulang ke Mayar — kalau invoice sudah lunas, ditutup, atau
+ * lewat masa berlaku, fungsi ini mengembalikan null supaya pesan TIDAK memuat link mati.
+ */
+export async function validMayarPaymentUrl(
+  paymentRef?: string | null,
+  paymentUrl?: string | null
+): Promise<string | null> {
+  const link = String(paymentUrl ?? "").trim();
+  const ref = String(paymentRef ?? "").trim();
+  if (!link || !ref) return null;
+  if (!/^https?:\/\/\S+$/i.test(link)) return null;
+
+  const invoice = await getMayarInvoice(ref);
+  if (!invoice.ok) return null;
+
+  const status = String(invoice.data?.status ?? "").toLowerCase();
+  if (status && status !== "unpaid" && status !== "pending") return null;
+
+  const expiredAt = Number(invoice.data?.expiredAt ?? 0);
+  if (expiredAt && expiredAt < Date.now()) return null;
+
+  return link;
 }
 
 /** Detail transaksi — jalur verifikasi cadangan kalau webhook hanya membawa transactionId. */

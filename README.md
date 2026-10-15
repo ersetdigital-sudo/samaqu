@@ -138,7 +138,7 @@ Tanpa webhook dari J&T — sinkronisasi memakai **polling** dari penjadwal ekste
 | Endpoint | Fungsi | Jadwal saran |
 |----------|--------|--------------|
 | `GET /api/cron/sync-tracking` | Tarik tracking J&T → naikkan status (`dikirim`) & tandai `selesai` saat paket diterima | tiap jam |
-| `GET /api/cron/auto-cancel` | Batalkan pesanan yang melewati batas waktu pembayaran | tiap jam |
+| `GET /api/cron/auto-cancel` | Reminder pembayaran (jendela 20–24 jam, sekali per pesanan) + batalkan pesanan yang melewati batas pembayaran | tiap jam |
 
 ---
 

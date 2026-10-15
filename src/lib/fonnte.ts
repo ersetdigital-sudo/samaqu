@@ -1,16 +1,22 @@
 /**
- * Notifikasi pesanan ke admin lewat WhatsApp via Fonnte (https://fonnte.com).
+ * Notifikasi WhatsApp SAMAQU lewat Fonnte (https://fonnte.com).
  *
  * Fonnte menerima POST ke /send dengan header `Authorization` berisi token mentah
  * (tanpa "Bearer") dan body form-urlencoded. Modul ini server-only karena memakai
  * token rahasia, jadi jangan diimpor dari komponen client.
  *
- * Konfigurasi diambil dari tabel `fonnte_settings` (diatur admin lewat Pengaturan),
- * lalu jatuh ke environment variable kalau kolomnya masih kosong. Tabel itu sengaja
- * terpisah dari `store_settings` karena `store_settings` bisa dibaca publik.
+ * DUA JALUR TERPISAH (diatur admin lewat Pengaturan, disimpan di tabel `fonnte_settings`):
+ * - **customer** — token device sendiri, untuk SEMUA pesan ke pembeli;
+ * - **admin** — token device sendiri + nomor tujuan, untuk pesan internal.
+ * Kalau kolom barunya masih kosong, masing-masing jatuh ke kolom lama `token` lalu ke
+ * environment `FONNTE_TOKEN`, supaya notifikasi tidak mendadak berhenti saat transisi.
+ * Token dan pengirimannya terpisah: kegagalan satu jalur tidak memengaruhi jalur lain.
  *
- * Prinsip penting: notifikasi adalah efek samping. Kegagalan mengirim pesan tidak
- * boleh menggagalkan checkout, jadi semua fungsi di sini menelan error-nya sendiri.
+ * Prinsip penting: notifikasi adalah efek samping. Kegagalan mengirim pesan tidak boleh
+ * menggagalkan checkout, pembayaran, pembatalan, atau pembaruan tracking — semua fungsi di
+ * sini menelan error-nya sendiri dan mengembalikan `false` kalau benar-benar tidak terkirim.
+ *
+ * Semua template pesan ke customer memakai sapaan "Ka" dan TANPA emoji.
  */
 
 import { getSupabaseAdmin } from "./supabase-admin";
@@ -19,6 +25,20 @@ import { SITE_URL } from "./site-config";
 const FONNTE_ENDPOINT = "https://api.fonnte.com/send";
 const REQUEST_TIMEOUT_MS = 8000;
 
+/** Satu device pengirim Fonnte. `enabled` mengikuti saklar global di pengaturan. */
+export interface FonnteChannel {
+  enabled: boolean;
+  token: string;
+}
+
+export interface FonnteConfigs {
+  /** Semua pesan ke pembeli. */
+  customer: FonnteChannel & { senderNumber: string };
+  /** Semua pesan internal. */
+  admin: FonnteChannel & { adminNumber: string };
+}
+
+/** Bentuk lama (satu token untuk dua-duanya) — masih dipakai modul chat internal. */
 export interface FonnteConfig {
   enabled: boolean;
   token: string;
@@ -35,20 +55,33 @@ export function normalizeWhatsappTarget(raw: string): string {
   return digits;
 }
 
-function envConfig(): FonnteConfig {
+interface SettingsRow {
+  enabled: boolean;
+  legacyToken: string;
+  customerToken: string;
+  customerNumber: string;
+  adminToken: string;
+  adminNumber: string;
+}
+
+function envDefaults(): SettingsRow {
+  const legacy = process.env.FONNTE_TOKEN || "";
   return {
     enabled: true,
-    token: process.env.FONNTE_TOKEN || "",
+    legacyToken: legacy,
+    customerToken: "",
+    customerNumber: "",
+    adminToken: "",
     adminNumber: process.env.ADMIN_WHATSAPP_NUMBER || "",
   };
 }
 
 /**
- * Nilai dari tabel `fonnte_settings` (diisi admin). Tabel ini tanpa policy RLS, jadi
- * hanya service role yang bisa membacanya. Mengembalikan null kalau tabelnya belum
- * dibuat (jalankan supabase/fonnte-settings.sql).
+ * Baris `fonnte_settings` (satu baris, id = 1). Tabel ini tanpa policy RLS, jadi hanya service
+ * role yang bisa membacanya. Mengembalikan null kalau tabelnya belum dibuat
+ * (jalankan supabase/fonnte-settings.sql).
  */
-async function dbConfig(): Promise<FonnteConfig | null> {
+async function dbSettings(): Promise<SettingsRow | null> {
   try {
     const { data, error } = await getSupabaseAdmin()
       .from("fonnte_settings")
@@ -61,7 +94,10 @@ async function dbConfig(): Promise<FonnteConfig | null> {
     const row = data as Record<string, unknown>;
     return {
       enabled: row.enabled !== false,
-      token: (row.token as string) || "",
+      legacyToken: (row.token as string) || "",
+      customerToken: (row.customer_token as string) || "",
+      customerNumber: (row.customer_number as string) || "",
+      adminToken: (row.admin_token as string) || "",
       adminNumber: (row.admin_number as string) || "",
     };
   } catch (e) {
@@ -70,7 +106,7 @@ async function dbConfig(): Promise<FonnteConfig | null> {
   }
 }
 
-let cached: { config: FonnteConfig; ts: number } | null = null;
+let cached: { configs: FonnteConfigs; ts: number } | null = null;
 const CACHE_TTL_MS = 60_000;
 
 /** Dipanggil setelah admin menyimpan pengaturan supaya nilai baru langsung dipakai. */
@@ -79,24 +115,41 @@ export function clearFonnteConfigCache() {
 }
 
 /**
- * Konfigurasi aktif: nilai yang diisi admin menang, field yang masih kosong jatuh ke
- * environment variable (FONNTE_TOKEN, ADMIN_WHATSAPP_NUMBER).
+ * Konfigurasi aktif kedua jalur. Urutan prioritas token: kolom khusus (customer/admin) →
+ * kolom lama `token` → environment `FONNTE_TOKEN`.
  */
+export async function getFonnteConfigs(): Promise<FonnteConfigs> {
+  if (cached && Date.now() - cached.ts < CACHE_TTL_MS) return cached.configs;
+
+  const fromEnv = envDefaults();
+  const row = (await dbSettings()) ?? fromEnv;
+  const fallbackToken = row.legacyToken || fromEnv.legacyToken;
+
+  const configs: FonnteConfigs = {
+    customer: {
+      enabled: row.enabled !== false,
+      token: row.customerToken || fallbackToken,
+      senderNumber: row.customerNumber || fromEnv.customerNumber,
+    },
+    admin: {
+      enabled: row.enabled !== false,
+      token: row.adminToken || fallbackToken,
+      adminNumber: row.adminNumber || fromEnv.adminNumber,
+    },
+  };
+
+  cached = { configs, ts: Date.now() };
+  return configs;
+}
+
+/** Bentuk lama — dipakai modul chat internal. Setara dengan jalur admin. */
 export async function getFonnteConfig(): Promise<FonnteConfig> {
-  if (cached && Date.now() - cached.ts < CACHE_TTL_MS) return cached.config;
-
-  const fromEnv = envConfig();
-  const fromDb = await dbConfig();
-  const config: FonnteConfig = fromDb
-    ? {
-        enabled: fromDb.enabled,
-        token: fromDb.token || fromEnv.token,
-        adminNumber: fromDb.adminNumber || fromEnv.adminNumber,
-      }
-    : fromEnv;
-
-  cached = { config, ts: Date.now() };
-  return config;
+  const configs = await getFonnteConfigs();
+  return {
+    enabled: configs.admin.enabled,
+    token: configs.admin.token || configs.customer.token,
+    adminNumber: configs.admin.adminNumber,
+  };
 }
 
 /**
@@ -161,6 +214,33 @@ export async function sendFonnteMessage(
   }
 }
 
+/**
+ * Nama panggilan untuk sapaan pesan customer: "Ka <nama depan>".
+ *
+ * - Nama yang sudah diawali "Ka"/"Kak"/"Kakak" (tanpa memperhatikan huruf besar/kecil) dipakai
+ *   apa adanya, supaya tidak muncul "Ka Kak Lea".
+ * - Nama kosong → "Ka" (jadi pesannya "Halo Ka,").
+ */
+export function greetingName(name?: string | null): string {
+  const full = String(name ?? "").trim();
+  if (!full) return "Ka";
+  const firstName = full.split(/\s+/)[0];
+  if (/^ka(kak)?$/i.test(firstName)) return full;
+  return `Ka ${firstName}`;
+}
+
+function rupiah(value: number): string {
+  return `Rp ${Math.round(Number(value) || 0).toLocaleString("id-ID")}`;
+}
+
+function safeName(name?: string | null): string {
+  return String(name ?? "").trim() || "Pelanggan";
+}
+
+/* ══════════════════════════════════════════
+   Notifikasi ke ADMIN (token device admin)
+   ══════════════════════════════════════════ */
+
 export interface NewOrderNotificationItem {
   name: string;
   color?: string | null;
@@ -180,25 +260,6 @@ export interface NewOrderNotification {
   notes?: string | null;
   /** Asal pesanan (mis. "Open Order (Create Your Price)") — hanya ditampilkan kalau diisi. */
   source?: string | null;
-}
-
-function rupiah(value: number): string {
-  return `Rp ${value.toLocaleString("id-ID")}`;
-}
-
-/**
- * Nama panggilan untuk sapaan pesan customer: "Ka <nama depan>".
- *
- * - Nama yang sudah diawali "Ka"/"Kak"/"Kakak" (tanpa memperhatikan huruf besar/kecil) dipakai
- *   apa adanya, supaya tidak muncul "Ka Kak Lea".
- * - Nama kosong → "Ka" (jadi pesannya "Halo Ka,").
- */
-export function greetingName(name?: string | null): string {
-  const full = String(name ?? "").trim();
-  if (!full) return "Ka";
-  const firstName = full.split(/\s+/)[0];
-  if (/^ka(kak)?$/i.test(firstName)) return full;
-  return `Ka ${firstName}`;
 }
 
 /** Ringkasan pesanan untuk admin — nomor pesanan, pemesan, item, dan tautan kelola. */
@@ -232,30 +293,60 @@ export function buildNewOrderMessage(order: NewOrderNotification): string {
   return lines.join("\n");
 }
 
+export interface AdminOrderCancelledNotification {
+  orderNumber: string;
+  customerName?: string | null;
+  reason: string;
+}
+
+/** Pemberitahuan pembatalan untuk admin. */
+export function buildAdminOrderCancelledMessage(order: AdminOrderCancelledNotification): string {
+  return [
+    "PEMBATALAN PESANAN SAMAQU",
+    "",
+    `Nomor Pesanan: ${order.orderNumber}`,
+    `Customer: ${safeName(order.customerName)}`,
+    `Alasan Pembatalan: ${order.reason}`,
+    "",
+    "Status: Pesanan berhasil dibatalkan.",
+  ].join("\n");
+}
+
 /**
- * Kirim notifikasi pesanan baru ke admin. Dilewati diam-diam kalau token belum ada atau
+ * Kirim notifikasi pesanan baru ke admin. Dilewati diam-diam kalau token/nomor belum ada atau
  * notifikasi dimatikan. Semua error ditelan di sini supaya alur checkout tetap aman.
  */
-export async function notifyAdminNewOrder(order: NewOrderNotification): Promise<void> {
-  const config = await getFonnteConfig();
-  if (!config.enabled || !config.token) return;
+export async function notifyAdminNewOrder(order: NewOrderNotification): Promise<boolean> {
+  const { admin } = await getFonnteConfigs();
+  if (!admin.enabled || !admin.token) return false;
 
-  const target = await resolveAdminTargets(config.adminNumber);
+  const target = await resolveAdminTargets(admin.adminNumber);
   if (!target) {
     console.warn(
       "[FONNTE] Tidak ada nomor admin. Isi lewat Pengaturan admin atau environment variable."
     );
-    return;
+    return false;
   }
 
-  await sendFonnteMessage(config.token, target, buildNewOrderMessage(order));
+  return sendFonnteMessage(admin.token, target, buildNewOrderMessage(order));
+}
+
+/** Kabari admin bahwa sebuah pesanan dibatalkan. */
+export async function notifyAdminOrderCancelled(
+  order: AdminOrderCancelledNotification
+): Promise<boolean> {
+  const { admin } = await getFonnteConfigs();
+  if (!admin.enabled || !admin.token) return false;
+
+  const target = await resolveAdminTargets(admin.adminNumber);
+  if (!target) return false;
+
+  return sendFonnteMessage(admin.token, target, buildAdminOrderCancelledMessage(order));
 }
 
 /* ══════════════════════════════════════════
-   Notifikasi ke CUSTOMER
-   Supaya admin tidak perlu membalas satu-satu: instruksi pembayaran, langkah berikutnya, dan
-   pengingat batas waktu ikut terkirim otomatis begitu pesanan dibuat (dan saat dibayar).
-══════════════════════════════════════════ */
+   Notifikasi ke CUSTOMER (token device customer)
+   ══════════════════════════════════════════ */
 
 /**
  * Ringkasan metode pembayaran untuk pesan customer — bentuk struktural dari baris
@@ -263,7 +354,7 @@ export async function notifyAdminNewOrder(order: NewOrderNotification): Promise<
  */
 export interface PaymentInstruction {
   label: string;
-  /** `bank` | `qris` | `ewallet` | `cod` | `other` */
+  /** `bank` | `qris` | `ewallet` | `cod` | `mayar` | `other` */
   type: string;
   bankName?: string | null;
   accountName?: string | null;
@@ -280,128 +371,15 @@ export interface CustomerOrderNotification {
   total: number;
   paymentMethod?: PaymentInstruction | null;
   isOpenOrder?: boolean;
-  /** Tautan halaman pesanan milik customer di /akun/pesanan. */
-  orderUrl?: string;
-}
-
-/** Satu baris item untuk pesan customer: "- 1x Thobe Navy — Jiharkah (Uk. M) — Rp 329.000". */
-function customerItemLine(item: NewOrderNotificationItem): string {
-  const color = item.color && item.color !== "default" && item.color !== "-" ? item.color : null;
-  const variant = [color, item.size ? `Uk. ${item.size}` : null].filter(Boolean).join(" · ");
-  return `- ${item.quantity}x ${item.name}${variant ? ` (${variant})` : ""} — ${rupiah(item.price * item.quantity)}`;
-}
-
-/** Baris instruksi pembayaran sesuai metode yang dipilih (bank/QRIS/e-wallet/COD). */
-function paymentInstructionLines(payment?: PaymentInstruction | null): string[] {
-  const type = payment?.type || "bank";
-
-  if (type === "cod") {
-    return [
-      "Kamu memilih *Bayar di Tempat (COD)*, jadi belum perlu transfer ya — admin akan konfirmasi dulu lewat chat ini sebelum pesanan dikirim.",
-    ];
-  }
-
-  if (type === "mayar") {
-    return [
-      "Pesanan ini dibayar *online* (QRIS / Virtual Account / e-wallet). Halaman pembayarannya terbuka otomatis setelah pesanan dibuat — selesaikan di sana ya, tidak perlu transfer manual.",
-    ];
-  }
-
-  const lines: string[] = [];
-  if (type === "qris") lines.push("Silakan scan QRIS pembayaran (admin kirim QR-nya di chat ini):");
-  else if (type === "ewallet") lines.push(`Silakan kirim ke${payment?.label ? ` *${payment.label}*` : ""}:`);
-  else lines.push("Silakan transfer ke rekening berikut:");
-
-  if (payment?.bankName) lines.push(`🏦 ${payment.bankName}`);
-  if (payment?.accountNumber) lines.push(`No. Rekening: *${payment.accountNumber}*`);
-  if (payment?.accountName) lines.push(`a.n. ${payment.accountName}`);
-  if (payment?.accountInfo) lines.push(payment.accountInfo);
-  if (payment?.instructions) lines.push(payment.instructions);
-  return lines;
-}
-
-/** Pesan "pesanan kamu sudah kami terima" + cara bayar + langkah berikutnya. */
-export function buildCustomerOrderMessage(order: CustomerOrderNotification): string {
-  const greeting = greetingName(order.customerName);
-  const type = order.paymentMethod?.type || "bank";
-  const isCod = type === "cod";
-
-  const lines: string[] = [
-    `Halo ${greeting} 👋`,
-    `Pesanan${order.isOpenOrder ? " Open Order" : ""} kamu sudah kami terima.`,
-    "",
-    `No. Pesanan: *${order.orderNumber}*`,
-    ...order.items.map(customerItemLine),
-    `Total: *${rupiah(order.total)}*`,
-    "",
-    ...paymentInstructionLines(order.paymentMethod),
-    "",
-  ];
-
-  if (isCod) {
-    lines.push(
-      "Setelah dikonfirmasi admin:",
-      "1. Pesanan disiapkan & diserahkan ke J&T",
-      "2. Nomor resi dikirim ke chat ini"
-    );
-  } else {
-    lines.push(
-      "Setelah transfer, balas chat ini dengan *bukti transfer* ya — supaya admin bisa langsung verifikasi.",
-      "Pesanan otomatis dibatalkan kalau belum ada pembayaran dalam *24 jam*.",
-      "",
-      "Setelah pembayaran diverifikasi:",
-      "1. Pesanan disiapkan & diserahkan ke J&T",
-      "2. Nomor resi dikirim ke chat ini"
-    );
-  }
-  if (order.orderUrl) lines.push(`3. Status pesanan bisa kamu pantau kapan saja: ${order.orderUrl}`);
-
-  lines.push("", "Ada yang mau ditanyakan? Balas chat ini aja 🙏", "— SAMAQU");
-  return lines.join("\n");
-}
-
-/**
- * Kirim pesan "pesanan diterima" ke WhatsApp customer. Dilewati diam-diam kalau token belum
- * ada, notifikasi dimatikan, atau nomor customer kosong — supaya alur pesanan tetap aman.
- */
-export async function notifyCustomerOrderCreated(order: CustomerOrderNotification): Promise<void> {
-  const config = await getFonnteConfig();
-  if (!config.enabled || !config.token) return;
-
-  const target = normalizeWhatsappTarget(order.customerWhatsapp);
-  if (!target) return;
-
-  await sendFonnteMessage(config.token, target, buildCustomerOrderMessage(order));
+  /** Link pembayaran online — HANYA diisi kalau invoice benar-benar berhasil dibuat. */
+  paymentUrl?: string | null;
 }
 
 export interface OrderPaidNotification {
   orderNumber: string;
   customerName: string;
   customerWhatsapp: string;
-  orderUrl?: string;
-}
-
-/** Pesan "pembayaran diterima, pesanan diproses" (dikirim saat admin ubah status ke Diproses). */
-export function buildOrderPaidMessage(order: OrderPaidNotification): string {
-  const greeting = greetingName(order.customerName);
-  const lines = [
-    `Halo ${greeting}, pembayaran pesanan *${order.orderNumber}* sudah kami terima ✅`,
-    "",
-    "Pesanan sedang disiapkan. Nomor resi J&T kami kirim ke chat ini begitu paket diserahkan ke kurir.",
-  ];
-  if (order.orderUrl) lines.push("", `Pantau status pesananmu: ${order.orderUrl}`);
-  lines.push("", "Terima kasih ya 🙏", "— SAMAQU");
-  return lines.join("\n");
-}
-
-export async function notifyCustomerOrderPaid(order: OrderPaidNotification): Promise<void> {
-  const config = await getFonnteConfig();
-  if (!config.enabled || !config.token) return;
-
-  const target = normalizeWhatsappTarget(order.customerWhatsapp);
-  if (!target) return;
-
-  await sendFonnteMessage(config.token, target, buildOrderPaidMessage(order));
+  total: number;
 }
 
 export interface ShippedNotification {
@@ -410,35 +388,310 @@ export interface ShippedNotification {
   customerWhatsapp: string;
   /** Nomor resi J&T yang tersimpan di pesanan (kolom `orders.awb_no`). */
   awbNo: string;
-  /** Tautan halaman pesanan milik customer di /akun/pesanan. */
-  orderUrl?: string;
+}
+
+export interface DeliveredNotification {
+  orderNumber: string;
+  customerName: string;
+  customerWhatsapp: string;
+}
+
+export interface PaymentReminderNotification {
+  orderNumber: string;
+  customerName: string;
+  customerWhatsapp: string;
+  total: number;
+  paymentMethod?: PaymentInstruction | null;
+  /** Link pembayaran online yang SUDAH diverifikasi masih berlaku. */
+  paymentUrl?: string | null;
+}
+
+export interface OrderCancelledNotification {
+  orderNumber: string;
+  customerName: string;
+  customerWhatsapp: string;
+  reason: string;
+  /** Baris refund — hanya diisi kalau informasinya benar-benar tersedia. */
+  refundInfo?: string | null;
+}
+
+/** Jenis metode pembayaran yang dikenali pesan (selain ini dianggap transfer bank). */
+const KNOWN_METHOD_TYPES = ["qris", "ewallet", "cod", "other", "mayar"];
+
+/**
+ * Baris tabel `payment_methods` → struktur instruksi pembayaran untuk pesan customer.
+ * Satu sumber untuk checkout website maupun Open Order supaya instruksinya tidak beda.
+ */
+export function paymentInstructionFrom(row: {
+  label?: string | null;
+  method_type?: string | null;
+  bank_name?: string | null;
+  account_name?: string | null;
+  account_number?: string | null;
+  account_info?: string | null;
+  instructions?: string | null;
+}): PaymentInstruction {
+  const rawType = row.method_type ?? "";
+  const type = KNOWN_METHOD_TYPES.includes(rawType) ? rawType : "bank";
+  const label =
+    row.label?.trim() || (row.bank_name ? `Transfer Bank (${row.bank_name})` : "Transfer Bank");
+
+  return {
+    label,
+    type,
+    bankName: row.bank_name ?? null,
+    accountName: row.account_name ?? null,
+    accountNumber: row.account_number ?? null,
+    accountInfo: row.account_info ?? null,
+    instructions: row.instructions ?? null,
+  };
+}
+
+/** Ringkasan produk satu baris: "Thobe Navy (Uk. M) x1, Cover & Hanger x1". */
+function productSummary(items: NewOrderNotificationItem[]): string {
+  const list = (items || [])
+    .map((item) => {
+      const rawColor = item.color && item.color !== "default" && item.color !== "-" ? item.color : null;
+      // Nama produk sering sudah memuat warnanya ("Thobe Superblack" + "Superblack") — jangan diulang.
+      const color =
+        rawColor && !item.name.toLowerCase().includes(rawColor.toLowerCase()) ? rawColor : null;
+      const variant = [color, item.size ? `Uk. ${item.size}` : null].filter(Boolean).join(" · ");
+      const qty = item.quantity || 1;
+      return `${item.name}${variant ? ` (${variant})` : ""} x${qty}`;
+    })
+    .filter(Boolean);
+  return list.length ? list.join(", ") : "-";
+}
+
+/** Link http(s) yang benar-benar bisa dipakai (bukan string kosong/palsu). */
+function usablePaymentUrl(url?: string | null): string | null {
+  const value = String(url ?? "").trim();
+  if (!value) return null;
+  return /^https?:\/\/\S+$/i.test(value) ? value : null;
 }
 
 /**
- * Pesan "paket sudah dikirim lewat J&T" + nomor resi. Data asli saja: nomor pesanan, resi, dan
- * tautan pantau status. Tanpa emoji (beda dari pesan lain) sesuai permintaan pemilik.
+ * Blok instruksi pembayaran sesuai metode: transfer bank, pembayaran online (Mayar),
+ * QRIS/e-wallet, atau COD (tanpa permintaan transfer).
  */
-export function buildOrderShippedMessage(order: ShippedNotification): string {
-  const lines = [
-    `Halo ${greetingName(order.customerName)}, pesanan *${order.orderNumber}* sudah dikirim lewat J&T.`,
-    `Nomor resi: *${order.awbNo}*`,
+function paymentInstructionBlock(
+  payment?: PaymentInstruction | null,
+  paymentUrl?: string | null
+): string[] {
+  const type = payment?.type || "bank";
+
+  if (type === "cod") {
+    return [
+      "Pesanan Ka akan diproses sesuai prosedur Bayar di Tempat (COD). Pembayaran dilakukan saat paket diterima, jadi tidak perlu transfer sekarang.",
+    ];
+  }
+
+  if (type === "mayar") {
+    const link = usablePaymentUrl(paymentUrl);
+    if (!link) {
+      // Invoice gagal dibuat: jangan pernah menampilkan link kosong atau link pesanan lain.
+      return [
+        "Link pembayaran belum tersedia. Silakan hubungi admin untuk mendapatkan link pembayaran.",
+      ];
+    }
+    return ["Link Pembayaran:", link, "", "Silakan selesaikan pembayaran melalui link di atas."];
+  }
+
+  if (type === "qris") {
+    return ["Silakan scan QRIS pembayaran (admin kirim QR-nya di chat ini)."];
+  }
+
+  const bankName = (payment?.bankName || payment?.label || "").trim();
+  const accountNumber = (payment?.accountNumber || "").trim();
+  const accountName = (payment?.accountName || "").trim();
+
+  if (type === "ewallet") {
+    const lines = [`Silakan kirim ke${payment?.label ? ` ${payment.label}` : " e-wallet"}:`];
+    if (payment?.accountInfo) lines.push(payment.accountInfo);
+    else if (accountNumber) lines.push(accountNumber);
+    lines.push("", "Setelah transfer, silakan kirim bukti pembayaran kepada admin.");
+    return lines;
+  }
+
+  // Transfer bank (default)
+  if (!accountNumber) {
+    const lines = ["Silakan hubungi admin untuk informasi rekening pembayaran."];
+    if (payment?.instructions) lines.push(payment.instructions);
+    return lines;
+  }
+
+  const lines = ["Silakan transfer ke rekening berikut:"];
+  if (bankName) lines.push(bankName);
+  lines.push(`Nomor Rekening: ${accountNumber}`);
+  if (accountName) lines.push(`Atas Nama: ${accountName}`);
+  if (payment?.accountInfo) lines.push(payment.accountInfo);
+  lines.push("", "Setelah transfer, silakan kirim bukti pembayaran kepada admin.");
+  return lines;
+}
+
+/** Pesan "pesanan Ka sudah kami terima" + ringkasan produk + instruksi pembayaran. */
+export function buildCustomerOrderMessage(order: CustomerOrderNotification): string {
+  const type = order.paymentMethod?.type || "bank";
+  const isCod = type === "cod";
+
+  const lines: string[] = [
+    `Halo ${greetingName(order.customerName)},`,
+    "",
+    "Terima kasih telah berbelanja di SAMAQU.",
+    "",
+    "Pesanan Ka sudah berhasil kami terima.",
+    "",
+    `Nomor Pesanan: ${order.orderNumber}`,
+    `Produk: ${productSummary(order.items)}`,
+    `Total Pembayaran: ${rupiah(order.total)}`,
+    "",
+    ...paymentInstructionBlock(order.paymentMethod, order.paymentUrl),
   ];
-  if (order.orderUrl) lines.push(`Pantau status pesananmu: ${order.orderUrl}`);
-  lines.push("", "Terima kasih.", "— SAMAQU");
+
+  // COD tidak butuh transfer, jadi tidak ada ajakan menyelesaikan pembayaran.
+  if (!isCod) {
+    lines.push(
+      "",
+      "Silakan selesaikan pembayaran sesuai instruksi di atas agar pesanan Ka dapat segera kami proses."
+    );
+  }
+
+  lines.push("", "Terima kasih telah memilih SAMAQU.");
   return lines.join("\n");
 }
 
-/**
- * Kirim notifikasi "paket dikirim". Mengembalikan `true` HANYA kalau Fonnte benar-benar menerima
- * pesannya, supaya pemanggil bisa mencatat status terkirim/gagal di pesanan. Tidak pernah melempar
- * error — kegagalan notifikasi tidak boleh menggagalkan perubahan status/resi.
- */
-export async function notifyCustomerOrderShipped(order: ShippedNotification): Promise<boolean> {
-  const config = await getFonnteConfig();
-  if (!config.enabled || !config.token) return false;
+/** Pesan "pembayaran sudah kami terima dan diverifikasi". */
+export function buildOrderPaidMessage(order: OrderPaidNotification): string {
+  return [
+    `Halo ${greetingName(order.customerName)},`,
+    "",
+    "Pembayaran untuk pesanan Ka telah kami terima dan berhasil diverifikasi.",
+    "",
+    `Nomor Pesanan: ${order.orderNumber}`,
+    `Total Pembayaran: ${rupiah(order.total)}`,
+    "",
+    "Pesanan Ka akan segera kami proses. Kami akan mengirimkan informasi nomor resi setelah pesanan dikirim.",
+    "",
+    "Terima kasih telah berbelanja di SAMAQU.",
+  ].join("\n");
+}
 
-  const target = normalizeWhatsappTarget(order.customerWhatsapp);
+/** Pesan "pesanan sudah dikirim lewat J&T Express" + nomor resi. */
+export function buildOrderShippedMessage(order: ShippedNotification): string {
+  return [
+    `Halo ${greetingName(order.customerName)},`,
+    "",
+    "Pesanan Ka telah dikirim melalui J&T Express.",
+    "",
+    `Nomor Pesanan: ${order.orderNumber}`,
+    `Nomor Resi: ${order.awbNo}`,
+    "",
+    "Silakan gunakan nomor resi tersebut untuk memantau perjalanan paket Ka.",
+    "",
+    "Terima kasih telah mempercayakan kebutuhan Ka kepada SAMAQU.",
+  ].join("\n");
+}
+
+/** Pesan "paket sudah diterima" (dari status delivered J&T yang valid). */
+export function buildOrderDeliveredMessage(order: DeliveredNotification): string {
+  return [
+    `Halo ${greetingName(order.customerName)},`,
+    "",
+    "Berdasarkan informasi pengiriman J&T Express, paket pesanan Ka telah diterima.",
+    "",
+    `Nomor Pesanan: ${order.orderNumber}`,
+    "",
+    "Semoga produk yang Ka terima sesuai dengan harapan dan bermanfaat.",
+    "",
+    "Terima kasih telah berbelanja di SAMAQU. Kami menghargai kepercayaan Ka kepada kami.",
+  ].join("\n");
+}
+
+/** Pesan pengingat pembayaran (maksimal sekali per pesanan). */
+export function buildPaymentReminderMessage(order: PaymentReminderNotification): string {
+  return [
+    `Halo ${greetingName(order.customerName)},`,
+    "",
+    "Kami ingin mengingatkan bahwa pesanan Ka masih menunggu pembayaran.",
+    "",
+    `Nomor Pesanan: ${order.orderNumber}`,
+    `Total Pembayaran: ${rupiah(order.total)}`,
+    "",
+    ...paymentInstructionBlock(order.paymentMethod, order.paymentUrl),
+    "",
+    "Silakan selesaikan pembayaran apabila Ka masih ingin melanjutkan pesanan tersebut.",
+    "",
+    "Jika pembayaran telah dilakukan, pesan ini dapat diabaikan.",
+    "",
+    "Terima kasih,",
+    "SAMAQU",
+  ].join("\n");
+}
+
+/** Pesan pemberitahuan pembatalan untuk customer. */
+export function buildOrderCancelledMessage(order: OrderCancelledNotification): string {
+  const lines = [
+    `Halo ${greetingName(order.customerName)},`,
+    "",
+    "Kami informasikan bahwa pesanan Ka telah dibatalkan.",
+    "",
+    `Nomor Pesanan: ${order.orderNumber}`,
+    `Alasan Pembatalan: ${order.reason}`,
+  ];
+
+  // Refund hanya disebut kalau informasinya memang tersedia (tidak menjanjikan apa pun).
+  const refund = String(order.refundInfo ?? "").trim();
+  if (refund) lines.push("", refund);
+
+  lines.push(
+    "",
+    "Mohon maaf atas ketidaknyamanan yang terjadi. Terima kasih atas pengertian Ka.",
+    "",
+    "SAMAQU"
+  );
+  return lines.join("\n");
+}
+
+/** Kirim satu pesan ke customer memakai token jalur customer. Tidak pernah melempar error. */
+async function sendToCustomer(
+  customerWhatsapp: string | null | undefined,
+  message: string
+): Promise<boolean> {
+  const { customer } = await getFonnteConfigs();
+  if (!customer.enabled || !customer.token) return false;
+
+  const target = normalizeWhatsappTarget(String(customerWhatsapp ?? ""));
   if (!target) return false;
 
-  return sendFonnteMessage(config.token, target, buildOrderShippedMessage(order));
+  return sendFonnteMessage(customer.token, target, message);
+}
+
+export async function notifyCustomerOrderCreated(
+  order: CustomerOrderNotification
+): Promise<boolean> {
+  return sendToCustomer(order.customerWhatsapp, buildCustomerOrderMessage(order));
+}
+
+export async function notifyCustomerOrderPaid(order: OrderPaidNotification): Promise<boolean> {
+  return sendToCustomer(order.customerWhatsapp, buildOrderPaidMessage(order));
+}
+
+export async function notifyCustomerOrderShipped(order: ShippedNotification): Promise<boolean> {
+  return sendToCustomer(order.customerWhatsapp, buildOrderShippedMessage(order));
+}
+
+export async function notifyCustomerOrderDelivered(order: DeliveredNotification): Promise<boolean> {
+  return sendToCustomer(order.customerWhatsapp, buildOrderDeliveredMessage(order));
+}
+
+export async function notifyCustomerPaymentReminder(
+  order: PaymentReminderNotification
+): Promise<boolean> {
+  return sendToCustomer(order.customerWhatsapp, buildPaymentReminderMessage(order));
+}
+
+export async function notifyCustomerOrderCancelled(
+  order: OrderCancelledNotification
+): Promise<boolean> {
+  return sendToCustomer(order.customerWhatsapp, buildOrderCancelledMessage(order));
 }

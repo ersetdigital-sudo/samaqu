@@ -1,8 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { TrackHistoryItem, TrackResponse } from "./types";
 import { isDelivered, isShipped, orderRank, shippingRank } from "./track-status";
-import { notifyCustomerOrderShipped } from "../fonnte";
-import { SITE_URL } from "../site-config";
+import { notifyCustomerOrderDelivered, notifyCustomerOrderShipped } from "../fonnte";
+import { claimOrderNotification, recordShippedNotifyStatus, sendOnce } from "../order-notify";
 
 /**
  * Terapkan hasil tracking J&T ke satu pesanan — SATU sumber logika, dipakai cron
@@ -186,35 +186,45 @@ export async function applyTrackingToOrder(
     if (error) console.error("[TRACKING-SYNC] Gagal update status:", order.order_number, error.message);
   }
 
-  // 7) Notifikasi "paket dikirim + nomor resi" — dipicu TEPAT saat status pesanan berubah jadi
-  //    `dikirim` (paket benar-benar diserahkan ke J&T: resi sudah tersimpan dan J&T sudah memindai).
-  //    Dikirim sekali per pesanan (penanda `shipped_notified_at`), tidak diulang kalau status
-  //    bolak-balik. Kegagalan Fonnte tidak pernah menggagalkan perubahan status — hasilnya dicatat.
+  // 7) WA "pesanan dikirim + nomor resi" — TEPAT saat status berubah jadi `dikirim` (paket sudah
+  //    diserahkan ke J&T: resi tersimpan dan J&T sudah memindai). Klaim `shipped_notified_at`
+  //    bersifat atomik, jadi cron dan aksi admin yang berjalan bersamaan tetap mengirim satu kali.
   const justShipped = nextStatus === "dikirim" && currentStatus !== "dikirim";
-  if (justShipped && !order.shipped_notified_at && order.awb_no) {
-    let sent = false;
-    try {
-      sent = await notifyCustomerOrderShipped({
+  if (justShipped && order.awb_no) {
+    if (await claimOrderNotification(order.id, "shipped")) {
+      let sent = false;
+      try {
+        sent = await notifyCustomerOrderShipped({
+          orderNumber: order.order_number || "",
+          customerName: order.customer_name || "",
+          customerWhatsapp: order.customer_whatsapp || "",
+          awbNo: order.awb_no,
+        });
+      } catch (e) {
+        console.error("[TRACKING-SYNC] Notifikasi 'dikirim' error:", order.order_number, e);
+      }
+      console.log(
+        "[TRACKING-SYNC] Notifikasi 'dikirim':",
+        order.order_number,
+        sent ? "terkirim" : "gagal"
+      );
+      // Status kirim dicatat untuk pemeriksaan admin. Klaim tidak dilepas walau gagal, supaya
+      // pesan tidak pernah terkirim dobel; kegagalannya terlihat dari log & kolom ini.
+      await recordShippedNotifyStatus(order.id, sent);
+    }
+  }
+
+  // 8) WA "paket diterima" — hanya saat transisi ke `selesai` (delivered J&T yang valid), bukan
+  //    saat "dikirim". Klaim `delivered_notified_at` menjaga tidak ada pesan dobel.
+  const justDelivered = nextStatus === "selesai" && currentStatus !== "selesai";
+  if (justDelivered && order.customer_name) {
+    await sendOnce(order.id, "delivered", "WA paket diterima", () =>
+      notifyCustomerOrderDelivered({
         orderNumber: order.order_number || "",
         customerName: order.customer_name || "",
         customerWhatsapp: order.customer_whatsapp || "",
-        awbNo: order.awb_no,
-        orderUrl: `${SITE_URL}/akun/pesanan/${order.order_number}`,
-      });
-    } catch (e) {
-      console.error("[TRACKING-SYNC] Notifikasi 'dikirim' error:", order.order_number, e);
-    }
-    console.log(
-      "[TRACKING-SYNC] Notifikasi 'dikirim':",
-      order.order_number,
-      sent ? "terkirim" : "gagal"
+      })
     );
-    const notifyPatch: Record<string, unknown> = { shipped_notify_status: sent ? "sent" : "failed" };
-    // Waktu kirim hanya diisi kalau benar-benar terkirim; kalau gagal, percobaan berikutnya
-    // (transisi berikutnya) masih boleh mengirim — tapi tidak pernah dobel kalau sudah terkirim.
-    if (sent) notifyPatch.shipped_notified_at = new Date().toISOString();
-    const { error: notifyError } = await supabase.from("orders").update(notifyPatch).eq("id", order.id);
-    if (notifyError) console.error("[TRACKING-SYNC] Gagal simpan status notifikasi:", order.order_number, notifyError.message);
   }
 
   return {

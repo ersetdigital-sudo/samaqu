@@ -14,10 +14,10 @@ import { markLeadBoughtForOrder } from "@/lib/ops-lead-sync";
 import {
   notifyAdminNewOrder,
   notifyCustomerOrderCreated,
+  paymentInstructionFrom,
   type NewOrderNotificationItem,
-  type PaymentInstruction,
 } from "@/lib/fonnte";
-import { SITE_URL } from "@/lib/site-config";
+import { sendOnce } from "@/lib/order-notify";
 import { createOrderPaymentLink } from "@/lib/mayar";
 
 /**
@@ -98,22 +98,10 @@ interface PaymentRow {
   instructions?: string | null;
 }
 
-/** Baris `payment_methods` (dikelola dari dashboard admin) → teks instruksi untuk pesan WA. */
-function toPaymentInstruction(row: PaymentRow): PaymentInstruction {
-  const type = ["qris", "ewallet", "cod", "other", "mayar"].includes(row.method_type ?? "")
-    ? (row.method_type as string)
-    : "bank";
-  const label = row.label?.trim() || (row.bank_name ? `Transfer Bank (${row.bank_name})` : "Transfer Bank");
-  return {
-    label,
-    type,
-    bankName: row.bank_name,
-    accountName: row.account_name,
-    accountNumber: row.account_number,
-    accountInfo: row.account_info,
-    instructions: row.instructions,
-  };
-}
+/**
+ * Baris `payment_methods` (dikelola dari dashboard admin) → instruksi pembayaran untuk pesan WA.
+ * Dipakai bersama dengan checkout website lewat `paymentInstructionFrom` di `src/lib/fonnte.ts`.
+ */
 
 export async function POST(request: NextRequest) {
   try {
@@ -473,43 +461,20 @@ export async function POST(request: NextRequest) {
         price: OPEN_ORDER_ADDON.price,
       });
     }
-    const paymentInstruction = paymentRow ? toPaymentInstruction(paymentRow) : null;
-
-    try {
-      await notifyAdminNewOrder({
-        orderNumber,
-        customerName: name,
-        customerWhatsapp: whatsapp,
-        total,
-        paymentType: paymentInstruction?.label ?? "Transfer Bank",
-        items: notificationItems,
-        shippingCity: [district, city].filter(Boolean).join(", "),
-        notes: shippingNotes || null,
-        source: "Open Order (Create Your Price)",
-      });
-    } catch (e) {
-      console.error("[OPEN-ORDER] Notif admin gagal:", e);
-    }
-
-    try {
-      await notifyCustomerOrderCreated({
-        orderNumber,
-        customerName: name,
-        customerWhatsapp: whatsapp,
-        items: notificationItems,
-        total,
-        paymentMethod: paymentInstruction,
-        isOpenOrder: true,
-        orderUrl: `${SITE_URL}/akun/pesanan/${orderNumber}`,
-      });
-    } catch (e) {
-      console.error("[OPEN-ORDER] Notif customer gagal:", e);
-    }
+    const paymentInstruction = paymentRow ? paymentInstructionFrom(paymentRow) : null;
+    const invoiceItemLines = [
+      ...validatedItems.map((item) => ({
+        label: `${item.productName}${item.size ? ` (Uk. ${item.size})` : ""}`,
+        quantity: item.quantity || 1,
+      })),
+      ...(extraCover ? [{ label: OPEN_ORDER_ADDON.name, quantity: 1 }] : []),
+    ];
 
     console.log("[OPEN-ORDER] Created:", { orderNumber, items: orderItems.length, total });
 
-    // Pembayaran online (Mayar): invoice dibuat DI SINI (server) supaya pelanggan tamu (tanpa sesi)
-    // tetap bisa langsung diarahkan ke halaman bayar. Gagal → null, client lanjut ke halaman sukses.
+    // Pembayaran online (Mayar): invoice dibuat DULU (di server) supaya link-nya bisa ikut dikirim
+    // di pesan customer dan pelanggan tamu (tanpa sesi) tetap bisa diarahkan ke halaman bayar.
+    // Gagal → null: pesanan tetap tersimpan dan pesan dikirim TANPA link (tidak ada link karangan).
     let paymentUrl: string | null = null;
     if (paymentRow?.method_type === "mayar") {
       paymentUrl = await createOrderPaymentLink({
@@ -519,15 +484,38 @@ export async function POST(request: NextRequest) {
         customerEmail: authData?.user?.email ?? null,
         customerWhatsapp: whatsapp,
         total,
-        items: [
-          ...validatedItems.map((item) => ({
-            label: `${item.productName}${item.size ? ` (Uk. ${item.size})` : ""}`,
-            quantity: item.quantity || 1,
-          })),
-          ...(extraCover ? [{ label: OPEN_ORDER_ADDON.name, quantity: 1 }] : []),
-        ],
+        items: invoiceItemLines,
       });
     }
+
+    // Notifikasi customer (token Fonnte Customer) & admin (token Fonnte Admin) dikirim bersamaan
+    // dan saling terpisah: kegagalan salah satu tidak memengaruhi yang lain maupun pesanan yang
+    // sudah tersimpan. Klaim `notify_created_at` memastikan pesan checkout hanya terkirim sekali.
+    await Promise.allSettled([
+      sendOnce(order.id, "created", "WA pesanan dibuat (Open Order)", () =>
+        notifyCustomerOrderCreated({
+          orderNumber,
+          customerName: name,
+          customerWhatsapp: whatsapp,
+          items: notificationItems,
+          total,
+          paymentMethod: paymentInstruction,
+          isOpenOrder: true,
+          paymentUrl,
+        })
+      ),
+      notifyAdminNewOrder({
+        orderNumber,
+        customerName: name,
+        customerWhatsapp: whatsapp,
+        total,
+        paymentType: paymentInstruction?.label ?? "Transfer Bank",
+        items: notificationItems,
+        shippingCity: [district, city].filter(Boolean).join(", "),
+        notes: shippingNotes || null,
+        source: "Open Order (Create Your Price)",
+      }),
+    ]);
 
     return NextResponse.json({ success: true, orderNumber, total, awbNo: null, paymentUrl });
   } catch (error) {
