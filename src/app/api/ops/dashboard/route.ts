@@ -4,6 +4,7 @@ import { isOpsAdmin, unauthorized } from "@/lib/ops-auth";
 import { jakartaDayBounds, BIZ_OFFSET_MS } from "@/lib/ops-followup";
 import { resolveStock } from "@/lib/ops-stock";
 import { rankTopProducts, isSaleOrder } from "@/lib/top-products";
+import { SALE_STATUSES } from "@/lib/transaksi";
 
 /**
  * Dashboard ops — ringkasan lintas modul dalam satu request.
@@ -16,14 +17,18 @@ import { rankTopProducts, isSaleOrder } from "@/lib/top-products";
 const BULAN = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
 
 /**
- * Penjualan (omset/HPP/laba/terlaris) hanya dihitung dari pesanan yang SUDAH DIBAYAR.
+ * Penjualan (omset/HPP/laba/AOV/margin) hanya dihitung dari pesanan yang SUDAH DIBAYAR.
  * `pending` = menunggu transfer: stoknya sudah direservasi saat order dibuat
- * (lihat /api/orders & /api/open-order), tapi belum jadi penjualan. `dibatalkan`
- * tentu tidak dihitung. Kalau kamu ubah alur pembayaran, ubah daftar ini.
+ * (lihat /api/orders & /api/open-order), tapi uangnya belum masuk. `dibatalkan` tentu tidak.
+ *
+ * Daftarnya memakai SATU aturan bersama `SALE_STATUSES` (src/lib/transaksi.ts) — sama dengan
+ * kartu "Total Omset" di menu Transaksi, Database Kota, dan Total Belanja pelanggan, supaya
+ * angka antar layar tidak bisa berbeda. Status `dikirim` IKUT dihitung karena pesanannya sudah
+ * dibayar (dulu daftarnya cuma `diproses`+`selesai`, jadi pesanan yang sudah dikirim hilang
+ * dari omset dashboard padahal dihitung di menu Transaksi).
  */
-const PAID_ORDER_STATUS = ["diproses", "selesai"];
 const isPaidOrder = (o: { status?: string | null }) =>
-  PAID_ORDER_STATUS.includes(String(o?.status || "").toLowerCase());
+  SALE_STATUSES.includes(String(o?.status || "").toLowerCase());
 
 /**
  * Batas awal/akhir bulan (WIB) untuk parameter `YYYY-MM`.

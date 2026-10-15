@@ -13,8 +13,14 @@
  *    (`order_items.price`), bukan harga produk sekarang, dan hanya dari baris itu.
  */
 
-/** Status pesanan yang dianggap penjualan sah. */
-export const SALE_ORDER_STATUS = ["diproses", "dikirim", "selesai"] as const;
+import { SALE_STATUSES } from "@/lib/transaksi";
+
+/**
+ * Status pesanan yang dianggap penjualan sah — SATU sumbernya di `src/lib/transaksi.ts`
+ * (`SALE_STATUSES`), dipakai bareng menu Transaksi, Database Kota, Pelanggan, dan Dashboard ops
+ * supaya definisi "omset" tidak bisa berbeda antar layar.
+ */
+export const SALE_ORDER_STATUS = SALE_STATUSES;
 
 export function isSaleOrder(status?: string | null): boolean {
   const s = String(status || "").toLowerCase();
