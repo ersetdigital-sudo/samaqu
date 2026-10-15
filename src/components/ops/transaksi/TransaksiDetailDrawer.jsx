@@ -8,6 +8,7 @@
  * ditampilkan (datanya belum ada).
  */
 
+import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Ban, Pencil, Receipt, X } from "lucide-react";
 import { NEUTRAL_ITEM_PHOTO } from "@/lib/order-photo";
@@ -17,6 +18,22 @@ import { SOURCE_STYLES, STATUS_STYLES, formatRupiah, formatTanggalJamID } from "
 export default function TransaksiDetailDrawer({ open, order, onClose, onEdit, onCancel }) {
   const status = order ? STATUS_STYLES[order.status] : null;
   const source = order ? SOURCE_STYLES[order.source] : null;
+
+  // Scroll halaman dikunci selama drawer terbuka supaya scrollbar halaman tidak menimpa
+  // tepi kanan drawer.
+  useEffect(() => {
+    if (!open) return undefined;
+    const { body, documentElement } = document;
+    const gap = window.innerWidth - documentElement.clientWidth;
+    const previousOverflow = body.style.overflow;
+    const previousPadding = body.style.paddingRight;
+    body.style.overflow = "hidden";
+    if (gap > 0) body.style.paddingRight = `${gap}px`;
+    return () => {
+      body.style.overflow = previousOverflow;
+      body.style.paddingRight = previousPadding;
+    };
+  }, [open]);
 
   return (
     <AnimatePresence>
@@ -57,7 +74,7 @@ export default function TransaksiDetailDrawer({ open, order, onClose, onEdit, on
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-5 py-5 space-y-5">
+            <div className="transaksi-body flex-1 overflow-y-auto px-5 py-5 space-y-5" style={{ scrollbarWidth: "none" }}>
               <div className="flex flex-wrap items-center gap-2">
                 <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold ${status?.badge || ""}`}>
                   {status?.icon ? <status.icon size={12} /> : null}

@@ -31,7 +31,7 @@ import { useToast } from "@/components/ops/ui/use-toast";
 
 const inputClass =
   "w-full px-3 py-2 bg-gray-50 dark:bg-slate-900 border-2 border-gray-200 dark:border-slate-700 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 text-sm font-semibold text-slate-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed";
-const labelClass = "text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block mb-1.5";
+const labelClass = "text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block mb-1";
 const sectionClass = "text-[11px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500";
 const cmpId = (a, b) => String(a).localeCompare(String(b), "id", { sensitivity: "base" });
 
@@ -74,6 +74,10 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
   /** Alamat diketik baru (bukan dari daftar tersimpan) → ikut masuk buku alamat pelanggan. */
   const [newAddressForCustomer, setNewAddressForCustomer] = useState(false);
   const prefilledFor = useRef(null);
+  /** Penanda pelanggan yang alamatnya sudah diisi otomatis (sekali per pelanggan). */
+  const prefilledAddressFor = useRef(null);
+  /** Nomor pesanan sumber alamat yang sedang terisi otomatis (ditampilkan sebagai keterangan). */
+  const [addressPrefilledFrom, setAddressPrefilledFrom] = useState("");
 
   const { data: variants = [] } = useQuery({
     queryKey: ["transaksi", "variants"],
@@ -88,14 +92,23 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
     staleTime: 60_000,
   });
 
-  // Alamat tersimpan pelanggan yang dipilih + pilihan wilayah (provinsi/kota/kecamatan).
+  // Alamat pelanggan: daftar alamat tersimpan + alamat pesanan terakhirnya (untuk auto-isi).
   const selectedCustomerId = form?.customer_mode === "existing" ? form?.customer_id || "" : "";
-  const { data: savedAddresses = [], isSuccess: addressesLoaded } = useQuery({
-    queryKey: ["transaksi", "alamat", selectedCustomerId],
-    queryFn: () => base44.entities.Transaction.addresses(selectedCustomerId),
-    enabled: isOpen && Boolean(selectedCustomerId),
+  const selectedCustomerName = form?.customer_mode === "existing" ? form?.customer_name || "" : "";
+  const selectedCustomerPhone = form?.customer_mode === "existing" ? form?.customer_whatsapp || "" : "";
+  const { data: addressData, isSuccess: addressesLoaded } = useQuery({
+    queryKey: ["transaksi", "alamat", selectedCustomerId, selectedCustomerPhone, selectedCustomerName],
+    queryFn: () =>
+      base44.entities.Transaction.addresses({
+        customer_id: selectedCustomerId,
+        whatsapp: selectedCustomerPhone,
+        name: selectedCustomerName,
+      }),
+    enabled: isOpen && Boolean(selectedCustomerId || selectedCustomerName),
     staleTime: 30_000,
   });
+  const savedAddresses = addressData?.addresses || [];
+  const lastCustomerAddress = addressData?.last || null;
   const { data: provinces = [] } = useQuery({
     queryKey: ["transaksi", "wilayah", "provinsi"],
     queryFn: () => base44.entities.Wilayah.provinces(),
@@ -141,6 +154,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
   useEffect(() => {
     if (!isOpen) {
       prefilledFor.current = null;
+      prefilledAddressFor.current = null;
       setConfirmClose(false);
       return;
     }
@@ -148,6 +162,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
     setTouched(false);
     setSaveAttempted(false);
     setNewAddressForCustomer(false);
+    setAddressPrefilledFrom("");
     setStep(0);
     if (initialData) {
       const parts = isoToWibInput(initialData.created_at);
@@ -206,6 +221,39 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
     applySavedAddress(savedAddresses.find((address) => address.is_default) || savedAddresses[0]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, form?.customer_mode, form?.address_mode, form?.saved_address_id, savedAddresses]);
+
+  /**
+   * Pelanggan dipilih tapi belum punya alamat tersimpan → isi otomatis dari alamat PESANAN
+   * TERAKHIRNYA supaya admin tidak mengetik ulang. Sekali per pelanggan (kalau kolomnya
+   * dikosongkan sendiri oleh admin, tidak diisi ulang).
+   */
+  useEffect(() => {
+    if (!isOpen || !form || !lastCustomerAddress) return;
+    if (form.customer_mode !== "existing") return;
+    // Pelanggan yang sudah punya alamat tersimpan tetap memakai alamat tersimpannya.
+    if (savedAddresses.length > 0) return;
+    if (form.address) return;
+    const key = selectedCustomerId || selectedCustomerName;
+    if (!key || prefilledAddressFor.current === key) return;
+    prefilledAddressFor.current = key;
+
+    setForm((current) =>
+      current
+        ? {
+            ...current,
+            address_mode: "new",
+            saved_address_id: "",
+            address: lastCustomerAddress.address || "",
+            province: lastCustomerAddress.province || "",
+            city: lastCustomerAddress.city || "",
+            kecamatan: lastCustomerAddress.kecamatan || "",
+            postal_code: lastCustomerAddress.postal_code || "",
+          }
+        : current,
+    );
+    setAddressPrefilledFrom(lastCustomerAddress.order_number || "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, form?.customer_mode, form?.address, lastCustomerAddress, selectedCustomerId, selectedCustomerName, savedAddresses.length]);
 
   /* ── Pelanggan terdaftar tanpa alamat tersimpan: isian alamat langsung tampil & ikut disimpan ── */
   useEffect(() => {
@@ -530,6 +578,25 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, confirmClose, touched, mutation.isPending]);
 
+  /**
+   * Selama drawer terbuka, scroll halaman dikunci. Kalau tidak, scrollbar halaman tampak
+   * menimpa tepi kanan drawer (dan latar belakang ikut bergeser waktu di-scroll).
+   * Lebar scrollbar yang hilang diganti padding supaya isi halaman tidak "melompat".
+   */
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const { body, documentElement } = document;
+    const gap = window.innerWidth - documentElement.clientWidth;
+    const previousOverflow = body.style.overflow;
+    const previousPadding = body.style.paddingRight;
+    body.style.overflow = "hidden";
+    if (gap > 0) body.style.paddingRight = `${gap}px`;
+    return () => {
+      body.style.overflow = previousOverflow;
+      body.style.paddingRight = previousPadding;
+    };
+  }, [isOpen]);
+
   return (
     <AnimatePresence>
       {isOpen && form && (
@@ -615,7 +682,8 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                 if (step < 2) goNext();
                 else save();
               }}
-              className="flex-1 min-h-0 overflow-y-auto [@media(min-height:768px)]:overflow-hidden no-scrollbar px-5 sm:px-6 py-4 space-y-4"
+              className="transaksi-body flex-1 min-h-0 overflow-y-auto [@media(min-height:640px)_and_(min-width:640px)]:overflow-hidden px-5 sm:px-6 py-3 space-y-3.5"
+              style={{ scrollbarWidth: "none" }}
             >
               {/* ── Langkah 1: Pelanggan (termasuk alamat & sumber/waktu) ── */}
               {step === 0 && (
@@ -641,7 +709,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                         postal_code: "",
                       });
                     }}
-                    className={`flex-1 px-4 py-2 rounded-lg border-2 text-sm font-bold transition-all ${
+                    className={`flex-1 px-4 py-1.5 rounded-lg border-2 text-sm font-bold transition-all ${
                       form.customer_mode === "existing"
                         ? "bg-slate-100 dark:bg-slate-800 border-slate-400 dark:border-slate-500 text-slate-900 dark:text-white"
                         : "bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-700 text-slate-500 dark:text-slate-400"
@@ -652,7 +720,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                   <button
                     type="button"
                     onClick={() => updateForm({ customer_mode: "new", customer_id: "" })}
-                    className={`flex-1 px-4 py-2 rounded-lg border-2 text-sm font-bold transition-all ${
+                    className={`flex-1 px-4 py-1.5 rounded-lg border-2 text-sm font-bold transition-all ${
                       form.customer_mode === "new"
                         ? "bg-slate-100 dark:bg-slate-800 border-slate-400 dark:border-slate-500 text-slate-900 dark:text-white"
                         : "bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-700 text-slate-500 dark:text-slate-400"
@@ -847,12 +915,20 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                         <textarea
                           rows={2}
                           value={form.address}
-                          onChange={(event) => updateForm({ address: event.target.value })}
+                          onChange={(event) => {
+                            setAddressPrefilledFrom("");
+                            updateForm({ address: event.target.value });
+                          }}
                           placeholder="Nama jalan, nomor rumah, RT/RW, patokan"
                           className={`${inputClass} ${saveAttempted && addressErrors.address ? "border-red-300 dark:border-red-900/60" : ""}`}
                         />
                         {addressErrorText("address") ? (
                           <p className="text-xs font-semibold text-red-600 dark:text-red-400 mt-1">{addressErrorText("address")}</p>
+                        ) : null}
+                        {addressPrefilledFrom ? (
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                            Terisi otomatis dari pesanan terakhir {addressPrefilledFrom} — bisa diubah.
+                          </p>
                         ) : null}
                       </div>
 
