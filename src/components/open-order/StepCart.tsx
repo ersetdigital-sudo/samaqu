@@ -8,6 +8,7 @@ import { Trash2 } from "lucide-react";
 import { cloudinaryUrl } from "@/lib/cloudinary";
 import { money, openOrderImage } from "@/lib/open-order-catalog";
 import { OPEN_ORDER_ADDON } from "@/lib/open-order-config";
+import { formatWeight } from "@/lib/shipping-weight";
 import { findOpenOrderProduct, openOrderColorLabel, type OpenOrderProduct } from "@/lib/open-order-offering";
 import type { CartLine } from "./types";
 import { Counter, FIELD_BG, GhostButton, LINE, MUTED, PrimaryButton, SummaryRow } from "./ui";
@@ -56,6 +57,9 @@ export default function StepCart({
   subtotal,
   extraCover,
   onToggleExtra,
+  itemsWeight,
+  addonWeight,
+  totalWeight,
   onQuantity,
   onRemove,
   onContinue,
@@ -66,6 +70,12 @@ export default function StepCart({
   subtotal: number;
   extraCover: boolean;
   onToggleExtra: (next: boolean) => void;
+  /** Berat barang saja (gram) — tanpa add-on. */
+  itemsWeight: number;
+  /** Berat add-on Cover & Hanger (gram) bila dipilih. */
+  addonWeight: number;
+  /** Total berat kirim (gram) — barang + add-on, minimum 300 g (dipakai hitungan ongkir). */
+  totalWeight: number;
   onQuantity: (key: number, quantity: number) => void;
   onRemove: (key: number) => void;
   onContinue: () => void;
@@ -164,6 +174,13 @@ export default function StepCart({
         </div>
         <div className="mt-3 pt-3" style={{ borderTop: `1px solid ${LINE}` }}>
           <SummaryRow label="Total" value={money(total)} strong />
+        </div>
+        <div className="mt-3 space-y-2.5 pt-3" style={{ borderTop: `1px solid ${LINE}` }}>
+          <SummaryRow label="Berat produk" value={formatWeight(itemsWeight)} />
+          {extraCover && (
+            <SummaryRow label={OPEN_ORDER_ADDON.name} value={`+${formatWeight(addonWeight)}`} />
+          )}
+          <SummaryRow label="Total berat" value={formatWeight(totalWeight)} strong />
         </div>
         <p className="mt-2 text-[11.5px] leading-relaxed" style={{ color: MUTED }}>
           Ongkir dihitung otomatis dari kecamatan tujuan di langkah berikutnya.

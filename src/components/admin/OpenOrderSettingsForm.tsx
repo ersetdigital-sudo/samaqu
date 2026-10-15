@@ -20,7 +20,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { AlertTriangle, Calendar, Edit, Loader2 } from "lucide-react";
+import { AlertTriangle, Calendar, Edit, Loader2, Shirt } from "lucide-react";
 import { useToast } from "@/components/AdminToast";
 import ProductsCatalog, { type CatalogCard } from "@/components/admin/ProductsCatalog";
 import { getProducts } from "@/lib/db";
@@ -131,6 +131,12 @@ export default function OpenOrderSettingsForm() {
   // Nilai tanggal terakhir yang tersimpan — dasar tombol Batal & penanda perubahan.
   const [original, setOriginal] = useState({ start: "", end: "" });
 
+  // Berat kirim add-on "Extra Cover & Hanger" (gram) — setting internal, tidak tampil di publik.
+  const [addonWeight, setAddonWeight] = useState("");
+  const [originalAddonWeight, setOriginalAddonWeight] = useState("");
+  const [editingAddon, setEditingAddon] = useState(false);
+  const [savingAddon, setSavingAddon] = useState(false);
+
   // Produk di Open Order (kartu katalog + sakelar)
   const [items, setItems] = useState<CatalogCard[]>([]);
   const [thumbnails, setThumbnails] = useState<Record<string, string>>({});
@@ -142,7 +148,7 @@ export default function OpenOrderSettingsForm() {
 
     supabase
       .from("store_settings")
-      .select("open_order_start_date, open_order_end_date")
+      .select("open_order_start_date, open_order_end_date, open_order_addon_weight")
       .eq("id", 1)
       .single()
       .then(({ data, error }) => {
@@ -156,6 +162,10 @@ export default function OpenOrderSettingsForm() {
           setStart(savedStart);
           setEnd(savedEnd);
           setOriginal({ start: savedStart, end: savedEnd });
+
+          const savedAddon = data.open_order_addon_weight == null ? "" : String(data.open_order_addon_weight);
+          setAddonWeight(savedAddon);
+          setOriginalAddonWeight(savedAddon);
         }
         setLoading(false);
       });
@@ -225,6 +235,34 @@ export default function OpenOrderSettingsForm() {
     toast.showToast("success", "Jendela Open Order disimpan");
   }
 
+  /**
+   * Simpan berat add-on Extra Cover & Hanger (gram) ke `store_settings`. Nilai ini
+   * dipakai hitungan ongkir J&T di wizard /open-order dan divalidasi ulang di server.
+   */
+  async function saveAddon() {
+    const grams = Math.round(Number(addonWeight));
+    if (!Number.isFinite(grams) || grams <= 0) {
+      toast.showToast("error", "Berat harus berupa angka lebih dari 0 gram");
+      return;
+    }
+    setSavingAddon(true);
+    const { error } = await supabase.from("store_settings").upsert({
+      id: 1,
+      open_order_addon_weight: grams,
+      updated_at: new Date().toISOString(),
+    });
+    setSavingAddon(false);
+    if (error) {
+      toast.showToast("error", error.message);
+      return;
+    }
+    const saved = String(grams);
+    setAddonWeight(saved);
+    setOriginalAddonWeight(saved);
+    setEditingAddon(false);
+    toast.showToast("success", "Berat Cover & Hanger disimpan");
+  }
+
   /** Sakelar kartu: simpan langsung ke SEMUA baris katalog pada grup nama + kategori ini. */
   async function toggleProduct(card: CatalogCard) {
     const next = card.openOrderEnabled === false;
@@ -274,9 +312,10 @@ export default function OpenOrderSettingsForm() {
         >
           <AlertTriangle size={18} className="mt-0.5 shrink-0" style={{ color: "var(--gold-deep)" }} />
           <p className="text-[13px] leading-relaxed" style={{ color: "#7a5c22" }}>
-            Kolom <code>open_order_start_date</code> / <code>open_order_end_date</code> belum ada di
-            Supabase. Jalankan <code>supabase/open-order-settings.sql</code> di SQL editor Supabase,
-            lalu muat ulang halaman ini.
+            Kolom pengaturan Open Order belum lengkap di Supabase. Jalankan{" "}
+            <code>supabase/open-order-settings.sql</code> dan{" "}
+            <code>supabase/open-order-addon-weight.sql</code> di SQL editor Supabase, lalu muat
+            ulang halaman ini.
           </p>
         </div>
       )}
@@ -405,6 +444,96 @@ export default function OpenOrderSettingsForm() {
                 >
                   <Edit size={16} />
                   Edit tanggal
+                </button>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Extra Cover & Hanger — berat kirim add-on (internal, tidak tampil di publik). */}
+      <div className="max-w-3xl rounded-2xl bg-white p-6 sm:p-7" style={{ border: "1px solid rgba(17,17,17,.08)" }}>
+        <div className="flex items-start gap-3">
+          <span
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-full"
+            style={{ background: "rgba(17,17,17,.04)", color: "var(--espresso)" }}
+          >
+            <Shirt size={17} />
+          </span>
+          <div>
+            <p className="text-[14px] font-semibold" style={{ color: "var(--espresso)" }}>
+              Extra Cover &amp; Hanger
+            </p>
+            <p className="mt-1 text-[12.5px] leading-relaxed" style={{ color: LABEL_COLOR }}>
+              Berat kirim add-on ini dipakai untuk hitungan ongkir J&amp;T. Hanya untuk internal —
+              tidak ditampilkan sebagai pengaturan di halaman publik.
+            </p>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="flex justify-center py-8">
+            <Loader2 size={20} className="animate-spin" style={{ color: "var(--gold)" }} />
+          </div>
+        ) : (
+          <>
+            <div className="mt-6 max-w-xs">
+              <span className={LABEL} style={labelStyle}>
+                Berat (gram)
+              </span>
+              {editingAddon ? (
+                <input
+                  type="number"
+                  min={1}
+                  step={1}
+                  inputMode="numeric"
+                  value={addonWeight}
+                  onChange={(e) => setAddonWeight(e.target.value)}
+                  className="mt-2 w-full rounded-xl px-4 py-3 text-sm outline-none transition-colors duration-150"
+                  style={fieldStyle}
+                />
+              ) : (
+                <p className="mt-2 text-sm font-medium" style={{ color: addonWeight ? "var(--espresso)" : LABEL_COLOR }}>
+                  {addonWeight ? `${Number(addonWeight).toLocaleString("id-ID")} gram` : "Belum diatur (default 300 g)"}
+                </p>
+              )}
+            </div>
+
+            <div className="mt-5 flex flex-wrap items-center justify-end gap-3">
+              {editingAddon ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={saveAddon}
+                    disabled={savingAddon}
+                    className="inline-flex items-center gap-2 rounded-xl px-5 py-3 text-[13.5px] font-semibold text-white transition-opacity duration-150 disabled:opacity-50"
+                    style={{ background: "var(--espresso)" }}
+                  >
+                    {savingAddon ? <Loader2 size={16} className="animate-spin" /> : <Edit size={16} />}
+                    Simpan
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAddonWeight(originalAddonWeight);
+                      setEditingAddon(false);
+                    }}
+                    disabled={savingAddon}
+                    className="inline-flex items-center rounded-xl px-5 py-3 text-[13.5px] font-semibold transition-colors duration-150 disabled:opacity-50"
+                    style={{ border: "1px solid rgba(17,17,17,.14)", color: "var(--espresso)" }}
+                  >
+                    Batal
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setEditingAddon(true)}
+                  className="inline-flex items-center gap-2 rounded-xl px-5 py-3 text-[13.5px] font-semibold transition-colors duration-150"
+                  style={{ border: "1px solid rgba(17,17,17,.14)", color: "var(--espresso)" }}
+                >
+                  <Edit size={16} />
+                  Edit berat
                 </button>
               )}
             </div>
