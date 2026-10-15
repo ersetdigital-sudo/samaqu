@@ -40,6 +40,12 @@ const STOCK_IN = "/api/ops/stock-in";
 const TRANSACTIONS = "/api/ops/transactions";
 /** Menu Transaksi: daftar per pesanan + pencatatan transaksi manual. */
 const TRANSAKSI = "/api/ops/transaksi";
+/** Buku alamat pelanggan (tabel `saved_addresses` yang sama dengan checkout website). */
+const ALAMAT = "/api/ops/alamat";
+/** Provinsi/kota/kecamatan dari dataset area J&T (untuk isian alamat). */
+const WILAYAH = "/api/ops/wilayah";
+/** Sebaran pesanan per kota (menu Database Kota). */
+const KOTA = "/api/ops/kota";
 const CUSTOMERS = "/api/ops/customers";
 
 /** Base44 memakai sort "-created_date" (desc). Kita terjemahkan ke parameter API. */
@@ -187,6 +193,55 @@ export const base44 = {
           action: "cancel",
           order_number: orderNumber,
         });
+      },
+
+      /** Alamat tersimpan milik satu pelanggan (untuk tab "Pelanggan terdaftar"). */
+      async addresses(customerId: string) {
+        if (!customerId) return [];
+        const params = new URLSearchParams({ customer_id: customerId });
+        const json = await call<{ items: any[] }>("GET", `${ALAMAT}?${params.toString()}`);
+        return json.items ?? [];
+      },
+
+      /** Simpan alamat baru ke buku alamat pelanggan. */
+      async saveAddress(data: any) {
+        const json = await call<{ item: any }>("POST", ALAMAT, data);
+        return json.item ?? null;
+      },
+    },
+
+    /** Provinsi/kota/kecamatan (sumbernya dataset area J&T yang sudah ada). */
+    Wilayah: {
+      async provinces() {
+        const json = await call<{ provinces: string[] }>("GET", WILAYAH);
+        return json.provinces ?? [];
+      },
+      async cities(province: string) {
+        const params = new URLSearchParams({ province });
+        const json = await call<{ cities: string[] }>("GET", `${WILAYAH}?${params.toString()}`);
+        return json.cities ?? [];
+      },
+      async districts(city: string) {
+        const params = new URLSearchParams({ city });
+        const json = await call<{ districts: string[] }>("GET", `${WILAYAH}?${params.toString()}`);
+        return json.districts ?? [];
+      },
+    },
+
+    /** Menu Database Kota: sebaran pesanan per kota beserta rinciannya. */
+    Kota: {
+      async list(params: { start?: string; end?: string; source?: string; province?: string; q?: string }) {
+        const search = new URLSearchParams();
+        if (params?.start) search.set("start", params.start);
+        if (params?.end) search.set("end", params.end);
+        if (params?.source && params.source !== "all") search.set("source", params.source);
+        if (params?.province && params.province !== "all") search.set("province", params.province);
+        if (params?.q) search.set("q", params.q);
+        const json = await call<{ items: any[]; totals: any; options: any }>(
+          "GET",
+          `${KOTA}?${search.toString()}`,
+        );
+        return { items: json.items ?? [], totals: json.totals ?? null, options: json.options ?? { provinces: [], sources: [] } };
       },
     },
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Users } from "lucide-react";
 import { base44 } from "@/lib/ops-api";
@@ -10,8 +11,18 @@ import type { DirectoryCustomer } from "@/lib/customer-directory";
  * Pusat data pelanggan di dashboard ops — sumber yang sama dengan panel Pelanggan admin
  * (`GET /api/ops/customers` → `buildCustomerDirectory`), tampilannya pakai komponen bersama
  * `CustomerDirectoryView` (filter + sort + drawer detail).
+ *
+ * Mendukung `?q=` supaya tautan dari menu lain (mis. Database Kota) langsung membuka
+ * pelanggan yang dimaksud. Tanpa parameter itu halaman tampil seperti biasa.
  */
 export default function OpsPelangganPage() {
+  const [initialQuery, setInitialQuery] = useState("");
+
+  useEffect(() => {
+    const param = new URLSearchParams(window.location.search).get("q") || "";
+    if (param) setInitialQuery(param);
+  }, []);
+
   const { data: customers = [], isLoading } = useQuery<DirectoryCustomer[]>({
     queryKey: ["customers"],
     queryFn: () => base44.entities.Customer.list(),
@@ -33,7 +44,12 @@ export default function OpsPelangganPage() {
         </div>
       </div>
 
-      <CustomerDirectoryView customers={customers} loading={isLoading} emptyText="Belum ada pelanggan" />
+      <CustomerDirectoryView
+        customers={customers}
+        loading={isLoading}
+        emptyText="Belum ada pelanggan"
+        initialQuery={initialQuery}
+      />
     </div>
   );
 }

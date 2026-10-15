@@ -9,6 +9,7 @@ import {
   FileText,
   LayoutDashboard,
   LogOut,
+  MapPin,
   Menu,
   Package,
   RotateCcw,
@@ -39,6 +40,7 @@ const MENU_GROUPS: { label: string; items: MenuItem[] }[] = [
       { title: "Follow-up", href: "/ops/follow-up", icon: IconPhoneCall },
       { title: "Laporan Leads", href: "/ops/leads/laporan", icon: BarChart3 },
       { title: "Pelanggan", href: "/ops/pelanggan", icon: Users },
+      { title: "Database Kota", href: "/ops/database-kota", icon: MapPin },
     ],
   },
   {

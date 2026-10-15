@@ -3,6 +3,8 @@ import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { isOpsAdmin, unauthorized } from "@/lib/ops-auth";
 import { cancelOrderCompletely, type CancelableOrder } from "@/lib/cancel-order";
 import { MANUAL_SOURCE_KEYS, itemSummary, sourceKey, sourceLabel, statusLabel } from "@/lib/transaksi";
+import { localPhone } from "@/lib/whatsapp";
+import { kotaFromShipping } from "@/lib/kota";
 
 /**
  * Menu "Transaksi" dashboard internal.
@@ -47,6 +49,71 @@ function newOrderNumber(createdAt: Date) {
 }
 
 type ItemInput = { product_id?: unknown; color?: unknown; size?: unknown; quantity?: unknown };
+
+type Shipping = {
+  address: string;
+  province: string;
+  city: string;
+  kecamatan: string;
+  postal_code: string;
+};
+
+/** Isian alamat wajib lengkap — sama seperti checkout website. */
+function readShipping(body: any): { shipping?: Shipping; error?: string } {
+  const address = String(body?.shipping?.address || "").trim();
+  const province = String(body?.shipping?.province || "").trim();
+  const city = String(body?.shipping?.city || "").trim();
+  const kecamatan = String(body?.shipping?.kecamatan || "").trim();
+  const postalCode = String(body?.shipping?.postal_code || "").trim();
+  if (!address) return { error: "Alamat lengkap wajib diisi" };
+  if (!province) return { error: "Provinsi wajib dipilih" };
+  if (!city) return { error: "Kota/Kabupaten wajib dipilih" };
+  if (!kecamatan) return { error: "Kecamatan wajib diisi" };
+  if (!postalCode) return { error: "Kode pos wajib diisi" };
+  return { shipping: { address, province, city, kecamatan, postal_code: postalCode } };
+}
+
+/**
+ * `orders.shipping_city` tetap disimpan "<kecamatan>, <kota>" — format yang sama dengan
+ * checkout website, karena kolom itu dipakai saat admin membuat resi J&T.
+ * Provinsi & kecamatan juga disimpan terpisah di kolomnya masing-masing.
+ */
+const shippingCityValue = (shipping: Shipping) =>
+  [shipping.kecamatan, shipping.city].filter(Boolean).join(", ");
+
+/** Tambah alamat baru ke daftar alamat pelanggan (tabel yang sama dengan checkout). */
+async function saveCustomerAddress(
+  admin: Admin,
+  customerId: string | null,
+  name: string,
+  whatsapp: string,
+  shipping: Shipping,
+) {
+  if (!customerId) return;
+  const { data: existing } = await admin
+    .from("saved_addresses")
+    .select("id")
+    .eq("customer_id", customerId)
+    .limit(1);
+  const isFirst = (existing || []).length === 0;
+
+  const { error } = await admin.from("saved_addresses").insert({
+    customer_id: customerId,
+    label: "Alamat",
+    recipient_name: name || "Pelanggan",
+    phone: localPhone(whatsapp),
+    address: shipping.address,
+    province: shipping.province,
+    city: shipping.city,
+    kecamatan: shipping.kecamatan,
+    postal_code: shipping.postal_code,
+    is_default: isFirst,
+  });
+  // Alamat gagal disimpan tidak boleh menggagalkan transaksinya — alamatnya sudah
+  // tercatat di pesanan, ini cuma menambahkannya ke buku alamat pelanggan.
+  if (error) console.error("[OPS] simpan alamat pelanggan:", error.message);
+}
+
 type Snapshot = {
   product_id: string;
   product_name: string;
@@ -158,7 +225,7 @@ export async function GET(req: NextRequest) {
   let query = admin
     .from("orders")
     .select(
-      "id, order_number, created_at, customer_id, customer_name, customer_whatsapp, status, source, subtotal, discount, shipping_cost, total, shipping_notes, awb_no",
+      "id, order_number, created_at, customer_id, customer_name, customer_whatsapp, status, source, subtotal, discount, shipping_cost, total, shipping_notes, awb_no, shipping_address, shipping_city, shipping_province, shipping_kecamatan, shipping_postal_code",
     )
     .order("created_at", { ascending: false })
     .limit(limit);
@@ -205,6 +272,14 @@ export async function GET(req: NextRequest) {
       shipping_cost: Number(order.shipping_cost) || 0,
       total: Number(order.total) || 0,
       notes: order.shipping_notes || "",
+      shipping_address: order.shipping_address || "",
+      shipping_city: order.shipping_city || "",
+      shipping_province: order.shipping_province || "",
+      shipping_kecamatan: order.shipping_kecamatan || "",
+      shipping_postal_code: order.shipping_postal_code || "",
+      // Kota dipisah dari `shipping_city` ("<kecamatan>, <kota>") supaya layar tidak perlu
+      // tahu aturan penggabungannya.
+      kota: kotaFromShipping(order.shipping_city, order.shipping_kecamatan),
       qty_total: rows.reduce((sum, row) => sum + (Number(row.quantity) || 0), 0),
       item_summary: itemSummary(rows),
       items: rows,
@@ -240,6 +315,10 @@ export async function POST(req: NextRequest) {
     if (!MANUAL_SOURCE_KEYS.includes(source)) return bad("Sumber transaksi tidak valid");
     if (Number.isNaN(createdAt.getTime())) return bad("Tanggal/jam transaksi tidak valid");
 
+    const shippingResult = readShipping(body);
+    if (shippingResult.error || !shippingResult.shipping) return bad(shippingResult.error || "Alamat belum lengkap");
+    const shipping = shippingResult.shipping;
+
     const admin = getSupabaseAdmin();
     const snapshot = await buildSnapshot(admin, inputItems);
     if (snapshot.error || !snapshot.items) return bad(snapshot.error || "Produk tidak valid");
@@ -260,10 +339,13 @@ export async function POST(req: NextRequest) {
       customer_id: customerId,
       customer_name: customerName,
       customer_whatsapp: customerWhatsapp,
-      // Transaksi manual tidak lewat kurir: alamat & metode pengiriman dibiarkan netral,
-      // sedangkan catatan admin disimpan di kolom catatan pengiriman.
-      shipping_address: "-",
-      shipping_city: "-",
+      // Alamat yang diisi admin disimpan di pesanan — inilah yang dibaca menu Pelanggan
+      // ("Riwayat Belanja & Alamat") dan Database Kota.
+      shipping_address: shipping.address,
+      shipping_city: shippingCityValue(shipping),
+      shipping_kecamatan: shipping.kecamatan,
+      shipping_province: shipping.province,
+      shipping_postal_code: shipping.postal_code,
       shipping_notes: notes || null,
       shipping_cost: shippingCost,
       payment_method: "cash",
@@ -320,6 +402,9 @@ export async function POST(req: NextRequest) {
       console.error("[OPS] transaksi items:", itemsError.message);
       return bad("Gagal menyimpan produk transaksi. Coba lagi.");
     }
+
+    // Alamat baru (kalau admin menambahkannya) ikut masuk buku alamat pelanggan.
+    if (body?.save_address) await saveCustomerAddress(admin, customerId, customerName, customerWhatsapp, shipping);
 
     return NextResponse.json({ order_number: order.order_number, total });
   } catch (e) {
@@ -396,6 +481,10 @@ export async function PATCH(req: NextRequest) {
     if (!MANUAL_SOURCE_KEYS.includes(source)) return bad("Sumber transaksi tidak valid");
     if (Number.isNaN(createdAt.getTime())) return bad("Tanggal/jam transaksi tidak valid");
 
+    const shippingResult = readShipping(body);
+    if (shippingResult.error || !shippingResult.shipping) return bad(shippingResult.error || "Alamat belum lengkap");
+    const shipping = shippingResult.shipping;
+
     const snapshot = await buildSnapshot(admin, inputItems);
     if (snapshot.error || !snapshot.items) return bad(snapshot.error || "Produk tidak valid");
     const items = snapshot.items;
@@ -468,6 +557,11 @@ export async function PATCH(req: NextRequest) {
         customer_whatsapp: customerWhatsapp,
         customer_id: String(body?.customer_id || "").trim() || order.customer_id || null,
         source,
+        shipping_address: shipping.address,
+        shipping_city: shippingCityValue(shipping),
+        shipping_kecamatan: shipping.kecamatan,
+        shipping_province: shipping.province,
+        shipping_postal_code: shipping.postal_code,
         shipping_notes: notes || null,
         shipping_cost: shippingCost,
         discount: finalDiscount,
@@ -505,6 +599,17 @@ export async function PATCH(req: NextRequest) {
     if (insertError) {
       console.error("[OPS] transaksi PATCH insert items:", insertError.message);
       return NextResponse.json({ error: "Gagal menyimpan produk transaksi" }, { status: 500 });
+    }
+
+    // Alamat baru (kalau admin menambahkannya) ikut masuk buku alamat pelanggan.
+    if (body?.save_address) {
+      await saveCustomerAddress(
+        admin,
+        String(body?.customer_id || "").trim() || order.customer_id || null,
+        customerName,
+        customerWhatsapp,
+        shipping,
+      );
     }
 
     return NextResponse.json({ order_number: order.order_number, total });

@@ -74,6 +74,22 @@ export default function TransaksiDetailDrawer({ open, order, onClose, onEdit, on
                 {order.notes ? <Row label="Catatan" value={order.notes} /> : null}
               </div>
 
+              {order.shipping_address ? (
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+                    Alamat Pengiriman
+                  </p>
+                  <div className="rounded-2xl border border-slate-200 dark:border-slate-800 px-4 py-3">
+                    <p className="text-sm font-semibold text-slate-900 dark:text-white">{order.shipping_address}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                      {[order.shipping_kecamatan, order.kota, order.shipping_province, order.shipping_postal_code]
+                        .filter(Boolean)
+                        .join(", ") || "Kelengkapan alamat belum terisi"}
+                    </p>
+                  </div>
+                </div>
+              ) : null}
+
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
                   Produk ({order.items?.length || 0} item)
