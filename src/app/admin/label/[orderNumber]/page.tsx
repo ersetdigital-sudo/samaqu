@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { maskPhoneLast4 } from "@/lib/mask-phone";
 import { fetchPaymentMethodById, isPaymentMethodId, legacyPaymentType, normalizeMethodType } from "@/lib/payment-methods";
 import { sumWeightGramsBySize, productWeightMapFromRows, variantWeightMapFromRows } from "@/lib/shipping-weight";
 
@@ -201,7 +202,7 @@ export default function LabelPage() {
         <div style={{ padding: "2mm 3.5mm", border: "2px solid #000", margin: "1.5mm 3.5mm", borderRadius: "1.5mm" }}>
           <div style={{ display: "inline-block", fontSize: "7.5px", fontWeight: "800", background: "#000", color: "#fff", padding: "0.4mm 2mm", borderRadius: "1mm", marginBottom: "1.5mm", textTransform: "uppercase" }}>Penerima</div>
           <div style={{ fontSize: "14px", fontWeight: "800", marginBottom: "1mm" }}>{order.customer_name}</div>
-          <div style={{ fontSize: "10px", fontWeight: "700", marginBottom: "1mm" }}>{order.customer_whatsapp}</div>
+          <div style={{ fontSize: "10px", fontWeight: "700", marginBottom: "1mm" }}>{maskPhoneLast4(order.customer_whatsapp)}</div>
           <div style={{ fontSize: "9px", fontWeight: "600", wordBreak: "break-word", lineHeight: "1.35" }}>
             {order.shipping_address}, {order.shipping_city}{order.shipping_postal_code ? ` ${order.shipping_postal_code}` : ""}
           </div>
@@ -309,7 +310,7 @@ export default function LabelPage() {
         <div style={{ padding: "1.1mm 2.5mm", border: "1.5px solid #000", margin: "1mm 2.5mm", borderRadius: "1mm" }}>
           <div style={{ display: "inline-block", fontSize: "6px", fontWeight: "800", background: "#000", color: "#fff", padding: "0.25mm 1.5mm", borderRadius: "0.8mm", marginBottom: "0.6mm", textTransform: "uppercase" }}>Penerima</div>
           <div style={{ fontSize: "11px", fontWeight: "800", lineHeight: "1.15", wordBreak: "break-word" }}>{order.customer_name}</div>
-          <div style={{ fontSize: "9px", fontWeight: "700", marginTop: "0.3mm" }}>{order.customer_whatsapp}</div>
+          <div style={{ fontSize: "9px", fontWeight: "700", marginTop: "0.3mm" }}>{maskPhoneLast4(order.customer_whatsapp)}</div>
           <div style={{ fontSize: "8px", fontWeight: "600", marginTop: "0.3mm", lineHeight: "1.2", wordBreak: "break-word" }}>
             {order.shipping_address}, {order.shipping_city}{order.shipping_postal_code ? ` ${order.shipping_postal_code}` : ""}
           </div>
