@@ -280,14 +280,18 @@ function SizeGrid({
 export default function TambahProdukPage({
   mode = "admin",
   editProductId,
-}: { mode?: "admin" | "ops"; editProductId?: string } = {}) {
+  priceTarget = "catalog",
+}: { mode?: "admin" | "ops"; editProductId?: string; priceTarget?: "catalog" | "openOrder" } = {}) {
   const router = useRouter();
   const storeSettings = useStoreSettings();
   // Dua mode satu komponen: "admin" (katalog lengkap, dengan foto) dan "ops" (internal:
   // tanpa foto, plus SKU/HPP/Tipe Produk, dan produk baru BELUM tampil di website).
   const isOps = mode === "ops";
   const isEdit = !!editProductId;
-  const backHref = isOps ? "/ops/master-produk" : "/admin";
+  // Harga diarahkan ke kolom khusus Open Order (`open_order_*`) saat `priceTarget = "openOrder"`
+  // (menu Open Order) supaya harga kampanye beda tanpa mengubah harga katalog (`products.price`).
+  const isOpenOrderPrice = priceTarget === "openOrder";
+  const backHref = isOps ? "/ops/master-produk" : isOpenOrderPrice ? "/admin/open-order" : "/admin";
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(!!editProductId);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -376,18 +380,26 @@ export default function TambahProdukPage({
         setSlug(product.id);
         setCategory(product.category);
         setDescription(product.description || "");
-        setBasePrice(product.price != null ? String(product.price) : "");
+        // Harga: mode Open Order membaca kolom `open_order_*` (fallback ke harga katalog bila
+        // belum pernah diatur) supaya form tidak kosong; mode biasa membaca kolom katalog.
+        const priceValue = isOpenOrderPrice ? product.open_order_price ?? product.price : product.price;
+        const minimumValue = isOpenOrderPrice ? product.open_order_minimum_price ?? product.minimum_price : product.minimum_price;
+        const recommendedValue = isOpenOrderPrice ? product.open_order_recommended_price ?? product.recommended_price : product.recommended_price;
+        const cypValue = isOpenOrderPrice ? product.open_order_cyp_enabled ?? product.create_your_price_enabled : product.create_your_price_enabled;
+        const microcopyValue = isOpenOrderPrice ? product.open_order_cyp_microcopy ?? product.cyp_microcopy_override : product.cyp_microcopy_override;
+
+        setBasePrice(priceValue != null ? String(priceValue) : "");
         setWeight(product.weight ? String(product.weight) : "");
         setSeries(product.series || "");
         setCatatanHarga(product.catatan_harga || "");
         setBadgeType(product.badge_type || "");
         setOpenOrderEnabled(product.open_order_enabled ?? true);
         setSelectedJenisKainId(product.jenis_kain_id || "");
-        setCypEnabled(product.create_your_price_enabled || false);
-        setMinimumPrice(product.minimum_price ? String(product.minimum_price) : "");
-        setRecommendedPrice(product.recommended_price ? String(product.recommended_price) : "");
-        setCypMicrocopyOverride(product.cyp_microcopy_override || "");
-        setUseCustomCypMicrocopy(!!product.cyp_microcopy_override);
+        setCypEnabled(cypValue || false);
+        setMinimumPrice(minimumValue ? String(minimumValue) : "");
+        setRecommendedPrice(recommendedValue ? String(recommendedValue) : "");
+        setCypMicrocopyOverride(microcopyValue || "");
+        setUseCustomCypMicrocopy(!!microcopyValue);
         setSku(product.sku || "");
         setHpp(product.hpp ? String(product.hpp) : "");
         setProductType(product.product_type === "free_gift" ? "free_gift" : "normal");
@@ -396,7 +408,7 @@ export default function TambahProdukPage({
         if (product.category === "Thobe" && product.name) {
           const { data: siblings } = await supabase
             .from("products")
-            .select("id, name, series, price, minimum_price, recommended_price, create_your_price_enabled, cyp_microcopy_override, image, images")
+            .select("id, name, series, price, minimum_price, recommended_price, create_your_price_enabled, cyp_microcopy_override, open_order_price, open_order_minimum_price, open_order_recommended_price, open_order_cyp_enabled, open_order_cyp_microcopy, image, images")
             .eq("category", "Thobe")
             .eq("name", product.name)
             .order("created_at", { ascending: true });
@@ -419,14 +431,20 @@ export default function TambahProdukPage({
             }));
             const varList = Object.values(colorGroups);
             seriesNames.push(sib.series);
+            // Mode Open Order: pakai kolom `open_order_*` (fallback ke harga katalog tiap series).
+            const blockPrice = isOpenOrderPrice ? sib.open_order_price ?? sib.price : sib.price;
+            const blockMinimum = isOpenOrderPrice ? sib.open_order_minimum_price ?? sib.minimum_price : sib.minimum_price;
+            const blockRecommended = isOpenOrderPrice ? sib.open_order_recommended_price ?? sib.recommended_price : sib.recommended_price;
+            const blockCyp = isOpenOrderPrice ? sib.open_order_cyp_enabled ?? sib.create_your_price_enabled : sib.create_your_price_enabled;
+            const blockMicrocopy = isOpenOrderPrice ? sib.open_order_cyp_microcopy ?? sib.cyp_microcopy_override : sib.cyp_microcopy_override;
             blocks[sib.series] = {
               productId: sib.id,
-              price: sib.price ? String(sib.price) : "",
-              cypEnabled: sib.create_your_price_enabled || false,
-              minimumPrice: sib.minimum_price ? String(sib.minimum_price) : "",
-              recommendedPrice: sib.recommended_price ? String(sib.recommended_price) : "",
-              useCustomCypMicrocopy: !!sib.cyp_microcopy_override,
-              cypMicrocopyOverride: sib.cyp_microcopy_override || "",
+              price: blockPrice != null ? String(blockPrice) : "",
+              cypEnabled: blockCyp || false,
+              minimumPrice: blockMinimum != null ? String(blockMinimum) : "",
+              recommendedPrice: blockRecommended != null ? String(blockRecommended) : "",
+              useCustomCypMicrocopy: !!blockMicrocopy,
+              cypMicrocopyOverride: blockMicrocopy || "",
               media: sibMedia,
               variants: varList.length > 0 ? varList : [{ color: "default", hex: "#141414", sizes: [{ size: "M", stock: 0, priceOverride: "", sku: "" }] }],
               activeColor: varList[0]?.color || "default",
@@ -944,6 +962,24 @@ export default function TambahProdukPage({
       const opsProductFields = isOps
         ? { product_type: productType, hpp: parseInt(hpp) || 0, sku: sku.trim() || null, ...(isEdit ? {} : { is_published: false }) }
         : {};
+      // Kolom harga: katalog biasa ATAU harga khusus Open Order (lihat `priceTarget`). Dipisah
+      // supaya menyimpan dari menu Open Order TIDAK mengubah harga di menu Produk.
+      const priceFieldsFor = (p: { price: number; minimum: string; recommended: string; cyp: boolean; microcopy: string; microcopyOn: boolean }) =>
+        isOpenOrderPrice
+          ? {
+              open_order_price: p.price,
+              open_order_minimum_price: p.minimum ? parseInt(p.minimum) : null,
+              open_order_recommended_price: p.recommended ? parseInt(p.recommended) : null,
+              open_order_cyp_enabled: p.cyp,
+              open_order_cyp_microcopy: p.microcopyOn && p.microcopy.trim() ? p.microcopy.trim() : null,
+            }
+          : {
+              price: p.price,
+              minimum_price: p.minimum ? parseInt(p.minimum) : null,
+              recommended_price: p.recommended ? parseInt(p.recommended) : null,
+              create_your_price_enabled: p.cyp,
+              cyp_microcopy_override: p.microcopyOn && p.microcopy.trim() ? p.microcopy.trim() : null,
+            };
       if (category === "Thobe" && selectedSeries.length > 0) {
         // ── Thobe multi-series: create 1 product row per series ──
         for (const seriesName of selectedSeries) {
@@ -965,11 +1001,14 @@ export default function TambahProdukPage({
             name,
             category,
             description: description || null,
-            price: blockPrice,
-            minimum_price: block.minimumPrice ? parseInt(block.minimumPrice) : null,
-            recommended_price: block.recommendedPrice ? parseInt(block.recommendedPrice) : null,
-            create_your_price_enabled: block.cypEnabled,
-            cyp_microcopy_override: block.useCustomCypMicrocopy && block.cypMicrocopyOverride.trim() ? block.cypMicrocopyOverride.trim() : null,
+            ...priceFieldsFor({
+              price: blockPrice,
+              minimum: block.minimumPrice,
+              recommended: block.recommendedPrice,
+              cyp: block.cypEnabled,
+              microcopy: block.cypMicrocopyOverride,
+              microcopyOn: block.useCustomCypMicrocopy,
+            }),
             ...(rowWeight > 0 ? { weight: rowWeight } : {}),
             image: block.media.find((m) => m.url)?.url || "",
             images: block.media.filter((m) => m.url).map((m) => m.url),
@@ -1039,16 +1078,20 @@ export default function TambahProdukPage({
         // ── Non-Thobe: existing single-product logic ──
         // products.weight = berat ukuran terbesar yang terisi (lihat catatan di cabang Thobe).
         const rowWeight = maxSizeWeight(variants.flatMap((v) => v.sizes));
+        const nonThobePrice = cypEnabled ? (parseInt(basePrice) || parseInt(minimumPrice) || 0) : (parseInt(basePrice) || 0);
         const { error: productError } = await supabase.from("products").upsert({
           id: slug,
           name,
           category,
           description: description || null,
-          price: cypEnabled ? (parseInt(basePrice) || parseInt(minimumPrice) || 0) : (parseInt(basePrice) || 0),
-          minimum_price: minimumPrice ? parseInt(minimumPrice) : null,
-          recommended_price: recommendedPrice ? parseInt(recommendedPrice) : null,
-          create_your_price_enabled: cypEnabled,
-          cyp_microcopy_override: useCustomCypMicrocopy && cypMicrocopyOverride.trim() ? cypMicrocopyOverride.trim() : null,
+          ...priceFieldsFor({
+            price: nonThobePrice,
+            minimum: minimumPrice,
+            recommended: recommendedPrice,
+            cyp: cypEnabled,
+            microcopy: cypMicrocopyOverride,
+            microcopyOn: useCustomCypMicrocopy,
+          }),
           ...(rowWeight > 0 ? { weight: rowWeight } : {}),
           image: media.find((m) => m.url)?.url || "",
           images: media.filter((m) => m.url).map((m) => m.url),
@@ -1127,7 +1170,7 @@ export default function TambahProdukPage({
           </button>
           <div className="min-w-0">
             <p className="hidden sm:block text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: "var(--text-muted)" }}>Produk</p>
-            <h1 className={`text-2xl leading-none truncate${isOps ? "" : " italic"}`} style={isOps ? { fontFamily: "var(--font-inter), system-ui, sans-serif", fontWeight: 800, color: "#0f172a" } : { fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>{isEdit ? "Edit Produk" : "Tambah Produk"}</h1>
+            <h1 className={`text-2xl leading-none truncate${isOps ? "" : " italic"}`} style={isOps ? { fontFamily: "var(--font-inter), system-ui, sans-serif", fontWeight: 800, color: "#0f172a" } : { fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>{isOpenOrderPrice ? "Harga Open Order" : isEdit ? "Edit Produk" : "Tambah Produk"}</h1>
           </div>
           <div className="ml-auto flex items-center gap-2.5">
             <button onClick={() => router.push(backHref)} className="pf-btn pf-btn-ghost">Batal</button>

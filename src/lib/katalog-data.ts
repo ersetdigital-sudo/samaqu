@@ -50,6 +50,12 @@ export interface Product {
   cyp_microcopy_override?: string | null;
   /** Ikut tampil di katalog halaman /open-order (kolom `products.open_order_enabled`). */
   open_order_enabled?: boolean;
+  /** Harga khusus Open Order (kampanye). Null = pakai harga katalog di atas. */
+  open_order_price?: number | null;
+  open_order_minimum_price?: number | null;
+  open_order_recommended_price?: number | null;
+  open_order_cyp_enabled?: boolean | null;
+  open_order_cyp_microcopy?: string | null;
 }
 
 /* ── Color hex map ── */

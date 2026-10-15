@@ -39,17 +39,22 @@ export interface CatalogCard {
   openOrderEnabled?: boolean;
   /** Tampil di katalog website (kolom `products.is_published`). false = "Dari Ops, belum tampil". */
   isPublished?: boolean;
+  /** Harga khusus Open Order (kolom `products.open_order_price`); null = pakai harga katalog. */
+  openOrderPrice?: number | null;
 }
 
 /**
  * Mode "Open Order" — kartu katalog dipakai juga di menu admin "Open Order", tapi aksi
- * kartunya diganti sakelar Tampil/Tersembunyi (tanpa Edit/Hapus).
+ * kartunya diganti sakelar Tampil/Tersembunyi + tombol Edit (form produk & harga khusus
+ * Open Order) — tanpa Hapus.
  */
 export interface OpenOrderMode {
   isEnabled: (p: CatalogCard) => boolean;
   onToggle: (p: CatalogCard) => void;
   /** id kartu yang sedang disimpan (tombolnya jadi "Menyimpan…"). */
   savingId?: string | null;
+  /** Tujuan tombol Edit (form produk + harga khusus Open Order). Kosong = tombol Edit disembunyikan. */
+  editHref?: (p: CatalogCard) => string;
 }
 
 type Availability = "all" | "ready" | "low" | "out";
@@ -131,7 +136,7 @@ function CardActions({
   );
 }
 
-/** Aksi kartu mode Open Order: sakelar Tampil/Tersembunyi + tombol detail. */
+/** Aksi kartu mode Open Order: sakelar Tampil/Tersembunyi + tombol Edit + tombol detail. */
 function OpenOrderAction({
   p,
   openOrder,
@@ -159,6 +164,16 @@ function OpenOrderAction({
         <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: on ? "#047857" : "var(--fg3)" }} />
         {saving ? "Menyimpan…" : on ? "Tampil di Open Order" : "Tersembunyi"}
       </button>
+      {openOrder.editHref && (
+        <Link
+          href={openOrder.editHref(p)}
+          className="flex items-center justify-center gap-1.5 text-xs font-bold py-2 px-3 rounded-lg text-white shrink-0 whitespace-nowrap"
+          style={{ background: "var(--fg)" }}
+          title="Edit produk & harga Open Order"
+        >
+          <Edit size={13} strokeWidth={2} /> Edit
+        </Link>
+      )}
       {onDetail && (
         <button
           onClick={() => onDetail(p.id)}
@@ -177,11 +192,14 @@ function OpenOrderAction({
 function CardBody({
   p,
   maxStock,
+  openOrder,
 }: {
   p: CatalogCard;
   maxStock: number;
+  /** Mode Open Order: tampilkan harga khusus Open Order bila ada (fallback harga katalog). */
+  openOrder?: boolean;
 }) {
-  const price = effectivePrice(p);
+  const price = openOrder && p.openOrderPrice != null ? p.openOrderPrice : effectivePrice(p);
   const stock = p.totalStock ?? 0;
   const fabric = fabricOf(p);
 
@@ -646,9 +664,9 @@ export default function ProductsCatalog({
                     <img src={thumbnails[p.id] || p.image || ""} alt={p.name} className="w-full h-full object-cover" loading="lazy" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <CardBody p={p} maxStock={facets.maxStock} />
+                    <CardBody p={p} maxStock={facets.maxStock} openOrder={!!openOrder} />
                   </div>
-                  <div className={openOrder ? "sm:w-60 shrink-0" : "sm:w-44 shrink-0"}>
+                  <div className={openOrder ? "sm:w-72 shrink-0" : "sm:w-44 shrink-0"}>
                     {openOrder
                       ? <OpenOrderAction p={p} openOrder={openOrder} onDetail={onDetail} />
                       : <CardActions p={p} onDelete={onDelete} onDetail={onDetail} />}
@@ -673,7 +691,7 @@ export default function ProductsCatalog({
                       </span>
                     </div>
                     <div className="p-4 flex flex-col flex-1">
-                      <CardBody p={p} maxStock={facets.maxStock} />
+                      <CardBody p={p} maxStock={facets.maxStock} openOrder={!!openOrder} />
                       <div className="mt-auto">
                         {openOrder
                           ? <OpenOrderAction p={p} openOrder={openOrder} onDetail={onDetail} />
