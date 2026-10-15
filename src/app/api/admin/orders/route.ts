@@ -124,7 +124,9 @@ export async function PATCH(request: NextRequest) {
     if (action === "syncTracking") {
       const { data: order, error: fetchError } = await supabaseAdmin
         .from("orders")
-        .select("id, order_number, status, shipping_status, awb_no")
+        .select(
+          "id, order_number, status, shipping_status, awb_no, customer_name, customer_whatsapp, shipped_notified_at"
+        )
         .eq("order_number", identifier)
         .single();
 

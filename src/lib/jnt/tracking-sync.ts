@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { TrackHistoryItem, TrackResponse } from "./types";
 import { isDelivered, isShipped, orderRank, shippingRank } from "./track-status";
+import { notifyCustomerOrderShipped } from "../fonnte";
+import { SITE_URL } from "../site-config";
 
 /**
  * Terapkan hasil tracking J&T ke satu pesanan — SATU sumber logika, dipakai cron
@@ -20,6 +22,11 @@ export interface SyncOrder {
   status: string;
   shipping_status?: string | null;
   awb_no?: string | null;
+  /** Dipakai notifikasi "paket dikirim" (WhatsApp customer). */
+  customer_name?: string | null;
+  customer_whatsapp?: string | null;
+  /** Penanda notifikasi "dikirim" sudah dikirim (kolom `orders.shipped_notified_at`). */
+  shipped_notified_at?: string | null;
 }
 
 export interface TrackOutcome {
@@ -177,6 +184,37 @@ export async function applyTrackingToOrder(
   if (Object.keys(patch).length > 0) {
     const { error } = await supabase.from("orders").update(patch).eq("id", order.id);
     if (error) console.error("[TRACKING-SYNC] Gagal update status:", order.order_number, error.message);
+  }
+
+  // 7) Notifikasi "paket dikirim + nomor resi" — dipicu TEPAT saat status pesanan berubah jadi
+  //    `dikirim` (paket benar-benar diserahkan ke J&T: resi sudah tersimpan dan J&T sudah memindai).
+  //    Dikirim sekali per pesanan (penanda `shipped_notified_at`), tidak diulang kalau status
+  //    bolak-balik. Kegagalan Fonnte tidak pernah menggagalkan perubahan status — hasilnya dicatat.
+  const justShipped = nextStatus === "dikirim" && currentStatus !== "dikirim";
+  if (justShipped && !order.shipped_notified_at && order.awb_no) {
+    let sent = false;
+    try {
+      sent = await notifyCustomerOrderShipped({
+        orderNumber: order.order_number || "",
+        customerName: order.customer_name || "",
+        customerWhatsapp: order.customer_whatsapp || "",
+        awbNo: order.awb_no,
+        orderUrl: `${SITE_URL}/akun/pesanan/${order.order_number}`,
+      });
+    } catch (e) {
+      console.error("[TRACKING-SYNC] Notifikasi 'dikirim' error:", order.order_number, e);
+    }
+    console.log(
+      "[TRACKING-SYNC] Notifikasi 'dikirim':",
+      order.order_number,
+      sent ? "terkirim" : "gagal"
+    );
+    const notifyPatch: Record<string, unknown> = { shipped_notify_status: sent ? "sent" : "failed" };
+    // Waktu kirim hanya diisi kalau benar-benar terkirim; kalau gagal, percobaan berikutnya
+    // (transisi berikutnya) masih boleh mengirim — tapi tidak pernah dobel kalau sudah terkirim.
+    if (sent) notifyPatch.shipped_notified_at = new Date().toISOString();
+    const { error: notifyError } = await supabase.from("orders").update(notifyPatch).eq("id", order.id);
+    if (notifyError) console.error("[TRACKING-SYNC] Gagal simpan status notifikasi:", order.order_number, notifyError.message);
   }
 
   return {
