@@ -157,6 +157,10 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
                               <span className="text-[9px]" style={{ color: "var(--clay)" }}>|</span>
                               <span className="text-[10px] font-ui" style={{ color: "var(--coffee)" }}>UK {item.size}</span>
                             </div>
+                            {/* Catatan per item (hanya keranjang lama) — ditampilkan aman kalau ada. */}
+                            {item.notes && (
+                              <p className="text-[10px] font-ui mt-0.5" style={{ color: "var(--stone)" }}>Catatan: {item.notes}</p>
+                            )}
                             <div className="flex items-center justify-between mt-1.5">
                               {/* Qty pill */}
                               <div className="inline-flex items-center rounded-full"

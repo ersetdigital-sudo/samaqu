@@ -23,11 +23,6 @@ import { trackViewContent, trackAddToCart, trackWhatsAppClick, sendCAPIEvent } f
 
 const FALLBACK_SIZES = ["S", "M", "L", "XL", "XXL"];
 
-function waLink(product: Product, size: string, color: string, qty: number, notes: string, price: number) {
-  const msg = `Halo Admin SAMAQU, saya ingin memesan:\n\nProduk: ${product.name}\nKain: ${product.kain || "-"}\nWarna: ${color}\nUkuran: ${size}\nJumlah: ${qty}\n${notes ? `Catatan: ${notes}\n` : ""}\nTotal: Rp ${(price * qty).toLocaleString("id-ID")}\n\nMohon konfirmasi ketersediaan. Terima kasih!`;
-  return getWhatsAppLink(msg);
-}
-
 function getDescription(product: Product): string {
   if (product.description) return product.description;
   const map: Record<string, string> = {
@@ -232,7 +227,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const [variantPrice, setVariantPrice] = useState<number | null>(null);
   const [stock, setStock] = useState<number | null>(null);
   const [qty, setQty] = useState(1);
-  const [notes, setNotes] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [zoomOpen, setZoomOpen] = useState(false);
@@ -506,7 +500,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       series: availableSeries.find((s) => s.id === displayId)?.series || product.series || undefined,
       kain: product.jenis_kain?.name || product.kain || undefined,
       qty,
-      notes: notes || undefined,
       // CYP fields
       customer_price: isCYP ? finalCYPPrice : undefined,
       minimum_price: isCYP ? minimumPrice : undefined,
@@ -540,8 +533,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     const kainName = product.jenis_kain?.name || product.kain || "";
     const color = selectedColor || product.colors[0] || "-";
     const variantParts = [kainName, seriesName, color !== "default" ? color : null].filter(Boolean).join(" - ");
-    let msg = `Halo, saya mau pesan produk:\n${product.name}${variantParts ? " - " + variantParts : ""} - Ukuran ${selectedSize}\nHarga: Rp ${effectivePrice.toLocaleString("id-ID")}\nJumlah: ${qty}`;
-    if (notes) msg += `\nCatatan: ${notes}`;
+    const msg = `Halo, saya mau pesan produk:\n${product.name}${variantParts ? " - " + variantParts : ""} - Ukuran ${selectedSize}\nHarga: Rp ${effectivePrice.toLocaleString("id-ID")}\nJumlah: ${qty}`;
     trackWhatsAppClick("product_detail", displayId);
     window.open(getWhatsAppLink(msg), "_blank");
   }
@@ -869,15 +861,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
           <div className="h-px mb-5" style={{ background: "rgba(0,0,0,.1)" }} />
 
-          {/* Notes */}
-          <div className="mb-5">
-            <p className="text-[10px] tracking-[0.1em] uppercase font-ui font-medium mb-2.5" style={{ color: "#000000" }}>Catatan (Opsional)</p>
-            <input type="text" value={notes} onChange={(e) => setNotes(e.target.value)}
-              placeholder="Minta packing khusus, tambah nama, dll."
-              className="w-full px-3 py-2.5 text-[13px] font-ui rounded-sm outline-none transition-all duration-200 focus:border-[#000000]"
-              style={{ background: "transparent", border: "1px solid rgba(0,0,0,.15)", color: "#000000" }} />
-          </div>
-
           {/* Quantity */}
           <div className="flex items-center justify-between">
             <p className="text-[10px] tracking-[0.1em] uppercase font-ui font-medium" style={{ color: "#000000" }}>Jumlah</p>
@@ -895,12 +878,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           </div>
 
           {/* Info tambahan — accordion */}
-          <div className="mb-5">
-            <InfoAccordionGroup />
-          </div>
-
-          {/* Bottom spacer for sticky bar */}
-          <div style={{ height: "calc(var(--action-bar-h) + 1.5rem)" }} />
+          <InfoAccordionGroup />
         </div>
       </div>
 
@@ -1176,14 +1154,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             </p>
             <div className="h-px mb-7" style={{ background: "rgba(0,0,0,.1)" }} />
 
-            <div className="mb-7">
-              <p className="text-[11px] sm:text-[12px] tracking-[0.12em] uppercase font-ui font-medium mb-3" style={{ color: "#000000" }}>Catatan (Opsional)</p>
-              <input type="text" value={notes} onChange={(e) => setNotes(e.target.value)}
-                placeholder="Misal: minta packing khusus, tambah nama, dll."
-                className="w-full px-4 py-3 text-sm font-ui rounded-sm outline-none transition-all duration-200 focus:border-[#000000]"
-                style={{ background: "transparent", border: "1px solid rgba(0,0,0,.15)", color: "#000000" }} />
-            </div>
-
             <div className="flex items-center justify-between mb-8">
               <p className="text-[11px] sm:text-[12px] tracking-[0.12em] uppercase font-ui font-medium" style={{ color: "#000000" }}>Jumlah</p>
               <div className="flex items-center gap-3">
@@ -1235,6 +1205,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             ))}
           </div>
         </div>
+      )}
+
+      {/* Spacer (mobile) untuk sticky bar TOTAL + tombol — hanya saat tidak ada section
+          "Produk lain..." di bawahnya; kalau ada, padding bawah section itu yang mengurus. */}
+      {relatedProducts.length === 0 && (
+        <div className="md:hidden" style={{ height: "calc(var(--action-bar-h) + 1.5rem)" }} />
       )}
 
       {/* ══════════════════════════════════════════
