@@ -1235,7 +1235,7 @@ Pesan & pemicunya (semua pesan ke customer TANPA emoji, sapaan "Ka"):
 | Pembayaran diterima | webhook Mayar terverifikasi ATAU admin ubah status `pending`→`diproses` (bukan COD) | `notifyCustomerOrderPaid` |
 | Pesanan dikirim | scan pertama J&T (status → `dikirim`) | `notifyCustomerOrderShipped` |
 | Paket diterima | tracking J&T `delivered` (status → `selesai`) | `notifyCustomerOrderDelivered` |
-| Reminder bayar | cron `/api/cron/auto-cancel`, jendela 20–24 jam, sekali saja | `notifyCustomerPaymentReminder` |
+| Reminder bayar | cron `/api/cron/auto-cancel`, jendela 20–23 jam, sekali saja | `notifyCustomerPaymentReminder` |
 | Pesanan dibatalkan | `cancelOrderCompletely()` (admin / customer / auto-cancel) | `notifyCustomerOrderCancelled` + `notifyAdminOrderCancelled` |
 | Pesanan baru (admin) | checkout website & Open Order | `notifyAdminNewOrder` |
 
@@ -1253,6 +1253,7 @@ yang datang belakangan tidak menandai lunas dua kali. COD dilewati: tanpa instru
 tanpa "pembayaran diterima", tanpa reminder.
 
 Reminder ditempel di cron auto-cancel (bukan endpoint/penjadwal baru) karena jadwalnya sudah tiap
-jam; jendela 20–24 jam dipilih supaya reminder selalu keluar SEBELUM auto-cancel 24 jam. Link
-Mayar diperiksa ulang lewat `validMayarPaymentUrl()` (`src/lib/mayar.ts`) — kalau invoice sudah
+jam; jendela 20–23 jam dipilih supaya reminder selalu keluar SEBELUM auto-cancel 24 jam, dengan
+jarak 1 jam agar tidak ada pesanan yang diingatkan lalu langsung dibatalkan di eksekusi yang sama.
+Link Mayar diperiksa ulang lewat `validMayarPaymentUrl()` (`src/lib/mayar.ts`) — kalau invoice sudah
 lunas atau kedaluwarsa, pesan TIDAK memuat link dan jatuh ke instruksi "hubungi admin".

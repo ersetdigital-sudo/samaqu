@@ -27,7 +27,7 @@ import { validMayarPaymentUrl } from "@/lib/mayar";
  */
 
 /** Batas jumlah reminder per eksekusi cron — supaya satu kali jalan tidak menembak terlalu banyak. */
-const REMINDER_LIMIT = 50;
+const REMINDER_LIMIT = 30;
 
 export async function GET(request: NextRequest) {
   // Verify cron secret (penjadwal mengirim header Authorization: Bearer $CRON_SECRET)
@@ -39,8 +39,11 @@ export async function GET(request: NextRequest) {
 
   const supabase = getSupabaseAdmin();
 
-  /* ── 1. Reminder pembayaran (20–24 jam) ── */
-  const windowStart = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  /* ── 1. Reminder pembayaran (20–23 jam) ── */
+  // Jendela berhenti di 23 jam, bukan 24: memberi jarak 1 jam dari auto-cancel sehingga tidak ada
+  // pesanan yang diingatkan lalu langsung dibatalkan pada eksekusi yang sama. Lebarnya 3 jam
+  // supaya penjadwal yang jalan tiap jam selalu punya beberapa kali kesempatan.
+  const windowStart = new Date(Date.now() - 23 * 60 * 60 * 1000).toISOString();
   const windowEnd = new Date(Date.now() - 20 * 60 * 60 * 1000).toISOString();
 
   const { data: pendingOrders } = await supabase

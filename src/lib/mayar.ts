@@ -123,6 +123,9 @@ async function mayarFetch<T>(
       },
       ...(init?.body ? { body: init.body } : {}),
       cache: "no-store",
+      // Tanpa timeout, Mayar yang menggantung menahan respons checkout (client menyerah di 30s
+      // dan customer mengira pesanannya gagal) — dan menahan cron sampai melewati batas durasi.
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
     const body = (await res.json().catch(() => null)) as MayarEnvelope<T> | null;
     const message = body?.messages ?? body?.message ?? "";
@@ -236,6 +239,9 @@ export function mayarPlaceholderEmail(orderNumber: string): string {
 
 /** Link bayar kedaluwarsa mengikuti batas auto-cancel pesanan (24 jam). */
 const INVOICE_TTL_MS = 24 * 60 * 60 * 1000;
+
+/** Batas tunggu satu request ke Mayar — supaya checkout & cron tidak menggantung. */
+const REQUEST_TIMEOUT_MS = 8000;
 
 /**
  * Keterangan baris item invoice Mayar: nomor pesanan + daftar produk, mis.
