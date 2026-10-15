@@ -30,7 +30,7 @@ import WilayahSelect from "@/components/ops/transaksi/WilayahSelect";
 import { useToast } from "@/components/ops/ui/use-toast";
 
 const inputClass =
-  "w-full px-3 py-2.5 bg-gray-50 dark:bg-slate-900 border-2 border-gray-200 dark:border-slate-700 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 text-sm font-semibold text-slate-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed";
+  "w-full px-3 py-2 bg-gray-50 dark:bg-slate-900 border-2 border-gray-200 dark:border-slate-700 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 text-sm font-semibold text-slate-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed";
 const labelClass = "text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block mb-1.5";
 const sectionClass = "text-[11px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500";
 const cmpId = (a, b) => String(a).localeCompare(String(b), "id", { sensitivity: "base" });
@@ -69,6 +69,8 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
   const [touched, setTouched] = useState(false);
   const [confirmClose, setConfirmClose] = useState(false);
   const [saveAttempted, setSaveAttempted] = useState(false);
+  /** Langkah drawer: 0 Pelanggan, 1 Produk, 2 Pembayaran. */
+  const [step, setStep] = useState(0);
   /** Alamat diketik baru (bukan dari daftar tersimpan) → ikut masuk buku alamat pelanggan. */
   const [newAddressForCustomer, setNewAddressForCustomer] = useState(false);
   const prefilledFor = useRef(null);
@@ -146,6 +148,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
     setTouched(false);
     setSaveAttempted(false);
     setNewAddressForCustomer(false);
+    setStep(0);
     if (initialData) {
       const parts = isoToWibInput(initialData.created_at);
       const kecamatan = String(initialData.shipping_kecamatan || "").trim()
@@ -397,6 +400,34 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
     setForm((current) => ({ ...current, address_mode: "new", saved_address_id: "" }));
   };
 
+  /* ── Alur bertahap: tiap langkah harus beres dulu sebelum bisa lanjut ── */
+  const step1Ready = Boolean(form?.customer_name?.trim()) && Boolean(form?.customer_whatsapp?.trim()) && !addressIncomplete;
+  const stepReady = [step1Ready, !incomplete, true];
+  const stepLabels = ["Pelanggan", "Produk", "Pembayaran"];
+
+  const goNext = () => {
+    setSaveAttempted(true);
+    setSaveError("");
+    if (!stepReady[step]) return;
+    setStep((current) => Math.min(2, current + 1));
+  };
+
+  const goBack = () => {
+    setSaveError("");
+    setStep((current) => Math.max(0, current - 1));
+  };
+
+  /** Hanya satu baris produk yang dibiarkan terbuka; baris lengkap diringkas jadi satu baris. */
+  const openRow = (index) => {
+    setTouched(true);
+    setItems((rows) => rows.map((row, i) => (row.editing === (i === index) ? row : { ...row, editing: i === index })));
+  };
+
+  const addRow = () => {
+    setTouched(true);
+    setItems((rows) => [...rows.map((row) => ({ ...row, editing: false })), emptyRow()]);
+  };
+
   /* ── Aksi ── */
   const updateForm = (patch) => {
     setForm((current) => ({ ...current, ...patch }));
@@ -515,38 +546,80 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "tween", duration: 0.24, ease: "easeOut" }}
-            className="fixed inset-y-0 right-0 z-[9999] w-full sm:w-[600px] bg-white dark:bg-[#1a1d28] shadow-2xl flex flex-col"
+            className="fixed inset-y-0 right-0 z-[9999] w-full sm:w-[680px] bg-white dark:bg-[#1a1d28] shadow-2xl flex flex-col overflow-hidden"
             role="dialog"
             aria-label={isEdit ? "Ubah transaksi" : "Tambah transaksi"}
           >
-            {/* Header menempel */}
-            <div className="shrink-0 flex items-center justify-between gap-3 px-5 sm:px-6 py-4 border-b border-slate-200 dark:border-slate-800">
-              <div>
-                <h3 className="font-heading font-bold text-lg text-slate-900 dark:text-white">
-                  {isEdit ? "Ubah Transaksi" : "Tambah Transaksi"}
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  {isEdit ? `No. Order ${initialData?.order_number}` : "Transaksi manual langsung berstatus Lunas"}
-                </p>
+            {/* Header menempel: judul + indikator langkah */}
+            <div className="shrink-0 px-5 sm:px-6 py-3.5 border-b border-slate-200 dark:border-slate-800">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="font-heading font-bold text-lg text-slate-900 dark:text-white">
+                    {isEdit ? "Ubah Transaksi" : "Tambah Transaksi"}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    {isEdit ? `No. Order ${initialData?.order_number}` : "Transaksi manual langsung berstatus Lunas"}
+                  </p>
+                </div>
+                <button
+                  onClick={requestClose}
+                  className="p-2 -mr-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
+                  aria-label="Tutup"
+                >
+                  <X size={18} className="text-slate-500 dark:text-slate-400" />
+                </button>
               </div>
-              <button
-                onClick={requestClose}
-                className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
-                aria-label="Tutup"
-              >
-                <X size={18} className="text-slate-500 dark:text-slate-400" />
-              </button>
+
+              {/* Stepper: langkah selesai boleh diklik untuk kembali */}
+              <ol className="flex items-center gap-1.5 mt-3">
+                {stepLabels.map((label, index) => {
+                  const done = index < step;
+                  const active = index === step;
+                  return (
+                    <li key={label} className="flex items-center gap-1.5 min-w-0">
+                      <button
+                        type="button"
+                        disabled={!done}
+                        onClick={() => done && setStep(index)}
+                        aria-current={active ? "step" : undefined}
+                        className={`flex items-center gap-1.5 min-w-0 ${done ? "cursor-pointer" : "cursor-default"}`}
+                      >
+                        <span
+                          className={`w-5 h-5 shrink-0 rounded-full grid place-items-center text-[10px] font-black ${
+                            done || active
+                              ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900"
+                              : "bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500"
+                          }`}
+                        >
+                          {done ? <Check size={11} /> : index + 1}
+                        </span>
+                        <span
+                          className={`text-xs font-bold truncate ${
+                            done || active ? "text-slate-900 dark:text-white" : "text-slate-400 dark:text-slate-500"
+                          }`}
+                        >
+                          {label}
+                        </span>
+                      </button>
+                      {index < stepLabels.length - 1 && <span className="w-3 sm:w-5 h-px bg-slate-200 dark:bg-slate-700 shrink-0" />}
+                    </li>
+                  );
+                })}
+              </ol>
             </div>
 
-            {/* Hanya bagian ini yang bisa di-scroll */}
+            {/* Body: di layar desktop tidak ter-scroll (scrollbar disembunyikan) */}
             <form
               onSubmit={(event) => {
                 event.preventDefault();
-                save();
+                if (step < 2) goNext();
+                else save();
               }}
-              className="flex-1 min-h-0 overflow-y-auto px-5 sm:px-6 py-5 space-y-6"
+              className="flex-1 min-h-0 overflow-y-auto [@media(min-height:768px)]:overflow-hidden no-scrollbar px-5 sm:px-6 py-4 space-y-4"
             >
-              {/* Pelanggan */}
+              {/* ── Langkah 1: Pelanggan (termasuk alamat & sumber/waktu) ── */}
+              {step === 0 && (
+                <>
               <section className="space-y-2">
                 <h4 className={sectionClass}>Pelanggan</h4>
                 <div className="flex gap-2">
@@ -724,22 +797,6 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
 
                   {showAddressForm && (
                     <div className="space-y-2">
-                      <div>
-                        <label className={labelClass}>
-                          Alamat Lengkap <span className="text-red-500">*</span>
-                        </label>
-                        <textarea
-                          rows={3}
-                          value={form.address}
-                          onChange={(event) => updateForm({ address: event.target.value })}
-                          placeholder="Nama jalan, nomor rumah, RT/RW, patokan"
-                          className={`${inputClass} ${saveAttempted && addressErrors.address ? "border-red-300 dark:border-red-900/60" : ""}`}
-                        />
-                        {addressErrorText("address") ? (
-                          <p className="text-xs font-semibold text-red-600 dark:text-red-400 mt-1">{addressErrorText("address")}</p>
-                        ) : null}
-                      </div>
-
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <WilayahSelect
                           label="Provinsi"
@@ -782,6 +839,23 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                         </div>
                       </div>
 
+                      {/* Alamat lengkap di bawah, tinggi kecil supaya tetap muat tanpa scroll */}
+                      <div>
+                        <label className={labelClass}>
+                          Alamat Lengkap <span className="text-red-500">*</span>
+                        </label>
+                        <textarea
+                          rows={2}
+                          value={form.address}
+                          onChange={(event) => updateForm({ address: event.target.value })}
+                          placeholder="Nama jalan, nomor rumah, RT/RW, patokan"
+                          className={`${inputClass} ${saveAttempted && addressErrors.address ? "border-red-300 dark:border-red-900/60" : ""}`}
+                        />
+                        {addressErrorText("address") ? (
+                          <p className="text-xs font-semibold text-red-600 dark:text-red-400 mt-1">{addressErrorText("address")}</p>
+                        ) : null}
+                      </div>
+
                       {newAddressForCustomer && form.customer_mode === "existing" && (
                         <p className="text-xs text-slate-500 dark:text-slate-400">
                           Alamat ini akan ditambahkan ke daftar alamat pelanggan.
@@ -820,7 +894,12 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                   </div>
                 </div>
               </section>
+                </>
+              )}
 
+              {/* ── Langkah 2: Produk ── */}
+              {step === 1 && (
+                <>
               {/* Produk bertahap */}
               <section className="space-y-2">
                 <div className="flex items-center justify-between gap-2">
@@ -830,7 +909,8 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                   </span>
                 </div>
 
-                <div className="space-y-2">
+                {/* Daftar item punya area sendiri; kalau itemnya banyak hanya area ini yang scroll */}
+                <div className="space-y-2 max-h-[46vh] min-h-[168px] overflow-y-auto no-scrollbar pr-0.5">
                   {items.map((row, index) => {
                     const info = rowInfo[index];
                     const step = seriesStep(row.category, row.kain, row.warna);
@@ -859,7 +939,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                           <div className="flex items-center gap-1 shrink-0">
                             <button
                               type="button"
-                              onClick={() => updateRow(index, { editing: true })}
+                              onClick={() => openRow(index)}
                               className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
                             >
                               <Pencil size={13} /> Ubah
@@ -1032,16 +1112,18 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
 
                 <button
                   type="button"
-                  onClick={() => {
-                    setTouched(true);
-                    setItems((rows) => [...rows, emptyRow()]);
-                  }}
+                  onClick={addRow}
                   className="inline-flex items-center gap-2 px-3.5 py-2 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-sm font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
                 >
                   <Plus size={15} /> Tambah produk
                 </button>
               </section>
+                </>
+              )}
 
+              {/* ── Langkah 3: Pembayaran ── */}
+              {step === 2 && (
+                <>
               {/* Ongkir & diskon */}
               <section className="space-y-2">
                 <h4 className={sectionClass}>Ongkir &amp; Diskon</h4>
@@ -1089,25 +1171,68 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                 />
               </section>
 
-              {stockIssues.length > 0 && (
-                <div className="flex items-start gap-2.5 rounded-xl border-2 border-red-200 bg-red-50 px-3.5 py-3" role="alert">
-                  <AlertCircle size={16} className="mt-px shrink-0 text-red-600" />
-                  <div className="text-sm font-medium leading-snug text-red-700">
-                    <p>Stok tidak mencukupi, transaksi ini belum bisa disimpan:</p>
-                    <ul className="list-disc ml-4 mt-1">
-                      {stockIssues.map((issue, index) => (
-                        <li key={index}>{issue}</li>
-                      ))}
-                    </ul>
+              {/* Ringkasan transaksi */}
+              <section className="rounded-2xl border border-slate-200 dark:border-slate-800 p-4 space-y-3">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Pelanggan</p>
+                    <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{form.customer_name || "-"}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{form.customer_whatsapp || "nomor belum ada"}</p>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                    {SOURCE_LABEL[form.source]}
+                  </span>
+                </div>
+
+                <div className="border-t border-slate-100 dark:border-slate-800 pt-2 text-xs">
+                  <p className="font-semibold text-slate-700 dark:text-slate-200">{form.address || "Alamat belum diisi"}</p>
+                  <p className="text-slate-500 dark:text-slate-400">
+                    {[form.kecamatan, form.city, form.province, form.postal_code].filter(Boolean).join(", ")}
+                  </p>
+                </div>
+
+                <div className="border-t border-slate-100 dark:border-slate-800 pt-2 space-y-1">
+                  {items.map((row, index) => {
+                    const info = rowInfo[index];
+                    if (!info?.chosen) return null;
+                    const seri = seriesStep(row.category, row.kain, row.warna);
+                    const label = [row.warna, seri.show ? row.series : "", info.chosen.size].filter(Boolean).join(" · ");
+                    return (
+                      <div key={index} className="flex items-center justify-between gap-3 text-sm">
+                        <span className="text-slate-700 dark:text-slate-200 truncate">{label}</span>
+                        <span className="text-slate-900 dark:text-white font-semibold whitespace-nowrap">
+                          x{info.quantity} · Rp {formatRupiah(info.subtotal)}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="border-t border-slate-100 dark:border-slate-800 pt-2 space-y-1 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500 dark:text-slate-400">Subtotal</span>
+                    <span className="font-semibold text-slate-900 dark:text-white">Rp {formatRupiah(subtotal)}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500 dark:text-slate-400">Ongkir</span>
+                    <span className="font-semibold text-slate-900 dark:text-white">Rp {formatRupiah(shippingValue)}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500 dark:text-slate-400">Diskon</span>
+                    <span className="font-semibold text-slate-900 dark:text-white">
+                      - Rp {formatRupiah(Math.min(discountValue, subtotal))}
+                    </span>
                   </div>
                 </div>
-              )}
 
-              {saveError && (
-                <div className="flex items-start gap-2.5 rounded-xl border-2 border-red-200 bg-red-50 px-3.5 py-3" role="alert">
-                  <AlertCircle size={16} className="mt-px shrink-0 text-red-600" />
-                  <p className="text-sm font-medium leading-snug text-red-700">{saveError}</p>
+                <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-2">
+                  <span className="text-sm font-bold text-slate-900 dark:text-white">Total</span>
+                  <span className="text-base font-black font-heading text-slate-900 dark:text-white whitespace-nowrap">
+                    Rp {formatRupiah(total)}
+                  </span>
                 </div>
+              </section>
+                </>
               )}
 
               {/* Tombol simpan untuk Enter; tombol aslinya ada di footer yang menempel */}
@@ -1115,30 +1240,59 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
             </form>
 
             {/* Footer menempel: Total di kiri, aksi di kanan — tidak ikut ter-scroll */}
-            <div className="shrink-0 flex items-center justify-between gap-3 px-5 sm:px-6 py-4 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-[#1a1d28]">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Total</p>
-                <p className="text-lg font-black font-heading text-slate-900 dark:text-white whitespace-nowrap">
-                  Rp {formatRupiah(total)}
+            <div className="shrink-0 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-[#1a1d28] px-5 sm:px-6 py-3.5">
+              {(step === 1 && stockIssues.length > 0) || saveError ? (
+                <p className="flex items-start gap-1.5 text-xs font-semibold text-red-600 dark:text-red-400 mb-2" role="alert">
+                  <AlertCircle size={13} className="mt-px shrink-0" />
+                  <span className="line-clamp-2">
+                    {saveError || stockIssues[0]}
+                    {!saveError && stockIssues.length > 1 ? ` (+${stockIssues.length - 1} lainnya)` : ""}
+                  </span>
                 </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={requestClose}
-                  className="px-4 py-2.5 bg-white dark:bg-slate-800 border-2 border-gray-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 transition-all"
-                >
-                  Batal
-                </button>
-                <button
-                  type="button"
-                  onClick={save}
-                  disabled={mutation.isPending || incomplete}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold rounded-xl hover:bg-slate-800 dark:hover:bg-slate-100 disabled:opacity-50 transition-all"
-                >
-                  <Save size={16} />
-                  {mutation.isPending ? "Menyimpan..." : isEdit ? "Simpan Perubahan" : "Simpan Transaksi"}
-                </button>
+              ) : null}
+
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Total</p>
+                  <p className="text-lg font-black font-heading text-slate-900 dark:text-white whitespace-nowrap">
+                    Rp {formatRupiah(total)}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {step > 0 && (
+                    <button
+                      type="button"
+                      onClick={goBack}
+                      className="px-4 py-2.5 bg-white dark:bg-slate-800 border-2 border-gray-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 transition-all"
+                    >
+                      Kembali
+                    </button>
+                  )}
+
+                  {step < 2 ? (
+                    <button
+                      type="button"
+                      onClick={goNext}
+                      className={`px-5 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold rounded-xl hover:bg-slate-800 dark:hover:bg-slate-100 transition-all ${
+                        stepReady[step] ? "" : "opacity-60"
+                      }`}
+                      title={stepReady[step] ? undefined : "Lengkapi isian wajib di langkah ini dulu"}
+                    >
+                      Lanjut
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={save}
+                      disabled={mutation.isPending}
+                      className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold rounded-xl hover:bg-slate-800 dark:hover:bg-slate-100 disabled:opacity-50 transition-all"
+                    >
+                      <Save size={16} />
+                      {mutation.isPending ? "Menyimpan..." : isEdit ? "Simpan Perubahan" : "Simpan Transaksi"}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 
