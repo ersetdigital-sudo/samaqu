@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "./supabase";
-import { OPEN_ORDER_PERIOD } from "./open-order-config";
+import { OPEN_ORDER_PERIOD, DEFAULT_OPEN_ORDER_ADDON_WEIGHT } from "./open-order-config";
 
 interface StoreSettings {
   store_name: string;
@@ -21,6 +21,11 @@ interface StoreSettings {
   open_order_start_date: string | null;
   /** Tanggal tutup jendela Open Order (YYYY-MM-DD). */
   open_order_end_date: string | null;
+  /**
+   * Berat kirim add-on "Extra Cover & Hanger" (gram) — diatur dari menu admin "Open Order".
+   * Null/kosong = pakai default 300 g (`DEFAULT_OPEN_ORDER_ADDON_WEIGHT`).
+   */
+  open_order_addon_weight: number | null;
 }
 
 const DEFAULTS: StoreSettings = {
@@ -36,6 +41,7 @@ const DEFAULTS: StoreSettings = {
   open_order_active: true,
   open_order_start_date: null,
   open_order_end_date: null,
+  open_order_addon_weight: DEFAULT_OPEN_ORDER_ADDON_WEIGHT,
 };
 
 let cached: StoreSettings = DEFAULTS;

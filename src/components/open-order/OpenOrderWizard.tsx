@@ -16,7 +16,7 @@ import Link from "next/link";
 import { Calendar, ChevronLeft, X } from "lucide-react";
 import { getCatalogProducts } from "@/lib/db";
 import type { Product } from "@/lib/katalog-data";
-import { OPEN_ORDER_ADDON, OPEN_ORDER_PERIOD } from "@/lib/open-order-config";
+import { OPEN_ORDER_ADDON, OPEN_ORDER_PERIOD, resolveAddonWeight } from "@/lib/open-order-config";
 import { sumWeightGramsBySize, variantWeightMapFromRows } from "@/lib/shipping-weight";
 import {
   buildOpenOrderProducts,
@@ -213,9 +213,11 @@ export default function OpenOrderWizard() {
   const subtotal = lines.reduce((sum, line) => sum + line.price * line.quantity, 0);
   const total = subtotal + (extraCover ? OPEN_ORDER_ADDON.price : 0) + (shipping?.cost ?? 0);
 
+  // Berat add-on Extra Cover & Hanger (gram) — diatur admin di menu "Open Order".
+  const addonWeight = resolveAddonWeight(settings.open_order_addon_weight);
+
   // Berat kirim (gram) memakai FUNGSI PUSAT `sumWeightGramsBySize`: berat varian per ukuran →
   // berat produk → default wizard. Tiap series (termasuk turunan) memakai beratnya SENDIRI.
-  // Add-on Extra Cover & Hanger tetap +300 g dan minimum 300 g tetap.
   const { productWeights, variantWeights } = useMemo(() => {
     const pw: Record<string, number> = {};
     for (const product of products) {
@@ -229,7 +231,8 @@ export default function OpenOrderWizard() {
     };
   }, [products, stockRows]);
 
-  const totalWeight = useMemo(() => {
+  // Berat barang saja (tanpa add-on) — untuk rincian "berat produk vs cover & hanger".
+  const itemsWeight = useMemo(() => {
     const weightLines = lines.map((line) => {
       const product = findOpenOrderProduct(products, line.productId);
       const variant = product ? openOrderVariantFor(product, line.color, line.series) : undefined;
@@ -241,8 +244,14 @@ export default function OpenOrderWizard() {
       };
     });
     const { grams, missingQty } = sumWeightGramsBySize(weightLines, productWeights, variantWeights);
-    return Math.max(300, grams + missingQty * 1200 + (extraCover ? OPEN_ORDER_ADDON.weight : 0));
-  }, [lines, products, productWeights, variantWeights, extraCover]);
+    return grams + missingQty * 1200;
+  }, [lines, products, productWeights, variantWeights]);
+
+  // Total berat kirim = minimum 300 g + add-on bila dipilih (formula sama persis dengan server).
+  const totalWeight = useMemo(
+    () => Math.max(300, itemsWeight + (extraCover ? addonWeight : 0)),
+    [itemsWeight, extraCover, addonWeight]
+  );
 
   /**
    * Ongkir yang sudah pernah dihitung (kunci: kota|kecamatan|berat). Menghindari menunggu
@@ -643,6 +652,9 @@ export default function OpenOrderWizard() {
                 subtotal={subtotal}
                 extraCover={extraCover}
                 onToggleExtra={setExtraCover}
+                itemsWeight={itemsWeight}
+                addonWeight={addonWeight}
+                totalWeight={totalWeight}
                 onQuantity={updateQuantity}
                 onRemove={removeLine}
                 onContinue={() => setStep(4)}

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
-import { OPEN_ORDER_ADDON } from "@/lib/open-order-config";
+import { OPEN_ORDER_ADDON, resolveAddonWeight } from "@/lib/open-order-config";
 import {
   buildOpenOrderProducts,
   findOpenOrderProduct,
@@ -252,6 +252,14 @@ export async function POST(request: NextRequest) {
     }
 
     const extraCover = body.extraCover === true;
+    // Berat add-on Cover & Hanger diatur admin (menu "Open Order" → `store_settings`). Nilai
+    // dari client tidak dipercaya — selalu dibaca ulang di server, sama seperti harganya.
+    const { data: addonSetting } = await supabaseAdmin
+      .from("store_settings")
+      .select("open_order_addon_weight")
+      .eq("id", 1)
+      .maybeSingle();
+    const addonWeight = resolveAddonWeight(addonSetting?.open_order_addon_weight);
     const subtotal = validatedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
     const addonTotal = extraCover ? OPEN_ORDER_ADDON.price : 0;
 
@@ -359,7 +367,7 @@ export async function POST(request: NextRequest) {
     );
     const weightGrams = Math.max(
       300,
-      itemsWeight + itemsWeightMissing * DEFAULT_OPEN_ORDER_WEIGHT + (extraCover ? OPEN_ORDER_ADDON.weight : 0)
+      itemsWeight + itemsWeightMissing * DEFAULT_OPEN_ORDER_WEIGHT + (extraCover ? addonWeight : 0)
     );
 
     const { data: order, error: orderError } = await supabaseAdmin
