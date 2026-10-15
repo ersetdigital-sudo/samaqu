@@ -50,6 +50,8 @@ export default function DateFilter({
   onMonthChange,
   /** Tanggal (YYYY-MM-DD) yang punya leads — dipakai untuk titik penanda. */
   markedDates = [],
+  /** Keterangan titik penanda; menu Transaksi memakai "ada transaksi". */
+  markedLabel = "ada leads",
 }) {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState(() => ({ y: year, m: month }));
@@ -261,7 +263,7 @@ export default function DateFilter({
           </div>
 
           <p className="mt-2 text-[10px] text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-500" /> ada leads
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500" /> {markedLabel}
             <span className="ml-2 w-4 h-0.5 rounded-full bg-blue-500/70" /> hari ini
           </p>
         </div>
