@@ -23,6 +23,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, Check, Pencil, Plus, Save, Trash2, X } from "lucide-react";
 import { base44 } from "@/lib/ops-api";
 import { MANUAL_SOURCE_KEYS, SOURCE_LABEL } from "@/lib/transaksi";
+import { withAddress } from "@/lib/customer-directory";
 import { OPS_STOCK_SIZES } from "@/lib/ops-stock";
 import { categoryRank, seriesRank, variantSortKey } from "@/lib/ops-order";
 import { formatRupiah, isoToWibInput, wibNow, wibToIso } from "@/components/ops/transaksi/transaksi-format";
@@ -388,7 +389,17 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
   const shippingValue = Number(digits(form?.shipping_cost)) || 0;
   const total = Math.max(0, subtotal - Math.min(discountValue, subtotal)) + shippingValue;
 
+  /**
+   * Pilihan pelanggan = yang sudah punya alamat, supaya alamatnya langsung terisi dan admin
+   * tidak mengetik ulang. Untuk deteksi nomor dobel dipakai daftar LENGKAP (termasuk yang
+   * belum punya alamat) supaya tidak lahir pelanggan ganda.
+   */
   const customerOptions = useMemo(
+    () => withAddress(customers).sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), "id-ID")),
+    [customers],
+  );
+
+  const semuaPelanggan = useMemo(
     () => [...customers].sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), "id-ID")),
     [customers],
   );
@@ -413,8 +424,8 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
     if (form?.customer_mode !== "new") return null;
     const key = phoneKey(form?.customer_whatsapp || "");
     if (key.length < 8) return null;
-    return customerOptions.find((customer) => phoneKey(customer.whatsapp) === key) || null;
-  }, [form?.customer_mode, form?.customer_whatsapp, customerOptions]);
+    return semuaPelanggan.find((customer) => phoneKey(customer.whatsapp) === key) || null;
+  }, [form?.customer_mode, form?.customer_whatsapp, semuaPelanggan]);
 
   const applySavedAddress = (address) => {
     setForm((current) => ({
