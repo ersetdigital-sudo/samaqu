@@ -27,11 +27,9 @@ import {
   ORDER_STAGE_LABEL,
   ORDER_STAGE_STYLE,
   ORDER_STAGE_TABS,
-  SHIPPING_STATUS_STYLE,
   matchesStage,
   orderStage,
   shippingLine,
-  shippingStatusOf,
   stageNeedsAdminAction,
   type OrderStageFilter,
 } from "@/lib/order-flow";
@@ -206,22 +204,6 @@ export default function OrdersView({
                   <td className="px-5 py-3.5 min-w-[170px]">
                     <span className="block text-xs whitespace-nowrap" style={{ color: "var(--text-muted)" }}>{ship.courier}</span>
                     <span className="block text-xs font-semibold mt-0.5 whitespace-nowrap" style={{ color: ship.awaiting ? "#c2410c" : "var(--espresso)" }}>{ship.resi}</span>
-                    {/* Status pengiriman terpisah dari status pesanan (mis. "Menunggu Pickup").
-                        Pesanan dibatalkan → tampil "Dibatalkan" (bukan progres pengiriman yang sudah moot). */}
-                    {ship.cancelled ? (
-                      <span className="badge mt-1" style={{ background: ORDER_STAGE_STYLE.dibatalkan.bg, color: ORDER_STAGE_STYLE.dibatalkan.color, border: `1px solid ${ORDER_STAGE_STYLE.dibatalkan.border}` }}>
-                        Dibatalkan
-                      </span>
-                    ) : (() => {
-                      const ss = shippingStatusOf(o);
-                      if (!ss) return null;
-                      const st = SHIPPING_STATUS_STYLE[ss];
-                      return (
-                        <span className="badge mt-1" style={{ background: st.bg, color: st.color, border: `1px solid ${st.border}` }}>
-                          {ship.status}
-                        </span>
-                      );
-                    })()}
                   </td>
                   <td className="px-5 py-3.5"><StageBadge order={o} /></td>
                   <td className="px-5 py-3.5 text-right">
