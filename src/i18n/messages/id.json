@@ -225,6 +225,24 @@
     "stockLimit": "Stok hanya tersisa {count} pcs untuk varian ini",
     "relatedTitle": "Produk lain dari kain ini"
   },
+  "tracking": {
+    "history": "Riwayat Pengiriman",
+    "refresh": "Perbarui",
+    "loading": "Memuat…",
+    "note": "Catatan",
+    "statusNow": "Status terkini",
+    "updatedAt": "Diperbarui",
+    "duration": "Total waktu perjalanan",
+    "fetchedAt": "Data diambil",
+    "rawData": "Lihat data mentah",
+    "close": "Tutup",
+    "driver": "Kurir",
+    "noUpdate": "Belum ada update dari J&T. Riwayat muncul setelah kurir memindai paket.",
+    "noResi": "Nomor resi belum tersedia. Kami kabari begitu paket diserahkan ke J&T.",
+    "stale": "Menampilkan data J&T terakhir yang tersimpan.",
+    "error": "Tidak bisa menghubungi layanan J&T. Coba lagi sebentar lagi.",
+    "empty": "Data pelacakan J&T belum bisa diambil."
+  },
   "testimoni": {
     "eyebrow": "Review Samaqu",
     "title": "Apa Kata Mereka?",

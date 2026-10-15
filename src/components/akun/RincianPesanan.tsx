@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useSafeLocale } from "@/lib/safe-i18n";
+import { useSafeLocale, useSafeTranslations } from "@/lib/safe-i18n";
 import { strukStatus, strukSteps, tglJamID, rupiah } from "@/lib/akun-format";
 import { formatWeight } from "@/lib/shipping-weight";
 import { usePaymentMethodName } from "@/lib/use-payment-methods";
@@ -230,6 +230,7 @@ const VARIAN_LINE = (item: RincianOrderItem) =>
 
 export default function RincianPesanan({ order }: { order: RincianOrder }) {
   const locale = useSafeLocale();
+  const t = useSafeTranslations("tracking");
   const to = (href: string) => `/${locale}${href}`;
 
   const { name: paymentName } = usePaymentMethodName(order.payment_method);
@@ -334,8 +335,8 @@ export default function RincianPesanan({ order }: { order: RincianOrder }) {
     };
   }, [resi]);
 
-  // Baris status kirim terakhir — teks asli J&T (status tertunda ditandai kuning untuk customer).
-  const latestRow = latest ? trackingRow(latest, "customer") : null;
+  // Baris status kirim terakhir — teks status & catatan J&T ditampilkan APA ADANYA.
+  const latestRow = latest ? trackingRow(latest) : null;
 
   return (
     <div className="rp-root -mx-4 -mt-4 md:mx-0 md:mt-0">
@@ -380,16 +381,16 @@ export default function RincianPesanan({ order }: { order: RincianOrder }) {
             ) : null}
             {latestRow ? (
               <>
-                <div className="rp-line" style={{ color: latestRow.pending ? "#b45309" : "#666666", fontWeight: 600 }}>
+                <div className="rp-line" style={{ color: latestRow.warning ? "#b45309" : "#666666", fontWeight: 600 }}>
                   <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7h11v9H3z" /><path d="M14 10h4l3 3v3h-7z" /><circle cx="7" cy="18" r="1.5" /><circle cx="17.5" cy="18" r="1.5" /></svg>
-                  <span>{[latestRow.title, latestRow.location].filter(Boolean).join(" — ")}</span>
+                  <span>{latestRow.status}</span>
                 </div>
                 <div className="rp-line rp-sub" style={{ marginLeft: 27 }}>
-                  <span>{formatTrackingTime(latestRow.dateTime)}</span>
+                  <span>{[latestRow.location, formatTrackingTime(latestRow.dateTime)].filter(Boolean).join(" • ")}</span>
                 </div>
                 {latestRow.note ? (
                   <div className="rp-line rp-sub" style={{ marginLeft: 27 }}>
-                    <span style={{ color: latestRow.pending ? "#b45309" : undefined }}>{latestRow.note}</span>
+                    <span>{t("note")}: {latestRow.note}</span>
                   </div>
                 ) : null}
               </>

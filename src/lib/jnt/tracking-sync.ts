@@ -52,6 +52,41 @@ function eventKey(awb: string, h: TrackHistoryItem): string {
   return `${awb}|${h.status_code ?? ""}|${h.date_time ?? ""}`;
 }
 
+/**
+ * Simpan riwayat mentah sebuah resi sebagai **cadangan** (idempoten) — TANPA mengubah status
+ * pesanan. Dipakai jalur baca publik (`/api/jnt/track`) supaya saat J&T tidak bisa dihubungi,
+ * halaman masih bisa menampilkan data asli terakhir. Resi yang tidak dikenali (bukan pesanan
+ * kita) diabaikan — hanya tabel `order_tracking_events` yang ditulis.
+ */
+export async function storeTrackingEvents(
+  supabase: SupabaseClient,
+  awb: string,
+  history: TrackHistoryItem[],
+): Promise<void> {
+  if (!awb || history.length === 0) return;
+  try {
+    const { data: order } = await supabase.from("orders").select("id").eq("awb_no", awb).maybeSingle();
+    if (!order?.id) return;
+
+    const rows = history.map((h) => ({
+      order_id: order.id as string,
+      awb_no: awb,
+      event_key: eventKey(awb, h),
+      status_code: typeof h.status_code === "number" ? h.status_code : null,
+      status_text: h.status ?? null,
+      city_name: h.city_name ?? null,
+      event_time: toIso(h.date_time),
+      raw: h,
+    }));
+    const { error } = await supabase
+      .from("order_tracking_events")
+      .upsert(rows, { onConflict: "event_key", ignoreDuplicates: true });
+    if (error) console.error("[TRACKING] Gagal simpan cadangan riwayat:", awb, error.message);
+  } catch (e) {
+    console.error("[TRACKING] Gagal simpan cadangan riwayat:", awb, e);
+  }
+}
+
 export async function applyTrackingToOrder(
   supabase: SupabaseClient,
   order: SyncOrder,

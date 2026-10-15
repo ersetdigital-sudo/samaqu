@@ -4,13 +4,14 @@ import { useState, useEffect } from "react";
 import { strukStatus, strukSteps, tglJamID, rupiah } from "@/lib/akun-format";
 import type { TrackHistoryItem } from "@/lib/jnt/types";
 import {
+  censorReceiverPII,
   formatTrackingTime,
   sortHistoryDesc,
-  TRACK_SUMMARY_TONE,
   trackingRow,
   trackingSummary,
 } from "@/lib/jnt/track-status";
-import { shippingPending, shippingStatusOf, SHIPPING_STATUS_LABEL } from "@/lib/order-flow";
+import { shippingStatusOf, SHIPPING_STATUS_LABEL } from "@/lib/order-flow";
+import { useSafeTranslations } from "@/lib/safe-i18n";
 import { PaymentMethodValue } from "@/components/admin/PaymentMethodsManager";
 import { RINCIAN_CSS, FALLBACK_PHOTO } from "@/components/akun/RincianPesanan";
 import { waNumber, waLink, pesanPembayaran } from "@/lib/whatsapp";
@@ -209,6 +210,12 @@ export default function OrderDetailContent({
   const [tracking, setTracking] = useState(false);
   const [trackHistory, setTrackHistory] = useState<TrackHistoryItem[] | null>(null);
   const [trackError, setTrackError] = useState<string | null>(null);
+  /** Respons J&T apa adanya (untuk tombol "Lihat data mentah"). */
+  const [trackRaw, setTrackRaw] = useState<unknown>(null);
+  /** Kapan data diambil dari J&T. */
+  const [trackFetchedAt, setTrackFetchedAt] = useState<string | null>(null);
+  const [showRaw, setShowRaw] = useState(false);
+  const t = useSafeTranslations("tracking");
 
   // Berat per produk (gram) untuk tiap item — diambil dari `products.weight` (order_items
   // tidak menyimpan berat). Dipakai menampilkan berat di samping tiap produk.
@@ -253,6 +260,8 @@ export default function OrderDetailContent({
       }
       const data = json?.track as { history?: TrackHistoryItem[] } | null;
       setTrackHistory(data?.history ?? []);
+      setTrackRaw(data ?? null);
+      setTrackFetchedAt(new Date().toISOString());
       if (!data && json?.trackError) setTrackError(json.trackError);
       // Kalau server menaikkan status, beri tahu induk supaya daftar & drawer ikut segar.
       if (json?.changed) onSynced?.({ status: json.status, shipping_status: json.shippingStatus ?? null });
@@ -390,18 +399,11 @@ export default function OrderDetailContent({
                     </div>
                   ) : null;
                 })() : null}
-                {/* Badge "Tertunda" (status J&T onhold) supaya tim bisa tindak lanjut. */}
-                {resi && shippingPending(order) ? (
-                  <div className="rp-line" style={{ marginTop: 8 }}>
-                    <span className="rp-sub">Status J&amp;T</span>
-                    <span className="rp-strong" style={{ marginLeft: "auto", color: "#b45309" }}>Tertunda — perlu tindak lanjut</span>
-                  </div>
-                ) : null}
                 {resi && order.tracking_status_text ? (
                   <div className="rp-line" style={{ marginTop: 8 }}>
                     <span className="rp-sub">Tracking terakhir</span>
                     <span className="rp-strong" style={{ marginLeft: "auto", textAlign: "right" }}>
-                      {trackingRow({ status: order.tracking_status_text, status_code: order.tracking_status_code }, "admin").title}
+                      {trackingRow({ status: order.tracking_status_text, status_code: order.tracking_status_code }).status}
                       {order.tracking_city ? ` · ${order.tracking_city}` : ""}
                     </span>
                   </div>
@@ -574,7 +576,7 @@ export default function OrderDetailContent({
               {showTrack ? (
                 <div className="od-track">
                   <div className="flex items-center gap-2">
-                    <p className="od-title" style={{ margin: 0 }}>Riwayat Pengiriman</p>
+                    <p className="od-title" style={{ margin: 0 }}>{t("history")}</p>
                     <button
                       type="button"
                       onClick={() => openTrack(true)}
@@ -582,58 +584,68 @@ export default function OrderDetailContent({
                       className="ml-auto text-[11px] font-bold px-3 py-1.5 rounded-lg whitespace-nowrap"
                       style={{ border: "1px solid #d4d4d8", color: "#475569" }}
                     >
-                      {tracking ? "Memuat…" : "Perbarui"}
+                      {tracking ? t("loading") : t("refresh")}
                     </button>
+                    {trackRaw ? (
+                      <button
+                        type="button"
+                        onClick={() => setShowRaw((v) => !v)}
+                        className="text-[11px] font-bold px-3 py-1.5 rounded-lg whitespace-nowrap"
+                        style={{ border: "1px solid #d4d4d8", color: "#475569" }}
+                      >
+                        {t("rawData")}
+                      </button>
+                    ) : null}
                   </div>
 
-                  {/* Ringkasan status terkini — status, pembaruan terakhir, total waktu perjalanan. */}
+                  {/* Ringkasan — nilai-nilainya diambil langsung dari event J&T terbaru. */}
                   {trackSummary ? (
-                    <div style={{ marginTop: 10, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
-                      <span
-                        className="text-[11px] font-bold px-2.5 py-1 rounded-full"
-                        style={{
-                          background: TRACK_SUMMARY_TONE[trackSummary.key].bg,
-                          color: TRACK_SUMMARY_TONE[trackSummary.key].color,
-                          border: `1px solid ${TRACK_SUMMARY_TONE[trackSummary.key].border}`,
-                        }}
-                      >
-                        {trackSummary.label}
-                      </span>
-                      {trackSummary.updatedAt ? (
-                        <span className="text-[11px]" style={{ color: "#8D9297" }}>
-                          Diperbarui {formatTrackingTime(trackSummary.updatedAt)}
-                        </span>
+                    <div style={{ marginTop: 10, display: "grid", gap: 4 }}>
+                      <p className="text-[12.5px]" style={{ margin: 0 }}>
+                        <span style={{ color: "#8D9297" }}>{t("statusNow")}: </span>
+                        <b style={{ color: "#1c1c1c" }}>{trackSummary.status}</b>
+                      </p>
+                      {trackSummary.note ? (
+                        <p className="text-[12.5px]" style={{ margin: 0, color: "#8D9297" }}>
+                          {t("note")}: <span style={{ color: "#1c1c1c" }}>{trackSummary.note}</span>
+                        </p>
                       ) : null}
+                      <p className="text-[12.5px]" style={{ margin: 0, color: "#8D9297" }}>
+                        {t("updatedAt")}: <span style={{ color: "#1c1c1c" }}>{formatTrackingTime(trackSummary.updatedAt)}</span>
+                      </p>
                       {trackSummary.elapsedLabel ? (
-                        <span className="text-[11px]" style={{ color: "#8D9297" }}>
-                          • Total {trackSummary.elapsedLabel}
-                        </span>
+                        <p className="text-[12.5px]" style={{ margin: 0, color: "#8D9297" }}>
+                          {t("duration")}: <span style={{ color: "#1c1c1c" }}>{trackSummary.elapsedLabel}</span>
+                        </p>
+                      ) : null}
+                      {trackFetchedAt ? (
+                        <p className="text-[12.5px]" style={{ margin: 0, color: "#8D9297" }}>
+                          {t("fetchedAt")}: <span style={{ color: "#1c1c1c" }}>{formatTrackingTime(trackFetchedAt)}</span>
+                        </p>
                       ) : null}
                     </div>
                   ) : null}
 
                   {tracking ? (
-                    <p className="od-tnote">Memuat pelacakan J&amp;T…</p>
+                    <p className="od-tnote">{t("loading")}</p>
                   ) : trackError ? (
                     <p className="od-tnote">{trackError}</p>
                   ) : trackUpdates.length > 0 ? (
                     <div className="od-ups">
                       {trackUpdates.map((u, i) => {
-                        // Admin: teks asli J&T + catatan internal apa adanya (mis. "TLC Salah, …").
-                        const row = trackingRow(u, "admin");
+                        // Teks status & catatan J&T ditampilkan APA ADANYA. Admin juga melihat nama kurir.
+                        const row = trackingRow(u);
                         return (
                           <div key={`${row.dateTime}-${i}`} className={`od-up${i === 0 ? " is-first" : ""}`}>
-                            <span className="od-up-dot" style={row.pending ? { background: "#b45309" } : undefined} />
+                            <span className="od-up-dot" style={row.warning ? { background: "#d97706" } : undefined} />
                             <div>
-                              <b style={row.pending ? { color: "#b45309" } : undefined}>
-                                {row.title}
-                                {row.pending ? " · Tertunda" : ""}
-                              </b>
+                              <b style={row.warning ? { color: "#b45309" } : undefined}>{row.status}</b>
                               <i>{[row.location, formatTrackingTime(row.dateTime)].filter(Boolean).join(" • ")}</i>
                               {row.note ? (
-                                <i style={{ display: "block", marginTop: 2, color: row.pending ? "#b45309" : undefined }}>
-                                  Catatan J&amp;T: {row.note}
-                                </i>
+                                <i style={{ display: "block", marginTop: 2 }}>{t("note")}: {row.note}</i>
+                              ) : null}
+                              {row.driver ? (
+                                <i style={{ display: "block", marginTop: 2 }}>{t("driver")}: {row.driver}</i>
                               ) : null}
                             </div>
                           </div>
@@ -641,8 +653,21 @@ export default function OrderDetailContent({
                       })}
                     </div>
                   ) : (
-                    <p className="od-tnote">Belum ada update dari J&amp;T. Riwayat muncul setelah kurir memindai paket.</p>
+                    <p className="od-tnote">{t("noUpdate")}</p>
                   )}
+
+                  {/* Respons J&T apa adanya (data pribadi penerima disembunyikan). */}
+                  {showRaw && trackRaw ? (
+                    <pre
+                      style={{
+                        marginTop: 10, padding: 12, borderRadius: 10, background: "#f7f7f8",
+                        border: "1px solid #E1E3E5", fontSize: 11, lineHeight: 1.5,
+                        maxHeight: 320, overflow: "auto",
+                      }}
+                    >
+{JSON.stringify(censorReceiverPII(trackRaw), null, 2)}
+                    </pre>
+                  ) : null}
                 </div>
               ) : null}
             </div>
