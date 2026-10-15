@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, use, useRef, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Minus, Plus, ChevronLeft, ChevronRight, ChevronDown, Play, ShoppingCart } from "lucide-react";
+import { Bag } from "@phosphor-icons/react";
 import ImageZoom, { type ZoomMedia } from "@/components/ImageZoom";
 import KainSeriesModal, { getKainSwatchColor } from "@/components/KainSeriesModal";
 import Breadcrumb from "@/components/Breadcrumb";
+import { CartBadge } from "@/components/CartBadge";
 import { colorMap, type Product, type MediaItem } from "@/lib/katalog-data";
 import { getCatalogProductById, getAvailableSeries, getRelatedProducts, type SeriesOption } from "@/lib/db";
 import { relatedProductTitle } from "@/lib/related-products";
@@ -16,6 +18,7 @@ import { useToast } from "@/components/Toast";
 import { getWhatsAppLink, useStoreSettings } from "@/lib/store-settings";
 import { supabase } from "@/lib/supabase";
 import { useWishlist } from "@/lib/use-wishlist";
+import { useSafeLocale } from "@/lib/safe-i18n";
 import { trackViewContent, trackAddToCart, trackWhatsAppClick, sendCAPIEvent } from "@/lib/meta-pixel";
 
 const FALLBACK_SIZES = ["S", "M", "L", "XL", "XXL"];
@@ -191,6 +194,31 @@ function RelatedProductCard({ p }: { p: Product }) {
   );
 }
 
+/* ── Tombol keranjang (mobile, detail produk) ──
+   Navbar atas disembunyikan di mobile untuk halaman ini, jadi tombol ini jadi satu-satunya
+   akses ke keranjang. Jumlah item diambil dari sumber yang sama dengan badge header
+   (`useCart().totalItems`) — tidak ada state keranjang baru di sini. */
+function MobileCartButton() {
+  const { totalItems } = useCart();
+  const router = useRouter();
+  const locale = useSafeLocale();
+
+  return (
+    <button
+      type="button"
+      onClick={() => router.push(`/${locale}/cart`)}
+      aria-label={totalItems > 0 ? `Keranjang belanja, ${totalItems} item` : "Keranjang belanja"}
+      className="relative shrink-0 grid place-items-center w-11 h-11 rounded-full transition-transform duration-200 active:scale-95"
+      style={{ color: "#000000" }}
+    >
+      <Bag size={22} />
+      {/* Badge hitam — sumber data sama dengan badge header (useCart().totalItems),
+          dengan animasi bump bawaan. Disembunyikan otomatis saat totalItems 0. */}
+      <CartBadge background="#000000" color="#ffffff" />
+    </button>
+  );
+}
+
 export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const searchParams = useSearchParams();
@@ -221,6 +249,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const [galleryHighlight, setGalleryHighlight] = useState(false);
   const { addItem } = useCart();
   const toast = useToast();
+  const locale = useSafeLocale();
   const storeSettings = useStoreSettings();
   const { isWishlisted, toggle: toggleWishlist, isLoggedIn } = useWishlist();
   const cypMicrocopy = product?.cyp_microcopy_override || storeSettings.cyp_microcopy || "Harga Minimum boleh dipilih. Itulah alasan kami membuat Create Your Price.";
@@ -483,7 +512,15 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       minimum_price: isCYP ? minimumPrice : undefined,
       create_your_price_enabled: isCYP || undefined,
     });
-    toast.show("Ditambahkan ke keranjang");
+    // Tautan "Lihat" + posisi di atas bar aksi hanya untuk mobile; desktop sudah punya
+    // ikon keranjang di navbar, jadi toast-nya tidak diubah.
+    const isMobileViewport = typeof window !== "undefined" && window.innerWidth < 768;
+    toast.show(
+      "Ditambahkan ke keranjang",
+      isMobileViewport
+        ? { action: { label: "Lihat", href: `/${locale}/cart` }, aboveActionBar: true }
+        : undefined,
+    );
 
     // Meta Pixel: AddToCart
     trackAddToCart({
@@ -614,8 +651,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       <div className="md:hidden">
         {/* Breadcrumb mobile — navbar atas disembunyikan di mobile (lihat layout
             (customer)), jadi tidak lagi butuh padding besar untuk navbar fixed. */}
-        <div className="max-w-7xl mx-auto px-4" style={{ paddingTop: "20px", marginBottom: "32px" }}>
-          <Breadcrumb extra={[{ label: product.name }]} />
+        <div className="max-w-7xl mx-auto px-4 flex items-center justify-between gap-3" style={{ paddingTop: "20px", marginBottom: "32px" }}>
+          <div className="min-w-0 flex-1">
+            <Breadcrumb extra={[{ label: product.name }]} />
+          </div>
+          <MobileCartButton />
         </div>
         {/* Gallery */}
         <div ref={mobileGalleryRef} className={`relative px-4 pb-1 transition-all duration-300 ${galleryHighlight ? "ring-2 ring-[#000000] ring-offset-2" : ""}`}>
