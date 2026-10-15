@@ -33,7 +33,8 @@ import {
 import { useSafeLocale } from "@/lib/safe-i18n";
 import { useStoreSettings } from "@/lib/store-settings";
 import { getCurrentCustomer } from "@/lib/customer-auth";
-import { fetchActivePaymentMethods, type PaymentMethodRow } from "@/lib/payment-methods";
+import { fetchActivePaymentMethods, isOnlinePaymentMethod, type PaymentMethodRow } from "@/lib/payment-methods";
+import { startOnlinePayment } from "@/lib/mayar-client";
 import { supabase } from "@/lib/supabase";
 import StepAuth, { type AuthAccount } from "./StepAuth";
 import StepCart from "./StepCart";
@@ -499,6 +500,12 @@ export default function OpenOrderWizard() {
       }
       setResult({ orderNumber: data.orderNumber, total: data.total });
       setStep(6);
+      // Pembayaran online (Mayar): arahkan customer ke halaman bayar Mayar. Gagal → tetap di
+      // halaman sukses; link bayar juga bisa dibuka dari detail pesanan.
+      if (isOnlinePaymentMethod(paymentMethods.find((m) => m.id === paymentMethod) || null)) {
+        const payUrl = await startOnlinePayment(String(data.orderNumber));
+        if (payUrl) window.location.href = payUrl;
+      }
     } catch (err) {
       console.error("[OPEN-ORDER] submit error:", err);
       setError("Pesanan gagal dikirim. Coba lagi ya.");

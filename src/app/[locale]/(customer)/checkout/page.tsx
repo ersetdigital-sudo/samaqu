@@ -10,7 +10,8 @@ import { supabase } from "@/lib/supabase";
 import { getWhatsAppLink } from "@/lib/store-settings";
 import { trackInitiateCheckout, sendCAPIEvent } from "@/lib/meta-pixel";
 import { PaymentIcon } from "@/lib/payment-icons";
-import { fetchActivePaymentMethods, normalizeMethodType, paymentMethodLabel, type PaymentMethodRow } from "@/lib/payment-methods";
+import { fetchActivePaymentMethods, isOnlinePaymentMethod, normalizeMethodType, paymentMethodLabel, type PaymentMethodRow } from "@/lib/payment-methods";
+import { startOnlinePayment } from "@/lib/mayar-client";
 import { cloudinaryUrl } from "@/lib/cloudinary";
 
 interface ShipOpt { courier: string; service: string; description: string; cost: number; etd: string; }
@@ -635,6 +636,15 @@ function CheckoutContent() {
       setOrderPlaced(true);
       clearCart();
       const orderNum = data.orderNumber || generateOrderNumber();
+      // Pembayaran online (Mayar): minta link bayar lalu arahkan customer ke halaman Mayar.
+      // Kalau gagal, lanjut ke halaman sukses biasa — customer masih bisa bayar dari detail pesanan.
+      if (isOnlinePaymentMethod(paymentMethods.find((m) => m.id === payment) || null)) {
+        const payUrl = await startOnlinePayment(orderNum);
+        if (payUrl) {
+          window.location.href = payUrl;
+          return;
+        }
+      }
       console.log("[CHECKOUT] ✅ Redirecting to:", `/checkout/success?order=${orderNum}`);
       router.push(`/checkout/success?order=${orderNum}`);
     } catch (err) {

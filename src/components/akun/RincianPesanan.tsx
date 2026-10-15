@@ -12,6 +12,7 @@ import {
   type ResolvedLineWeight,
 } from "@/lib/shipping-weight";
 import { usePaymentMethodName } from "@/lib/use-payment-methods";
+import { startOnlinePayment } from "@/lib/mayar-client";
 import { supabase } from "@/lib/supabase";
 import ConfirmModal from "@/components/ConfirmModal";
 import type { TrackHistoryItem } from "@/lib/jnt/types";
@@ -51,6 +52,11 @@ export interface RincianOrder {
   shipping_city?: string | null;
   shipping_postal_code?: string | null;
   order_items: RincianOrderItem[];
+  /** Pembayaran online (Mayar): diisi saat invoice dibuat, `paid_at` saat webhook memverifikasi lunas. */
+  payment_provider?: string | null;
+  payment_url?: string | null;
+  payment_status?: string | null;
+  paid_at?: string | null;
 }
 
 /** Foto cadangan kalau baris pesanan tidak punya gambar dan katalog tidak ketemu.
@@ -242,6 +248,7 @@ export default function RincianPesanan({ order }: { order: RincianOrder }) {
   const { name: paymentName } = usePaymentMethodName(order.payment_method);
 
   const [showAlamat, setShowAlamat] = useState(false);
+  const [paying, setPaying] = useState(false);
   const [latest, setLatest] = useState<TrackHistoryItem | null>(null);
 
   // Pesanan yang baru dibatalkan dari halaman ini ditimpa statusnya secara lokal supaya banner &
@@ -355,6 +362,17 @@ export default function RincianPesanan({ order }: { order: RincianOrder }) {
 
   // Baris status kirim terakhir — teks status & catatan J&T ditampilkan APA ADANYA.
   const latestRow = latest ? trackingRow(latest) : null;
+
+  /** Buka halaman bayar Mayar (link dibuat ulang kalau memang belum ada / kedaluwarsa). */
+  async function payNow() {
+    setPaying(true);
+    try {
+      const url = order.payment_url || (await startOnlinePayment(order.order_number));
+      if (url) window.location.href = url;
+    } finally {
+      setPaying(false);
+    }
+  }
 
   return (
     <div className="rp-root -mx-4 -mt-4 md:mx-0 md:mt-0">
@@ -477,6 +495,21 @@ export default function RincianPesanan({ order }: { order: RincianOrder }) {
               <div className="rp-row"><span className="rp-strong">Total</span><span className="rp-strong rp-mono">{rupiah(order.total)}</span></div>
               {paymentName ? (
                 <div className="rp-row"><span>Metode Pembayaran</span><span>{paymentName}</span></div>
+              ) : null}
+              {order.payment_provider === "mayar" ? (
+                <>
+                  <div className="rp-row">
+                    <span>Pembayaran Online</span>
+                    <span style={{ color: order.paid_at ? "#047857" : "#b45309", fontWeight: 700 }}>
+                      {order.paid_at ? "Lunas" : "Belum dibayar"}
+                    </span>
+                  </div>
+                  {!order.paid_at ? (
+                    <button type="button" onClick={payNow} disabled={paying} className="rp-btn" style={{ marginTop: 10 }}>
+                      {paying ? "Membuka halaman bayar…" : "Bayar Sekarang"}
+                    </button>
+                  ) : null}
+                </>
               ) : null}
               {order.shipping_method ? (
                 <div className="rp-row"><span>Pengiriman</span><span>{order.shipping_method}</span></div>
