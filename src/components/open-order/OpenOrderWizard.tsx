@@ -33,6 +33,7 @@ import {
 import { useSafeLocale } from "@/lib/safe-i18n";
 import { useStoreSettings } from "@/lib/store-settings";
 import { getCurrentCustomer } from "@/lib/customer-auth";
+import { localPhone } from "@/lib/whatsapp";
 import { fetchActivePaymentMethods, isOnlinePaymentMethod, type PaymentMethodRow } from "@/lib/payment-methods";
 import { startOnlinePayment } from "@/lib/mayar-client";
 import { supabase } from "@/lib/supabase";
@@ -383,7 +384,7 @@ export default function OpenOrderWizard() {
     setCustomer((prev) => ({
       ...prev,
       name: addr.recipient_name || prev.name,
-      whatsapp: addr.phone || prev.whatsapp,
+      whatsapp: localPhone(addr.phone) || prev.whatsapp,
       address: addr.address || "",
       postalCode: addr.postal_code || "",
       district: addr.kecamatan || "",

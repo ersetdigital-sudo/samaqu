@@ -25,6 +25,22 @@ export function waLink(raw: string | null | undefined, message: string): string 
 }
 
 /**
+ * Nomor apa pun → format lokal Indonesia berawalan "0" (mis. "85603324143" → "085603324143",
+ * "+62 812-3456-7890" → "081234567890").
+ *
+ * Dipakai supaya nomor yang ditampilkan layar sama bentuknya dengan yang ada di profil — apa pun
+ * asal simpannya (profil, alamat tersimpan yang dulu diisi tanpa 0, atau ketikan pelanggan).
+ */
+export function localPhone(raw?: string | null): string {
+  const digits = (raw || "").replace(/[^0-9]/g, "");
+  if (!digits) return "";
+  if (digits.startsWith("62")) return `0${digits.slice(2)}`;
+  if (digits.startsWith("0")) return digits;
+  if (digits.startsWith("8")) return `0${digits}`;
+  return digits;
+}
+
+/**
  * Emoji ditulis sebagai escape Unicode, bukan karakter mentah: byte-nya jadi tidak
  * bergantung pada encoding file, sehingga tidak bisa berubah jadi "�" di pesan yang
  * diterima pelanggan.

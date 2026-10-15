@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { getCurrentCustomer } from "@/lib/customer-auth";
 import { useSafeLocale } from "@/lib/safe-i18n";
 import { AkunHeader } from "@/components/akun/AkunShell";
+import { localPhone } from "@/lib/whatsapp";
 
 const PROVINCES = [
   "ACEH","SUMATERA UTARA","SUMATERA BARAT","RIAU","JAMBI","SUMATERA SELATAN","BENGKULU","LAMPUNG",
@@ -75,7 +76,7 @@ export default function AlamatBaruPage() {
     if (form.is_default) {
       await supabase.from("saved_addresses").update({ is_default: false }).eq("customer_id", c.id);
     }
-    const payload = { ...form, customer_id: c.id };
+    const payload = { ...form, phone: localPhone(form.phone), customer_id: c.id };
     if (isEdit) await supabase.from("saved_addresses").update(payload).eq("id", id);
     else await supabase.from("saved_addresses").insert(payload);
 
