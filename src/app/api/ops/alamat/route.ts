@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { isOpsAdmin, unauthorized } from "@/lib/ops-auth";
 import { localPhone } from "@/lib/whatsapp";
-import { kotaFromShipping, provinceOfCity } from "@/lib/kota";
+import { kotaFromShipping, prettifyCity, provinceOfCity } from "@/lib/kota";
 
 const normPhone = (value: unknown) =>
   String(value ?? "").replace(/\D/g, "").replace(/^0+/, "").replace(/^62/, "");
@@ -66,9 +66,17 @@ export async function GET(req: NextRequest) {
     });
 
     if (match) {
-      const kecamatan = String(match.shipping_kecamatan || "").trim()
-        || String(match.shipping_city || "").split(",")[0].trim();
-      const city = kotaFromShipping(match.shipping_city, kecamatan);
+      // Kecamatan hanya diambil dari `shipping_city` kalau memang berformat "<kecamatan>, <kota>".
+      // Kalau tidak ada, kecamatan dibiarkan KOSONG — lebih baik kosong daripada salah isi,
+      // karena kecamatan dipakai untuk kode area J&T saat bikin resi.
+      const cityParts = String(match.shipping_city || "")
+        .split(",")
+        .map((part) => part.trim())
+        .filter(Boolean);
+      const kecamatan = String(match.shipping_kecamatan || "").trim() || (cityParts.length > 1 ? cityParts[0] : "");
+      // Kota ditulis tanpa prefix administratif supaya cocok dengan pilihan di form
+      // ("Kota Bekasi" → "Bekasi", "Kab. Bogor" → "Bogor").
+      const city = prettifyCity(kotaFromShipping(match.shipping_city, kecamatan));
       last = {
         order_number: match.order_number,
         created_at: match.created_at,
