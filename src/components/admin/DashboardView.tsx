@@ -11,7 +11,12 @@
  * tidak ada angka, persentase, atau chart palsu.
  */
 
+import { SALE_STATUSES } from "@/lib/transaksi";
+
 const money = (n: number) => "Rp " + Math.round(n).toLocaleString("id-ID");
+
+/** Aturan bersama "sudah dibayar" — lihat SALE_STATUSES (src/lib/transaksi.ts). */
+const isPaidOrder = (status?: string | null) => SALE_STATUSES.includes(String(status || "").toLowerCase());
 
 const shortMoney = (n: number) =>
   n >= 1_000_000_000 ? "Rp " + (n / 1_000_000_000).toFixed(1).replace(".", ",") + " M"
@@ -59,7 +64,8 @@ export default function DashboardView({
   onNextMonth,
   onThisMonth,
 }: {
-  /** Total pendapatan periode terpilih — dihitung caller (aturan lama: tanpa pesanan pending). */
+  /** Total pendapatan periode terpilih — dihitung caller dengan aturan bersama `SALE_STATUSES`
+   *  (hanya pesanan yang sudah dibayar: diproses/dikirim/selesai). */
   revenue: number;
   /** Pesanan PERIODE TERPILIH — dipakai kartu metrik, donut status, dan Produk Terlaris. */
   orders: DashboardOrder[];
@@ -77,7 +83,12 @@ export default function DashboardView({
   /* ── metrik ── */
   const orderCount = orders.length;
   const pendingOrders = orders.filter((o) => o.status === "pending").length;
-  const avgOrder = orderCount ? revenue / orderCount : 0;
+  /* Pesanan yang dihitung sebagai pendapatan: SATU aturan bersama `SALE_STATUSES`
+     (src/lib/transaksi.ts) — sama dengan menu Transaksi/Database Kota/Pelanggan dan dashboard ops.
+     Dipakai untuk rata-rata supaya pembaginya sejalan dengan `revenue` (dulu dibagi SEMUA pesanan,
+     termasuk yang belum bayar & batal, jadi rata-ratanya kelihatan lebih kecil). */
+  const paidOrders = orders.filter((o) => isPaidOrder(o.status));
+  const avgOrder = paidOrders.length ? revenue / paidOrders.length : 0;
 
   const categoryCount: Record<string, number> = {};
   products.forEach((p) => {
@@ -108,7 +119,7 @@ export default function DashboardView({
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
       if (key in rev) {
         cnt[key] += 1;
-        if (o.status !== "pending" && o.status !== "dibatalkan") rev[key] += o.total;
+        if (isPaidOrder(o.status)) rev[key] += o.total;
       }
     }
     return keys.map((k) => ({
@@ -145,7 +156,7 @@ export default function DashboardView({
   });
 
   const metrics = [
-    { label: "Pendapatan", value: money(revenue), pill: `${orderCount} pesanan` },
+    { label: "Pendapatan", value: money(revenue), pill: `${paidOrders.length} pesanan` },
     { label: "Pesanan", value: String(orderCount), pill: `${pendingOrders} menunggu` },
     { label: "Rata-rata Pesanan", value: avgOrder ? money(avgOrder) : "—", pill: "per pesanan" },
     {
