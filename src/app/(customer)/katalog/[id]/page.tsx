@@ -8,7 +8,8 @@ import ImageZoom, { type ZoomMedia } from "@/components/ImageZoom";
 import KainSeriesModal, { getKainSwatchColor } from "@/components/KainSeriesModal";
 import Breadcrumb from "@/components/Breadcrumb";
 import { colorMap, type Product, type MediaItem } from "@/lib/katalog-data";
-import { getProductById, getAvailableSeries, getProducts, type SeriesOption } from "@/lib/db";
+import { getProductById, getAvailableSeries, getRelatedProducts, type SeriesOption } from "@/lib/db";
+import { relatedProductTitle } from "@/lib/related-products";
 import { useCart } from "@/lib/cart-context";
 import { useToast } from "@/components/Toast";
 import { getWhatsAppLink, useStoreSettings } from "@/lib/store-settings";
@@ -177,7 +178,7 @@ function RelatedProductCard({ p }: { p: Product }) {
         )}
       </div>
       <div className="p-3.5">
-        <h3 className="text-[14px] font-semibold font-ui line-clamp-1" style={{ color: "var(--espresso)" }}>{p.name}</h3>
+        <h3 className="text-[14px] font-semibold font-ui line-clamp-1" style={{ color: "var(--espresso)" }}>{relatedProductTitle(p)}</h3>
         {p.kain && (
           <p className="mt-1 text-[11.5px] font-ui" style={{ color: "var(--gold)" }}>Kain {p.kain}</p>
         )}
@@ -233,11 +234,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   useEffect(() => {
     if (!product) return;
-    getProducts().then((all) => {
-      const sameKain = all.filter((p) => p.id !== product.id && product.kain && p.kain === product.kain);
-      const others = all.filter((p) => p.id !== product.id && (!product.kain || p.kain !== product.kain));
-      setRelatedProducts([...sameKain, ...others].slice(0, 4));
+    let cancelled = false;
+    getRelatedProducts(product).then((list) => {
+      if (!cancelled) setRelatedProducts(list);
     });
+    return () => { cancelled = true; };
   }, [product]);
 
   useEffect(() => {
