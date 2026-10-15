@@ -301,6 +301,12 @@ function paymentInstructionLines(payment?: PaymentInstruction | null): string[] 
     ];
   }
 
+  if (type === "mayar") {
+    return [
+      "Pesanan ini dibayar *online* (QRIS / Virtual Account / e-wallet). Halaman pembayarannya terbuka otomatis setelah pesanan dibuat — selesaikan di sana ya, tidak perlu transfer manual.",
+    ];
+  }
+
   const lines: string[] = [];
   if (type === "qris") lines.push("Silakan scan QRIS pembayaran (admin kirim QR-nya di chat ini):");
   else if (type === "ewallet") lines.push(`Silakan kirim ke${payment?.label ? ` *${payment.label}*` : ""}:`);

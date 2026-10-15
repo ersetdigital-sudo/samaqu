@@ -10,6 +10,7 @@ import { supabase } from "@/lib/supabase";
 import { trackPurchase, trackLead, sendCAPIEvent } from "@/lib/meta-pixel";
 import { normalizeMethodType, paymentMethodLabel, type PaymentMethodRow } from "@/lib/payment-methods";
 import { useResolvedPaymentMethod } from "@/lib/use-payment-methods";
+import { startOnlinePayment } from "@/lib/mayar-client";
 import { cloudinaryUrl } from "@/lib/cloudinary";
 
 interface OrderData {
@@ -40,6 +41,16 @@ function CheckoutSuccessContent() {
   // Metode pembayaran pesanan ini: uuid baru dari admin, atau slug lama ('bank'/'qris'/'cod')
   const { type: paymentTypeResolved, method: paidMethod } = useResolvedPaymentMethod(order?.payment_method);
   const [copied, setCopied] = useState<string | null>(null);
+  const [paying, setPaying] = useState(false);
+
+  /** Mayar: buka halaman bayar pesanan ini (server membuat atau memakai ulang invoice-nya). */
+  const handlePayNow = async () => {
+    if (paying) return;
+    setPaying(true);
+    const url = await startOnlinePayment(orderId || "");
+    if (url) window.location.href = url;
+    else setPaying(false);
+  };
   const [loading, setLoading] = useState(true);
   const [timeLeft, setTimeLeft] = useState(24 * 60 * 60);
   const countdownRef = useRef<HTMLDivElement>(null);
@@ -131,9 +142,13 @@ function CheckoutSuccessContent() {
   const qrisList = paidMethod && (paymentTypeResolved === "qris" || paymentTypeResolved === "ewallet")
     ? [paidMethod]
     : paymentMethods.filter((m) => normalizeMethodType(m.method_type) !== "bank");
-  const bankList = paidMethod && paymentTypeResolved === "bank"
-    ? [paidMethod]
-    : paymentMethods.filter((m) => normalizeMethodType(m.method_type) === "bank");
+  // Pembayaran online (Mayar) tidak pernah menampilkan daftar rekening bank — jangan sampai
+  // customer transfer ke rekening manual padahal memilih bayar online.
+  const bankList = paymentTypeResolved === "mayar"
+    ? []
+    : paidMethod && paymentTypeResolved === "bank"
+      ? [paidMethod]
+      : paymentMethods.filter((m) => normalizeMethodType(m.method_type) === "bank");
 
   return (
     <section className="min-h-screen relative overflow-x-hidden" style={{ background: "var(--cream)" }}>
@@ -239,6 +254,21 @@ function CheckoutSuccessContent() {
             <p className="text-sm font-ui leading-relaxed" style={{ color: "var(--text-secondary)" }}>
               {paidMethod?.instructions || "Pembayaran dilakukan saat barang diterima. Admin akan menghubungi Anda untuk konfirmasi pengiriman."}
             </p>
+          </motion.section>
+        ) : paymentTypeResolved === "mayar" ? (
+          /* Pembayaran Online (Mayar): dibayar di halaman Mayar (QRIS/VA/e-wallet), jadi TIDAK ada
+             instruksi transfer bank di sini. */
+          <motion.section initial={{ opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.4 }} className="rounded-2xl p-5 sm:p-7 mb-5" style={{ background: "rgba(255,255,255,0.65)", backdropFilter: "blur(6px)", border: "1px solid rgba(0,0,0,.06)", boxShadow: "0 18px 44px -28px rgba(0,0,0,0.4)" }}>
+            <h2 className="flex items-center gap-2 text-xl mb-4" style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>
+              <ShieldCheck className="w-5 h-5" style={{ color: "#8b6f42" }} />
+              Pembayaran Online
+            </h2>
+            <p className="text-sm font-ui leading-relaxed mb-4" style={{ color: "var(--text-secondary)" }}>
+              Selesaikan pembayaran lewat halaman pembayaran online (QRIS, Virtual Account, atau e-wallet). Nominal: <span style={{ color: "var(--gold)" }}>Rp {order.total.toLocaleString("id-ID")}</span>
+            </p>
+            <button onClick={handlePayNow} disabled={paying} className="w-full inline-flex items-center justify-center gap-2 rounded-full px-6 py-3.5 text-[12px] tracking-[0.06em] uppercase font-ui font-semibold transition-all duration-200 disabled:opacity-60" style={{ background: "var(--espresso, #2b211c)", color: "var(--cream, #f7f3ee)" }}>
+              {paying ? "Membuka…" : "Bayar Sekarang"}
+            </button>
           </motion.section>
         ) : paymentTypeResolved === "qris" || paymentTypeResolved === "ewallet" ? (
           <motion.section initial={{ opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.4 }} className="rounded-2xl p-5 sm:p-7 mb-5" style={{ background: "rgba(255,255,255,0.65)", backdropFilter: "blur(6px)", border: "1px solid rgba(0,0,0,.06)", boxShadow: "0 18px 44px -28px rgba(0,0,0,0.4)" }}>
