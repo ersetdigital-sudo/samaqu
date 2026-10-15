@@ -5,6 +5,13 @@ import { cancelOrderCompletely, type CancelableOrder } from "@/lib/cancel-order"
 import { MANUAL_SOURCE_KEYS, itemSummary, sourceKey, sourceLabel, statusLabel } from "@/lib/transaksi";
 import { localPhone } from "@/lib/whatsapp";
 import { kotaFromShipping } from "@/lib/kota";
+import {
+  productWeightMapFromRows,
+  resolveLineWeight,
+  variantWeightMapFromRows,
+  type VariantWeightMap,
+  type WeightMap,
+} from "@/lib/shipping-weight";
 
 /**
  * Menu "Transaksi" dashboard internal.
@@ -242,13 +249,40 @@ export async function GET(req: NextRequest) {
 
   const { data: lineItems } = await admin
     .from("order_items")
-    .select("order_id, product_id, product_name, series, kain, color, size, quantity, price")
+    .select(
+      "order_id, product_id, product_name, series, kain, color, size, quantity, price, product_image, customer_price, minimum_price",
+    )
     .in("order_id", list.map((o) => o.id));
+
+  // Berat per item (gram) — `order_items` tidak menyimpannya, jadi dihitung di sini seperti
+  // panel admin: berat varian (per produk+warna+ukuran) → cadangan berat produk. Aturan
+  // resolusinya milik `src/lib/shipping-weight.ts` supaya angkanya sama dengan admin.
+  const productIds = [...new Set((lineItems || []).map((item) => item.product_id).filter(Boolean))] as string[];
+  let productWeights: WeightMap = {};
+  let variantWeights: VariantWeightMap = {};
+  if (productIds.length > 0) {
+    const [{ data: productRows }, { data: variantRows }] = await Promise.all([
+      admin.from("products").select("id, weight").in("id", productIds),
+      admin.from("product_variants").select("product_id, color, size, weight").in("product_id", productIds),
+    ]);
+    productWeights = productWeightMapFromRows(productRows as { id?: string | null; weight?: number | null }[]);
+    variantWeights = variantWeightMapFromRows(
+      variantRows as { product_id?: string | null; color?: string | null; size?: string | null; weight?: number | null }[],
+    );
+  }
 
   const byOrder = new Map<string, any[]>();
   for (const item of lineItems || []) {
+    const row = {
+      ...item,
+      weight: resolveLineWeight(
+        { productId: item.product_id, color: item.color, size: item.size },
+        productWeights,
+        variantWeights,
+      ),
+    };
     if (!byOrder.has(item.order_id)) byOrder.set(item.order_id, []);
-    byOrder.get(item.order_id)!.push(item);
+    byOrder.get(item.order_id)!.push(row);
   }
 
   const items = list.map((order) => {

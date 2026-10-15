@@ -10,6 +10,8 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { Ban, Pencil, Receipt, X } from "lucide-react";
+import { NEUTRAL_ITEM_PHOTO } from "@/lib/order-photo";
+import { formatWeightExact } from "@/lib/shipping-weight";
 import { SOURCE_STYLES, STATUS_STYLES, formatRupiah, formatTanggalJamID } from "@/components/ops/transaksi/transaksi-format";
 
 export default function TransaksiDetailDrawer({ open, order, onClose, onEdit, onCancel }) {
@@ -96,17 +98,58 @@ export default function TransaksiDetailDrawer({ open, order, onClose, onEdit, on
                 </p>
                 <div className="space-y-2">
                   {(order.items || []).map((item, index) => (
-                    <div key={`${item.product_id}-${item.color}-${item.size}-${index}`} className="rounded-xl border border-slate-200 dark:border-slate-800 px-3.5 py-3">
-                      <p className="text-sm font-bold text-slate-900 dark:text-white">
-                        {index + 1}. {item.product_name}
-                      </p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                        {[item.color && item.color !== "default" ? item.color : null, item.size, `x${item.quantity}`]
-                          .filter(Boolean)
-                          .join(" · ")}
-                        {" — "}
-                        Rp {formatRupiah(item.price * item.quantity)}
-                      </p>
+                    <div
+                      key={`${item.product_id}-${item.color}-${item.size}-${index}`}
+                      className="flex gap-3 rounded-xl border border-slate-200 dark:border-slate-800 p-3"
+                    >
+                      <div className="w-14 h-16 shrink-0 rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-800">
+                        <img
+                          src={item.product_image || NEUTRAL_ITEM_PHOTO}
+                          alt={item.product_name}
+                          loading="lazy"
+                          decoding="async"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-bold text-slate-900 dark:text-white">{item.product_name}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                          {[
+                            item.kain ? `Kain ${item.kain}` : null,
+                            item.series,
+                            item.color && item.color !== "default" ? item.color : null,
+                            item.size,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")}{" "}
+                          × {item.quantity}
+                        </p>
+                        {item.weight ? (
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                            Berat:{" "}
+                            <b className="text-slate-700 dark:text-slate-200">
+                              {item.weight.source === "missing" ? "-" : formatWeightExact(item.weight.grams)}
+                            </b>
+                            {item.weight.source !== "variant" ? (
+                              <span className="font-bold text-amber-600 dark:text-amber-400">
+                                {" "}
+                                ·{" "}
+                                {item.weight.source === "product"
+                                  ? "berat memakai fallback produk"
+                                  : "berat per ukuran belum diisi"}
+                              </span>
+                            ) : null}
+                          </p>
+                        ) : null}
+                        <p className="text-sm font-bold text-slate-900 dark:text-white mt-1">
+                          Rp {formatRupiah(item.price * item.quantity)}
+                        </p>
+                        {item.customer_price && item.minimum_price ? (
+                          <p className="text-xs font-semibold" style={{ color: "#B4552F" }}>
+                            Min: Rp {formatRupiah(item.minimum_price)} · Dipilih: Rp {formatRupiah(item.customer_price)}
+                          </p>
+                        ) : null}
+                      </div>
                     </div>
                   ))}
                   {(order.items || []).length === 0 && (
