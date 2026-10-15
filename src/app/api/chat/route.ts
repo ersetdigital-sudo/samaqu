@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { getChatConfig, isChatReady } from "@/lib/chat-config";
 import { getKnowledgeContext } from "@/lib/chat-knowledge";
 import { maybeAlertErrorSpike, ERROR_ALERT_THRESHOLD } from "@/lib/chat-alerts";
@@ -14,6 +14,10 @@ import { getSupabaseAdmin } from "@/lib/supabase-admin";
 const MAX_MESSAGES = 12;
 const MAX_CHARS = 2000;
 const MAX_TOOL_ROUNDS = 3;
+// Batas panjang jawaban. Model MiMo menghasilkan ~25–30 token/detik, jadi jawaban 700 token
+// bisa menambah ~15 detik di ujung stream. Chat customer cukup singkat → 450 jaga gaya tetap
+// padat tanpa memotong informasi penting.
+const MAX_TOKENS = 450;
 
 const REFUSAL =
   "Maaf ya Kak, aku cuma bisa bantu seputar produk & layanan SAMAQU \u{1F60A}";
@@ -241,7 +245,7 @@ export async function POST(req: NextRequest) {
               model: config.model,
               messages: convo,
               temperature: 0.4,
-              max_tokens: 700,
+              max_tokens: MAX_TOKENS,
               tools: CHAT_TOOLS,
               tool_choice: "auto",
               stream: true,
@@ -288,32 +292,41 @@ export async function POST(req: NextRequest) {
         failure = `exception: ${String(error).slice(0, 300)}`;
         send({ error: ERROR_REPLY });
       } finally {
-        // Simpan log DULU (di-await) baru tutup stream. Fire-and-forget TIDAK aman di
-        // serverless (Vercel): fungsi bisa dimatikan begitu respons selesai sehingga log hilang.
-        // Log sukses maupun gagal (kolom `error`) supaya tingkat error asisten bisa dipantau.
-        const errText = failure ?? (answer ? null : "tidak ada jawaban dari model");
+        // Tutup stream dulu supaya customer langsung "selesai" begitu token terakhir datang.
         try {
-          const { error } = await getSupabaseAdmin()
-            .from("chat_logs")
-            .insert({
-              session_id: sessionId,
-              locale,
-              question,
-              answer: answer || "",
-              tools_used: toolsUsed,
-              escalated: toolsUsed.includes("hubungi_admin"),
-              error: errText,
-            });
-          if (error) console.error("[CHAT] gagal menulis chat_logs:", error.message);
-        } catch (e) {
-          console.error("[CHAT] gagal menulis chat_logs:", e);
+          controller.close();
+        } catch {
+          // sudah ditutup
         }
 
-        // Kalau error menumpuk, kabari admin (throttle 1 jam di dalam fungsinya).
-        if (errText) {
-          await maybeAlertErrorSpike(ERROR_ALERT_THRESHOLD, errText);
-        }
-        controller.close();
+        // Simpan log & alert SETELAH respons ditutup, pakai `after()` (Next/Vercel waitUntil)
+        // sehingga tulis ke DB tidak lagi menahan jawaban di ujung stream. Tetap andal di
+        // serverless — beda dengan fire-and-forget biasa yang bisa dimatikan bersama fungsi.
+        // Log sukses maupun gagal (kolom `error`) supaya tingkat error asisten bisa dipantau.
+        const errText = failure ?? (answer ? null : "tidak ada jawaban dari model");
+        after(async () => {
+          try {
+            const { error } = await getSupabaseAdmin()
+              .from("chat_logs")
+              .insert({
+                session_id: sessionId,
+                locale,
+                question,
+                answer: answer || "",
+                tools_used: toolsUsed,
+                escalated: toolsUsed.includes("hubungi_admin"),
+                error: errText,
+              });
+            if (error) console.error("[CHAT] gagal menulis chat_logs:", error.message);
+          } catch (e) {
+            console.error("[CHAT] gagal menulis chat_logs:", e);
+          }
+
+          // Kalau error menumpuk, kabari admin (throttle 1 jam di dalam fungsinya).
+          if (errText) {
+            await maybeAlertErrorSpike(ERROR_ALERT_THRESHOLD, errText);
+          }
+        });
       }
     },
   });

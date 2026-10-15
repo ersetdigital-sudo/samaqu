@@ -121,7 +121,6 @@ function toThumbnail(url: string | null): string | null {
 }
 
 interface VariantRow {
-  product_id: string;
   color: string | null;
   size: string | null;
   stock: number | null;
@@ -151,9 +150,13 @@ async function cariProduk(args: Record<string, unknown>): Promise<ChatToolResult
   const warna = sanitize(args.warna).toLowerCase();
   const maxHarga = typeof args.max_harga === "number" ? args.max_harga : Number(args.max_harga) || 0;
 
+  // Stok ikut di-embed dalam SATU query (dulu products lalu product_variants terpisah =
+  // dua round-trip berurutan ke database). Hint FK eksplisit karena ada 2 relasi ke products.
   let query = admin
     .from("products")
-    .select("id, name, category, kain, series, price, minimum_price, create_your_price_enabled, colors, image, jenis_kain(name, material)")
+    .select(
+      "id, name, category, kain, series, price, minimum_price, create_your_price_enabled, colors, image, jenis_kain(name, material), product_variants!product_variants_product_id_fkey(color, size, stock)"
+    )
     .eq("is_published", true);
 
   if (term) query = query.or(`name.ilike.%${term}%,category.ilike.%${term}%,kain.ilike.%${term}%,series.ilike.%${term}%`);
@@ -184,16 +187,11 @@ async function cariProduk(args: Record<string, unknown>): Promise<ChatToolResult
   }
 
   products = products.slice(0, 8);
-  const ids = products.map((p) => p.id as string);
-  const { data: variantData } = await admin
-    .from("product_variants")
-    .select("product_id, color, size, stock")
-    .in("product_id", ids);
 
   const byProduct = new Map<string, VariantRow[]>();
-  for (const v of (variantData || []) as VariantRow[]) {
-    if (!byProduct.has(v.product_id)) byProduct.set(v.product_id, []);
-    byProduct.get(v.product_id)!.push(v);
+  for (const p of products) {
+    const variants = Array.isArray(p.product_variants) ? (p.product_variants as VariantRow[]) : [];
+    byProduct.set(p.id as string, variants);
   }
 
   const cards: ChatProductCard[] = [];
