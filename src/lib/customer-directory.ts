@@ -48,6 +48,11 @@ export type DirectoryCustomer = {
    * Dipakai untuk menandai pelanggan yang alamatnya siap dipakai di menu Transaksi.
    */
   hasAddress: boolean;
+  /**
+   * Ada alamatnya, TAPI kecamatannya tidak tersimpan di manapun (data lama dari checkout yang
+   * dulu membuang kecamatan). Ditandai supaya admin bisa melengkapi manual — bukan ditebak.
+   */
+  addressIncomplete: boolean;
 };
 
 /* ── Agregasi (server) ── */
@@ -61,6 +66,7 @@ type OrderRow = {
   customer_whatsapp: string | null;
   shipping_address: string | null;
   shipping_city: string | null;
+  shipping_kecamatan?: string | null;
   shipping_postal_code: string | null;
   total: number | null;
   status: string | null;
@@ -97,7 +103,7 @@ export async function buildCustomerDirectory(admin: SupabaseClient): Promise<Dir
 
   const { data: orders, error: ordersError } = await admin
     .from("orders")
-    .select("id, order_number, customer_id, customer_name, customer_whatsapp, shipping_address, shipping_city, shipping_postal_code, total, status, created_at, order_items(product_name, series, kain, color, quantity)");
+    .select("id, order_number, customer_id, customer_name, customer_whatsapp, shipping_address, shipping_city, shipping_kecamatan, shipping_postal_code, total, status, created_at, order_items(product_name, series, kain, color, quantity)");
   if (ordersError) console.warn("[CUSTOMERS] Gagal membaca orders:", ordersError.message);
 
   type Agg = DirectoryCustomer;
@@ -120,12 +126,16 @@ export async function buildCustomerDirectory(admin: SupabaseClient): Promise<Dir
       lastOrderAt: null,
       cities: [],
       hasAddress: false,
+      addressIncomplete: false,
     });
     const n = norm(c.name);
     if (n && !idByName.has(n)) idByName.set(n, c.id);
   }
 
   const citySets = new Map<string, Set<string>>();
+  /** Pelanggan yang punya alamat, dan yang kecamatannya tersimpan di data. */
+  const addressKeys = new Set<string>();
+  const kecamatanKeys = new Set<string>();
   for (const o of (orders || []) as OrderRow[]) {
     // Utamakan `customer_id`; order lama (customer_id null) dicocokkan lewat nama.
     let key: string | null = null;
@@ -150,6 +160,7 @@ export async function buildCustomerDirectory(admin: SupabaseClient): Promise<Dir
           lastOrderAt: null,
           cities: [],
           hasAddress: false,
+          addressIncomplete: false,
         });
       }
     }
@@ -180,6 +191,15 @@ export async function buildCustomerDirectory(admin: SupabaseClient): Promise<Dir
     const street = String(o.shipping_address || "").trim();
     if (street && street !== "-") agg.hasAddress = true;
 
+    // Kecamatan dianggap tersimpan kalau ada di kolomnya sendiri, atau menempel di
+    // `shipping_city` dengan format "<kecamatan>, <kota>".
+    const kecamatan = String(o.shipping_kecamatan || "").trim();
+    const cityParts = String(o.shipping_city || "").split(",").map((part) => part.trim()).filter(Boolean);
+    if (street && street !== "-") {
+      addressKeys.add(agg.key);
+      if (kecamatan || cityParts.length > 1) kecamatanKeys.add(agg.key);
+    }
+
     const city = (o.shipping_city || "").trim();
     if (city) {
       if (!citySets.has(key)) citySets.set(key, new Set());
@@ -191,6 +211,8 @@ export async function buildCustomerDirectory(admin: SupabaseClient): Promise<Dir
   for (const c of result) {
     c.orders.sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
     c.cities = Array.from(citySets.get(c.key) || []).sort((a, b) => a.localeCompare(b, "id-ID"));
+    // Ada alamat tapi kecamatan tidak tersimpan di pesanan mana pun → perlu dilengkapi manual.
+    c.addressIncomplete = addressKeys.has(c.key) && !kecamatanKeys.has(c.key);
   }
   return result;
 }

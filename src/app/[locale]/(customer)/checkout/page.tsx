@@ -571,6 +571,9 @@ function CheckoutContent() {
           // Alamat tersimpan → kecamatan dari address book; alamat manual → kecamatan yang
           // diketik customer. Dulu kecamatan manual terbuang, jadi pesanan masuk tanpa kecamatan.
           district: selectedAddr ? selectedAddr.kecamatan || "" : kecamatanName.trim(),
+          // Provinsi ikut dikirim kalau customer memakai alamat tersimpan (data dari address book),
+          // supaya pesanan menyimpan provinsi sebagai kolom terpisah — bukan cuma di teks kota.
+          province: selectedAddr?.province || "",
           postalCode: kodepos,
           notes: catatanKurir,
           method: `${selectedShipping!.courier} - ${selectedShipping!.service}`,

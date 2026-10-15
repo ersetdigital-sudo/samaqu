@@ -899,6 +899,11 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                           disabled={!form.city}
                           onChange={(value) => updateForm({ kecamatan: value })}
                           error={addressErrorText("kecamatan")}
+                          hint={
+                            addressPrefilledFrom && !form.kecamatan
+                              ? "Kecamatan belum ada di data pesanan ini — isi manual ya."
+                              : ""
+                          }
                         />
                         <div>
                           <label className={labelClass}>

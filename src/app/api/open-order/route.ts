@@ -373,6 +373,10 @@ export async function POST(request: NextRequest) {
         customer_whatsapp: whatsapp,
         shipping_address: address,
         shipping_city: [district, city].filter(Boolean).join(", "),
+        // Kecamatan (dan provinsi bila dikirim wizard) disimpan terpisah juga — sama dengan
+        // /api/orders, supaya form/dashboard ops bisa membacanya langsung.
+        shipping_kecamatan: district || null,
+        shipping_province: String(rawCustomer.province || "").trim() || null,
         shipping_postal_code: postalCode || null,
         shipping_method: shippingMethod,
         shipping_cost: shippingCost,
