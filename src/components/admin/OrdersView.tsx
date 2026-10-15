@@ -217,9 +217,16 @@ export default function OrdersView({
                       if (!ss) return null;
                       const st = SHIPPING_STATUS_STYLE[ss];
                       return (
-                        <span className="badge mt-1" style={{ background: st.bg, color: st.color, border: `1px solid ${st.border}` }}>
-                          {ship.status}
-                        </span>
+                        <>
+                          {ship.pending ? (
+                            <span className="badge mt-1 mr-1.5" style={{ background: "#fffbeb", color: "#b45309", border: "1px solid #fde68a" }}>
+                              Tertunda
+                            </span>
+                          ) : null}
+                          <span className="badge mt-1" style={{ background: st.bg, color: st.color, border: `1px solid ${st.border}` }}>
+                            {ship.status}
+                          </span>
+                        </>
                       );
                     })()}
                   </td>

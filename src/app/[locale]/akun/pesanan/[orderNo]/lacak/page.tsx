@@ -1,12 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { getCurrentCustomer, getCustomerOrders } from "@/lib/customer-auth";
 import { useSafeLocale } from "@/lib/safe-i18n";
-import { strukStatus, tglJamID } from "@/lib/akun-format";
+import { strukStatus } from "@/lib/akun-format";
 import type { TrackHistoryItem } from "@/lib/jnt/types";
-import { trackingLabel } from "@/lib/jnt/track-status";
+import {
+  formatTrackingTime,
+  sortHistoryDesc,
+  TRACK_SUMMARY_TONE,
+  trackingRow,
+  trackingSummary,
+} from "@/lib/jnt/track-status";
 import { STRUK_CSS, StrukHeader, StrukTitle } from "@/components/akun/StrukShell";
 
 interface Order {
@@ -24,7 +30,7 @@ interface TrackDetail {
   weight?: number;
   itemname?: string;
   shipped_date?: string;
-  receiver?: { name?: string; city?: string };
+  receiver?: { city?: string };
 }
 
 interface TrackPayload {
@@ -32,13 +38,9 @@ interface TrackPayload {
   orderid?: string;
   detail?: TrackDetail;
   history?: TrackHistoryItem[];
-}
-
-/** J&T mengirim tanggal "YYYY-MM-DD HH:mm:ss" — jadikan ISO supaya stabil di semua browser. */
-function updateTime(value?: string) {
-  if (!value) return "";
-  const stamp = tglJamID(value.includes("T") ? value : value.replace(" ", "T"));
-  return stamp === "-" ? value : stamp;
+  /** true = data lama dari database karena J&T tidak bisa dihubungi. */
+  stale?: boolean;
+  updatedAt?: string | null;
 }
 
 export default function LacakPage() {
@@ -52,34 +54,46 @@ export default function LacakPage() {
   const [trackError, setTrackError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
+  const resi = order?.awb_no || null;
+
+  // Ambil riwayat dari J&T (cache pendek di server). `refresh` = tombol "Perbarui".
+  const loadTrack = useCallback(async (refresh: boolean) => {
+    if (!resi) return;
+    setTracking(true);
+    setTrackError(null);
+    try {
+      const res = await fetch(`/api/jnt/track?awb=${encodeURIComponent(resi)}${refresh ? "&refresh=1" : ""}`);
+      const json = await res.json();
+      if (json?.success && json?.data) setPayload(json.data as TrackPayload);
+      else setTrackError(json?.error || "Data pelacakan J&T belum bisa diambil.");
+    } catch {
+      setTrackError("Tidak bisa menghubungi layanan J&T. Coba lagi sebentar lagi.");
+    } finally {
+      setTracking(false);
+    }
+  }, [resi]);
+
   useEffect(() => {
     async function init() {
       const customer = await getCurrentCustomer();
-      if (!customer) return;
-
-      const orders = (await getCustomerOrders(customer.id)) as Order[];
-      const found = orders.find((o) => o.order_number === orderNo) || null;
-      setOrder(found);
-      setLoading(false);
-      if (!found?.awb_no) return;
-
-      setTracking(true);
-      try {
-        const res = await fetch(`/api/jnt/track?awb=${encodeURIComponent(found.awb_no)}`);
-        const json = await res.json();
-        if (json?.success && json?.data) setPayload(json.data as TrackPayload);
-        else setTrackError(json?.error || "Data pelacakan J&T belum bisa diambil.");
-      } catch {
-        setTrackError("Tidak bisa menghubungi layanan J&T. Coba muat ulang sebentar lagi.");
-      } finally {
-        setTracking(false);
+      if (!customer) {
+        setLoading(false);
+        return;
       }
+      const orders = (await getCustomerOrders(customer.id)) as Order[];
+      setOrder(orders.find((o) => o.order_number === orderNo) || null);
+      setLoading(false);
     }
     init();
   }, [orderNo]);
 
-  // J&T mengirim riwayat dari kejadian terlama; yang terbaru tampil di atas.
-  const updates = useMemo(() => [...(payload?.history || [])].reverse(), [payload]);
+  useEffect(() => {
+    if (resi) loadTrack(false);
+  }, [resi, loadTrack]);
+
+  // Riwayat terbaru di atas — diurut dari waktu asli J&T.
+  const updates = useMemo(() => sortHistoryDesc(payload?.history), [payload]);
+  const summary = useMemo(() => trackingSummary(payload?.history), [payload]);
   const sc = order ? strukStatus(order.status) : null;
   const awb = order?.awb_no || payload?.awb;
 
@@ -93,6 +107,8 @@ export default function LacakPage() {
       /* clipboard bisa diblokir browser — abaikan */
     }
   }
+
+  const tone = summary ? TRACK_SUMMARY_TONE[summary.key] : null;
 
   return (
     <div className="sk-root -mx-4 -mt-4 md:mx-0 md:mt-0">
@@ -108,10 +124,7 @@ export default function LacakPage() {
 
         <div className="sk-cols">
           <section className="sk-hero sk-up sk-d2">
-            <div
-              className="sk-card"
-              style={{ margin: 0, padding: "20px 18px" }}
-            >
+            <div className="sk-card" style={{ margin: 0, padding: "20px 18px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <span
                   style={{
@@ -171,14 +184,58 @@ export default function LacakPage() {
               {payload?.detail?.receiver?.city ? (
                 <p style={{ fontSize: 12.5, color: "#666666", marginTop: 12 }}>
                   Tujuan: {payload.detail.receiver.city}
-                  {payload.detail.weight ? ` • ${payload.detail.weight} kg` : ""}
+                  {payload.detail.weight ? ` • ${payload.detail.weight / 1000} kg` : ""}
                 </p>
               ) : null}
             </div>
           </section>
 
           <section className="sk-card sk-pay sk-up sk-d3">
-            <h3>Riwayat Pengiriman</h3>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <h3 style={{ margin: 0 }}>Riwayat Pengiriman</h3>
+              <button
+                type="button"
+                onClick={() => loadTrack(true)}
+                disabled={tracking || !resi}
+                className="sk-bk"
+                style={{ width: "auto", marginLeft: "auto", padding: "0 12px", height: 32, fontSize: 12, fontWeight: 700 }}
+              >
+                {tracking ? "Memuat…" : "Perbarui"}
+              </button>
+            </div>
+
+            {/* Ringkasan: status terkini + pembaruan terakhir + total waktu perjalanan. */}
+            {summary ? (
+              <div style={{ marginTop: 12 }}>
+                <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+                  <span
+                    className="sk-chip"
+                    style={{ position: "static", background: tone?.bg, color: tone?.color, border: `1px solid ${tone?.border}` }}
+                  >
+                    <span className="sk-dot" style={{ background: tone?.color }} />
+                    {summary.label}
+                  </span>
+                  {summary.updatedAt ? (
+                    <span style={{ fontSize: 12, color: "#666666" }}>
+                      Diperbarui {formatTrackingTime(summary.updatedAt)}
+                    </span>
+                  ) : null}
+                </div>
+                {summary.elapsedLabel ? (
+                  <p style={{ fontSize: 12, color: "#666666", marginTop: 6 }}>
+                    Total waktu perjalanan: <b style={{ color: "#1a1a1a" }}>{summary.elapsedLabel}</b>
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+
+            {payload?.stale ? (
+              <div className="sk-hint" style={{ marginTop: 12 }}>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="9" /><path d="M12 8v5M12 16h.01" /></svg>
+                Menampilkan data terakhir yang tersimpan
+                {payload.updatedAt ? ` (${formatTrackingTime(payload.updatedAt)})` : ""} — J&amp;T belum bisa dihubungi.
+              </div>
+            ) : null}
 
             {loading || tracking ? (
               <div className="sk-steps">
@@ -193,27 +250,35 @@ export default function LacakPage() {
                 ))}
               </div>
             ) : trackError ? (
-              <div className="sk-hint" style={{ marginTop: 0 }}>
+              <div className="sk-hint" style={{ marginTop: 12 }}>
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="9" /><path d="M12 8v5M12 16h.01" /></svg>
                 {trackError}
               </div>
             ) : updates.length > 0 ? (
               <div className="sk-steps">
-                {updates.map((update, i) => (
-                  <div key={`${update.date_time}-${i}`} className={`sk-step ${i === 0 ? "is-active" : "is-done"}`}>
-                    <div className="sk-rail">
-                      <span className="sk-node" />
-                      {i < updates.length - 1 ? <span className="sk-line" /> : null}
+                {updates.map((item, i) => {
+                  // Keterangan memakai teks ASLI J&T (tanpa label karangan); status tertunda
+                  // ditampilkan sebagai "Tertunda" + alasan yang sudah disaring untuk customer.
+                  const row = trackingRow(item, "customer");
+                  return (
+                    <div key={`${row.dateTime}-${i}`} className={`sk-step ${i === 0 ? "is-active" : "is-done"}`}>
+                      <div className="sk-rail">
+                        <span className="sk-node" />
+                        {i < updates.length - 1 ? <span className="sk-line" /> : null}
+                      </div>
+                      <div className="sk-txt">
+                        <b style={row.pending ? { color: "#b45309" } : undefined}>{row.title}</b>
+                        <i>{[row.location, formatTrackingTime(row.dateTime)].filter(Boolean).join(" • ")}</i>
+                        {row.note ? (
+                          <i style={{ display: "block", marginTop: 2, color: row.pending ? "#b45309" : undefined }}>{row.note}</i>
+                        ) : null}
+                      </div>
                     </div>
-                    <div className="sk-txt">
-                      <b>{trackingLabel(update)}</b>
-                      <i>{[update.city_name, updateTime(update.date_time)].filter(Boolean).join(" • ")}</i>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
-              <div className="sk-note" style={{ margin: 0 }}>
+              <div className="sk-note" style={{ margin: 0, marginTop: 12 }}>
                 {awb
                   ? "Belum ada update dari J&T. Riwayat muncul setelah kurir memindai paket."
                   : "Nomor resi belum tersedia. Kami kabari begitu paket diserahkan ke J&T."}

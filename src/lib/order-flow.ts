@@ -1,3 +1,5 @@
+import { isPendingScan } from "./jnt/track-status";
+
 /**
  * Tahap (stage) alur pesanan admin — istilah ala Shopee Seller Centre.
  *
@@ -103,6 +105,15 @@ export interface ShippingSource {
   status?: string;
   shipping_status?: string | null;
   awb_no?: string | null;
+  /** Snapshot pemindaian terakhir J&T (kolom `orders.tracking_*`) — untuk badge "Tertunda". */
+  tracking_status_code?: number | null;
+  tracking_status_text?: string | null;
+}
+
+/** Paket sedang tertunda menurut pemindaian terakhir J&T (status VIP "Sedang Tertunda"). */
+export function shippingPending(order: ShippingSource): boolean {
+  if (order.status === "dibatalkan") return false;
+  return isPendingScan({ status: order.tracking_status_text, status_code: order.tracking_status_code });
 }
 
 export function shippingStatusOf(order: ShippingSource): ShippingStatus | null {
@@ -120,7 +131,7 @@ export function shippingStatusOf(order: ShippingSource): ShippingStatus | null {
 /** Ringkasan pengiriman satu baris daftar: kurir + nomor resi + status pengiriman. */
 export function shippingLine(
   order: StageSource & ShippingSource & { shipping_method?: string | null }
-): { courier: string; resi: string; status: string | null; awaiting: boolean; cancelled: boolean } {
+): { courier: string; resi: string; status: string | null; awaiting: boolean; cancelled: boolean; pending: boolean } {
   const stage = orderStage(order);
   const cancelled = stage === "dibatalkan";
   const awaiting = !order.awb_no && stage === "perlu_dikirim";
@@ -132,5 +143,6 @@ export function shippingLine(
     status: ss ? SHIPPING_STATUS_LABEL[ss] : null,
     awaiting,
     cancelled,
+    pending: shippingPending(order),
   };
 }

@@ -55,7 +55,7 @@ interface Order {
   /** Status pengiriman terpisah dari status pesanan (menunggu_pickup | dikirim | selesai). */
   shipping_status?: string | null;
   tracking_status_text?: string | null;
-  /** Kode pemindaian terakhir — dasar `trackingLabel` (tampilan riwayat yang konsisten). */
+  /** Kode pemindaian terakhir — dipakai mendeteksi status tertunda (badge "Tertunda"). */
   tracking_status_code?: number | null;
   tracking_city?: string | null;
   tracking_updated_at?: string | null;
