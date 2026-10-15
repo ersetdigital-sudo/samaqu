@@ -70,7 +70,7 @@ export default function WilayahSelect({
         onClick={() => setOpen((current) => !current)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg border-2 bg-gray-50 dark:bg-slate-900 text-left text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+        className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg border-2 bg-gray-50 dark:bg-slate-900 text-left text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
           error ? "border-red-300 dark:border-red-900/60" : "border-gray-200 dark:border-slate-700"
         } ${open ? "border-blue-500 ring-2 ring-blue-100 dark:ring-blue-900/30" : ""}`}
       >
