@@ -5,6 +5,8 @@ import { cancelOrderCompletely, type CancelableOrder } from "@/lib/cancel-order"
 import { MANUAL_SOURCE_KEYS, itemSummary, sourceKey, sourceLabel, statusLabel } from "@/lib/transaksi";
 import { localPhone } from "@/lib/whatsapp";
 import { kotaFromShipping } from "@/lib/kota";
+import { itemProductIds, loadOrderPhotoLookup } from "@/lib/order-photo-data";
+import { resolveItemPhotos } from "@/lib/order-photo";
 import {
   productWeightMapFromRows,
   resolveLineWeight,
@@ -254,10 +256,17 @@ export async function GET(req: NextRequest) {
     )
     .in("order_id", list.map((o) => o.id));
 
+  // Foto produk sering kosong di `order_items` (mis. baris Open Order yang belum punya snapshot,
+  // atau foto yang sudah terhapus dari CDN). Diselesaikan di sini memakai rantai yang SAMA
+  // dengan panel admin & halaman Akun: snapshot → foto katalog per warna → foto utama katalog →
+  // pencocokan katalog lama. Kalau tetap tidak ada, layar memakai placeholder netral.
+  const photoLookup = await loadOrderPhotoLookup(itemProductIds(lineItems || []));
+  const itemsWithPhotos = resolveItemPhotos(lineItems || [], photoLookup);
+
   // Berat per item (gram) — `order_items` tidak menyimpannya, jadi dihitung di sini seperti
   // panel admin: berat varian (per produk+warna+ukuran) → cadangan berat produk. Aturan
   // resolusinya milik `src/lib/shipping-weight.ts` supaya angkanya sama dengan admin.
-  const productIds = [...new Set((lineItems || []).map((item) => item.product_id).filter(Boolean))] as string[];
+  const productIds = [...new Set((itemsWithPhotos || []).map((item) => item.product_id).filter(Boolean))] as string[];
   let productWeights: WeightMap = {};
   let variantWeights: VariantWeightMap = {};
   if (productIds.length > 0) {
@@ -272,7 +281,7 @@ export async function GET(req: NextRequest) {
   }
 
   const byOrder = new Map<string, any[]>();
-  for (const item of lineItems || []) {
+  for (const item of itemsWithPhotos || []) {
     const row = {
       ...item,
       weight: resolveLineWeight(
