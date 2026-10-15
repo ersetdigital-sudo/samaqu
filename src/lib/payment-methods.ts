@@ -1,12 +1,13 @@
 import { supabase } from "./supabase";
 
-/** Jenis metode pembayaran yang didukung. */
-export type PaymentMethodType = "bank" | "qris" | "ewallet" | "cod" | "other";
+/** Jenis metode pembayaran yang didukung. `mayar` = pembayaran online lewat gateway Mayar. */
+export type PaymentMethodType = "bank" | "qris" | "ewallet" | "cod" | "other" | "mayar";
 
 export const PAYMENT_METHOD_TYPES: { value: PaymentMethodType; label: string; hint: string }[] = [
   { value: "bank", label: "Transfer Bank", hint: "Tampilkan nomor rekening" },
   { value: "qris", label: "QRIS", hint: "Tampilkan gambar QR" },
   { value: "ewallet", label: "E-Wallet", hint: "Tampilkan nomor tujuan (GoPay/OVO/Dana)" },
+  { value: "mayar", label: "Pembayaran Online (Mayar)", hint: "Customer diarahkan ke halaman bayar Mayar (QRIS/VA/E-wallet)" },
   { value: "cod", label: "Bayar di Tempat (COD)", hint: "Tanpa pembayaran online" },
   { value: "other", label: "Lainnya", hint: "Hanya catatan instruksi" },
 ];
@@ -35,8 +36,13 @@ export function isPaymentMethodId(value?: string | null): boolean {
 }
 
 export function normalizeMethodType(value?: string | null): PaymentMethodType {
-  if (value === "qris" || value === "ewallet" || value === "cod" || value === "other") return value;
+  if (value === "qris" || value === "ewallet" || value === "cod" || value === "other" || value === "mayar") return value;
   return "bank";
+}
+
+/** true kalau metode ini pembayaran ONLINE (dibuatkan invoice Mayar saat checkout). */
+export function isOnlinePaymentMethod(pm?: PaymentMethodRow | null): boolean {
+  return normalizeMethodType(pm?.method_type) === "mayar";
 }
 
 export function defaultMethodLabel(type: PaymentMethodType): string {
@@ -45,6 +51,8 @@ export function defaultMethodLabel(type: PaymentMethodType): string {
       return "QRIS";
     case "ewallet":
       return "E-Wallet";
+    case "mayar":
+      return "Pembayaran Online";
     case "cod":
       return "Bayar di Tempat (COD)";
     case "other":

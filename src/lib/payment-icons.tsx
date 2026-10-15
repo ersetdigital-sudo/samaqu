@@ -24,6 +24,7 @@ export function defaultIconForType(type: string | null | undefined): PaymentIcon
   if (type === "qris") return "qris";
   if (type === "ewallet") return "ewallet";
   if (type === "cod") return "cod";
+  if (type === "mayar") return "card"; // pembayaran online (QRIS/VA/e-wallet via Mayar)
   if (type === "other") return "store";
   return "bank";
 }

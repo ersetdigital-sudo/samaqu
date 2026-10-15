@@ -65,6 +65,11 @@ export interface AdminDetailOrder {
   shipping_cost: number;
   shipping_method?: string | null;
   payment_method?: string | null;
+  /** Pembayaran online (Mayar): provider, link bayar, status, dan jam lunas. */
+  payment_provider?: string | null;
+  payment_url?: string | null;
+  payment_status?: string | null;
+  paid_at?: string | null;
   awb_no?: string | null;
   /** Berat kirim pesanan (gram) — kolom `orders.weight`. */
   weight?: number | null;
@@ -474,6 +479,32 @@ export default function OrderDetailContent({
                   <div className="rp-line" style={{ marginTop: 8 }}>
                     <span className="rp-strong"><PaymentMethodValue value={order.payment_method} /></span>
                   </div>
+                  {order.payment_provider === "mayar" ? (
+                    <>
+                      <div className="rp-line" style={{ marginTop: 8 }}>
+                        <span className="rp-sub">Pembayaran Online (Mayar)</span>
+                        <span
+                          className="rp-strong"
+                          style={{ marginLeft: "auto", color: order.paid_at ? "#047857" : "#b45309" }}
+                        >
+                          {order.paid_at ? "Lunas" : "Belum dibayar"}
+                        </span>
+                      </div>
+                      {order.payment_url ? (
+                        <div className="rp-line" style={{ marginTop: 6 }}>
+                          <a
+                            href={order.payment_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="rp-sub"
+                            style={{ color: "#2563eb", wordBreak: "break-all" }}
+                          >
+                            Link bayar Mayar
+                          </a>
+                        </div>
+                      ) : null}
+                    </>
+                  ) : null}
                 </div>
               ) : null}
 

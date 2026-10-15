@@ -5,6 +5,7 @@ import { Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/AdminToast";
 import PaymentMethodsManager from "@/components/admin/PaymentMethodsManager";
+import MayarSettingsForm from "@/components/admin/MayarSettingsForm";
 import { SettingsCard, Field } from "@/components/admin/SettingsCard";
 
 /**
@@ -26,6 +27,7 @@ export default function SettingsPanel() {
       <MetaPixelSection />
       <FonnteSection />
       <PaymentMethodsManager />
+      <MayarSettingsForm />
     </div>
   );
 }
