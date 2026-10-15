@@ -7,6 +7,7 @@ import { getProductById, weightMap } from "@/lib/katalog-data";
 import { useCart } from "@/lib/cart-context";
 import { supabase } from "@/lib/supabase";
 import { getWhatsAppLink } from "@/lib/store-settings";
+import { localPhone } from "@/lib/whatsapp";
 import { trackInitiateCheckout, sendCAPIEvent } from "@/lib/meta-pixel";
 import { PaymentIcon } from "@/lib/payment-icons";
 import { fetchActivePaymentMethods, normalizeMethodType, paymentMethodLabel, type PaymentMethodRow } from "@/lib/payment-methods";
@@ -293,7 +294,7 @@ function CheckoutContent() {
         console.log("[CHECKOUT] 📇 Default address:", defaultAddr.label, defaultAddr.id);
         setSelectedAddressId(defaultAddr.id);
         setNama(defaultAddr.recipient_name);
-        setWhatsapp(defaultAddr.phone);
+        setWhatsapp(localPhone(defaultAddr.phone));
         setAlamat(defaultAddr.address);
         setKota(defaultAddr.city);
         setKodepos(defaultAddr.postal_code);
@@ -486,7 +487,7 @@ function CheckoutContent() {
     console.log("[CHECKOUT] 👆 User selected address:", { id: addr.id, label: addr.label, kecamatan: addr.kecamatan, city: addr.city, district_id: addr.district_id });
     setSelectedAddressId(addr.id);
     setNama(addr.recipient_name);
-    setWhatsapp(addr.phone);
+    setWhatsapp(localPhone(addr.phone));
     setAlamat(addr.address);
     setKota(addr.city);
     setKodepos(addr.postal_code);

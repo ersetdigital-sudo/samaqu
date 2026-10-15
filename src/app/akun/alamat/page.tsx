@@ -9,6 +9,7 @@ import ProfileDropdown from "@/components/ProfileDropdown";
 import { supabase } from "@/lib/supabase";
 import { getCurrentCustomer } from "@/lib/customer-auth";
 import { getWhatsAppLink } from "@/lib/store-settings";
+import { localPhone } from "@/lib/whatsapp";
 
 interface Address {
   id: string;
@@ -108,7 +109,7 @@ export default function AlamatPage() {
     const isFirstAddress = addresses.length === 0;
     const forceDefault = isFirstAddress;
     const shouldBeDefault = form.is_default || forceDefault;
-    const payload = { ...form, label: form.label.trim() || "Alamat", customer_id: customerId, is_default: shouldBeDefault };
+    const payload = { ...form, phone: localPhone(form.phone), label: form.label.trim() || "Alamat", customer_id: customerId, is_default: shouldBeDefault };
 
     if (shouldBeDefault) {
       await supabase.from("saved_addresses").update({ is_default: false }).eq("customer_id", customerId);
