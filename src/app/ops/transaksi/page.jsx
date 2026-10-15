@@ -22,7 +22,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Database,
-  Eye,
   FileText,
   Package,
   Pencil,
@@ -38,7 +37,7 @@ import DateFilter, { formatTanggalID } from "@/components/ops/leads/DateFilter";
 import ConfirmDeleteModal from "@/components/ops/ConfirmDeleteModal";
 import TransaksiFormModal from "@/components/ops/transaksi/TransaksiFormModal";
 import TransaksiDetailDrawer from "@/components/ops/transaksi/TransaksiDetailDrawer";
-import { MONTHS, SOURCE_STYLES, STATUS_STYLES, formatRupiah, pad } from "@/components/ops/transaksi/transaksi-format";
+import { MONTHS, SOURCE_STYLES, STATUS_STYLES, formatRupiah, formatTanggalSingkatID, pad } from "@/components/ops/transaksi/transaksi-format";
 import { useToast } from "@/components/ops/ui/use-toast";
 
 const digits = (value) => String(value ?? "").replace(/\D/g, "");
@@ -374,15 +373,14 @@ export default function Transaksi() {
             <table className="w-full table-fixed text-sm">
               <thead>
                 <tr className="bg-slate-50 dark:bg-slate-900 text-left">
-                  <th className="w-[12%] px-3 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Tanggal</th>
-                  <th className="w-[6%] px-2 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Jam</th>
-                  <th className="w-[13%] px-2 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">No. Order</th>
-                  <th className="w-[14%] px-2 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Pelanggan</th>
+                  <th className="w-[11%] px-3 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Tanggal</th>
+                  <th className="w-[15%] px-2 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">No. Order</th>
+                  <th className="w-[16%] px-2 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Pelanggan</th>
                   <th className="w-[9%] px-2 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Sumber</th>
-                  <th className="w-[16%] px-2 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Produk</th>
-                  <th className="w-[11%] px-2 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 text-right">Total</th>
-                  <th className="w-[9%] px-2 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Status</th>
-                  <th className="w-[10%] px-3 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 text-right">Aksi</th>
+                  <th className="w-[19%] px-2 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Produk</th>
+                  <th className="w-[12%] px-2 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 text-right">Total</th>
+                  <th className="w-[11%] px-2 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Status</th>
+                  <th className="w-[7%] px-3 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 text-right">Aksi</th>
                 </tr>
               </thead>
               <tbody>
@@ -398,18 +396,14 @@ export default function Transaksi() {
                       onClick={() => setDetail(order)}
                       className="border-t border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900/50 cursor-pointer"
                     >
-                      <td className="px-3 py-3 font-semibold text-slate-900 dark:text-white whitespace-nowrap truncate" title={formatTanggalID(order.date_wib)}>
-                        {formatTanggalID(order.date_wib)}
+                      <td className="px-3 py-3 font-semibold text-slate-900 dark:text-white whitespace-nowrap truncate" title={`${formatTanggalID(order.date_wib)} · ${order.time_wib || "-"} WIB`}>
+                        {formatTanggalSingkatID(order.date_wib)}
                       </td>
-                      <td className="px-2 py-3 text-slate-600 dark:text-slate-400 whitespace-nowrap">{order.time_wib || "-"}</td>
                       <td className="px-2 py-3 font-bold text-slate-900 dark:text-white whitespace-nowrap truncate" title={order.order_number}>
                         {order.order_number}
                       </td>
-                      <td className="px-2 py-3">
-                        <span className="block font-semibold text-slate-900 dark:text-white truncate" title={order.customer_name}>
-                          {order.customer_name}
-                        </span>
-                        <span className="block text-[11px] text-slate-500 dark:text-slate-400 truncate">{order.customer_whatsapp}</span>
+                      <td className="px-2 py-3 font-semibold text-slate-900 dark:text-white truncate" title={`${order.customer_name} · ${order.customer_whatsapp}`}>
+                        {order.customer_name}
                       </td>
                       <td className="px-2 py-3">
                         <span className={`px-2.5 py-1 rounded-lg text-xs font-bold whitespace-nowrap ${source?.badge || "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"}`}>
@@ -430,16 +424,6 @@ export default function Transaksi() {
                       </td>
                       <td className="px-3 py-3">
                         <div className="flex items-center justify-end gap-1">
-                          <button
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              setDetail(order);
-                            }}
-                            className="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
-                            aria-label="Lihat detail"
-                          >
-                            <Eye size={15} />
-                          </button>
                           {order.can_edit && (
                             <button
                               onClick={(event) => {

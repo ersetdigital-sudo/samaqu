@@ -33,6 +33,9 @@ export const MONTHS = [
   "Juli", "Agustus", "September", "Oktober", "November", "Desember",
 ];
 
+/** Bulan versi pendek — dipakai kolom tabel supaya tanggalnya tidak kepotong. */
+export const MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+
 export const pad = (n) => String(n).padStart(2, "0");
 
 export const formatRupiah = (value) => (value || 0).toLocaleString("id-ID");
@@ -43,6 +46,13 @@ export function formatTanggalID(iso) {
   if (!m) return iso || "-";
   const date = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
   return `${WEEKDAYS[date.getUTCDay()]}, ${Number(m[3])} ${MONTHS[Number(m[2]) - 1]} ${m[1]}`;
+}
+
+/** "2026-10-01" → "1 Okt 2026" — versi pendek untuk kolom tabel (tanggal & jam lengkap ada di detail). */
+export function formatTanggalSingkatID(iso) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ""));
+  if (!m) return iso || "-";
+  return `${Number(m[3])} ${MONTHS_SHORT[Number(m[2]) - 1]} ${m[1]}`;
 }
 
 /** timestamptz → "Kamis, 1 Oktober 2026 · 14.30 WIB" (waktu WIB, bukan waktu server). */
