@@ -706,7 +706,8 @@ export default function MasterProduk() {
   // Ringkasan daftar produk: "Menampilkan X dari Y produk" — Y = totalProducts (lihat KPI di atas).
   const hasProductFilter = searchTerm.trim() !== '' || statusFilter !== 'all';
 
-  // Status stok untuk tabel & kartu — satu baris, tanpa bar persentase.
+  // Status stok untuk tabel & kartu — HANYA badge status (tanpa angka "X unit" di
+  // belakangnya; angka stok sudah tampil di kolom Stok / kotak Stok pada kartu).
   // Dasarnya stok EFEKTIF (sudah memperhitungkan stok bersama antar-series).
   const renderStockIndicator = (product) => {
     const { nilai, status } = stokProduk(product);
@@ -717,12 +718,12 @@ export default function MasterProduk() {
     }[status] || { cls: 'bg-slate-100 border-slate-300 text-slate-600', label: '—' };
 
     return (
-      <div className="flex items-center justify-center gap-2 whitespace-nowrap" title={`Stok efektif ${nilai} unit`}>
-        <span className={`px-2.5 py-1 rounded-full border text-[11px] font-bold ${gaya.cls}`}>{gaya.label}</span>
-        <span className={`text-xs font-bold ${nilai === 0 ? 'text-red-600' : 'text-slate-600 dark:text-slate-300'}`}>
-          {nilai} unit
-        </span>
-      </div>
+      <span
+        className={`inline-flex items-center justify-center px-2.5 py-1 rounded-full border text-[11px] font-bold whitespace-nowrap ${gaya.cls}`}
+        title={`Stok efektif ${nilai} unit`}
+      >
+        {gaya.label}
+      </span>
     );
   };
 
@@ -1136,9 +1137,9 @@ export default function MasterProduk() {
           <div className="grid grid-cols-2 md:flex md:gap-1">
             <button 
               onClick={() => setActiveTab('produk')}
-              className={`flex items-center justify-center gap-2 px-2 md:px-6 py-3 rounded-lg transition-all ${
+              className={`flex items-center justify-center gap-2 px-2 md:px-6 py-3 rounded-xl transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#18181b]/40 dark:focus-visible:ring-white/60 ${
                 activeTab === 'produk'
-                  ? 'bg-blue-600 text-white shadow-md font-semibold'
+                  ? 'bg-[#18181b] text-white shadow-sm dark:bg-white dark:text-[#18181b] font-semibold'
                   : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100/50 dark:hover:bg-slate-700/50 font-medium'
               }`}
               style={{ fontSize: '13px', letterSpacing: '0.01em' }}
@@ -1148,9 +1149,9 @@ export default function MasterProduk() {
             </button>
             <button 
               onClick={() => setActiveTab('report')}
-              className={`flex items-center justify-center gap-2 px-2 md:px-6 py-3 rounded-lg transition-all ${
+              className={`flex items-center justify-center gap-2 px-2 md:px-6 py-3 rounded-xl transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#18181b]/40 dark:focus-visible:ring-white/60 ${
                 activeTab === 'report'
-                  ? 'bg-blue-600 text-white shadow-md font-semibold'
+                  ? 'bg-[#18181b] text-white shadow-sm dark:bg-white dark:text-[#18181b] font-semibold'
                   : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100/50 dark:hover:bg-slate-700/50 font-medium'
               }`}
               style={{ fontSize: '13px', letterSpacing: '0.01em' }}
@@ -1160,9 +1161,9 @@ export default function MasterProduk() {
             </button>
             <button 
               onClick={() => setActiveTab('stockin')}
-              className={`flex items-center justify-center gap-2 px-2 md:px-6 py-3 rounded-lg transition-all ${
+              className={`flex items-center justify-center gap-2 px-2 md:px-6 py-3 rounded-xl transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#18181b]/40 dark:focus-visible:ring-white/60 ${
                 activeTab === 'stockin'
-                  ? 'bg-blue-600 text-white shadow-md font-semibold'
+                  ? 'bg-[#18181b] text-white shadow-sm dark:bg-white dark:text-[#18181b] font-semibold'
                   : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100/50 dark:hover:bg-slate-700/50 font-medium'
               }`}
               style={{ fontSize: '13px', letterSpacing: '0.01em' }}
@@ -1172,9 +1173,9 @@ export default function MasterProduk() {
             </button>
             <button 
               onClick={() => setActiveTab('stockout')}
-              className={`flex items-center justify-center gap-2 px-2 md:px-6 py-3 rounded-lg transition-all ${
+              className={`flex items-center justify-center gap-2 px-2 md:px-6 py-3 rounded-xl transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#18181b]/40 dark:focus-visible:ring-white/60 ${
                 activeTab === 'stockout'
-                  ? 'bg-blue-600 text-white shadow-md font-semibold'
+                  ? 'bg-[#18181b] text-white shadow-sm dark:bg-white dark:text-[#18181b] font-semibold'
                   : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100/50 dark:hover:bg-slate-700/50 font-medium'
               }`}
               style={{ fontSize: '13px', letterSpacing: '0.01em' }}
