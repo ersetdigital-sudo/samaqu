@@ -13,7 +13,9 @@ import {
 import { shippingStatusOf, SHIPPING_STATUS_LABEL } from "@/lib/order-flow";
 import { useSafeTranslations } from "@/lib/safe-i18n";
 import { PaymentMethodValue } from "@/components/admin/PaymentMethodsManager";
-import { RINCIAN_CSS, FALLBACK_PHOTO } from "@/components/akun/RincianPesanan";
+import { RINCIAN_CSS } from "@/components/akun/RincianPesanan";
+import { NEUTRAL_ITEM_PHOTO, resolveItemPhotos, type OrderPhotoLookup } from "@/lib/order-photo";
+import { itemProductIds, loadOrderPhotoLookup } from "@/lib/order-photo-data";
 import { waNumber, waLink, pesanPembayaran } from "@/lib/whatsapp";
 import { supabase } from "@/lib/supabase";
 import {
@@ -223,8 +225,6 @@ export default function OrderDetailContent({
   const [trackError, setTrackError] = useState<string | null>(null);
   /** Respons J&T apa adanya (untuk tombol "Lihat data mentah"). */
   const [trackRaw, setTrackRaw] = useState<unknown>(null);
-  /** Kapan data diambil dari J&T. */
-  const [trackFetchedAt, setTrackFetchedAt] = useState<string | null>(null);
   const [showRaw, setShowRaw] = useState(false);
   const t = useSafeTranslations("tracking");
 
@@ -266,6 +266,25 @@ export default function OrderDetailContent({
     });
     return () => { active = false; };
   }, [order.order_items, order.order_number]);
+
+  // Foto item: snapshot dari baris pesanan dipakai lebih dulu; kalau kosong (mis. item Open Order
+  // yang dibuat sebelum snapshot dipasang) fotonya diambil dari katalog lewat SATU fungsi pusat
+  // yang juga dipakai dashboard customer — supaya admin & customer selalu melihat foto yang sama.
+  const [photoLookup, setPhotoLookup] = useState<OrderPhotoLookup | null>(null);
+  useEffect(() => {
+    const ids = itemProductIds(order.order_items || []);
+    if (ids.length === 0) return;
+    let active = true;
+    loadOrderPhotoLookup(ids).then((lookup) => {
+      if (active) setPhotoLookup(lookup);
+    });
+    return () => { active = false; };
+  }, [order.order_items]);
+
+  const itemsWithPhotos = useMemo(
+    () => resolveItemPhotos(order.order_items || [], photoLookup),
+    [order.order_items, photoLookup]
+  );
 
   /**
    * Total berat pesanan. Pesanan yang BELUM punya resi J&T dihitung ulang dari berat per ukuran
@@ -319,7 +338,6 @@ export default function OrderDetailContent({
       const data = json?.track as { history?: TrackHistoryItem[] } | null;
       setTrackHistory(data?.history ?? []);
       setTrackRaw(data ?? null);
-      setTrackFetchedAt(new Date().toISOString());
       if (!data && json?.trackError) setTrackError(json.trackError);
       // Kalau server menaikkan status, beri tahu induk supaya daftar & drawer ikut segar.
       if (json?.changed) onSynced?.({ status: json.status, shipping_status: json.shippingStatus ?? null });
@@ -537,11 +555,11 @@ export default function OrderDetailContent({
             </section>
 
             <section className="rp-card">
-              {items.length > 0 ? (
-                items.map((item, i) => (
+              {itemsWithPhotos.length > 0 ? (
+                itemsWithPhotos.map((item, i) => (
                   <div key={`${item.product_name}-${i}`} className="rp-it">
                     <div className="rp-thumb">
-                      <img src={item.product_image || FALLBACK_PHOTO} alt={item.product_name} />
+                      <img src={item.product_image || NEUTRAL_ITEM_PHOTO} alt={item.product_name} loading="lazy" decoding="async" />
                     </div>
                     <div style={{ minWidth: 0, flex: 1 }}>
                       <p className="rp-nm">{item.product_name}</p>
@@ -695,29 +713,27 @@ export default function OrderDetailContent({
                     ) : null}
                   </div>
 
-                  {/* Ringkasan — nilai-nilainya diambil langsung dari event J&T terbaru. */}
+                  {/* Ringkasan status: teks & keterangan diambil apa adanya dari event J&T terbaru. */}
                   {trackSummary ? (
-                    <div style={{ marginTop: 10, display: "grid", gap: 4 }}>
-                      <p className="text-[12.5px]" style={{ margin: 0 }}>
-                        <span style={{ color: "#8D9297" }}>{t("statusNow")}: </span>
-                        <b style={{ color: "#1c1c1c" }}>{trackSummary.status}</b>
+                    <div style={{ marginTop: 10 }}>
+                      <p
+                        className="text-[10.5px] font-bold uppercase"
+                        style={{ margin: 0, color: "#8D9297", letterSpacing: "0.06em" }}
+                      >
+                        {t("currentStatusTitle")}
+                      </p>
+                      <p
+                        className="text-[13.5px] font-bold"
+                        style={{ margin: "6px 0 0", color: "#1c1c1c", lineHeight: 1.35 }}
+                      >
+                        {trackSummary.status}
+                      </p>
+                      <p className="text-[12px]" style={{ margin: "2px 0 0", color: "#8D9297" }}>
+                        {formatTrackingTime(trackSummary.updatedAt)}
                       </p>
                       {trackSummary.note ? (
-                        <p className="text-[12.5px]" style={{ margin: 0, color: "#8D9297" }}>
-                          {t("note")}: <span style={{ color: "#1c1c1c" }}>{trackSummary.note}</span>
-                        </p>
-                      ) : null}
-                      <p className="text-[12.5px]" style={{ margin: 0, color: "#8D9297" }}>
-                        {t("updatedAt")}: <span style={{ color: "#1c1c1c" }}>{formatTrackingTime(trackSummary.updatedAt)}</span>
-                      </p>
-                      {trackSummary.elapsedLabel ? (
-                        <p className="text-[12.5px]" style={{ margin: 0, color: "#8D9297" }}>
-                          {t("duration")}: <span style={{ color: "#1c1c1c" }}>{trackSummary.elapsedLabel}</span>
-                        </p>
-                      ) : null}
-                      {trackFetchedAt ? (
-                        <p className="text-[12.5px]" style={{ margin: 0, color: "#8D9297" }}>
-                          {t("fetchedAt")}: <span style={{ color: "#1c1c1c" }}>{formatTrackingTime(trackFetchedAt)}</span>
+                        <p className="text-[12px]" style={{ margin: "8px 0 0", color: "#8D9297" }}>
+                          {t("noteLabel")}: <span style={{ color: "#1c1c1c" }}>{trackSummary.note}</span>
                         </p>
                       ) : null}
                     </div>

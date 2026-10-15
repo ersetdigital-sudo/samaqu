@@ -18,6 +18,8 @@ import {
   type NewOrderNotificationItem,
 } from "@/lib/fonnte";
 import { sendOnce } from "@/lib/order-notify";
+import { orderItemPhoto } from "@/lib/order-photo";
+import { loadOrderPhotoLookup } from "@/lib/order-photo-data";
 import { createOrderPaymentLink } from "@/lib/mayar";
 
 /**
@@ -72,6 +74,8 @@ interface OrderItemRow {
   order_id: string;
   product_id: string;
   product_name: string;
+  /** Snapshot foto produk saat pesanan dibuat (null = tidak ada foto di katalog). */
+  product_image: string | null;
   color: string | null;
   size: string | null;
   quantity: number;
@@ -391,6 +395,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Gagal menyimpan pesanan" }, { status: 500 });
     }
 
+    // Foto item diambil dari katalog SEKARANG lalu disimpan sebagai snapshot di baris pesanan,
+    // supaya riwayat pesanan tidak ikut berubah kalau foto produk diganti nanti. Aturan fotonya
+    // sama dengan yang tampil di katalog & dashboard (src/lib/order-photo.ts).
+    const photoLookup = await loadOrderPhotoLookup(validatedItems.map((item) => item.productId));
+
     const orderItems: OrderItemRow[] = validatedItems.map((item) => ({
       order_id: order.id,
       product_id: item.productId,
@@ -401,6 +410,17 @@ export async function POST(request: NextRequest) {
       price: item.price,
       series: item.series,
       kain: item.kain,
+      product_image:
+        orderItemPhoto(
+          {
+            product_id: item.productId,
+            product_name: item.productName,
+            color: item.color,
+            kain: item.kain,
+            series: item.series,
+          },
+          photoLookup
+        ) || null,
       customer_price: item.cypEnabled ? item.price : null,
       minimum_price: item.cypEnabled ? item.minimumPrice : null,
     }));
@@ -416,6 +436,11 @@ export async function POST(request: NextRequest) {
         price: OPEN_ORDER_ADDON.price,
         series: null,
         kain: null,
+        // Add-on belum tentu punya foto di katalog — kalau tidak ada, tampilannya memakai
+        // placeholder netral (bukan foto produk lain).
+        product_image:
+          orderItemPhoto({ product_id: OPEN_ORDER_ADDON.id, product_name: OPEN_ORDER_ADDON.name }, photoLookup) ||
+          null,
         customer_price: null,
         minimum_price: null,
       });

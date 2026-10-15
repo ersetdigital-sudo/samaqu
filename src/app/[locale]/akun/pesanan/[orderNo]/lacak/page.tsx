@@ -193,29 +193,21 @@ export default function LacakPage() {
               </button>
             </div>
 
-            {/* Ringkasan — semuanya diambil langsung dari event J&T (tanpa teks buatan). */}
+            {/* Ringkasan status: teks & keterangan diambil apa adanya dari event J&T terbaru. */}
             {summary ? (
-              <div style={{ marginTop: 12, display: "grid", gap: 4 }}>
-                <p style={{ fontSize: 12.5, margin: 0 }}>
-                  <span style={{ color: "#666666" }}>{t("statusNow")}: </span>
-                  <b style={{ color: "#1a1a1a" }}>{summary.status}</b>
+              <div style={{ marginTop: 12 }}>
+                <p style={{ margin: 0, fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "#8A8A85" }}>
+                  {t("currentStatusTitle")}
+                </p>
+                <p style={{ margin: "6px 0 0", fontSize: 14.5, fontWeight: 700, color: "#1a1a1a", lineHeight: 1.35 }}>
+                  {summary.status}
+                </p>
+                <p style={{ margin: "2px 0 0", fontSize: 12.5, color: "#666666" }}>
+                  {formatTrackingTime(summary.updatedAt)}
                 </p>
                 {summary.note ? (
-                  <p style={{ fontSize: 12.5, margin: 0, color: "#666666" }}>
-                    {t("note")}: <span style={{ color: "#1a1a1a" }}>{summary.note}</span>
-                  </p>
-                ) : null}
-                <p style={{ fontSize: 12.5, margin: 0, color: "#666666" }}>
-                  {t("updatedAt")}: <span style={{ color: "#1a1a1a" }}>{formatTrackingTime(summary.updatedAt)}</span>
-                </p>
-                {summary.elapsedLabel ? (
-                  <p style={{ fontSize: 12.5, margin: 0, color: "#666666" }}>
-                    {t("duration")}: <span style={{ color: "#1a1a1a" }}>{summary.elapsedLabel}</span>
-                  </p>
-                ) : null}
-                {payload?.fetchedAt ? (
-                  <p style={{ fontSize: 12.5, margin: 0, color: "#666666" }}>
-                    {t("fetchedAt")}: <span style={{ color: "#1a1a1a" }}>{formatTrackingTime(payload.fetchedAt)}</span>
+                  <p style={{ margin: "8px 0 0", fontSize: 12.5, color: "#666666" }}>
+                    {t("noteLabel")}: <span style={{ color: "#1a1a1a" }}>{summary.note}</span>
                   </p>
                 ) : null}
               </div>

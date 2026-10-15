@@ -25,6 +25,24 @@ const DEFAULT_MESSAGES: Record<string, Record<string, string>> = {
     garansi_retur: "Garansi & Retur", cyp: "Create Your Price", sama_quran: "Sama Quran",
     account: "Account", chat_admin: "Chat Admin", bantuan_title: "Butuh bantuan? Hubungi kami.",
   },
+  // Panel admin berada DI LUAR provider next-intl, jadi tanpa cadangan ini label pelacakan
+  // tampil sebagai nama key mentah ("statusNow:", "fetchedAt:", …). Isinya = id.json.
+  tracking: {
+    history: "Riwayat Pengiriman",
+    refresh: "Perbarui",
+    loading: "Memuat…",
+    note: "Catatan",
+    currentStatusTitle: "Status pengiriman saat ini",
+    noteLabel: "Keterangan",
+    rawData: "Lihat data mentah",
+    close: "Tutup",
+    driver: "Kurir",
+    noUpdate: "Belum ada update dari J&T. Riwayat muncul setelah kurir memindai paket.",
+    noResi: "Nomor resi belum tersedia. Kami kabari begitu paket diserahkan ke J&T.",
+    stale: "Menampilkan data J&T terakhir yang tersimpan.",
+    error: "Tidak bisa menghubungi layanan J&T. Coba lagi sebentar lagi.",
+    empty: "Data pelacakan J&T belum bisa diambil.",
+  },
 };
 
 /**

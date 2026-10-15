@@ -9,6 +9,8 @@ import {
   type PaymentInstruction,
 } from "@/lib/fonnte";
 import { sendOnce } from "@/lib/order-notify";
+import { orderItemPhoto } from "@/lib/order-photo";
+import { loadOrderPhotoLookup } from "@/lib/order-photo-data";
 import { createOrderPaymentLink } from "@/lib/mayar";
 import { markLeadBoughtForOrder } from "@/lib/ops-lead-sync";
 import { sumWeightGramsBySize, productWeightMapFromRows, variantWeightMapFromRows } from "@/lib/shipping-weight";
@@ -277,11 +279,28 @@ export async function POST(request: NextRequest) {
     console.log("[ORDERS] Order created:", order.id, orderNumber);
 
     // Insert order items (with CYP fields)
+    // Foto item disimpan sebagai snapshot supaya riwayat pesanan tidak berubah kalau foto produk
+    // diganti. Foto dari keranjang dipakai lebih dulu; kalau kosong, diambil dari katalog dengan
+    // aturan yang sama seperti tampilan (src/lib/order-photo.ts).
+    const photoLookup = await loadOrderPhotoLookup(validatedItems.map((item) => item.productId));
+
     const orderItems = validatedItems.map((item) => ({
       order_id: order.id,
       product_id: item.productId,
       product_name: item.name,
-      product_image: item.image || null,
+      product_image:
+        item.image ||
+        orderItemPhoto(
+          {
+            product_id: item.productId,
+            product_name: item.name,
+            color: item.color,
+            kain: item.kain,
+            series: item.series,
+          },
+          photoLookup
+        ) ||
+        null,
       color: item.color || null,
       size: item.size || null,
       series: item.series || null,

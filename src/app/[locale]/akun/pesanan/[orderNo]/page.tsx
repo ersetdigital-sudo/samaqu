@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { getCurrentCustomer, getCustomerOrders } from "@/lib/customer-auth";
 import { getProducts } from "@/lib/db";
-import { itemsWithCatalogPhotos } from "@/lib/order-photo";
+import { resolveItemPhotos } from "@/lib/order-photo";
+import { itemProductIds, loadOrderPhotoLookup } from "@/lib/order-photo-data";
 import { useSafeLocale } from "@/lib/safe-i18n";
 import RincianPesanan, {
   RincianHeader,
@@ -28,8 +29,9 @@ export default function DetailPesananPage() {
       const customer = await getCurrentCustomer();
       if (!customer) return;
 
-      // Katalog diambil bersamaan dengan pesanan: fotonya dipakai untuk mengisi item
-      // yang `product_image`-nya kosong (lihat src/lib/order-photo.ts).
+      // Katalog + foto produk diambil bersamaan dengan pesanan: dipakai untuk mengisi item
+      // yang `product_image`-nya kosong, memakai fungsi pusat yang sama dengan dashboard admin
+      // (lihat src/lib/order-photo.ts + src/lib/order-photo-data.ts).
       const [orders, catalog] = await Promise.all([getCustomerOrders(customer.id), getProducts()]);
       const found = (orders as RincianOrder[]).find((o) => o.order_number === orderNo);
 
@@ -39,9 +41,12 @@ export default function DetailPesananPage() {
         return;
       }
 
+      const items = found.order_items || [];
+      const lookup = await loadOrderPhotoLookup(itemProductIds(items), catalog);
+
       setOrder({
         ...found,
-        order_items: itemsWithCatalogPhotos<RincianOrderItem>(found.order_items || [], catalog),
+        order_items: resolveItemPhotos<RincianOrderItem>(items, lookup),
       });
       setLoading(false);
     }

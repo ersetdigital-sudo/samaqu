@@ -4,11 +4,14 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { getCurrentCustomer, getCustomerOrders } from "@/lib/customer-auth";
+import { resolveItemPhotos } from "@/lib/order-photo";
+import { itemProductIds, loadOrderPhotoLookup } from "@/lib/order-photo-data";
 import { useSafeLocale } from "@/lib/safe-i18n";
 import { AkunHeader } from "@/components/akun/AkunShell";
 import { statusInfo, tglID, rupiah } from "@/lib/akun-format";
 
 interface OrderItem {
+  product_id?: string | null;
   product_name: string;
   color: string;
   size: string;
@@ -46,7 +49,13 @@ export default function PesananPage() {
       const c = await getCurrentCustomer();
       if (!c) return;
       const o = await getCustomerOrders(c.id);
-      setOrders((o as Order[]) || []);
+      const list = (o as Order[]) || [];
+      // Foto item: snapshot di baris pesanan dipakai lebih dulu; kalau kosong (mis. item Open Order
+      // lama) diambil dari katalog lewat fungsi pusat yang sama dengan dashboard admin.
+      const lookup = await loadOrderPhotoLookup(
+        itemProductIds(list.flatMap((order) => order.order_items || []))
+      );
+      setOrders(list.map((order) => ({ ...order, order_items: resolveItemPhotos(order.order_items || [], lookup) })));
       setLoading(false);
     }
     init();
@@ -124,7 +133,7 @@ export default function PesananPage() {
                         <div className="flex items-center gap-3">
                           <div className="akun-thumb w-11 h-11 shrink-0 overflow-hidden">
                             {item?.product_image ? (
-                              <img src={item.product_image} alt={item.product_name} className="w-full h-full object-cover" />
+                              <img src={item.product_image} alt={item.product_name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                             ) : (
                               <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="#000000" strokeWidth="1.2"><path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z" /><path d="M3 8.5v7L12 20l9-4.5v-7" /></svg>
                             )}
@@ -164,7 +173,7 @@ export default function PesananPage() {
                   <div className="flex gap-3 mt-3">
                     <div className="akun-thumb w-16 h-16 shrink-0 overflow-hidden">
                       {item?.product_image ? (
-                        <img src={item.product_image} alt={item.product_name} className="w-full h-full object-cover" />
+                        <img src={item.product_image} alt={item.product_name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                       ) : (
                         <svg viewBox="0 0 24 24" className="w-8 h-8" fill="none" stroke="#000000" strokeWidth="1.2"><path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z" /><path d="M3 8.5v7L12 20l9-4.5v-7" /></svg>
                       )}

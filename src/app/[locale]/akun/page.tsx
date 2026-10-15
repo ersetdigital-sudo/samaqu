@@ -4,12 +4,15 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { getCustomerOrders } from "@/lib/customer-auth";
+import { resolveItemPhotos } from "@/lib/order-photo";
+import { itemProductIds, loadOrderPhotoLookup } from "@/lib/order-photo-data";
 import { useAkunCustomer } from "@/components/akun/AkunContext";
 import { useSafeLocale } from "@/lib/safe-i18n";
 
 import { statusInfo, rupiah, tglID } from "@/lib/akun-format";
 
 interface OrderItem {
+  product_id?: string | null;
   product_name: string;
   color: string;
   size: string;
@@ -50,7 +53,14 @@ export default function DashboardAkunPage() {
         supabase.from("wishlists").select("product_id", { count: "exact", head: true }).eq("customer_id", id),
       ]);
       if (!alive) return;
-      setOrders((o as Order[]) || []);
+      const list = (o as Order[]) || [];
+      // Foto item: snapshot dulu, kalau kosong diambil dari katalog (fungsi pusat yang sama
+      // dengan dashboard admin & detail pesanan customer).
+      const lookup = await loadOrderPhotoLookup(
+        itemProductIds(list.flatMap((order) => order.order_items || []))
+      );
+      if (!alive) return;
+      setOrders(list.map((order) => ({ ...order, order_items: resolveItemPhotos(order.order_items || [], lookup) })));
       setWishCount(w.count || 0);
       setLoading(false);
     }
@@ -170,7 +180,7 @@ export default function DashboardAkunPage() {
                       <div className="flex items-center gap-3">
                         <div className="w-11 h-11 sm:w-10 sm:h-10 rounded-[10px] overflow-hidden shrink-0 flex items-center justify-center" style={{ background: "#e3ede9" }}>
                           {order.order_items?.[0]?.product_image ? (
-                            <img src={order.order_items[0].product_image} alt={order.order_items[0].product_name} className="w-full h-full object-cover" />
+                            <img src={order.order_items[0].product_image} alt={order.order_items[0].product_name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                           ) : (
                             <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="#000000" strokeWidth="1.5"><path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z" /><path d="M3 8.5v7L12 20l9-4.5v-7" /></svg>
                           )}
