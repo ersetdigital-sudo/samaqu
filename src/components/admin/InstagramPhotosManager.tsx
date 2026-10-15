@@ -7,7 +7,8 @@ import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/AdminToast";
 import AdminShell from "@/components/AdminShell";
 import { INSTAGRAM_DEFAULT_PHOTOS, INSTAGRAM_PROFILE, INSTAGRAM_SLOTS } from "@/lib/instagram-defaults";
-import { squareResizeImage, validateImageFile } from "@/lib/image-square";
+import { squareResizeImage } from "@/lib/image-square";
+import { uploadToCloudinary, validateMediaFile } from "@/lib/cloudinary";
 
 type Slot = { posisi: number; image_url: string; link: string; alt: string };
 
@@ -68,24 +69,21 @@ export default function InstagramPhotosManager() {
 
   async function handleUpload(i: number, file: File) {
     try {
-      validateImageFile(file);
+      await validateMediaFile(file);
     } catch (e) {
       toast.showToast("error", e instanceof Error ? e.message : "File tidak valid");
       return;
     }
     setBusy(i);
     try {
+      // Dinormalkan dulu jadi persegi 1080×1080 (crop tengah, JPEG) supaya semua
+      // slot seragam dan ringan, baru diunggah ke Cloudinary akun utama
+      // (signed upload — sama seperti Foto Carousel / produk).
       const blob = await squareResizeImage(file);
-      const fd = new FormData();
-      fd.append("file", new File([blob], "instagram.jpg", { type: "image/jpeg" }));
-      const res = await fetch("/api/admin/instagram-photos/upload", {
-        method: "POST",
-        headers: await authHeaders(),
-        body: fd,
-      });
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok || !json.url) throw new Error(json.error || "Gagal upload foto");
-      patch(i, { image_url: json.url });
+      const square = new File([blob], "instagram.jpg", { type: "image/jpeg" });
+      const url = await uploadToCloudinary(square, { scope: "product" });
+      if (!url) throw new Error("Upload gagal");
+      patch(i, { image_url: url });
       toast.showToast("success", `Foto slot ${i + 1} diperbarui`);
     } catch (e) {
       toast.showToast("error", e instanceof Error ? e.message : "Gagal upload foto");
