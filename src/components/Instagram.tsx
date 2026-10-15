@@ -1,14 +1,43 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useSafeTranslations } from "@/lib/safe-i18n";
+import { supabase } from "@/lib/supabase";
+import { INSTAGRAM_DEFAULT_PHOTOS, INSTAGRAM_PROFILE } from "@/lib/instagram-defaults";
 
-const images = [
-  { src: "/images/c8a0800b-b9bb-4b53-bd5e-00f26a500219.png", alt: "SAMAQU thobe" },
-  { src: "/images/6dc8bbe4-ca21-49a6-83a6-c2435d4b14db.png", alt: "SAMAQU thobe" },
-  { src: "/images/4419a3a6-0e9a-46bc-97c1-657808a84044.png", alt: "SAMAQU tunik" },
-  { src: "/images/dd7c9baf-e018-41d2-aa90-fde6d68a96f7.png", alt: "SAMAQU thobe" },
-  { src: "/images/000ee3e5-1e1a-439e-a35e-4448fe95a3f6.png", alt: "SAMAQU thobe" },
-  { src: "/images/6c9fafc8-b3b8-46ac-ace5-693bd7911905.png", alt: "SAMAQU vest" },
-];
+/**
+ * Section "Ikuti perjalanan kami di Instagram @samaqu.id".
+ *
+ * Layout, jumlah kolom, ukuran, jarak, sudut, ikon, dan responsif TIDAK berubah —
+ * yang berubah hanya SUMBER foto: dari tabel `instagram_photos` (diatur admin).
+ * Setiap slot selalu terisi: kalau slot kosong/belum diisi / query gagal, dipakai
+ * foto bawaan (INSTAGRAM_DEFAULT_PHOTOS) supaya grid tidak pernah bolong.
+ *
+ * Data diambil di klien (tanpa cache) sehingga perubahan admin langsung muncul
+ * tanpa deploy ulang. Render pertama = foto bawaan (sama seperti sebelumnya).
+ */
+
+type Photo = { src: string; alt: string; link: string };
+
+type Row = {
+  posisi: number;
+  image_url: string | null;
+  link: string | null;
+  alt: string | null;
+};
+
+/** Map baris DB → slot tetap (posisi i+1). Slot tanpa baris → foto bawaan. */
+function toSlots(rows: Row[] | null): Photo[] {
+  return INSTAGRAM_DEFAULT_PHOTOS.map((def, i) => {
+    const row = rows?.find((r) => r.posisi === i + 1);
+    return {
+      src: row?.image_url || def.src,
+      alt: row?.alt || def.alt,
+      link: row?.link || INSTAGRAM_PROFILE,
+    };
+  });
+}
 
 function InstagramIcon() {
   return (
@@ -29,6 +58,24 @@ function InstagramIcon() {
 
 export default function Instagram() {
   const t = useSafeTranslations("instagram");
+  // Mulai dari foto bawaan (render pertama identik dengan tampilan lama), lalu
+  // ganti dengan data admin begitu termuat.
+  const [photos, setPhotos] = useState<Photo[]>(() => toSlots(null));
+
+  useEffect(() => {
+    let cancelled = false;
+    supabase
+      .from("instagram_photos")
+      .select("posisi, image_url, link, alt")
+      .order("posisi")
+      .then(({ data, error }) => {
+        if (cancelled || error || !data) return;
+        setPhotos(toSlots(data as Row[]));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <section className="py-14 sm:py-20" style={{ background: "#F3F3F3" }}>
@@ -62,10 +109,10 @@ export default function Instagram() {
 
         {/* 3×2 Grid */}
         <div className="mt-10 grid grid-cols-3 gap-3 sm:gap-4">
-          {images.map((img) => (
+          {photos.map((img, i) => (
             <a
-              key={img.src}
-              href="https://instagram.com/samaqu.id"
+              key={i}
+              href={img.link}
               target="_blank"
               rel="noopener"
               className="group relative overflow-hidden rounded-[6px] aspect-square"
@@ -85,7 +132,7 @@ export default function Instagram() {
 
         {/* CTA */}
         <a
-          href="https://instagram.com/samaqu.id"
+          href={INSTAGRAM_PROFILE}
           target="_blank"
           rel="noopener"
           className="mt-8 sm:mt-10 grid place-items-center rounded-md text-[13px] sm:text-[14px] font-bold tracking-[.12em] py-4 transition-colors duration-200 !no-underline !text-white visited:!text-white hover:!text-white"
