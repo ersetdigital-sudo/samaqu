@@ -17,12 +17,13 @@
  * angka nyata (total pesanan / varian menipis).
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useBodyScrollLock } from "@/lib/use-scroll-lock";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Box, DollarSign, Edit, Image as ImageIcon, Layers, Package, Shirt, ShoppingCart, TrendingUp, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { useToast } from "@/components/AdminToast";
 import { colorMap } from "@/lib/katalog-data";
 
 const money = (n: number) => "Rp " + Math.round(n).toLocaleString("id-ID");
@@ -92,11 +93,16 @@ export function ProductDetailPanel({
   productId,
   onClose,
   mode = "drawer",
+  onPublishedChange,
 }: {
   productId: string;
   onClose: () => void;
   mode?: "drawer" | "page";
+  /** Dipanggil setelah status "tampil di website" benar-benar tersimpan, supaya
+   *  daftar produk di dashboard ikut memperbarui badge "Dari Ops, belum tampil". */
+  onPublishedChange?: (published: boolean, target: { name: string; category: string }) => void;
 }) {
+  const toast = useToast();
   const [product, setProduct] = useState<ProductData | null>(null);
   const [variants, setVariants] = useState<Variant[]>([]);
   const [images, setImages] = useState<ProductImage[]>([]);
@@ -105,6 +111,7 @@ export function ProductDetailPanel({
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const [savingOpenOrder, setSavingOpenOrder] = useState(false);
   const [savingPublish, setSavingPublish] = useState(false);
+  const savingPublishRef = useRef(false);
 
   useEffect(() => {
     let mounted = true;
@@ -200,18 +207,22 @@ export function ProductDetailPanel({
    * Sakelar "tampil di website" — mengubah `products.is_published` untuk SEMUA baris satu
    * nama + kategori (satu produk di katalog). Menyalakan hanya boleh kalau sudah ada foto
    * asli (bukan logo default) DAN harga > 0; kalau belum, tampilkan pesan yang jelas.
+   *
+   * Simpan langsung ke server pada klik PERTAMA (tanpa tombol "Simpan" terpisah) dan baru
+   * ubah tampilan pill SETELAH server mengonfirmasi (read-back), supaya ikon tidak pernah
+   * menyimpang dari data tersimpan. Kalau gagal, pill dibiarkan di status lama + pesan error.
    */
   async function togglePublish() {
-    if (!product) return;
-    const next = !(product.is_published !== false);
+    if (!product || savingPublishRef.current) return;
+    const next = !isPublished;
     if (next) {
       const hasRealPhoto = !!product.image && !/(^|\/)logo\.svg$/i.test(product.image);
       if (!hasRealPhoto) {
-        alert("Lengkapi foto produk dulu (bukan logo bawaan) sebelum menampilkan di website.");
+        toast.showToast("error", "Lengkapi foto produk dulu (bukan logo bawaan) sebelum menampilkan di website.");
         return;
       }
       if (!(effectivePrice(product) > 0)) {
-        alert("Isi harga produk (lebih dari 0) dulu sebelum menampilkan di website.");
+        toast.showToast("error", "Isi harga produk (lebih dari 0) dulu sebelum menampilkan di website.");
         return;
       }
       // Peringatan LUNAK (tidak memblokir): ukuran berstok yang beratnya belum diisi akan
@@ -233,25 +244,43 @@ export function ProductDetailPanel({
               (Number(v.stock) || 0) > 0 && !(Number(v.weight) > 0)
           ).length;
           if (missing > 0) {
-            alert(`${missing} ukuran belum punya berat, ongkir memakai berat default.`);
+            toast.showToast("error", `${missing} ukuran belum punya berat, ongkir memakai berat default.`);
           }
         }
       } catch {
         /* peringatan lunak — jangan sampai menghalangi penerbitan */
       }
     }
+
+    savingPublishRef.current = true;
     setSavingPublish(true);
-    const { error } = await supabase
+    const target = { name: product.name, category: product.category };
+    // `.select("id")` = read-back: pastikan baris benar-benar ter-update, bukan sekadar
+    // "tidak error" (RLS bisa mengembalikan 0 baris tanpa error).
+    const { data, error } = await supabase
       .from("products")
       .update({ is_published: next })
       .eq("category", product.category)
-      .eq("name", product.name);
+      .eq("name", product.name)
+      .select("id");
+    savingPublishRef.current = false;
     setSavingPublish(false);
-    if (error) {
+
+    if (error || !data || data.length === 0) {
       console.error("[PD] Gagal mengubah status tampil:", error);
+      toast.showToast("error", "Gagal mengubah status tampil — coba lagi.");
       return;
     }
+
     setProduct((prev) => (prev ? { ...prev, is_published: next } : prev));
+    onPublishedChange?.(next, target);
+    toast.showToast("success", next ? "Produk tampil di website" : "Produk disembunyikan");
+    // Best-effort: segarkan halaman publik yang ter-cache (Home, katalog, detail produk).
+    fetch("/api/revalidate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ secret: "samaqu-revalidate", productId: product.id }),
+    }).catch(() => {});
   }
 
   return (
@@ -351,7 +380,16 @@ export function ProductDetailPanel({
                   aria-label="Tampilkan produk ini di katalog website"
                   className={`pd-oo${isPublished ? " is-on" : ""}`}
                 >
-                  {savingPublish ? "…" : isPublished ? "Tampil" : "Belum tampil"}
+                  {savingPublish ? (
+                    <span className="pd-oo-loading">
+                      <span className="pd-oo-spin" aria-hidden="true" />
+                      Menyimpan…
+                    </span>
+                  ) : isPublished ? (
+                    "Tampil"
+                  ) : (
+                    "Belum tampil"
+                  )}
                 </button>
               </div>
               <p className="pd-empty">
@@ -513,9 +551,11 @@ export function ProductDetailPanel({
 export default function ProductDetailDrawer({
   productId,
   onClose,
+  onPublishedChange,
 }: {
   productId: string | null;
   onClose: () => void;
+  onPublishedChange?: (published: boolean, target: { name: string; category: string }) => void;
 }) {
   useEffect(() => {
     if (!productId) return;
@@ -549,7 +589,7 @@ export default function ProductDetailDrawer({
             transition={{ type: "tween", duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
             onClick={(e) => e.stopPropagation()}
           >
-            <ProductDetailPanel productId={productId} onClose={onClose} />
+            <ProductDetailPanel productId={productId} onClose={onClose} onPublishedChange={onPublishedChange} />
           </motion.div>
         </motion.div>
       )}
@@ -724,4 +764,10 @@ const PD_CSS = `
   .pd-oo.is-on { background: rgba(34,197,94,.14); border-color: rgba(34,197,94,.32); color: var(--pd-green); }
   .pd-oo:hover { filter: brightness(.97); }
   .pd-oo:disabled { opacity: .6; cursor: default; }
+  .pd-oo-loading { display: inline-flex; align-items: center; gap: 5px; }
+  .pd-oo-spin {
+    width: 9px; height: 9px; border-radius: 999px; flex-shrink: 0;
+    border: 2px solid currentColor; border-top-color: transparent;
+    animation: pd-spin .7s linear infinite;
+  }
 `;
