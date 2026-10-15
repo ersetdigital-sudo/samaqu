@@ -23,7 +23,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, Check, Pencil, Plus, Save, Trash2, X } from "lucide-react";
 import { base44 } from "@/lib/ops-api";
 import { MANUAL_SOURCE_KEYS, SOURCE_LABEL } from "@/lib/transaksi";
-import { withAddress } from "@/lib/customer-directory";
 import { OPS_STOCK_SIZES } from "@/lib/ops-stock";
 import { categoryRank, seriesRank, variantSortKey } from "@/lib/ops-order";
 import { formatRupiah, isoToWibInput, wibNow, wibToIso } from "@/components/ops/transaksi/transaksi-format";
@@ -390,14 +389,14 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
   const total = Math.max(0, subtotal - Math.min(discountValue, subtotal)) + shippingValue;
 
   /**
-   * Pilihan pelanggan = yang sudah punya alamat, supaya alamatnya langsung terisi dan admin
-   * tidak mengetik ulang. Untuk deteksi nomor dobel dipakai daftar LENGKAP (termasuk yang
-   * belum punya alamat) supaya tidak lahir pelanggan ganda.
+   * Pilihan pelanggan = SEMUA pelanggan (termasuk yang hanya punya pesanan batal dan yang
+   * belum punya alamat) supaya admin dari tab mana pun tetap bisa memilih. Yang alamatnya
+   * sudah siap ditaruh di atas supaya input transaksi tetap cepat, dan sisanya ditandai.
    */
-  const customerOptions = useMemo(
-    () => withAddress(customers).sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), "id-ID")),
-    [customers],
-  );
+  const customerOptions = useMemo(() => {
+    const sorted = [...customers].sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), "id-ID"));
+    return [...sorted.filter((customer) => customer.hasAddress !== false), ...sorted.filter((customer) => customer.hasAddress === false)];
+  }, [customers]);
 
   const semuaPelanggan = useMemo(
     () => [...customers].sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), "id-ID")),
@@ -769,6 +768,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                         {customer.name}
                         {customer.whatsapp ? ` · ${customer.whatsapp}` : ""}
                         {customer.registered ? "" : " (belum daftar)"}
+                        {customer.hasAddress === false ? " — belum ada alamat" : ""}
                       </option>
                     ))}
                   </select>

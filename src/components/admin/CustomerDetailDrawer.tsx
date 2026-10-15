@@ -33,6 +33,8 @@ export type AdminCustomer = {
   registered: boolean;
   orders: CustomerOrder[];
   ordersCount: number;
+  /** Pesanan yang benar-benar jadi transaksi (aturan menu Transaksi). */
+  paidOrdersCount?: number;
   totalSpend: number;
   lastOrderAt: string | null;
 };
@@ -146,11 +148,19 @@ export default function CustomerDetailDrawer({
               {/* Ringkasan */}
               <div className="cd-grid2">
                 <div className="cd-card cd-stat">
-                  <p className="cd-stat-label">Total Belanja</p>
+                  <p className="cd-stat-label">
+                    Total Belanja
+                    {(customer.paidOrdersCount ?? 0) === 0 && customer.ordersCount > 0 ? " · belum ada yang lunas" : ""}
+                  </p>
                   <p className="cd-stat-value">{money(customer.totalSpend)}</p>
                 </div>
                 <div className="cd-card cd-stat">
-                  <p className="cd-stat-label">Jumlah Pesanan</p>
+                  <p className="cd-stat-label">
+                    Jumlah Pesanan
+                    {(customer.paidOrdersCount ?? 0) !== customer.ordersCount
+                      ? ` · ${customer.paidOrdersCount ?? 0} lunas`
+                      : ""}
+                  </p>
                   <p className="cd-stat-value">{customer.ordersCount}</p>
                 </div>
                 <div className="cd-card cd-stat">

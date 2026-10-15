@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { SALE_STATUSES } from "@/lib/transaksi";
 
 /**
  * "Pusat data pelanggan" — satu sumber untuk agregasi + filter + sort, dipakai
@@ -32,14 +33,19 @@ export type DirectoryCustomer = {
   createdAt: string | null;
   orders: DirectoryOrder[];
   ordersCount: number;
+  /**
+   * Jumlah pesanan yang benar-benar jadi transaksi (aturan `SALE_STATUSES` — sama dengan
+   * menu Transaksi: diproses/dikirim/selesai). Pesanan belum dibayar & dibatalkan tidak ikut.
+   */
+  paidOrdersCount: number;
+  /** Total belanja = jumlah nilai pesanan yang benar-benar jadi transaksi saja. */
   totalSpend: number;
   lastOrderAt: string | null;
   /** Kota unik dari alamat pesanan (untuk filter Kota). */
   cities: string[];
   /**
    * Punya alamat pengiriman (dari salah satu pesanannya, termasuk yang dibatalkan).
-   * Pelanggan tanpa alamat tidak ditampilkan di daftar Pelanggan supaya admin di menu
-   * Transaksi langsung bisa memakai alamat yang sudah ada.
+   * Dipakai untuk menandai pelanggan yang alamatnya siap dipakai di menu Transaksi.
    */
   hasAddress: boolean;
 };
@@ -109,6 +115,7 @@ export async function buildCustomerDirectory(admin: SupabaseClient): Promise<Dir
       createdAt: c.created_at || null,
       orders: [],
       ordersCount: 0,
+      paidOrdersCount: 0,
       totalSpend: 0,
       lastOrderAt: null,
       cities: [],
@@ -138,6 +145,7 @@ export async function buildCustomerDirectory(admin: SupabaseClient): Promise<Dir
           createdAt: null,
           orders: [],
           ordersCount: 0,
+          paidOrdersCount: 0,
           totalSpend: 0,
           lastOrderAt: null,
           cities: [],
@@ -156,8 +164,14 @@ export async function buildCustomerDirectory(admin: SupabaseClient): Promise<Dir
       address: [o.shipping_address, o.shipping_city, o.shipping_postal_code].filter(Boolean).join(", ") || null,
     });
     agg.ordersCount += 1;
-    // "Total belanja" = nilai yang benar-benar dibelanjakan, jadi pesanan batal tidak dihitung.
-    if (o.status !== "dibatalkan") agg.totalSpend += o.total || 0;
+    // "Total belanja" = hanya pesanan yang benar-benar jadi transaksi belanja, memakai aturan
+    // yang SAMA dengan menu Transaksi (`SALE_STATUSES`: diproses/dikirim/selesai).
+    // Pesanan yang masih menunggu pembayaran dan pesanan dibatalkan tidak dihitung,
+    // jadi angka di sini tidak bisa berbeda dengan menu Transaksi.
+    if (SALE_STATUSES.includes(o.status || "")) {
+      agg.totalSpend += o.total || 0;
+      agg.paidOrdersCount += 1;
+    }
     if (!agg.whatsapp && o.customer_whatsapp) agg.whatsapp = o.customer_whatsapp;
     if (!agg.lastOrderAt || o.created_at > agg.lastOrderAt) agg.lastOrderAt = o.created_at;
 
@@ -184,12 +198,51 @@ export async function buildCustomerDirectory(admin: SupabaseClient): Promise<Dir
 /* ── Filter & sort (murni, bisa di klien) ── */
 
 /**
- * Daftar pelanggan yang ditampilkan = yang sudah punya alamat pengiriman.
- * Pelanggan tanpa alamat (mis. akun terdaftar yang belum pernah pesan) disembunyikan
- * supaya menu Pelanggan & pilihan pelanggan di menu Transaksi tetap rapi.
+ * Daftar pelanggan yang sudah punya alamat pengiriman. Dipakai untuk menaruh pelanggan
+ * yang alamatnya siap dipakai di urutan atas pilihan pelanggan saat membuat transaksi.
  */
 export function withAddress(list: DirectoryCustomer[]): DirectoryCustomer[] {
   return (list || []).filter((customer) => customer.hasAddress !== false);
+}
+
+/* ── Tab daftar pelanggan ── */
+
+export type CustomerTab = "all" | "buyers" | "cancelled";
+
+export const CUSTOMER_TABS: { key: CustomerTab; label: string; hint: string }[] = [
+  { key: "all", label: "Semua Pelanggan", hint: "Semua pelanggan yang tercatat di sistem" },
+  { key: "buyers", label: "Pernah Belanja", hint: "Pelanggan dengan minimal satu transaksi belanja" },
+  { key: "cancelled", label: "Hanya Pesanan Batal", hint: "Seluruh pesanannya dibatalkan & belum ada transaksi belanja" },
+];
+
+const isCancelled = (status: unknown) => String(status || "").toLowerCase().includes("batal");
+
+/** Ada minimal satu transaksi belanja? (aturan sama dengan menu Transaksi) */
+export function pernahBelanja(customer?: DirectoryCustomer | null): boolean {
+  return (customer?.orders || []).some((order) => SALE_STATUSES.includes(String(order.status || "")));
+}
+
+/** Seluruh riwayat pesanannya dibatalkan & belum punya transaksi belanja. */
+export function hanyaPesananBatal(customer?: DirectoryCustomer | null): boolean {
+  const orders = customer?.orders || [];
+  return orders.length > 0 && !pernahBelanja(customer) && orders.every((order) => isCancelled(order.status));
+}
+
+/** Saring daftar sesuai tab yang aktif. */
+export function filterByTab(list: DirectoryCustomer[], tab: CustomerTab): DirectoryCustomer[] {
+  if (tab === "buyers") return (list || []).filter(pernahBelanja);
+  if (tab === "cancelled") return (list || []).filter(hanyaPesananBatal);
+  return list || [];
+}
+
+/** Jumlah pelanggan di tiap tab — dihitung dari data yang sama dengan yang ditampilkan. */
+export function countByTab(list: DirectoryCustomer[]): Record<CustomerTab, number> {
+  const items = list || [];
+  return {
+    all: items.length,
+    buyers: items.filter(pernahBelanja).length,
+    cancelled: items.filter(hanyaPesananBatal).length,
+  };
 }
 
 export type AccountFilter = "all" | "registered" | "guest";
