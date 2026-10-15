@@ -186,6 +186,21 @@ function rupiah(value: number): string {
   return `Rp ${value.toLocaleString("id-ID")}`;
 }
 
+/**
+ * Nama panggilan untuk sapaan pesan customer: "Ka <nama depan>".
+ *
+ * - Nama yang sudah diawali "Ka"/"Kak"/"Kakak" (tanpa memperhatikan huruf besar/kecil) dipakai
+ *   apa adanya, supaya tidak muncul "Ka Kak Lea".
+ * - Nama kosong → "Ka" (jadi pesannya "Halo Ka,").
+ */
+export function greetingName(name?: string | null): string {
+  const full = String(name ?? "").trim();
+  if (!full) return "Ka";
+  const firstName = full.split(/\s+/)[0];
+  if (/^ka(kak)?$/i.test(firstName)) return full;
+  return `Ka ${firstName}`;
+}
+
 /** Ringkasan pesanan untuk admin — nomor pesanan, pemesan, item, dan tautan kelola. */
 export function buildNewOrderMessage(order: NewOrderNotification): string {
   const itemLines = order.items
@@ -301,12 +316,12 @@ function paymentInstructionLines(payment?: PaymentInstruction | null): string[] 
 
 /** Pesan "pesanan kamu sudah kami terima" + cara bayar + langkah berikutnya. */
 export function buildCustomerOrderMessage(order: CustomerOrderNotification): string {
-  const firstName = (order.customerName || "").trim().split(/\s+/)[0] || "Kak";
+  const greeting = greetingName(order.customerName);
   const type = order.paymentMethod?.type || "bank";
   const isCod = type === "cod";
 
   const lines: string[] = [
-    `Halo ${firstName} 👋`,
+    `Halo ${greeting} 👋`,
     `Pesanan${order.isOpenOrder ? " Open Order" : ""} kamu sudah kami terima.`,
     "",
     `No. Pesanan: *${order.orderNumber}*`,
@@ -362,9 +377,9 @@ export interface OrderPaidNotification {
 
 /** Pesan "pembayaran diterima, pesanan diproses" (dikirim saat admin ubah status ke Diproses). */
 export function buildOrderPaidMessage(order: OrderPaidNotification): string {
-  const firstName = (order.customerName || "").trim().split(/\s+/)[0] || "Kak";
+  const greeting = greetingName(order.customerName);
   const lines = [
-    `Halo ${firstName}, pembayaran pesanan *${order.orderNumber}* sudah kami terima ✅`,
+    `Halo ${greeting}, pembayaran pesanan *${order.orderNumber}* sudah kami terima ✅`,
     "",
     "Pesanan sedang disiapkan. Nomor resi J&T kami kirim ke chat ini begitu paket diserahkan ke kurir.",
   ];
@@ -381,4 +396,43 @@ export async function notifyCustomerOrderPaid(order: OrderPaidNotification): Pro
   if (!target) return;
 
   await sendFonnteMessage(config.token, target, buildOrderPaidMessage(order));
+}
+
+export interface ShippedNotification {
+  orderNumber: string;
+  customerName: string;
+  customerWhatsapp: string;
+  /** Nomor resi J&T yang tersimpan di pesanan (kolom `orders.awb_no`). */
+  awbNo: string;
+  /** Tautan halaman pesanan milik customer di /akun/pesanan. */
+  orderUrl?: string;
+}
+
+/**
+ * Pesan "paket sudah dikirim lewat J&T" + nomor resi. Data asli saja: nomor pesanan, resi, dan
+ * tautan pantau status. Tanpa emoji (beda dari pesan lain) sesuai permintaan pemilik.
+ */
+export function buildOrderShippedMessage(order: ShippedNotification): string {
+  const lines = [
+    `Halo ${greetingName(order.customerName)}, pesanan *${order.orderNumber}* sudah dikirim lewat J&T.`,
+    `Nomor resi: *${order.awbNo}*`,
+  ];
+  if (order.orderUrl) lines.push(`Pantau status pesananmu: ${order.orderUrl}`);
+  lines.push("", "Terima kasih.", "— SAMAQU");
+  return lines.join("\n");
+}
+
+/**
+ * Kirim notifikasi "paket dikirim". Mengembalikan `true` HANYA kalau Fonnte benar-benar menerima
+ * pesannya, supaya pemanggil bisa mencatat status terkirim/gagal di pesanan. Tidak pernah melempar
+ * error — kegagalan notifikasi tidak boleh menggagalkan perubahan status/resi.
+ */
+export async function notifyCustomerOrderShipped(order: ShippedNotification): Promise<boolean> {
+  const config = await getFonnteConfig();
+  if (!config.enabled || !config.token) return false;
+
+  const target = normalizeWhatsappTarget(order.customerWhatsapp);
+  if (!target) return false;
+
+  return sendFonnteMessage(config.token, target, buildOrderShippedMessage(order));
 }
