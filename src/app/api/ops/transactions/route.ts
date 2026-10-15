@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { isOpsAdmin, unauthorized } from "@/lib/ops-auth";
+import { sourceLabel } from "@/lib/transaksi";
 
 /**
  * Transaksi (barang keluar) untuk dashboard internal.
  * Sumbernya order website (orders + order_items) — jadi penjualan lewat website
- * otomatis muncul sebagai barang keluar, tanpa input dobel.
+ * otomatis muncul sebagai barang keluar, tanpa input dobel. Transaksi manual yang
+ * dicatat dari menu Transaksi juga menulis ke tabel yang sama, jadi ikut tampil di
+ * sini dengan `platform` sesuai `orders.source` (WhatsApp/Instagram/…).
  *
  * Status baris:
  * - `return`     → order dibatalkan (stok sudah dikembalikan)
@@ -24,7 +27,7 @@ export async function GET(req: NextRequest) {
   const admin = getSupabaseAdmin();
   const { data: orders, error } = await admin
     .from("orders")
-    .select("id, order_number, created_at, status, payment_method, total")
+    .select("id, order_number, created_at, status, payment_method, total, source")
     .order("created_at", { ascending: !desc })
     .limit(Math.ceil(limit / 2));
 
@@ -63,7 +66,7 @@ export async function GET(req: NextRequest) {
       price,
       total: qty * price,
       ongkir: 0,
-      platform: "Website",
+      platform: sourceLabel(o.source),
       status: cancelled ? "return" : unpaid ? "pending" : "completed",
       payment_method: o.payment_method || null,
       is_free_gift: false,

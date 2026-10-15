@@ -38,6 +38,8 @@ const JENIS_KAIN = "/api/ops/jenis-kain";
 const VARIANTS = "/api/ops/product-variants";
 const STOCK_IN = "/api/ops/stock-in";
 const TRANSACTIONS = "/api/ops/transactions";
+/** Menu Transaksi: daftar per pesanan + pencatatan transaksi manual. */
+const TRANSAKSI = "/api/ops/transaksi";
 const CUSTOMERS = "/api/ops/customers";
 
 /** Base44 memakai sort "-created_date" (desc). Kita terjemahkan ke parameter API. */
@@ -160,6 +162,31 @@ export const base44 = {
         const params = new URLSearchParams({ sort: sortParam(sort), limit: String(opts?.limit ?? 2000) });
         const json = await call<{ items: any[] }>("GET", `${TRANSACTIONS}?${params.toString()}`);
         return json.items ?? [];
+      },
+
+      /** Daftar transaksi per PESANAN untuk menu Transaksi (bulan terpilih). */
+      async orders(range: { start: string; end: string }) {
+        const params = new URLSearchParams({ start: range.start, end: range.end });
+        const json = await call<{ items: any[] }>("GET", `${TRANSAKSI}?${params.toString()}`);
+        return json.items ?? [];
+      },
+
+      /** Catat transaksi manual (langsung Lunas, stok langsung terpotong). */
+      async createManual(data: any) {
+        return call<{ order_number: string; total: number }>("POST", TRANSAKSI, data);
+      },
+
+      /** Simpan perubahan transaksi manual. */
+      async updateManual(data: any) {
+        return call<{ order_number: string; total: number }>("PATCH", TRANSAKSI, { action: "update", ...data });
+      },
+
+      /** Batalkan transaksi (stok dikembalikan lewat jalur pembatalan yang sama dengan admin). */
+      async cancel(orderNumber: string) {
+        return call<{ order_number: string; cancelled: boolean }>("PATCH", TRANSAKSI, {
+          action: "cancel",
+          order_number: orderNumber,
+        });
       },
     },
 
