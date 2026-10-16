@@ -362,7 +362,10 @@ function AdminPageInner() {
     async function fetchData() {
       try {
         const [ordersRes, productsRes, variantsRes] = await Promise.all([
-          supabase.from("orders").select("*, order_items(product_id, product_name, color, size, series, kain, quantity, price, customer_price, minimum_price, product_image)").order("created_at", { ascending: false }).limit(50),
+          fetch("/api/ops/orders?limit=50", { headers: await authHeaders() })
+            .then((r) => r.json())
+            .then((json) => ({ data: json?.orders || [] }))
+            .catch(() => ({ data: [] })),
           supabase.from("products").select("*").order("created_at", { ascending: true }),
           supabase.from("product_variants").select("product_id, stock, base_product_id"),
         ]);
@@ -408,13 +411,12 @@ function AdminPageInner() {
       setDashLoading(true);
       try {
         const { startISO, endISO } = monthRangeUTC(bulanValue);
-        const { data } = await supabase
-          .from("orders")
-          .select("*, order_items(product_id, product_name, color, size, series, kain, quantity, price)")
-          .gte("created_at", startISO)
-          .lt("created_at", endISO)
-          .order("created_at", { ascending: false })
-          .limit(1000);
+        const monthRes = await fetch(
+          `/api/ops/orders?from=${encodeURIComponent(startISO)}&to=${encodeURIComponent(endISO)}&limit=1000`,
+          { headers: await authHeaders() }
+        );
+        const monthJson = await monthRes.json().catch(() => ({}));
+        const data = monthJson?.orders;
         if (mounted) setDashOrders((data as Order[]) || []);
       } catch (err) {
         console.error("Error fetching dashboard month:", err);

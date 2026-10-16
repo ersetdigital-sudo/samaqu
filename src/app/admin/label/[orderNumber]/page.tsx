@@ -51,12 +51,20 @@ export default function LabelPage() {
 
   useEffect(() => {
     async function fetchOrder() {
-      const { data, error: fetchErr } = await supabase
-        .from("orders")
-        .select("*, order_items(product_id, product_name, color, size, quantity, price, series, kain)")
-        .eq("order_number", orderNumber)
-        .single();
-      if (fetchErr || !data) { setError("Pesanan tidak ditemukan"); setLoading(false); return; }
+      // Baca lewat API ber-guard: halaman label memuat data penerima & isi paket, jadi tidak
+      // boleh lagi dibaca langsung dari browser dengan anon key.
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`/api/ops/orders?order_number=${encodeURIComponent(orderNumber)}`, {
+        headers: { Authorization: `Bearer ${session?.access_token || ""}` },
+      });
+      const json = await res.json().catch(() => ({}));
+      const data = json?.order;
+      const fetchErr = res.ok ? null : json?.error || "Gagal memuat pesanan";
+      if (fetchErr || !data) {
+        setError(res.status === 401 ? "Login admin dulu untuk membuka label resi." : "Pesanan tidak ditemukan");
+        setLoading(false);
+        return;
+      }
 
       // Berat kosong (pesanan lama) → hitung dari berat per ukuran (`product_variants.weight`),
       // dengan berat produk sebagai cadangan — fungsi pusat yang sama dengan checkout.
