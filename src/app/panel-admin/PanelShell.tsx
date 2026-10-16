@@ -85,7 +85,10 @@ export default function PanelShell({ children }: { children: ReactNode }) {
           ))}
         </nav>
 
-        <div className={styles.sideFoot}>© 2026 SAMAQU · Panel Admin</div>
+        <div className={styles.sideFoot}>
+          <b>Dashboard Admin</b>
+          <span>© 2026 SAMAQU ADMIN · Engineered by Surya</span>
+        </div>
       </aside>
 
       {open ? <div className={styles.scrimOpen} onClick={() => setOpen(false)} /> : null}

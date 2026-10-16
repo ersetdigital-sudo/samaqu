@@ -166,6 +166,13 @@
   color: #a99fa8;
   line-height: 1.35;
 }
+.sideFoot b {
+  display: block;
+  color: #fff;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.sideFoot span { display: block; margin-top: 3px; }
 
 .main { flex: 1; margin-left: 260px; min-width: 0; }
 
