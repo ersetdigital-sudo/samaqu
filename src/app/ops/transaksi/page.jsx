@@ -16,14 +16,13 @@ import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
-  Ban,
   CalendarDays,
   ChevronLeft,
   ChevronRight,
   Database,
+  Eye,
   FileText,
   Package,
-  Pencil,
   Plus,
   Search,
   Wallet,
@@ -37,7 +36,7 @@ import ConfirmDeleteModal from "@/components/ops/ConfirmDeleteModal";
 import TransaksiFormModal from "@/components/ops/transaksi/TransaksiFormModal";
 import TransaksiDetailDrawer from "@/components/ops/transaksi/TransaksiDetailDrawer";
 import GlassCard from "@/components/ops/GlassCard";
-import { MONTHS, SOURCE_STYLES, STATUS_STYLES, formatRupiah, formatTanggalSingkatID, pad } from "@/components/ops/transaksi/transaksi-format";
+import { MONTHS, SOURCE_STYLES, STATUS_STYLES, formatRupiah, formatTanggalSingkatID, itemVariantText, pad } from "@/components/ops/transaksi/transaksi-format";
 import { useToast } from "@/components/ops/ui/use-toast";
 
 const digits = (value) => String(value ?? "").replace(/\D/g, "");
@@ -94,6 +93,9 @@ export default function Transaksi() {
       if (String(order.customer_name || "").toLowerCase().includes(query)) return true;
       if (String(order.order_number || "").toLowerCase().includes(query)) return true;
       if (String(order.customer_whatsapp || "").includes(search)) return true;
+      // Cari juga lewat isi kolom Produk (nama produk + kain/series/ukuran) — sumber datanya
+      // sama dengan kolom itu, jadi yang terlihat di tabel itulah yang bisa dicari.
+      if ((order.items || []).some((item) => `${item.product_name || ""} ${itemVariantText(item)}`.toLowerCase().includes(query))) return true;
       return queryPhone.length >= 4 && phoneKey(order.customer_whatsapp).includes(queryPhone);
     });
   }, [orders, search, sourceFilter, statusFilter, selectedDate]);
@@ -226,7 +228,7 @@ export default function Transaksi() {
             <input
               value={searchInput}
               onChange={(event) => setSearchInput(event.target.value)}
-              placeholder="Cari nama / nomor HP / No. Order..."
+              placeholder="Cari nama / nomor HP / No. Order / produk..."
               className="w-full pl-9 pr-8 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
             {searchInput && (
@@ -353,17 +355,25 @@ export default function Transaksi() {
             <table className="w-full table-fixed text-sm">
               <thead>
                 <tr className="bg-slate-50 dark:bg-slate-900 text-left">
-                  <th className="w-[14%] px-3 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Tanggal</th>
-                  <th className="w-[24%] px-2 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Pelanggan</th>
-                  <th className="w-[28%] px-2 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Produk</th>
-                  <th className="w-[14%] px-2 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 text-right">Total</th>
-                  <th className="w-[13%] px-2 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Status</th>
-                  <th className="w-[7%] px-3 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 text-right">Aksi</th>
+                  <th className="w-[11%] px-3 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Tanggal</th>
+                  <th className="w-[20%] px-2 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Pelanggan</th>
+                  <th className="w-[30%] px-2 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Produk</th>
+                  <th className="w-[11%] px-2 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 text-right">Total</th>
+                  <th className="w-[12%] px-2 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Status</th>
+                  <th className="w-[16%] px-3 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 text-right">Aksi</th>
                 </tr>
               </thead>
               <tbody>
                 {visibleOrders.map((order, index) => {
                   const status = STATUS_STYLES[order.status];
+                  // Baris produk memakai item PERTAMA dari data yang sama dengan Detail Transaksi
+                  // (`order.items` dari /api/ops/transaksi) — bukan ringkasan terpisah.
+                  const firstItem = order.items?.[0] || null;
+                  const extraItems = Math.max(0, (order.items?.length || 0) - 1);
+                  const variantText = itemVariantText(firstItem);
+                  const itemLine = firstItem
+                    ? `${firstItem.product_name}${variantText ? ` · ${variantText}` : ""} × ${firstItem.quantity}`
+                    : order.item_summary || "";
                   return (
                     <motion.tr
                       key={order.id}
@@ -379,8 +389,29 @@ export default function Transaksi() {
                       <td className="px-2 py-3 font-semibold text-slate-900 dark:text-white truncate" title={`${order.customer_name} · ${order.customer_whatsapp}`}>
                         {order.customer_name}
                       </td>
-                      <td className="px-2 py-3 text-slate-700 dark:text-slate-200 truncate" title={order.item_summary}>
-                        {order.item_summary}
+                      <td className="px-2 py-3">
+                        {/* Satu baris per transaksi: nama produk (tebal) · kain · series · ukuran × qty.
+                            Dianggap "satu baris" walau isinya <span>, jadi tinggi baris tabel tidak berubah. */}
+                        <div className="flex items-center gap-1.5 min-w-0" title={extraItems > 0 ? `${itemLine} +${extraItems} item lainnya` : itemLine}>
+                          <p className="min-w-0 truncate">
+                            <span className="font-bold text-slate-900 dark:text-white">{firstItem ? firstItem.product_name : order.item_summary}</span>
+                            {variantText ? <span className="text-slate-500 dark:text-slate-400"> · {variantText}</span> : null}
+                            {firstItem ? <span className="text-slate-500 dark:text-slate-400"> × {firstItem.quantity}</span> : null}
+                          </p>
+                          {extraItems > 0 && (
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                setDetail(order);
+                              }}
+                              title={`Lihat ${extraItems} item lainnya di Detail Transaksi`}
+                              className="shrink-0 px-1.5 py-0.5 rounded-md text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                            >
+                              +{extraItems}
+                            </button>
+                          )}
+                        </div>
                       </td>
                       <td className="px-2 py-3 text-right font-bold text-slate-900 dark:text-white whitespace-nowrap">
                         Rp {formatRupiah(order.total)}
@@ -392,30 +423,28 @@ export default function Transaksi() {
                         </span>
                       </td>
                       <td className="px-3 py-3">
-                        <div className="flex items-center justify-end gap-1">
-                          {order.can_edit && (
-                            <button
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                setEditing(order);
-                                setFormOpen(true);
-                              }}
-                              className="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                              aria-label="Ubah transaksi"
-                            >
-                              <Pencil size={15} />
-                            </button>
-                          )}
+                        <div className="flex items-center justify-end gap-1 whitespace-nowrap">
+                          <button
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setDetail(order);
+                            }}
+                            title="Lihat Detail Transaksi"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                          >
+                            <Eye size={14} />
+                            Detail
+                          </button>
                           {order.can_cancel && (
                             <button
                               onClick={(event) => {
                                 event.stopPropagation();
                                 setCancelTarget(order);
                               }}
-                              className="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-                              aria-label="Batalkan transaksi"
+                              title="Batalkan transaksi — stok dikembalikan kalau belum dikirim"
+                              className="px-2.5 py-1.5 rounded-lg text-xs font-bold border-2 border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                             >
-                              <Ban size={15} />
+                              Batalkan
                             </button>
                           )}
                         </div>

@@ -52,6 +52,16 @@ export function formatTanggalID(iso) {
   return `${WEEKDAYS[date.getUTCDay()]}, ${Number(m[3])} ${MONTHS[Number(m[2]) - 1]} ${m[1]}`;
 }
 
+/**
+ * Rincian varian satu item untuk tabel, mengikuti istilah & urutan di Detail Transaksi:
+ * jenis kain → series → ukuran. Contoh: "Kain B-01 · Nahawand · XL".
+ * Qty ditempel terpisah oleh pemanggil supaya bisa diberi bobot visual lebih ringan.
+ */
+export function itemVariantText(item) {
+  if (!item) return "";
+  return [item.kain ? `Kain ${item.kain}` : null, item.series || null, item.size || null].filter(Boolean).join(" · ");
+}
+
 /** "2026-10-01" → "1 Okt 2026" — versi pendek untuk kolom tabel (tanggal & jam lengkap ada di detail). */
 export function formatTanggalSingkatID(iso) {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ""));
