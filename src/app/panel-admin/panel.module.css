@@ -272,25 +272,53 @@ svg.heart { width: 14px; height: 14px; fill: #e46a92; stroke: none; color: #e46a
   border: 1px solid var(--card-line);
   border-radius: 18px;
   padding: 18px;
-  position: relative;
-  overflow: hidden;
 }
-.stHead { display: flex; align-items: center; gap: 12px; }
-.ic { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; flex: none; }
+/* Kartu statistik mengikuti irama kartu dashboard ops: baris label (ikon + teks uppercase) →
+   nilai (selalu satu baris) → caption yang ditempel ke dasar kartu. Jadi semua kartu dalam satu
+   baris selalu sejajar, berapa pun panjang nominalnya (mis. "Rp 340.000"). */
+.stats .card {
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+}
+.stHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--mut);
+  min-height: 20px;
+}
+.stHead svg { width: 16px; height: 16px; flex: none; }
 .stLabel {
-  font-weight: 600;
-  font-size: 13px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   min-width: 0;
 }
-.arr { margin-left: auto; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; flex: none; }
-.arr svg { width: 14px; height: 14px; }
-.stValue { font-size: 30px; font-weight: 800; margin: 6px 0 16px 54px; }
-.stFoot { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--mut); white-space: nowrap; }
-.pill { font-weight: 700; padding: 3px 8px; border-radius: 20px; }
-svg.wave { position: absolute; right: 0; bottom: 0; width: 150px; height: 60px; stroke: none; }
+.stValue {
+  margin-top: 12px;
+  font-weight: 800;
+  line-height: 1.15;
+  white-space: nowrap;
+  font-size: clamp(1.05rem, 1.5vw, 1.75rem);
+  color: var(--plum);
+}
+.stFoot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 6px;
+  font-size: 12px;
+  color: var(--mut);
+  white-space: nowrap;
+}
+.delta { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
+.ic { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; flex: none; }
 
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
 .ph { display: flex; gap: 12px; align-items: center; }
@@ -338,7 +366,6 @@ svg.wave { position: absolute; right: 0; bottom: 0; width: 150px; height: 60px; 
 @media (max-width: 1250px) {
   .stats { gap: 12px; }
   .card { padding: 16px; }
-  .stValue { margin-left: 0; }
 }
 @media (max-width: 1050px) {
   .stats { grid-template-columns: 1fr 1fr; }
@@ -353,7 +380,6 @@ svg.wave { position: absolute; right: 0; bottom: 0; width: 150px; height: 60px; 
   .heroTitle { white-space: normal; flex-wrap: wrap; }
   .heroArt { width: 100%; height: 180px; }
   .stats { grid-template-columns: 1fr; }
-  .stValue { margin-left: 54px; }
   .grid2 { grid-template-columns: 1fr; }
 }
 
