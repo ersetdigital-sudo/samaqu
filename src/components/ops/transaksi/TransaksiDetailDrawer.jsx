@@ -13,7 +13,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Ban, Pencil, Receipt, Truck, X } from "lucide-react";
 import { NEUTRAL_ITEM_PHOTO } from "@/lib/order-photo";
 import { formatWeightExact } from "@/lib/shipping-weight";
-import { formatTrackingTime, sortHistoryDesc, trackingRow } from "@/lib/jnt/track-status";
+import { formatTrackingTime, sortHistoryDesc, trackingRow, trackingSummary } from "@/lib/jnt/track-status";
 import { SOURCE_STYLES, STATUS_STYLES, formatRupiah, formatTanggalJamID } from "@/components/ops/transaksi/transaksi-format";
 import TransaksiResiPanel from "@/components/ops/transaksi/TransaksiResiPanel";
 
@@ -37,6 +37,8 @@ export default function TransaksiDetailDrawer({ open, order, onClose, onEdit, on
   const [trackOpen, setTrackOpen] = useState(false);
   const [trackBusy, setTrackBusy] = useState(false);
   const trackRows = trackOpen ? sortHistoryDesc(track.history).map(trackingRow) : [];
+  // Ringkasan sama seperti yang dipakai dashboard admin (mis. "Diterima oleh: Lea").
+  const trackSummary = trackOpen ? trackingSummary(track.history) : null;
 
   /** Ambil riwayat dari J&T. `force` = lewati cache 5 menit di endpoint. Tanpa tulis DB. */
   const loadTrack = async (force = false) => {
@@ -186,13 +188,19 @@ export default function TransaksiDetailDrawer({ open, order, onClose, onEdit, on
                         <button
                           type="button"
                           onClick={toggleTrack}
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-[11px] font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                          className="w-full inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                         >
-                          <Truck size={13} /> {trackOpen ? "Tutup riwayat" : "Lacak Resi"}
+                          <Truck size={15} /> {trackOpen ? "Tutup riwayat" : "Lacak Resi"}
                         </button>
 
                         {trackOpen ? (
                           <div className="mt-2 rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden">
+                            {/* Ringkasan penerima — sama seperti yang tampil di dashboard admin. */}
+                            {track.status === "done" && trackSummary?.receiver ? (
+                              <p className="px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800">
+                                Diterima oleh: {trackSummary.receiver}
+                              </p>
+                            ) : null}
                             {track.status === "loading" ? (
                               <p className="px-3 py-2.5 text-xs font-semibold text-slate-500 dark:text-slate-400">
                                 Memuat riwayat dari J&T…
