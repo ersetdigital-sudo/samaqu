@@ -41,7 +41,7 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
     // Checkout wajib pakai akun: pesanan, resi, dan riwayat pelacakan tersimpan di akun customer.
     const { data } = await supabase.auth.getSession();
     if (!data.session) {
-      router.push(`/${locale}/akun?redirect=${encodeURIComponent("/checkout")}`);
+      router.push(`/${locale}/akun/login?redirect=${encodeURIComponent("/checkout")}`);
       return;
     }
     router.push(`/${locale}/checkout`);
