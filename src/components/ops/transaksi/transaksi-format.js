@@ -5,16 +5,20 @@
  * warna yang sama persis — polanya mengikuti badge Sumber di halaman Leads.
  */
 
-import { BadgeCheck, Ban, CheckCircle2, Clock, Truck } from "lucide-react";
+import { BadgeCheck, Ban, Camera, CheckCircle2, Clock, Globe, MessageCircle, Music2, ShoppingBag, Store, Truck } from "lucide-react";
 
-/** Badge warna per sumber transaksi. */
+/**
+ * Badge warna + ikon per sumber transaksi.
+ * Ikonnya pakai lambang yang gampang dikenali (globe = website, balon chat = WhatsApp, dst)
+ * supaya sumbernya kebaca sekilas tanpa harus membaca tulisannya.
+ */
 export const SOURCE_STYLES = {
-  website: { label: "Website", badge: "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300" },
-  whatsapp: { label: "WhatsApp", badge: "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300" },
-  instagram: { label: "Instagram", badge: "bg-pink-100 dark:bg-pink-900/40 text-pink-700 dark:text-pink-300" },
-  shopee: { label: "Shopee", badge: "bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300" },
-  tiktok: { label: "TikTok Shop", badge: "bg-cyan-100 dark:bg-cyan-900/40 text-cyan-700 dark:text-cyan-300" },
-  offline: { label: "Offline", badge: "bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300" },
+  website: { label: "Website", icon: Globe, badge: "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300" },
+  whatsapp: { label: "WhatsApp", icon: MessageCircle, badge: "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300" },
+  instagram: { label: "Instagram", icon: Camera, badge: "bg-pink-100 dark:bg-pink-900/40 text-pink-700 dark:text-pink-300" },
+  shopee: { label: "Shopee", icon: ShoppingBag, badge: "bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300" },
+  tiktok: { label: "TikTok Shop", icon: Music2, badge: "bg-cyan-100 dark:bg-cyan-900/40 text-cyan-700 dark:text-cyan-300" },
+  offline: { label: "Offline", icon: Store, badge: "bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300" },
 };
 
 /** Badge + ikon per status pesanan (`orders.status`). */

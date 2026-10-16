@@ -80,7 +80,8 @@ export default function TransaksiDetailDrawer({ open, order, onClose, onEdit, on
                   {status?.icon ? <status.icon size={12} /> : null}
                   {order.status_label}
                 </span>
-                <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${source?.badge || ""}`}>
+                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold ${source?.badge || ""}`}>
+                  {source?.icon ? <source.icon size={14} /> : null}
                   {order.source_label}
                 </span>
               </div>
