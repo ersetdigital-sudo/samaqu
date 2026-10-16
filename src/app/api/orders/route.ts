@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { isPaymentMethodId, legacyPaymentType } from "@/lib/payment-methods";
 import {
@@ -14,6 +13,14 @@ import { loadOrderPhotoLookup } from "@/lib/order-photo-data";
 import { createOrderPaymentLink } from "@/lib/mayar";
 import { markLeadBoughtForOrder } from "@/lib/ops-lead-sync";
 import { sumWeightGramsBySize, productWeightMapFromRows, variantWeightMapFromRows } from "@/lib/shipping-weight";
+
+/**
+ * Semua baca/tulis pesanan di route ini memakai service role (server-side), supaya policy RLS
+ * `orders`/`order_items` bisa ditutup dari anon: browser tidak lagi menyentuh tabel pesanan
+ * langsung, hanya lewat API (checkout POST, halaman admin via /api/ops/orders, customer lewat
+ * policy `auth.uid() = customer_id`).
+ */
+const supabase = getSupabaseAdmin();
 
 function generateOrderNumber(): string {
   const d = new Date();
@@ -427,31 +434,6 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const status = searchParams.get("status");
-    const limit = parseInt(searchParams.get("limit") || "50");
-
-    let query = supabase
-      .from("orders")
-      .select("*, order_items(*)")
-      .order("created_at", { ascending: false })
-      .limit(limit);
-
-    if (status) {
-      query = query.eq("status", status);
-    }
-
-    const { data, error } = await query;
-
-    if (error) {
-      return NextResponse.json({ error: "Gagal mengambil data pesanan" }, { status: 500 });
-    }
-
-    return NextResponse.json({ orders: data });
-  } catch (error) {
-    console.error("Orders GET error:", error);
-    return NextResponse.json({ error: "Terjadi kesalahan server" }, { status: 500 });
-  }
-}
+// GET publik dihapus: dulu mengembalikan pesanan SEMUA pelanggan (`select("*, order_items(*)")`)
+// tanpa autentikasi. Daftar pesanan sekarang dibaca lewat GET /api/ops/orders (ber-guard admin),
+// dan customer membaca pesanannya sendiri lewat policy RLS `auth.uid() = customer_id`.
