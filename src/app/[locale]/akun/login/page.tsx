@@ -23,6 +23,12 @@ export default function LoginPage() {
     setLoading(true);
     const result = await loginCustomer(email, password);
     if (result.error) { setError(result.error); setLoading(false); return; }
+    // Kalau customer datang dari tombol Checkout (mis. dari keranjang), lanjutkan ke halaman itu.
+    const redirectTo = new URLSearchParams(window.location.search).get("redirect");
+    if (redirectTo && redirectTo.startsWith("/")) {
+      router.push(`/${locale}${redirectTo}`);
+      return;
+    }
     router.push(`/${locale}/akun`);
   }
 

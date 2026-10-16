@@ -30,6 +30,12 @@ export default function RegisterPage() {
     // Meta Pixel: CompleteRegistration
     const { eventId } = trackCompleteRegistration("email");
     sendCAPIEvent("CompleteRegistration", eventId, { status: "registered" }, { email, phone: whatsapp });
+    // Kalau customer datang dari tombol Checkout (mis. dari keranjang), lanjutkan ke halaman itu.
+    const redirectTo = new URLSearchParams(window.location.search).get("redirect");
+    if (redirectTo && redirectTo.startsWith("/")) {
+      router.push(`/${locale}${redirectTo}`);
+      return;
+    }
     router.push(`/${locale}/akun`);
   }
 
