@@ -1,24 +1,34 @@
 "use client";
 
 /**
- * Kerangka panel admin — susunannya diambil dari mockup (samaqu-admin-dashboard/pages/index.html):
- * sidebar gelap dengan logo kotak pink, nav bersekat, header sticky berisi crumb + judul + user,
- * dan hamburger untuk layar sempit. Isi menu masih placeholder (menyusul disatukan dengan ops).
+ * Kerangka panel admin — tema "Rose Luxury Admin" (palet berry/plum/blush, font Plus Jakarta
+ * Sans, radius lembut). Susunannya tetap seperti sebelumnya: sidebar gelap + nav bersekat,
+ * header sticky berisi crumb + judul + user, dan hamburger untuk layar sempit.
+ *
+ * Catatan: halaman Transaksi/Produk/Leads belum dibangun (masih `soon`); menu sengaja tampil
+ * sebagai pill, bukan link, supaya tidak menabrak rute yang belum ada.
  */
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Menu, ShoppingBag, Shirt, Package } from "lucide-react";
+import { LayoutDashboard, Menu, Package, ShoppingBag, Users } from "lucide-react";
 import styles from "./panel.module.css";
 
-const NAV = [
+type NavItem = { href: string; label: string; icon: typeof LayoutDashboard; soon?: boolean };
+
+const NAV: { section: string; items: NavItem[] }[] = [
   {
-    section: "Menu Utama",
+    section: "Operasional",
     items: [
       { href: "/panel-admin", label: "Beranda", icon: LayoutDashboard },
-      { href: "/panel-admin", label: "Transaksi", icon: ShoppingBag, soon: true },
-      { href: "/panel-admin", label: "Produk", icon: Package, soon: true },
-      { href: "/panel-admin", label: "Leads", icon: Shirt, soon: true },
+      { href: "/panel-admin/transaksi", label: "Transaksi", icon: ShoppingBag, soon: true },
+    ],
+  },
+  {
+    section: "Katalog & Data",
+    items: [
+      { href: "/panel-admin/produk", label: "Produk", icon: Package, soon: true },
+      { href: "/panel-admin/leads", label: "Leads", icon: Users, soon: true },
     ],
   },
 ];
@@ -26,6 +36,11 @@ const NAV = [
 export default function PanelShell({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+
+  const activeItem = NAV.flatMap((g) => g.items).find((item) =>
+    item.href === "/panel-admin" ? pathname === item.href : pathname.startsWith(item.href)
+  );
+  const title = activeItem?.label ?? "Beranda";
 
   return (
     <div className={styles.app}>
@@ -44,12 +59,25 @@ export default function PanelShell({ children }: { children: ReactNode }) {
               <p className={styles.sec}>{group.section}</p>
               {group.items.map((item) => {
                 const Icon = item.icon;
-                const active = pathname === item.href && !item.soon;
+                if (item.soon) {
+                  return (
+                    <div key={item.label} className={`${styles.navItem} ${styles.navItemDisabled}`}>
+                      <Icon />
+                      <span>{item.label}</span>
+                      <span className={styles.soon}>soon</span>
+                    </div>
+                  );
+                }
+                const active = activeItem?.href === item.href;
                 return (
-                  <Link key={item.label} href={item.href} className={active ? styles.on : undefined}>
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    className={active ? styles.on : undefined}
+                    onClick={() => setOpen(false)}
+                  >
                     <Icon />
                     <span>{item.label}</span>
-                    {item.soon ? <span className={styles.cnt}>soon</span> : null}
                   </Link>
                 );
               })}
@@ -57,7 +85,7 @@ export default function PanelShell({ children }: { children: ReactNode }) {
           ))}
         </nav>
 
-        <div className={styles.sideFoot}>Panel admin · tahap 1</div>
+        <div className={styles.sideFoot}>Panel admin · Rose Luxury</div>
       </aside>
 
       {open ? <div className={styles.scrimOpen} onClick={() => setOpen(false)} /> : null}
@@ -68,16 +96,16 @@ export default function PanelShell({ children }: { children: ReactNode }) {
             <Menu size={18} />
           </button>
           <div>
-            <div className={styles.crumb}>SAMAQU</div>
-            <h1>Panel Admin</h1>
+            <div className={styles.crumb}>SAMAQU · Panel Admin</div>
+            <h1>{title}</h1>
           </div>
           <div className={styles.sp} />
-          <span className={styles.demoTag}>Tahap 1</span>
+          <span className={styles.rolePill}>Super Admin</span>
           <div className={styles.user}>
             <div className={styles.av}>A</div>
             <div className={styles.ut}>
               <b>Admin</b>
-              <small>Super admin</small>
+              <small>SAMAQU</small>
             </div>
           </div>
         </header>
