@@ -713,15 +713,19 @@ export default function OrderDetailContent({
                 <div className="od-track">
                   <div className="flex items-center gap-2">
                     <p className="od-title" style={{ margin: 0 }}>{t("history")}</p>
-                    <button
-                      type="button"
-                      onClick={() => openTrack(true)}
-                      disabled={tracking}
-                      className="ml-auto text-[11px] font-bold px-3 py-1.5 rounded-lg whitespace-nowrap"
-                      style={{ border: "1px solid #d4d4d8", color: "#475569" }}
-                    >
-                      {tracking ? t("loading") : t("refresh")}
-                    </button>
+                    {/* Tombol "Perbarui" tidak perlu kalau paketnya sudah final (diterima) —
+                        riwayatnya sudah lengkap dan statusnya tidak akan berubah lagi. */}
+                    {order.status === "selesai" || shippingStatusOf(order) === "selesai" ? null : (
+                      <button
+                        type="button"
+                        onClick={() => openTrack(true)}
+                        disabled={tracking}
+                        className="ml-auto text-[11px] font-bold px-3 py-1.5 rounded-lg whitespace-nowrap"
+                        style={{ border: "1px solid #d4d4d8", color: "#475569" }}
+                      >
+                        {tracking ? t("loading") : t("refresh")}
+                      </button>
+                    )}
                     {trackRaw ? (
                       <button
                         type="button"
