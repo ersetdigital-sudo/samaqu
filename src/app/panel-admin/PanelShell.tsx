@@ -2,26 +2,22 @@
 
 /**
  * Kerangka panel admin — tema dari mockup HTML (samaqu-admin-dashboard-2/pages/index.html).
- * Sidebar gelap 248px + nav bersekat, topbar berisi search, chip tanggal, lonceng, dan user.
  *
- * Catatan: menu Transaksi/Produk/Leads belum dibangun (badge `SOON`), jadi sengaja non-link
- * supaya tidak menabrak rute yang belum ada.
+ * Ada gerbang login: semua API `/api/ops/*` butuh sesi admin Supabase, jadi isi panel baru
+ * dirender setelah sesi terbukti admin (probe `GET /api/ops/leads?limit=1`), sama seperti ops.
+ *
+ * Catatan: menu Transaksi/Produk/Leads belum dibangun (badge `SOON`), jadi sengaja non-link.
  */
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import type { FormEvent, ReactNode } from "react";
+import { supabase } from "@/lib/supabase";
+import { useWibLongDate } from "./wib-date";
 import styles from "./panel.module.css";
 
 const AVATAR =
   "https://res.cloudinary.com/j4ka1ty6/image/upload/w_96,h_96,c_fill,f_auto,q_auto/v1792158930/Avatar_Hijab_Merah_Muda_dalam_Lencana.png";
-
-const TANGGAL = new Intl.DateTimeFormat("id-ID", {
-  weekday: "long",
-  day: "numeric",
-  month: "long",
-  year: "numeric",
-  timeZone: "Asia/Jakarta",
-}).format(new Date());
 
 type IconName = "home" | "card" | "box" | "users";
 
@@ -77,6 +73,124 @@ const NAV: { section: string; items: NavItem[] }[] = [
 
 export default function PanelShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const tanggal = useWibLongDate();
+  const [ready, setReady] = useState(false);
+  const [authorized, setAuthorized] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) {
+        if (!cancelled) setReady(true);
+        return;
+      }
+      try {
+        const res = await fetch("/api/ops/leads?limit=1", { headers: { Authorization: `Bearer ${token}` } });
+        if (!cancelled) setAuthorized(res.ok);
+      } catch {
+        if (!cancelled) setAuthorized(false);
+      } finally {
+        if (!cancelled) setReady(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  async function handleLogin(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    const { data, error: err } = await supabase.auth.signInWithPassword({ email, password });
+    if (err || !data.session) {
+      setError(err?.message || "Login gagal");
+      setBusy(false);
+      return;
+    }
+    const res = await fetch("/api/ops/leads?limit=1", {
+      headers: { Authorization: `Bearer ${data.session.access_token}` },
+    });
+    if (!res.ok) {
+      setError("Akun ini bukan admin SAMAQU");
+      await supabase.auth.signOut();
+      setBusy(false);
+      return;
+    }
+    setAuthorized(true);
+    setBusy(false);
+  }
+
+  if (!ready) {
+    return (
+      <div className={styles.app}>
+        <div className={styles.gate}>
+          <div className={styles.gateCard}>
+            <div className={styles.gateBrand}>
+              <div className={styles.logo}>S</div>
+              <div>
+                <b>SAMAQU</b>
+                <small>Panel Admin</small>
+              </div>
+            </div>
+            <p className={styles.gateHint}>Memuat…</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!authorized) {
+    return (
+      <div className={styles.app}>
+        <div className={styles.gate}>
+          <form className={styles.gateCard} onSubmit={handleLogin}>
+            <div className={styles.gateBrand}>
+              <div className={styles.logo}>S</div>
+              <div>
+                <b>SAMAQU</b>
+                <small>Panel Admin</small>
+              </div>
+            </div>
+            <label className={styles.gateLabel} htmlFor="pa-email">
+              Email
+            </label>
+            <input
+              id="pa-email"
+              className={styles.gateInput}
+              type="email"
+              autoComplete="username"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+            <label className={styles.gateLabel} htmlFor="pa-pass">
+              Password
+            </label>
+            <input
+              id="pa-pass"
+              className={styles.gateInput}
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+            {error ? <p className={styles.gateError}>{error}</p> : null}
+            <button className={styles.gateBtn} type="submit" disabled={busy}>
+              {busy ? "Memproses…" : "Masuk"}
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   const activeItem = NAV.flatMap((g) => g.items).find((item) =>
     item.href === "/panel-admin" ? pathname === item.href : pathname.startsWith(item.href)
@@ -145,7 +259,7 @@ export default function PanelShell({ children }: { children: ReactNode }) {
               <rect x="3" y="5" width="18" height="16" rx="2" />
               <path d="M3 10h18M8 3v4M16 3v4" />
             </svg>
-            {TANGGAL}
+            {tanggal}
           </div>
           <div className={styles.bell}>
             <svg viewBox="0 0 24 24">

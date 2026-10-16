@@ -32,7 +32,9 @@
 .app *::before,
 .app *::after { box-sizing: border-box; }
 .app button,
-.app input { font: inherit; color: inherit; }
+.app input { font: inherit; }
+/* Jangan set `color: inherit` di sini: specificity-nya mengalahkan `.btn { color:#fff }`
+   sehingga teks tombol ikut warna induk (bukan putih). */
 .app svg {
   width: 18px;
   height: 18px;
@@ -325,11 +327,11 @@ svg.wave { position: absolute; right: 0; bottom: 0; width: 150px; height: 60px; 
 }
 
 /* ---------- responsive (sama seperti mockup) ---------- */
-/* Layar lebar: hero 3 kolom (teks + gambar + kutipan) seperti mockup. Ambang 1340px dipilih
-   supaya lebar minimum tiap kolom selalu kebagi di kanvas (lebar - sidebar), jadi tidak pernah
-   meluber/terpotong. */
-@media (min-width: 1340px) {
-  .hero { grid-template-columns: minmax(300px, 1fr) minmax(160px, 300px) minmax(240px, 300px); }
+/* Layar lebar: hero 3 kolom (teks + gambar + kutipan) seperti mockup — mockup memunculkan
+   kutipan mulai 1250px. Ukuran kolom dibatasi supaya jumlahnya selalu muat di kanvas
+   (lebar layar - sidebar), jadi tidak meluber/terpotong. */
+@media (min-width: 1250px) {
+  .hero { grid-template-columns: minmax(270px, 1fr) minmax(160px, 300px) minmax(230px, 300px); }
   .heroArt { width: 100%; max-width: 300px; height: 200px; }
   .quote { display: block; }
 }
@@ -354,3 +356,74 @@ svg.wave { position: absolute; right: 0; bottom: 0; width: 150px; height: 60px; 
   .stValue { margin-left: 54px; }
   .grid2 { grid-template-columns: 1fr; }
 }
+
+/* ---------- daftar isi kartu (pesanan / stok) ---------- */
+.list { display: flex; flex-direction: column; margin-top: 12px; }
+.listRow { display: flex; align-items: center; gap: 12px; padding: 11px 2px; border-bottom: 1px solid var(--card-line); }
+.listRow:last-child { border-bottom: 0; }
+.listMain { min-width: 0; }
+.listMain b { display: block; font-size: 13px; }
+.listMain small {
+  display: block;
+  color: var(--mut);
+  font-size: 11.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 42ch;
+}
+.listVal { margin-left: auto; text-align: right; font-weight: 700; font-size: 13px; white-space: nowrap; }
+.listVal small { display: block; font-size: 11px; font-weight: 600; }
+
+/* notifikasi gagal muat data */
+.alert {
+  background: #fdecec;
+  border: 1px solid #f6c4d4;
+  color: #a11b46;
+  border-radius: 14px;
+  padding: 12px 16px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+/* ---------- gerbang login ---------- */
+.gate { flex: 1; display: grid; place-items: center; padding: 32px 16px; min-height: 100vh; }
+.gateCard {
+  width: 100%;
+  max-width: 380px;
+  background: #fff;
+  border: 1px solid var(--card-line);
+  border-radius: 18px;
+  padding: 26px;
+  box-shadow: 0 18px 40px -24px rgba(42, 26, 34, 0.35);
+}
+.gateBrand { display: flex; gap: 12px; align-items: center; margin-bottom: 20px; }
+.gateBrand b { display: block; font-size: 17px; color: var(--plum); }
+.gateBrand small { font-size: 12px; color: var(--mut); }
+.gateLabel { display: block; font-size: 12px; font-weight: 600; color: var(--plum); margin-bottom: 6px; }
+.gateInput {
+  width: 100%;
+  height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0 14px;
+  background: #fff;
+  color: var(--plum);
+  outline: none;
+  margin-bottom: 14px;
+}
+.gateInput:focus { border-color: var(--pink); box-shadow: 0 0 0 3px rgba(214, 51, 108, 0.12); }
+.gateBtn {
+  width: 100%;
+  height: 44px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--pink-d);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+.gateBtn:hover { background: var(--pink); }
+.gateBtn:disabled { opacity: 0.6; cursor: not-allowed; }
+.gateError { color: #c2255c; font-size: 12.5px; margin: 0 0 12px; }
+.gateHint { color: var(--mut); font-size: 13px; margin: 0; }
