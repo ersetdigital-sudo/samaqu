@@ -362,7 +362,7 @@ export default function TransaksiDetailDrawer({ open, order, onClose, onEdit, on
                                     ) : null}
                                     {/* Nama penerima dari J&T apa adanya — mis. siapa yang menerima paket. */}
                                     {row.receiver ? (
-                                      <p className="text-[11px] text-slate-500 dark:text-slate-400">Penerima: {row.receiver}</p>
+                                      <p className="text-[11px] text-slate-500 dark:text-slate-400">Diterima oleh: {row.receiver}</p>
                                     ) : null}
                                   </li>
                                 ))}
