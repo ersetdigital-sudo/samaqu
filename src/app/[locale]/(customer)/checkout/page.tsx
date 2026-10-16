@@ -471,22 +471,12 @@ function CheckoutContent() {
         if (jntJson.error) throw new Error(jntJson.error);
         opts = jntJson.data || [];
       } else {
-        // RajaOngkir: resolve destination ID first
-        const destId = await resolveDestinationId(addr, signal);
-        if (!destId) {
-          console.error("[CHECKOUT] ❌ Destination ID not found!");
-          setShippingError("Kecamatan tujuan tidak ditemukan di sistem kurir. Pastikan nama kecamatan benar.");
-          setLoadingCost(false);
-          return;
-        }
-
-        if (!addr.district_id) {
-          setSavedAddresses((prev) =>
-            prev.map((a) => (a.id === addr.id ? { ...a, district_id: destId } : a))
-          );
-        }
-
-        opts = await fetchShippingCost(originId, destId, berat, enabledCouriers, signal);
+        // RajaOngkir sudah tidak dipakai lagi: tarif selalu dari API J&T. Kalau provider toko
+        // bukan "jnt", tampilkan pesan yang jelas daripada menghitung ongkir dari sistem lama.
+        console.error("[CHECKOUT] ❌ shipping_provider bukan 'jnt' — jalur RajaOngkir sudah dilepas.");
+        setShippingError("Metode pengiriman belum disiapkan. Hubungi admin untuk mengaktifkan J&T.");
+        setLoadingCost(false);
+        return;
       }
 
       if (opts.length === 0) {
