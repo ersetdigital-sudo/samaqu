@@ -66,6 +66,18 @@ const clampQty = (value, max) => {
   return Math.max(1, Math.min(top, Number(value) || 1));
 };
 
+/**
+ * Alamat tersimpan digabung jadi SATU blok teks untuk ditampilkan (read-only):
+ * "Jalan… No. 51, Harapan Jaya, Bekasi Utara, Kota Bekasi, Jawa Barat, 17124".
+ * Ini hanya untuk tampilan — nilai provinsi/kota/kecamatan/kode pos tetap tersimpan
+ * sebagai data terpisah di transaksi (dipakai Database Kota, Detail Transaksi, & resi J&T).
+ */
+const savedAddressText = (address) =>
+  [address?.address, address?.kecamatan, address?.city, address?.province, address?.postal_code]
+    .map((part) => String(part || "").trim())
+    .filter(Boolean)
+    .join(", ");
+
 const sizeRank = (size) => {
   const index = OPS_STOCK_SIZES.indexOf(String(size || "").toUpperCase());
   return index === -1 ? OPS_STOCK_SIZES.length : index;
@@ -536,6 +548,31 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
     setForm((current) => ({ ...current, address_mode: "new", saved_address_id: "" }));
   };
 
+  /**
+   * "Ubah alamat": buka isian dengan alamat terpilih sebagai nilai awal, TANPA menambah alamat
+   * baru ke buku alamat pelanggan (perubahan hanya tersimpan di transaksi ini).
+   */
+  const startEditingAddress = () => {
+    setTouched(true);
+    setNewAddressForCustomer(false);
+    setForm((current) => ({ ...current, address_mode: "new" }));
+  };
+
+  /** "Batal" di isian alamat: balik ke tampilan teks dan kembalikan alamat yang tadi dipilih. */
+  const cancelAddressEdit = () => {
+    setTouched(true);
+    setNewAddressForCustomer(false);
+    const chosen =
+      savedAddresses.find((address) => address.id === form?.saved_address_id) ||
+      savedAddresses.find((address) => address.is_default) ||
+      savedAddresses[0];
+    if (chosen) {
+      applySavedAddress(chosen);
+      return;
+    }
+    setForm((current) => ({ ...current, address_mode: "saved" }));
+  };
+
   /* ── Alur bertahap: tiap langkah harus beres dulu sebelum bisa lanjut ── */
   const step1Ready = Boolean(form?.customer_name?.trim()) && Boolean(form?.customer_whatsapp?.trim()) && !addressIncomplete;
   const stepReady = [step1Ready, !incomplete, true];
@@ -975,64 +1012,83 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
 
                 {/* Alamat Pengiriman */}
                 <div className="pt-3 mt-1 border-t border-slate-100 dark:border-slate-800 space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <h5 className={sectionClass}>Alamat Pengiriman</h5>
-                    {form.customer_mode === "existing" && form.address_mode === "new" && savedAddresses.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => setForm((current) => ({ ...current, address_mode: "saved", saved_address_id: "" }))}
-                        className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline"
-                      >
-                        Pilih dari alamat tersimpan
-                      </button>
-                    )}
-                  </div>
+                  <h5 className={sectionClass}>Alamat Pengiriman</h5>
 
+                  {/* Pelanggan terdaftar yang sudah punya alamat → cukup tampil sebagai TEKS.
+                      Kolom isian hanya muncul kalau "Ubah alamat"/"Tambah alamat baru" diklik. */}
                   {pickingSavedAddress && (
                     <div className="space-y-2">
-                      {savedAddresses.map((address) => (
-                        <button
-                          key={address.id}
-                          type="button"
-                          onClick={() => applySavedAddress(address)}
-                          className={`w-full text-left rounded-xl border-2 px-3.5 py-3 transition-colors ${
-                            form.saved_address_id === address.id
-                              ? "border-slate-400 dark:border-slate-500 bg-slate-50 dark:bg-slate-800"
-                              : "border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
-                          }`}
-                        >
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-bold text-slate-900 dark:text-white truncate">
-                              {address.label || "Alamat"}
-                            </span>
-                            {address.is_default && (
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-900 text-white dark:bg-white dark:text-slate-900">
-                                Utama
+                      {savedAddresses.map((address) => {
+                        const chosen = form.saved_address_id === address.id;
+                        return (
+                          <button
+                            key={address.id}
+                            type="button"
+                            onClick={() => applySavedAddress(address)}
+                            aria-pressed={chosen}
+                            className={`w-full text-left rounded-xl border-2 px-3.5 py-3 transition-colors ${
+                              chosen
+                                ? "border-slate-900 dark:border-slate-100 bg-slate-50 dark:bg-slate-800"
+                                : "border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-bold text-slate-900 dark:text-white truncate">
+                                {address.label || "Alamat"}
                               </span>
-                            )}
-                            {form.saved_address_id === address.id && <Check size={14} className="ml-auto shrink-0 text-blue-600" />}
-                          </div>
-                          <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">{address.address}</p>
-                          <p className="text-xs text-slate-500 dark:text-slate-400">
-                            {[address.kecamatan, address.city, address.province, address.postal_code].filter(Boolean).join(", ")}
-                          </p>
-                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                            {address.recipient_name} · {address.phone}
-                          </p>
+                              {address.is_default && (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-900 text-white dark:bg-white dark:text-slate-900">
+                                  Utama
+                                </span>
+                              )}
+                              {chosen && (
+                                <span className="ml-auto shrink-0 inline-flex items-center gap-1 text-[11px] font-bold text-slate-900 dark:text-white">
+                                  <Check size={14} /> Dipilih
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm text-slate-700 dark:text-slate-200 mt-1 leading-relaxed">
+                              {savedAddressText(address)}
+                            </p>
+                          </button>
+                        );
+                      })}
+
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-0.5">
+                        <button
+                          type="button"
+                          onClick={startEditingAddress}
+                          className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline"
+                        >
+                          Ubah alamat
                         </button>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={startNewAddress}
-                        className="inline-flex items-center gap-1.5 px-3 py-2 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
-                      >
-                        <Plus size={13} /> Tambah alamat baru
-                      </button>
+                        <button
+                          type="button"
+                          onClick={startNewAddress}
+                          className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline"
+                        >
+                          Tambah alamat baru
+                        </button>
+                      </div>
                     </div>
+                  )}
+
+                  {/* Pelanggan terdaftar tanpa alamat tersimpan → isian langsung tampil. */}
+                  {form.customer_mode === "existing" && addressesLoaded && savedAddresses.length === 0 && (
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Pelanggan ini belum punya alamat.</p>
                   )}
 
                   {showAddressForm && (
                     <div className="space-y-2">
+                      {form.customer_mode === "existing" && savedAddresses.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={cancelAddressEdit}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
+                        >
+                          <X size={13} /> Batal
+                        </button>
+                      )}
                       <div
                         className="grid grid-cols-1 sm:grid-cols-2 gap-2"
                         data-invalid={
