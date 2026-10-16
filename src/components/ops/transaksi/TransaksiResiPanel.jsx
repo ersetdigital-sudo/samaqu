@@ -135,7 +135,10 @@ export default function TransaksiResiPanel({ order, onResiCreated }) {
       /* localStorage bisa diblokir — abaikan, cetak tetap jalan */
     }
     setLabelSize(size);
-    window.open(`/admin/label/${order.order_number}?size=${size}`, "_blank", "noopener,noreferrer");
+    // Panel admin (admin.samaqu.id → /panel-admin/*) punya halaman label sendiri. Kalau dipaksa
+    // "/admin/label", host admin me-rewrite-nya jadi /panel-admin/admin/label → 404.
+    const labelBase = window.location.pathname.startsWith("/panel-admin") ? "/panel-admin/label" : "/admin/label";
+    window.open(`${labelBase}/${order.order_number}?size=${size}`, "_blank", "noopener,noreferrer");
   };
 
   const sizeLabel = (size) => (size === "78x100" ? "Cetak 78 × 100 mm" : "Cetak 100 × 150 mm");

@@ -35,7 +35,13 @@
 .app input { font: inherit; }
 /* Jangan set `color: inherit` di sini: specificity-nya mengalahkan `.btn { color:#fff }`
    sehingga teks tombol ikut warna induk (bukan putih). */
-.app svg {
+/* Dasar ikon panel admin — sengaja di-scope ke komponen panel saja (bukan `.app svg`), supaya
+   ikon di halaman yang di-reuse dari ops (mis. Transaksi) tidak ikut dipaksa 18px/putus. */
+.side svg,
+.top svg,
+.hero svg,
+.stats svg,
+.grid2 svg {
   width: 18px;
   height: 18px;
   stroke: currentColor;

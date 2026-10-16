@@ -9,9 +9,9 @@
  */
 import { useEffect, useState } from "react";
 import { statusLabel, SALE_STATUSES } from "@/lib/transaksi";
-import { opsGet } from "./panel-api";
-import { useWibToday, wibDateOffset, dailyIndexForDate } from "./wib-date";
-import styles from "./panel.module.css";
+import { opsGet } from "../panel-api";
+import { useWibToday, wibDateOffset, dailyIndexForDate } from "../wib-date";
+import styles from "../panel.module.css";
 
 const HERO_ART =
   "https://res.cloudinary.com/j4ka1ty6/image/upload/w_440,h_200,c_fill,f_auto,q_auto/v1792159516/1640fd4d-496e-470d-b933-af298a247885.png";
