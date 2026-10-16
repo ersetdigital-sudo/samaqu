@@ -1,23 +1,21 @@
 "use client";
 
 /**
- * Kerangka panel admin — tema "Rose Luxury Admin".
+ * Kerangka panel admin — tampilan disalin dari mockup HTML
+ * (samaqu-admin-dashboard-2/pages/index.html): sidebar gelap 248px, topbar berisi crumb +
+ * judul + search + chip tanggal + lonceng + user.
  *
- * Sidebar gelap + nav bersekat, header sticky (search, chip tanggal, notifikasi, user),
- * dan hamburger untuk layar sempit. Hero sapaan ada di halaman beranda.
- *
- * Catatan: halaman Transaksi/Produk/Leads belum dibangun; menunya sengaja tampil sebagai pill
- * `soon` (bukan link) supaya tidak menabrak rute yang belum ada. "Akun"/"Logout" juga belum
- * aktif (panel belum punya autentikasi sendiri).
+ * Catatan: menu Transaksi/Produk/Leads belum dibangun (pill `SOON`), dan Akun/Logout belum
+ * aktif karena panel belum punya autentikasi sendiri — keduanya sengaja non-link (bukan `<a>`)
+ * supaya tidak menabrak rute yang belum ada.
  */
-import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, Calendar, LayoutDashboard, LogOut, Menu, Package, Search, ShoppingBag, User, Users } from "lucide-react";
+import type { ReactNode } from "react";
 import styles from "./panel.module.css";
 
 const AVATAR =
-  "https://res.cloudinary.com/j4ka1ty6/image/upload/w_72,h_72,c_fill,f_auto,q_auto/v1792158930/Avatar_Hijab_Merah_Muda_dalam_Lencana.png";
+  "https://res.cloudinary.com/j4ka1ty6/image/upload/w_96,h_96,c_fill,f_auto,q_auto/v1792158930/Avatar_Hijab_Merah_Muda_dalam_Lencana.png";
 
 const TANGGAL = new Intl.DateTimeFormat("id-ID", {
   weekday: "long",
@@ -27,34 +25,79 @@ const TANGGAL = new Intl.DateTimeFormat("id-ID", {
   timeZone: "Asia/Jakarta",
 }).format(new Date());
 
-type NavItem = { href: string; label: string; icon: typeof LayoutDashboard; soon?: boolean; disabled?: boolean };
+type IconName = "home" | "card" | "box" | "users" | "gear" | "logout";
+
+function NavIcon({ name }: { name: IconName }) {
+  switch (name) {
+    case "home":
+      return (
+        <svg viewBox="0 0 24 24">
+          <path d="M3 11l9-8 9 8v10H3z" />
+        </svg>
+      );
+    case "card":
+      return (
+        <svg viewBox="0 0 24 24">
+          <rect x="3" y="6" width="18" height="13" rx="2" />
+          <path d="M3 10h18" />
+        </svg>
+      );
+    case "box":
+      return (
+        <svg viewBox="0 0 24 24">
+          <path d="M21 8l-9-5-9 5 9 5 9-5zM3 8v8l9 5 9-5V8" />
+        </svg>
+      );
+    case "users":
+      return (
+        <svg viewBox="0 0 24 24">
+          <circle cx="9" cy="8" r="4" />
+          <path d="M2 21c0-4 3-6 7-6s7 2 7 6M17 4a4 4 0 010 8" />
+        </svg>
+      );
+    case "gear":
+      return (
+        <svg viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="3" />
+          <path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2" />
+        </svg>
+      );
+    case "logout":
+      return (
+        <svg viewBox="0 0 24 24">
+          <path d="M15 3h4v18h-4M10 17l-5-5 5-5M5 12h11" />
+        </svg>
+      );
+  }
+}
+
+type NavItem = { label: string; href: string; icon: IconName; soon?: boolean; plain?: boolean };
 
 const NAV: { section: string; items: NavItem[] }[] = [
   {
     section: "Operasional",
     items: [
-      { href: "/panel-admin", label: "Beranda", icon: LayoutDashboard },
-      { href: "/panel-admin/transaksi", label: "Transaksi", icon: ShoppingBag, soon: true },
+      { label: "Beranda", href: "/panel-admin", icon: "home" },
+      { label: "Transaksi", href: "/panel-admin/transaksi", icon: "card", soon: true },
     ],
   },
   {
     section: "Katalog & Data",
     items: [
-      { href: "/panel-admin/produk", label: "Produk", icon: Package, soon: true },
-      { href: "/panel-admin/leads", label: "Leads", icon: Users, soon: true },
+      { label: "Produk", href: "/panel-admin/produk", icon: "box", soon: true },
+      { label: "Leads", href: "/panel-admin/leads", icon: "users", soon: true },
     ],
   },
   {
     section: "Pengaturan",
     items: [
-      { href: "/panel-admin", label: "Akun", icon: User, disabled: true },
-      { href: "/panel-admin", label: "Logout", icon: LogOut, disabled: true },
+      { label: "Akun", href: "/panel-admin", icon: "gear", plain: true },
+      { label: "Logout", href: "/panel-admin", icon: "logout", plain: true },
     ],
   },
 ];
 
 export default function PanelShell({ children }: { children: ReactNode }) {
-  const [open, setOpen] = useState(false);
   const pathname = usePathname();
 
   const activeItem = NAV.flatMap((g) => g.items).find((item) =>
@@ -63,7 +106,7 @@ export default function PanelShell({ children }: { children: ReactNode }) {
 
   return (
     <div className={styles.app}>
-      <aside className={`${styles.side} ${open ? styles.sideOpen : ""}`}>
+      <aside className={styles.side}>
         <div className={styles.brand}>
           <div className={styles.logo}>S</div>
           <div>
@@ -75,28 +118,25 @@ export default function PanelShell({ children }: { children: ReactNode }) {
         <nav className={styles.nav}>
           {NAV.map((group) => (
             <div key={group.section}>
-              <p className={styles.sec}>{group.section}</p>
+              <div className={styles.sec}>{group.section}</div>
               {group.items.map((item) => {
-                const Icon = item.icon;
-                if (item.soon || item.disabled) {
+                if (item.plain || item.soon) {
                   return (
-                    <div key={item.label} className={`${styles.navItem} ${styles.navItemDisabled}`}>
-                      <Icon />
-                      <span>{item.label}</span>
-                      {item.soon ? <span className={styles.soon}>soon</span> : null}
+                    <div key={item.label} className={styles.navItem}>
+                      <NavIcon name={item.icon} />
+                      {item.label}
+                      {item.soon ? <span className={styles.soon}>SOON</span> : null}
                     </div>
                   );
                 }
-                const active = activeItem?.href === item.href;
                 return (
                   <Link
                     key={item.label}
                     href={item.href}
-                    className={active ? styles.on : undefined}
-                    onClick={() => setOpen(false)}
+                    className={activeItem?.href === item.href ? styles.on : undefined}
                   >
-                    <Icon />
-                    <span>{item.label}</span>
+                    <NavIcon name={item.icon} />
+                    {item.label}
                   </Link>
                 );
               })}
@@ -104,46 +144,51 @@ export default function PanelShell({ children }: { children: ReactNode }) {
           ))}
         </nav>
 
-        <div className={styles.sideFoot}>
-          <img className={styles.footAv} src={AVATAR} alt="" aria-hidden="true" width={34} height={34} />
+        <div className={styles.foot}>
+          <img className={styles.footAv} src={AVATAR} alt="" width={44} height={44} />
           <div className={styles.footText}>
             <b>© 2026 SAMAQU ADMIN</b>
-            <span>Engineered by Surya</span>
+            Engineered by <b>Surya</b>
           </div>
         </div>
       </aside>
 
-      {open ? <div className={styles.scrimOpen} onClick={() => setOpen(false)} /> : null}
-
-      <div className={styles.main}>
-        <header className={styles.top}>
-          <button className={styles.hamb} onClick={() => setOpen(true)} aria-label="Menu">
-            <Menu size={18} />
-          </button>
-          <div className={`${styles.search} ${styles.topSearch}`}>
-            <Search />
-            <input className={styles.in} placeholder="Cari pesanan, SKU baju, atau nama pelanggan…" />
+      <main className={styles.main}>
+        <div className={styles.top}>
+          <div className={styles.topT}>
+            <small>SAMAQU · PANEL ADMIN</small>
+            <h1>Beranda</h1>
           </div>
-          <span className={styles.dateChip}>
-            <Calendar size={16} />
+          <div className={`${styles.search} ${styles.topSearch}`}>
+            <svg viewBox="0 0 24 24">
+              <circle cx="11" cy="11" r="7" />
+              <path d="M21 21l-5-5" />
+            </svg>
+            <input className={styles.searchInput} placeholder="Cari pesanan, SKU baju, atau nama pelanggan..." />
+          </div>
+          <div className={styles.date}>
+            <svg viewBox="0 0 24 24">
+              <rect x="3" y="5" width="18" height="16" rx="2" />
+              <path d="M3 10h18M8 3v4M16 3v4" />
+            </svg>
             {TANGGAL}
-          </span>
-          <div className={styles.sp} />
-          <button className={styles.bell} aria-label="Notifikasi">
-            <Bell size={18} />
-            <i className={styles.bellDot} />
-          </button>
+          </div>
+          <div className={styles.bell}>
+            <svg viewBox="0 0 24 24">
+              <path d="M6 16V11a6 6 0 0112 0v5l2 2H4zM10 21h4" />
+            </svg>
+          </div>
           <div className={styles.user}>
-            <img className={styles.avImg} src={AVATAR} alt="Lea" width={38} height={38} />
-            <div className={styles.ut}>
+            <img className={styles.av} src={AVATAR} alt="Lea" width={40} height={40} />
+            <div>
               <b>Lea</b>
               <small>SAMAQU</small>
             </div>
           </div>
-        </header>
+        </div>
 
-        <div className={styles.content}>{children}</div>
-      </div>
+        {children}
+      </main>
     </div>
   );
 }
