@@ -1,13 +1,19 @@
 "use client";
 
+import { createContext, useContext, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 
 /**
  * Shim kecil supaya halaman yang di-port dari app Base44 (yang pakai react-router)
  * bisa jalan di Next.js App Router tanpa mengubah kodenya.
+ *
+ * Sejak panel admin memakai ulang halaman ops, shim ini juga **sadar base**: shell bisa
+ * mengganti peta nama halaman → route lewat `OpsPageMapProvider` (mis. panel admin memetakan
+ * `MasterProduk` ke `/panel-admin/produk`). Tanpa provider, peta default = route `/ops`
+ * seperti sebelumnya (jadi perilaku ops tidak berubah).
  */
 
-/** Peta nama halaman Base44 → route /ops */
+/** Peta nama halaman Base44 → route /ops (default). */
 const PAGE_ROUTES: Record<string, string> = {
   Dashboard: "/ops",
   Transaksi: "/ops/transaksi",
@@ -31,6 +37,22 @@ const PAGE_ROUTES: Record<string, string> = {
 
 export function createPageUrl(page: string): string {
   return PAGE_ROUTES[page] || `/ops/${String(page).toLowerCase()}`;
+}
+
+const PageMapContext = createContext<Record<string, string>>(PAGE_ROUTES);
+
+/** Shell (ops / panel admin) membungkus isinya dengan ini supaya navigasi mengikuti route shell-nya. */
+export function OpsPageMapProvider({ pages, children }: { pages: Record<string, string>; children: ReactNode }) {
+  return <PageMapContext.Provider value={pages}>{children}</PageMapContext.Provider>;
+}
+
+/**
+ * Versi sadar-base dari `createPageUrl` — pakai ini di halaman yang bisa dirender di lebih dari
+ * satu shell (ops **dan** panel admin). Nama halaman yang tidak ada di peta jatuh ke route `/ops`.
+ */
+export function usePageUrl(): (page: string) => string {
+  const map = useContext(PageMapContext);
+  return (page: string) => map[page] ?? createPageUrl(page);
 }
 
 /**
