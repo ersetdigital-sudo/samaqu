@@ -373,20 +373,17 @@ export default function Transaksi() {
             <table className="w-full table-fixed text-sm">
               <thead>
                 <tr className="bg-slate-50 dark:bg-slate-900 text-left">
-                  <th className="w-[11%] px-3 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Tanggal</th>
-                  <th className="w-[15%] px-2 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">No. Order</th>
-                  <th className="w-[16%] px-2 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Pelanggan</th>
-                  <th className="w-[9%] px-2 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Sumber</th>
-                  <th className="w-[19%] px-2 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Produk</th>
-                  <th className="w-[12%] px-2 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 text-right">Total</th>
-                  <th className="w-[11%] px-2 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Status</th>
+                  <th className="w-[14%] px-3 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Tanggal</th>
+                  <th className="w-[24%] px-2 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Pelanggan</th>
+                  <th className="w-[28%] px-2 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Produk</th>
+                  <th className="w-[14%] px-2 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 text-right">Total</th>
+                  <th className="w-[13%] px-2 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Status</th>
                   <th className="w-[7%] px-3 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 text-right">Aksi</th>
                 </tr>
               </thead>
               <tbody>
                 {visibleOrders.map((order, index) => {
                   const status = STATUS_STYLES[order.status];
-                  const source = SOURCE_STYLES[order.source];
                   return (
                     <motion.tr
                       key={order.id}
@@ -399,16 +396,8 @@ export default function Transaksi() {
                       <td className="px-3 py-3 font-semibold text-slate-900 dark:text-white whitespace-nowrap truncate" title={`${formatTanggalID(order.date_wib)} · ${order.time_wib || "-"} WIB`}>
                         {formatTanggalSingkatID(order.date_wib)}
                       </td>
-                      <td className="px-2 py-3 font-bold text-slate-900 dark:text-white whitespace-nowrap truncate" title={order.order_number}>
-                        {order.order_number}
-                      </td>
                       <td className="px-2 py-3 font-semibold text-slate-900 dark:text-white truncate" title={`${order.customer_name} · ${order.customer_whatsapp}`}>
                         {order.customer_name}
-                      </td>
-                      <td className="px-2 py-3">
-                        <span className={`px-2.5 py-1 rounded-lg text-xs font-bold whitespace-nowrap ${source?.badge || "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"}`}>
-                          {order.source_label}
-                        </span>
                       </td>
                       <td className="px-2 py-3 text-slate-700 dark:text-slate-200 truncate" title={order.item_summary}>
                         {order.item_summary}
