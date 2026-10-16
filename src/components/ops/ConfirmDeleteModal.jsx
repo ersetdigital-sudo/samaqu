@@ -8,6 +8,12 @@ export default function ConfirmDeleteModal({
   onConfirm, 
   title = "Yakin ingin menghapus transaksi ini?",
   itemName,
+  /** Keterangan tambahan (opsional) — mis. peringatan bahwa resi J&T ikut dibatalkan. */
+  message,
+  /** Label tombol konfirmasi; default tetap "Oke" supaya pemanggil lama tidak berubah. */
+  confirmLabel = "Oke",
+  /** Teks saat proses berjalan; default sama seperti sebelumnya. */
+  busyLabel = "Menghapus...",
   isDeleting = false
 }) {
   // ESC key handler
@@ -64,6 +70,11 @@ export default function ConfirmDeleteModal({
                 {itemName}
               </p>
             )}
+            {message ? (
+              <p className="text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 mt-3 text-left">
+                {message}
+              </p>
+            ) : null}
           </div>
 
           {/* Buttons */}
@@ -82,7 +93,7 @@ export default function ConfirmDeleteModal({
               disabled={isDeleting}
               className="flex-1 px-5 py-2.5 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 active:scale-[0.98] transition-all disabled:opacity-50"
             >
-              {isDeleting ? 'Menghapus...' : 'Oke'}
+              {isDeleting ? busyLabel : confirmLabel}
             </button>
           </div>
         </motion.div>

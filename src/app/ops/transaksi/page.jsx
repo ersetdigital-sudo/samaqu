@@ -25,6 +25,7 @@ import {
   Package,
   Plus,
   Search,
+  Trash2,
   Truck,
   Wallet,
   X,
@@ -149,6 +150,7 @@ export default function Transaksi() {
   const [editing, setEditing] = useState(null);
   const [detail, setDetail] = useState(null);
   const [cancelTarget, setCancelTarget] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const cancelMutation = useMutation({
     mutationFn: (order) => base44.entities.Transaction.cancel(order.order_number),
@@ -162,6 +164,30 @@ export default function Transaksi() {
     onError: (error) =>
       toast({
         title: "Gagal membatalkan",
+        description: error instanceof Error ? error.message : "Coba lagi.",
+        variant: "destructive",
+      }),
+  });
+
+  /**
+   * Hapus transaksi manual (untuk membuang data uji). Server menolak kalau pesanan sudah punya
+   * resi J&T atau kalau itu pesanan website, dan mengembalikan stok lebih dulu.
+   */
+  const deleteMutation = useMutation({
+    mutationFn: (order) => base44.entities.Transaction.deleteOrder(order.order_number),
+    onSuccess: (result, order) => {
+      queryClient.invalidateQueries({ queryKey: ["transaksi"] });
+      setDeleteTarget(null);
+      setDetail((current) => (current?.order_number === order.order_number ? null : current));
+      toast({
+        title: "✅ Transaksi dihapus",
+        description: `${result?.order_number || order.order_number} · stok sudah dikembalikan`,
+        variant: "success",
+      });
+    },
+    onError: (error) =>
+      toast({
+        title: "Gagal menghapus",
         description: error instanceof Error ? error.message : "Coba lagi.",
         variant: "destructive",
       }),
@@ -379,10 +405,10 @@ export default function Transaksi() {
                 <tr className="bg-slate-50 dark:bg-slate-900 text-left">
                   <th className="w-[11%] px-3 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Tanggal</th>
                   <th className="w-[20%] px-2 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Pelanggan</th>
-                  <th className="w-[30%] px-2 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Produk</th>
+                  <th className="w-[27%] px-2 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Produk</th>
                   <th className="w-[11%] px-2 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 text-right">Total</th>
                   <th className="w-[12%] px-2 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Status</th>
-                  <th className="w-[16%] px-3 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 text-right">Aksi</th>
+                  <th className="w-[19%] px-3 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 text-right">Aksi</th>
                 </tr>
               </thead>
               <tbody>
@@ -479,6 +505,22 @@ export default function Transaksi() {
                               Batalkan
                             </button>
                           )}
+                          {/* Hapus hanya untuk transaksi manual. Kalau resinya masih AKTIF
+                              (status belum dibatalkan), tombolnya disembunyikan — admin
+                              diarahkan "Batalkan" dulu supaya resinya ikut di-void di J&T. */}
+                          {(!order.awb_no || order.status === "dibatalkan") && order.source !== "website" && (
+                            <button
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                setDeleteTarget(order);
+                              }}
+                              title="Hapus transaksi (stok dikembalikan lebih dulu)"
+                              aria-label="Hapus transaksi"
+                              className="p-2 rounded-lg text-slate-400 hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-600 transition-colors"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </motion.tr>
@@ -519,7 +561,30 @@ export default function Transaksi() {
         onConfirm={() => cancelMutation.mutate(cancelTarget)}
         title="Batalkan transaksi ini?"
         itemName={cancelTarget ? `${cancelTarget.order_number} · ${cancelTarget.customer_name}` : undefined}
+        message={
+          cancelTarget?.awb_no
+            ? `Resi J&T ${cancelTarget.awb_no} akan dibatalkan (void) LEBIH DULU di J&T. Kalau paketnya sudah dijemput/diproses J&T, pembatalan akan ditolak dan stok tidak dikembalikan.`
+            : "Stok produk dikembalikan kalau pesanannya belum dikirim."
+        }
+        confirmLabel="Batalkan"
+        busyLabel="Membatalkan..."
         isDeleting={cancelMutation.isPending}
+      />
+
+      <ConfirmDeleteModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => deleteMutation.mutate(deleteTarget)}
+        title="Hapus transaksi ini?"
+        itemName={deleteTarget ? `${deleteTarget.order_number} · ${deleteTarget.customer_name}` : undefined}
+        message={
+          deleteTarget?.awb_no
+            ? "Transaksi, produk, dan riwayat resinya dihapus permanen. Resinya sudah di-void saat pembatalan — kalau ragu, cek dulu di J&T. Tindakan ini tidak bisa dibatalkan."
+            : "Transaksi dan produknya dihapus permanen, dan stok dikembalikan lebih dulu. Tindakan ini tidak bisa dibatalkan."
+        }
+        confirmLabel="Hapus"
+        busyLabel="Menghapus..."
+        isDeleting={deleteMutation.isPending}
       />
     </div>
   );
