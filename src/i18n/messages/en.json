@@ -235,6 +235,7 @@
     "rawData": "View raw data",
     "close": "Close",
     "driver": "Courier",
+    "receivedBy": "Received by",
     "noUpdate": "No updates from J&T yet. History appears after the courier scans the parcel.",
     "noResi": "Waybill number is not available yet. We will let you know once the parcel is handed to J&T.",
     "stale": "Showing the last saved J&T data.",
