@@ -50,7 +50,8 @@ function toPublic(data: TrackResponse, fetchedAt: string, sertakanPetugas = fals
       note: h.note,
       ...(sertakanPetugas
         ? {
-            driver: (h as unknown as Record<string, unknown>).driver ?? "",
+            // Nama field asli J&T: driverName; `trackingRow` membacanya dari situ.
+            driverName: (h as unknown as Record<string, unknown>).driverName ?? "",
             receiver: (h as unknown as Record<string, unknown>).receiver ?? "",
           }
         : {}),
@@ -81,7 +82,7 @@ async function storedPayload(awb: string, fetchedAt: string, sertakanPetugas = f
         note: raw.note ?? "",
         ...(sertakanPetugas
           ? {
-              driver: (raw as unknown as Record<string, unknown>).driver ?? "",
+              driverName: (raw as unknown as Record<string, unknown>).driverName ?? "",
               receiver: (raw as unknown as Record<string, unknown>).receiver ?? "",
             }
           : {}),
