@@ -18,7 +18,6 @@ import { motion } from "framer-motion";
 import {
   Ban,
   CalendarDays,
-  Calculator,
   ChevronLeft,
   ChevronRight,
   Database,
@@ -37,6 +36,7 @@ import DateFilter, { formatTanggalID } from "@/components/ops/leads/DateFilter";
 import ConfirmDeleteModal from "@/components/ops/ConfirmDeleteModal";
 import TransaksiFormModal from "@/components/ops/transaksi/TransaksiFormModal";
 import TransaksiDetailDrawer from "@/components/ops/transaksi/TransaksiDetailDrawer";
+import GlassCard from "@/components/ops/GlassCard";
 import { MONTHS, SOURCE_STYLES, STATUS_STYLES, formatRupiah, formatTanggalSingkatID, pad } from "@/components/ops/transaksi/transaksi-format";
 import { useToast } from "@/components/ops/ui/use-toast";
 
@@ -109,7 +109,6 @@ export default function Transaksi() {
       count: visibleOrders.length,
       revenue,
       pieces: sold.reduce((sum, order) => sum + (order.qty_total || 0), 0),
-      average: sold.length ? Math.round(revenue / sold.length) : 0,
       cancelled: visibleOrders.filter((order) => order.status === "dibatalkan").length,
     };
   }, [visibleOrders]);
@@ -166,11 +165,10 @@ export default function Transaksi() {
   });
 
   const statCards = [
-    { label: "Total Transaksi", value: stats.count, icon: FileText },
-    { label: "Total Omset", value: `Rp ${formatRupiah(stats.revenue)}`, icon: Wallet },
-    { label: "Total Pcs Terjual", value: stats.pieces, icon: Package },
-    { label: "Rata-rata per Transaksi", value: `Rp ${formatRupiah(stats.average)}`, icon: Calculator },
-    { label: "Transaksi Dibatalkan", value: stats.cancelled, icon: XCircle },
+    { label: "Total Transaksi", value: String(stats.count), icon: FileText, caption: "pesanan sesuai filter" },
+    { label: "Total Omset", value: `Rp ${formatRupiah(stats.revenue)}`, icon: Wallet, caption: "hanya yang sudah dibayar" },
+    { label: "Total Pcs Terjual", value: String(stats.pieces), icon: Package, caption: "dari pesanan sudah dibayar" },
+    { label: "Transaksi Dibatalkan", value: String(stats.cancelled), icon: XCircle, caption: "tidak dihitung omset" },
   ];
 
   return (
@@ -200,30 +198,12 @@ export default function Transaksi() {
         </div>
       </div>
 
-      {/* Kartu statistik */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
-        {statCards.map((card, index) => {
-          const Icon = card.icon;
-          return (
-            <div
-              key={card.label}
-              className="bg-white dark:bg-[#1a1d28] rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm hover:shadow-md transition-shadow duration-300"
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div className="w-10 h-10 bg-slate-100 dark:bg-slate-800 rounded-xl flex items-center justify-center">
-                  <Icon size={19} className="text-slate-700 dark:text-slate-200" />
-                </div>
-                <span className="text-[9px] font-black text-slate-300 dark:text-slate-600 tracking-widest">
-                  {String(index + 1).padStart(2, "0")}
-                </span>
-              </div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{card.label}</p>
-              <p className="text-2xl font-black font-heading text-slate-900 dark:text-white mt-0.5 tracking-tight whitespace-nowrap">
-                {card.value}
-              </p>
-            </div>
-          );
-        })}
+      {/* Kartu statistik — memakai komponen kartu bersama dashboard ops
+          (`@/components/ops/GlassCard`) supaya bentuknya sama persis. */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
+        {statCards.map((card) => (
+          <GlassCard key={card.label} icon={card.icon} label={card.label} value={card.value} caption={card.caption} />
+        ))}
       </div>
 
       <p className="text-xs text-slate-500 dark:text-slate-400 px-1 -mt-3">
