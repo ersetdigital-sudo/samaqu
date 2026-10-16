@@ -33,7 +33,9 @@ export async function GET(request: NextRequest) {
   // Verify cron secret (penjadwal mengirim header Authorization: Bearer $CRON_SECRET)
   const authHeader = request.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  // Kalau CRON_SECRET kosong, route DITOLAK (bukan dibiarkan publik) — supaya tidak ada yang bisa
+  // memicu reminder WA massal / auto-cancel tanpa kredensial.
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
