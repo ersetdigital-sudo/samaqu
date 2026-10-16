@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import PanelShell from "./PanelShell";
+import PanelShell from "../PanelShell";
 
 /**
  * Layout panel admin (`admin.samaqu.id` → /panel-admin/*).

@@ -12,7 +12,9 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { FormEvent, ReactNode } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
+import { Toaster } from "@/components/ops/ui/toaster";
 import { useWibLongDate } from "./wib-date";
 import styles from "./panel.module.css";
 
@@ -59,7 +61,7 @@ const NAV: { section: string; items: NavItem[] }[] = [
     section: "Operasional",
     items: [
       { label: "Beranda", href: "/panel-admin", icon: "home" },
-      { label: "Transaksi", href: "/panel-admin/transaksi", icon: "card", soon: true },
+      { label: "Transaksi", href: "/panel-admin/transaksi", icon: "card" },
     ],
   },
   {
@@ -80,6 +82,25 @@ export default function PanelShell({ children }: { children: ReactNode }) {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Halaman Transaksi memakai halaman ops yang sama → butuh React Query + Toaster (keduanya di
+  // OpsShell). Client dibuat per-instance supaya tidak dibagi antar-request saat SSR.
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            refetchOnWindowFocus: false,
+            retry: 1,
+            staleTime: 60 * 1000,
+            gcTime: 10 * 60 * 1000,
+            // PENTING: halaman /ops memakai `initialData: []`. Tanpa baris ini, array kosong
+            // dianggap data segar sehingga query tidak jalan dan tabel tampil kosong.
+            initialDataUpdatedAt: 0,
+          },
+        },
+      })
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -197,7 +218,8 @@ export default function PanelShell({ children }: { children: ReactNode }) {
   );
 
   return (
-    <div className={styles.app}>
+    <QueryClientProvider client={queryClient}>
+      <div className={styles.app}>
       <aside className={styles.side}>
         <div className={styles.brand}>
           <div className={styles.logo}>S</div>
@@ -277,6 +299,8 @@ export default function PanelShell({ children }: { children: ReactNode }) {
 
         {children}
       </main>
-    </div>
+      <Toaster />
+      </div>
+    </QueryClientProvider>
   );
 }
