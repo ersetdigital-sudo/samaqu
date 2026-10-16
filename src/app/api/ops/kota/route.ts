@@ -72,6 +72,8 @@ export async function GET(req: NextRequest) {
       paid: SALE_STATUSES.includes(String(order.status || "")),
       cityKey: key || "__kosong__",
       city: rawCity ? prettifyCity(rawCity) : KOTA_KOSONG,
+      // Kecamatan ikut dibawa supaya pencarian bisa menemukannya (mis. cari "Paseh" → baris "Bandung").
+      kecamatan: String(order.shipping_kecamatan || "").trim(),
       province: province || "Provinsi belum terisi",
     };
   });
@@ -86,7 +88,8 @@ export async function GET(req: NextRequest) {
   const filtered = rows.filter((row) => {
     if (provinceFilter && provinceFilter !== "all" && row.province !== provinceFilter) return false;
     if (sourceFilter && sourceFilter !== "all" && row.source !== sourceFilter) return false;
-    if (search && !row.city.toLowerCase().includes(search)) return false;
+    // Pencarian mencakup kota DAN kecamatan: cari "Paseh" tetap menemukan baris kotanya ("Bandung").
+    if (search && !`${row.city} ${row.kecamatan}`.toLowerCase().includes(search)) return false;
     return true;
   });
 
