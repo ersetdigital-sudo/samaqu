@@ -1,12 +1,10 @@
 "use client";
 
 /**
- * Kerangka panel admin — tampilan disalin dari mockup HTML
- * (samaqu-admin-dashboard-2/pages/index.html): sidebar gelap 248px, topbar berisi crumb +
- * judul + search + chip tanggal + lonceng + user.
+ * Kerangka panel admin — tema dari mockup HTML (samaqu-admin-dashboard-2/pages/index.html).
+ * Sidebar gelap 248px + nav bersekat, topbar berisi search, chip tanggal, lonceng, dan user.
  *
- * Catatan: menu Transaksi/Produk/Leads belum dibangun (pill `SOON`), dan Akun/Logout belum
- * aktif karena panel belum punya autentikasi sendiri — keduanya sengaja non-link (bukan `<a>`)
+ * Catatan: menu Transaksi/Produk/Leads belum dibangun (badge `SOON`), jadi sengaja non-link
  * supaya tidak menabrak rute yang belum ada.
  */
 import Link from "next/link";
@@ -25,7 +23,7 @@ const TANGGAL = new Intl.DateTimeFormat("id-ID", {
   timeZone: "Asia/Jakarta",
 }).format(new Date());
 
-type IconName = "home" | "card" | "box" | "users" | "gear" | "logout";
+type IconName = "home" | "card" | "box" | "users";
 
 function NavIcon({ name }: { name: IconName }) {
   switch (name) {
@@ -55,23 +53,10 @@ function NavIcon({ name }: { name: IconName }) {
           <path d="M2 21c0-4 3-6 7-6s7 2 7 6M17 4a4 4 0 010 8" />
         </svg>
       );
-    case "gear":
-      return (
-        <svg viewBox="0 0 24 24">
-          <circle cx="12" cy="12" r="3" />
-          <path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2" />
-        </svg>
-      );
-    case "logout":
-      return (
-        <svg viewBox="0 0 24 24">
-          <path d="M15 3h4v18h-4M10 17l-5-5 5-5M5 12h11" />
-        </svg>
-      );
   }
 }
 
-type NavItem = { label: string; href: string; icon: IconName; soon?: boolean; plain?: boolean };
+type NavItem = { label: string; href: string; icon: IconName; soon?: boolean };
 
 const NAV: { section: string; items: NavItem[] }[] = [
   {
@@ -86,13 +71,6 @@ const NAV: { section: string; items: NavItem[] }[] = [
     items: [
       { label: "Produk", href: "/panel-admin/produk", icon: "box", soon: true },
       { label: "Leads", href: "/panel-admin/leads", icon: "users", soon: true },
-    ],
-  },
-  {
-    section: "Pengaturan",
-    items: [
-      { label: "Akun", href: "/panel-admin", icon: "gear", plain: true },
-      { label: "Logout", href: "/panel-admin", icon: "logout", plain: true },
     ],
   },
 ];
@@ -120,12 +98,12 @@ export default function PanelShell({ children }: { children: ReactNode }) {
             <div key={group.section}>
               <div className={styles.sec}>{group.section}</div>
               {group.items.map((item) => {
-                if (item.plain || item.soon) {
+                if (item.soon) {
                   return (
-                    <div key={item.label} className={styles.navItem}>
+                    <div key={item.label} className={`${styles.navItem} ${styles.navItemSoon}`}>
                       <NavIcon name={item.icon} />
-                      {item.label}
-                      {item.soon ? <span className={styles.soon}>SOON</span> : null}
+                      <span>{item.label}</span>
+                      <span className={styles.soon}>SOON</span>
                     </div>
                   );
                 }
@@ -136,7 +114,7 @@ export default function PanelShell({ children }: { children: ReactNode }) {
                     className={activeItem?.href === item.href ? styles.on : undefined}
                   >
                     <NavIcon name={item.icon} />
-                    {item.label}
+                    <span>{item.label}</span>
                   </Link>
                 );
               })}
@@ -155,10 +133,6 @@ export default function PanelShell({ children }: { children: ReactNode }) {
 
       <main className={styles.main}>
         <div className={styles.top}>
-          <div className={styles.topT}>
-            <small>SAMAQU · PANEL ADMIN</small>
-            <h1>Beranda</h1>
-          </div>
           <div className={`${styles.search} ${styles.topSearch}`}>
             <svg viewBox="0 0 24 24">
               <circle cx="11" cy="11" r="7" />

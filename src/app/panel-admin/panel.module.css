@@ -73,31 +73,52 @@
 
 .nav { display: flex; flex-direction: column; }
 .sec {
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  color: var(--mut);
-  margin: 18px 8px 8px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: #7d7078;
+  margin: 20px 10px 8px;
   text-transform: uppercase;
 }
-.navItem {
+.navItem,
+.nav a {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 11px 12px;
+  padding: 10px 12px;
   border-radius: 12px;
-  color: #e9dfe4;
+  color: #cfc4ca;
   text-decoration: none;
   font-weight: 500;
-  margin-bottom: 4px;
+  border: 1px solid transparent;
+  margin-bottom: 2px;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
 }
-.nav a.on { background: var(--side-on); color: #fff; }
+.navItem svg,
+.nav a svg { color: #a2949b; transition: color 0.18s ease; }
+.navItem:hover,
+.nav a:hover { background: rgba(255, 255, 255, 0.05); color: #fff; }
+.navItem:hover svg,
+.nav a:hover svg { color: #fff; }
+.nav a.on {
+  background: linear-gradient(100deg, #7a1f3e, #96284c);
+  border-color: rgba(243, 167, 192, 0.18);
+  color: #fff;
+  box-shadow: 0 8px 18px -8px rgba(150, 40, 76, 0.9);
+}
+.nav a.on svg { color: #f3a7c0; }
+.navItemSoon { cursor: default; }
+.navItemSoon:hover { background: transparent; color: #cfc4ca; }
+.navItemSoon:hover svg { color: #a2949b; }
 .soon {
   margin-left: auto;
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 700;
-  background: #3a2c32;
+  letter-spacing: 0.06em;
+  background: rgba(243, 167, 192, 0.13);
   color: #f3a7c0;
-  padding: 3px 9px;
+  border: 1px solid rgba(243, 167, 192, 0.22);
+  padding: 2px 8px;
   border-radius: 20px;
 }
 .foot { margin-top: auto; display: flex; gap: 10px; align-items: center; font-size: 12px; }
@@ -109,9 +130,6 @@
 /* ---------- main ---------- */
 .main { flex: 1; padding: 14px 26px 26px; min-width: 0; }
 .top { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
-.topT { flex-shrink: 0; }
-.topT small { font-size: 11px; color: var(--mut); letter-spacing: 0.05em; }
-.topT h1 { font-size: 20px; }
 
 .search {
   margin-left: auto;
