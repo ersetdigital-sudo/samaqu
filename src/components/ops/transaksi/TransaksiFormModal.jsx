@@ -67,13 +67,14 @@ const clampQty = (value, max) => {
 };
 
 /**
- * Alamat tersimpan digabung jadi SATU blok teks untuk ditampilkan (read-only):
+ * Gabungkan data alamat jadi SATU blok teks untuk ditampilkan (read-only):
  * "Jalan… No. 51, Harapan Jaya, Bekasi Utara, Kota Bekasi, Jawa Barat, 17124".
+ * Dipakai untuk alamat dari buku alamat pelanggan MAUPUN isi form saat ini (sumber apa pun).
  * Ini hanya untuk tampilan — nilai provinsi/kota/kecamatan/kode pos tetap tersimpan
  * sebagai data terpisah di transaksi (dipakai Database Kota, Detail Transaksi, & resi J&T).
  */
-const savedAddressText = (address) =>
-  [address?.address, address?.kecamatan, address?.city, address?.province, address?.postal_code]
+const addressText = (source) =>
+  [source?.address, source?.kecamatan, source?.city, source?.province, source?.postal_code]
     .map((part) => String(part || "").trim())
     .filter(Boolean)
     .join(", ");
@@ -98,6 +99,15 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
   const [step, setStep] = useState(0);
   /** Alamat diketik baru (bukan dari daftar tersimpan) → ikut masuk buku alamat pelanggan. */
   const [newAddressForCustomer, setNewAddressForCustomer] = useState(false);
+  /**
+   * Sedang mengetik alamat (klik "Ubah alamat"/"Tambah alamat baru") → kolom isian ditampilkan.
+   * Patokan tampilan kartu teks adalah ISI FORM, bukan ada/tidaknya alamat di buku alamat,
+   * supaya alamat yang terisi otomatis dari sumber lain (mis. pesanan terakhir) juga tampil
+   * sebagai kartu, bukan sebagai kolom.
+   */
+  const [addressEditing, setAddressEditing] = useState(false);
+  /** Salinan alamat sebelum isian dibuka → tombol "Batal" mengembalikannya apa adanya. */
+  const [addressBackup, setAddressBackup] = useState(null);
   const prefilledFor = useRef(null);
   /** Penanda pelanggan yang alamatnya sudah diisi otomatis (sekali per pelanggan). */
   const prefilledAddressFor = useRef(null);
@@ -194,6 +204,8 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
     setTouched(false);
     setSaveAttempted(false);
     setNewAddressForCustomer(false);
+    setAddressEditing(false);
+    setAddressBackup(null);
     setAddressPrefilledFrom("");
     setStep(0);
     if (initialData) {
@@ -504,9 +516,18 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
   const addressIncomplete = ADDRESS_FIELDS.some((field) => addressErrors[field]);
   const addressErrorText = (field) => (saveAttempted ? addressErrors[field] : "");
 
-  /** Pelanggan terdaftar: pilih dari alamat tersimpan; kalau belum ada, isian langsung tampil. */
-  const pickingSavedAddress = form?.customer_mode === "existing" && form?.address_mode === "saved" && savedAddresses.length > 0;
-  const showAddressForm = !pickingSavedAddress;
+  /**
+   * Patokan tampilan kartu alamat adalah ISI FORM (dari sumber apa pun: buku alamat, pesanan
+   * terakhir, atau ketikan admin) — bukan ada/tidaknya alamat di buku alamat pelanggan.
+   * Kolom isian hanya muncul kalau alamat memang kosong atau admin klik Ubah/Tambah alamat.
+   */
+  const formAddressFilled = Boolean(String(form?.address || "").trim());
+  const customerHasSavedAddresses = savedAddresses.length > 0;
+  const showAddressCard = form?.customer_mode === "existing" && !addressEditing && formAddressFilled;
+  const showAddressForm = !showAddressCard;
+  /** Alamat form sekarang berasal dari salah satu kartu buku alamat yang terpilih. */
+  const formPickedSavedAddress =
+    Boolean(form?.saved_address_id) && savedAddresses.some((address) => address.id === form.saved_address_id);
 
   /** Nomor HP yang sudah terdaftar → tawarkan pakai pelanggan itu daripada bikin ganda. */
   const duplicateCustomer = useMemo(() => {
@@ -531,6 +552,8 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
   const useExistingCustomer = (customer) => {
     setTouched(true);
     setNewAddressForCustomer(false);
+    setAddressEditing(false);
+    setAddressBackup(null);
     setForm((current) => ({
       ...current,
       customer_mode: "existing",
@@ -542,9 +565,24 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
     }));
   };
 
+  /** Salinan alamat sebelum isian dibuka → dipakai tombol "Batal" untuk kembali apa adanya. */
+  const beginAddressEdit = () => {
+    const current = form || {};
+    setAddressBackup({
+      address: current.address || "",
+      province: current.province || "",
+      city: current.city || "",
+      kecamatan: current.kecamatan || "",
+      postal_code: current.postal_code || "",
+      saved_address_id: current.saved_address_id || "",
+    });
+    setAddressEditing(true);
+  };
+
   const startNewAddress = () => {
     setTouched(true);
     setNewAddressForCustomer(true);
+    beginAddressEdit();
     setForm((current) => ({ ...current, address_mode: "new", saved_address_id: "" }));
   };
 
@@ -555,13 +593,21 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
   const startEditingAddress = () => {
     setTouched(true);
     setNewAddressForCustomer(false);
+    beginAddressEdit();
     setForm((current) => ({ ...current, address_mode: "new" }));
   };
 
-  /** "Batal" di isian alamat: balik ke tampilan teks dan kembalikan alamat yang tadi dipilih. */
+  /** "Batal" di isian alamat: balik ke kartu teks dan kembalikan alamat sebelum diubah. */
   const cancelAddressEdit = () => {
     setTouched(true);
     setNewAddressForCustomer(false);
+    setAddressEditing(false);
+    if (addressBackup) {
+      const backup = addressBackup;
+      setAddressBackup(null);
+      setForm((current) => ({ ...current, ...backup, address_mode: "saved" }));
+      return;
+    }
     const chosen =
       savedAddresses.find((address) => address.id === form?.saved_address_id) ||
       savedAddresses.find((address) => address.is_default) ||
@@ -892,6 +938,8 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                     type="button"
                     onClick={() => {
                       setNewAddressForCustomer(false);
+                      setAddressEditing(false);
+                      setAddressBackup(null);
                       updateForm({
                         customer_mode: "existing",
                         customer_id: "",
@@ -916,7 +964,11 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                   </button>
                   <button
                     type="button"
-                    onClick={() => updateForm({ customer_mode: "new", customer_id: "" })}
+                    onClick={() => {
+                      setAddressEditing(false);
+                      setAddressBackup(null);
+                      updateForm({ customer_mode: "new", customer_id: "" });
+                    }}
                     className={`flex-1 px-4 py-1.5 rounded-lg border-2 text-sm font-bold transition-all ${
                       form.customer_mode === "new"
                         ? "bg-slate-100 dark:bg-slate-800 border-slate-400 dark:border-slate-500 text-slate-900 dark:text-white"
@@ -938,6 +990,8 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                     onChange={(event) => {
                       const picked = customerOptions.find((entry) => (entry.id || entry.key) === event.target.value);
                       setNewAddressForCustomer(false);
+                      setAddressEditing(false);
+                      setAddressBackup(null);
                       // Ganti pelanggan → alamat ikut diganti (alamat utama terpilih otomatis).
                       updateForm({
                         customer_id: picked?.id || "",
@@ -1014,10 +1068,25 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                 <div className="pt-3 mt-1 border-t border-slate-100 dark:border-slate-800 space-y-2">
                   <h5 className={sectionClass}>Alamat Pengiriman</h5>
 
-                  {/* Pelanggan terdaftar yang sudah punya alamat → cukup tampil sebagai TEKS.
-                      Kolom isian hanya muncul kalau "Ubah alamat"/"Tambah alamat baru" diklik. */}
-                  {pickingSavedAddress && (
+                  {/* Pelanggan terdaftar + alamat form sudah terisi → kartu teks, tanpa kolom.
+                      Kartu dari buku alamat tetap dipakai kalau pelanggan punya beberapa alamat. */}
+                  {showAddressCard && (
                     <div className="space-y-2">
+                      {!formPickedSavedAddress && (
+                        <div className="rounded-xl border-2 border-slate-900 dark:border-slate-100 bg-slate-50 dark:bg-slate-800 px-3.5 py-3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-bold text-slate-900 dark:text-white truncate">
+                              Alamat pengiriman
+                            </span>
+                            <span className="ml-auto shrink-0 inline-flex items-center gap-1 text-[11px] font-bold text-slate-900 dark:text-white">
+                              <Check size={14} /> Dipakai
+                            </span>
+                          </div>
+                          <p className="text-sm text-slate-700 dark:text-slate-200 mt-1 leading-relaxed">
+                            {addressText(form)}
+                          </p>
+                        </div>
+                      )}
                       {savedAddresses.map((address) => {
                         const chosen = form.saved_address_id === address.id;
                         return (
@@ -1048,7 +1117,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                               )}
                             </div>
                             <p className="text-sm text-slate-700 dark:text-slate-200 mt-1 leading-relaxed">
-                              {savedAddressText(address)}
+                              {addressText(address)}
                             </p>
                           </button>
                         );
@@ -1073,14 +1142,15 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                     </div>
                   )}
 
-                  {/* Pelanggan terdaftar tanpa alamat tersimpan → isian langsung tampil. */}
-                  {form.customer_mode === "existing" && addressesLoaded && savedAddresses.length === 0 && (
+                  {/* Pesan ini HANYA saat alamat form memang kosong & pelanggan belum punya
+                      alamat tersimpan — bukan saat alamat terisi dari sumber lain. */}
+                  {form.customer_mode === "existing" && addressesLoaded && !formAddressFilled && !customerHasSavedAddresses && (
                     <p className="text-xs text-slate-500 dark:text-slate-400">Pelanggan ini belum punya alamat.</p>
                   )}
 
                   {showAddressForm && (
                     <div className="space-y-2">
-                      {form.customer_mode === "existing" && savedAddresses.length > 0 && (
+                      {form.customer_mode === "existing" && (formAddressFilled || customerHasSavedAddresses) && (
                         <button
                           type="button"
                           onClick={cancelAddressEdit}
