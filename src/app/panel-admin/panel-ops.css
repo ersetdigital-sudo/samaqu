@@ -35,3 +35,46 @@
 .ops-root.panel-ops .hover\:bg-slate-800:hover { background-color: #9d174d; }
 .ops-root.panel-ops .bg-slate-900\/60 { background-color: rgba(194, 37, 92, 0.6); }
 .ops-root.panel-ops .hover\:bg-slate-900\/50:hover { background-color: rgba(157, 23, 77, 0.5); }
+
+/* ── Halaman Produk: kotak header gelap → kartu putih ala dashboard ──
+ *
+ * master-produk memakai gradient arbitrary (`from-[#18181b]`) berisi kartu kaca
+ * (`bg-white/10`) dengan teks putih. Di panel dibuat rata seperti kartu dashboard
+ * (putih, label uppercase muted, nilai gelap, caption muted). */
+
+.ops-root.panel-ops .from-\[\#18181b\] {
+  background-image: none;
+  background-color: #ffffff;
+  border: 1px solid #f1e6ea;
+  box-shadow: 0 1px 2px rgba(17, 24, 39, 0.04);
+}
+/* Ornamen lingkaran blur putih — tidak berguna di latar putih. */
+.ops-root.panel-ops .from-\[\#18181b\] .bg-white\/5 { display: none; }
+/* Judul & subjudul. */
+.ops-root.panel-ops .from-\[\#18181b\] h1 { color: #2a1a22; }
+.ops-root.panel-ops .from-\[\#18181b\] .text-blue-100 { color: #8a7d83; }
+/* Kotak ikon di judul: kaca putih → blush, ikon berry. */
+.ops-root.panel-ops .from-\[\#18181b\] .w-14.bg-white\/10 { background-color: #fdeaf3; border-color: #f7d3e4; }
+.ops-root.panel-ops .from-\[\#18181b\] .w-14.bg-white\/10 svg { color: #c2255c; }
+/* Tombol kaca putih ("Import", "Tambah Stok") → tombol sekunder panel. */
+.ops-root.panel-ops .from-\[\#18181b\] .bg-white\/10.rounded-xl {
+  background-color: #f8eef2;
+  border-color: #f7d3e4;
+  color: #c2255c;
+}
+.ops-root.panel-ops .from-\[\#18181b\] .bg-white\/10.rounded-xl:hover { background-color: #fbe7ef; }
+/* Kartu statistik: kaca gelap → kartu putih + teks gelap. */
+.ops-root.panel-ops .from-\[\#18181b\] .bg-white\/10.rounded-2xl:not(.w-14) {
+  background-color: #ffffff;
+  border-color: #f1e6ea;
+  backdrop-filter: none;
+}
+.ops-root.panel-ops .from-\[\#18181b\] .bg-white\/10.rounded-2xl:not(.w-14):hover { background-color: #fdf3f7; }
+.ops-root.panel-ops .from-\[\#18181b\] .bg-white\/10.rounded-2xl:not(.w-14) .text-white { color: #817681; }
+.ops-root.panel-ops .from-\[\#18181b\] .bg-white\/10.rounded-2xl:not(.w-14) p.text-white { color: #2a1a22; }
+.ops-root.panel-ops .from-\[\#18181b\] .bg-white\/10.rounded-2xl:not(.w-14) .text-white\/85 { color: #817681; }
+
+/* ── Header tabel daftar produk: navy (#1e3a5f) → berry ── */
+.ops-root.panel-ops .bg-\[\#1e3a5f\] { background-color: #c2255c; }
+.ops-root.panel-ops .border-\[\#2d4a6f\] { border-color: rgba(255, 255, 255, 0.25); }
+.ops-root.panel-ops .hover\:bg-\[\#2d4a6f\]:hover { background-color: #9d174d; }
