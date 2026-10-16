@@ -325,11 +325,12 @@ svg.wave { position: absolute; right: 0; bottom: 0; width: 150px; height: 60px; 
 }
 
 /* ---------- responsive (sama seperti mockup) ---------- */
-/* Layar lebar: hero 3 kolom (teks + gambar + kutipan) seperti mockup. Lebar minimum tiap kolom
-   dijaga supaya tidak pernah meluber/terpotong. */
-@media (min-width: 1260px) {
-  .hero { grid-template-columns: minmax(300px, 1fr) minmax(180px, 400px) minmax(240px, 300px); }
-  .heroArt { width: 100%; max-width: 440px; height: 200px; }
+/* Layar lebar: hero 3 kolom (teks + gambar + kutipan) seperti mockup. Ambang 1340px dipilih
+   supaya lebar minimum tiap kolom selalu kebagi di kanvas (lebar - sidebar), jadi tidak pernah
+   meluber/terpotong. */
+@media (min-width: 1340px) {
+  .hero { grid-template-columns: minmax(300px, 1fr) minmax(160px, 300px) minmax(240px, 300px); }
+  .heroArt { width: 100%; max-width: 300px; height: 200px; }
   .quote { display: block; }
 }
 @media (max-width: 1250px) {
