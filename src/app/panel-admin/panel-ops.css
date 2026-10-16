@@ -84,3 +84,14 @@
  * memakai `bg-green-100`/`bg-emerald-100` sehingga tetap hijau (warna semantik). */
 .ops-root.panel-ops .bg-green-500 { background-color: #c2255c; }
 .ops-root.panel-ops .hover\:bg-green-600:hover { background-color: #9d174d; }
+
+/* ── Tab halaman Produk (Daftar Produk / Laporan Stok / Barang Masuk / Barang Keluar) ──
+ * Tab aktif ditandai `bg-[#18181b]` (hitam) — kelas itu di halaman ops hanya dipakai untuk
+ * tab aktif, jadi aman dipetakan ke berry. Tab lain: teks muted, hover blush + teks berry. */
+.ops-root.panel-ops .bg-\[\#18181b\] { background-color: #c2255c; }
+.ops-root.panel-ops .focus-visible\:ring-\[\#18181b\]\/40:focus-visible { --tw-ring-color: rgba(194, 37, 92, 0.4); }
+.ops-root.panel-ops .bg-white\/80.p-1 > div > button:not(.bg-\[\#18181b\]) { color: #7a6a71; }
+.ops-root.panel-ops .bg-white\/80.p-1 > div > button:not(.bg-\[\#18181b\]):hover {
+  background-color: #fdf3f7;
+  color: #c2255c;
+}
