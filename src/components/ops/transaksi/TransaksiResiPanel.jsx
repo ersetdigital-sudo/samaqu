@@ -1,0 +1,323 @@
+"use client";
+
+/**
+ * Panel resi J&T untuk menu Transaksi (ops) — dipakai di DUA tempat supaya perilakunya sama persis:
+ *  1. drawer Detail Transaksi (section "Pengiriman J&T"), dan
+ *  2. panel "Transaksi tercatat" setelah menyimpan transaksi baru.
+ *
+ * Isinya: tampilan nomor resi (bisa disalin) + status kirim + tombol cetak dua ukuran, dan tombol
+ * "Buat Resi" dengan pra-cek + dialog konfirmasi bila resinya belum ada.
+ *
+ * Yang SENGAJA tidak dilakukan:
+ *  - tidak membuat resi otomatis: pembuatan resi selalu lewat klik eksplisit + konfirmasi,
+ *    karena ini aksi sungguhan ke J&T (kurir menjemput, resinya tidak bisa dibatalkan dari sini);
+ *  - tidak ada retry otomatis; satu kali klik = satu kali panggil.
+ *
+ * Endpoint yang dipakai semuanya sudah ada: `Resi.check` (pra-cek baca-saja) dan
+ * `Transaction.createResi` (route admin `PATCH /api/admin/orders` aksi `createJnt`, apa adanya).
+ */
+
+import { useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { AlertCircle, Check, Truck } from "lucide-react";
+import { base44 } from "@/lib/ops-api";
+import { formatWeightExact } from "@/lib/shipping-weight";
+
+/** Label status kirim yang dipakai layar (nilainya dari `orders.shipping_status`). */
+const SHIPPING_STATUS_LABEL = { menunggu_pickup: "Menunggu pickup", dikirim: "Dikirim", selesai: "Selesai" };
+
+/** Pesan khusus dari route createJnt: resi sudah terbit di J&T tapi gagal dicatat di sistem. */
+const RESI_ISSUED_NOT_SAVED = "Resi J&T terbit tapi gagal disimpan";
+
+/** Ukuran label terakhir yang dipakai admin — biar tidak memilih lagi tiap kali mencetak. */
+const LABEL_SIZE_KEY = "samaqu:ops-label-size";
+
+function readLabelSize() {
+  try {
+    const stored = window.localStorage.getItem(LABEL_SIZE_KEY);
+    return stored === "78x100" || stored === "100x150" ? stored : "100x150";
+  } catch {
+    return "100x150";
+  }
+}
+
+export default function TransaksiResiPanel({ order, onResiCreated }) {
+  const [resiCheck, setResiCheck] = useState(null);
+  const [resiChecking, setResiChecking] = useState(false);
+  const [resiBusy, setResiBusy] = useState(false);
+  const [resiError, setResiError] = useState("");
+  const [resiIssuedWarning, setResiIssuedWarning] = useState(false);
+  const [copied, setCopied] = useState(false);
+  /** Resi yang baru saja dibuat dari panel ini (langsung tampil tanpa menunggu muat ulang). */
+  const [createdAwb, setCreatedAwb] = useState("");
+  const [labelSize, setLabelSize] = useState(readLabelSize);
+  /** Kunci proses per transaksi: klik beruntun / Enter berulang tidak mengirim dua panggilan. */
+  const resiLock = useRef(false);
+
+  if (!order) return null;
+
+  const awb = createdAwb || order.awb_no || "";
+  const shippingStatus = createdAwb ? "menunggu_pickup" : order.shipping_status || "";
+  const cancelled = order.status === "dibatalkan";
+
+  /** Langkah 1: pra-cek baca-saja (server memeriksa alamat, nomor, kode area J&T, berat). */
+  const openResiConfirm = async () => {
+    if (resiLock.current || resiChecking) return;
+    resiLock.current = true;
+    setResiChecking(true);
+    setResiError("");
+    setResiIssuedWarning(false);
+    setResiCheck(null);
+    try {
+      const result = await base44.entities.Resi.check(order.order_number);
+      setResiCheck(result);
+    } catch (error) {
+      setResiError(error instanceof Error ? error.message : "Gagal memeriksa data resi. Coba lagi.");
+    } finally {
+      setResiChecking(false);
+      resiLock.current = false;
+    }
+  };
+
+  const closeResiConfirm = () => {
+    if (resiBusy) return;
+    setResiCheck(null);
+    setResiError("");
+  };
+
+  /** Langkah 2: panggil pembuatan resi (aksi sungguhan ke J&T). Tidak ada retry otomatis. */
+  const submitResi = async () => {
+    if (resiLock.current || resiBusy) return;
+    resiLock.current = true;
+    setResiBusy(true);
+    setResiError("");
+    try {
+      const result = await base44.entities.Transaction.createResi(order.order_number);
+      const awbNo = result?.awbNo || "";
+      setCreatedAwb(awbNo);
+      setResiBusy(false);
+      setResiCheck(null);
+      resiLock.current = false;
+      onResiCreated?.({ awb_no: awbNo, shipping_status: result?.shippingStatus || "menunggu_pickup" });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Gagal membuat resi. Coba lagi.";
+      setResiBusy(false);
+      resiLock.current = false;
+      // Kondisi khusus: resi sudah terbit di J&T tapi gagal dicatat → JANGAN tawarkan coba lagi.
+      if (message.includes(RESI_ISSUED_NOT_SAVED)) {
+        setResiCheck(null);
+        setResiIssuedWarning(true);
+        onResiCreated?.(null, true);
+        return;
+      }
+      setResiError(message);
+    }
+  };
+
+  const copyAwb = async () => {
+    if (!awb) return;
+    try {
+      await navigator.clipboard.writeText(awb);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1600);
+    } catch {
+      setCopied(false);
+    }
+  };
+
+  /** Buka halaman label yang sudah ada; ukuran terakhir diingat supaya cetak berikutnya cepat. */
+  const openLabel = (size) => {
+    try {
+      window.localStorage.setItem(LABEL_SIZE_KEY, size);
+    } catch {
+      /* localStorage bisa diblokir — abaikan, cetak tetap jalan */
+    }
+    setLabelSize(size);
+    window.open(`/admin/label/${order.order_number}?size=${size}`, "_blank", "noopener,noreferrer");
+  };
+
+  const sizeOptions = labelSize === "78x100" ? ["78x100", "100x150"] : ["100x150", "78x100"];
+  const sizeLabel = (size) => (size === "78x100" ? "Cetak 78 × 100 mm" : "Cetak 100 × 150 mm");
+
+  return (
+    <>
+      {awb ? (
+        <>
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Nomor Resi</p>
+              <p className="text-sm font-black font-mono text-slate-900 dark:text-white truncate">{awb}</p>
+            </div>
+            <button
+              type="button"
+              onClick={copyAwb}
+              className="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-[11px] font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+            >
+              <Check size={13} /> {copied ? "Tersalin" : "Salin"}
+            </button>
+          </div>
+
+          {/* Pesanan yang sudah dibatalkan: `shipping_status` lama masih "menunggu_pickup"
+              (jalur pembatalan tidak mengubah kolom itu), jadi ditampilkan "Dibatalkan". */}
+          {cancelled ? (
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+              Status kirim: <b className="text-red-600 dark:text-red-400">Dibatalkan</b>
+            </p>
+          ) : shippingStatus ? (
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+              Status kirim:{" "}
+              <b className="text-slate-700 dark:text-slate-200">{SHIPPING_STATUS_LABEL[shippingStatus] || shippingStatus}</b>
+            </p>
+          ) : null}
+
+          {!cancelled ? (
+            <div className="flex flex-wrap items-center gap-2 pt-0.5">
+              {sizeOptions.map((size) => (
+                <button
+                  key={size}
+                  type="button"
+                  onClick={() => openLabel(size)}
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[11px] font-bold transition-colors ${
+                    size === labelSize
+                      ? "border-slate-900 dark:border-slate-100 bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100"
+                      : "border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+                  }`}
+                >
+                  {sizeLabel(size)}
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </>
+      ) : cancelled ? (
+        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+          Pesanan ini sudah dibatalkan, jadi resi tidak dibuat dari sini.
+        </p>
+      ) : order.status === "diproses" ? (
+        <>
+          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+            Belum ada resi J&T. Nomor resi dibuat di J&T dan kurir akan menjemput paket.
+          </p>
+          <button
+            type="button"
+            onClick={openResiConfirm}
+            disabled={resiChecking}
+            className="w-full inline-flex items-center justify-center gap-2 px-3 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold rounded-xl text-sm hover:bg-slate-800 dark:hover:bg-slate-100 disabled:opacity-60 transition-all"
+          >
+            <Truck size={15} /> {resiChecking ? "Memeriksa data…" : "Buat Resi"}
+          </button>
+        </>
+      ) : (
+        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+          Resi untuk pesanan ini dibuat lewat alur pesanan, bukan dari menu Transaksi.
+        </p>
+      )}
+
+      {resiError && !resiCheck ? (
+        <p className="text-xs font-semibold text-red-600 dark:text-red-400">{resiError}</p>
+      ) : null}
+
+      {resiIssuedWarning ? (
+        <div className="rounded-lg border-2 border-amber-300 dark:border-amber-900/60 bg-amber-50 dark:bg-amber-900/20 px-3 py-2.5">
+          <p className="text-xs font-black text-amber-800 dark:text-amber-200">
+            Resi sudah terbit di J&T tetapi belum tercatat di sistem.
+          </p>
+          <p className="text-xs font-semibold text-amber-800 dark:text-amber-200 mt-1">
+            JANGAN klik Buat Resi lagi. Muat ulang halaman untuk melihat apakah resi sudah tercatat, dan hubungi admin
+            sistem bila belum.
+          </p>
+        </div>
+      ) : null}
+
+      {/* Konfirmasi "Buat Resi": hasil pra-cek + peringatan sebelum memanggil J&T */}
+      <AnimatePresence>
+        {resiCheck && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[10000] bg-black/50 backdrop-blur-sm flex items-center justify-center p-5"
+            onClick={closeResiConfirm}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              className="w-full max-w-md max-h-full overflow-y-auto no-scrollbar rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#1a1d28] p-5 shadow-xl"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <h4 className="font-heading font-bold text-slate-900 dark:text-white">Buat resi J&T?</h4>
+
+              <div className="mt-3 rounded-xl border border-slate-200 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800 text-sm">
+                <div className="px-3.5 py-2">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Penerima</p>
+                  <p className="font-bold text-slate-900 dark:text-white">{resiCheck.receiver?.name || "-"}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{resiCheck.receiver?.phone || "-"}</p>
+                </div>
+                <div className="px-3.5 py-2">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Alamat</p>
+                  <p className="text-xs font-semibold text-slate-700 dark:text-slate-200 leading-snug">
+                    {resiCheck.receiver?.address || "-"}
+                  </p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {[resiCheck.receiver?.kecamatan, resiCheck.receiver?.city, resiCheck.receiver?.postal_code]
+                      .filter(Boolean)
+                      .join(", ")}
+                  </p>
+                </div>
+                <div className="px-3.5 py-2 flex items-center justify-between gap-3">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Berat estimasi</p>
+                  <p className="text-sm font-bold text-slate-900 dark:text-white">{formatWeightExact(resiCheck.weight_grams)}</p>
+                </div>
+              </div>
+
+              <ul className="mt-3 space-y-1.5">
+                {(resiCheck.checks || []).map((check) => (
+                  <li key={check.key} className="flex items-start gap-2 text-xs">
+                    <span className={check.ok ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"}>
+                      {check.ok ? "✓" : "!"}
+                    </span>
+                    <span className="min-w-0">
+                      <span className={`font-bold ${check.ok ? "text-slate-700 dark:text-slate-200" : "text-amber-700 dark:text-amber-300"}`}>
+                        {check.label}
+                      </span>
+                      {!check.ok && check.detail ? (
+                        <span className="block font-semibold text-amber-700 dark:text-amber-300">{check.detail}</span>
+                      ) : null}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+
+              <p className="mt-3 flex items-start gap-1.5 text-xs font-bold text-amber-700 dark:text-amber-300">
+                <AlertCircle size={14} className="mt-px shrink-0" />
+                <span>Ini membuat order sungguhan di J&T dan kurir akan menjemput. Pastikan alamat dan ongkir sudah benar.</span>
+              </p>
+
+              {resiError ? <p className="mt-2 text-xs font-semibold text-red-600 dark:text-red-400">{resiError}</p> : null}
+
+              <div className="flex gap-2 mt-4">
+                <button
+                  type="button"
+                  onClick={closeResiConfirm}
+                  disabled={resiBusy}
+                  className="flex-1 px-4 py-2.5 border-2 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-60 transition-all"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  onClick={submitResi}
+                  disabled={resiBusy || !resiCheck.ok}
+                  className="flex-1 px-4 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold rounded-xl hover:bg-slate-800 dark:hover:bg-slate-100 disabled:opacity-60 transition-all"
+                >
+                  {resiBusy ? "Membuat resi…" : "Buat Resi"}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  );
+}
