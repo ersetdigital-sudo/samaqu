@@ -225,6 +225,14 @@ export const base44 = {
       },
 
       /**
+       * Hapus transaksi manual (untuk membuang data uji). Server menolak kalau pesanan sudah
+       * punya resi J&T atau kalau itu pesanan website, dan mengembalikan stok lebih dulu.
+       */
+      async deleteOrder(orderNumber: string) {
+        return call<{ order_number: string; deleted: boolean }>("DELETE", TRANSAKSI, { order_number: orderNumber });
+      },
+
+      /**
        * Buat resi J&T untuk satu pesanan (aksi sungguhan ke J&T). Memakai route admin apa
        * adanya: `PATCH /api/admin/orders { orderNumber, action: "createJnt" }`.
        * Kontrak responsnya dipertahankan: sukses `{ success, awbNo, status, shippingStatus }`,

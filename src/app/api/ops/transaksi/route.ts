@@ -666,3 +666,84 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Gagal menyimpan perubahan" }, { status: 500 });
   }
 }
+
+/**
+ * Hapus transaksi manual dari menu Transaksi (ops) — dipakai untuk membuang data uji.
+ *
+ * Aturan aman:
+ *  - Pesanan yang masih AKTIF dan sudah punya resi J&T TIDAK boleh dihapus di sini. Resinya akan
+ *    tetap hidup di J&T (kurir tetap bisa menjemput) tanpa catatan lokal. Admin diarahkan
+ *    "Batalkan" dulu karena jalur itulah yang mem-void resi di J&T.
+ *    Pesanan yang SUDAH dibatalkan boleh dihapus walau `awb_no` masih tersimpan (jalur
+ *    pembatalan tidak mengosongkan kolom itu) — resinya sudah di-void saat pembatalan.
+ *  - Yang boleh dihapus hanya transaksi manual (bukan pesanan website yang sudah dibayar).
+ *  - Stok dikembalikan DULU memakai RPC yang sama dengan pembatalan, hanya untuk pesanan yang
+ *    stoknya benar-benar terpotong (`stock_reserved === true`) dan belum dibatalkan.
+ *  - Urutan hapus: voucher_usages → order_items → orders (event tracking ikut terhapus lewat
+ *    ON DELETE CASCADE pada `order_tracking_events`).
+ */
+export async function DELETE(req: NextRequest) {
+  if (!(await isOpsAdmin(req))) return unauthorized();
+
+  try {
+    const body = await req.json().catch(() => ({}));
+    const orderNumber = String(body?.order_number || "").trim();
+    if (!orderNumber) return bad("Nomor pesanan wajib diisi");
+
+    const admin = getSupabaseAdmin();
+    const { data: order, error } = await admin
+      .from("orders")
+      .select("id, order_number, status, source, awb_no, jnt_order_id, stock_reserved")
+      .eq("order_number", orderNumber)
+      .maybeSingle();
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (!order) return NextResponse.json({ error: "Pesanan tidak ditemukan" }, { status: 404 });
+
+    if ((order.awb_no || order.jnt_order_id) && order.status !== "dibatalkan") {
+      return bad(
+        `Pesanan ini sudah punya resi J&T${order.awb_no ? ` (${order.awb_no})` : ""}. Batalkan dulu supaya resinya ikut dibatalkan di J&T.`,
+      );
+    }
+    if (sourceKey(order.source) === "website") {
+      return bad("Pesanan website tidak bisa dihapus dari menu Transaksi.");
+    }
+
+    const { data: items } = await admin
+      .from("order_items")
+      .select("product_id, color, size, quantity")
+      .eq("order_id", order.id);
+
+    // Stok dikembalikan hanya kalau memang pernah terpotong dan belum dikembalikan pembatalan.
+    if (order.stock_reserved === true && order.status !== "dibatalkan") {
+      for (const item of items || []) {
+        if (!item?.product_id || !item?.color || !item?.size || !item?.quantity) continue;
+        await admin.rpc("samaqu_restore_stock", {
+          p_product_id: item.product_id,
+          p_color: item.color,
+          p_size: item.size,
+          p_qty: item.quantity,
+        });
+      }
+    }
+
+    await admin.from("voucher_usages").delete().eq("order_id", order.id);
+
+    const { error: itemsError } = await admin.from("order_items").delete().eq("order_id", order.id);
+    if (itemsError) {
+      console.error("[OPS] hapus item transaksi:", itemsError.message);
+      return NextResponse.json({ error: "Gagal menghapus produk transaksi" }, { status: 500 });
+    }
+
+    const { error: orderError } = await admin.from("orders").delete().eq("id", order.id);
+    if (orderError) {
+      console.error("[OPS] hapus transaksi:", orderError.message);
+      return NextResponse.json({ error: "Gagal menghapus transaksi" }, { status: 500 });
+    }
+
+    return NextResponse.json({ order_number: order.order_number, deleted: true });
+  } catch (e) {
+    console.error("[OPS] hapus transaksi:", e);
+    return NextResponse.json({ error: "Gagal menghapus transaksi" }, { status: 500 });
+  }
+}
