@@ -68,7 +68,7 @@ const NAV: { section: string; items: NavItem[] }[] = [
     section: "Katalog & Data",
     items: [
       { label: "Produk", href: "/panel-admin/produk", icon: "box", soon: true },
-      { label: "Leads", href: "/panel-admin/leads", icon: "users", soon: true },
+      { label: "Leads", href: "/panel-admin/leads", icon: "users" },
     ],
   },
 ];
