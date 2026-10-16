@@ -58,8 +58,22 @@ function CheckoutSuccessContent() {
   useEffect(() => {
     async function fetchData() {
       if (!orderId) { setLoading(false); return; }
+      // Kalau URL-nya membawa token tautan pesanan (`?t=…`), baca lewat endpoint lookup yang
+      // memverifikasi token — jalur ini yang tetap jalan untuk customer tamu setelah policy RLS
+      // `orders` ditutup dari anon. Tanpa token (tautan lama / sudah login), pakai jalur langsung.
+      const lookupToken = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("t") : null;
+      const orderPromise = lookupToken
+        ? fetch(`/api/orders/lookup?order=${encodeURIComponent(orderId)}&t=${encodeURIComponent(lookupToken)}`)
+            .then((r) => r.json())
+            .then((json) => ({ data: json?.order || null }))
+            .catch(() => ({ data: null }))
+        : supabase
+            .from("orders")
+            .select("*, order_items(product_name, color, size, quantity, price)")
+            .eq("order_number", orderId)
+            .single();
       const [orderRes, paymentRes, settingsRes] = await Promise.all([
-        supabase.from("orders").select("*, order_items(product_name, color, size, quantity, price)").eq("order_number", orderId).single(),
+        orderPromise,
         supabase.from("payment_methods").select("*").eq("is_active", true).order("display_order"),
         supabase.from("store_settings").select("whatsapp, store_name, tagline").eq("id", 1).single(),
       ]);
