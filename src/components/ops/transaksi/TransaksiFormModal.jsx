@@ -33,6 +33,7 @@ import { OPS_STOCK_SIZES } from "@/lib/ops-stock";
 import { categoryRank, seriesRank, variantSortKey } from "@/lib/ops-order";
 import { formatWeightExact } from "@/lib/shipping-weight";
 import { formatRupiah, isoToWibInput, itemSummaryLabel, itemSummaryParts, wibNow, wibToIso } from "@/components/ops/transaksi/transaksi-format";
+import TransaksiResiPanel from "@/components/ops/transaksi/TransaksiResiPanel";
 import WilayahSelect from "@/components/ops/transaksi/WilayahSelect";
 import { useToast } from "@/components/ops/ui/use-toast";
 
@@ -124,6 +125,11 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
   const [addressBackup, setAddressBackup] = useState(null);
   /** Hasil "Cek Ongkir" terakhir (daftar layanan J&T + berat & tujuan yang dipakai). */
   const [ongkir, setOngkir] = useState(EMPTY_ONGKIR);
+  /**
+   * Setelah transaksi tersimpan, drawer TIDAK langsung ditutup: diganti panel "Transaksi tercatat"
+   * yang isinya aksi resi (buat + cetak), supaya admin tidak perlu mencari barisnya di daftar.
+   */
+  const [savedOrder, setSavedOrder] = useState(null);
   const prefilledFor = useRef(null);
   /** Penanda pelanggan yang alamatnya sudah diisi otomatis (sekali per pelanggan). */
   const prefilledAddressFor = useRef(null);
@@ -577,6 +583,12 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
     updateForm({ shipping_cost: digits(service?.cost) });
   };
 
+  /** Setelah resi dibuat dari panel "Transaksi tercatat", simpan nomor resinya di panel. */
+  const handleResiCreated = (patch) => {
+    if (!patch) return;
+    setSavedOrder((current) => (current ? { ...current, ...patch } : current));
+  };
+
   /**
    * Pilihan pelanggan = SEMUA pelanggan (termasuk yang hanya punya pesanan batal dan yang
    * belum punya alamat) supaya admin dari tab mana pun tetap bisa memilih. Yang alamatnya
@@ -827,7 +839,16 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
       });
       onSaved?.();
       setTouched(false);
-      onClose();
+      // Lanjut ke panel "Transaksi tercatat" (bukan menutup drawer) supaya bisa langsung
+      // buat/cetak resi. Datanya diambil dari respons server + data awal saat mode Ubah.
+      setSavedOrder({
+        order_number: result?.order_number || initialData?.order_number || "",
+        total: Number(result?.total ?? total) || 0,
+        status: initialData?.status || "diproses",
+        awb_no: initialData?.awb_no || "",
+        shipping_status: initialData?.shipping_status || "",
+        isEdit,
+      });
     },
     onError: (error) =>
       setSaveError(error instanceof Error ? error.message : "Gagal menyimpan transaksi. Coba lagi."),
@@ -951,10 +972,14 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h3 className="font-heading font-bold text-lg text-slate-900 dark:text-white">
-                    {isEdit ? "Ubah Transaksi" : "Tambah Transaksi"}
+                    {savedOrder ? "Transaksi Tercatat" : isEdit ? "Ubah Transaksi" : "Tambah Transaksi"}
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    {isEdit ? `No. Order ${initialData?.order_number}` : "Transaksi manual langsung berstatus Lunas"}
+                    {savedOrder
+                      ? `No. Order ${savedOrder.order_number}`
+                      : isEdit
+                        ? `No. Order ${initialData?.order_number}`
+                        : "Transaksi manual langsung berstatus Lunas"}
                   </p>
                 </div>
                 <button
@@ -966,8 +991,8 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                 </button>
               </div>
 
-              {/* Stepper: langkah selesai boleh diklik untuk kembali */}
-              <ol className="flex items-center gap-1.5 mt-3">
+              {/* Stepper: langkah selesai boleh diklik untuk kembali (disembunyikan saat sudah tersimpan) */}
+              <ol className={`flex items-center gap-1.5 mt-3 ${savedOrder ? "hidden" : ""}`}>
                 {stepLabels.map((label, index) => {
                   const done = index < step;
                   const active = index === step;
@@ -1015,6 +1040,35 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
               className="transaksi-body no-scrollbar flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 sm:px-6 py-3 space-y-3.5"
               style={{ scrollbarWidth: "none" }}
             >
+              {/* Setelah tersimpan: panel "Transaksi tercatat" — langsung bisa buat & cetak resi,
+                  jadi admin tidak perlu mencari barisnya lagi di daftar. */}
+              {savedOrder ? (
+                <div className="space-y-3.5">
+                  <div className="rounded-2xl border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50 dark:bg-emerald-900/20 px-4 py-3.5">
+                    <p className="text-sm font-black text-emerald-800 dark:text-emerald-200">
+                      {savedOrder.isEdit ? "✅ Transaksi diperbarui" : "✅ Transaksi tercatat"}
+                    </p>
+                    <p className="text-xs font-semibold text-emerald-800 dark:text-emerald-200 mt-1">
+                      No. Order <b className="font-mono">{savedOrder.order_number}</b>
+                      {savedOrder.total ? ` · Rp ${formatRupiah(savedOrder.total)}` : ""}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
+                      Pengiriman J&T
+                    </p>
+                    <div className="rounded-xl border border-slate-200 dark:border-slate-800 px-3.5 py-3 space-y-2.5">
+                      <TransaksiResiPanel order={savedOrder} onResiCreated={handleResiCreated} />
+                    </div>
+                  </div>
+
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Transaksi sudah masuk ke daftar Transaksi. Tutup panel ini kalau sudah selesai.
+                  </p>
+                </div>
+              ) : (
+                <>
               {/* ── Langkah 1: Pelanggan (termasuk alamat & sumber/waktu) ── */}
               {step === 0 && (
                 <>
@@ -1975,6 +2029,9 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                 </>
               )}
 
+                </>
+              )}
+
               {/* Tombol simpan untuk Enter; tombol aslinya ada di footer yang menempel */}
               <button type="submit" className="hidden" aria-hidden="true" />
             </form>
@@ -2000,6 +2057,18 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                 </div>
 
                 <div className="flex items-center gap-2">
+                  {/* Sudah tersimpan → footer cukup satu aksi: tutup panel (aksinya pindah ke
+                      panel "Transaksi tercatat" yang berisi Buat Resi & Cetak Resi). */}
+                  {savedOrder ? (
+                    <button
+                      type="button"
+                      onClick={onClose}
+                      className="px-5 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold rounded-xl hover:bg-slate-800 dark:hover:bg-slate-100 transition-all"
+                    >
+                      Tutup
+                    </button>
+                  ) : (
+                    <>
                   {step > 0 && (
                     <button
                       type="button"
@@ -2031,6 +2100,8 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                       <Save size={16} />
                       {mutation.isPending ? "Menyimpan..." : isEdit ? "Simpan Perubahan" : "Simpan Transaksi"}
                     </button>
+                  )}
+                    </>
                   )}
                 </div>
               </div>
