@@ -46,7 +46,7 @@ import { format, startOfMonth, endOfMonth, subMonths, subDays } from "date-fns";
 import ConfirmDeleteModal from "@/components/ops/ConfirmDeleteModal";
 import ImportProductModal from "@/components/ops/ImportProductModal"; // Import the new modal
 import { useToast } from "@/components/ops/ui/use-toast";
-import { createPageUrl } from "@/lib/ops-router";
+import { usePageUrl } from "@/lib/ops-router";
 import { MetricCardSkeleton } from "@/components/ops/ui/skeleton";
 import { SIZES, normalizeStock, sumStock, stockStatus } from "@/lib/ops-variants";
 import { IconBoxes, IconLayers, IconCalendarClock, IconPackageX, IconArrowDownToLine, IconAlertTriangle } from "@/components/ops/icons";
@@ -462,6 +462,7 @@ function ProductDetailModal({ isOpen, onClose, product, stockIns = [], transacti
 }
 export default function MasterProduk() {
   const navigate = useNavigate();
+  const pageUrl = usePageUrl();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('produk');
   const [statusFilter, setStatusFilter] = useState("all");
@@ -889,7 +890,7 @@ export default function MasterProduk() {
 
                 {activeTab !== 'produk' && (
                   <motion.button
-                    onClick={() => navigate(createPageUrl('TambahBarangMasuk'))}
+                    onClick={() => navigate(pageUrl('TambahBarangMasuk'))}
                     className="w-full md:w-auto flex items-center justify-center gap-2 px-4 py-2.5 bg-white/10 backdrop-blur-sm border border-white/10 text-white rounded-xl transition-all hover:bg-white/20 font-jakarta"
                     style={{ fontSize: '14px', fontWeight: 700 }}
                     whileHover={{ scale: 1.03 }}
@@ -901,7 +902,7 @@ export default function MasterProduk() {
                 )}
 
                 <motion.button
-                  onClick={() => navigate(createPageUrl('TambahProduk'))}
+                  onClick={() => navigate(pageUrl('TambahProduk'))}
                   className="w-full md:w-auto flex items-center justify-center gap-2 px-4 py-2.5 bg-white text-blue-600 rounded-xl shadow-lg transition-all hover:bg-blue-50 font-jakarta border border-transparent"
                   style={{ fontSize: '14px', fontWeight: 700 }}
                   whileHover={{ scale: 1.03 }}
@@ -1300,7 +1301,7 @@ export default function MasterProduk() {
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      navigate(createPageUrl('TambahProduk'), { state: { product } });
+                                      navigate(pageUrl('TambahProduk'), { state: { product } });
                                     }}
                                     className="w-8 h-8 flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
                                     title="Edit Produk"
@@ -1398,7 +1399,7 @@ export default function MasterProduk() {
                         <motion.button
                           onClick={(e) => {
                             e.stopPropagation();
-                            navigate(createPageUrl('TambahProduk'), { state: { product } });
+                            navigate(pageUrl('TambahProduk'), { state: { product } });
                           }}
                           className="flex items-center gap-1.5 px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-xl transition-all font-inter border border-blue-100"
                           style={{ fontSize: '12px', fontWeight: 600 }}
@@ -1690,7 +1691,7 @@ export default function MasterProduk() {
                         Menampilkan <span className="text-blue-600 dark:text-blue-400 font-bold">{manualStockIns.length}</span> data barang masuk
                       </p>
                       <motion.button
-                        onClick={() => navigate(createPageUrl('TambahBarangMasuk'))}
+                        onClick={() => navigate(pageUrl('TambahBarangMasuk'))}
                         className="flex items-center gap-2 px-4 py-2.5 bg-green-500 hover:bg-green-600 text-white rounded-xl font-semibold text-sm transition-all shadow-md"
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}

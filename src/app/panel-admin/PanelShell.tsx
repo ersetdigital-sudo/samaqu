@@ -15,6 +15,7 @@ import type { FormEvent, ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { Toaster } from "@/components/ops/ui/toaster";
+import { OpsPageMapProvider } from "@/lib/ops-router";
 import { useWibLongDate } from "./wib-date";
 import styles from "./panel.module.css";
 
@@ -67,11 +68,25 @@ const NAV: { section: string; items: NavItem[] }[] = [
   {
     section: "Katalog & Data",
     items: [
-      { label: "Produk", href: "/panel-admin/produk", icon: "box", soon: true },
+      { label: "Produk", href: "/panel-admin/produk", icon: "box" },
       { label: "Leads", href: "/panel-admin/leads", icon: "users" },
     ],
   },
 ];
+
+/**
+ * Peta nama halaman (konvensi Base44) → route panel admin. Dipakai halaman ops yang dititipkan
+ * ke panel supaya navigasi internalnya ("Tambah Produk", "Tambah Barang Masuk", "kembali")
+ * tetap berada di `/panel-admin/...`, bukan lompat ke `/ops/*` (yang akan 404 di host admin).
+ */
+const PANEL_PAGES: Record<string, string> = {
+  Dashboard: "/panel-admin",
+  Transaksi: "/panel-admin/transaksi",
+  Leads: "/panel-admin/leads",
+  MasterProduk: "/panel-admin/produk",
+  TambahProduk: "/panel-admin/produk/tambah",
+  TambahBarangMasuk: "/panel-admin/produk/barang-masuk",
+};
 
 export default function PanelShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -297,7 +312,7 @@ export default function PanelShell({ children }: { children: ReactNode }) {
           </div>
         </div>
 
-        {children}
+        <OpsPageMapProvider pages={PANEL_PAGES}>{children}</OpsPageMapProvider>
       </main>
       <Toaster />
       </div>

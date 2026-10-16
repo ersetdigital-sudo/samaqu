@@ -14,6 +14,7 @@ import PresetColorPicker from "@/components/PresetColorPicker";
 import { colorMap } from "@/lib/katalog-data";
 import { uploadToCloudinary, validateMediaFile } from "@/lib/cloudinary";
 import { useStoreSettings } from "@/lib/store-settings";
+import { usePageUrl } from "@/lib/ops-router";
 
 const CATEGORIES = ["Thobe", "Kandora", "Koko", "Vest", "Kabak", "Cover & Hanger"] as const;
 const SIZES = ["S", "M", "L", "XL", "XXL"] as const;
@@ -291,7 +292,9 @@ export default function TambahProdukPage({
   // Harga diarahkan ke kolom khusus Open Order (`open_order_*`) saat `priceTarget = "openOrder"`
   // (menu Open Order) supaya harga kampanye beda tanpa mengubah harga katalog (`products.price`).
   const isOpenOrderPrice = priceTarget === "openOrder";
-  const backHref = isOps ? "/ops/master-produk" : isOpenOrderPrice ? "/admin/open-order" : "/admin";
+  // Sadar-base: di panel admin, "kembali" harus ke /panel-admin/produk, bukan /ops/master-produk.
+  const pageUrl = usePageUrl();
+  const backHref = isOps ? pageUrl("MasterProduk") : isOpenOrderPrice ? "/admin/open-order" : "/admin";
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(!!editProductId);
   const [errors, setErrors] = useState<Record<string, string>>({});

@@ -6,12 +6,13 @@ import { base44 } from "@/lib/ops-api";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, TrendingUp, Package, Calendar as CalendarIcon, Hash, FileText, X, RotateCcw, Save, DollarSign } from "lucide-react";
 import { format } from "date-fns";
-import { createPageUrl } from "@/lib/ops-router";
+import { usePageUrl } from "@/lib/ops-router";
 import { useToast } from "@/components/ops/ui/use-toast";
 import { SIZES, normalizeStock } from "@/lib/ops-variants";
 
 export default function TambahBarangMasuk() {
   const navigate = useNavigate();
+  const pageUrl = usePageUrl();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -124,7 +125,7 @@ export default function TambahBarangMasuk() {
         description: "Stok produk dan HPP telah diperbarui",
         variant: "success",
       });
-      navigate(createPageUrl('MasterProduk'));
+      navigate(pageUrl('MasterProduk'));
     },
     onError: (error) => {
       toast({
@@ -239,7 +240,7 @@ export default function TambahBarangMasuk() {
         {/* Header */}
         <div className="mb-8">
           <button
-            onClick={() => navigate(createPageUrl('MasterProduk'))}
+            onClick={() => navigate(pageUrl('MasterProduk'))}
             className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-5 transition-colors"
             style={{ fontSize: '15px', fontWeight: 600, letterSpacing: '0.01em' }}
           >
@@ -506,7 +507,7 @@ export default function TambahBarangMasuk() {
           <div className="flex gap-4 justify-end pt-4">
             <button
               type="button"
-              onClick={() => navigate(createPageUrl('MasterProduk'))}
+              onClick={() => navigate(pageUrl('MasterProduk'))}
               className="flex items-center justify-center gap-2 px-8 py-3.5 bg-white border-2 border-gray-300 text-gray-700 rounded-2xl hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 shadow-sm hover:shadow-md font-outfit"
               style={{ fontSize: '15px', fontWeight: 700, letterSpacing: '0.01em' }}
             >
