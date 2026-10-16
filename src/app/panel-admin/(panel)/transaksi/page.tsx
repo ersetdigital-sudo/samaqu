@@ -12,7 +12,7 @@ import OpsTransaksi from "@/app/ops/transaksi/page";
 
 export default function PanelTransaksiPage() {
   return (
-    <div className="ops-root">
+    <div className="ops-root panel-ops">
       <OpsTransaksi />
     </div>
   );

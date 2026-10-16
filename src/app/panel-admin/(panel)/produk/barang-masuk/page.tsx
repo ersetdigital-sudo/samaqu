@@ -9,7 +9,7 @@ import TambahBarangMasuk from "@/app/ops/barang-masuk/page";
 
 export default function PanelBarangMasukPage() {
   return (
-    <div className="ops-root">
+    <div className="ops-root panel-ops">
       <TambahBarangMasuk />
     </div>
   );

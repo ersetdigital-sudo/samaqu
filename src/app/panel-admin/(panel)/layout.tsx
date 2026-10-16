@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import "../panel-ops.css";
 import PanelShell from "../PanelShell";
 
 /**
