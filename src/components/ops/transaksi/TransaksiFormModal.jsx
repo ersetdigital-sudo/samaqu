@@ -8,10 +8,16 @@
  * Kalau sudah ada isian lalu drawer ditutup, muncul konfirmasi singkat supaya isian
  * tidak hilang karena salah klik.
  *
- * Pemilihan produk bertahap mengikuti urutan Laporan Stok di ops
- * (Kategori → Jenis Kain → Warna → Series → Ukuran → Qty). Urutan & "warna dari nama produk"
- * diambil dari `src/lib/ops-order.ts` — aturan yang sama dengan Daftar Produk & Laporan Stok —
- * jadi tidak ada daftar kedua yang bisa berbeda.
+ * Pemilihan produk memakai pemilih cepat: cari produk → tombol Series (harga + sisa stok) →
+ * tombol Ukuran (sisa stok per ukuran) → Qty. Grup produk (nama + jenis kain) diambil dari
+ * data yang sama dengan Laporan Stok (`/api/ops/product-variants`), urutan series memakai
+ * `seriesRank` dari `src/lib/ops-order.ts`, dan stok yang ditampilkan SELALU `stock_efektif`
+ * (hasil `resolveStock`) — bukan kolom `stock` mentah, karena baris series pengikut
+ * (Bayati/Imron ikut Jiharkah, Karim/Imalah ikut Nahawand) menyimpan stok 0 di database.
+ *
+ * Langkah Warna hanya muncul kalau produk itu memang punya lebih dari satu warna asli;
+ * varian Thobe menyimpan warna `default` (warna sebenarnya ada di nama produk), jadi langkah
+ * itu dilewati. Nilai `color` yang dikirim ke server tetap nilai asli di `product_variants`.
  *
  * Catatan: harga & stok di sini hanya untuk tampilan/peringatan. Saat Simpan, server tetap
  * membaca ulang harga dari database dan memotong stok lewat RPC yang sama dengan checkout.
@@ -42,8 +48,9 @@ const phoneKey = (value) => digits(value).replace(/^0+/, "").replace(/^62/, "");
 
 const ADDRESS_FIELDS = ["address", "province", "city", "kecamatan", "postal_code"];
 
-/** Satu baris item yang masih kosong (semua langkah belum dipilih). */
+/** Satu baris item yang masih kosong (produk belum dipilih). */
 const emptyRow = () => ({
+  product: "",
   category: "",
   kain: "",
   warna: "",
@@ -52,6 +59,12 @@ const emptyRow = () => ({
   quantity: 1,
   editing: true,
 });
+
+/** Batasi qty: minimal 1, tidak lebih dari stok efektif varian yang dipilih. */
+const clampQty = (value, max) => {
+  const top = Number(max) > 0 ? Number(max) : 99;
+  return Math.max(1, Math.min(top, Number(value) || 1));
+};
 
 const sizeRank = (size) => {
   const index = OPS_STOCK_SIZES.indexOf(String(size || "").toUpperCase());
@@ -78,6 +91,10 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
   const prefilledAddressFor = useRef(null);
   /** Nomor pesanan sumber alamat yang sedang terisi otomatis (ditampilkan sebagai keterangan). */
   const [addressPrefilledFrom, setAddressPrefilledFrom] = useState("");
+  /** Pemilih produk cepat: kata kunci + chip kategori (dipakai pada baris item yang terbuka). */
+  const [search, setSearch] = useState("");
+  const [catChip, setCatChip] = useState("all");
+  const searchRef = useRef(null);
 
   const { data: variants = [] } = useQuery({
     queryKey: ["transaksi", "variants"],
@@ -278,6 +295,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
         return { ...emptyRow(), variant: `${item.color || "default"}||${String(item.size).toUpperCase()}`, quantity: item.quantity };
       }
       return {
+        product: group.product_name,
         category: group.category,
         kain: group.kain,
         warna: group.warna,
@@ -299,11 +317,68 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
   const rowsFor = (category, kain, warna) =>
     dataset.filter((row) => row.category === category && row.kain === kain && row.warna === warna);
 
-  const kainOptions = (category) =>
-    [...new Set(dataset.filter((row) => row.category === category).map((row) => row.kain))].sort(cmpId);
+  /**
+   * Grup produk = nama produk + jenis kain (berisi semua series & warnanya).
+   * Grup inilah yang muncul di hasil pencarian, contoh "Thobe Superblack · Kain B-01".
+   */
+  const productGroups = useMemo(() => {
+    const map = new Map();
+    for (const entry of dataset) {
+      const key = `${entry.category}|${entry.kain}|${entry.product_name}`;
+      let group = map.get(key);
+      if (!group) {
+        group = { key, name: entry.product_name, category: entry.category, kain: entry.kain, warnas: [], series: [], stockTotal: 0 };
+        map.set(key, group);
+      }
+      if (!group.warnas.includes(entry.warna)) group.warnas.push(entry.warna);
+      if (entry.series && !group.series.includes(entry.series)) group.series.push(entry.series);
+      // Stok grup dihitung HANYA dari baris pemilik stok (tanpa `linkedTo`). Baris pengikut
+      // memakai stok induknya, jadi kalau ikut dijumlah hasilnya dobel.
+      if (!entry.linkedTo) {
+        group.stockTotal += Object.values(entry.sizes || {}).reduce((sum, n) => sum + (Number(n) || 0), 0);
+      }
+    }
+    return [...map.values()];
+  }, [dataset]);
 
-  const warnaOptions = (category, kain) =>
-    [...new Set(dataset.filter((row) => row.category === category && row.kain === kain).map((row) => row.warna))].sort(cmpId);
+  /** Grup yang sedang dipilih pada satu baris item (dibaca dari isian barisnya sendiri). */
+  const groupOf = (row) =>
+    row.product
+      ? productGroups.find((group) => group.name === row.product && group.kain === row.kain && group.category === row.category) || null
+      : null;
+
+  /** Hasil pencarian: difilter kata kunci + chip kategori, diurutkan seperti Daftar Produk. */
+  const visibleGroups = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return productGroups
+      .filter((group) => catChip === "all" || group.category === catChip)
+      .filter((group) => {
+        if (!query) return true;
+        return `${group.name} ${group.kain} ${group.category} ${group.warnas.join(" ")}`.toLowerCase().includes(query);
+      })
+      .sort(
+        (a, b) =>
+          categoryRank(a.category) - categoryRank(b.category) || cmpId(a.kain, b.kain) || cmpId(a.name, b.name),
+      );
+  }, [productGroups, search, catChip]);
+
+  /**
+   * Tombol series untuk satu baris item: satu tombol per series, urut seperti Laporan Stok
+   * (`seriesRank`), harga = harga produk pada baris series itu (sama dengan yang dipakai server
+   * saat menyimpan), stok = jumlah `stock_efektif` seluruh ukuran di series tersebut.
+   */
+  const seriesChoices = (row) => {
+    if (!row.product || !row.kain || !row.warna) return [];
+    const rows = rowsFor(row.category, row.kain, row.warna).filter((entry) => entry.product_name === row.product);
+    const bySeries = new Map();
+    for (const entry of rows) {
+      const key = entry.series || "";
+      const current = bySeries.get(key) || { series: entry.series || "", price: entry.price, stock: 0 };
+      current.stock += Object.values(entry.sizes || {}).reduce((sum, n) => sum + (Number(n) || 0), 0);
+      bySeries.set(key, current);
+    }
+    return [...bySeries.values()].sort((a, b) => seriesRank(a.series) - seriesRank(b.series));
+  };
 
   /** Series hanya jadi langkah kalau produk di kombinasi itu memang punya series. */
   const seriesStep = (category, kain, warna) => {
@@ -368,7 +443,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
     const chosen = options.find((entry) => entry.value === row.variant) || null;
     const quantity = Number(row.quantity) || 0;
     let issue = null;
-    if (!product) issue = "Pilih produk dulu (kategori → jenis kain → warna → series)";
+    if (!product) issue = "Pilih produk dulu (cari produk → series → ukuran)";
     else if (!row.variant) issue = "Ukuran belum dipilih";
     else if (quantity < 1) issue = "Jumlah minimal 1";
     else {
@@ -478,11 +553,15 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
   /** Hanya satu baris produk yang dibiarkan terbuka; baris lengkap diringkas jadi satu baris. */
   const openRow = (index) => {
     setTouched(true);
+    setSearch("");
+    setCatChip("all");
     setItems((rows) => rows.map((row, i) => (row.editing === (i === index) ? row : { ...row, editing: i === index })));
   };
 
   const addRow = () => {
     setTouched(true);
+    setSearch("");
+    setCatChip("all");
     setItems((rows) => [...rows.map((row) => ({ ...row, editing: false })), emptyRow()]);
   };
 
@@ -492,17 +571,48 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
     setTouched(true);
   };
 
-  const updateRow = (index, patch, { collapse = false } = {}) => {
+  const updateRow = (index, patch) => {
     setTouched(true);
-    setItems((rows) =>
-      rows.map((row, i) => (i === index ? { ...row, ...patch, ...(collapse ? { editing: false } : {}) } : row)),
-    );
+    setItems((rows) => rows.map((row, i) => (i === index ? { ...row, ...patch } : row)));
   };
 
   const removeRow = (index) => {
     setTouched(true);
     setItems((rows) => rows.filter((_, i) => i !== index));
   };
+
+  /** Baris item yang sedang terbuka (hanya satu) — dipakai untuk fokus kotak cari. */
+  const openIndex = items.findIndex((row) => row.editing);
+
+  /** Pilih grup produk pada satu baris; `null` = kosongkan pilihan lagi ("Ganti"). */
+  const chooseGroup = (index, nextGroup) => {
+    if (!nextGroup) {
+      updateRow(index, { product: "", category: "", kain: "", warna: "", series: null, variant: "" });
+      return;
+    }
+    // Produk dengan satu warna asli langsung terisi; yang multi-warna menunggu langkah Warna.
+    updateRow(index, {
+      product: nextGroup.name,
+      category: nextGroup.category,
+      kain: nextGroup.kain,
+      warna: nextGroup.warnas.length === 1 ? nextGroup.warnas[0] : "",
+      series: null,
+      variant: "",
+    });
+  };
+
+  /* Kata kunci & chip direset saat pindah baris supaya ketikan tidak "menempel" ke item lain,
+     dan kotak cari langsung difokuskan supaya input produk bisa dimulai tanpa klik. */
+  useEffect(() => {
+    setSearch("");
+    setCatChip("all");
+  }, [openIndex]);
+
+  useEffect(() => {
+    if (!isOpen || step !== 1 || openIndex === -1) return undefined;
+    const timer = setTimeout(() => searchRef.current?.focus(), 80);
+    return () => clearTimeout(timer);
+  }, [isOpen, step, openIndex]);
 
   const mutation = useMutation({
     mutationFn: (data) =>
@@ -992,12 +1102,12 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
               {/* ── Langkah 2: Produk ── */}
               {step === 1 && (
                 <>
-              {/* Produk bertahap */}
-              <section className="space-y-2">
+              {/* Pemilih produk cepat: cari produk → series → ukuran → qty */}
+              <section className="space-y-2.5">
                 <div className="flex items-center justify-between gap-2">
                   <h4 className={sectionClass}>Produk</h4>
                   <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500">
-                    Kategori → Jenis Kain → Warna → Series → Ukuran → Qty
+                    Cari produk → Series → Ukuran → Qty
                   </span>
                 </div>
 
@@ -1008,10 +1118,16 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                     const step = seriesStep(row.category, row.kain, row.warna);
 
                     if (!row.editing && rowComplete(row) && info.chosen) {
-                      const product = info.product;
-                      const summary = [row.category, row.warna, step.show ? row.series : "", info.chosen.size, `x${info.quantity}`]
+                      const group = groupOf(row);
+                      // Satu baris ringkas: "Thobe Superblack · Kain B-01 · Jiharkah · XL × 2"
+                      const summary = [
+                        group?.name || row.product,
+                        row.kain ? `Kain ${row.kain}` : "",
+                        step.show ? row.series : "",
+                        `${info.chosen.size} × ${info.quantity}`,
+                      ]
                         .filter(Boolean)
-                        .join(" | ");
+                        .join(" · ");
                       return (
                         <div
                           key={index}
@@ -1023,7 +1139,6 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                             </p>
                             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                               Rp {formatRupiah(info.subtotal)}
-                              {product?.kain ? ` · kain ${product.kain}` : ""}
                               {` · stok ${info.chosen.stock}`}
                               {info.chosen.linkedTo ? ` · stok mengikuti ${info.chosen.linkedTo}` : ""}
                             </p>
@@ -1049,12 +1164,16 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                       );
                     }
 
+                    const group = groupOf(row);
+                    const maxStock = info.chosen ? info.chosen.stock : 0;
+                    const quantity = Number(row.quantity) || 1;
+
                     return (
                       <div
                         key={index}
-                        className={`rounded-xl border-2 p-3 ${info.issue ? "border-slate-200 dark:border-slate-700" : "border-slate-200 dark:border-slate-700"}`}
+                        className="rounded-xl border-2 border-slate-200 dark:border-slate-700 p-3 space-y-3"
                       >
-                        <div className="flex items-center justify-between gap-2 mb-2">
+                        <div className="flex items-center justify-between gap-2">
                           <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
                             Produk {index + 1}
                           </span>
@@ -1069,122 +1188,295 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                           </button>
                         </div>
 
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                          <div>
-                            <label className={labelClass}>Kategori</label>
-                            <select
-                              value={row.category}
-                              onChange={(event) =>
-                                updateRow(index, { category: event.target.value, kain: "", warna: "", series: null, variant: "" })
-                              }
-                              className={inputClass}
-                            >
-                              <option value="">— Pilih —</option>
-                              {categoryOptions.map((category) => (
-                                <option key={category} value={category}>
-                                  {category}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
+                        {/* 1 · Cari produk (hasil dikelompokkan per produk + jenis kain) */}
+                        <div className="space-y-1.5">
+                          {rowComplete(row) && info.chosen && (
+                            <p className="rounded-lg bg-emerald-50 dark:bg-emerald-900/20 px-3 py-2 text-xs font-bold text-emerald-700 dark:text-emerald-300">
+                              {[
+                                group?.name || row.product,
+                                row.kain ? `Kain ${row.kain}` : "",
+                                step.show ? row.series : "",
+                                `${info.chosen.size} × ${info.quantity}`,
+                              ]
+                                .filter(Boolean)
+                                .join(" · ")}
+                              <span className="font-semibold"> · Rp {formatRupiah(info.subtotal)}</span>
+                            </p>
+                          )}
+                          <input
+                            ref={index === openIndex ? searchRef : null}
+                            value={search}
+                            onChange={(event) => setSearch(event.target.value)}
+                            placeholder="Cari produk… (mis. super, grey, b-01)"
+                            aria-label="Cari produk"
+                            className={inputClass}
+                          />
 
-                          <div>
-                            <label className={labelClass}>Jenis Kain</label>
-                            <select
-                              value={row.kain}
-                              disabled={!row.category}
-                              onChange={(event) => updateRow(index, { kain: event.target.value, warna: "", series: null, variant: "" })}
-                              className={inputClass}
-                            >
-                              <option value="">— Pilih —</option>
-                              {kainOptions(row.category).map((kain) => (
-                                <option key={kain} value={kain}>
-                                  {kain}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-
-                          <div>
-                            <label className={labelClass}>Warna</label>
-                            <select
-                              value={row.warna}
-                              disabled={!row.kain}
-                              onChange={(event) => updateRow(index, { warna: event.target.value, series: null, variant: "" })}
-                              className={inputClass}
-                            >
-                              <option value="">— Pilih —</option>
-                              {warnaOptions(row.category, row.kain).map((warna) => (
-                                <option key={warna} value={warna}>
-                                  {warna}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-
-                          {/* Produk tanpa series (mis. Kandora Superblack) langsung lewati langkah ini */}
-                          {step.show && (
-                            <div>
-                              <label className={labelClass}>Series</label>
-                              <select
-                                value={row.series ?? ""}
-                                disabled={!row.warna}
-                                onChange={(event) => updateRow(index, { series: event.target.value, variant: "" })}
-                                className={inputClass}
-                              >
-                                <option value="">— Pilih —</option>
-                                {step.options.map((series) => (
-                                  <option key={series || "tanpa-series"} value={series}>
-                                    {series || "Tanpa series"}
-                                  </option>
-                                ))}
-                              </select>
+                          {categoryOptions.length > 1 && (
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              {["all", ...categoryOptions].map((category) => {
+                                const active = catChip === category;
+                                return (
+                                  <button
+                                    key={category}
+                                    type="button"
+                                    onClick={() => setCatChip(category)}
+                                    className={`px-2.5 py-1 rounded-full text-[11px] font-bold border transition-colors ${
+                                      active
+                                        ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-slate-900 dark:border-white"
+                                        : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                                    }`}
+                                  >
+                                    {category === "all" ? "Semua" : category}
+                                  </button>
+                                );
+                              })}
                             </div>
                           )}
 
-                          <div>
-                            <label className={labelClass}>Ukuran</label>
-                            <select
-                              value={row.variant}
-                              disabled={!info.product}
-                              onChange={(event) =>
-                                updateRow(index, { variant: event.target.value }, { collapse: Boolean(event.target.value) })
-                              }
-                              className={inputClass}
-                            >
-                              <option value="">— Pilih —</option>
-                              {info.options.map((option) => (
-                                <option key={option.value} value={option.value}>
-                                  {option.size}
-                                  {option.showColor ? ` (${option.color})` : ""} · sisa {option.stock}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-
-                          <div>
-                            <label className={labelClass}>Qty</label>
-                            <input
-                              type="number"
-                              min="1"
-                              max="99"
-                              value={row.quantity}
-                              onChange={(event) => updateRow(index, { quantity: event.target.value })}
-                              onBlur={() => {
-                                if (rowComplete(row)) updateRow(index, {}, { collapse: true });
-                              }}
-                              className={inputClass}
-                            />
-                          </div>
+                          {!group ? (
+                            <div className="rounded-lg border border-slate-200 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800 max-h-[214px] overflow-y-auto no-scrollbar">
+                              {dataset.length === 0 ? (
+                                <p className="px-3 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                                  Memuat daftar produk…
+                                </p>
+                              ) : visibleGroups.length === 0 ? (
+                                <p className="px-3 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                                  Produk tidak ditemukan. Coba kata lain (mis. “super”, “grey”, “b-01”).
+                                </p>
+                              ) : (
+                                visibleGroups.map((option) => (
+                                  <button
+                                    key={option.key}
+                                    type="button"
+                                    onClick={() => chooseGroup(index, option)}
+                                    className="w-full flex items-center justify-between gap-2 px-3 py-2.5 text-left hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                                  >
+                                    <span className="min-w-0">
+                                      <span className="block text-sm font-bold text-slate-900 dark:text-white truncate">{option.name}</span>
+                                      <span className="block text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                                        {[
+                                          option.kain ? `Kain ${option.kain}` : "",
+                                          option.category,
+                                          option.series.length > 1 ? `${option.series.length} series` : "",
+                                        ]
+                                          .filter(Boolean)
+                                          .join(" · ")}
+                                      </span>
+                                    </span>
+                                    <span
+                                      className={`shrink-0 text-[11px] font-bold ${
+                                        option.stockTotal > 0
+                                          ? "text-emerald-600 dark:text-emerald-400"
+                                          : "text-slate-400 dark:text-slate-500"
+                                      }`}
+                                    >
+                                      {option.stockTotal > 0 ? `sisa ${option.stockTotal}` : "habis"}
+                                    </span>
+                                  </button>
+                                ))
+                              )}
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 dark:bg-slate-900 px-3 py-2">
+                              <span className="min-w-0 text-sm font-bold text-slate-900 dark:text-white truncate">
+                                {group.name}
+                                {group.kain ? (
+                                  <span className="font-semibold text-slate-500 dark:text-slate-400"> · Kain {group.kain}</span>
+                                ) : null}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => chooseGroup(index, null)}
+                                className="shrink-0 px-2 py-1 rounded-lg text-[11px] font-bold text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-colors"
+                              >
+                                Ganti
+                              </button>
+                            </div>
+                          )}
                         </div>
 
-                        <div className="flex flex-wrap items-center justify-between gap-2 mt-2">
+                        {/* Warna: hanya kalau produk ini punya lebih dari satu warna asli (mis. Kandora) */}
+                        {group && group.warnas.length > 1 && !row.warna && (
+                          <div className="space-y-1">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Warna</p>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                              {group.warnas.map((warna) => (
+                                <button
+                                  key={warna}
+                                  type="button"
+                                  onClick={() => updateRow(index, { warna, series: null, variant: "" })}
+                                  className="px-3 py-2 rounded-xl border-2 border-slate-200 dark:border-slate-700 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                                >
+                                  {warna}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* 2 · Series (nama + harga + sisa stok; urut seperti Laporan Stok) */}
+                        {group && row.warna && step.show && (
+                          <div className="space-y-1">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Series</p>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                              {seriesChoices(row).map((option) => {
+                                const active = (row.series || "") === option.series;
+                                const soldOut = option.stock <= 0;
+                                return (
+                                  <button
+                                    key={option.series || "tanpa-series"}
+                                    type="button"
+                                    disabled={soldOut}
+                                    onClick={() => updateRow(index, { series: option.series, variant: "" })}
+                                    className={`px-3 py-2 rounded-xl border-2 text-left transition-colors ${
+                                      active
+                                        ? "border-slate-900 dark:border-white bg-slate-900 dark:bg-white"
+                                        : soldOut
+                                          ? "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 opacity-60 cursor-not-allowed"
+                                          : "border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+                                    }`}
+                                  >
+                                    <span
+                                      className={`block text-sm font-bold truncate ${
+                                        active
+                                          ? "text-white dark:text-slate-900"
+                                          : soldOut
+                                            ? "text-slate-400 dark:text-slate-500"
+                                            : "text-slate-900 dark:text-white"
+                                      }`}
+                                    >
+                                      {option.series || "Tanpa series"}
+                                    </span>
+                                    <span
+                                      className={`block text-[11px] font-semibold ${
+                                        active ? "text-white/80 dark:text-slate-700" : "text-slate-500 dark:text-slate-400"
+                                      }`}
+                                    >
+                                      Rp {formatRupiah(option.price)}
+                                    </span>
+                                    <span
+                                      className={`block text-[11px] font-bold ${
+                                        active
+                                          ? "text-white/80 dark:text-slate-700"
+                                          : soldOut
+                                            ? "text-slate-400 dark:text-slate-500"
+                                            : "text-emerald-600 dark:text-emerald-400"
+                                      }`}
+                                    >
+                                      {soldOut ? "stok habis" : `sisa ${option.stock}`}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* 3 · Ukuran (stok per ukuran = stock_efektif, jadi pengikut ikut induknya) */}
+                        {info.product && (
+                          <div className="space-y-1">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Ukuran</p>
+                            <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                              {info.options.map((option) => {
+                                const active = row.variant === option.value;
+                                const soldOut = option.stock <= 0;
+                                return (
+                                  <button
+                                    key={option.value}
+                                    type="button"
+                                    disabled={soldOut}
+                                    onClick={() => updateRow(index, { variant: option.value })}
+                                    className={`px-2 py-2 rounded-xl border-2 text-center transition-colors ${
+                                      active
+                                        ? "border-slate-900 dark:border-white bg-slate-900 dark:bg-white"
+                                        : soldOut
+                                          ? "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 opacity-60 cursor-not-allowed"
+                                          : "border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+                                    }`}
+                                  >
+                                    <span
+                                      className={`block text-sm font-bold ${
+                                        active
+                                          ? "text-white dark:text-slate-900"
+                                          : soldOut
+                                            ? "text-slate-400 dark:text-slate-500"
+                                            : "text-slate-900 dark:text-white"
+                                      }`}
+                                    >
+                                      {option.size}
+                                    </span>
+                                    <span
+                                      className={`block text-[10px] font-bold ${
+                                        active
+                                          ? "text-white/80 dark:text-slate-700"
+                                          : soldOut
+                                            ? "text-slate-400 dark:text-slate-500"
+                                            : "text-slate-500 dark:text-slate-400"
+                                      }`}
+                                    >
+                                      {soldOut ? "habis" : `sisa ${option.stock}`}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* 4 · Qty (maksimal = stok efektif varian yang dipilih) */}
+                        {info.chosen && (
+                          <div className="space-y-1">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Jumlah</p>
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => updateRow(index, { quantity: Math.max(1, quantity - 1) })}
+                                disabled={quantity <= 1}
+                                className="w-9 h-9 grid place-items-center rounded-xl border-2 border-slate-200 dark:border-slate-700 text-lg font-black text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
+                                aria-label="Kurangi jumlah"
+                              >
+                                −
+                              </button>
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                value={row.quantity}
+                                onChange={(event) => updateRow(index, { quantity: clampQty(digits(event.target.value), maxStock) })}
+                                aria-label="Jumlah"
+                                className={`${inputClass} w-16 text-center`}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => updateRow(index, { quantity: Math.min(maxStock, quantity + 1) })}
+                                disabled={quantity >= maxStock}
+                                className="w-9 h-9 grid place-items-center rounded-xl border-2 border-slate-200 dark:border-slate-700 text-lg font-black text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
+                                aria-label="Tambah jumlah"
+                              >
+                                +
+                              </button>
+                              <span
+                                className={`text-[11px] font-bold ${
+                                  quantity >= maxStock ? "text-amber-600 dark:text-amber-400" : "text-slate-500 dark:text-slate-400"
+                                }`}
+                              >
+                                {quantity >= maxStock ? `Stok tersisa ${maxStock}` : `Maks ${maxStock} pcs`}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="flex flex-wrap items-center justify-between gap-2">
                           <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
                             {info.chosen
                               ? `Rp ${formatRupiah(info.chosen.price)} / pcs · subtotal Rp ${formatRupiah(info.subtotal)}`
                               : info.product
-                                ? `Kain ${info.product.kain || "-"} · pilih ukuran`
-                                : "Pilih bertahap dari kiri ke kanan"}
+                                ? "Pilih ukuran dulu"
+                                : group
+                                  ? step.show
+                                    ? "Pilih series di atas"
+                                    : "Pilih ukuran di atas"
+                                  : "Cari & pilih produk di atas"}
                             {info.chosen?.linkedTo ? ` · stok mengikuti ${info.chosen.linkedTo}` : ""}
                           </p>
                           {info.issue ? (
