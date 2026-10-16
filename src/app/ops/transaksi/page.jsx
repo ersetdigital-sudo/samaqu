@@ -25,6 +25,7 @@ import {
   Package,
   Plus,
   Search,
+  Truck,
   Wallet,
   X,
   XCircle,
@@ -165,6 +166,27 @@ export default function Transaksi() {
         variant: "destructive",
       }),
   });
+
+  /**
+   * Setelah aksi resi di drawer Detail:
+   * - sukses → baris yang sedang dibuka langsung diperbarui (nomor resi + status kirim), lalu
+   *   daftar disegarkan supaya penanda resi muncul tanpa reload;
+   * - kondisi "resi terbit tapi gagal dicatat" → data transaksi diambil ulang dari server
+   *   supaya admin melihat kondisi sebenarnya.
+   */
+  const handleResiCreated = async (patch, refreshFromServer = false) => {
+    if (patch && !refreshFromServer) setDetail((current) => (current ? { ...current, ...patch } : current));
+    try {
+      const fresh = await queryClient.fetchQuery({ queryKey: ["transaksi", "orders", start, end] });
+      if (refreshFromServer) {
+        const found = (fresh || []).find((row) => row.order_number === detail?.order_number);
+        if (found) setDetail(found);
+      }
+    } catch {
+      // daftar tetap disegarkan lewat invalidasi di bawah
+    }
+    queryClient.invalidateQueries({ queryKey: ["transaksi"] });
+  };
 
   const statCards = [
     { label: "Total Transaksi", value: String(stats.count), icon: FileText, caption: "pesanan sesuai filter" },
@@ -411,6 +433,16 @@ export default function Transaksi() {
                               +{extraItems}
                             </button>
                           )}
+                          {/* Penanda kecil kalau pesanan sudah punya resi J&T — tanpa kolom baru,
+                              dan tingginya di bawah tinggi baris jadi tabel tetap setinggi sekarang. */}
+                          {order.awb_no ? (
+                            <span
+                              title={`Resi J&T ${order.awb_no}`}
+                              className="shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300"
+                            >
+                              <Truck size={11} /> Resi
+                            </span>
+                          ) : null}
                         </div>
                       </td>
                       <td className="px-2 py-3 text-right font-bold text-slate-900 dark:text-white whitespace-nowrap">
@@ -471,6 +503,7 @@ export default function Transaksi() {
       <TransaksiDetailDrawer
         open={!!detail}
         order={detail}
+        onResiCreated={handleResiCreated}
         onClose={() => setDetail(null)}
         onEdit={(order) => {
           setDetail(null);

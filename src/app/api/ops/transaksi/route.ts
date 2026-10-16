@@ -234,7 +234,7 @@ export async function GET(req: NextRequest) {
   let query = admin
     .from("orders")
     .select(
-      "id, order_number, created_at, customer_id, customer_name, customer_whatsapp, status, source, subtotal, discount, shipping_cost, total, shipping_notes, awb_no, shipping_address, shipping_city, shipping_province, shipping_kecamatan, shipping_postal_code",
+      "id, order_number, created_at, customer_id, customer_name, customer_whatsapp, status, source, subtotal, discount, shipping_cost, total, shipping_notes, awb_no, jnt_order_id, shipping_status, shipping_address, shipping_city, shipping_province, shipping_kecamatan, shipping_postal_code",
     )
     .order("created_at", { ascending: false })
     .limit(limit);
@@ -326,6 +326,11 @@ export async function GET(req: NextRequest) {
       qty_total: rows.reduce((sum, row) => sum + (Number(row.quantity) || 0), 0),
       item_summary: itemSummary(rows),
       items: rows,
+      // Data resi J&T — dipakai layar untuk menampilkan/menyalin nomor resi, status kirim,
+      // dan memutuskan tombol Buat Resi/Cetak Resi. Murni tambahan, tidak mengubah field lain.
+      awb_no: order.awb_no || "",
+      jnt_order_id: order.jnt_order_id || "",
+      shipping_status: order.shipping_status || "",
       // Pesanan website hanya dipantau dari sini (sumbernya read-only); yang boleh
       // diubah/dibatalkan dari menu ini cuma transaksi yang dicatat manual.
       can_edit: key !== "website" && status !== "dibatalkan",
