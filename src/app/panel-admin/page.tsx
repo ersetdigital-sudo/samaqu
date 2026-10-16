@@ -93,12 +93,7 @@ type MetricCard = {
   caption: string;
   delta?: string;
   down?: boolean;
-  glyph?: string;
-  glyphColor?: string;
   icon: StatIconName;
-  icBg: string;
-  icColor: string;
-  wave: string;
 };
 
 function Heart() {
@@ -241,10 +236,7 @@ export default function PanelAdminHome() {
       caption: "Dari kemarin",
       delta: `${deltaOmset >= 0 ? "↗" : "↘"} ${Math.abs(deltaOmset)}%`,
       down: deltaOmset < 0,
-      icon: "bag" as StatIconName,
-      icBg: "#fde4ec",
-      icColor: "#d6336c",
-      wave: "#fde4ec",
+      icon: "bag",
     },
     {
       label: "Pesanan masuk",
@@ -252,32 +244,19 @@ export default function PanelAdminHome() {
       caption: "Hari ini",
       delta: `${deltaMasuk >= 0 ? "↗" : "↘"} ${Math.abs(deltaMasuk)}%`,
       down: deltaMasuk < 0,
-      icon: "basket" as StatIconName,
-      icBg: "#e3f7ea",
-      icColor: "#2f9e5b",
-      wave: "#e3f7ea",
+      icon: "basket",
     },
     {
       label: "Perlu dikirim",
       value: String(perluDikirim),
       caption: "Menunggu resi",
-      glyph: "◷",
-      glyphColor: "#e8890c",
-      icon: "truck" as StatIconName,
-      icBg: "#fff1db",
-      icColor: "#e8890c",
-      wave: "#fff1db",
+      icon: "truck",
     },
     {
       label: "Stok menipis",
       value: String(lowStock.length),
       caption: "Ambang ≤ 5 unit",
-      glyph: "⊡",
-      glyphColor: "#e8365d",
-      icon: "box" as StatIconName,
-      icBg: "#efe6fd",
-      icColor: "#7c4ddb",
-      wave: "#efe6fd",
+      icon: "box",
     },
   ];
 
@@ -293,11 +272,7 @@ export default function PanelAdminHome() {
           </p>
         </div>
         <img className={styles.heroArt} src={HERO_ART} alt="" />
-        <div className={styles.quote}>
-          Kerja hari ini,
-          <br />
-          untuk cerita yang lebih baik esok hari. <Heart />
-        </div>
+        <div className={styles.quote}>Terima kasih sudah menjadi bagian dari SAMAQU.</div>
       </section>
 
       {error ? <div className={styles.alert}>{error}</div> : null}
@@ -306,33 +281,21 @@ export default function PanelAdminHome() {
         {metrics.map((m) => (
           <div key={m.label} className={styles.card}>
             <div className={styles.stHead}>
-              <div className={styles.ic} style={{ background: m.icBg, color: m.icColor }}>
-                <StatIcon name={m.icon} />
-              </div>
+              <StatIcon name={m.icon} />
               <span className={styles.stLabel}>{m.label}</span>
-              <div className={styles.arr} style={{ background: m.icBg, color: m.icColor }}>
-                <svg viewBox="0 0 24 24">
-                  <path d="M9 6l6 6-6 6" />
-                </svg>
-              </div>
             </div>
             <div className={styles.stValue}>{loading ? "—" : m.value}</div>
             <div className={styles.stFoot}>
               {m.delta ? (
                 <span
-                  className={styles.pill}
+                  className={styles.delta}
                   style={m.down ? { background: "#fdecec", color: "#c2255c" } : { background: "#e3f7ea", color: "#2f9e5b" }}
                 >
                   {m.delta}
                 </span>
-              ) : (
-                <span style={{ color: m.glyphColor }}>{m.glyph}</span>
-              )}
-              {m.caption}
+              ) : null}
+              <span>{m.caption}</span>
             </div>
-            <svg className={styles.wave} viewBox="0 0 150 60">
-              <path d="M0 50 C40 50 50 25 80 30 S120 5 150 10 V60 H0Z" fill={m.wave} />
-            </svg>
           </div>
         ))}
       </section>
