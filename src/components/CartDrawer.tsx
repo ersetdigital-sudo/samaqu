@@ -6,10 +6,13 @@ import { X, Minus, Plus, Trash2, Tag, ShoppingBag, ShoppingCart } from "lucide-r
 import { useCart } from "@/lib/cart-context";
 import { colorMap } from "@/lib/katalog-data";
 import { cloudinaryUrl } from "@/lib/cloudinary";
+import { supabase } from "@/lib/supabase";
+import { useSafeLocale } from "@/lib/safe-i18n";
 import { useRouter } from "next/navigation";
 
 export default function CartDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   const router = useRouter();
+  const locale = useSafeLocale();
   const { items, removeItem, updateQty, subtotal, voucher, applyVoucher, removeVoucher } = useCart();
   const [promoCode, setPromoCode] = useState("");
   const [promoError, setPromoError] = useState("");
@@ -33,9 +36,15 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
     setPromoError("");
   }
 
-  function handleCheckout() {
+  async function handleCheckout() {
     onClose();
-    router.push("/checkout");
+    // Checkout wajib pakai akun: pesanan, resi, dan riwayat pelacakan tersimpan di akun customer.
+    const { data } = await supabase.auth.getSession();
+    if (!data.session) {
+      router.push(`/${locale}/akun?redirect=${encodeURIComponent("/checkout")}`);
+      return;
+    }
+    router.push(`/${locale}/checkout`);
   }
 
   return (
