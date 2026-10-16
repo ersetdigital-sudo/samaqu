@@ -14,6 +14,7 @@ import { PaymentIcon } from "@/lib/payment-icons";
 import { fetchActivePaymentMethods, isOnlinePaymentMethod, normalizeMethodType, paymentMethodLabel, type PaymentMethodRow } from "@/lib/payment-methods";
 import { startOnlinePayment } from "@/lib/mayar-client";
 import { cloudinaryUrl } from "@/lib/cloudinary";
+import WilayahSelect from "@/components/wilayah/WilayahSelect";
 
 interface ShipOpt { courier: string; service: string; description: string; cost: number; etd: string; }
 
@@ -199,6 +200,60 @@ function CheckoutContent() {
   const [loadingCost, setLoadingCost] = useState(false);
   const [shippingError, setShippingError] = useState<string | null>(null);
   const [kecamatanName, setKecamatanName] = useState("");
+  // Wilayah dipilih dari dataset area J&T (sumber yang sama dengan Open Order & dashboard ops),
+  // jadi nama kota/kecamatan yang tersimpan langsung bisa dipakai J&T untuk menghitung tarif.
+  const [provinsiName, setProvinsiName] = useState("");
+  const [wilayahProvinsi, setWilayahProvinsi] = useState<string[]>([]);
+  const [wilayahKota, setWilayahKota] = useState<string[]>([]);
+  const [wilayahKecamatan, setWilayahKecamatan] = useState<string[]>([]);
+  const [wilayahManual, setWilayahManual] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/shipping/wilayah")
+      .then((res) => res.json())
+      .then((json) => {
+        if (active && Array.isArray(json?.data)) setWilayahProvinsi(json.data.map((o: { name: string }) => o.name));
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (wilayahManual || !provinsiName) {
+      setWilayahKota([]);
+      return undefined;
+    }
+    let active = true;
+    fetch(`/api/shipping/wilayah?province=${encodeURIComponent(provinsiName)}`)
+      .then((res) => res.json())
+      .then((json) => {
+        if (active && Array.isArray(json?.data)) setWilayahKota(json.data.map((o: { name: string }) => o.name));
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [provinsiName, wilayahManual]);
+
+  useEffect(() => {
+    if (wilayahManual || !kota) {
+      setWilayahKecamatan([]);
+      return undefined;
+    }
+    let active = true;
+    fetch(`/api/shipping/wilayah?city=${encodeURIComponent(kota)}`)
+      .then((res) => res.json())
+      .then((json) => {
+        if (active && Array.isArray(json?.data)) setWilayahKecamatan(json.data.map((o: { name: string }) => o.name));
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [kota, wilayahManual]);
   const [originId, setOriginId] = useState<number | null>(null);
   const [enabledCouriers, setEnabledCouriers] = useState<string[]>([]);
   const [shippingProvider, setShippingProvider] = useState<"rajaongkir" | "jnt">("rajaongkir");
@@ -516,12 +571,21 @@ function CheckoutContent() {
     setWhatsapp(localPhone(addr.phone));
     setAlamat(addr.address);
     setKota(addr.city);
+    setProvinsiName(addr.province || "");
     setKodepos(addr.postal_code);
     setShipOptions([]);
     setSelectedShipping(null);
     setShippingError(null);
     // Don't clear lastResolvedRef here — let the guard in calculateShipping handle it
     // The debounce + addr.id guard prevent double-hit for same address
+  }
+
+  /** Setiap perubahan wilayah membatalkan hasil ongkir sebelumnya (perilaku lama dipertahankan). */
+  function resetOngkirPick() {
+    lastResolvedRef.current = "";
+    setShipOptions([]);
+    setSelectedShipping(null);
+    setErrors((p) => ({ ...p, kecamatan: "", kota: "" }));
   }
 
   function validatePhone(p: string): boolean {
@@ -573,7 +637,7 @@ function CheckoutContent() {
           district: selectedAddr ? selectedAddr.kecamatan || "" : kecamatanName.trim(),
           // Provinsi ikut dikirim kalau customer memakai alamat tersimpan (data dari address book),
           // supaya pesanan menyimpan provinsi sebagai kolom terpisah — bukan cuma di teks kota.
-          province: selectedAddr?.province || "",
+          province: selectedAddr?.province || provinsiName || "",
           postalCode: kodepos,
           notes: catatanKurir,
           method: `${selectedShipping!.courier} - ${selectedShipping!.service}`,
@@ -793,21 +857,89 @@ function CheckoutContent() {
                   <textarea rows={3} value={alamat} onChange={(e) => { setAlamat(e.target.value); setErrors((p) => ({ ...p, alamat: "" })); }} className="w-full rounded-lg px-4 py-3 text-sm font-ui resize-none" style={{ ...selectStyle, border: `1px solid ${errors.alamat ? "#e74c3c" : "rgba(0,0,0,.25)"}` }} placeholder="Jalan, nomor rumah, RT/RW, kelurahan" />
                   {errors.alamat && <p className="text-[11px] font-ui mt-1" style={{ color: "#e74c3c" }}>{errors.alamat}</p>}
                 </div>
-                <div data-field="kecamatan">
-                  <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: errors.kecamatan ? "#e74c3c" : "var(--text-secondary)" }}>Kecamatan <span style={{ color: "var(--gold)" }}>*</span></label>
-                  <input type="text" value={kecamatanName} onChange={(e) => {
-                    setKecamatanName(e.target.value);
-                    setErrors((p) => ({ ...p, kecamatan: "" }));
-                    lastResolvedRef.current = "";
-                    setShipOptions([]);
-                    setSelectedShipping(null);
-                  }} className="w-full rounded-lg px-4 py-3 text-sm font-ui" style={{ ...selectStyle, border: `1px solid ${errors.kecamatan ? "#e74c3c" : "rgba(0,0,0,.25)"}` }} placeholder="Contoh: Cengkareng" />
-                  {errors.kecamatan && <p className="text-[11px] font-ui mt-1" style={{ color: "#e74c3c" }}>{errors.kecamatan}</p>}
+                <div className="sm:col-span-2" data-field="provinsi">
+                  <WilayahSelect
+                    label="Provinsi"
+                    variant="store"
+                    required={false}
+                    value={provinsiName}
+                    options={wilayahProvinsi}
+                    disabled={wilayahManual}
+                    placeholder="Pilih provinsi"
+                    onChange={(next: string) => {
+                      setProvinsiName(next);
+                      setKota("");
+                      setKecamatanName("");
+                      resetOngkirPick();
+                    }}
+                  />
                 </div>
                 <div data-field="kota">
-                  <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: errors.kota ? "#e74c3c" : "var(--text-secondary)" }}>Kota / Kabupaten <span style={{ color: "var(--gold)" }}>*</span></label>
-                  <input type="text" value={kota} onChange={(e) => { setKota(e.target.value); setErrors((p) => ({ ...p, kota: "" })); lastResolvedRef.current = ""; }} className="w-full rounded-lg px-4 py-3 text-sm font-ui" style={{ ...selectStyle, border: `1px solid ${errors.kota ? "#e74c3c" : "rgba(0,0,0,.25)"}` }} placeholder="Contoh: Jakarta Barat" />
-                  {errors.kota && <p className="text-[11px] font-ui mt-1" style={{ color: "#e74c3c" }}>{errors.kota}</p>}
+                  {wilayahManual ? (
+                    <>
+                      <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: errors.kota ? "#e74c3c" : "var(--text-secondary)" }}>Kota / Kabupaten <span style={{ color: "var(--gold)" }}>*</span></label>
+                      <input type="text" value={kota} onChange={(e) => { setKota(e.target.value); setErrors((p) => ({ ...p, kota: "" })); lastResolvedRef.current = ""; }} className="w-full rounded-lg px-4 py-3 text-sm font-ui" style={{ ...selectStyle, border: `1px solid ${errors.kota ? "#e74c3c" : "rgba(0,0,0,.25)"}` }} placeholder="Contoh: Jakarta Barat" />
+                      {errors.kota && <p className="text-[11px] font-ui mt-1" style={{ color: "#e74c3c" }}>{errors.kota}</p>}
+                    </>
+                  ) : (
+                    <WilayahSelect
+                      label="Kota / Kabupaten"
+                      variant="store"
+                      value={kota}
+                      options={wilayahKota}
+                      disabled={!provinsiName}
+                      error={errors.kota}
+                      placeholder={provinsiName ? "Pilih kota / kabupaten" : "Pilih provinsi dulu"}
+                      onChange={(next: string) => {
+                        setKota(next);
+                        setKecamatanName("");
+                        resetOngkirPick();
+                      }}
+                    />
+                  )}
+                </div>
+                <div data-field="kecamatan">
+                  {wilayahManual ? (
+                    <>
+                      <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: errors.kecamatan ? "#e74c3c" : "var(--text-secondary)" }}>Kecamatan <span style={{ color: "var(--gold)" }}>*</span></label>
+                      <input type="text" value={kecamatanName} onChange={(e) => {
+                        setKecamatanName(e.target.value);
+                        setErrors((p) => ({ ...p, kecamatan: "" }));
+                        lastResolvedRef.current = "";
+                        setShipOptions([]);
+                        setSelectedShipping(null);
+                      }} className="w-full rounded-lg px-4 py-3 text-sm font-ui" style={{ ...selectStyle, border: `1px solid ${errors.kecamatan ? "#e74c3c" : "rgba(0,0,0,.25)"}` }} placeholder="Contoh: Cengkareng" />
+                      {errors.kecamatan && <p className="text-[11px] font-ui mt-1" style={{ color: "#e74c3c" }}>{errors.kecamatan}</p>}
+                    </>
+                  ) : (
+                    <WilayahSelect
+                      label="Kecamatan"
+                      variant="store"
+                      value={kecamatanName}
+                      options={wilayahKecamatan}
+                      disabled={!kota}
+                      error={errors.kecamatan}
+                      placeholder={kota ? "Pilih kecamatan" : "Pilih kota / kabupaten dulu"}
+                      hint="Ongkir J&T dihitung otomatis dari kecamatan ini."
+                      onChange={(next: string) => {
+                        setKecamatanName(next);
+                        resetOngkirPick();
+                      }}
+                    />
+                  )}
+                </div>
+                <div className="sm:col-span-2 -mt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setWilayahManual((prev) => !prev);
+                      resetOngkirPick();
+                    }}
+                    className="text-xs font-medium"
+                    style={{ color: "#8b6f42" }}
+                  >
+                    {wilayahManual ? "← Kembali pilih dari daftar" : "Kecamatan tidak ada di daftar? Ketik manual"}
+                  </button>
                 </div>
                 <div data-field="kodepos">
                   <label className="block text-[13px] sm:text-sm font-ui mb-1.5" style={{ color: errors.kodepos ? "#e74c3c" : "var(--text-secondary)" }}>Kode Pos</label>
