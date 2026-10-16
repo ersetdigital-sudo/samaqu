@@ -173,22 +173,15 @@ export default function TransaksiResiPanel({ order, onResiCreated }) {
           ) : null}
 
           {!cancelled ? (
-            <div className="flex flex-wrap items-center gap-2 pt-0.5">
-              {sizeOptions.map((size) => (
-                <button
-                  key={size}
-                  type="button"
-                  onClick={() => setPrintSize(size)}
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[11px] font-bold transition-colors ${
-                    size === labelSize
-                      ? "border-slate-900 dark:border-slate-100 bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100"
-                      : "border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
-                  }`}
-                >
-                  {sizeLabel(size)}
-                </button>
-              ))}
-            </div>
+            /* Satu tombol saja (alurnya sama dengan "Buat Resi" / "Atur Pesanan"): klik → popup
+               → pilih ukuran label → halaman label dibuka di tab baru. */
+            <button
+              type="button"
+              onClick={() => setPrintSize(labelSize)}
+              className="w-full inline-flex items-center justify-center gap-2 px-3 py-2.5 border-2 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-xl text-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
+            >
+              Cetak Resi
+            </button>
           ) : null}
         </>
       ) : cancelled ? (
@@ -349,40 +342,39 @@ export default function TransaksiResiPanel({ order, onResiCreated }) {
                   <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Nomor Resi</p>
                   <p className="font-mono text-xs font-bold text-slate-900 dark:text-white">{awb || "-"}</p>
                 </div>
-                <div className="px-3.5 py-2 flex items-center justify-between gap-3">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Ukuran Label</p>
-                  <p className="text-sm font-bold text-slate-900 dark:text-white">
-                    {printSize === "78x100" ? "78 × 100 mm" : "100 × 150 mm"}
-                  </p>
-                </div>
               </div>
 
               <p className="mt-3 flex items-start gap-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400">
                 <AlertCircle size={14} className="mt-px shrink-0" />
-                <span>
-                  Halaman label dibuka di tab baru — tinggal tekan tombol "Cetak Label" di sana. Ukuran ini disimpan
-                  sebagai pilihan terakhir.
-                </span>
+                <span>Pilih ukuran label. Halaman label dibuka di tab baru — tinggal tekan tombol "Cetak Label" di sana.</span>
               </p>
 
-              <div className="flex gap-2 mt-4">
+              <div className="mt-4 space-y-2">
+                {sizeOptions.map((size) => (
+                  <button
+                    key={size}
+                    type="button"
+                    onClick={() => {
+                      setPrintSize("");
+                      openLabel(size);
+                    }}
+                    className="w-full inline-flex items-center justify-between gap-2 px-4 py-3 border-2 border-slate-200 dark:border-slate-700 rounded-xl font-bold text-slate-800 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
+                  >
+                    <span>{sizeLabel(size)}</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                      {size === labelSize ? "Terakhir dipakai" : "Pilih"}
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="mt-3">
                 <button
                   type="button"
                   onClick={() => setPrintSize("")}
-                  className="flex-1 px-4 py-2.5 border-2 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
+                  className="w-full px-4 py-2.5 border-2 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
                 >
                   Batal
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const size = printSize;
-                    setPrintSize("");
-                    openLabel(size);
-                  }}
-                  className="flex-1 px-4 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold rounded-xl hover:bg-slate-800 dark:hover:bg-slate-100 transition-all"
-                >
-                  Cetak
                 </button>
               </div>
             </motion.div>
