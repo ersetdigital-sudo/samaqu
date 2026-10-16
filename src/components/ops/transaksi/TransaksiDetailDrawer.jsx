@@ -12,6 +12,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Ban, Pencil, Receipt, Truck, X } from "lucide-react";
 import { NEUTRAL_ITEM_PHOTO } from "@/lib/order-photo";
+import { supabase } from "@/lib/supabase";
 import { formatWeightExact } from "@/lib/shipping-weight";
 import { formatTrackingTime, sortHistoryDesc, trackingRow, trackingSummary } from "@/lib/jnt/track-status";
 import { SOURCE_STYLES, STATUS_STYLES, formatRupiah, formatTanggalJamID } from "@/components/ops/transaksi/transaksi-format";
@@ -46,8 +47,12 @@ export default function TransaksiDetailDrawer({ open, order, onClose, onEdit, on
     setTrackBusy(true);
     setTrack((current) => ({ ...current, status: "loading", error: "" }));
     try {
+      // Token admin ops ikut dikirim: endpoint hanya menyertakan data kurir & nama penerima
+      // kalau pemintanya admin (versi publik/customer sengaja tanpa data itu).
+      const { data: { session: trackSession } } = await supabase.auth.getSession();
       const res = await fetch(`/api/jnt/track?awb=${encodeURIComponent(awb)}${force ? "&refresh=1" : ""}`, {
         cache: "no-store",
+        headers: trackSession?.access_token ? { Authorization: `Bearer ${trackSession.access_token}` } : undefined,
       });
       const json = await res.json().catch(() => null);
       if (!res.ok || !json?.success) throw new Error(json?.error || "Gagal mengambil riwayat dari J&T.");
