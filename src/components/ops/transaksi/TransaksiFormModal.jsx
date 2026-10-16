@@ -26,11 +26,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, Check, Pencil, Plus, Save, Trash2, X } from "lucide-react";
+import { AlertCircle, Check, Pencil, Plus, Save, Trash2, Truck, X } from "lucide-react";
 import { base44 } from "@/lib/ops-api";
 import { MANUAL_SOURCE_KEYS, SOURCE_LABEL } from "@/lib/transaksi";
 import { OPS_STOCK_SIZES } from "@/lib/ops-stock";
 import { categoryRank, seriesRank, variantSortKey } from "@/lib/ops-order";
+import { formatWeightExact } from "@/lib/shipping-weight";
 import { formatRupiah, isoToWibInput, wibNow, wibToIso } from "@/components/ops/transaksi/transaksi-format";
 import WilayahSelect from "@/components/ops/transaksi/WilayahSelect";
 import { useToast } from "@/components/ops/ui/use-toast";
@@ -40,6 +41,19 @@ const inputClass =
 const labelClass = "text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block mb-1";
 const sectionClass = "text-[11px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500";
 const cmpId = (a, b) => String(a).localeCompare(String(b), "id", { sensitivity: "base" });
+
+/** Kondisi awal panel "Cek Ongkir" (tidak ada hasil). */
+const EMPTY_ONGKIR = { status: "idle", services: [], error: "", weightGrams: 0, key: "", destination: "" };
+
+/**
+ * Sidik jari data yang dipakai saat cek ongkir (tujuan + daftar item).
+ * Kalau isinya berubah setelah ongkir terisi, panel menandai "Ongkir mungkin berubah, cek ulang"
+ * — nilai yang sudah diisi TIDAK diubah otomatis.
+ */
+const ongkirKey = (destination, items) =>
+  `${destination.map((part) => String(part || "").trim()).join(", ")}||${items
+    .map((item) => `${item.product_id}:${item.color}:${item.size}:${item.quantity}`)
+    .join(",")}`;
 
 const digits = (value) => String(value ?? "").replace(/\D/g, "");
 
@@ -108,6 +122,8 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
   const [addressEditing, setAddressEditing] = useState(false);
   /** Salinan alamat sebelum isian dibuka → tombol "Batal" mengembalikannya apa adanya. */
   const [addressBackup, setAddressBackup] = useState(null);
+  /** Hasil "Cek Ongkir" terakhir (daftar layanan J&T + berat & tujuan yang dipakai). */
+  const [ongkir, setOngkir] = useState(EMPTY_ONGKIR);
   const prefilledFor = useRef(null);
   /** Penanda pelanggan yang alamatnya sudah diisi otomatis (sekali per pelanggan). */
   const prefilledAddressFor = useRef(null);
@@ -206,6 +222,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
     setNewAddressForCustomer(false);
     setAddressEditing(false);
     setAddressBackup(null);
+    setOngkir(EMPTY_ONGKIR);
     setAddressPrefilledFrom("");
     setStep(0);
     if (initialData) {
@@ -489,6 +506,76 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
   const discountValue = Number(digits(form?.discount)) || 0;
   const shippingValue = Number(digits(form?.shipping_cost)) || 0;
   const total = Math.max(0, subtotal - Math.min(discountValue, subtotal)) + shippingValue;
+
+  /**
+   * Item yang dikirim ke server saat Simpan (bentuknya sama persis). Dipakai juga untuk Cek
+   * Ongkir — cuma item yang sudah lengkap (punya produk + ukuran).
+   */
+  const payloadItems = () =>
+    items
+      .map((row) => {
+        const product = resolveProduct(row);
+        const [color, size] = String(row.variant).split("||");
+        return {
+          product_id: product?.product_id || "",
+          color: color || "default",
+          size,
+          quantity: Number(row.quantity) || 0,
+        };
+      })
+      .filter((item) => item.product_id && item.size);
+
+  /** Penanda "Ongkir mungkin berubah, cek ulang" — nilai ongkir yang sudah diisi tidak diubah. */
+  const ongkirStale =
+    ongkir.status === "done" && Boolean(ongkir.key) && ongkir.key !== ongkirKey([form?.city, form?.kecamatan], payloadItems());
+
+  /**
+   * Cek ongkir J&T: tujuan diambil dari alamat form, berat dihitung di server memakai fungsi
+   * berat bersama (sama dengan website checkout), tarifnya dari route J&T yang sudah ada.
+   */
+  const checkOngkir = async () => {
+    const city = String(form?.city || "").trim();
+    const kecamatan = String(form?.kecamatan || "").trim();
+    const destination = [kecamatan, city].filter(Boolean).join(", ");
+
+    if (!city || !kecamatan) {
+      setOngkir({ ...EMPTY_ONGKIR, status: "error", error: "Lengkapi alamat dulu (kota/kabupaten & kecamatan).", destination });
+      return;
+    }
+
+    const orderItems = payloadItems();
+    if (orderItems.length === 0) {
+      setOngkir({ ...EMPTY_ONGKIR, status: "error", error: "Pilih produk dulu (minimal 1 item dengan ukuran).", destination });
+      return;
+    }
+
+    setOngkir({ ...EMPTY_ONGKIR, status: "loading", destination });
+    try {
+      const result = await base44.entities.Ongkir.check({ city, kecamatan, items: orderItems });
+      const services = (result?.data || []).filter((service) => Number(service?.cost) > 0);
+      setOngkir({
+        status: "done",
+        services,
+        error: services.length === 0 ? "Tidak ada layanan J&T untuk tujuan ini. Isi ongkir manual." : "",
+        weightGrams: Number(result?.weight_grams) || 0,
+        key: ongkirKey([city, kecamatan], orderItems),
+        destination,
+      });
+    } catch (error) {
+      setOngkir({
+        ...EMPTY_ONGKIR,
+        status: "error",
+        error: error instanceof Error ? error.message : "Gagal cek ongkir. Isi ongkir manual.",
+        destination,
+      });
+    }
+  };
+
+  /** Klik salah satu layanan → kolom Ongkir terisi tarifnya (masih bisa diedit manual). */
+  const applyOngkir = (service) => {
+    setTouched(true);
+    updateForm({ shipping_cost: digits(service?.cost) });
+  };
 
   /**
    * Pilihan pelanggan = SEMUA pelanggan (termasuk yang hanya punya pesanan batal dan yang
@@ -1708,6 +1795,71 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                         className={`${inputClass} pl-10`}
                       />
                     </div>
+
+                    <button
+                      type="button"
+                      onClick={checkOngkir}
+                      disabled={ongkir.status === "loading"}
+                      className="mt-1.5 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-[11px] font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-60 disabled:cursor-wait transition-colors"
+                    >
+                      <Truck size={13} />
+                      {ongkir.status === "loading" ? "Menghitung…" : "Cek Ongkir"}
+                    </button>
+
+                    {ongkirStale && (
+                      <p className="mt-1 text-[11px] font-bold text-amber-600 dark:text-amber-400">
+                        Ongkir mungkin berubah, cek ulang
+                      </p>
+                    )}
+
+                    {ongkir.status === "error" && (
+                      <p className="mt-1 text-[11px] font-semibold text-red-600 dark:text-red-400">{ongkir.error}</p>
+                    )}
+
+                    {ongkir.status === "done" && ongkir.services.length > 0 && (
+                      <div className="mt-1.5 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+                        <p className="px-3 py-2 bg-slate-50 dark:bg-slate-900 text-[11px] font-bold text-slate-600 dark:text-slate-300">
+                          Berat {formatWeightExact(ongkir.weightGrams)}
+                          {ongkir.destination ? ` · Tujuan ${ongkir.destination}` : ""}
+                        </p>
+                        <div className="divide-y divide-slate-100 dark:divide-slate-800 max-h-[168px] overflow-y-auto no-scrollbar">
+                          {ongkir.services.map((service) => {
+                            const active = digits(form.shipping_cost) === digits(service.cost);
+                            return (
+                              <button
+                                key={`${service.service}-${service.cost}`}
+                                type="button"
+                                onClick={() => applyOngkir(service)}
+                                className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-left transition-colors ${
+                                  active ? "bg-slate-900 dark:bg-white" : "hover:bg-slate-50 dark:hover:bg-slate-800"
+                                }`}
+                              >
+                                <span
+                                  className={`text-xs font-bold truncate ${
+                                    active ? "text-white dark:text-slate-900" : "text-slate-800 dark:text-slate-200"
+                                  }`}
+                                >
+                                  J&amp;T · {service.service}
+                                  {service.description ? <span className="font-semibold"> · {service.description}</span> : null}
+                                  {service.etd ? <span className="font-semibold"> · Estimasi {service.etd} hari</span> : null}
+                                </span>
+                                <span
+                                  className={`text-xs font-black whitespace-nowrap ${
+                                    active ? "text-white dark:text-slate-900" : "text-slate-900 dark:text-white"
+                                  }`}
+                                >
+                                  Rp {formatRupiah(service.cost)}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {ongkir.status === "done" && ongkir.services.length === 0 && ongkir.error && (
+                      <p className="mt-1 text-[11px] font-semibold text-slate-500 dark:text-slate-400">{ongkir.error}</p>
+                    )}
                   </div>
                   <div>
                     <label className={labelClass}>Diskon (opsional)</label>
