@@ -156,34 +156,15 @@ export default function TransaksiDetailDrawer({ open, order, onClose, onEdit, on
     }
   };
 
+  /**
+   * Buka/tutup panel riwayat. SETIAP kali dibuka, riwayat diambil langsung dari J&T
+   * (`refresh=1` → lewati cache 5 menit), jadi yang tampil selalu data terbaru.
+   * Ini murni baca — tidak menulis database dan tidak mengubah status pesanan.
+   */
   const toggleTrack = () => {
     const next = !trackOpen;
     setTrackOpen(next);
-    if (next && track.status === "idle") loadTrack(false);
-  };
-
-  /**
-   * "Perbarui": sinkronkan riwayat ke sistem memakai mekanisme yang sama dengan tombol
-   * "Lacak Paket" di dashboard admin (status pesanan ikut mengikuti hasil scan J&T),
-   * lalu riwayatnya dibaca ulang.
-   */
-  const syncTrack = async () => {
-    if (!awb || trackBusy) return;
-    setTrackBusy(true);
-    try {
-      await base44.entities.Transaction.syncTracking(order.order_number);
-      onResiCreated?.(null, true);
-      setTrackBusy(false);
-      await loadTrack(true);
-    } catch (error) {
-      setTrack((current) => ({
-        ...current,
-        status: "error",
-        error: error instanceof Error ? error.message : "Gagal memperbarui riwayat.",
-      }));
-    } finally {
-      setTrackBusy(false);
-    }
+    if (next) loadTrack(true);
   };
 
   // Scroll halaman dikunci selama drawer terbuka supaya scrollbar halaman tidak menimpa
@@ -392,14 +373,11 @@ export default function TransaksiDetailDrawer({ open, order, onClose, onEdit, on
                               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                                 {trackRows.length > 0 ? `${trackRows.length} riwayat` : "Riwayat J&T"}
                               </span>
-                              <button
-                                type="button"
-                                onClick={syncTrack}
-                                disabled={trackBusy}
-                                className="px-2.5 py-1 rounded-lg text-[11px] font-bold text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 disabled:opacity-60 transition-colors"
-                              >
-                                {trackBusy ? "Memperbarui…" : "Perbarui"}
-                              </button>
+                              {trackBusy ? (
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                  Memuat…
+                                </span>
+                              ) : null}
                             </div>
                           </div>
                         ) : null}
