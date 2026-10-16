@@ -78,3 +78,9 @@
 .ops-root.panel-ops .bg-\[\#1e3a5f\] { background-color: #c2255c; }
 .ops-root.panel-ops .border-\[\#2d4a6f\] { border-color: rgba(255, 255, 255, 0.25); }
 .ops-root.panel-ops .hover\:bg-\[\#2d4a6f\]:hover { background-color: #9d174d; }
+
+/* ── Tombol hijau "Barang Masuk" (halaman Produk, tab Barang Masuk) → berry ──
+ * Hanya hijau SOLID (bg-green-500 + hover green-600) yang diubah; badge status hijau
+ * memakai `bg-green-100`/`bg-emerald-100` sehingga tetap hijau (warna semantik). */
+.ops-root.panel-ops .bg-green-500 { background-color: #c2255c; }
+.ops-root.panel-ops .hover\:bg-green-600:hover { background-color: #9d174d; }
