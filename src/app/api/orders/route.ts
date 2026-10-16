@@ -258,10 +258,21 @@ export async function POST(request: NextRequest) {
     }
 
     // Insert order
+    // Pesanan wajib terikat ke akun yang checkout. Id-nya berasal dari token sesi yang sudah
+    // diverifikasi di atas (bukan dari payload), dan hanya dipakai kalau baris `customers`-nya
+    // ada — kolom `orders.customer_id` ber-FK ke tabel itu.
+    const { data: linkedCustomer } = await supabase
+      .from("customers")
+      .select("id")
+      .eq("id", authData.user.id)
+      .maybeSingle();
+    const linkedCustomerId = linkedCustomer?.id || null;
+
     const { data: order, error: orderError } = await supabase
       .from("orders")
       .insert({
         order_number: orderNumber,
+        customer_id: linkedCustomerId,
         customer_name: customer.name,
         customer_email: customer.email || null,
         customer_whatsapp: customer.whatsapp,
