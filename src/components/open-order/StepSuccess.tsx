@@ -10,9 +10,9 @@
  * - tautan ke halaman pesanan di akun.
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Check, Copy } from "lucide-react";
+import { Check, Clock, Copy } from "lucide-react";
 import { money } from "@/lib/open-order-catalog";
 import { normalizeMethodType, paymentMethodLabel, type PaymentMethodRow } from "@/lib/payment-methods";
 import { PaymentIcon } from "@/lib/payment-icons";
@@ -41,6 +41,30 @@ export default function StepSuccess({
 }) {
   const locale = useSafeLocale();
   const [copied, setCopied] = useState("");
+  const [now, setNow] = useState(() => new Date());
+  const [timeLeft, setTimeLeft] = useState(24 * 60 * 60);
+
+  // Jam berjalan + hitungan 24 jam (sama seperti halaman sukses checkout).
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNow(new Date());
+      setTimeLeft((left) => (left > 0 ? left - 1 : 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const pad = (n: number) => (n < 10 ? `0${n}` : String(n));
+  const countdown = {
+    h: pad(Math.floor(timeLeft / 3600)),
+    m: pad(Math.floor((timeLeft % 3600) / 60)),
+    s: pad(timeLeft % 60),
+  };
+  const jamSekarang = now.toLocaleTimeString("id-ID", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    timeZone: "Asia/Jakarta",
+  });
 
   const firstName = (customerName || "").trim().split(/\s+/)[0] || "Kak";
   const type = normalizeMethodType(paymentMethod?.method_type);
@@ -84,6 +108,46 @@ export default function StepSuccess({
           sudah kami kirim ke WhatsApp kamu.
         </p>
       </div>
+
+      {/* ── Jam sekarang + hitungan waktu pembayaran ── */}
+      {needsTransfer && (
+        <div
+          className="mt-7 rounded-2xl p-4 sm:p-5"
+          style={{ background: FIELD_BG, border: `1px solid ${LINE}` }}
+        >
+          <div className="flex items-center justify-between gap-4">
+            <span className="flex items-center gap-2.5 text-[12.5px] font-ui font-medium" style={{ color: INK }}>
+              <Clock size={16} style={{ color: "var(--gold-deep)" }} />
+              Sekarang
+            </span>
+            <span className="text-[13px] font-semibold tabular-nums" style={{ color: INK }}>
+              {jamSekarang} WIB
+            </span>
+          </div>
+
+          <div
+            className="mt-3.5 flex items-center justify-between gap-4 pt-3.5"
+            style={{ borderTop: `1px solid ${LINE}` }}
+          >
+            <span className="text-[12.5px] font-ui font-medium" style={{ color: INK }}>
+              Selesaikan sebelum waktu habis
+            </span>
+            <span className="flex items-center gap-1.5 font-ui" style={{ fontVariantNumeric: "tabular-nums" }}>
+              <span className="rounded-md px-2.5 py-1 text-base font-medium" style={{ background: INK, color: "var(--cream)" }}>
+                {countdown.h}
+              </span>
+              <span style={{ color: MUTED }}>:</span>
+              <span className="rounded-md px-2.5 py-1 text-base font-medium" style={{ background: INK, color: "var(--cream)" }}>
+                {countdown.m}
+              </span>
+              <span style={{ color: MUTED }}>:</span>
+              <span className="rounded-md px-2.5 py-1 text-base font-medium" style={{ background: INK, color: "var(--cream)" }}>
+                {countdown.s}
+              </span>
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* ── Instruksi pembayaran (bank / e-wallet / QRIS) ── */}
       {needsTransfer && (
