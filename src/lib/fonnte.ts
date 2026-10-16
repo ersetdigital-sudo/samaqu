@@ -529,17 +529,18 @@ function paymentInstructionBlock(
   return lines;
 }
 
-/** Pesan "pesanan Ka sudah kami terima" + ringkasan produk + instruksi pembayaran. */
+/** Pesan "pesanan sudah kami terima" + ringkasan produk + instruksi pembayaran. */
 export function buildCustomerOrderMessage(order: CustomerOrderNotification): string {
   const type = order.paymentMethod?.type || "bank";
   const isCod = type === "cod";
+  const ka = greetingName(order.customerName);
 
   const lines: string[] = [
-    `Halo ${greetingName(order.customerName)},`,
+    `Halo ${ka},`,
     "",
     "Terima kasih telah berbelanja di SAMAQU.",
     "",
-    "Pesanan Ka sudah berhasil kami terima.",
+    `Pesanan ${ka} sudah berhasil kami terima.`,
     "",
     `Nomor Pesanan: ${order.orderNumber}`,
     `Produk: ${productSummary(order.items)}`,
@@ -552,7 +553,7 @@ export function buildCustomerOrderMessage(order: CustomerOrderNotification): str
   if (!isCod) {
     lines.push(
       "",
-      "Silakan selesaikan pembayaran sesuai instruksi di atas agar pesanan Ka dapat segera kami proses."
+      `Silakan selesaikan pembayaran sesuai instruksi di atas agar pesanan ${ka} dapat segera kami proses.`,
     );
   }
 
@@ -562,15 +563,16 @@ export function buildCustomerOrderMessage(order: CustomerOrderNotification): str
 
 /** Pesan "pembayaran sudah kami terima dan diverifikasi". */
 export function buildOrderPaidMessage(order: OrderPaidNotification): string {
+  const ka = greetingName(order.customerName);
   return [
-    `Halo ${greetingName(order.customerName)},`,
+    `Halo ${ka},`,
     "",
-    "Pembayaran untuk pesanan Ka telah kami terima dan berhasil diverifikasi.",
+    `Pembayaran untuk pesanan ${ka} telah kami terima dan berhasil diverifikasi.`,
     "",
     `Nomor Pesanan: ${order.orderNumber}`,
     `Total Pembayaran: ${rupiah(order.total)}`,
     "",
-    "Pesanan Ka akan segera kami proses. Kami akan mengirimkan informasi nomor resi setelah pesanan dikirim.",
+    `Pesanan ${ka} akan segera kami proses. Kami akan mengirimkan informasi nomor resi setelah pesanan dikirim.`,
     "",
     "Terima kasih telah berbelanja di SAMAQU.",
   ].join("\n");
@@ -578,30 +580,34 @@ export function buildOrderPaidMessage(order: OrderPaidNotification): string {
 
 /** Pesan "pesanan sudah dikirim lewat J&T Express" + nomor resi. */
 export function buildOrderShippedMessage(order: ShippedNotification): string {
+  const ka = greetingName(order.customerName);
   return [
-    `Halo ${greetingName(order.customerName)},`,
+    `Halo ${ka},`,
     "",
-    "Pesanan Ka telah dikirim melalui J&T Express.",
+    `Pesanan ${ka} telah dikirim melalui J&T Express.`,
     "",
     `Nomor Pesanan: ${order.orderNumber}`,
     `Nomor Resi: ${order.awbNo}`,
     "",
-    "Silakan gunakan nomor resi tersebut untuk memantau perjalanan paket Ka.",
+    `Silakan gunakan nomor resi tersebut untuk memantau perjalanan paket ${ka}.`,
     "",
-    "Terima kasih telah mempercayakan kebutuhan Ka kepada SAMAQU.",
+    `Terima kasih telah mempercayakan kebutuhan ${ka} kepada SAMAQU.`,
   ].join("\n");
 }
 
 /** Pesan "paket sudah diterima" (dari status delivered J&T yang valid). */
 export function buildOrderDeliveredMessage(order: DeliveredNotification): string {
+  // Sapaan + sebutan pelanggan di badan pesan selalu "Ka <nama>" (mis. "Halo Ka Lea," lalu
+  // "paket pesanan Ka Lea telah diterima").
+  const ka = greetingName(order.customerName);
   return [
-    `Halo ${greetingName(order.customerName)},`,
+    `Halo ${ka},`,
     "",
-    "Berdasarkan informasi pengiriman J&T Express, paket pesanan Ka telah diterima.",
+    `Berdasarkan informasi pengiriman J&T Express, paket pesanan ${ka} telah diterima.`,
     "",
     `Nomor Pesanan: ${order.orderNumber}`,
     "",
-    "Semoga produk yang Ka terima sesuai dengan harapan dan bermanfaat.",
+    `Semoga produk yang ${ka} terima sesuai dengan harapan dan bermanfaat.`,
     "",
     "Terima kasih telah berbelanja di SAMAQU. Kami menghargai kepercayaan Ka kepada kami.",
   ].join("\n");
@@ -609,17 +615,18 @@ export function buildOrderDeliveredMessage(order: DeliveredNotification): string
 
 /** Pesan pengingat pembayaran (maksimal sekali per pesanan). */
 export function buildPaymentReminderMessage(order: PaymentReminderNotification): string {
+  const ka = greetingName(order.customerName);
   return [
-    `Halo ${greetingName(order.customerName)},`,
+    `Halo ${ka},`,
     "",
-    "Kami ingin mengingatkan bahwa pesanan Ka masih menunggu pembayaran.",
+    `Kami ingin mengingatkan bahwa pesanan ${ka} masih menunggu pembayaran.`,
     "",
     `Nomor Pesanan: ${order.orderNumber}`,
     `Total Pembayaran: ${rupiah(order.total)}`,
     "",
     ...paymentInstructionBlock(order.paymentMethod, order.paymentUrl),
     "",
-    "Silakan selesaikan pembayaran apabila Ka masih ingin melanjutkan pesanan tersebut.",
+    `Silakan selesaikan pembayaran apabila ${ka} masih ingin melanjutkan pesanan tersebut.`,
     "",
     "Jika pembayaran telah dilakukan, pesan ini dapat diabaikan.",
     "",
@@ -630,10 +637,11 @@ export function buildPaymentReminderMessage(order: PaymentReminderNotification):
 
 /** Pesan pemberitahuan pembatalan untuk customer. */
 export function buildOrderCancelledMessage(order: OrderCancelledNotification): string {
+  const ka = greetingName(order.customerName);
   const lines = [
-    `Halo ${greetingName(order.customerName)},`,
+    `Halo ${ka},`,
     "",
-    "Kami informasikan bahwa pesanan Ka telah dibatalkan.",
+    `Kami informasikan bahwa pesanan ${ka} telah dibatalkan.`,
     "",
     `Nomor Pesanan: ${order.orderNumber}`,
     `Alasan Pembatalan: ${order.reason}`,
