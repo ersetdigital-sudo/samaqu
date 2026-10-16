@@ -42,6 +42,6 @@ export const config = {
   matcher: [
     "/",
     "/(id|en)/:path*",
-    "/((?!_next|admin|ops|api|opengraph-image|twitter-image|icon|apple-icon|manifest|\\.well-known|.*\\..*).*)",
+    "/((?!_next|admin|panel-admin|ops|api|opengraph-image|twitter-image|icon|apple-icon|manifest|\\.well-known|.*\\..*).*)",
   ],
 };
