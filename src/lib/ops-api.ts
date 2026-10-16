@@ -46,6 +46,8 @@ const ALAMAT = "/api/ops/alamat";
 const WILAYAH = "/api/ops/wilayah";
 /** Sebaran pesanan per kota (menu Database Kota). */
 const KOTA = "/api/ops/kota";
+/** Cek ongkir J&T: berat dihitung di server, tarifnya dari /api/shipping/jnt-cost (checkout). */
+const ONGKIR = "/api/ops/ongkir";
 const CUSTOMERS = "/api/ops/customers";
 
 /** Base44 memakai sort "-created_date" (desc). Kita terjemahkan ke parameter API. */
@@ -213,6 +215,13 @@ export const base44 = {
       async saveAddress(data: any) {
         const json = await call<{ item: any }>("POST", ALAMAT, data);
         return json.item ?? null;
+      },
+    },
+
+    /** Cek ongkir J&T dari drawer Transaksi (berat dihitung di server). */
+    Ongkir: {
+      async check(body: { city: string; kecamatan: string; items: unknown[] }) {
+        return call<{ data: any[]; weight_grams: number; city: string; kecamatan: string }>("POST", ONGKIR, body);
       },
     },
 
