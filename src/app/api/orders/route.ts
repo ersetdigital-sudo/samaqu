@@ -13,6 +13,7 @@ import { loadOrderPhotoLookup } from "@/lib/order-photo-data";
 import { createOrderPaymentLink } from "@/lib/mayar";
 import { markLeadBoughtForOrder } from "@/lib/ops-lead-sync";
 import { sumWeightGramsBySize, productWeightMapFromRows, variantWeightMapFromRows } from "@/lib/shipping-weight";
+import { orderLookupToken } from "@/lib/order-token";
 
 /**
  * Semua baca/tulis pesanan di route ini memakai service role (server-side), supaya policy RLS
@@ -427,6 +428,10 @@ export async function POST(request: NextRequest) {
       total,
       awbNo: null,
       paymentUrl,
+      // Token untuk halaman sukses (`/checkout/success?order=…&t=…`) — dipakai supaya pesanan
+      // tetap bisa dilihat setelah policy RLS `orders` ditutup dari anon, tanpa membuka
+      // pesanan orang lain.
+      orderToken: orderLookupToken(orderNumber),
     });
   } catch (error) {
     console.error("[ORDERS] === ORDER FAILED ===", error);
