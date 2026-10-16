@@ -85,7 +85,7 @@ export default function PanelShell({ children }: { children: ReactNode }) {
           ))}
         </nav>
 
-        <div className={styles.sideFoot}>Panel admin · Rose Luxury</div>
+        <div className={styles.sideFoot}>© 2026 SAMAQU · Panel Admin</div>
       </aside>
 
       {open ? <div className={styles.scrimOpen} onClick={() => setOpen(false)} /> : null}
@@ -102,9 +102,9 @@ export default function PanelShell({ children }: { children: ReactNode }) {
           <div className={styles.sp} />
           <span className={styles.rolePill}>Super Admin</span>
           <div className={styles.user}>
-            <div className={styles.av}>A</div>
+            <div className={styles.av}>L</div>
             <div className={styles.ut}>
-              <b>Admin</b>
+              <b>Lea</b>
               <small>SAMAQU</small>
             </div>
           </div>
