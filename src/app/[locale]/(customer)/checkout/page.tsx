@@ -704,8 +704,11 @@ function CheckoutContent() {
           return;
         }
       }
-      console.log("[CHECKOUT] ✅ Redirecting to:", `/checkout/success?order=${orderNum}`);
-      router.push(`/checkout/success?order=${orderNum}`);
+      // Token tautan pesanan: dipakai halaman sukses supaya pesanan tetap bisa dibuka walau
+      // customer belum login (lihat src/lib/order-token.ts).
+      const lookupQuery = data.orderToken ? `&t=${encodeURIComponent(data.orderToken)}` : "";
+      console.log("[CHECKOUT] ✅ Redirecting to:", `/checkout/success?order=${orderNum}${lookupQuery}`);
+      router.push(`/checkout/success?order=${orderNum}${lookupQuery}`);
     } catch (err) {
       console.error("[CHECKOUT] ❌ Order submit error:", err);
       if (err instanceof Error && err.name === "TimeoutError") {
