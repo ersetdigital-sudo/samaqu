@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse, after } from "next/server";
-import { getChatConfig, isChatReady } from "@/lib/chat-config";
+import { getCustomerProfile } from "@/lib/ai/config";
+import { consumeOpenAIStream, streamChatCompletion, type ToolCall } from "@/lib/ai/provider";
 import { getKnowledgeContext } from "@/lib/chat-knowledge";
 import { maybeAlertErrorSpike, ERROR_ALERT_THRESHOLD } from "@/lib/chat-alerts";
 import { CHAT_TOOLS, executeChatTool, type ChatProductCard } from "@/lib/chat-tools";
@@ -11,13 +12,10 @@ import { getSupabaseAdmin } from "@/lib/supabase-admin";
 // POST → balasan AI yang di-streaming (SSE). Model dibatasi konteks SAMAQU dan boleh memanggil
 //        tool (cari produk/stok, panduan ukuran) supaya harga & stok selalu dari database.
 
-const MAX_MESSAGES = 12;
-const MAX_CHARS = 2000;
-const MAX_TOOL_ROUNDS = 3;
-// Batas panjang jawaban. Model MiMo menghasilkan ~25–30 token/detik, jadi jawaban 700 token
-// bisa menambah ~15 detik di ujung stream. Chat customer cukup singkat → 450 jaga gaya tetap
-// padat tanpa memotong informasi penting.
-const MAX_TOKENS = 450;
+// Batas panjang jawaban, jumlah pesan, dan putaran tool sekarang datang dari PROFIL CUSTOMER
+// (`src/lib/ai/config.ts`) supaya menyetel asisten admin tidak pernah mengubah chat ini.
+// Model MiMo menghasilkan ~25–30 token/detik, jadi jawaban 700 token bisa menambah ~15 detik
+// di ujung stream. Chat customer cukup singkat → 450 jaga gaya tetap padat.
 
 const REFUSAL =
   "Maaf ya Kak, aku cuma bisa bantu seputar produk & layanan SAMAQU \u{1F60A}";
@@ -44,7 +42,7 @@ ${knowledge}${extra ? `\n\nCATATAN TAMBAHAN DARI ADMIN:\n${extra}` : ""}`;
 }
 
 export async function GET() {
-  const config = await getChatConfig();
+  const profile = await getCustomerProfile();
 
   let whatsapp = "";
   try {
@@ -59,107 +57,15 @@ export async function GET() {
   }
 
   return NextResponse.json({
-    enabled: isChatReady(config),
-    greeting: config.greeting || "",
+    enabled: profile.enabled,
+    greeting: profile.greeting,
     whatsapp,
   });
 }
 
-interface ToolCall {
-  id: string;
-  type: "function";
-  function: { name: string; arguments: string };
-}
-
-/**
- * Baca stream SSE gaya OpenAI: teruskan potongan teks ke `onDelta`, kumpulkan tool call
- * (argumen datang bertahap per index). Mengembalikan teks lengkap + daftar tool call.
- */
-async function consumeStream(
-  body: ReadableStream<Uint8Array>,
-  onDelta: (text: string) => void
-): Promise<{ content: string; toolCalls: ToolCall[] }> {
-  const reader = body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
-  let content = "";
-  const toolCalls: ToolCall[] = [];
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split("\n");
-    buffer = lines.pop() ?? "";
-
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed.startsWith("data:")) continue;
-      const payload = trimmed.slice(5).trim();
-      if (!payload || payload === "[DONE]") continue;
-
-      let json: { choices?: Array<{ delta?: { content?: string; tool_calls?: Array<{ index?: number; id?: string; function?: { name?: string; arguments?: string } }> } }> };
-      try {
-        json = JSON.parse(payload);
-      } catch {
-        continue;
-      }
-
-      const delta = json.choices?.[0]?.delta;
-      if (!delta) continue;
-
-      if (typeof delta.content === "string" && delta.content) {
-        content += delta.content;
-        onDelta(delta.content);
-      }
-
-      if (Array.isArray(delta.tool_calls)) {
-        for (const tc of delta.tool_calls) {
-          const idx = tc.index ?? 0;
-          if (!toolCalls[idx]) {
-            toolCalls[idx] = { id: tc.id || `call_${idx}`, type: "function", function: { name: "", arguments: "" } };
-          }
-          if (tc.id) toolCalls[idx].id = tc.id;
-          if (tc.function?.name) toolCalls[idx].function.name += tc.function.name;
-          if (tc.function?.arguments) toolCalls[idx].function.arguments += tc.function.arguments;
-        }
-      }
-    }
-  }
-
-  return { content, toolCalls: toolCalls.filter(Boolean) };
-}
-
-/**
- * Panggil MiMo dengan retry otomatis untuk kegagalan transient (network / 429 / 5xx).
- * Ini yang menjaga asisten tetap stabil saat penyedia AI sesekali gagal.
- */
-async function fetchWithRetry(url: string, init: RequestInit, attempts = 3): Promise<Response> {
-  let lastError: unknown;
-  for (let i = 0; i < attempts; i++) {
-    try {
-      const res = await fetch(url, init);
-      if ((res.status === 429 || res.status >= 500) && i < attempts - 1) {
-        lastError = new Error(`HTTP ${res.status}`);
-        await new Promise((r) => setTimeout(r, 300 * (i + 1)));
-        continue;
-      }
-      return res;
-    } catch (e) {
-      lastError = e;
-      if (i < attempts - 1) {
-        await new Promise((r) => setTimeout(r, 300 * (i + 1)));
-        continue;
-      }
-      throw e;
-    }
-  }
-  throw lastError instanceof Error ? lastError : new Error("Gagal menghubungi penyedia AI");
-}
-
 export async function POST(req: NextRequest) {
-  const config = await getChatConfig();
-  if (!isChatReady(config)) {
+  const profile = await getCustomerProfile();
+  if (!profile.enabled) {
     return NextResponse.json({ error: "Live chat belum aktif." }, { status: 503 });
   }
 
@@ -181,13 +87,13 @@ export async function POST(req: NextRequest) {
     )
     .map((m) => ({
       role: m.role,
-      content: m.content.slice(0, MAX_CHARS),
+      content: m.content.slice(0, profile.maxChars),
       // Hanya gambar dari Cloudinary kita sendiri yang diterima (cegah URL sembarangan).
       images: Array.isArray(m.images)
         ? m.images.filter((u) => typeof u === "string" && /^https:\/\/res\.cloudinary\.com\//.test(u)).slice(0, 3)
         : [],
     }))
-    .slice(-MAX_MESSAGES);
+    .slice(-profile.maxMessages);
 
   if (!messages.length || messages[messages.length - 1].role !== "user") {
     return NextResponse.json({ error: "Tidak ada pertanyaan." }, { status: 400 });
@@ -218,8 +124,7 @@ export async function POST(req: NextRequest) {
     .slice(0, 1800);
 
   const knowledge = await getKnowledgeContext();
-  const system = buildSystemPrompt(knowledge, config.extraInstructions);
-  const baseUrl = config.baseUrl.replace(/\/+$/, "");
+  const system = buildSystemPrompt(knowledge, profile.extraInstructions);
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
@@ -235,25 +140,18 @@ export async function POST(req: NextRequest) {
       try {
         const convo: Array<Record<string, unknown>> = [{ role: "system", content: system }, ...mimoMessages];
 
-        for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
+        for (let round = 0; round < profile.maxToolRounds; round++) {
           if (round > 0) send({ reset: true }); // buang teks parsial sebelum putaran tool berikutnya
 
-          const res = await fetchWithRetry(`${baseUrl}/chat/completions`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", Authorization: `Bearer ${config.apiKey}` },
-            body: JSON.stringify({
-              model: config.model,
-              messages: convo,
-              temperature: 0.4,
-              max_tokens: MAX_TOKENS,
-              tools: CHAT_TOOLS,
-              tool_choice: "auto",
-              stream: true,
-              // Matikan "thinking mode" — tanpa ini MiMo menulis penalaran dulu (tak terlihat
-              // pelanggan) sehingga balasan terasa lama. Paramnya harus di dalam chat_template_kwargs.
-              chat_template_kwargs: { enable_thinking: false },
-            }),
-            signal: AbortSignal.timeout(60000),
+          const res = await streamChatCompletion({
+            baseUrl: profile.baseUrl,
+            apiKey: profile.apiKey,
+            model: profile.model,
+            messages: convo,
+            tools: CHAT_TOOLS,
+            temperature: profile.temperature,
+            maxTokens: profile.maxTokens,
+            timeoutMs: profile.timeoutMs,
           });
 
           if (!res.ok || !res.body) {
@@ -264,7 +162,7 @@ export async function POST(req: NextRequest) {
             break;
           }
 
-          const { content, toolCalls } = await consumeStream(res.body, (delta) => send({ delta }));
+          const { content, toolCalls } = await consumeOpenAIStream(res.body, (delta) => send({ delta }));
 
           if (toolCalls.length) {
             convo.push({ role: "assistant", content: content || null, tool_calls: toolCalls });
