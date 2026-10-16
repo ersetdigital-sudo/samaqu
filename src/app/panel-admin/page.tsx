@@ -1,11 +1,105 @@
+"use client";
+
 /**
- * Beranda panel admin — markup & ukuran disalin dari mockup HTML
- * (samaqu-admin-dashboard-2/pages/index.html). Data belum tersambung: angka 0 + empty state.
+ * Beranda panel admin — tampilan dari mockup HTML (samaqu-admin-dashboard-2/pages/index.html),
+ * datanya asli dari API ops:
+ *   - kartu statistik & "Pesanan terbaru" ← GET /api/ops/transaksi
+ *   - "Stok menipis"                      ← GET /api/ops/product-variants
+ * Omset mengikuti aturan bersama `SALE_STATUSES` (diproses/dikirim/selesai) seperti dashboard lain.
  */
+import { useEffect, useState } from "react";
+import { statusLabel, SALE_STATUSES } from "@/lib/transaksi";
+import { opsGet } from "./panel-api";
+import { useWibToday, wibDateOffset, dailyIndexForDate } from "./wib-date";
 import styles from "./panel.module.css";
 
 const HERO_ART =
   "https://res.cloudinary.com/j4ka1ty6/image/upload/w_440,h_200,c_fill,f_auto,q_auto/v1792159516/1640fd4d-496e-470d-b933-af298a247885.png";
+
+/**
+ * Kutipan harian di banner sambutan. Dipilih secara deterministik dari tanggal WIB
+ * (`dailyIndexForDate`), jadi tidak acak dan tidak bergantung jumlah kunjungan: semua admin
+ * melihat kutipan yang sama pada hari yang sama, dan berganti saat hari WIB berganti.
+ */
+const dailyQuotes = [
+  "Pelan-pelan, yang penting selesai.",
+  "Kerja rapi, hati happy.",
+  "Satu per satu, semua beres.",
+  "Semangat kecil, hasil besar.",
+  "Terima kasih sudah teliti hari ini.",
+  "Awali hari dengan senyuman.",
+  "Sedikit progres tetap berarti.",
+  "Rapi datanya, lancar kerjanya.",
+  "Fokus hari ini, bangga nanti.",
+  "Setiap detail itu berarti.",
+  "Kerjakan dengan hati.",
+  "Hari baik dimulai dari sini.",
+  "Teliti itu bentuk kepedulian.",
+  "Kamu hebat sudah sampai sini.",
+  "Selesaikan satu, lanjut berikutnya.",
+  "Kerja tenang, hasil maksimal.",
+  "Hal kecil bikin perbedaan besar.",
+  "Jangan lupa istirahat sejenak.",
+  "Hari ini kesempatan baru.",
+  "Progres lebih penting dari sempurna.",
+  "Semoga semua urusan lancar.",
+  "Senyum dulu, lanjut lagi.",
+  "Teratur hari ini, ringan esok.",
+  "Terima kasih sudah berusaha.",
+  "Kesalahan kecil, pelajaran besar.",
+  "Kerja sama bikin semuanya mudah.",
+  "Satu langkah lebih maju.",
+  "Jaga kualitas, jaga semangat.",
+  "Semua proses punya arti.",
+  "Tutup hari dengan rasa syukur.",
+];
+
+const rupiah = (n: number) => "Rp " + Math.round(Number(n) || 0).toLocaleString("id-ID");
+const sumStock = (m?: Record<string, number> | null) =>
+  Object.values(m ?? {}).reduce((a, b) => a + (Number(b) || 0), 0);
+const isSale = (status: string) => (SALE_STATUSES as readonly string[]).includes(status);
+const STATUS_TONE: Record<string, string> = {
+  pending: "#e8890c",
+  diproses: "#e8890c",
+  dikirim: "#2f9e5b",
+  selesai: "#2f9e5b",
+  dibatalkan: "#c2255c",
+};
+
+type TxItem = { product_name?: string; series?: string | null; color?: string | null; size?: string | null };
+type TxRow = {
+  order_number: string;
+  date_wib: string;
+  time_wib?: string;
+  status: string;
+  total: number;
+  customer_name?: string;
+  qty_total?: number;
+  awb_no?: string | null;
+  item_summary?: string;
+  items?: TxItem[];
+};
+type VariantRow = {
+  id: string;
+  product_name?: string;
+  series_name?: string | null;
+  color?: string | null;
+  stock_efektif?: Record<string, number> | null;
+};
+
+type MetricCard = {
+  label: string;
+  value: string;
+  caption: string;
+  delta?: string;
+  down?: boolean;
+  glyph?: string;
+  glyphColor?: string;
+  icon: StatIconName;
+  icBg: string;
+  icColor: string;
+  wave: string;
+};
 
 function Heart() {
   return (
@@ -57,26 +151,6 @@ function StatIcon({ name }: { name: StatIconName }) {
   }
 }
 
-type Metric = {
-  label: string;
-  value: string;
-  caption: string;
-  delta?: string;
-  glyph?: string;
-  glyphColor?: string;
-  icon: StatIconName;
-  icBg: string;
-  icColor: string;
-  wave: string;
-};
-
-const METRICS: Metric[] = [
-  { label: "Omset hari ini", value: "Rp 0", caption: "Dari kemarin", delta: "0%", icon: "bag", icBg: "#fde4ec", icColor: "#d6336c", wave: "#fde4ec" },
-  { label: "Pesanan masuk", value: "0", caption: "Hari ini", delta: "0%", icon: "basket", icBg: "#e3f7ea", icColor: "#2f9e5b", wave: "#e3f7ea" },
-  { label: "Perlu dikirim", value: "0", caption: "Menunggu resi", glyph: "◷", glyphColor: "#e8890c", icon: "truck", icBg: "#fff1db", icColor: "#e8890c", wave: "#fff1db" },
-  { label: "Stok menipis", value: "0", caption: "Ambang ≤ 5 unit", glyph: "⊡", glyphColor: "#e8365d", icon: "box", icBg: "#efe6fd", icColor: "#7c4ddb", wave: "#efe6fd" },
-];
-
 function EmptyOrdersArt() {
   return (
     <svg viewBox="0 0 120 90">
@@ -106,6 +180,107 @@ function EmptyStockArt() {
 }
 
 export default function PanelAdminHome() {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [orders, setOrders] = useState<TxRow[]>([]);
+  const [variants, setVariants] = useState<VariantRow[]>([]);
+  // Kunci tanggal WIB hari ini — ikut berubah otomatis saat lewat tengah malam WIB.
+  const today = useWibToday();
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        // 60 hari terakhir: cukup untuk pesanan hari ini, "perlu dikirim" yang masih terbuka,
+        // dan pembanding kemarin.
+        const start = wibDateOffset(-60);
+        const end = today;
+        const [tx, vr] = await Promise.all([
+          opsGet<{ items?: TxRow[] }>(`/api/ops/transaksi?start=${start}&end=${end}`),
+          opsGet<{ items?: VariantRow[] }>("/api/ops/product-variants"),
+        ]);
+        if (cancelled) return;
+        setOrders(Array.isArray(tx.items) ? tx.items : []);
+        setVariants(Array.isArray(vr.items) ? vr.items : []);
+      } catch (e) {
+        if (!cancelled) setError(e instanceof Error ? e.message : "Gagal memuat data");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [today]);
+
+  const yesterday = wibDateOffset(-1);
+  const quote = dailyQuotes[dailyIndexForDate(today, dailyQuotes.length)];
+
+  const todayOrders = orders.filter((o) => o.date_wib === today);
+  const yestOrders = orders.filter((o) => o.date_wib === yesterday);
+  const omsetToday = todayOrders.filter((o) => isSale(o.status)).reduce((a, o) => a + (Number(o.total) || 0), 0);
+  const omsetYest = yestOrders.filter((o) => isSale(o.status)).reduce((a, o) => a + (Number(o.total) || 0), 0);
+  const deltaOmset = omsetYest > 0 ? Math.round(((omsetToday - omsetYest) / omsetYest) * 100) : omsetToday > 0 ? 100 : 0;
+  const deltaMasuk =
+    yestOrders.length > 0 ? Math.round(((todayOrders.length - yestOrders.length) / yestOrders.length) * 100) : todayOrders.length > 0 ? 100 : 0;
+
+  const perluDikirim = orders.filter((o) => o.status === "diproses" && !o.awb_no).length;
+  const lowStock = variants.filter((v) => {
+    const total = sumStock(v.stock_efektif);
+    return total > 0 && total <= 5;
+  });
+
+  const latest = [...orders]
+    .sort((a, b) => `${b.date_wib} ${b.time_wib ?? ""}`.localeCompare(`${a.date_wib} ${a.time_wib ?? ""}`))
+    .slice(0, 5);
+
+  const metrics: MetricCard[] = [
+    {
+      label: "Omset hari ini",
+      value: rupiah(omsetToday),
+      caption: "Dari kemarin",
+      delta: `${deltaOmset >= 0 ? "↗" : "↘"} ${Math.abs(deltaOmset)}%`,
+      down: deltaOmset < 0,
+      icon: "bag" as StatIconName,
+      icBg: "#fde4ec",
+      icColor: "#d6336c",
+      wave: "#fde4ec",
+    },
+    {
+      label: "Pesanan masuk",
+      value: String(todayOrders.length),
+      caption: "Hari ini",
+      delta: `${deltaMasuk >= 0 ? "↗" : "↘"} ${Math.abs(deltaMasuk)}%`,
+      down: deltaMasuk < 0,
+      icon: "basket" as StatIconName,
+      icBg: "#e3f7ea",
+      icColor: "#2f9e5b",
+      wave: "#e3f7ea",
+    },
+    {
+      label: "Perlu dikirim",
+      value: String(perluDikirim),
+      caption: "Menunggu resi",
+      glyph: "◷",
+      glyphColor: "#e8890c",
+      icon: "truck" as StatIconName,
+      icBg: "#fff1db",
+      icColor: "#e8890c",
+      wave: "#fff1db",
+    },
+    {
+      label: "Stok menipis",
+      value: String(lowStock.length),
+      caption: "Ambang ≤ 5 unit",
+      glyph: "⊡",
+      glyphColor: "#e8365d",
+      icon: "box" as StatIconName,
+      icBg: "#efe6fd",
+      icColor: "#7c4ddb",
+      wave: "#efe6fd",
+    },
+  ];
+
   return (
     <>
       <section className={styles.hero}>
@@ -114,9 +289,7 @@ export default function PanelAdminHome() {
             Selamat bekerja, Lea <Hand />
           </h2>
           <p className={styles.heroSub}>
-            Terima kasih sudah menjadi bagian dari SAMAQU.
-            <br />
-            Semoga hari ini semua proses berjalan lancar! <Heart />
+            {quote} <Heart />
           </p>
         </div>
         <img className={styles.heroArt} src={HERO_ART} alt="" />
@@ -127,8 +300,10 @@ export default function PanelAdminHome() {
         </div>
       </section>
 
+      {error ? <div className={styles.alert}>{error}</div> : null}
+
       <section className={styles.stats}>
-        {METRICS.map((m) => (
+        {metrics.map((m) => (
           <div key={m.label} className={styles.card}>
             <div className={styles.stHead}>
               <div className={styles.ic} style={{ background: m.icBg, color: m.icColor }}>
@@ -141,11 +316,14 @@ export default function PanelAdminHome() {
                 </svg>
               </div>
             </div>
-            <div className={styles.stValue}>{m.value}</div>
+            <div className={styles.stValue}>{loading ? "—" : m.value}</div>
             <div className={styles.stFoot}>
               {m.delta ? (
-                <span className={styles.pill} style={{ background: "#e3f7ea", color: "#2f9e5b" }}>
-                  ↗ {m.delta}
+                <span
+                  className={styles.pill}
+                  style={m.down ? { background: "#fdecec", color: "#c2255c" } : { background: "#e3f7ea", color: "#2f9e5b" }}
+                >
+                  {m.delta}
                 </span>
               ) : (
                 <span style={{ color: m.glyphColor }}>{m.glyph}</span>
@@ -171,14 +349,39 @@ export default function PanelAdminHome() {
             </div>
             <span className={styles.all}>Lihat semua ›</span>
           </div>
-          <div className={styles.empty}>
-            <div className={styles.emptyBox}>
-              <EmptyOrdersArt />
+
+          {loading ? (
+            <div className={styles.empty}>
+              <p>Memuat pesanan…</p>
             </div>
-            <b>Belum ada pesanan</b>
-            <p>Pesanan akan muncul di sini begitu data tersambung.</p>
-            <button className={styles.btn}>+&nbsp;&nbsp;Buat Pesanan Baru</button>
-          </div>
+          ) : latest.length === 0 ? (
+            <div className={styles.empty}>
+              <div className={styles.emptyBox}>
+                <EmptyOrdersArt />
+              </div>
+              <b>Belum ada pesanan</b>
+              <p>Pesanan akan muncul di sini begitu ada transaksi.</p>
+              <button className={styles.btn}>+&nbsp;&nbsp;Buat Pesanan Baru</button>
+            </div>
+          ) : (
+            <div className={styles.list}>
+              {latest.map((o) => (
+                <div key={o.order_number} className={styles.listRow}>
+                  <div className={styles.listMain}>
+                    <b>{o.order_number}</b>
+                    <small>
+                      {o.customer_name || "-"}
+                      {o.item_summary ? ` · ${o.item_summary}` : ""}
+                    </small>
+                  </div>
+                  <div className={styles.listVal}>
+                    {rupiah(o.total)}
+                    <small style={{ color: STATUS_TONE[o.status] ?? "var(--mut)" }}>{statusLabel(o.status)}</small>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className={styles.card}>
@@ -192,13 +395,37 @@ export default function PanelAdminHome() {
             </div>
             <span className={styles.all}>Lihat semua ›</span>
           </div>
-          <div className={styles.empty}>
-            <div className={styles.emptyBox}>
-              <EmptyStockArt />
+
+          {loading ? (
+            <div className={styles.empty}>
+              <p>Memuat stok…</p>
             </div>
-            <b>Semua stok aman</b>
-            <p>Tidak ada varian yang perlu segera diisi ulang.</p>
-          </div>
+          ) : lowStock.length === 0 ? (
+            <div className={styles.empty}>
+              <div className={styles.emptyBox}>
+                <EmptyStockArt />
+              </div>
+              <b>Semua stok aman</b>
+              <p>Tidak ada varian yang perlu segera diisi ulang.</p>
+            </div>
+          ) : (
+            <div className={styles.list}>
+              {lowStock.slice(0, 5).map((v) => {
+                const parts = [v.series_name, v.color && v.color !== "default" ? v.color : null].filter(Boolean).join(" · ");
+                return (
+                  <div key={v.id} className={styles.listRow}>
+                    <div className={styles.listMain}>
+                      <b>{v.product_name || v.id}</b>
+                      <small>{parts || "-"}</small>
+                    </div>
+                    <div className={styles.listVal} style={{ color: "#e8365d" }}>
+                      {sumStock(v.stock_efektif)} unit
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </section>
     </>
