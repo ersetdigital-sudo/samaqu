@@ -53,6 +53,26 @@ export function formatTanggalID(iso) {
 }
 
 /**
+ * Label ringkasan satu item (dipakai di langkah Produk & langkah Pembayaran):
+ * nama produk LENGKAP · jenis kain · series · (warna) · ukuran
+ * → "Thobe Charcoal Grey · Kain B-01 · Jiharkah · S".
+ *
+ * Sumbernya sama dengan yang dipakai server & Detail Transaksi — nama produk apa adanya
+ * (`products.name`), jenis kain (`jenis_kain.name`), series, warna ASLI (hanya kalau produk
+ * itu punya lebih dari satu warna, mis. Kandora), dan ukuran. Jenis kain selalu ikut tampil
+ * karena warna yang sama bisa ada di beberapa jenis kain.
+ */
+export function itemSummaryParts({ product, kain, series, color, size }) {
+  return [product, kain ? `Kain ${kain}` : "", series, color, size]
+    .map((part) => String(part || "").trim())
+    .filter(Boolean);
+}
+
+export function itemSummaryLabel(parts) {
+  return itemSummaryParts(parts).join(" · ");
+}
+
+/**
  * Rincian varian satu item untuk tabel, mengikuti istilah & urutan di Detail Transaksi:
  * jenis kain → series → ukuran. Contoh: "Kain B-01 · Nahawand · XL".
  * Qty ditempel terpisah oleh pemanggil supaya bisa diberi bobot visual lebih ringan.
