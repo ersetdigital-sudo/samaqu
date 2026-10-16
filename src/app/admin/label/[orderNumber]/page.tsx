@@ -34,7 +34,14 @@ export default function LabelPage() {
   const [error, setError] = useState<string | null>(null);
   const [paymentType, setPaymentType] = useState<string | null>(null);
   // Ukuran label yang dipilih: "100x150" (desain existing) atau "78x100" (format baru).
-  const [size, setSize] = useState<"100x150" | "78x100">("100x150");
+  // Query string `?size=` (mis. dari tombol Cetak Resi di ops) hanya menentukan PILIHAN AWAL;
+  // kalau tidak ada atau tidak dikenal, perilakunya sama seperti sebelumnya (default 100x150)
+  // dan tombol di toolbar tetap bisa mengganti ukurannya.
+  const [size, setSize] = useState<"100x150" | "78x100">(() => {
+    if (typeof window === "undefined") return "100x150";
+    const param = new URLSearchParams(window.location.search).get("size");
+    return param === "78x100" || param === "100x150" ? param : "100x150";
+  });
   const LABEL_SIZES = {
     "100x150": { w: 100, h: 150, label: "100 × 150 mm" },
     "78x100": { w: 78, h: 100, label: "78 × 100 mm" },

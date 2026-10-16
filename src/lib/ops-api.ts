@@ -48,6 +48,13 @@ const WILAYAH = "/api/ops/wilayah";
 const KOTA = "/api/ops/kota";
 /** Cek ongkir J&T: berat dihitung di server, tarifnya dari /api/shipping/jnt-cost (checkout). */
 const ONGKIR = "/api/ops/ongkir";
+/** Pra-cek pembuatan resi (baca data pesanan + kode area J&T; tidak memanggil J&T). */
+const RESI_CHECK = "/api/ops/resi-check";
+/**
+ * Pembuatan resi J&T memakai route admin apa adanya (`PATCH /api/admin/orders` aksi `createJnt`)
+ * — guard-nya `isOpsAdmin`, sama dengan route ops lain, jadi tidak perlu route kedua.
+ */
+const ADMIN_ORDERS = "/api/admin/orders";
 const CUSTOMERS = "/api/ops/customers";
 
 /** Base44 memakai sort "-created_date" (desc). Kita terjemahkan ke parameter API. */
@@ -215,6 +222,34 @@ export const base44 = {
       async saveAddress(data: any) {
         const json = await call<{ item: any }>("POST", ALAMAT, data);
         return json.item ?? null;
+      },
+
+      /**
+       * Buat resi J&T untuk satu pesanan (aksi sungguhan ke J&T). Memakai route admin apa
+       * adanya: `PATCH /api/admin/orders { orderNumber, action: "createJnt" }`.
+       * Kontrak responsnya dipertahankan: sukses `{ success, awbNo, status, shippingStatus }`,
+       * gagal melempar Error dengan pesan server apa adanya.
+       */
+      async createResi(orderNumber: string) {
+        return call<{ success: boolean; awbNo: string; status: string; shippingStatus: string }>(
+          "PATCH",
+          ADMIN_ORDERS,
+          { orderNumber, action: "createJnt" },
+        );
+      },
+    },
+
+    /** Pra-cek pembuatan resi (hanya membaca; tidak memanggil J&T dan tidak menulis apa pun). */
+    Resi: {
+      async check(orderNumber: string) {
+        return call<{
+          ok: boolean;
+          checks: { key: string; label: string; ok: boolean; detail?: string }[];
+          weight_grams: number;
+          receiver: { name: string; phone: string; address: string; kecamatan: string; city: string; postal_code: string };
+          awb_no: string;
+          status: string;
+        }>("POST", RESI_CHECK, { order_number: orderNumber });
       },
     },
 
