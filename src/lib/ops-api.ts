@@ -245,6 +245,19 @@ export const base44 = {
           { orderNumber, action: "createJnt" },
         );
       },
+
+      /**
+       * Sinkronkan riwayat pengiriman J&T untuk satu pesanan — memakai route admin apa adanya
+       * (`PATCH /api/admin/orders { action: "syncTracking" }`), sama dengan tombol "Lacak Paket"
+       * di dashboard admin: status pesanan ikut diperbarui oleh mekanisme yang sudah ada.
+       */
+      async syncTracking(orderNumber: string) {
+        return call<{ success: boolean; status?: string; shippingStatus?: string; eventsStored?: number }>(
+          "PATCH",
+          ADMIN_ORDERS,
+          { orderNumber, action: "syncTracking" },
+        );
+      },
     },
 
     /** Pra-cek pembuatan resi (hanya membaca; tidak memanggil J&T dan tidak menulis apa pun). */

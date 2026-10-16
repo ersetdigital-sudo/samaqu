@@ -14,6 +14,7 @@ import { AlertCircle, Ban, Check, Pencil, Receipt, Truck, X } from "lucide-react
 import { base44 } from "@/lib/ops-api";
 import { NEUTRAL_ITEM_PHOTO } from "@/lib/order-photo";
 import { formatWeightExact } from "@/lib/shipping-weight";
+import { formatTrackingTime, sortHistoryDesc, trackingRow } from "@/lib/jnt/track-status";
 import { SOURCE_STYLES, STATUS_STYLES, formatRupiah, formatTanggalJamID } from "@/components/ops/transaksi/transaksi-format";
 
 /** Label status kirim yang dipakai layar (nilainya dari `orders.shipping_status`). */
@@ -47,6 +48,9 @@ export default function TransaksiDetailDrawer({ open, order, onClose, onEdit, on
     setResiError("");
     setResiIssuedWarning(false);
     setCopied(false);
+    setTrack({ status: "idle", history: [], error: "" });
+    setTrackOpen(false);
+    setTrackBusy(false);
     resiLock.current = false;
     return undefined;
   }, [open]);
@@ -117,6 +121,69 @@ export default function TransaksiDetailDrawer({ open, order, onClose, onEdit, on
 
   const openLabel = (size) => {
     window.open(`/admin/label/${order.order_number}?size=${size}`, "_blank", "noopener,noreferrer");
+  };
+
+  /** Riwayat pengiriman (Lacak Resi): hasil baca dari endpoint tracking publik — read-only. */
+  const [track, setTrack] = useState({ status: "idle", history: [], error: "" });
+  const [trackOpen, setTrackOpen] = useState(false);
+  const [trackBusy, setTrackBusy] = useState(false);
+  const trackRows = trackOpen ? sortHistoryDesc(track.history).map(trackingRow) : [];
+
+  /** Ambil riwayat dari J&T. `force` = lewati cache 5 menit di endpoint. Tanpa tulis DB. */
+  const loadTrack = async (force = false) => {
+    if (!awb || trackBusy) return;
+    setTrackBusy(true);
+    setTrack((current) => ({ ...current, status: "loading", error: "" }));
+    try {
+      const res = await fetch(`/api/jnt/track?awb=${encodeURIComponent(awb)}${force ? "&refresh=1" : ""}`, {
+        cache: "no-store",
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.success) throw new Error(json?.error || "Gagal mengambil riwayat dari J&T.");
+      setTrack({
+        status: "done",
+        history: Array.isArray(json.data?.history) ? json.data.history : [],
+        error: "",
+      });
+    } catch (error) {
+      setTrack({
+        status: "error",
+        history: [],
+        error: error instanceof Error ? error.message : "Gagal mengambil riwayat dari J&T.",
+      });
+    } finally {
+      setTrackBusy(false);
+    }
+  };
+
+  const toggleTrack = () => {
+    const next = !trackOpen;
+    setTrackOpen(next);
+    if (next && track.status === "idle") loadTrack(false);
+  };
+
+  /**
+   * "Perbarui": sinkronkan riwayat ke sistem memakai mekanisme yang sama dengan tombol
+   * "Lacak Paket" di dashboard admin (status pesanan ikut mengikuti hasil scan J&T),
+   * lalu riwayatnya dibaca ulang.
+   */
+  const syncTrack = async () => {
+    if (!awb || trackBusy) return;
+    setTrackBusy(true);
+    try {
+      await base44.entities.Transaction.syncTracking(order.order_number);
+      onResiCreated?.(null, true);
+      setTrackBusy(false);
+      await loadTrack(true);
+    } catch (error) {
+      setTrack((current) => ({
+        ...current,
+        status: "error",
+        error: error instanceof Error ? error.message : "Gagal memperbarui riwayat.",
+      }));
+    } finally {
+      setTrackBusy(false);
+    }
   };
 
   // Scroll halaman dikunci selama drawer terbuka supaya scrollbar halaman tidak menimpa
@@ -232,7 +299,14 @@ export default function TransaksiDetailDrawer({ open, order, onClose, onEdit, on
                         </button>
                       </div>
 
-                      {order.shipping_status ? (
+                      {/* Pesanan yang sudah dibatalkan: `shipping_status` lama masih
+                          "menunggu_pickup" (jalur pembatalan tidak mengubah kolom itu), jadi
+                          status kirimnya ditampilkan sebagai "Dibatalkan" supaya tidak menyesatkan. */}
+                      {cancelled ? (
+                        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                          Status kirim: <b className="text-red-600 dark:text-red-400">Dibatalkan</b>
+                        </p>
+                      ) : order.shipping_status ? (
                         <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
                           Status kirim:{" "}
                           <b className="text-slate-700 dark:text-slate-200">
@@ -260,6 +334,72 @@ export default function TransaksiDetailDrawer({ open, order, onClose, onEdit, on
                           </button>
                         </div>
                       ) : null}
+
+                      {/* Lacak Resi: riwayat asli J&T (teks & catatan apa adanya, tanpa parafrase) */}
+                      <div className="pt-0.5">
+                        <button
+                          type="button"
+                          onClick={toggleTrack}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-[11px] font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                        >
+                          <Truck size={13} /> {trackOpen ? "Tutup riwayat" : "Lacak Resi"}
+                        </button>
+
+                        {trackOpen ? (
+                          <div className="mt-2 rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden">
+                            {track.status === "loading" ? (
+                              <p className="px-3 py-2.5 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                                Memuat riwayat dari J&T…
+                              </p>
+                            ) : track.status === "error" ? (
+                              <p className="px-3 py-2.5 text-xs font-semibold text-red-600 dark:text-red-400">{track.error}</p>
+                            ) : trackRows.length === 0 ? (
+                              <p className="px-3 py-2.5 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                                Belum ada riwayat dari J&T.
+                              </p>
+                            ) : (
+                              <ul className="max-h-[196px] overflow-y-auto no-scrollbar divide-y divide-slate-100 dark:divide-slate-800">
+                                {trackRows.map((row, index) => (
+                                  <li key={`${row.dateTime}-${index}`} className="px-3 py-2">
+                                    <p
+                                      className={`text-xs font-bold ${
+                                        row.warning ? "text-amber-600 dark:text-amber-400" : "text-slate-800 dark:text-slate-100"
+                                      }`}
+                                    >
+                                      {row.status}
+                                    </p>
+                                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                                      {[row.location, formatTrackingTime(row.dateTime)].filter(Boolean).join(" • ")}
+                                    </p>
+                                    {row.note ? (
+                                      <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                                        Catatan: {row.note}
+                                      </p>
+                                    ) : null}
+                                    {row.driver ? (
+                                      <p className="text-[11px] text-slate-500 dark:text-slate-400">Kurir: {row.driver}</p>
+                                    ) : null}
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+
+                            <div className="flex items-center justify-between gap-2 px-3 py-2 bg-slate-50 dark:bg-slate-900">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                {trackRows.length > 0 ? `${trackRows.length} riwayat` : "Riwayat J&T"}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={syncTrack}
+                                disabled={trackBusy}
+                                className="px-2.5 py-1 rounded-lg text-[11px] font-bold text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 disabled:opacity-60 transition-colors"
+                              >
+                                {trackBusy ? "Memperbarui…" : "Perbarui"}
+                              </button>
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
                     </>
                   ) : cancelled ? (
                     <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
