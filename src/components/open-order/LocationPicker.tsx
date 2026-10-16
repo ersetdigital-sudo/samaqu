@@ -3,14 +3,15 @@
 /**
  * Pemilih lokasi tujuan di langkah 4 (data pemesan).
  *
- * Provinsi → Kota/Kabupaten → Kecamatan diambil dari RajaOngkir lewat route shipping yang
- * sudah ada (`/api/shipping/provinces`, `/api/shipping/districts`). Nama kota/kecamatan yang
- * tersimpan adalah nama resmi RajaOngkir — itulah yang dipakai `/api/shipping/jnt-cost` untuk
- * menghitung ongkir J&T, jadi ongkir tidak lagi bergantung pada ejaan yang diketik customer.
+ * Provinsi → Kota/Kabupaten → Kecamatan diambil dari dataset area J&T yang sudah dipakai
+ * integrasi pengiriman (`src/lib/jnt/area-data.json` lewat `/api/shipping/wilayah`), jadi
+ * tidak butuh layanan luar. Nama kota/kecamatan yang tersimpan adalah nama yang sama dipakai
+ * `/api/shipping/jnt-cost` untuk menghitung ongkir J&T, jadi ongkir tidak bergantung pada
+ * ejaan yang diketik customer.
  *
- * Kalau daftar RajaOngkir tidak bisa dimuat (kunci kosong / API bermasalah), komponen ini
- * otomatis kembali ke input teks Kota + Kecamatan seperti sebelumnya supaya pesanan tetap
- * bisa dikirim dan admin menghitung ongkir menyusul.
+ * Kalau daftar wilayah tidak bisa dimuat, komponen ini otomatis kembali ke input teks
+ * Kota + Kecamatan seperti sebelumnya supaya pesanan tetap bisa dikirim dan admin menghitung
+ * ongkir menyusul.
  */
 
 import { useEffect, useState } from "react";
@@ -18,13 +19,14 @@ import type { CustomerData } from "./types";
 import { Field, inputClass, inputStyle, MUTED, TextInput } from "./ui";
 
 interface LocationOption {
-  id: number;
+  /** Nilai untuk <select>; bisa angka (route lama) atau nama wilayah (route dataset J&T). */
+  id: number | string;
   name: string;
 }
 
 type Status = "loading" | "ready" | "unavailable";
 
-/** Nama RajaOngkir serba kapital ("KOTA ADM. JAKARTA TIMUR") → "Kota Adm. Jakarta Timur". */
+/** Nama wilayah dari dataset J&T ("KOTA ADM. JAKARTA TIMUR") → "Kota Adm. Jakarta Timur". */
 const prettyName = (name: string) =>
   name.toLowerCase().replace(/(^|[\s.])([a-z])/g, (_, sep: string, char: string) => sep + char.toUpperCase());
 
@@ -81,7 +83,7 @@ export default function LocationPicker({
   // Daftar provinsi cukup dimuat sekali.
   useEffect(() => {
     const controller = new AbortController();
-    loadOptions("/api/shipping/provinces", controller.signal)
+    loadOptions("/api/shipping/wilayah", controller.signal)
       .then((options) => {
         setProvinces(options);
         setStatus(options.length > 0 ? "ready" : "unavailable");
@@ -101,7 +103,7 @@ export default function LocationPicker({
       return;
     }
     const controller = new AbortController();
-    loadOptions(`/api/shipping/districts?provinceId=${customer.provinceId}`, controller.signal)
+    loadOptions(`/api/shipping/wilayah?province=${encodeURIComponent(customer.provinceId)}`, controller.signal)
       .then(setCities)
       .catch((err: Error) => {
         if (err.name !== "AbortError") console.error("[OPEN-ORDER] daftar kota gagal dimuat:", err);
@@ -116,7 +118,7 @@ export default function LocationPicker({
       return;
     }
     const controller = new AbortController();
-    loadOptions(`/api/shipping/districts?cityId=${customer.cityId}`, controller.signal)
+    loadOptions(`/api/shipping/wilayah?city=${encodeURIComponent(customer.cityId)}`, controller.signal)
       .then(setDistricts)
       .catch((err: Error) => {
         if (err.name !== "AbortError") console.error("[OPEN-ORDER] daftar kecamatan gagal dimuat:", err);
@@ -146,7 +148,7 @@ export default function LocationPicker({
     onChange("district", district ? prettyName(district.name) : "");
   }
 
-  // RajaOngkir tidak tersedia → kembali ke input teks seperti sebelumnya.
+  // Daftar wilayah tidak tersedia → kembali ke input teks seperti sebelumnya.
   if (status === "unavailable") {
     return (
       <>
@@ -222,7 +224,7 @@ export default function LocationPicker({
       </Field>
 
       <p className="text-[11px] leading-relaxed" style={{ color: MUTED }}>
-        Pilihan wilayah ini berasal dari data RajaOngkir, jadi ongkir J&T langsung terhitung begitu kecamatan dipilih.
+        Pilihan wilayah ini berasal dari data area J&T, jadi ongkir J&T langsung terhitung begitu kecamatan dipilih.
       </p>
     </>
   );
