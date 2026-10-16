@@ -4,6 +4,8 @@ import { routing } from "./i18n/routing";
 
 const intlMiddleware = createMiddleware(routing);
 
+/** Subdomain panel admin: admin.samaqu.id/<halaman> → /panel-admin/<halaman> */
+const ADMIN_HOST = "admin.samaqu.id";
 /** Subdomain dashboard internal: office.samaqu.id/<halaman> → /ops/<halaman> */
 const OPS_HOST = "office.samaqu.id";
 const LOCALES = ["id", "en"];
@@ -27,6 +29,22 @@ export default function middleware(request: NextRequest) {
     }
     if (!url.pathname.startsWith("/ops")) {
       url.pathname = url.pathname === "/" ? "/ops" : `/ops${url.pathname}`;
+    }
+    return NextResponse.rewrite(url, { request: { headers } });
+  }
+
+  if (host === ADMIN_HOST) {
+    // Panel admin: tanpa locale, URL bersih (admin.samaqu.id/produk, dst).
+    // Catatan: "panel-admin" sudah dikecualikan di matcher, jadi hasil rewrite ini tidak
+    // diproses ulang middleware (tidak ada loop) dan cabang office.samaqu.id tidak tersentuh.
+    const url = request.nextUrl.clone();
+    const firstSegment = url.pathname.split("/")[1];
+    if (LOCALES.includes(firstSegment)) {
+      url.pathname = "/";
+      return NextResponse.redirect(url);
+    }
+    if (!url.pathname.startsWith("/panel-admin")) {
+      url.pathname = url.pathname === "/" ? "/panel-admin" : `/panel-admin${url.pathname}`;
     }
     return NextResponse.rewrite(url, { request: { headers } });
   }
