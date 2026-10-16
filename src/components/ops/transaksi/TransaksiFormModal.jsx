@@ -32,7 +32,7 @@ import { MANUAL_SOURCE_KEYS, SOURCE_LABEL } from "@/lib/transaksi";
 import { OPS_STOCK_SIZES } from "@/lib/ops-stock";
 import { categoryRank, seriesRank, variantSortKey } from "@/lib/ops-order";
 import { formatWeightExact } from "@/lib/shipping-weight";
-import { formatRupiah, isoToWibInput, wibNow, wibToIso } from "@/components/ops/transaksi/transaksi-format";
+import { formatRupiah, isoToWibInput, itemSummaryLabel, itemSummaryParts, wibNow, wibToIso } from "@/components/ops/transaksi/transaksi-format";
 import WilayahSelect from "@/components/ops/transaksi/WilayahSelect";
 import { useToast } from "@/components/ops/ui/use-toast";
 
@@ -1389,14 +1389,14 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                     if (!row.editing && rowComplete(row) && info.chosen) {
                       const group = groupOf(row);
                       // Satu baris ringkas: "Thobe Superblack · Kain B-01 · Jiharkah · XL × 2"
-                      const summary = [
-                        group?.name || row.product,
-                        row.kain ? `Kain ${row.kain}` : "",
-                        step.show ? row.series : "",
-                        `${info.chosen.size} × ${info.quantity}`,
-                      ]
-                        .filter(Boolean)
-                        .join(" · ");
+                      const summaryParts = itemSummaryParts({
+                        product: group?.name || row.product,
+                        kain: row.kain,
+                        series: step.show ? row.series : "",
+                        color: group && group.warnas.length > 1 ? row.warna : "",
+                        size: `${info.chosen.size} × ${info.quantity}`,
+                      });
+                      const summary = summaryParts.join(" · ");
                       return (
                         <div
                           key={index}
@@ -1404,7 +1404,10 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                         >
                           <div className="min-w-0">
                             <p className="text-sm font-bold text-slate-900 dark:text-white truncate" title={summary}>
-                              {summary}
+                              {summaryParts[0]}
+                              {summaryParts.length > 1 ? (
+                                <span className="font-semibold text-slate-500 dark:text-slate-400"> · {summaryParts.slice(1).join(" · ")}</span>
+                              ) : null}
                             </p>
                             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                               Rp {formatRupiah(info.subtotal)}
@@ -1462,14 +1465,14 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                         <div className="space-y-1.5">
                           {rowComplete(row) && info.chosen && (
                             <p className="rounded-lg bg-emerald-50 dark:bg-emerald-900/20 px-3 py-2 text-xs font-bold text-emerald-700 dark:text-emerald-300">
-                              {[
-                                group?.name || row.product,
-                                row.kain ? `Kain ${row.kain}` : "",
-                                step.show ? row.series : "",
-                                `${info.chosen.size} × ${info.quantity}`,
-                              ]
-                                .filter(Boolean)
-                                .join(" · ")}
+                              {itemSummaryLabel({
+                                product: group?.name || row.product,
+                                kain: row.kain,
+                                series: step.show ? row.series : "",
+                                color: group && group.warnas.length > 1 ? row.warna : "",
+                                size: info.chosen.size,
+                              })}{" "}
+                              × {info.quantity}
                               <span className="font-semibold"> · Rp {formatRupiah(info.subtotal)}</span>
                             </p>
                           )}
@@ -1915,11 +1918,29 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                     const info = rowInfo[index];
                     if (!info?.chosen) return null;
                     const seri = seriesStep(row.category, row.kain, row.warna);
-                    const label = [row.warna, seri.show ? row.series : "", info.chosen.size].filter(Boolean).join(" · ");
+                    const group = groupOf(row);
+                    // Sama persis dengan baris ringkasan di langkah Produk: nama produk lengkap,
+                    // jenis kain, series, (warna kalau produknya multi-warna), lalu ukuran.
+                    const labelParts = itemSummaryParts({
+                      product: group?.name || row.product,
+                      kain: row.kain,
+                      series: seri.show ? row.series : "",
+                      color: group && group.warnas.length > 1 ? row.warna : "",
+                      size: info.chosen.size,
+                    });
+                    const label = labelParts.join(" · ");
                     return (
-                      <div key={index} className="flex items-center justify-between gap-3 text-sm">
-                        <span className="text-slate-700 dark:text-slate-200 truncate">{label}</span>
-                        <span className="text-slate-900 dark:text-white font-semibold whitespace-nowrap">
+                      <div key={index} className="flex items-start justify-between gap-3 text-sm">
+                        <span
+                          className="min-w-0 leading-snug font-bold text-slate-900 dark:text-white"
+                          title={label}
+                        >
+                          {labelParts[0]}
+                          {labelParts.length > 1 ? (
+                            <span className="font-semibold text-slate-500 dark:text-slate-400"> · {labelParts.slice(1).join(" · ")}</span>
+                          ) : null}
+                        </span>
+                        <span className="shrink-0 text-slate-900 dark:text-white font-semibold whitespace-nowrap">
                           x{info.quantity} · Rp {formatRupiah(info.subtotal)}
                         </span>
                       </div>
