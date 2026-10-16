@@ -12,6 +12,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Ban, Pencil, Receipt, Truck, X } from "lucide-react";
 import { NEUTRAL_ITEM_PHOTO } from "@/lib/order-photo";
+import { formatWeightExact } from "@/lib/shipping-weight";
 import { formatTrackingTime, sortHistoryDesc, trackingRow } from "@/lib/jnt/track-status";
 import { SOURCE_STYLES, STATUS_STYLES, formatRupiah, formatTanggalJamID } from "@/components/ops/transaksi/transaksi-format";
 import TransaksiResiPanel from "@/components/ops/transaksi/TransaksiResiPanel";
