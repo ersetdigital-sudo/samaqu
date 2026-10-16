@@ -2,8 +2,8 @@
 
 /**
  * Kerangka panel admin — tema "Rose Luxury Admin" (palet berry/plum/blush, font Plus Jakarta
- * Sans, radius lembut). Susunannya tetap seperti sebelumnya: sidebar gelap + nav bersekat,
- * header sticky berisi crumb + judul + user, dan hamburger untuk layar sempit.
+ * Sans, radius lembut). Sidebar gelap + nav bersekat, header sticky berisi role pill + user
+ * (avatar foto), dan hamburger untuk layar sempit.
  *
  * Catatan: halaman Transaksi/Produk/Leads belum dibangun (masih `soon`); menu sengaja tampil
  * sebagai pill, bukan link, supaya tidak menabrak rute yang belum ada.
@@ -40,7 +40,6 @@ export default function PanelShell({ children }: { children: ReactNode }) {
   const activeItem = NAV.flatMap((g) => g.items).find((item) =>
     item.href === "/panel-admin" ? pathname === item.href : pathname.startsWith(item.href)
   );
-  const title = activeItem?.label ?? "Beranda";
 
   return (
     <div className={styles.app}>
@@ -95,14 +94,16 @@ export default function PanelShell({ children }: { children: ReactNode }) {
           <button className={styles.hamb} onClick={() => setOpen(true)} aria-label="Menu">
             <Menu size={18} />
           </button>
-          <div>
-            <div className={styles.crumb}>SAMAQU · Panel Admin</div>
-            <h1>{title}</h1>
-          </div>
           <div className={styles.sp} />
           <span className={styles.rolePill}>Super Admin</span>
           <div className={styles.user}>
-            <div className={styles.av}>L</div>
+            <img
+              className={styles.avImg}
+              src="https://res.cloudinary.com/j4ka1ty6/image/upload/w_72,h_72,c_fill,f_auto,q_auto/v1792158930/Avatar_Hijab_Merah_Muda_dalam_Lencana.png"
+              alt="Lea"
+              width={38}
+              height={38}
+            />
             <div className={styles.ut}>
               <b>Lea</b>
               <small>SAMAQU</small>
