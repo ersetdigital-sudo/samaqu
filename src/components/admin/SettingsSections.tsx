@@ -20,10 +20,15 @@ export default function SettingsPanel() {
     <div className="space-y-6">
       <h2 className="text-2xl italic" style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}>Pengaturan Toko</h2>
       <StoreInfoSection />
-      <ShippingOriginSection />
+      <section className="card p-6 max-w-2xl">
+        <h3 className="text-lg font-medium" style={{ color: "var(--espresso)" }}>Asal Pengiriman</h3>
+        <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
+          Ditetapkan di sistem: <strong style={{ color: "var(--espresso)" }}>DEPOK</strong> — dipakai J&T untuk
+          Tariff Check dan pembuatan resi. Jadi tidak perlu dipilih lagi di sini.
+        </p>
+      </section>
       <ShippingProviderSection />
       <CourierSettingsSection />
-      <ApiKeySection />
       <SocialMediaSection />
       <MetaPixelSection />
       <FonnteSections />
@@ -46,8 +51,7 @@ const AVAILABLE_COURIERS = [
 ];
 
 const PROVIDER_OPTIONS = [
-  { value: "rajaongkir" as const, label: "RajaOngkir", desc: "Semua ekspedisi (JNE, SiCepat, J&T, dll)" },
-  { value: "jnt" as const, label: "J&T API Langsung", desc: "Hanya J&T, tanpa perantara" },
+  { value: "jnt" as const, label: "J&T API Langsung", desc: "Tarif & resi langsung dari API J&T" },
 ];
 
 // Model teks MiMo (dari GET /v1/models). TTS/ASR tidak ditampilkan karena bukan untuk chat.
@@ -355,8 +359,8 @@ function ShippingOriginSection() {
 }
 
 function ShippingProviderSection() {
-  const [provider, setProvider] = useState<"rajaongkir" | "jnt">("rajaongkir");
-  const [original, setOriginal] = useState<"rajaongkir" | "jnt">("rajaongkir");
+  const [provider, setProvider] = useState<"rajaongkir" | "jnt">("jnt");
+  const [original, setOriginal] = useState<"rajaongkir" | "jnt">("jnt");
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -395,7 +399,7 @@ function ShippingProviderSection() {
   return (
     <SettingsCard
       title="Provider Pengiriman"
-      description="Pilih provider ongkir yang dipakai di checkout. J&T API = langsung ke J&T tanpa perantara. RajaOngkir = semua ekspedisi via RajaOngkir."
+      description="Provider ongkir yang dipakai di checkout. Sekarang hanya J&T API langsung (tanpa perantara)."
       editing={editing}
       onEdit={() => setEditing(true)}
       onCancel={handleCancel}
