@@ -736,6 +736,12 @@ export default function OrderDetailContent({
                           {t("noteLabel")}: <span style={{ color: "#1c1c1c" }}>{trackSummary.note}</span>
                         </p>
                       ) : null}
+                      {/* Nama penerima dari J&T (biasanya terisi pada scan serah terima). */}
+                      {trackSummary.receiver ? (
+                        <p className="text-[12px]" style={{ margin: "8px 0 0", color: "#8D9297" }}>
+                          Penerima: <span style={{ color: "#1c1c1c" }}>{trackSummary.receiver}</span>
+                        </p>
+                      ) : null}
                     </div>
                   ) : null}
 
@@ -759,6 +765,10 @@ export default function OrderDetailContent({
                               ) : null}
                               {row.driver ? (
                                 <i style={{ display: "block", marginTop: 2 }}>{t("driver")}: {row.driver}</i>
+                              ) : null}
+                              {/* Nama penerima dari J&T (`receiver`) — mis. siapa yang menerima paket. */}
+                              {row.receiver ? (
+                                <i style={{ display: "block", marginTop: 2 }}>Penerima: {row.receiver}</i>
                               ) : null}
                             </div>
                           </div>

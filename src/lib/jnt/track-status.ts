@@ -54,6 +54,8 @@ export interface TrackScan {
   city_name?: string | null;
   date_time?: string | null;
   driverName?: string | null;
+  /** Nama orang yang menerima paket (diisi J&T pada scan serah terima, mis. kode 200). */
+  receiver?: string | null;
 }
 
 /** Satu baris riwayat siap tampil. Semua teks berasal langsung dari respons J&T. */
@@ -68,6 +70,8 @@ export interface TrackingRow {
   warning: boolean;
   /** `driverName` J&T — hanya dipakai tampilan admin, tidak pernah ke customer. */
   driver: string | null;
+  /** Nama penerima dari J&T (`receiver`) apa adanya — mis. siapa yang menerima paket. */
+  receiver: string | null;
   /** `date_time` J&T apa adanya. */
   dateTime: string;
 }
@@ -86,6 +90,7 @@ export function trackingRow(item: TrackScan | null | undefined): TrackingRow {
     note: rawNote || null,
     warning: Number(item?.status_code) === 150,
     driver: String(item?.driverName ?? "").trim() || null,
+    receiver: String(item?.receiver ?? "").trim() || null,
     dateTime: item?.date_time ?? "",
   };
 }
@@ -124,6 +129,8 @@ export interface TrackingSummary {
   status: string;
   /** `note` event terbaru (persis), null bila kosong. */
   note: string | null;
+  /** Nama penerima (`receiver`) event terbaru — mis. siapa yang menerima paket. */
+  receiver: string | null;
   /** `date_time` event terbaru — mengikuti timestamp dari sumber API. */
   updatedAt: string | null;
 }
@@ -136,6 +143,7 @@ export function trackingSummary(history: TrackHistoryItem[] | null | undefined):
   return {
     status: String(latest?.status ?? "").trim(),
     note: String(latest?.note ?? "").trim() || null,
+    receiver: String(latest?.receiver ?? "").trim() || null,
     updatedAt: latest?.date_time ?? null,
   };
 }
