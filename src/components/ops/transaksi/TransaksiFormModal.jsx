@@ -847,6 +847,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
         status: initialData?.status || "diproses",
         awb_no: initialData?.awb_no || "",
         shipping_status: initialData?.shipping_status || "",
+        customer_name: form?.customer_name || initialData?.customer_name || "",
         isEdit,
       });
     },

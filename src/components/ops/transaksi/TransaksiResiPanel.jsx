@@ -138,7 +138,6 @@ export default function TransaksiResiPanel({ order, onResiCreated }) {
     window.open(`/admin/label/${order.order_number}?size=${size}`, "_blank", "noopener,noreferrer");
   };
 
-  const sizeOptions = labelSize === "78x100" ? ["78x100", "100x150"] : ["100x150", "78x100"];
   const sizeLabel = (size) => (size === "78x100" ? "Cetak 78 × 100 mm" : "Cetak 100 × 150 mm");
 
   return (
@@ -331,52 +330,62 @@ export default function TransaksiResiPanel({ order, onResiCreated }) {
               className="w-full max-w-md max-h-full overflow-y-auto no-scrollbar rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#1a1d28] p-5 shadow-xl"
               onClick={(event) => event.stopPropagation()}
             >
-              <h4 className="font-heading font-bold text-slate-900 dark:text-white">Cetak resi J&T?</h4>
+              <h4 className="font-heading font-bold text-slate-900 dark:text-white">Cetak label J&T?</h4>
 
+              {/* Irama dialog sengaja sama dengan dialog "Buat resi J&T?": info di atas,
+                  peringatan kecil, lalu dua tombol di bawah. */}
               <div className="mt-3 rounded-xl border border-slate-200 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800 text-sm">
-                <div className="px-3.5 py-2 flex items-center justify-between gap-3">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">No. Order</p>
-                  <p className="font-mono text-xs font-bold text-slate-900 dark:text-white">{order.order_number}</p>
+                <div className="px-3.5 py-2">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Penerima</p>
+                  <p className="font-bold text-slate-900 dark:text-white">{order.customer_name || "-"}</p>
                 </div>
                 <div className="px-3.5 py-2 flex items-center justify-between gap-3">
                   <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Nomor Resi</p>
                   <p className="font-mono text-xs font-bold text-slate-900 dark:text-white">{awb || "-"}</p>
                 </div>
+                <div className="px-3.5 py-2 flex items-center justify-between gap-3">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">No. Order</p>
+                  <p className="font-mono text-xs font-bold text-slate-900 dark:text-white">{order.order_number}</p>
+                </div>
               </div>
 
-              <p className="mt-3 flex items-start gap-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400">
+              <p className="mt-3 flex items-start gap-1.5 text-xs font-bold text-amber-700 dark:text-amber-300">
                 <AlertCircle size={14} className="mt-px shrink-0" />
-                <span>Pilih ukuran label. Halaman label dibuka di tab baru — tinggal tekan tombol "Cetak Label" di sana.</span>
+                <span>
+                  Halaman label dibuka di tab baru — tinggal tekan "Cetak Label" di sana. Tombol kanan memakai ukuran
+                  terakhir: {printSize === "78x100" ? "78 × 100 mm" : "100 × 150 mm"}.
+                </span>
               </p>
 
-              <div className="mt-4 space-y-2">
-                {sizeOptions.map((size) => (
-                  <button
-                    key={size}
-                    type="button"
-                    onClick={() => {
-                      setPrintSize("");
-                      openLabel(size);
-                    }}
-                    className="w-full inline-flex items-center justify-between gap-2 px-4 py-3 border-2 border-slate-200 dark:border-slate-700 rounded-xl font-bold text-slate-800 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
-                  >
-                    <span>{sizeLabel(size)}</span>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                      {size === labelSize ? "Terakhir dipakai" : "Pilih"}
-                    </span>
-                  </button>
-                ))}
-              </div>
-
-              <div className="mt-3">
+              <div className="flex gap-2 mt-4">
                 <button
                   type="button"
                   onClick={() => setPrintSize("")}
-                  className="w-full px-4 py-2.5 border-2 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
+                  className="flex-1 px-4 py-2.5 border-2 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
                 >
                   Batal
                 </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const size = printSize;
+                    setPrintSize("");
+                    openLabel(size);
+                  }}
+                  className="flex-1 px-4 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold rounded-xl hover:bg-slate-800 dark:hover:bg-slate-100 transition-all"
+                >
+                  {sizeLabel(printSize)}
+                </button>
               </div>
+
+              {/* Ukuran lain tetap bisa dipilih (sekali klik, tanpa menutup dialog dulu). */}
+              <button
+                type="button"
+                onClick={() => setPrintSize(printSize === "78x100" ? "100x150" : "78x100")}
+                className="mt-2 w-full text-[11px] font-bold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 transition-colors"
+              >
+                Pakai ukuran lain: {sizeLabel(printSize === "78x100" ? "100x150" : "78x100")}
+              </button>
             </motion.div>
           </motion.div>
         ) : null}
