@@ -420,6 +420,24 @@
 }
 .search .in { padding-left: 36px; }
 
+/* chip tanggal — ikon kalender berry + tanggal tebal */
+.dateChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  height: 40px;
+  padding: 0 16px;
+  background: var(--surface);
+  border: 1px solid var(--bd);
+  border-radius: var(--rk);
+  box-shadow: var(--sh);
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--plum);
+  white-space: nowrap;
+}
+.dateChip svg { color: var(--berry); flex: none; }
+
 /* ---------- badges / pills ---------- */
 .b {
   display: inline-flex;

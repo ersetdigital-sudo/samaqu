@@ -3,7 +3,7 @@
  *
  * Data belum dipasang (angka 0 / empty state); tata letaknya dulu yang dirapikan.
  */
-import { TrendingUp, ShoppingBag, Truck, Package } from "lucide-react";
+import { TrendingUp, ShoppingBag, Truck, Package, Search, Calendar } from "lucide-react";
 import styles from "./panel.module.css";
 
 const METRICS = [
@@ -27,17 +27,17 @@ export default function PanelAdminHome() {
       <div className={styles.row} style={{ marginBottom: 20 }}>
         <div>
           <div className={styles.pageTitle}>Selamat bekerja, Lea</div>
-          <div className={styles.hint}>{TANGGAL} · Ringkasan operasional hari ini.</div>
+          <div className={styles.hint}>Ringkasan operasional hari ini.</div>
         </div>
         <div className={styles.sp} />
-        <button className={styles.btn}>
-          <Package size={16} />
-          Lihat Pesanan
-        </button>
-        <button className={styles.btnPri}>
-          <ShoppingBag size={16} />
-          Input Pesanan
-        </button>
+        <div className={styles.search} style={{ flex: "1 1 240px", maxWidth: 380, minWidth: 200 }}>
+          <Search />
+          <input className={styles.in} placeholder="Cari pesanan, SKU baju, atau nama pelanggan…" />
+        </div>
+        <span className={styles.dateChip}>
+          <Calendar size={16} />
+          {TANGGAL}
+        </span>
       </div>
 
       <div className={styles.stats}>
