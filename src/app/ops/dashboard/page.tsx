@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 // tipe versi ini — jadi semuanya diambil lewat namespace (pola yang sama seperti
 // OpsShell.tsx). Nilainya `any`, jadi tidak bisa gagal type-check.
 import * as LucideIcons from "lucide-react";
+import GlassCard from "@/components/ops/GlassCard";
 
 const IconDashboard: any = (LucideIcons as any).LayoutDashboard ?? (LucideIcons as any).Gauge;
 const IconRefresh: any = (LucideIcons as any).RefreshCw;
@@ -90,22 +91,6 @@ async function fetchDashboard(month: string): Promise<DashboardData> {
   const json = await res.json().catch(() => null);
   if (!res.ok) throw new Error(json?.error || `Gagal memuat dashboard (${res.status})`);
   return json as DashboardData;
-}
-
-function GlassCard({ icon: Icon, label, value, caption }: { icon: any; label: string; value: string; caption: string }) {
-  return (
-    <div className="bg-white border border-slate-200 rounded-2xl p-5 flex flex-col">
-      {/* Irama kartu dikunci: baris label (tidak wrap) → nilai (selalu 1 baris) → caption
-          yang ditempel ke dasar kartu. Jadi keempat kartu selalu sejajar, berapa pun
-          panjang nominalnya. */}
-      <div className="flex items-center gap-2 text-slate-500 min-h-[20px]">
-        <Icon size={16} className="shrink-0" />
-        <span className="text-[11px] font-bold uppercase tracking-wider truncate">{label}</span>
-      </div>
-      <p className="font-black text-slate-900 mt-3 whitespace-nowrap leading-tight text-[clamp(1.05rem,1.5vw,1.75rem)]">{value}</p>
-      <p className="text-slate-500 text-xs mt-auto pt-1.5">{caption}</p>
-    </div>
-  );
 }
 
 function StatCard({ label, value, caption, tone }: { label: string; value: string; caption: string; tone?: string }) {
