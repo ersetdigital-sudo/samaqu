@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { User, Mail, Phone, Lock, Loader2 } from "lucide-react";
@@ -18,6 +18,11 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  // Query aktif (mis. `?redirect=/checkout`) — diwariskan ke tautan "Masuk" supaya tetap nyambung.
+  const [query, setQuery] = useState("");
+  useEffect(() => {
+    setQuery(window.location.search);
+  }, []);
 
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
@@ -154,7 +159,7 @@ export default function RegisterPage() {
 
           <p className="mt-8 text-center text-xs" style={{ color: "var(--text-muted)" }}>
             Sudah punya akun?{" "}
-            <Link href="/akun/login" className="font-semibold" style={{ color: "var(--gold)" }}>Masuk</Link>
+            <Link href={`/akun/login${query}`} className="font-semibold" style={{ color: "var(--gold)" }}>Masuk</Link>
           </p>
         </div>
       </div>
