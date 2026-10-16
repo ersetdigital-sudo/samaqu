@@ -24,3 +24,14 @@
   --color-blue-900: #6b1033;
   --color-blue-950: #4a0a24;
 }
+
+/* Tombol utama halaman ops memakai `bg-slate-900` (navy) — di panel diganti berry.
+ *
+ * Sengaja per-kelas, BUKAN memetakan ulang `--color-slate-900`: variabel itu juga dipakai
+ * `text-slate-900` (teks gelap), jadi kalau dipetakan seluruh teks ikut jadi pink.
+ * Yang `dark:bg-slate-900` tidak ikut kena karena nama kelasnya beda (`.dark\:bg-slate-900`). */
+
+.ops-root.panel-ops .bg-slate-900 { background-color: #c2255c; }
+.ops-root.panel-ops .hover\:bg-slate-800:hover { background-color: #9d174d; }
+.ops-root.panel-ops .bg-slate-900\/60 { background-color: rgba(194, 37, 92, 0.6); }
+.ops-root.panel-ops .hover\:bg-slate-900\/50:hover { background-color: rgba(157, 23, 77, 0.5); }
