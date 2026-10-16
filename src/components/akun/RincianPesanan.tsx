@@ -424,6 +424,12 @@ export default function RincianPesanan({ order }: { order: RincianOrder }) {
                     <span>{t("note")}: {latestRow.note}</span>
                   </div>
                 ) : null}
+                {/* Nama penerima dari J&T (`receiver`) — siapa yang menerima paket. */}
+                {latestRow.receiver ? (
+                  <div className="rp-line rp-sub" style={{ marginLeft: 27 }}>
+                    <span>{t("receivedBy")}: {latestRow.receiver}</span>
+                  </div>
+                ) : null}
               </>
             ) : (
               <div className="rp-line rp-sub" style={{ marginTop: 8 }}>

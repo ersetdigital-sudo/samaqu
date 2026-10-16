@@ -37,6 +37,7 @@ const DEFAULT_MESSAGES: Record<string, Record<string, string>> = {
     rawData: "Lihat data mentah",
     close: "Tutup",
     driver: "Kurir",
+    receivedBy: "Diterima oleh",
     noUpdate: "Belum ada update dari J&T. Riwayat muncul setelah kurir memindai paket.",
     noResi: "Nomor resi belum tersedia. Kami kabari begitu paket diserahkan ke J&T.",
     stale: "Menampilkan data J&T terakhir yang tersimpan.",

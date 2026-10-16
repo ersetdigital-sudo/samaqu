@@ -254,6 +254,10 @@ export default function LacakPage() {
                         {row.note ? (
                           <i style={{ display: "block", marginTop: 2 }}>{t("note")}: {row.note}</i>
                         ) : null}
+                        {/* Nama penerima dari J&T (`receiver`) — siapa yang menerima paket. */}
+                        {row.receiver ? (
+                          <i style={{ display: "block", marginTop: 2 }}>{t("receivedBy")}: {row.receiver}</i>
+                        ) : null}
                       </div>
                     </div>
                   );
