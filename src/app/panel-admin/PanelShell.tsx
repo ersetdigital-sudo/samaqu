@@ -389,7 +389,7 @@ export default function PanelShell({ children }: { children: ReactNode }) {
         </div>
       </aside>
 
-      <main className={styles.main}>
+      <main className={`${styles.main}${pathname.startsWith("/panel-admin/assistant") ? ` ${styles.mainFill}` : ""}`}>
         <div className={styles.top}>
           <div className={`${styles.search} ${styles.topSearch}`}>
             <svg viewBox="0 0 24 24">
