@@ -12,7 +12,7 @@ import OpsMasterProduk from "@/app/ops/master-produk/page";
 
 export default function PanelProdukPage() {
   return (
-    <div className="ops-root">
+    <div className="ops-root panel-ops">
       <OpsMasterProduk />
     </div>
   );

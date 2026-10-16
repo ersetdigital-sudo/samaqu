@@ -10,7 +10,7 @@ import TambahProdukPage from "@/app/ops/master-produk/tambah/page";
 
 export default function PanelTambahProdukPage() {
   return (
-    <div className="ops-root">
+    <div className="ops-root panel-ops">
       <TambahProdukPage />
     </div>
   );

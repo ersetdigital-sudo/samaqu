@@ -1,0 +1,26 @@
+/* Warna aksen halaman ops yang dititipkan ke panel admin.
+ *
+ * Halaman ops memakai aksen biru Tailwind (220+ pemakaian `blue-*`). Di panel admin aksennya
+ * berry/blush, jadi skala biru Tailwind dipetakan ulang di sini — cukup lewat variabel
+ * `--color-blue-*` karena semua utility Tailwind 4 mengacu ke variabel itu
+ * (mis. `.bg-blue-600 { background-color: var(--color-blue-600) }`).
+ *
+ * Di-scope `.ops-root.panel-ops` (kelas `panel-ops` hanya dipasang pembungkus halaman panel),
+ * jadi halaman ops di office.samaqu.id TIDAK terpengaruh.
+ *
+ * Warna semantik (hijau/amber/merah) sengaja tidak diubah.
+ */
+
+.ops-root.panel-ops {
+  --color-blue-50: #fdf3f7;
+  --color-blue-100: #fbe7ef;
+  --color-blue-200: #f7d3e4;
+  --color-blue-300: #f0b3ce;
+  --color-blue-400: #e482ac;
+  --color-blue-500: #d6336c;
+  --color-blue-600: #c2255c;
+  --color-blue-700: #9d174d;
+  --color-blue-800: #831843;
+  --color-blue-900: #6b1033;
+  --color-blue-950: #4a0a24;
+}

@@ -11,7 +11,7 @@ import OpsLeads from "@/app/ops/leads/page";
 
 export default function PanelLeadsPage() {
   return (
-    <div className="ops-root">
+    <div className="ops-root panel-ops">
       <OpsLeads />
     </div>
   );
