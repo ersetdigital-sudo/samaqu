@@ -51,6 +51,8 @@ export default function TransaksiResiPanel({ order, onResiCreated }) {
   /** Resi yang baru saja dibuat dari panel ini (langsung tampil tanpa menunggu muat ulang). */
   const [createdAwb, setCreatedAwb] = useState("");
   const [labelSize, setLabelSize] = useState(readLabelSize);
+  /** Ukuran yang sedang dikonfirmasi untuk dicetak ("" = dialog cetak tertutup). */
+  const [printSize, setPrintSize] = useState("");
   /** Kunci proses per transaksi: klik beruntun / Enter berulang tidak mengirim dua panggilan. */
   const resiLock = useRef(false);
 
@@ -176,7 +178,7 @@ export default function TransaksiResiPanel({ order, onResiCreated }) {
                 <button
                   key={size}
                   type="button"
-                  onClick={() => openLabel(size)}
+                  onClick={() => setPrintSize(size)}
                   className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[11px] font-bold transition-colors ${
                     size === labelSize
                       ? "border-slate-900 dark:border-slate-100 bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100"
@@ -317,6 +319,75 @@ export default function TransaksiResiPanel({ order, onResiCreated }) {
             </motion.div>
           </motion.div>
         )}
+      </AnimatePresence>
+
+      {/* Konfirmasi cetak resi — alurnya sengaja SAMA dengan "Buat Resi": pilih dulu, baru cetak. */}
+      <AnimatePresence>
+        {printSize ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[10000] bg-black/50 backdrop-blur-sm flex items-center justify-center p-5"
+            onClick={() => setPrintSize("")}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              className="w-full max-w-md max-h-full overflow-y-auto no-scrollbar rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#1a1d28] p-5 shadow-xl"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <h4 className="font-heading font-bold text-slate-900 dark:text-white">Cetak resi J&T?</h4>
+
+              <div className="mt-3 rounded-xl border border-slate-200 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800 text-sm">
+                <div className="px-3.5 py-2 flex items-center justify-between gap-3">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">No. Order</p>
+                  <p className="font-mono text-xs font-bold text-slate-900 dark:text-white">{order.order_number}</p>
+                </div>
+                <div className="px-3.5 py-2 flex items-center justify-between gap-3">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Nomor Resi</p>
+                  <p className="font-mono text-xs font-bold text-slate-900 dark:text-white">{awb || "-"}</p>
+                </div>
+                <div className="px-3.5 py-2 flex items-center justify-between gap-3">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Ukuran Label</p>
+                  <p className="text-sm font-bold text-slate-900 dark:text-white">
+                    {printSize === "78x100" ? "78 × 100 mm" : "100 × 150 mm"}
+                  </p>
+                </div>
+              </div>
+
+              <p className="mt-3 flex items-start gap-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                <AlertCircle size={14} className="mt-px shrink-0" />
+                <span>
+                  Halaman label dibuka di tab baru — tinggal tekan tombol "Cetak Label" di sana. Ukuran ini disimpan
+                  sebagai pilihan terakhir.
+                </span>
+              </p>
+
+              <div className="flex gap-2 mt-4">
+                <button
+                  type="button"
+                  onClick={() => setPrintSize("")}
+                  className="flex-1 px-4 py-2.5 border-2 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const size = printSize;
+                    setPrintSize("");
+                    openLabel(size);
+                  }}
+                  className="flex-1 px-4 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold rounded-xl hover:bg-slate-800 dark:hover:bg-slate-100 transition-all"
+                >
+                  Cetak
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        ) : null}
       </AnimatePresence>
     </>
   );
