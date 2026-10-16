@@ -211,12 +211,14 @@
 .user small { display: block; font-size: 11px; color: var(--mut); }
 
 /* ---------- hero ---------- */
+/* Dua kolom (teks + gambar) sebagai dasar; kartu kutipan hanya muncul di layar lebar supaya
+   kolom teks tidak pernah kesempitan (dulu 3 kolom dipaksa → teks & kutipan terpotong). */
 .hero {
   position: relative;
   border-radius: 20px;
   background: linear-gradient(100deg, #fde7ef, #fbd3e1 55%, #fde9f0);
   display: grid;
-  grid-template-columns: minmax(260px, 1fr) 440px minmax(0, 300px);
+  grid-template-columns: minmax(0, 1.2fr) minmax(150px, 0.8fr);
   gap: 20px;
   align-items: center;
   padding: 0 32px;
@@ -225,16 +227,26 @@
   margin-bottom: 18px;
 }
 .heroText { padding: 24px 0; min-width: 0; }
-.heroTitle { font-size: 28px; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
-.heroTitle svg { width: 26px; height: 26px; color: var(--orange); }
-.heroSub { color: #6b4b5a; line-height: 1.5; }
-.heroArt { width: 440px; height: 200px; object-fit: cover; object-position: center bottom; display: block; }
+.heroTitle {
+  font-size: 28px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+.heroTitle svg { width: 26px; height: 26px; color: var(--orange); flex: none; }
+.heroSub { color: #6b4b5a; line-height: 1.5; max-width: 52ch; }
+.heroArt { width: 100%; height: 200px; object-fit: cover; object-position: center bottom; display: block; }
 .quote {
   position: relative;
+  display: none;
   background: rgba(255, 255, 255, 0.55);
   border-radius: 18px;
   padding: 22px 30px 22px 56px;
-  width: 300px;
+  width: 100%;
+  max-width: 300px;
   color: #4a2e3b;
   line-height: 1.5;
 }
@@ -313,10 +325,14 @@ svg.wave { position: absolute; right: 0; bottom: 0; width: 150px; height: 60px; 
 }
 
 /* ---------- responsive (sama seperti mockup) ---------- */
+/* Layar lebar: hero 3 kolom (teks + gambar + kutipan) seperti mockup. Lebar minimum tiap kolom
+   dijaga supaya tidak pernah meluber/terpotong. */
+@media (min-width: 1260px) {
+  .hero { grid-template-columns: minmax(300px, 1fr) minmax(180px, 400px) minmax(240px, 300px); }
+  .heroArt { width: 100%; max-width: 440px; height: 200px; }
+  .quote { display: block; }
+}
 @media (max-width: 1250px) {
-  .hero { grid-template-columns: minmax(220px, 1fr) 360px; }
-  .heroArt { width: 360px; height: 180px; }
-  .quote { display: none; }
   .stats { gap: 12px; }
   .card { padding: 16px; }
   .stValue { margin-left: 0; }
@@ -333,7 +349,6 @@ svg.wave { position: absolute; right: 0; bottom: 0; width: 150px; height: 60px; 
   .hero { display: flex; flex-direction: column; align-items: flex-start; padding: 24px; min-height: 0; }
   .heroTitle { white-space: normal; flex-wrap: wrap; }
   .heroArt { width: 100%; height: 180px; }
-  .quote { width: 100%; }
   .stats { grid-template-columns: 1fr; }
   .stValue { margin-left: 54px; }
   .grid2 { grid-template-columns: 1fr; }
