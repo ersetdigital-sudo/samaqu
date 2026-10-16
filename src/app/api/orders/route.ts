@@ -30,6 +30,13 @@ function generateOrderNumber(): string {
 
 export async function POST(request: NextRequest) {
   try {
+    // Checkout wajib akun: tolak pesanan tanpa sesi customer yang sah.
+    const bearer = (request.headers.get("authorization") || "").replace(/^Bearer\s+/i, "").trim();
+    const { data: authData } = bearer ? await supabase.auth.getUser(bearer) : { data: { user: null } };
+    if (!authData?.user?.id) {
+      return NextResponse.json({ error: "Masuk dulu untuk melanjutkan checkout" }, { status: 401 });
+    }
+
     const body = await request.json();
     const { customer, shipping, items } = body;
 

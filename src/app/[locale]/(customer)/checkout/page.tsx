@@ -327,17 +327,17 @@ function CheckoutContent() {
       console.log("[CHECKOUT] 📇 Fetching saved addresses...");
       let user = null;
       try {
-        const { data, error: authError } = await supabase.auth.getUser();
-        if (authError) {
-          console.log("[CHECKOUT] 📇 Auth check failed (guest mode):", authError.message);
-          return;
-        }
+        const { data } = await supabase.auth.getUser();
         user = data.user;
       } catch (authErr) {
-        console.log("[CHECKOUT] 📇 Auth check error (guest mode):", authErr);
+        console.log("[CHECKOUT] 📇 Auth check error:", authErr);
+      }
+      if (!user) {
+        // Checkout wajib akun: arahkan ke halaman Masuk, lalu kembali ke checkout.
+        const localePath = typeof window !== "undefined" ? window.location.pathname.split("/")[1] || "id" : "id";
+        router.replace(`/${localePath}/akun/login?redirect=${encodeURIComponent("/checkout")}`);
         return;
       }
-      if (!user) { console.log("[CHECKOUT] 📇 No user logged in"); return; }
       if (user.email) setEmail(user.email);
       console.log("[CHECKOUT] 📇 User ID:", user.id);
       const { data, error } = await supabase
@@ -674,9 +674,13 @@ function CheckoutContent() {
       console.log("[CHECKOUT] 📦 Payload built. Items:", payload.items.length, "Shipping:", payload.shipping.method, "Payment:", payload.paymentMethod);
       console.log("[CHECKOUT] 📦 Sending to /api/orders...");
 
+      const { data: { session: orderSession } } = await supabase.auth.getSession();
       const res = await fetch("/api/orders", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${orderSession?.access_token || ""}`,
+        },
         body: JSON.stringify(payload),
         signal: AbortSignal.timeout(30000),
       });
