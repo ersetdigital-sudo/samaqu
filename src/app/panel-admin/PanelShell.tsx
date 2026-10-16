@@ -10,13 +10,14 @@
  */
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import type { FormEvent, ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { Toaster } from "@/components/ops/ui/toaster";
 import { OpsPageMapProvider } from "@/lib/ops-router";
 import { useWibLongDate } from "./wib-date";
+import { opsGet } from "./panel-api";
 import styles from "./panel.module.css";
 
 const AVATAR =
@@ -88,8 +89,15 @@ const PANEL_PAGES: Record<string, string> = {
   TambahBarangMasuk: "/panel-admin/produk/barang-masuk",
 };
 
+/** Hasil pencarian topbar (pesanan / produk / leads). */
+type SearchHit = { key: string; kind: string; title: string; sub: string; href: string };
+type OrderRow = { order_number?: string; customer_name?: string; customer_whatsapp?: string };
+type ProductRow = { id?: string; name?: string; series?: string | null; category?: string | null; sku?: string | null };
+type LeadRow = { id?: string; kontak?: string; produk?: string | null; sumber?: string | null };
+
 export default function PanelShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const tanggal = useWibLongDate();
   const [ready, setReady] = useState(false);
   const [authorized, setAuthorized] = useState(false);
@@ -116,6 +124,94 @@ export default function PanelShell({ children }: { children: ReactNode }) {
         },
       })
   );
+
+  // ── Pencarian topbar: cari pesanan / produk / leads lalu buka halamannya ──
+  const [q, setQ] = useState("");
+  const [hits, setHits] = useState<SearchHit[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  useEffect(() => {
+    const term = q.trim();
+    if (term.length < 2) {
+      setHits([]);
+      setSearching(false);
+      setSearchError(false);
+      return;
+    }
+    let cancelled = false;
+    setSearching(true);
+    setSearchError(false);
+    const timer = setTimeout(async () => {
+      const needle = term.toLowerCase();
+      const digits = term.replace(/\D/g, "");
+      try {
+        const [ordersRes, productsRes, leadsRes] = await Promise.all([
+          opsGet<{ orders?: OrderRow[] }>("/api/ops/orders?limit=300"),
+          opsGet<{ items?: ProductRow[] }>("/api/ops/products"),
+          // API leads hanya mencari di kolom kontak; sisanya disaring di klien.
+          opsGet<{ items?: LeadRow[] }>(`/api/ops/leads?search=${encodeURIComponent(term)}&limit=5`),
+        ]);
+        if (cancelled) return;
+
+        const orderHits: SearchHit[] = (ordersRes.orders ?? [])
+          .filter((o) => {
+            const hay = `${o.order_number ?? ""} ${o.customer_name ?? ""}`.toLowerCase();
+            const wa = String(o.customer_whatsapp ?? "").replace(/\D/g, "");
+            return hay.includes(needle) || (digits.length >= 3 && wa.includes(digits));
+          })
+          .slice(0, 4)
+          .map((o) => ({
+            key: `order-${o.order_number}`,
+            kind: "Pesanan",
+            title: o.order_number ?? "",
+            sub: o.customer_name ?? "",
+            href: "/panel-admin/transaksi",
+          }));
+
+        const productHits: SearchHit[] = (productsRes.items ?? [])
+          .filter((p) =>
+            `${p.name ?? ""} ${p.series ?? ""} ${p.category ?? ""} ${p.sku ?? ""}`.toLowerCase().includes(needle)
+          )
+          .slice(0, 4)
+          .map((p) => ({
+            key: `product-${p.id}`,
+            kind: "Produk",
+            title: p.name ?? "",
+            sub: [p.series, p.category].filter(Boolean).join(" · "),
+            href: "/panel-admin/produk",
+          }));
+
+        const leadHits: SearchHit[] = (leadsRes.items ?? []).slice(0, 4).map((l) => ({
+          key: `lead-${l.id}`,
+          kind: "Leads",
+          title: l.kontak ?? "",
+          sub: [l.produk, l.sumber].filter(Boolean).join(" · "),
+          href: "/panel-admin/leads",
+        }));
+
+        setHits([...orderHits, ...productHits, ...leadHits]);
+      } catch {
+        if (!cancelled) {
+          setHits([]);
+          setSearchError(true);
+        }
+      } finally {
+        if (!cancelled) setSearching(false);
+      }
+    }, 300);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [q]);
+
+  function openHit(hit: SearchHit) {
+    setSearchOpen(false);
+    setQ("");
+    router.push(hit.href);
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -289,7 +385,54 @@ export default function PanelShell({ children }: { children: ReactNode }) {
               <circle cx="11" cy="11" r="7" />
               <path d="M21 21l-5-5" />
             </svg>
-            <input className={styles.searchInput} placeholder="Cari pesanan, SKU baju, atau nama pelanggan..." />
+            <input
+              className={styles.searchInput}
+              placeholder="Cari pesanan, SKU baju, atau nama pelanggan..."
+              value={q}
+              onChange={(e) => {
+                setQ(e.target.value);
+                setSearchOpen(true);
+              }}
+              onFocus={() => setSearchOpen(true)}
+              onBlur={() => setTimeout(() => setSearchOpen(false), 150)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") {
+                  setSearchOpen(false);
+                  e.currentTarget.blur();
+                } else if (e.key === "Enter" && hits.length > 0) {
+                  e.preventDefault();
+                  openHit(hits[0]);
+                }
+              }}
+              aria-label="Cari pesanan, produk, atau leads"
+            />
+            {searchOpen && q.trim().length >= 2 ? (
+              <div className={styles.searchPanel}>
+                {searching ? (
+                  <p className={styles.searchNote}>Mencari…</p>
+                ) : searchError ? (
+                  <p className={styles.searchNote}>Gagal memuat hasil pencarian.</p>
+                ) : hits.length === 0 ? (
+                  <p className={styles.searchNote}>Tidak ada hasil untuk “{q.trim()}”.</p>
+                ) : (
+                  hits.map((h) => (
+                    <button
+                      key={h.key}
+                      type="button"
+                      className={styles.searchHit}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => openHit(h)}
+                    >
+                      <span className={styles.searchKind}>{h.kind}</span>
+                      <span className={styles.searchMain}>
+                        <b>{h.title}</b>
+                        {h.sub ? <small>{h.sub}</small> : null}
+                      </span>
+                    </button>
+                  ))
+                )}
+              </div>
+            ) : null}
           </div>
           <div className={styles.date}>
             <svg viewBox="0 0 24 24">
