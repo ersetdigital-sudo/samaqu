@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { isOpsAdmin, unauthorized } from "@/lib/ops-auth";
-import { jakartaDayBounds, BIZ_OFFSET_MS } from "@/lib/ops-followup";
+import { jakartaDayBounds, jakartaMonthBounds, BIZ_OFFSET_MS } from "@/lib/ops-followup";
 import { resolveStock } from "@/lib/ops-stock";
 import { rankTopProducts, isSaleOrder } from "@/lib/top-products";
 import { SALE_STATUSES } from "@/lib/transaksi";
@@ -13,8 +13,6 @@ import { SALE_STATUSES } from "@/lib/transaksi";
  * Ringkasan penjualan bisa difilter per bulan lewat query `?month=YYYY-MM`
  * (default: bulan WIB sekarang) supaya pemilih bulan di UI tahu posisinya.
  */
-
-const BULAN = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
 
 /**
  * Penjualan (omset/HPP/laba/AOV/margin) hanya dihitung dari pesanan yang SUDAH DIBAYAR.
@@ -30,38 +28,8 @@ const BULAN = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "
 const isPaidOrder = (o: { status?: string | null }) =>
   SALE_STATUSES.includes(String(o?.status || "").toLowerCase());
 
-/**
- * Batas awal/akhir bulan (WIB) untuk parameter `YYYY-MM`.
- * Parameter tidak valid → diabaikan dan dipakai bulan WIB sekarang.
- */
-function jakartaMonthBounds(monthParam?: string | null) {
-  const wib = new Date(Date.now() + BIZ_OFFSET_MS);
-  let year = wib.getUTCFullYear();
-  let monthIdx = wib.getUTCMonth(); // 0-11
-
-  const m = /^(\d{4})-(\d{2})$/.exec((monthParam || "").trim());
-  if (m) {
-    const y = Number(m[1]);
-    const mi = Number(m[2]) - 1;
-    if (Number.isFinite(y) && y >= 2000 && y <= 2100 && mi >= 0 && mi <= 11) {
-      year = y;
-      monthIdx = mi;
-    }
-  }
-
-  const startMs = Date.UTC(year, monthIdx, 1) - BIZ_OFFSET_MS;
-  const endMs = Date.UTC(year, monthIdx + 1, 1) - BIZ_OFFSET_MS;
-  const daysInMonth = new Date(Date.UTC(year, monthIdx + 1, 0)).getUTCDate();
-  const value = `${year}-${String(monthIdx + 1).padStart(2, "0")}`;
-
-  return {
-    startIso: new Date(startMs).toISOString(),
-    endIso: new Date(endMs).toISOString(),
-    label: `${BULAN[monthIdx]} ${year}`,
-    value,
-    daysInMonth,
-  };
-}
+// Batas bulan WIB (`jakartaMonthBounds`) sekarang tinggal di `src/lib/ops-followup.ts` supaya
+// dashboard ops dan asisten AI admin memakai definisi "bulan ini" yang sama persis.
 
 export async function GET(req: NextRequest) {
   if (!(await isOpsAdmin(req))) return unauthorized();

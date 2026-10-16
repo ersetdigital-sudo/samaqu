@@ -182,11 +182,47 @@ export function fmtWibDateTime(iso?: string | null): string {
   return `${WIB_FMT.format(d)}, ${WIB_TIME_FMT.format(d).replace(":", ".")}`;
 }
 
-const HARI_ID = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
-const BULAN_ID = [
+export const HARI_ID = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+export const BULAN_ID = [
   "Januari", "Februari", "Maret", "April", "Mei", "Juni",
   "Juli", "Agustus", "September", "Oktober", "November", "Desember",
 ];
+
+/**
+ * Batas awal/akhir bulan (WIB) untuk parameter `YYYY-MM`.
+ * Parameter tidak valid → diabaikan dan dipakai bulan WIB sekarang.
+ *
+ * SATU implementasi, dipakai bersama oleh `/api/ops/dashboard` dan tool asisten AI admin —
+ * jangan disalin ulang supaya definisi "bulan ini" tidak pernah berbeda antar layar.
+ */
+export function jakartaMonthBounds(monthParam?: string | null, now: Date = new Date()) {
+  const wib = new Date(now.getTime() + BIZ_OFFSET_MS);
+  let year = wib.getUTCFullYear();
+  let monthIdx = wib.getUTCMonth(); // 0-11
+
+  const m = /^(\d{4})-(\d{2})$/.exec(String(monthParam || "").trim());
+  if (m) {
+    const y = Number(m[1]);
+    const mi = Number(m[2]) - 1;
+    if (Number.isFinite(y) && y >= 2000 && y <= 2100 && mi >= 0 && mi <= 11) {
+      year = y;
+      monthIdx = mi;
+    }
+  }
+
+  const startMs = Date.UTC(year, monthIdx, 1) - BIZ_OFFSET_MS;
+  const endMs = Date.UTC(year, monthIdx + 1, 1) - BIZ_OFFSET_MS;
+  const daysInMonth = new Date(Date.UTC(year, monthIdx + 1, 0)).getUTCDate();
+  const value = `${year}-${String(monthIdx + 1).padStart(2, "0")}`;
+
+  return {
+    startIso: new Date(startMs).toISOString(),
+    endIso: new Date(endMs).toISOString(),
+    label: `${BULAN_ID[monthIdx]} ${year}`,
+    value,
+    daysInMonth,
+  };
+}
 
 /** "2026-10-01" → "Kamis, 1 Oktober 2026" (format Hari, Tanggal Bulan Tahun). */
 export function formatTanggalId(value?: string | null): string {

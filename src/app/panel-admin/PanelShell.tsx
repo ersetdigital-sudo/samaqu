@@ -23,7 +23,7 @@ import styles from "./panel.module.css";
 const AVATAR =
   "https://res.cloudinary.com/j4ka1ty6/image/upload/w_96,h_96,c_fill,f_auto,q_auto/v1792158930/Avatar_Hijab_Merah_Muda_dalam_Lencana.png";
 
-type IconName = "home" | "card" | "box" | "users";
+type IconName = "home" | "card" | "box" | "users" | "spark";
 
 function NavIcon({ name }: { name: IconName }) {
   switch (name) {
@@ -53,6 +53,13 @@ function NavIcon({ name }: { name: IconName }) {
           <path d="M2 21c0-4 3-6 7-6s7 2 7 6M17 4a4 4 0 010 8" />
         </svg>
       );
+    case "spark":
+      return (
+        <svg viewBox="0 0 24 24">
+          <path d="M11 3l1.7 4.9L17.6 9.6l-4.9 1.7L11 16.2 9.3 11.3 4.4 9.6l4.9-1.7z" />
+          <path d="M18 15l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z" />
+        </svg>
+      );
   }
 }
 
@@ -72,6 +79,10 @@ const NAV: { section: string; items: NavItem[] }[] = [
       { label: "Produk", href: "/panel-admin/produk", icon: "box" },
       { label: "Leads", href: "/panel-admin/leads", icon: "users" },
     ],
+  },
+  {
+    section: "Bantuan",
+    items: [{ label: "Asisten", href: "/panel-admin/assistant", icon: "spark" }],
   },
 ];
 
