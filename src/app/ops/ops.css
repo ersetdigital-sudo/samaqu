@@ -22,12 +22,30 @@
 .ops-root .border-border { border-color: #e2e8f0; }
 .ops-root .bg-destructive { background-color: hsl(var(--destructive)); }
 
-.ops-root .no-scrollbar::-webkit-scrollbar { display: none; }
-.ops-root .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+/* Scrollbar disembunyikan SEPENUHNYA (Chrome/Edge/Safari lewat ::-webkit-scrollbar, Firefox
+   lewat scrollbar-width) — tanpa batang, panah, maupun jalur kosong. Scroll tetap jalan lewat
+   mouse wheel, trackpad, sentuhan, dan keyboard. Lebar scrollbar dibuat 0, jadi lebar isi tidak
+   pernah bergeser saat scroll muncul/hilang. `overscroll-behavior: contain` menahan sisa scroll
+   supaya tidak "bocor" ke halaman di belakang drawer. */
+.ops-root .no-scrollbar::-webkit-scrollbar,
+.ops-root .no-scrollbar::-webkit-scrollbar-track,
+.ops-root .no-scrollbar::-webkit-scrollbar-thumb,
+.ops-root .no-scrollbar::-webkit-scrollbar-corner,
+.ops-root .transaksi-body::-webkit-scrollbar,
+.ops-root .transaksi-body::-webkit-scrollbar-track,
+.ops-root .transaksi-body::-webkit-scrollbar-thumb,
+.ops-root .transaksi-body::-webkit-scrollbar-corner {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
 
-/* Isi drawer Transaksi: scrollbar tidak ditampilkan sama sekali (desktop & HP). */
-.ops-root .transaksi-body::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
-.ops-root .transaksi-body { scrollbar-width: none !important; -ms-overflow-style: none !important; }
+.ops-root .no-scrollbar,
+.ops-root .transaksi-body {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+  overscroll-behavior: contain;
+}
 
 /* Input tanggal/native di dalam dashboard: konsisten dengan gaya Base44 */
 .ops-root input[type="date"]::-webkit-calendar-picker-indicator { opacity: .5; }

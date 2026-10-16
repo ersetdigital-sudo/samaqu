@@ -103,7 +103,7 @@ export default function WilayahSelect({
               </button>
             )}
           </div>
-          <div className="max-h-56 overflow-y-auto">
+          <div className="max-h-56 overflow-y-auto no-scrollbar">
             {list.length === 0 ? (
               <p className="px-3 py-3 text-xs text-slate-500 dark:text-slate-400">Tidak ada pilihan yang cocok.</p>
             ) : (

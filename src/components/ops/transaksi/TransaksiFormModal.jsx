@@ -95,6 +95,9 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
   const [search, setSearch] = useState("");
   const [catChip, setCatChip] = useState("all");
   const searchRef = useRef(null);
+  /** Area isi drawer (yang di-scroll) + penanda supaya validasi gagal menggeser ke isian error. */
+  const bodyRef = useRef(null);
+  const [scrollKick, setScrollKick] = useState(0);
 
   const { data: variants = [] } = useQuery({
     queryKey: ["transaksi", "variants"],
@@ -541,7 +544,11 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
   const goNext = () => {
     setSaveAttempted(true);
     setSaveError("");
-    if (!stepReady[step]) return;
+    if (!stepReady[step]) {
+      // Isian wajib belum lengkap → geser ke isian pertama yang bermasalah.
+      setScrollKick((count) => count + 1);
+      return;
+    }
     setStep((current) => Math.min(2, current + 1));
   };
 
@@ -614,6 +621,28 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
     return () => clearTimeout(timer);
   }, [isOpen, step, openIndex]);
 
+  /* Ganti langkah → posisi scroll isi drawer kembali ke atas. */
+  useEffect(() => {
+    bodyRef.current?.scrollTo({ top: 0 });
+  }, [step]);
+
+  /* Validasi gagal → geser ke isian pertama yang bermasalah. Kalau isiannya sudah terlihat,
+     tidak perlu digeser (biar tidak ada gerakan yang tidak diminta). */
+  useEffect(() => {
+    if (scrollKick === 0) return undefined;
+    const timer = setTimeout(() => {
+      const area = bodyRef.current;
+      if (!area) return;
+      const target = area.querySelector('[data-invalid="true"]');
+      if (!target) return;
+      const box = target.getBoundingClientRect();
+      const view = area.getBoundingClientRect();
+      if (box.top >= view.top && box.bottom <= view.bottom) return;
+      target.scrollIntoView({ block: "center", behavior: "smooth" });
+    }, 60);
+    return () => clearTimeout(timer);
+  }, [scrollKick]);
+
   const mutation = useMutation({
     mutationFn: (data) =>
       isEdit
@@ -640,11 +669,21 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
     setSaveError("");
     if (incomplete) {
       setSaveError("Lengkapi dulu produknya (dan periksa baris yang stoknya tidak cukup).");
+      setScrollKick((count) => count + 1);
       return;
     }
-    if (!form.customer_name.trim()) return setSaveError("Nama pelanggan wajib diisi.");
-    if (!form.customer_whatsapp.trim()) return setSaveError("Nomor HP pelanggan wajib diisi.");
-    if (addressIncomplete) return setSaveError("Alamat pengiriman wajib diisi lengkap.");
+    if (!form.customer_name.trim()) {
+      setScrollKick((count) => count + 1);
+      return setSaveError("Nama pelanggan wajib diisi.");
+    }
+    if (!form.customer_whatsapp.trim()) {
+      setScrollKick((count) => count + 1);
+      return setSaveError("Nomor HP pelanggan wajib diisi.");
+    }
+    if (addressIncomplete) {
+      setScrollKick((count) => count + 1);
+      return setSaveError("Alamat pengiriman wajib diisi lengkap.");
+    }
     const createdAt = wibToIso(form.date, form.time);
     if (!createdAt) return setSaveError("Tanggal/jam transaksi tidak valid.");
 
@@ -795,14 +834,15 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
               </ol>
             </div>
 
-            {/* Body: di layar desktop tidak ter-scroll (scrollbar disembunyikan) */}
+            {/* Body: boleh di-scroll (header & footer menempel), scrollbar disembunyikan total */}
             <form
               onSubmit={(event) => {
                 event.preventDefault();
                 if (step < 2) goNext();
                 else save();
               }}
-              className="transaksi-body flex-1 min-h-0 overflow-y-auto [@media(min-height:640px)_and_(min-width:640px)]:overflow-hidden px-5 sm:px-6 py-3 space-y-3.5"
+              ref={bodyRef}
+              className="transaksi-body no-scrollbar flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 sm:px-6 py-3 space-y-3.5"
               style={{ scrollbarWidth: "none" }}
             >
               {/* ── Langkah 1: Pelanggan (termasuk alamat & sumber/waktu) ── */}
@@ -853,6 +893,11 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                 {form.customer_mode === "existing" ? (
                   <select
                     value={form.customer_id}
+                    data-invalid={
+                      form.customer_mode === "existing" && (!form.customer_name.trim() || !form.customer_whatsapp.trim())
+                        ? "true"
+                        : undefined
+                    }
                     onChange={(event) => {
                       const picked = customerOptions.find((entry) => (entry.id || entry.key) === event.target.value);
                       setNewAddressForCustomer(false);
@@ -889,6 +934,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                       value={form.customer_name}
                       onChange={(event) => updateForm({ customer_name: event.target.value })}
                       placeholder="Nama pelanggan"
+                      data-invalid={saveAttempted && !form.customer_name.trim() ? "true" : undefined}
                       className={inputClass}
                     />
                     <input
@@ -896,6 +942,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                       value={form.customer_whatsapp}
                       onChange={(event) => updateForm({ customer_whatsapp: event.target.value })}
                       placeholder="Nomor HP (08…)"
+                      data-invalid={saveAttempted && !form.customer_whatsapp.trim() ? "true" : undefined}
                       className={inputClass}
                     />
                   </div>
@@ -986,7 +1033,15 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
 
                   {showAddressForm && (
                     <div className="space-y-2">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <div
+                        className="grid grid-cols-1 sm:grid-cols-2 gap-2"
+                        data-invalid={
+                          saveAttempted &&
+                          (addressErrors.province || addressErrors.city || addressErrors.kecamatan || addressErrors.postal_code)
+                            ? "true"
+                            : undefined
+                        }
+                      >
                         <WilayahSelect
                           label="Provinsi"
                           value={form.province}
@@ -1046,6 +1101,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                             updateForm({ address: event.target.value });
                           }}
                           placeholder="Nama jalan, nomor rumah, RT/RW, patokan"
+                          data-invalid={saveAttempted && addressErrors.address ? "true" : undefined}
                           className={`${inputClass} ${saveAttempted && addressErrors.address ? "border-red-300 dark:border-red-900/60" : ""}`}
                         />
                         {addressErrorText("address") ? (
@@ -1171,6 +1227,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                     return (
                       <div
                         key={index}
+                        data-invalid={info.issue ? "true" : undefined}
                         className="rounded-xl border-2 border-slate-200 dark:border-slate-700 p-3 space-y-3"
                       >
                         <div className="flex items-center justify-between gap-2">
