@@ -1,0 +1,242 @@
+/* Tema panel admin — DISALIN dari mockup dashboard admin (samaqu-admin-dashboard/pages/index.html)
+   dengan nilai yang sama persis. Dipakai sebagai CSS Module, jadi nama class di sini tidak
+   bertabrakan dengan style global aplikasi. */
+
+.app {
+  --pink: #DB2777;
+  --pink-d: #BE185D;
+  --soft: #F3D8E5;
+  --soft2: #FCF1F6;
+  --ch: #374151;
+  --ch-d: #2D3440;
+  --bg: #F9FAFB;
+  --w: #FFFFFF;
+  --mut: #6B7280;
+  --bd: #E5E7EB;
+  --ok: #15803D;
+  --warn: #D97706;
+  --err: #DC2626;
+  --r: 10px;
+  --rs: 8px;
+  --font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --head: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
+  --sh: 0 1px 2px rgba(17, 24, 39, .04);
+
+  display: flex;
+  min-height: 100vh;
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--ch);
+  font-size: 14px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+.app *, .app *::before, .app *::after { box-sizing: border-box; }
+.app button, .app input, .app select, .app textarea { font: inherit; color: inherit; }
+
+/* layout */
+.side {
+  width: 240px;
+  background: var(--ch);
+  color: #E5E7EB;
+  position: fixed;
+  inset: 0 auto 0 0;
+  display: flex;
+  flex-direction: column;
+  z-index: 40;
+  transition: transform .2s;
+}
+.brand {
+  padding: 22px 20px 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, .07);
+}
+.logo {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--pink);
+  display: grid;
+  place-items: center;
+  font-family: var(--head);
+  font-weight: 800;
+  color: #fff;
+  font-size: 17px;
+}
+.brand b { font-family: var(--head); font-size: 16px; letter-spacing: .06em; color: #fff; display: block; }
+.brand small { color: #9CA3AF; font-size: 11.5px; }
+
+.nav { padding: 14px 12px; flex: 1; overflow: auto; }
+.nav .sec {
+  font-size: 10.5px;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: #9CA3AF;
+  padding: 12px 10px 6px;
+  margin: 0;
+}
+.nav a {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 10px;
+  border-radius: var(--rs);
+  color: #D1D5DB;
+  text-decoration: none;
+  font-weight: 500;
+  margin-bottom: 2px;
+  cursor: pointer;
+  position: relative;
+}
+.nav a:hover { background: rgba(255, 255, 255, .06); color: #fff; }
+.nav a.on { background: rgba(243, 216, 229, .12); color: #fff; }
+.nav a.on::before {
+  content: "";
+  position: absolute;
+  left: -12px;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--pink);
+}
+.nav a.on svg { color: #F9A8D4; }
+.nav .cnt {
+  margin-left: auto;
+  background: var(--pink);
+  color: #fff;
+  font-size: 11px;
+  padding: 1px 7px;
+  border-radius: 20px;
+  font-weight: 600;
+}
+.nav svg { width: 17px; height: 17px; flex: none; }
+
+.side-foot {
+  padding: 14px 20px;
+  border-top: 1px solid rgba(255, 255, 255, .07);
+  font-size: 12px;
+  color: #9CA3AF;
+}
+
+.main { flex: 1; margin-left: 240px; min-width: 0; }
+
+.top {
+  height: 64px;
+  background: var(--w);
+  border-bottom: 1px solid var(--bd);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 28px;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+.top h1 { font-family: var(--head); font-size: 18px; margin: 0; font-weight: 700; color: var(--ch); }
+.crumb { font-size: 12px; color: var(--mut); }
+.top .sp { flex: 1; }
+
+.user { display: flex; align-items: center; gap: 10px; }
+.av {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--soft);
+  color: var(--pink-d);
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 13px;
+}
+.user b { display: block; font-size: 13px; }
+.user small { color: var(--mut); font-size: 11.5px; }
+.ut { min-width: 0; }
+.demoTag {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  color: var(--warn);
+  background: #FEF3C7;
+  border-radius: 6px;
+  padding: 3px 7px;
+}
+.hamb {
+  display: none;
+  background: none;
+  border: 1px solid var(--bd);
+  border-radius: 8px;
+  width: 38px;
+  height: 38px;
+  cursor: pointer;
+}
+.scrim { display: none; }
+
+.content { padding: 24px 28px 48px; max-width: 1440px; }
+
+/* elements */
+.card { background: var(--w); border: 1px solid var(--bd); border-radius: var(--r); box-shadow: var(--sh); }
+.cardH { display: flex; align-items: center; gap: 12px; padding: 16px 18px; border-bottom: 1px solid var(--bd); }
+.cardH h2, .cardH h3 { margin: 0; font-family: var(--head); font-size: 15px; font-weight: 700; }
+.cardH p { margin: 2px 0 0; color: var(--mut); font-size: 12.5px; }
+.cardB { padding: 18px; }
+.row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.sp { flex: 1; }
+.hint { font-size: 12px; color: var(--mut); }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 38px;
+  padding: 0 15px;
+  border-radius: var(--rs);
+  border: 1px solid var(--bd);
+  background: var(--w);
+  font-weight: 600;
+  font-size: 13.5px;
+  cursor: pointer;
+  white-space: nowrap;
+  color: var(--ch);
+  transition: background .15s, border-color .15s;
+}
+.btn:hover { background: #F3F4F6; }
+.btnPri { background: var(--pink); border-color: var(--pink); color: #fff; }
+.btnPri:hover { background: var(--pink-d); border-color: var(--pink-d); }
+.btnSm { height: 30px; padding: 0 10px; font-size: 12.5px; }
+
+.b {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 20px;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+.b::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.bPink { background: var(--soft); color: #9D174D; }
+.bGray { background: #F3F4F6; color: #4B5563; }
+
+.grid { display: grid; gap: 14px; }
+
+/* responsive (sama seperti mockup) */
+@media (max-width: 900px) {
+  .side { transform: translateX(-100%); }
+  .sideOpen { transform: none; }
+  .main { margin-left: 0; }
+  .hamb { display: grid; place-items: center; }
+  .top { padding: 0 16px; }
+  .content { padding: 18px 16px 40px; }
+  .user .ut { display: none; }
+}
+@media (max-width: 600px) {
+  .crumb { display: none; }
+  .top h1 { font-size: 16px; }
+  .demoTag { display: none; }
+}
