@@ -145,8 +145,9 @@
   flex-direction: column;
   height: 100vh;
   height: 100dvh;
+  padding: 10px 26px 18px;
 }
-.mainFill > .top { flex: none; }
+.mainFill > .top { flex: none; margin-bottom: 12px; }
 .top { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
 
 .search {
@@ -539,26 +540,31 @@ svg.heart { width: 14px; height: 14px; fill: #e46a92; stroke: none; color: #e46a
 .gateHint { color: var(--mut); font-size: 13px; margin: 0; }
 
 /* ---------- asisten AI (halaman /panel-admin/assistant) ---------- */
-/* Rantai tinggi (audit): .app (flex, min-height 100vh) → .mainFill (kolom setinggi viewport)
-   → .aiWrap (flex:1, min-height:0) → .aiLog (flex:1, min-height:0, overflow-y:auto).
-   Area chat menyerap seluruh sisa ruang setelah header global (.top) dan chrome halaman
-   (judul, chip, input, catatan) — tanpa tinggi tebakan, dan hanya .aiLog yang menggulir. */
+/* Layout mengikuti wireframe "coding workspace split": header tipis satu baris, area chat
+   menyerap seluruh sisa tinggi (scrollable), chip + input dipin di bawah.
+   Rantai tinggi: .app (flex) → .mainFill (kolom 100dvh) → .aiWrap (flex:1, min-height:0)
+   → .aiLog (flex:1, min-height:0, overflow-y:auto). Hanya .aiLog yang menggulir. */
 .aiWrap {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 .aiHead {
   flex: none;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  column-gap: 12px;
+  row-gap: 1px;
   background: #fff;
   border: 1px solid var(--card-line);
-  border-radius: 20px;
-  padding: 14px 20px;
+  border-radius: 14px;
+  padding: 9px 16px;
 }
-.aiTitle { margin: 0; font-size: 20px; line-height: 1.25; color: var(--plum); }
-.aiSub { margin: 4px 0 0; color: var(--mut); font-size: 12.5px; line-height: 1.5; }
+.aiTitle { margin: 0; font-size: 16.5px; line-height: 1.3; color: var(--plum); }
+.aiSub { margin: 0; color: var(--mut); font-size: 12px; line-height: 1.45; }
 /* Satu-satunya area yang menggulir. `min-height:0` wajib agar flex child boleh menyusut;
    baris pesan `flex:none` supaya percakapan panjang menggulir, bukan terkompresi. */
 .aiLog {
@@ -568,11 +574,11 @@ svg.heart { width: 14px; height: 14px; fill: #e46a92; stroke: none; color: #e46a
   overscroll-behavior: contain;
   background: #fff;
   border: 1px solid var(--card-line);
-  border-radius: 20px;
-  padding: 18px 20px;
+  border-radius: 16px;
+  padding: 16px 18px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   scrollbar-width: thin;
   scrollbar-color: rgba(194, 37, 92, 0.28) transparent;
 }
@@ -608,8 +614,8 @@ svg.heart { width: 14px; height: 14px; fill: #e46a92; stroke: none; color: #e46a
   background: #fdf3f7;
   color: var(--pink-d);
   border-radius: 999px;
-  padding: 6px 12px;
-  font-size: 12px;
+  padding: 5px 11px;
+  font-size: 11.5px;
   font-weight: 600;
   line-height: 1.3;
   cursor: pointer;
@@ -619,12 +625,12 @@ svg.heart { width: 14px; height: 14px; fill: #e46a92; stroke: none; color: #e46a
 .aiForm {
   flex: none;
   display: flex;
-  gap: 10px;
+  gap: 8px;
   align-items: flex-end;
   background: #fff;
   border: 1px solid var(--card-line);
-  border-radius: 18px;
-  padding: 10px;
+  border-radius: 16px;
+  padding: 8px;
 }
 .aiInput {
   flex: 1;
@@ -635,34 +641,34 @@ svg.heart { width: 14px; height: 14px; fill: #e46a92; stroke: none; color: #e46a
   color: var(--plum);
   font: inherit;
   font-size: 13.5px;
-  line-height: 1.5;
+  line-height: 1.45;
   max-height: 120px;
-  padding: 9px 6px;
+  padding: 8px 6px;
 }
 .aiSend {
   flex: none;
-  height: 44px;
+  height: 40px;
   border: 0;
-  border-radius: 12px;
+  border-radius: 11px;
   background: var(--pink-d);
   color: #fff;
   font-weight: 700;
   font-size: 13.5px;
-  padding: 0 20px;
+  padding: 0 18px;
   cursor: pointer;
 }
 .aiSend:hover { background: var(--pink); }
 .aiSend:disabled { opacity: 0.55; cursor: not-allowed; }
 .aiStop {
   flex: none;
-  height: 44px;
+  height: 40px;
   border: 1px solid #f0b3ce;
-  border-radius: 12px;
+  border-radius: 11px;
   background: #fff;
   color: #c2255c;
   font-weight: 700;
   font-size: 13.5px;
-  padding: 0 20px;
+  padding: 0 18px;
   cursor: pointer;
 }
 .aiStop:hover { background: #fdf3f7; }
@@ -681,4 +687,4 @@ svg.heart { width: 14px; height: 14px; fill: #e46a92; stroke: none; color: #e46a
 }
 .aiNotice { flex: none; color: #9d174d; font-size: 12.5px; margin: 0 2px; }
 .aiError { flex: none; color: #c2255c; font-size: 12.5px; margin: 0 2px; }
-.aiNote { flex: none; color: var(--mut); font-size: 11.5px; margin: 0 2px; }
+.aiNote { flex: none; color: var(--mut); font-size: 11px; margin: 0 2px; }
