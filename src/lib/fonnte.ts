@@ -920,6 +920,193 @@ export async function notifyCustomerInvoice(invoice: InvoiceNotification): Promi
   );
 }
 
+/* ── Template mentah (placeholder) untuk editor di panel Pengaturan ── */
+
+/** Nilai placeholder yang dipakai sebagai "data" saat menyusun template mentah. */
+function tpl(nama: string): string {
+  return `{${nama}}`;
+}
+
+/** Ganti nilai contoh dengan penandanya (nilai terpanjang lebih dulu supaya tidak saling menimpa). */
+function gantiDenganPenanda(teks: string, peta: Record<string, string>): string {
+  let hasil = teks;
+  for (const [nilai, penanda] of Object.entries(peta).sort((a, b) => b[0].length - a[0].length)) {
+    if (!nilai) continue;
+    hasil = hasil.split(nilai).join(penanda);
+  }
+  return hasil;
+}
+
+const itemBarisPesanan = (items: NewOrderNotificationItem[]): string =>
+  items
+    .map((item) => `- ${item.quantity}x ${item.name}${itemNameSuffix(item)} — ${rupiah(item.price * item.quantity)}`)
+    .join("\n");
+
+const blokRekening = (bank: PaymentInstruction): string =>
+  [
+    `*Pembayaran ${(bank.bankName || bank.label || "Transfer Bank").toUpperCase()}*`,
+    bank.accountNumber || "",
+    bank.accountName ? `a.n. ${bank.accountName}` : "",
+    bank.accountInfo || "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+/**
+ * Template MENTAH (placeholder, bukan data contoh) untuk tiap notifikasi — dipakai panel
+ * Pengaturan sebagai isi awal editor. Disusun dari penyusun pesan yang SAMA dengan yang
+ * mengirim, jadi teks dan penandanya tidak mungkin beda dengan yang benar-benar dikirim.
+ */
+export function templateBawaanNotifikasi(): Record<string, string> {
+  const p = tpl;
+  const hasil: Record<string, string> = {};
+
+  const pesananAdmin = buildNewOrderMessage({
+    orderNumber: p("nomor"),
+    customerName: p("nama"),
+    customerWhatsapp: p("wa"),
+    total: 567000,
+    paymentType: p("pembayaran"),
+    items: SAMPEL_ITEM,
+    shippingCity: "MANGGALA, KOTA MAKASSAR",
+    source: "Website",
+  });
+  hasil["pesanan-baru-admin"] = gantiDenganPenanda(pesananAdmin, {
+    [itemBarisPesanan(SAMPEL_ITEM)]: p("daftar_produk"),
+    ["Tujuan: MANGGALA, KOTA MAKASSAR\nSumber: Website"]: p("info_tambahan"),
+    [`${SITE_URL}/admin?panel=orders`]: p("tautan_admin"),
+    [rupiah(567000)]: p("total"),
+  });
+
+  const diterima = buildCustomerOrderMessage({
+    orderNumber: p("nomor"),
+    customerName: p("nama"),
+    customerWhatsapp: p("wa"),
+    items: SAMPEL_ITEM,
+    total: 567000,
+    paymentMethod: SAMPEL_BANK,
+  });
+  hasil["pesanan-diterima"] = gantiDenganPenanda(diterima, {
+    [itemBarisPesanan(SAMPEL_ITEM)]: p("daftar_produk"),
+    [paymentInstructionBlock(SAMPEL_BANK, null).join("\n")]: p("instruksi_pembayaran"),
+    [rupiah(567000)]: p("total"),
+  });
+
+  const invoice = buildInvoiceMessage(
+    {
+      orderNumber: p("nomor"),
+      customerName: p("nama"),
+      customerWhatsapp: p("wa"),
+      items: SAMPEL_ITEM,
+      subtotal: 567000,
+      discount: 0,
+      shippingCost: 22000,
+      total: 589000,
+      paid: false,
+    },
+    [SAMPEL_BANK],
+  );
+  hasil["invoice-belum-lunas"] = gantiDenganPenanda(invoice, {
+    [SAMPEL_ITEM.map(invoiceItemLine).join("\n")]: p("daftar_produk"),
+    [blokRekening(SAMPEL_BANK)]: p("blok_rekening"),
+    [rupiahRapat(567000)]: p("subtotal"),
+    [rupiahRapat(22000)]: p("ongkir"),
+    [rupiahRapat(589000)]: p("total"),
+    ["Belum Lunas"]: p("status"),
+  });
+
+  const dibayar = buildOrderPaidMessage({
+    orderNumber: p("nomor"),
+    customerName: p("nama"),
+    customerWhatsapp: p("wa"),
+    total: 589000,
+  });
+  hasil["pembayaran-diterima"] = gantiDenganPenanda(dibayar, {
+    [rupiah(589000)]: p("total"),
+  });
+
+  const reminder = buildPaymentReminderMessage({
+    orderNumber: p("nomor"),
+    customerName: p("nama"),
+    customerWhatsapp: p("wa"),
+    total: 338000,
+    paymentMethod: SAMPEL_BANK,
+  });
+  hasil["pengingat-bayar"] = gantiDenganPenanda(reminder, {
+    [paymentInstructionBlock(SAMPEL_BANK, null).join("\n")]: p("instruksi_pembayaran"),
+    [rupiah(338000)]: p("total"),
+  });
+
+  const dikirim = buildOrderShippedMessage({
+    orderNumber: p("nomor"),
+    customerName: p("nama"),
+    customerWhatsapp: p("wa"),
+    awbNo: p("resi"),
+  });
+  hasil["pesanan-dikirim"] = dikirim;
+
+  hasil["pesanan-sampai"] = buildOrderDeliveredMessage({
+    orderNumber: p("nomor"),
+    customerName: p("nama"),
+    customerWhatsapp: p("wa"),
+  });
+
+  hasil["pesanan-dibatalkan-pembeli"] = buildOrderCancelledMessage({
+    orderNumber: p("nomor"),
+    customerName: p("nama"),
+    customerWhatsapp: p("wa"),
+    reason: p("alasan"),
+  });
+
+  hasil["pesanan-dibatalkan-admin"] = buildAdminOrderCancelledMessage({
+    orderNumber: p("nomor"),
+    customerName: p("nama"),
+    reason: p("alasan"),
+  });
+
+  // Notifikasi yang belum dikirim sistem: format usulannya sudah berbentuk penanda.
+  hasil["nota-transaksi-lunas"] = [
+    "USULAN FORMAT (belum jalan):",
+    "",
+    "Halo Ka {nama},",
+    "",
+    "Pesanan {nomor} sudah kami catat dan berstatus LUNAS.",
+    "",
+    "{daftar_produk}",
+    "",
+    "*TOTAL: {total}*",
+    "",
+    "Terima kasih sudah berbelanja di SAMAQU.",
+  ].join("\n");
+
+  // Jaring pengaman: nilai contoh yang belum tergantikan (mis. karena format teks berbeda)
+  // diganti penandanya juga, supaya editor TIDAK PERNAH menampilkan data contoh.
+  const jaringPengaman: Record<string, string> = {
+    "Contoh Pembeli": "{nama}",
+    "Contoh Nama Pemilik Rekening": "{nama_rekening}",
+    "Contoh": "{nama}",
+    "SMQ-20261017-000": "{nomor}",
+    "08123456789": "{wa}",
+    "JP0000000000": "{resi}",
+    "Rp 567.000": "{total}",
+    "Rp 589.000": "{total}",
+    "Rp 338.000": "{total}",
+    "Rp567.000": "{subtotal}",
+    "Rp589.000": "{total}",
+    "Rp22.000": "{ongkir}",
+    "MANGGALA, KOTA MAKASSAR": "{tujuan}",
+    "Transfer Bank (BSI)": "{pembayaran}",
+    "0000000000": "{nomor_rekening}",
+    "Belum dibayar 24 jam": "{alasan}",
+    "Belum Lunas": "{status}",
+  };
+  for (const key of Object.keys(hasil)) {
+    hasil[key] = gantiDenganPenanda(hasil[key], jaringPengaman);
+  }
+
+  return hasil;
+}
+
 /* ── Katalog notifikasi (dibaca panel Pengaturan admin supaya semua pesan kelihatan) ── */
 
 export type NotifikasiInfo = {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
-import { katalogNotifikasi } from "@/lib/fonnte";
+import { katalogNotifikasi, templateBawaanNotifikasi } from "@/lib/fonnte";
 import { ambilOverride, hapusOverride, simpanOverride } from "@/lib/notifikasi-template";
 
 /**
@@ -41,9 +41,15 @@ export async function GET(req: NextRequest) {
   if (!(await isAdmin(req))) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const items = katalogNotifikasi();
+  const template = templateBawaanNotifikasi();
   const override = await ambilOverride();
   return NextResponse.json({
-    items: items.map((item) => ({ ...item, override: override[item.key] || "" })),
+    // `template` = teks mentah dengan penanda (isi awal editor), `isi` = contoh hasil kirim.
+    items: items.map((item) => ({
+      ...item,
+      template: template[item.key] || "",
+      override: override[item.key] || "",
+    })),
     jumlahDiubah: Object.keys(override).length,
   });
 }
