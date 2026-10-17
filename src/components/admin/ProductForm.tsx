@@ -19,6 +19,25 @@ import { usePageUrl } from "@/lib/ops-router";
 const CATEGORIES = ["Thobe", "Kandora", "Koko", "Vest", "Kabak", "Cover & Hanger"] as const;
 const SIZES = ["S", "M", "L", "XL", "XXL"] as const;
 
+/**
+ * Cover & Hanger = kategori non-pakaian: variannya berupa NAMA (mis. "Hanger saja"),
+ * bukan kombinasi warna × ukuran.
+ *
+ * Penyimpanannya TETAP satu baris `product_variants` per varian (struktur sama seperti varian
+ * biasa) dengan `color` = nama varian dan `size` = "ALL SIZE":
+ *  - `color`/`size` NOT NULL + UNIQUE(product_id,color,size) → dua varian dengan color/size
+ *    kosong akan bentrok, jadi pembeda HARUS ada di salah satu kolom itu;
+ *  - RPC stok (`samaqu_decrement_stock`) mencocokkan baris lewat color + size, jadi varian
+ *    tanpa pembeda di situ tidak bisa dipotong stoknya;
+ *  - "ALL SIZE" adalah penanda yang sudah dipakai baris Cover & Hanger lama (`cover-thobe`),
+ *    dan website membaca daftar ukuran dari kolom ini — jadi pembeli melihat satu pilihan
+ *    "ALL SIZE" (bukan teks kosong / "undefined").
+ * Nama varian inilah yang tampil di semua layar (Daftar Produk, Laporan Stok, drawer Transaksi).
+ */
+const COVER_HANGER = "Cover & Hanger";
+const COVER_HANGER_SIZE = "ALL SIZE";
+const COVER_HANGER_TEMPLATE = ["Hanger saja", "Cover saja", "Set Hanger + Cover"];
+
 function formatRupiah(val: string): string {
   const digits = val.replace(/\D/g, "");
   if (!digits) return "";
@@ -32,6 +51,25 @@ interface Variant {
   color: string;
   hex: string;
   sizes: SizeRow[];
+}
+
+/**
+ * Satu varian Cover & Hanger: `color` diisi NAMA varian, dan selalu punya tepat satu
+ * baris "ukuran" tetap (`COVER_HANGER_SIZE`) supaya bentuk datanya sama dengan varian biasa.
+ */
+function emptyCoverHangerVariant(name = ""): Variant {
+  return { color: name, hex: "", sizes: [{ size: COVER_HANGER_SIZE, stock: 0, priceOverride: "", sku: "", weight: "" }] };
+}
+
+/** Nama varian Cover & Hanger yang isinya dobel (case-insensitive, spasi diabaikan). */
+function duplicateCoverHangerNames(variants: Variant[]): Set<string> {
+  const seen = new Map<string, number>();
+  for (const v of variants) {
+    const key = String(v.color ?? "").trim().toLowerCase();
+    if (!key) continue;
+    seen.set(key, (seen.get(key) || 0) + 1);
+  }
+  return new Set([...seen.entries()].filter(([, n]) => n > 1).map(([key]) => key));
 }
 
 interface MediaFile {
@@ -278,6 +316,165 @@ function SizeGrid({
   );
 }
 
+/**
+ * Daftar varian untuk kategori Cover & Hanger: satu baris = satu varian dengan NAMA bebas
+ * (tidak ada warna & ukuran). Struktur & gaya barisnya sama dengan `SizeGrid` (kelas `pf-*`),
+ * hanya kolom pertama yang berubah dari "Ukuran" jadi "Nama varian".
+ */
+function CoverHangerVariantList({
+  variants,
+  skuFallback,
+  onUpdateName,
+  onUpdateField,
+  onAdd,
+  onAddTemplate,
+  onRemove,
+}: {
+  variants: Variant[];
+  skuFallback?: string;
+  onUpdateName: (idx: number, value: string) => void;
+  onUpdateField: (idx: number, field: keyof SizeRow, value: string | number) => void;
+  onAdd: () => void;
+  onAddTemplate: () => void;
+  onRemove: (idx: number) => void;
+}) {
+  const duplicates = duplicateCoverHangerNames(variants);
+  const missingWeight = variants.filter((v) => String(v.sizes[0]?.weight ?? "").trim() === "").length;
+
+  return (
+    <div className="pf-sizes">
+      {/* Aksi cepat: isi 3 nama varian siap pakai — nama tetap bisa diubah & baris tetap bisa dihapus */}
+      <div className="pf-bulkbar">
+        <div className="pf-bulkbar-text">
+          <span className="pf-bulkbar-title">Tambah dari template</span>
+          <span className="pf-bulkbar-hint">Mengisi 3 varian: {COVER_HANGER_TEMPLATE.join(" · ")} (nama masih bisa diubah)</span>
+        </div>
+        <div className="pf-bulkbar-actions">
+          <button type="button" className="pf-btn pf-btn-ghost" onClick={onAddTemplate}>Tambah dari template</button>
+        </div>
+      </div>
+
+      {duplicates.size > 0 ? (
+        <p className="pf-error pf-sizes-msg">Nama varian tidak boleh kembar: {[...duplicates].join(", ")}</p>
+      ) : null}
+
+      {/* Header kolom (layar ≥768px) */}
+      <div className="pf-sizes-head">
+        <span>Nama Varian</span>
+        <span>Stok</span>
+        <span>Berat</span>
+        <span>Harga Khusus</span>
+        <span>SKU</span>
+        <span className="pf-sizes-head-act" />
+      </div>
+
+      <div className="pf-sizes-list">
+        {variants.map((v, i) => {
+          const s = v.sizes[0] ?? { size: COVER_HANGER_SIZE, stock: 0, priceOverride: "", sku: "", weight: "" };
+          const weightEmpty = String(s.weight ?? "").trim() === "";
+          const isDuplicate = duplicates.has(String(v.color ?? "").trim().toLowerCase());
+          return (
+            <div key={i} className="pf-size-row">
+              <div className="pf-size-head">
+                <label className="pf-size-field pf-f-size">
+                  <span className="pf-size-label">Nama varian</span>
+                  <input
+                    value={v.color}
+                    onChange={(e) => onUpdateName(i, e.target.value)}
+                    placeholder="mis. Hanger saja"
+                    list="cover-hanger-suggestions"
+                    aria-invalid={isDuplicate || undefined}
+                    title={isDuplicate ? "Nama varian ini dipakai lebih dari satu baris" : undefined}
+                    className={`pf-cell${isDuplicate ? " invalid" : ""}`}
+                  />
+                </label>
+                <div className="pf-size-act">
+                  {variants.length > 1 ? (
+                    <button type="button" onClick={() => onRemove(i)} className="pf-rowdel" title="Hapus varian" aria-label={`Hapus varian ${v.color || i + 1}`}>
+                      <Trash2 size={15} />
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+
+              <div className="pf-size-body">
+                <div className="pf-size-field pf-f-stock">
+                  <span className="pf-size-label">Stok</span>
+                  <span className="pf-adorn">
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      value={s.stock || ""}
+                      onChange={(e) => onUpdateField(i, "stock", parseInt(e.target.value) || 0)}
+                      placeholder="0"
+                      className="pf-cell pf-cell-num"
+                    />
+                  </span>
+                </div>
+
+                <div className="pf-size-field pf-f-weight">
+                  <span className="pf-size-label">Berat</span>
+                  <span className={`pf-adorn pf-adorn--g${weightEmpty ? " is-missing" : ""}`}>
+                    {weightEmpty ? <span className="pf-dot-warn" title="belum diisi" aria-label="belum diisi" /> : null}
+                    <input
+                      type="number"
+                      min={100}
+                      max={5000}
+                      inputMode="numeric"
+                      value={s.weight ?? ""}
+                      onChange={(e) => onUpdateField(i, "weight", e.target.value)}
+                      placeholder="—"
+                      title={weightEmpty ? "belum diisi" : undefined}
+                      className="pf-cell pf-cell-num"
+                    />
+                    <span className="pf-suffix">g</span>
+                  </span>
+                </div>
+
+                <label className="pf-size-field pf-f-price">
+                  <span className="pf-size-label">Harga khusus</span>
+                  <span className="pf-adorn pf-adorn--rp">
+                    <span className="pf-prefix">Rp</span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={formatRupiah(s.priceOverride)}
+                      onChange={(e) => onUpdateField(i, "priceOverride", parseRupiah(e.target.value))}
+                      placeholder="—"
+                      className="pf-cell pf-cell-num"
+                    />
+                  </span>
+                </label>
+
+                <label className="pf-size-field pf-f-sku">
+                  <span className="pf-size-label">SKU</span>
+                  <input value={s.sku} onChange={(e) => onUpdateField(i, "sku", e.target.value)}
+                    placeholder={skuFallback?.trim() || "—"} className="pf-cell" />
+                </label>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <datalist id="cover-hanger-suggestions">
+        {COVER_HANGER_TEMPLATE.map((n) => <option key={n} value={n} />)}
+      </datalist>
+
+      <div className="pf-sizes-foot">
+        <button type="button" onClick={onAdd} className="pf-add">
+          <Plus size={14} /> Tambah Varian
+        </button>
+        {missingWeight > 0 ? (
+          <span className="pf-missing-chip" title="Varian ini memakai berat default saat menghitung ongkir">
+            {missingWeight} dari {variants.length} varian belum ada berat
+          </span>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 export default function TambahProdukPage({
   mode = "admin",
   editProductId,
@@ -354,6 +551,19 @@ export default function TambahProdukPage({
   // baris series mana yang boleh dihapus saat dicabut dari checklist.
   const [originalName, setOriginalName] = useState("");
   const [originalSelectedSeries, setOriginalSelectedSeries] = useState<string[]>([]);
+
+  // ── Cover & Hanger: kategori non-pakaian → varian berupa NAMA, bukan warna × ukuran ──
+  const isCoverHanger = category === COVER_HANGER;
+  /** Ada isian varian yang bakal hilang kalau mode varian ikut ganti kategori (untuk konfirmasi). */
+  const variantDataFilled = isCoverHanger
+    ? variants.some((v) => String(v.color).trim() !== "" || v.sizes.some((s) => s.stock > 0))
+    : variants.length > 0;
+  /**
+   * Warna pemilik media. Cover & Hanger tidak punya warna, jadi medianya disimpan dengan
+   * `color` KOSONG: website menampilkan media ber-`color` kosong untuk varian apa pun
+   * (lihat filter di halaman katalog: `!m.color || m.color === selectedColor`).
+   */
+  const mediaColor = isCoverHanger ? "" : category === "Thobe" ? "default" : activeColor || "default";
 
   // Fetch jenis_kain list + daftar series dari tabel product_series
   useEffect(() => {
@@ -478,6 +688,9 @@ export default function TambahProdukPage({
           const varList = Object.values(colorGroups);
           setVariants(varList);
           setActiveColor(varList[0]?.color || null);
+        } else if (product.category === COVER_HANGER) {
+          // Cover & Hanger tanpa varian tersimpan → mulai dari satu baris kosong siap diisi.
+          setVariants([emptyCoverHangerVariant()]);
         }
         const { data: dbImages } = await supabase.from("product_images").select("*").eq("product_id", editProductId).order("display_order");
         if (dbImages) {
@@ -628,7 +841,8 @@ export default function TambahProdukPage({
   // Handle file select
   async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>, color: string) {
     const files = e.target.files;
-    if (!files || !activeColor) return;
+    // Cover & Hanger tidak punya warna, jadi tidak lagi mensyaratkan `activeColor`.
+    if (!files) return;
 
     const newMedia: MediaFile[] = [];
     for (const file of Array.from(files)) {
@@ -677,7 +891,7 @@ export default function TambahProdukPage({
     const u = mediaUrl.trim();
     if (!u) return;
     const isVideo = /\.(mp4|webm|ogg|m4v)(\?|#|$)/i.test(u);
-    setMedia((prev) => [...prev, { id: `${Date.now()}-${Math.random().toString(36).slice(2)}`, url: u, isVideo, color: category === "Thobe" ? "default" : activeColor || "default", preview: u, uploading: false }]);
+    setMedia((prev) => [...prev, { id: `${Date.now()}-${Math.random().toString(36).slice(2)}`, url: u, isVideo, color: mediaColor, preview: u, uploading: false }]);
     setMediaUrl("");
   }
 
@@ -931,17 +1145,29 @@ export default function TambahProdukPage({
       if (cypEnabled && (!minimumPrice || parseInt(minimumPrice) <= 0)) e.minimumPrice = "Harga Minimum wajib diisi jika Create Your Price aktif";
       if (cypEnabled && minimumPrice && basePrice && parseInt(minimumPrice) > parseInt(basePrice)) e.minimumPrice = "Harga Minimum tidak boleh lebih besar dari Harga Dasar";
       if (cypEnabled && recommendedPrice && minimumPrice && parseInt(recommendedPrice) < parseInt(minimumPrice)) e.recommendedPrice = "Harga Rekomendasi tidak boleh kurang dari Harga Minimum";
-      if (variants.length === 0) e.variants = "Minimal 1 varian warna";
-      const hasSize = variants.some((v) => v.sizes.some((s) => s.stock > 0));
-      if (!hasSize) e.variants = "Minimal 1 ukuran dengan stok > 0";
-      // Berat per ukuran (opsional): kalau diisi harus bilangan bulat 100–5000 gram.
+      if (isCoverHanger) {
+        // Cover & Hanger: varian dinilai dari NAMAnya (tidak ada warna & ukuran).
+        if (variants.length === 0) {
+          e.variants = "Minimal 1 varian";
+        } else {
+          const names = variants.map((v) => String(v.color ?? "").trim());
+          if (names.some((n) => n === "")) e.variants = "Nama varian wajib diisi";
+          else if (duplicateCoverHangerNames(variants).size > 0) e.variants = "Nama varian tidak boleh kembar";
+        }
+        if (!variants.some((v) => v.sizes.some((s) => s.stock > 0))) e.variants = "Minimal 1 varian dengan stok > 0";
+      } else {
+        if (variants.length === 0) e.variants = "Minimal 1 varian warna";
+        const hasSize = variants.some((v) => v.sizes.some((s) => s.stock > 0));
+        if (!hasSize) e.variants = "Minimal 1 ukuran dengan stok > 0";
+      }
+      // Berat per varian/ukuran (opsional): kalau diisi harus bilangan bulat 100–5000 gram.
       for (const v of variants) {
         for (const s of v.sizes) {
           const raw = String(s.weight ?? "").trim();
           if (raw === "") continue;
           const w = Number(raw);
           if (!Number.isInteger(w) || w < 100 || w > 5000) {
-            e.variants = "Berat per ukuran harus bilangan bulat 100–5000 gram";
+            e.variants = isCoverHanger ? "Berat varian harus bilangan bulat 100–5000 gram" : "Berat per ukuran harus bilangan bulat 100–5000 gram";
           }
         }
       }
@@ -1166,7 +1392,7 @@ export default function TambahProdukPage({
   const activeVariant = variants.find((v) => v.color === activeColor);
   const activeMedia = category === "Thobe" && activeSeriesTab && seriesBlocks[activeSeriesTab]
     ? seriesBlocks[activeSeriesTab].media
-    : category === "Thobe" ? media : media.filter((m) => m.color === activeColor);
+    : category === "Thobe" ? media : media.filter((m) => m.color === mediaColor);
 
   if (loading) {
     return isOps
@@ -1225,6 +1451,16 @@ export default function TambahProdukPage({
                     <div className="pf-selectwrap">
                       <select value={category} onChange={(e) => {
                         const val = e.target.value;
+                        const toCoverHanger = val === COVER_HANGER;
+                        // Ganti mode varian (masuk/keluar Cover & Hanger) hanya setelah dikonfirmasi
+                        // kalau sudah ada isian — supaya varian yang sudah diisi tidak hilang diam-diam.
+                        if (toCoverHanger !== isCoverHanger && variantDataFilled) {
+                          const pesan = toCoverHanger
+                            ? "Varian warna & ukuran yang sudah diisi akan diganti dengan daftar varian nama (Cover & Hanger). Lanjut?"
+                            : "Daftar varian Cover & Hanger yang sudah diisi akan dikosongkan. Lanjut ganti kategori?";
+                          if (!window.confirm(pesan)) return;
+                        }
+                        if (toCoverHanger !== isCoverHanger) setVariants(toCoverHanger ? [emptyCoverHangerVariant()] : []);
                         setCategory(val);
                         if (val !== "Thobe") setSeries("");
                         if (val !== "Thobe" && val !== "Kandora") setSelectedJenisKainId("");
@@ -1670,17 +1906,50 @@ export default function TambahProdukPage({
               </div>
             ) : (
               <>
-              {/* Non-Thobe: Varian & Stok */}
+              {/* Non-Thobe: Varian & Stok (Cover & Hanger pakai daftar varian nama) */}
               <div className="pf-card p-5 lg:p-6">
                 <div className="pf-head">
                   <div className="pf-num">2</div>
                   <div>
                     <h2 className="pf-title">Varian &amp; Stok</h2>
-                    <p className="pf-sub">Kelola warna, ukuran, harga khusus, dan stok.</p>
+                    <p className="pf-sub">
+                      {isCoverHanger
+                        ? "Daftar varian produk ini (nama varian, stok, harga khusus, berat)."
+                        : "Kelola warna, ukuran, harga khusus, dan stok."}
+                    </p>
                   </div>
                 </div>
                 {errors.variants && <p className="pf-error mb-3">{errors.variants}</p>}
-                {category === "Thobe" && selectedSeries.length === 0 ? (
+                {isCoverHanger ? (
+                  <CoverHangerVariantList
+                    variants={variants}
+                    skuFallback={sku}
+                    onUpdateName={(i, value) => setVariants((prev) => prev.map((v, idx) => (idx === i ? { ...v, color: value } : v)))}
+                    onUpdateField={(i, field, value) =>
+                      setVariants((prev) =>
+                        prev.map((v, idx) => {
+                          if (idx !== i) return v;
+                          const sizes = v.sizes.length > 0 ? [...v.sizes] : [{ size: COVER_HANGER_SIZE, stock: 0, priceOverride: "", sku: "", weight: "" }];
+                          sizes[0] = { ...sizes[0], [field]: value };
+                          return { ...v, sizes };
+                        })
+                      )
+                    }
+                    onAdd={() => setVariants((prev) => [...prev, emptyCoverHangerVariant()])}
+                    /* Template: baris kosong yang belum diisi ikut terpakai, nama yang sudah ada dilewati —
+                       semuanya dalam SATU update state. */
+                    onAddTemplate={() =>
+                      setVariants((prev) => {
+                        const adaNama = new Set(prev.map((v) => String(v.color ?? "").trim().toLowerCase()).filter(Boolean));
+                        const baru = COVER_HANGER_TEMPLATE.filter((n) => !adaNama.has(n.toLowerCase())).map((n) => emptyCoverHangerVariant(n));
+                        if (baru.length === 0) return prev;
+                        const kosong = prev.length === 1 && String(prev[0].color ?? "").trim() === "" && prev[0].sizes.every((s) => !s.stock);
+                        return kosong ? baru : [...prev, ...baru];
+                      })
+                    }
+                    onRemove={(i) => setVariants((prev) => (prev.length > 1 ? prev.filter((_, idx) => idx !== i) : prev))}
+                  />
+                ) : category === "Thobe" && selectedSeries.length === 0 ? (
                   <p className="text-sm text-center py-6" style={{ color: "var(--text-muted)" }}>Pilih minimal 1 series terlebih dahulu</p>
                 ) : (
                 <>
@@ -1724,20 +1993,24 @@ export default function TambahProdukPage({
                   <div className="pf-num">3</div>
                   <div>
                     <h2 className="pf-title">Media</h2>
-                    <p className="pf-sub">Foto &amp; video produk per warna.</p>
+                    <p className="pf-sub">{isCoverHanger ? "Foto & video produk (berlaku untuk semua varian)." : "Foto & video produk per warna."}</p>
                   </div>
                 </div>
                 {errors.media && <p className="pf-error mb-3">{errors.media}</p>}
-                {!activeColor ? (
+                {!activeColor && !isCoverHanger ? (
                   <p className="text-sm text-center py-6" style={{ color: "var(--text-muted)" }}>Pilih warna terlebih dahulu untuk upload media</p>
                 ) : (
                   <div>
-                    <p className="text-sm mb-3" style={{ color: "var(--text-secondary)" }}>Upload untuk warna: <span className="font-medium" style={{ color: "var(--gold)" }}>{activeColor}</span></p>
+                    {isCoverHanger ? (
+                      <p className="text-sm mb-3" style={{ color: "var(--text-secondary)" }}>Media berlaku untuk <span className="font-medium" style={{ color: "var(--gold)" }}>semua varian</span></p>
+                    ) : (
+                      <p className="text-sm mb-3" style={{ color: "var(--text-secondary)" }}>Upload untuk warna: <span className="font-medium" style={{ color: "var(--gold)" }}>{activeColor}</span></p>
+                    )}
                     <label className="pf-drop">
                       <span className="pf-drop-ico"><Upload size={20} /></span>
                       <p className="text-sm font-medium" style={{ color: "var(--espresso)" }}>Klik atau seret file ke sini</p>
                       <p className="pf-hint">JPG, PNG, WebP (max 10MB) · MP4, WebM (max 50MB)</p>
-                      <input type="file" multiple accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" onChange={(e) => handleFileSelect(e, activeColor || "default")} className="hidden" />
+                      <input type="file" multiple accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" onChange={(e) => handleFileSelect(e, mediaColor)} className="hidden" />
                     </label>
                     <div className="flex gap-2 mt-2.5">
                       <input value={mediaUrl} onChange={(e) => setMediaUrl(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addMediaByUrl(); } }} placeholder="atau tempel URL gambar / video…" className="pf-input flex-1" />

@@ -1854,10 +1854,13 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                           )}
                         </div>
 
-                        {/* Warna: hanya kalau produk ini punya lebih dari satu warna asli (mis. Kandora) */}
+                        {/* Langkah ini memilih varian: untuk produk biasa = warna, untuk
+                            Cover & Hanger = nama varian (mis. "Hanger saja"). */}
                         {group && group.warnas.length > 1 && !row.warna && (
                           <div className="space-y-1">
-                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Warna</p>
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                              {group.category === "Cover & Hanger" ? "Varian" : "Warna"}
+                            </p>
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                               {group.warnas.map((warna) => (
                                 <button
