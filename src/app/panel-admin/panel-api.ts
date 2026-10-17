@@ -11,6 +11,12 @@ export async function authToken(): Promise<string | null> {
   return data.session?.access_token ?? null;
 }
 
+/** Email admin yang sedang masuk — dipakai untuk memisahkan data per akun (mis. riwayat asisten). */
+export async function sessionEmail(): Promise<string | null> {
+  const { data } = await supabase.auth.getSession();
+  return data.session?.user?.email ?? null;
+}
+
 export async function opsGet<T>(path: string): Promise<T> {
   const token = await authToken();
   const res = await fetch(path, {
