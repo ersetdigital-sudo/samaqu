@@ -134,10 +134,18 @@ export const ADMIN_TOOLS = [
     function: {
       name: "ringkas_operasional",
       description:
-        "Ringkasan operasional SAMAQU: omset & jumlah pesanan per tahap pada satu bulan, produk terlaris, kondisi stok, dan kondisi leads/follow-up. Pakai untuk pertanyaan seperti 'kondisi hari ini', 'omset bulan ini', 'bagaimana penjualan', 'apa yang perlu dikerjakan'.",
+         "Ringkasan operasional SAMAQU: omset & jumlah pesanan pada satu PERIODE (hari ini, 7 hari terakhir, bulan ini, bulan lalu, atau tanggal/bulan tertentu), produk terlaris, kondisi stok, dan kondisi leads/follow-up. Pakai untuk pertanyaan seperti 'jumlah orderan hari ini', 'omset hari ini', 'omset bulan ini', 'bagaimana penjualan', 'apa yang perlu dikerjakan'. Untuk pertanyaan harian WAJIB isi periode 'hari_ini' (atau tanggal YYYY-MM-DD), jangan menjawab bahwa data harian tidak tersedia.",
       parameters: {
         type: "object",
         properties: {
+          periode: {
+            type: "string",
+            description: "hari_ini, 7_hari, bulan_ini (default), atau bulan_lalu.",
+          },
+          tanggal: {
+            type: "string",
+            description: "Satu hari tertentu, format YYYY-MM-DD (mis. '2026-10-17'). Kalau diisi, periode diabaikan.",
+          },
           bulan: {
             type: "string",
             description: "Bulan yang diminta, format YYYY-MM (mis. '2026-10'). Kosongkan untuk bulan berjalan WIB.",
@@ -161,6 +169,10 @@ export const ADMIN_TOOLS = [
             description: "Filter status: Belum Bayar, Lunas, Dikirim, Selesai, Dibatalkan (opsional).",
           },
           bulan: { type: "string", description: "Bulan pesanan dibuat, format YYYY-MM (opsional)." },
+          tanggal: {
+            type: "string",
+            description: "Satu hari pesanan dibuat, format YYYY-MM-DD (mis. '2026-10-17') — dipakai untuk pertanyaan harian.",
+          },
           limit: { type: "number", description: "Jumlah maksimum baris (1-15, default 8)." },
         },
       },
@@ -216,9 +228,51 @@ export const ADMIN_TOOLS = [
 
 /* ─────────────────────────── implementasi ─────────────────────────── */
 
+/**
+ * Rentang waktu (WIB) untuk tool operasional — supaya pertanyaan HARIAN bisa dijawab, bukan
+ * cuma bulanan:
+ *  - `tanggal` (YYYY-MM-DD) → satu hari tertentu;
+ *  - `periode: "hari_ini"` → hari ini;
+ *  - `periode: "7_hari"`   → 7 hari terakhir termasuk hari ini;
+ *  - `periode: "bulan_lalu"` → bulan sebelumnya;
+ *  - selain itu → `bulan` (YYYY-MM) atau bulan berjalan.
+ */
+function periodeRange(args: Record<string, unknown>): { startIso: string; endIso: string; label: string } {
+  const tanggal = typeof args.tanggal === "string" ? args.tanggal.trim() : "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(tanggal)) {
+    const mulai = new Date(`${tanggal}T00:00:00+07:00`);
+    if (!Number.isNaN(mulai.getTime())) {
+      return {
+        startIso: mulai.toISOString(),
+        endIso: new Date(mulai.getTime() + 24 * 60 * 60 * 1000).toISOString(),
+        label: WIB_DATE.format(mulai),
+      };
+    }
+  }
+
+  const periode = String(args.periode || "").trim().toLowerCase().replace(/\s+/g, "_");
+  if (periode === "hari_ini") {
+    const hari = jakartaDayBounds();
+    return { startIso: hari.startIso, endIso: hari.endIso, label: `hari ini, ${WIB_DATE.format(new Date())}` };
+  }
+  if (periode === "7_hari") {
+    const hari = jakartaDayBounds();
+    const mulai = new Date(new Date(hari.endIso).getTime() - 7 * 24 * 60 * 60 * 1000);
+    return { startIso: mulai.toISOString(), endIso: hari.endIso, label: "7 hari terakhir" };
+  }
+  if (periode === "bulan_lalu") {
+    const wibSekarang = new Date(Date.now() + 7 * 60 * 60 * 1000);
+    const lalu = new Date(Date.UTC(wibSekarang.getUTCFullYear(), wibSekarang.getUTCMonth() - 1, 1));
+    const yyyymm = `${lalu.getUTCFullYear()}-${String(lalu.getUTCMonth() + 1).padStart(2, "0")}`;
+    return jakartaMonthBounds(yyyymm);
+  }
+
+  return jakartaMonthBounds(typeof args.bulan === "string" ? args.bulan : null);
+}
+
 async function ringkasOperasional(args: Record<string, unknown>): Promise<AdminToolResult> {
   const admin = getSupabaseAdmin();
-  const month = jakartaMonthBounds(typeof args.bulan === "string" ? args.bulan : null);
+  const periode = periodeRange(args);
   const { startIso, endIso } = jakartaDayBounds();
 
   const countLeads = async (build: (q: any) => any) => {
@@ -228,7 +282,7 @@ async function ringkasOperasional(args: Record<string, unknown>): Promise<AdminT
 
   const [ordersRes, variantsRes, productsRes, leadTotal, leadBaru, leadHariIni, leadTerlambat, leadUnscheduled, todayTasks] =
     await Promise.all([
-      admin.from("orders").select("id, status, total, created_at").gte("created_at", month.startIso).lt("created_at", month.endIso),
+      admin.from("orders").select("id, status, total, created_at").gte("created_at", periode.startIso).lt("created_at", periode.endIso),
       admin.from("product_variants").select("product_id, stock, base_product_id"),
       admin.from("products").select("id, product_type, name, category, series"),
       countLeads((q) => q),
@@ -295,11 +349,11 @@ async function ringkasOperasional(args: Record<string, unknown>): Promise<AdminT
     );
 
   const lines: string[] = [
-    `Periode: ${month.label} (WIB).`,
+    `Periode: ${periode.label} (WIB).`,
     "",
     "PENJUALAN",
     `- Omset (pesanan lunas): ${rupiah(omset)} dari ${valid.length} transaksi${valid.length ? ` · rata-rata ${rupiah(Math.round(omset / valid.length))}` : ""}`,
-    `- Total pesanan bulan ini: ${orders.length}`,
+    `- Total pesanan periode ini: ${orders.length}`,
     ...[...perTahap.entries()].map(([label, n]) => `  · ${label}: ${n}`),
     "",
     "STOK",
@@ -312,7 +366,7 @@ async function ringkasOperasional(args: Record<string, unknown>): Promise<AdminT
   ];
 
   if (taskLines.length) lines.push("", "TUGAS HARI INI (maks 5)", ...taskLines);
-  if (topLines.length) lines.push("", "PRODUK TERLARIS BULAN INI (unit)", ...topLines);
+  if (topLines.length) lines.push("", `PRODUK TERLARIS (${periode.label.toUpperCase()}, unit)`, ...topLines);
 
   return { text: lines.join("\n") };
 }
@@ -323,6 +377,8 @@ async function cariTransaksi(args: Record<string, unknown>): Promise<AdminToolRe
   const statusKey = orderStatusKey(args.status);
   const limit = clampInt(args.limit, 8, 1, 15);
   const bulan = typeof args.bulan === "string" && args.bulan.trim() ? jakartaMonthBounds(args.bulan) : null;
+  // Filter per HARI — dipakai untuk pertanyaan "pesanan tanggal 17 Oktober" dsb.
+  const tanggalDiminta = typeof args.tanggal === "string" && /^\d{4}-\d{2}-\d{2}$/.test(args.tanggal.trim());
 
   let query = admin
     .from("orders")
@@ -330,7 +386,12 @@ async function cariTransaksi(args: Record<string, unknown>): Promise<AdminToolRe
     .order("created_at", { ascending: false })
     .limit(limit);
 
-  if (bulan) query = query.gte("created_at", bulan.startIso).lt("created_at", bulan.endIso);
+  if (tanggalDiminta) {
+    const rentang = periodeRange(args);
+    query = query.gte("created_at", rentang.startIso).lt("created_at", rentang.endIso);
+  } else if (bulan) {
+    query = query.gte("created_at", bulan.startIso).lt("created_at", bulan.endIso);
+  }
   if (statusKey) query = query.eq("status", statusKey);
   if (term) {
     const digits = term.replace(/\D/g, "");
