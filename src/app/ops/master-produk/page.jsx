@@ -1695,7 +1695,7 @@ export default function MasterProduk() {
               transition={{ duration: 0.2 }}
             >
               {(() => {
-                const manualStockIns = stockIns.filter(si => !si.source || si.source === 'manual' || si.source === 'batal');
+                const manualStockIns = stockIns.filter(si => !si.source || si.source === 'manual' || si.source === 'batal' || si.source === 'tukar_size' || si.source === 'return');
                 return (
                   <>
                     {/* Action Button */}
@@ -1771,12 +1771,12 @@ export default function MasterProduk() {
                                       {si.notes || '-'}
                                     </td>
                                     <td className="px-4 py-3.5 text-center align-middle">
-                                      {si.source === 'batal' ? (
+                                      {['batal', 'tukar_size', 'return'].includes(si.source) ? (
                                         <span
                                           className="text-xs font-semibold text-gray-400 dark:text-slate-500"
-                                          title="Baris otomatis dari pembatalan pesanan — stok sudah kembali, tidak dihapus dari sini"
+                                          title="Baris otomatis dari retur/pembatalan — stok sudah diterapkan, tidak dihapus dari sini"
                                         >
-                                          otomatis
+                                          {si.source === 'tukar_size' ? 'tukar size' : si.source === 'return' ? 'retur' : 'otomatis'}
                                         </span>
                                       ) : (
                                         <button
@@ -1817,7 +1817,7 @@ export default function MasterProduk() {
                 <div>
                   <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">Informasi Barang Keluar</p>
                   <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                    Data barang keluar diambil otomatis dari transaksi penjualan. Untuk menambah barang keluar, buat transaksi penjualan baru di halaman Transaksi.
+                    Data barang keluar diambil otomatis dari transaksi penjualan, ditambah pergerakan stok dari Tukar Size/Return. Untuk menambah barang keluar penjualan, buat transaksi baru di halaman Transaksi.
                   </p>
                 </div>
               </div>
@@ -1877,6 +1877,12 @@ export default function MasterProduk() {
                     {String(t.status || '') === 'pending' && (
                     <span className="px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 text-[10px] font-bold">Belum bayar</span>
                     )}
+                    {String(t.status || '') === 'tukar_size' && (
+                    <span className="px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 text-[10px] font-bold">Tukar Size</span>
+                    )}
+                    {String(t.status || '') === 'retur' && (
+                    <span className="px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 text-[10px] font-bold">Retur</span>
+                    )}
                     </span>
                     </td>
                     <td className="px-2.5 py-1.5 align-middle font-inter text-[13px] font-medium text-gray-900 dark:text-white break-words">
@@ -1888,7 +1894,9 @@ export default function MasterProduk() {
                     </span>
                     </td>
                     <td className="px-2.5 py-1.5 text-right align-middle font-inter text-[13px] font-semibold whitespace-nowrap">
-                    {product?.product_type === 'free_gift' || t.is_free_gift ? (
+                    {t.is_stock_movement ? (
+                    <span className="text-slate-500 dark:text-slate-400 text-[11px] font-bold">Stok keluar</span>
+                    ) : product?.product_type === 'free_gift' || t.is_free_gift ? (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-pink-100 dark:bg-pink-900/50 text-pink-600 dark:text-pink-400 rounded-full text-[11px] font-bold border border-pink-200 dark:border-pink-700">
                     <Gift size={11} /> Free Gift
                     </span>

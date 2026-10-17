@@ -40,6 +40,8 @@ const STOCK_IN = "/api/ops/stock-in";
 const TRANSACTIONS = "/api/ops/transactions";
 /** Menu Transaksi: daftar per pesanan + pencatatan transaksi manual. */
 const TRANSAKSI = "/api/ops/transaksi";
+/** Retur & Tukar Size (tabel returns/return_items). */
+const RETURNS = "/api/ops/returns";
 /** Buku alamat pelanggan (tabel `saved_addresses` yang sama dengan checkout website). */
 const ALAMAT = "/api/ops/alamat";
 /** Provinsi/kota/kecamatan dari dataset area J&T (untuk isian alamat). */
@@ -246,6 +248,49 @@ export const base44 = {
           ADMIN_ORDERS,
           { orderNumber, action: "createJnt" },
         );
+      },
+
+      /** Detail pesanan + item (dipakai form pengajuan retur). */
+      async getOrder(orderNumber: string) {
+        const params = new URLSearchParams({ order_number: orderNumber });
+        const json = await call<{ order: any }>("GET", `/api/ops/orders?${params.toString()}`);
+        return json.order ?? null;
+      },
+    },
+
+    /** Retur & Tukar Size. */
+    Return: {
+      async list(params: { type?: string; status?: string; q?: string; limit?: number } = {}) {
+        const search = new URLSearchParams();
+        if (params.type) search.set("type", params.type);
+        if (params.status) search.set("status", params.status);
+        if (params.q) search.set("q", params.q);
+        if (params.limit) search.set("limit", String(params.limit));
+        const suffix = search.toString();
+        const json = await call<{ items: any[] }>("GET", suffix ? `${RETURNS}?${suffix}` : RETURNS);
+        return json.items ?? [];
+      },
+
+      async get(returnNumber: string) {
+        const params = new URLSearchParams({ return_number: returnNumber });
+        const json = await call<{ item: any }>("GET", `${RETURNS}?${params.toString()}`);
+        return json.item ?? null;
+      },
+
+      async create(data: any) {
+        const json = await call<{ item: any }>("POST", RETURNS, data);
+        return json.item ?? null;
+      },
+
+      async update(returnNumber: string, action: string, data: any = {}) {
+        const json = await call<{ item: any }>("PATCH", RETURNS, { return_number: returnNumber, action, ...data });
+        return json.item ?? null;
+      },
+
+      async createResi(returnNumber: string) {
+        return call<{ item: any; awbNo: string; weightGrams?: number }>("POST", `${RETURNS}/resi`, {
+          return_number: returnNumber,
+        });
       },
     },
 
