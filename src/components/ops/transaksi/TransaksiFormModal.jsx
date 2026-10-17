@@ -169,6 +169,12 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
   const prefilledFor = useRef(null);
   /** Penanda pelanggan yang alamatnya sudah diisi otomatis (sekali per pelanggan). */
   const prefilledAddressFor = useRef(null);
+  /**
+   * Penanda "mulai transaksi baru": dinaikkan saat admin mau input transaksi berikutnya dari
+   * panel "Transaksi tercatat". Efek reset memakai nilai ini sebagai dependensi, jadi form
+   * dikosongkan lewat jalur yang SAMA dengan saat drawer dibuka (tidak ada dua aturan reset).
+   */
+  const [resetKey, setResetKey] = useState(0);
   /** Nomor pesanan sumber alamat yang sedang terisi otomatis (ditampilkan sebagai keterangan). */
   const [addressPrefilledFrom, setAddressPrefilledFrom] = useState("");
   /** Pemilih produk cepat: kata kunci + chip kategori (dipakai pada baris item yang terbuka). */
@@ -278,6 +284,10 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
     setSaveError("");
     setTouched(false);
     setSaveAttempted(false);
+    // Panel "Transaksi tercatat" milik simpan sebelumnya harus hilang saat drawer dibuka lagi
+    // atau saat admin mulai transaksi baru — dulu tidak direset sehingga form tampak "tidak
+    // kereset" (masih memperlihatkan transaksi yang barusan disimpan).
+    setSavedOrder(null);
     setNewAddressForCustomer(false);
     setAddressEditing(false);
     setAddressBackup(null);
@@ -341,7 +351,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
       setItems([emptyRow()]);
       prefilledFor.current = null;
     }
-  }, [isOpen, initialData]);
+  }, [isOpen, initialData, resetKey]);
 
   /* ── Pelanggan terdaftar: alamat utama langsung terpilih ── */
   useEffect(() => {
@@ -2691,13 +2701,29 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                   {/* Sudah tersimpan → footer cukup satu aksi: tutup panel (aksinya pindah ke
                       panel "Transaksi tercatat" yang berisi Buat Resi & Cetak Resi). */}
                   {savedOrder ? (
-                    <button
-                      type="button"
-                      onClick={onClose}
-                      className="px-5 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold rounded-xl hover:bg-slate-800 dark:hover:bg-slate-100 transition-all"
-                    >
-                      Tutup
-                    </button>
+                    <>
+                      {/* Selesai simpan, admin biasanya langsung input transaksi berikutnya.
+                          Tombol ini mengosongkan form lewat efek reset yang sama (drawer tetap
+                          terbuka, tanpa reload dan tanpa menampilkan data transaksi lama). */}
+                      {/* Tombol ini hanya untuk transaksi BARU: kalau tadi menyimpan perubahan
+                          (Ubah), mengosongkan form justru membingungkan. */}
+                      {!savedOrder.isEdit ? (
+                        <button
+                          type="button"
+                          onClick={() => setResetKey((k) => k + 1)}
+                          className="px-4 py-2.5 bg-white dark:bg-slate-800 border-2 border-gray-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 transition-all"
+                        >
+                          Tambah transaksi lagi
+                        </button>
+                      ) : null}
+                      <button
+                        type="button"
+                        onClick={onClose}
+                        className="px-5 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold rounded-xl hover:bg-slate-800 dark:hover:bg-slate-100 transition-all"
+                      >
+                        Tutup
+                      </button>
+                    </>
                   ) : (
                     <>
                   {step > 0 && (
