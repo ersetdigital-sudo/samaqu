@@ -186,6 +186,8 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
   const [pasteText, setPasteText] = useState("");
   const [pasteStatus, setPasteStatus] = useState({ state: "idle", message: "" });
   const [pasteFilled, setPasteFilled] = useState([]);
+  /** Saran kode pos dari data wilayah (kecamatan yang punya beberapa kode pos) → chip pilihan. */
+  const [pastePostal, setPastePostal] = useState([]);
   /** Sedang memproses tombol "Isi otomatis" (tombolnya dinonaktifkan selama ini). */
   const [pasting, setPasting] = useState(false);
   /** Area isi drawer (yang di-scroll) + penanda supaya validasi gagal menggeser ke isian error. */
@@ -286,6 +288,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
     setPasteText("");
     setPasteStatus({ state: "idle", message: "" });
     setPasteFilled([]);
+    setPastePostal([]);
     setPasting(false);
     setStep(0);
     if (initialData) {
@@ -900,6 +903,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
         postal_code: hasil.postal_code || "",
       });
       setPasteFilled(Array.isArray(hasil.filled) ? hasil.filled : []);
+      setPastePostal(Array.isArray(hasil.postal_options) ? hasil.postal_options : []);
       // Peringatan (oranye) hanya untuk kolom WAJIB: nama, nomor HP, provinsi, kota, kecamatan.
       // Kode pos yang tidak ada di teks hanya info netral — aturan validasinya tidak diubah.
       const gagal = (Array.isArray(hasil.missing) ? hasil.missing : []).filter((bagian) => bagian !== "postal_code");
@@ -1793,6 +1797,25 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                             placeholder="55581"
                             className={`${inputClass} ${saveAttempted && addressErrors.postal_code ? "border-red-300 dark:border-red-900/60" : ""}`}
                           />
+                          {/* Kecamatan ini punya beberapa kode pos di data wilayah → tawarkan
+                              pilihannya, tidak menebak satu. Chip hilang setelah kolom terisi. */}
+                          {pastePostal.length > 0 && !form.postal_code ? (
+                            <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                Pilih
+                              </span>
+                              {pastePostal.map((kode) => (
+                                <button
+                                  key={kode}
+                                  type="button"
+                                  onClick={() => updateForm({ postal_code: kode })}
+                                  className="px-2 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700 text-[11px] font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                                >
+                                  {kode}
+                                </button>
+                              ))}
+                            </div>
+                          ) : null}
                           {addressErrorText("postal_code") ? (
                             <p className="text-xs font-semibold text-red-600 dark:text-red-400 mt-1">{addressErrorText("postal_code")}</p>
                           ) : null}

@@ -33,6 +33,11 @@ export type WilayahSource = {
   districtsOf: (city: string) => string[];
   /** Provinsi dari sebuah kota (cadangan kalau kota tidak ada di daftar provinsi). */
   provinceOfCity: (city: string) => string;
+  /**
+   * Kode pos yang mungkin untuk sebuah (kota, kecamatan) — OPSIONAL, dipakai kalau teks yang
+   * ditempel tidak menyebut kode pos. Satu hasil = langsung diisi, banyak hasil = jadi saran.
+   */
+  postalOf?: (city: string, kecamatan: string) => string[];
 };
 
 export type BagianAlamat = "name" | "whatsapp" | "address" | "province" | "city" | "kecamatan" | "postal_code";
@@ -53,6 +58,8 @@ export type HasilDeteksi = {
   notes: string[];
   /** Kode pos tidak ada di teks — info netral, BUKAN peringatan. */
   postal_missing: boolean;
+  /** Saran kode pos dari data wilayah (kecamatan dengan lebih dari satu kode pos). Tidak ditebak. */
+  postal_options: string[];
 };
 
 /* ── Normalisasi teks ── */
@@ -340,6 +347,7 @@ export function deteksiAlamat(teks: string, sumber: WilayahSource): HasilDeteksi
     filled: [],
     notes: [],
     postal_missing: false,
+    postal_options: [],
   };
 
   const { rows, adaTab } = pecahSelSpreadsheet(teks);
@@ -530,14 +538,30 @@ export function deteksiAlamat(teks: string, sumber: WilayahSource): HasilDeteksi
   }
 
   /* 9 · Kode pos: ekor nomor HP (HP menempel kode pos, mis. "0878… 16412") → angka 5 digit yang
-     berdiri sendiri. Kalau tidak ada di teks, cukup info netral — aturan validasi tidak diubah. */
-  const kodePos = hpEkor && /^\d{5}$/.test(hpEkor) ? hpEkor : cariKodePos(satuBaris);
+     berdiri sendiri → data wilayah (kecamatan berkode pos tunggal langsung diisi, yang punya
+     beberapa kode pos jadi saran pilihan). Aturan validasi kolom Kode Pos tidak diubah. */
+  let kodePos = hpEkor && /^\d{5}$/.test(hpEkor) ? hpEkor : cariKodePos(satuBaris);
+  let kodePosDariData = false;
+  if (!kodePos && hasil.kecamatan && sumber.postalOf) {
+    const opsi = sumber.postalOf(hasil.city, hasil.kecamatan);
+    if (opsi.length === 1) {
+      kodePos = opsi[0];
+      kodePosDariData = true;
+    } else if (opsi.length > 1) {
+      hasil.postal_options = opsi;
+    }
+  }
   if (kodePos) {
     hasil.postal_code = kodePos;
     hasil.filled.push("postal_code");
+    if (kodePosDariData) hasil.notes.push("Kode pos diisi otomatis dari data wilayah, periksa lagi");
   } else {
     hasil.postal_missing = true;
-    hasil.notes.push("Kode pos tidak ada di teks, isi manual jika diperlukan");
+    hasil.notes.push(
+      hasil.postal_options.length > 0
+        ? `Ada ${hasil.postal_options.length} kode pos untuk ${hasil.kecamatan}, pilih yang sesuai`
+        : "Kode pos tidak ada di teks, isi manual jika diperlukan",
+    );
   }
 
   /* 10 · Alamat lengkap: buang segmen terpakai, label, kecamatan/kota/provinsi, kode pos, nama, HP.
