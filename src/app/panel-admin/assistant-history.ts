@@ -96,3 +96,17 @@ export function appendArchive(rawArchive: string | null, entry: ArchiveEntry): s
   list.push(entry);
   return JSON.stringify(list.slice(-ARCHIVE_MAX));
 }
+
+/**
+ * Sapaan pembuka hanya ditambahkan saat percakapan benar-benar kosong. Percakapan yang sudah
+ * ada (termasuk yang dipulihkan dari riwayat) dikembalikan apa adanya — jadi sapaan tidak
+ * pernah berulang atau terduplikasi.
+ */
+export function seedIfEmpty(messages: HistoryMsg[], greeting: string): HistoryMsg[] {
+  return messages.length ? messages : [{ role: "assistant", content: greeting }];
+}
+
+/** Apakah percakapan sudah punya pertanyaan dari admin (untuk arsip & tombol reset). */
+export function hasUserTurn(messages: HistoryMsg[]): boolean {
+  return messages.some((m) => m.role === "user");
+}
