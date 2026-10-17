@@ -48,7 +48,7 @@ import ImportProductModal from "@/components/ops/ImportProductModal"; // Import 
 import { useToast } from "@/components/ops/ui/use-toast";
 import { usePageUrl } from "@/lib/ops-router";
 import { MetricCardSkeleton } from "@/components/ops/ui/skeleton";
-import { SIZES, normalizeStock, sumStock, stockStatus } from "@/lib/ops-variants";
+import { SIZES, normalizeStock, stockStatus } from "@/lib/ops-variants";
 import { IconBoxes, IconLayers, IconCalendarClock, IconPackageX, IconArrowDownToLine, IconAlertTriangle } from "@/components/ops/icons";
 
 /**
@@ -57,7 +57,18 @@ import { IconBoxes, IconLayers, IconCalendarClock, IconPackageX, IconArrowDownTo
  * menumpang stok produk basisnya, jadi tidak lagi dihitung "habis".
  */
 const stokVarianMap = (v) => normalizeStock(v.stock_efektif ?? v.stock);
-const stokVarianTotal = (v) => sumStock(v.stock_efektif ?? v.stock);
+/**
+ * Total stok varian = jumlah SEMUA ukuran yang benar-benar ada di data, bukan cuma XS–XXL.
+ * Kategori Cover & Hanger memakai satu "ukuran" tetap `ALL SIZE` (variannya dibedakan lewat
+ * nama/warna), dan `normalizeStock` — daftar ukuran standar — membuang kunci di luar itu.
+ * Dulu varian seperti itu terbaca total 0 / status "Habis" padahal stoknya ada
+ * (mis. produk `cover-thobe`).
+ */
+const stokVarianTotal = (v) => {
+  const src = v?.stock_efektif ?? v?.stock;
+  if (!src || typeof src !== "object") return 0;
+  return Object.values(src).reduce((sum, n) => sum + (Number(n) || 0), 0);
+};
 
 /* ── Bantu pencarian & filter Laporan Stok (semua dari data yang ada) ── */
 const varianKategori = (v) => String(v.category || "").trim();
@@ -355,7 +366,9 @@ function ProductDetailModal({ isOpen, onClose, product, stockIns = [], transacti
                         <tbody>
                           {pv.map((v) => {
                             const st = stokVarianMap(v);
-                            const total = SIZES.reduce((s, sz) => s + st[sz], 0);
+                            // Total memakai `stokVarianTotal` supaya ukuran di luar XS–XXL
+                            // (mis. "ALL SIZE" milik Cover & Hanger) tetap ikut terhitung.
+                            const total = stokVarianTotal(v);
                             return (
                               <tr key={v.id} className="border-t border-slate-100 dark:border-slate-800">
                                 <td className="px-3 py-2 text-[13px] font-semibold text-slate-900 dark:text-white whitespace-nowrap">
