@@ -35,7 +35,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, Check, Pencil, Plus, Save, Trash2, Truck, X } from "lucide-react";
+import { AlertCircle, Check, Loader2, Pencil, Plus, RotateCcw, Save, Trash2, Truck, Wand2, X } from "lucide-react";
 import { base44 } from "@/lib/ops-api";
 import { MANUAL_PRICE_MAX, MANUAL_PRICE_MIN, MANUAL_SOURCE_KEYS, SOURCE_LABEL, manualPrice } from "@/lib/transaksi";
 import { OPS_STOCK_SIZES } from "@/lib/ops-stock";
@@ -177,6 +177,16 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
   /** Pencarian pelanggan di langkah 1 — nama atau nomor HP (pemilih pelanggan cepat). */
   const [customerSearch, setCustomerSearch] = useState("");
   const customerSearchRef = useRef(null);
+  /**
+   * "Tempel alamat lengkap, isi otomatis" (mode Pelanggan baru): teks tempelan, status pesan,
+   * dan daftar kolom yang terakhir diisi otomatis (dipakai tombol Reset supaya isian manual
+   * yang lain tidak ikut terhapus).
+   */
+  const [pasteText, setPasteText] = useState("");
+  const [pasteStatus, setPasteStatus] = useState({ state: "idle", message: "" });
+  const [pasteFilled, setPasteFilled] = useState([]);
+  /** Sedang memproses tombol "Isi otomatis" (tombolnya dinonaktifkan selama ini). */
+  const [pasting, setPasting] = useState(false);
   /** Area isi drawer (yang di-scroll) + penanda supaya validasi gagal menggeser ke isian error. */
   const bodyRef = useRef(null);
   const [scrollKick, setScrollKick] = useState(0);
@@ -271,6 +281,11 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
     setOngkir(EMPTY_ONGKIR);
     setAddressPrefilledFrom("");
     setCustomerSearch("");
+    // Drawer dibuka ulang → isian "tempel alamat" tidak boleh menempel dari sesi sebelumnya.
+    setPasteText("");
+    setPasteStatus({ state: "idle", message: "" });
+    setPasteFilled([]);
+    setPasting(false);
     setStep(0);
     if (initialData) {
       const parts = isoToWibInput(initialData.created_at);
@@ -793,6 +808,80 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
       kecamatan: "",
       postal_code: "",
     });
+  };
+
+  /* ── "Tempel alamat lengkap, isi otomatis" (mode Pelanggan baru) ── */
+
+  /** Label kolom untuk pesan "belum terdeteksi" — pakai istilah yang dibaca admin. */
+  const LABEL_BAGIAN = {
+    name: "Nama pelanggan",
+    whatsapp: "Nomor HP",
+    province: "Provinsi",
+    city: "Kota/Kabupaten",
+    kecamatan: "Kecamatan",
+    postal_code: "Kode pos",
+  };
+
+  /**
+   * Isi otomatis dari teks tempelan. Semua kolom diisi dalam SATU update state supaya
+   * dropdown berantai (Provinsi → Kota → Kecamatan) tidak saling mereset: nilai yang
+   * terisi berasal dari daftar wilayah yang sama dengan isi dropdown itu.
+   */
+  const isiOtomatisAlamat = async () => {
+    const teks = pasteText.trim();
+    if (!teks || pasting) return;
+    setPasting(true);
+    setPasteStatus({ state: "loading", message: "Membaca teks alamat…" });
+    try {
+      const hasil = await base44.entities.AlamatTebak.deteksi(teks);
+      updateForm({
+        customer_mode: "new",
+        customer_id: "",
+        customer_name: hasil.name || "",
+        customer_whatsapp: hasil.whatsapp || "",
+        address_mode: "new",
+        saved_address_id: "",
+        address: hasil.street || "",
+        province: hasil.province || "",
+        city: hasil.city || "",
+        kecamatan: hasil.kecamatan || "",
+        postal_code: hasil.postal_code || "",
+      });
+      setPasteFilled(Array.isArray(hasil.filled) ? hasil.filled : []);
+      const belum = (Array.isArray(hasil.missing) ? hasil.missing : []).map((bagian) => LABEL_BAGIAN[bagian] || bagian);
+      setPasteStatus(
+        belum.length > 0
+          ? {
+              state: "partial",
+              message: `${belum.join(", ")} belum terdeteksi, silakan isi/pilih manual. Kolom lain sudah terisi dan bisa diubah.`,
+            }
+          : { state: "done", message: "Alamat terisi otomatis. Periksa lagi sebelum klik Lanjut." },
+      );
+    } catch (error) {
+      setPasteStatus({
+        state: "error",
+        message: error instanceof Error ? error.message : "Gagal membaca teks alamat. Isi manual saja.",
+      });
+    } finally {
+      setPasting(false);
+    }
+  };
+
+  /** Reset: kosongkan textarea + kolom yang tadi diisi otomatis (isian manual lain dibiarkan). */
+  const resetAlamatTempel = () => {
+    const terisi = new Set(pasteFilled);
+    const patch = { customer_mode: "new" };
+    if (terisi.has("name")) patch.customer_name = "";
+    if (terisi.has("whatsapp")) patch.customer_whatsapp = "";
+    if (terisi.has("address")) patch.address = "";
+    if (terisi.has("province")) patch.province = "";
+    if (terisi.has("city")) patch.city = "";
+    if (terisi.has("kecamatan")) patch.kecamatan = "";
+    if (terisi.has("postal_code")) patch.postal_code = "";
+    updateForm(patch);
+    setPasteFilled([]);
+    setPasteStatus({ state: "idle", message: "" });
+    setPasteText("");
   };
 
   const useExistingCustomer = (customer) => {
@@ -1382,24 +1471,85 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                     </>
                   )
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <input
-                      type="text"
-                      value={form.customer_name}
-                      onChange={(event) => updateForm({ customer_name: event.target.value })}
-                      placeholder="Nama pelanggan"
-                      data-invalid={saveAttempted && !form.customer_name.trim() ? "true" : undefined}
-                      className={inputClass}
-                    />
-                    <input
-                      type="text"
-                      value={form.customer_whatsapp}
-                      onChange={(event) => updateForm({ customer_whatsapp: event.target.value })}
-                      placeholder="Nomor HP (08…)"
-                      data-invalid={saveAttempted && !form.customer_whatsapp.trim() ? "true" : undefined}
-                      className={inputClass}
-                    />
-                  </div>
+                  <>
+                    {/* "Tempel alamat lengkap, isi otomatis" — hanya di mode Pelanggan baru.
+                        Cara kerja & aturan deteksinya ada di src/lib/alamat-deteksi.ts. */}
+                    <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 p-3 space-y-2">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                        Tempel alamat lengkap, isi otomatis
+                      </p>
+                      <textarea
+                        rows={3}
+                        value={pasteText}
+                        onChange={(event) => {
+                          setPasteText(event.target.value);
+                          if (pasteStatus.state !== "idle") setPasteStatus({ state: "idle", message: "" });
+                        }}
+                        placeholder="Tempel teks alamat lengkap di sini. Contoh: Budi Santoso · 08123456789, Jl. Sudirman No.123, Kelurahan X, Kecamatan Y, Kota Z"
+                        aria-label="Tempel teks alamat lengkap"
+                        className={`${inputClass} resize-y`}
+                      />
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={isiOtomatisAlamat}
+                          disabled={pasting || !pasteText.trim()}
+                          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold hover:bg-slate-800 dark:hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          {pasting ? <Loader2 size={13} className="animate-spin" /> : <Wand2 size={13} />}
+                          {pasting ? "Mengisi…" : "Isi otomatis"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={resetAlamatTempel}
+                          disabled={pasting || (!pasteText.trim() && pasteFilled.length === 0)}
+                          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border-2 border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          <RotateCcw size={13} /> Reset
+                        </button>
+                        {pasteStatus.message ? (
+                          <p
+                            className={`flex items-start gap-1.5 text-[11px] font-semibold ${
+                              pasteStatus.state === "error"
+                                ? "text-red-600 dark:text-red-400"
+                                : pasteStatus.state === "partial"
+                                  ? "text-amber-600 dark:text-amber-400"
+                                  : pasteStatus.state === "done"
+                                    ? "text-emerald-600 dark:text-emerald-400"
+                                    : "text-slate-500 dark:text-slate-400"
+                            }`}
+                            role="status"
+                          >
+                            {pasteStatus.state === "error" || pasteStatus.state === "partial" ? (
+                              <AlertCircle size={13} className="mt-px shrink-0" />
+                            ) : pasteStatus.state === "done" ? (
+                              <Check size={13} className="mt-px shrink-0" />
+                            ) : null}
+                            <span>{pasteStatus.message}</span>
+                          </p>
+                        ) : null}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <input
+                        type="text"
+                        value={form.customer_name}
+                        onChange={(event) => updateForm({ customer_name: event.target.value })}
+                        placeholder="Nama pelanggan"
+                        data-invalid={saveAttempted && !form.customer_name.trim() ? "true" : undefined}
+                        className={inputClass}
+                      />
+                      <input
+                        type="text"
+                        value={form.customer_whatsapp}
+                        onChange={(event) => updateForm({ customer_whatsapp: event.target.value })}
+                        placeholder="Nomor HP (08…)"
+                        data-invalid={saveAttempted && !form.customer_whatsapp.trim() ? "true" : undefined}
+                        className={inputClass}
+                      />
+                    </div>
+                  </>
                 )}
 
                 {/* Nomor HP yang sudah terdaftar → tawarkan pakai pelanggan itu supaya tidak ganda */}
