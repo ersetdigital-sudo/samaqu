@@ -184,8 +184,12 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
   const [search, setSearch] = useState("");
   const [catChip, setCatChip] = useState("all");
   const searchRef = useRef(null);
-  /** Blok "Ukuran" baris yang sedang terbuka — tujuan auto-scroll setelah series dipilih. */
+  /** Blok langkah baris yang sedang terbuka — tujuan auto-scroll setelah tiap pilihan. */
+  const paketStepRef = useRef(null);
+  const colorStepRef = useRef(null);
+  const seriesStepRef = useRef(null);
   const sizeStepRef = useRef(null);
+  const qtyStepRef = useRef(null);
   /** Pencarian pelanggan di langkah 1 — nama atau nomor HP (pemilih pelanggan cepat). */
   const [customerSearch, setCustomerSearch] = useState("");
   const customerSearchRef = useRef(null);
@@ -1187,6 +1191,11 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
    */
   const openRowIsPaket = openIndex >= 0 ? paketOptions(groupOf(items[openIndex])).length > 0 : false;
 
+  /** Geser drawer ke blok langkah berikutnya — dipakai semua alur (baju & paket). */
+  const scrollToStep = (ref) => {
+    setTimeout(() => ref.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 60);
+  };
+
   /** Pilih grup produk pada satu baris; `null` = kosongkan pilihan lagi ("Ganti"). */
   const chooseGroup = (index, nextGroup) => {
     if (!nextGroup) {
@@ -1207,6 +1216,16 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
       price: "",
       priceManual: false,
     });
+
+    // Langkah berikutnya berbeda per jenis produk — geser otomatis supaya input satset.
+    if (isPaketEntry(nextGroup)) {
+      scrollToStep(paketOptions(nextGroup).length > 1 ? paketStepRef : qtyStepRef);
+    } else if (nextGroup.warnas.length > 1) {
+      scrollToStep(colorStepRef);
+    } else {
+      const warna = nextGroup.warnas[0] || "";
+      scrollToStep(seriesStep(nextGroup.category, nextGroup.kain, warna).show ? seriesStepRef : sizeStepRef);
+    }
   };
 
   /* Kata kunci & chip direset saat pindah baris supaya ketikan tidak "menempel" ke item lain,
@@ -2045,6 +2064,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                         size: isPaketEntry(row) ? `× ${info.quantity}` : `${info.chosen.size} × ${info.quantity}`,
                       });
                       const summary = summaryParts.join(" · ");
+                      const weightMissing = info.unitWeight.source === "missing";
                       return (
                         <div
                           key={index}
@@ -2062,6 +2082,18 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                               {row.priceManual ? ` · harga manual Rp ${formatRupiah(info.unitPrice)}/pcs` : ""}
                               {` · stok ${info.chosen.stock}`}
                               {info.chosen.linkedTo ? ` · stok mengikuti ${info.chosen.linkedTo}` : ""}
+                              {" · "}
+                              {/* Berat per produk — ditampilkan di list supaya admin tahu tanpa buka detail. */}
+                              <span
+                                className={
+                                  weightMissing || info.unitWeight.source === "product"
+                                    ? "font-bold text-amber-600 dark:text-amber-400"
+                                    : "font-semibold text-slate-600 dark:text-slate-300"
+                                }
+                              >
+                                Berat {weightMissing ? "belum diisi" : formatWeightExact(info.unitWeight.grams)}
+                                {info.unitWeight.source === "product" ? " (fallback)" : ""}
+                              </span>
                             </p>
                           </div>
                           <div className="flex items-center gap-1 shrink-0">
@@ -2123,6 +2155,17 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                               })}{" "}
                               × {info.quantity}
                               <span className="font-semibold"> · Rp {formatRupiah(info.subtotal)}</span>
+                              <span
+                                className={`font-semibold ${
+                                  info.unitWeight.source === "missing" || info.unitWeight.source === "product"
+                                    ? "text-amber-700 dark:text-amber-300"
+                                    : ""
+                                }`}
+                              >
+                                {" · "}Berat{" "}
+                                {info.unitWeight.source === "missing" ? "belum diisi" : formatWeightExact(info.unitWeight.grams)}
+                                {info.unitWeight.source === "product" ? " (fallback)" : ""}
+                              </span>
                             </p>
                           )}
                           <input
@@ -2222,7 +2265,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                             harga + sisa stok). Satu paket pun tetap ditampilkan sebagai chip supaya
                             selalu bisa dipilih/diganti (kalau cuma satu, otomatis terpilih). */}
                         {group && paketOptions(group).length >= 1 && (
-                          <div className="space-y-1">
+                          <div className="space-y-1" ref={paketStepRef}>
                             <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                               Paket
                             </p>
@@ -2236,7 +2279,11 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                                     key={paket.color}
                                     type="button"
                                     disabled={habis}
-                                    onClick={() => updateRow(index, { warna: paket.color, series: null, variant: "", price: "", priceManual: false })}
+                                    onClick={() => {
+                                      updateRow(index, { warna: paket.color, series: null, variant: "", price: "", priceManual: false });
+                                      // Paket tidak punya ukuran — langsung ke Qty.
+                                      scrollToStep(qtyStepRef);
+                                    }}
                                     className={`px-3 py-2 rounded-xl border-2 text-left transition-colors ${
                                       habis
                                         ? "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 opacity-60 cursor-not-allowed"
@@ -2263,7 +2310,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
 
                         {/* Warna: hanya untuk produk pakaian dengan lebih dari satu warna asli */}
                         {group && paketOptions(group).length === 0 && group.warnas.length > 1 && !row.warna && (
-                          <div className="space-y-1">
+                          <div className="space-y-1" ref={colorStepRef}>
                             <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                               {isPaketKategori(group.category) ? "Varian" : "Warna"}
                             </p>
@@ -2272,7 +2319,11 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                                 <button
                                   key={warna}
                                   type="button"
-                                  onClick={() => updateRow(index, { warna, series: null, variant: "", price: "", priceManual: false })}
+                                  onClick={() => {
+                                    updateRow(index, { warna, series: null, variant: "", price: "", priceManual: false });
+                                    // Warna dipilih → lanjut ke Series (kalau ada) atau Ukuran.
+                                    scrollToStep(seriesStep(group.category, group.kain, warna).show ? seriesStepRef : sizeStepRef);
+                                  }}
                                   className="px-3 py-2 rounded-xl border-2 border-slate-200 dark:border-slate-700 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                                 >
                                   {warna}
@@ -2284,7 +2335,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
 
                         {/* 2 · Series (nama + harga + sisa stok; urut seperti Laporan Stok) — dilewati untuk paket */}
                         {group && row.warna && step.show && paketOptions(group).length === 0 && (
-                          <div className="space-y-1">
+                          <div className="space-y-1" ref={seriesStepRef}>
                             <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Series</p>
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                               {seriesChoices(row).map((option) => {
@@ -2297,12 +2348,8 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                                     disabled={soldOut}
                                     onClick={() => {
                                       updateRow(index, { series: option.series, variant: "", price: "", priceManual: false });
-                                      // Series adalah langkah terakhir sebelum ukuran — geser otomatis
-                                      // ke blok "Ukuran" supaya admin tidak perlu scroll manual.
-                                      setTimeout(
-                                        () => sizeStepRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }),
-                                        60,
-                                      );
+                                      // Series selesai → lanjut ke Ukuran.
+                                      scrollToStep(sizeStepRef);
                                     }}
                                     className={`px-3 py-2 rounded-xl border-2 text-left transition-colors ${
                                       active
@@ -2362,7 +2409,11 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                                     key={option.value}
                                     type="button"
                                     disabled={soldOut}
-                                    onClick={() => updateRow(index, { variant: option.value, price: "", priceManual: false })}
+                                    onClick={() => {
+                                      updateRow(index, { variant: option.value, price: "", priceManual: false });
+                                      // Ukuran dipilih → lanjut ke Qty/harga.
+                                      scrollToStep(qtyStepRef);
+                                    }}
                                     className={`px-2 py-2 rounded-xl border-2 text-center transition-colors ${
                                       active
                                         ? "border-slate-900 dark:border-white bg-slate-900 dark:bg-white"
@@ -2402,7 +2453,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
 
                         {/* 4 · Qty (maksimal = stok efektif varian yang dipilih) */}
                         {info.chosen && (
-                          <div className="space-y-1">
+                          <div className="space-y-1" ref={qtyStepRef}>
                             <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Jumlah</p>
                             <div className="flex items-center gap-2">
                               <button
