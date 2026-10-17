@@ -488,12 +488,12 @@ export default function Transaksi({ variant = "ops" }) {
             <table>
               {/* Lebar kolom dipatok di sini (`table-layout: fixed`) supaya semua tab tampil sama. */}
               <colgroup>
-                <col style={{ width: "19%" }} />
-                <col style={{ width: "15%" }} />
-                <col style={{ width: "24%" }} />
+                <col style={{ width: "18%" }} />
+                <col style={{ width: "20%" }} />
+                <col style={{ width: "23%" }} />
                 <col style={{ width: "9%" }} />
                 <col style={{ width: "12%" }} />
-                <col style={{ width: "16%" }} />
+                <col style={{ width: "15%" }} />
                 <col />
               </colgroup>
               <thead>
@@ -517,7 +517,7 @@ export default function Transaksi({ variant = "ops" }) {
                       <td>
                         <span className="id">{order.order_number}</span>
                         <small>
-                          {formatTanggalSingkatID(order.date_wib)} · {order.time_wib} WIB
+                          {formatTanggalSingkatID(order.date_wib)} · {order.time_wib}
                         </small>
                       </td>
                       <td>
