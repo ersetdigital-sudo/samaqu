@@ -100,6 +100,15 @@ const PANEL_PAGES: Record<string, string> = {
   TambahBarangMasuk: "/panel-admin/produk/barang-masuk",
 };
 
+/**
+ * Judul halaman di topbar (mockup `.top .t`: "SAMAQU · PANEL ADMIN" + nama halaman, sebaris
+ * dengan search/tanggal/bell). Hanya halaman yang terdaftar di sini yang menampilkan judul;
+ * halaman lain (mis. Beranda) tampil apa adanya tanpa berubah.
+ */
+const PAGE_TITLES: Record<string, string> = {
+  "/panel-admin/transaksi": "Transaksi",
+};
+
 /** Hasil pencarian topbar (pesanan / produk / leads). */
 type SearchHit = { key: string; kind: string; title: string; sub: string; href: string };
 type OrderRow = { order_number?: string; customer_name?: string; customer_whatsapp?: string };
@@ -391,6 +400,12 @@ export default function PanelShell({ children }: { children: ReactNode }) {
 
       <main className={`${styles.main}${pathname.startsWith("/panel-admin/assistant") ? ` ${styles.mainFill}` : ""}`}>
         <div className={styles.top}>
+          {PAGE_TITLES[pathname] ? (
+            <div className={styles.t}>
+              <small>SAMAQU · PANEL ADMIN</small>
+              <h1>{PAGE_TITLES[pathname]}</h1>
+            </div>
+          ) : null}
           <div className={`${styles.search} ${styles.topSearch}`}>
             <svg viewBox="0 0 24 24">
               <circle cx="11" cy="11" r="7" />

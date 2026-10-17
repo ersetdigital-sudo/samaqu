@@ -1257,3 +1257,25 @@ jam; jendela 20–23 jam dipilih supaya reminder selalu keluar SEBELUM auto-canc
 jarak 1 jam agar tidak ada pesanan yang diingatkan lalu langsung dibatalkan di eksekusi yang sama.
 Link Mayar diperiksa ulang lewat `validMayarPaymentUrl()` (`src/lib/mayar.ts`) — kalau invoice sudah
 lunas atau kedaluwarsa, pesan TIDAK memuat link dan jatuh ke instruksi "hubungi admin".
+
+## Dokumentasi vault setelah perubahan (skill `samaqu-docs`)
+
+Setelah pekerjaan yang **mengubah implementasi** — fitur, logic bisnis, skema/migration, API atau
+integrasi, autentikasi/hak akses, arsitektur, perbaikan bug yang mengubah perilaku, atau konfigurasi
+deploy yang relevan — perbarui dokumentasi Obsidian lewat skill **`samaqu-docs`**
+(panggil `/samaqu-docs`, atau ikuti `SKILL.md`-nya). Untuk perubahan kosmetik/refactor internal
+tanpa dampak perilaku, tidak perlu menambah catatan.
+
+- **Vault:** `C:\Users\DELL\Downloads\SAMAQU DOC\samaqu doc\` — satu-satunya vault, jangan membuat
+  yang baru dan jangan menulis ke lokasi lain.
+- **Dokumentasi bukan pengganti pengujian.** Tetap jalankan `npx tsc --noEmit` (dan `npm run build`
+  bila menyentuh route/UI); catatan hanya boleh menyebut pengujian yang benar-benar dijalankan.
+- **Jangan mengklaim dokumentasi sudah diperbarui** kalau file belum benar-benar ditulis di vault.
+- Kalau vault tidak bisa diakses, **laporkan kegagalan** — jangan diam-diam menulis di tempat lain
+  dan jangan mengaku sukses.
+- **Jangan menulis secret**: password, token, API key, nilai `.env.local`, atau data pelanggan.
+  Catatan `SAMAQU - ENV VERCEL` hanya memuat nama variabel, fungsi, scope, dan env yang diperlukan.
+- **Utamakan memperbarui** catatan yang sudah ada (jangan menggandakan dokumentasi ENV, database,
+  arsitektur, atau fitur). Tautan internal pakai `[[Nama Dokumen]]`.
+- **Jangan `git commit`/`push` hanya untuk dokumentasi** kecuali diminta secara terpisah; vault
+  berada di luar repo ini.
