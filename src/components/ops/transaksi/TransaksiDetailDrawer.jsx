@@ -12,6 +12,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Ban, Pencil, Receipt, Truck, X } from "lucide-react";
 import { NEUTRAL_ITEM_PHOTO } from "@/lib/order-photo";
+import { isPaketItem, variantName } from "@/lib/item-label";
 import { supabase } from "@/lib/supabase";
 import { formatWeightExact } from "@/lib/shipping-weight";
 import { formatTrackingTime, sortHistoryDesc, trackingRow, trackingSummary } from "@/lib/jnt/track-status";
@@ -287,14 +288,16 @@ export default function TransaksiDetailDrawer({ open, order, onClose, onEdit, on
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-bold text-slate-900 dark:text-white">{item.product_name}</p>
                         <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                          {[
-                            item.kain ? `Kain ${item.kain}` : null,
-                            item.series,
-                            item.color && item.color !== "default" ? item.color : null,
-                            item.size,
-                          ]
-                            .filter(Boolean)
-                            .join(" · ")}{" "}
+                          {isPaketItem(item)
+                            ? [item.kain ? `Kain ${item.kain}` : null, variantName(item.color) || variantName(item.series) || null].filter(Boolean).join(" · ")
+                            : [
+                                item.kain ? `Kain ${item.kain}` : null,
+                                item.series,
+                                item.color && item.color !== "default" ? item.color : null,
+                                item.size,
+                              ]
+                                .filter(Boolean)
+                                .join(" · ")}{" "}
                           × {item.quantity}
                         </p>
                         {item.weight ? (

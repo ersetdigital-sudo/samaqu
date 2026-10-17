@@ -38,6 +38,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, Check, Loader2, Pencil, Plus, RotateCcw, Save, Trash2, Truck, Wand2, X } from "lucide-react";
 import { base44 } from "@/lib/ops-api";
 import { MANUAL_PRICE_MAX, MANUAL_PRICE_MIN, MANUAL_SOURCE_KEYS, SOURCE_LABEL, manualPrice } from "@/lib/transaksi";
+import { PAKET_CATEGORY, PAKET_SIZE, variantName } from "@/lib/item-label";
 import { OPS_STOCK_SIZES } from "@/lib/ops-stock";
 import { categoryRank, seriesRank, variantSortKey } from "@/lib/ops-order";
 import { formatWeightExact } from "@/lib/shipping-weight";
@@ -514,9 +515,42 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
     return rows.length === 1 ? rows[0] : rows[0] || null;
   };
 
-  /** Pilihan ukuran + stok tersedia; turunan memakai stok induknya (bawaan /api/ops). */
+  /* ── Cover & Hanger: kategori non-pakaian → alurnya Cari produk → PAKET → Qty.
+     Paket = satu baris dataset per varian; nama paketnya tersimpan di `color` (data lama bisa
+     menaruhnya di `series`/nama produk — dibaca lewat `variantName()`), dan ukuran (`ALL SIZE`
+     atau kosong) DIIABAIKAN sepenuhnya: tidak pernah jadi syarat. ── */
+  const isPaketEntry = (entry) => entry?.category === PAKET_CATEGORY;
+  /** Nama paket: field warna → series (data lama) → nama produk. Data lama tidak diubah. */
+  const paketNameOf = (entry) => variantName(entry?.color) || variantName(entry?.series) || String(entry?.product_name || "");
+  /** Ukuran yang dipakai saat menyimpan paket: ukuran yang benar-benar ada di data (kalau kosong, penanda ALL SIZE). */
+  const paketSize = (entry) => Object.keys(entry?.sizes || {})[0] || PAKET_SIZE;
+  /** Chip paket satu grup (satu baris dataset per paket). */
+  const paketOptions = (group) =>
+    group?.category === PAKET_CATEGORY
+      ? dataset.filter((entry) => entry.category === group.category && entry.kain === group.kain && entry.product_name === group.name)
+      : [];
+  /** Satu "pilihan" untuk baris paket supaya harga, stok, subtotal, dan simpan lewat jalur yang sama. */
+  const paketChoice = (entry) =>
+    entry
+      ? {
+          value: `${entry.color}||${paketSize(entry)}`,
+          size: paketSize(entry),
+          color: entry.color,
+          showColor: false,
+          stock: Object.values(entry.sizes || {}).reduce((sum, n) => sum + (Number(n) || 0), 0),
+          price: entry.price,
+          linkedTo: entry.linkedTo,
+        }
+      : null;
+
+  /**
+   * Pilihan ukuran + stok tersedia; turunan memakai stok induknya (bawaan /api/ops).
+   * Cover & Hanger tidak punya ukuran → satu "pilihan" saja (paketnya), supaya harga/stok/
+   * subtotal baris tetap lewat jalur yang sama tanpa menuntut ukuran.
+   */
   const sizeOptions = (product) => {
     if (!product) return [];
+    if (isPaketEntry(product)) return [paketChoice(product)];
     const groups = dataset.filter((entry) => entry.product_id === product.product_id);
     const multiColor = new Set(groups.map((entry) => entry.color)).size > 1;
     return groups
@@ -534,17 +568,24 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
       .sort((a, b) => sizeRank(a.size) - sizeRank(b.size) || cmpId(a.color, b.color));
   };
 
-  const rowComplete = (row) => Boolean(resolveProduct(row) && row.variant && Number(row.quantity) >= 1);
+  /** Baris lengkap: pakaian butuh ukuran, Cover & Hanger cukup paket (warna) + Qty. */
+  const rowComplete = (row) => {
+    const product = resolveProduct(row);
+    if (!product) return false;
+    if (isPaketEntry(product)) return Number(row.quantity) >= 1;
+    return Boolean(row.variant) && Number(row.quantity) >= 1;
+  };
 
   /** Total permintaan per varian; baris kembar ikut dihitung supaya peringatan jujur. */
   const requested = useMemo(() => {
     const map = {};
     for (const row of items) {
       const product = resolveProduct(row);
-      if (!product || !row.variant) continue;
-      const option = sizeOptions(product).find((entry) => entry.value === row.variant);
+      if (!product) continue;
+      const options = sizeOptions(product);
+      const option = isPaketEntry(product) ? options[0] : options.find((entry) => entry.value === row.variant);
       if (!option) continue;
-      const key = `${product.product_id}||${row.variant}`;
+      const key = `${product.product_id}||${option.value}`;
       const entry = map[key] || { option, total: 0 };
       entry.total += Number(row.quantity) || 0;
       map[key] = entry;
@@ -555,23 +596,28 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
 
   const rowInfo = items.map((row) => {
     const product = resolveProduct(row);
+    const paket = isPaketEntry(product);
+    const groupIsPaket = paketOptions(groupOf(row)).length > 0;
     const options = sizeOptions(product);
-    const chosen = options.find((entry) => entry.value === row.variant) || null;
+    const chosen = paket ? options[0] || null : options.find((entry) => entry.value === row.variant) || null;
     const quantity = Number(row.quantity) || 0;
     let issue = null;
-    if (!product) issue = "Pilih produk dulu (cari produk → series → ukuran)";
-    else if (!row.variant) issue = "Ukuran belum dipilih";
+    if (!product) {
+      issue = groupIsPaket ? "Pilih paket dulu di atas" : "Pilih produk dulu (cari produk → series → ukuran)";
+    } else if (!paket && !row.variant) issue = "Ukuran belum dipilih";
     else if (quantity < 1) issue = "Jumlah minimal 1";
     else if (row.priceManual && manualPrice(row.price) === null) {
       issue = `Harga manual harus bilangan bulat Rp ${formatRupiah(MANUAL_PRICE_MIN)} - Rp ${formatRupiah(MANUAL_PRICE_MAX)}`;
     } else {
-      const entry = requested[`${product.product_id}||${row.variant}`];
+      const entry = requested[`${product.product_id}||${chosen?.value}`];
       if (entry && entry.total > entry.option.stock) {
-        issue = `Stok ${entry.option.size} tinggal ${entry.option.stock}, diminta ${entry.total}`;
+        issue = paket
+          ? `Stok paket "${entry.option.color}" tinggal ${entry.option.stock}, diminta ${entry.total}`
+          : `Stok ${entry.option.size} tinggal ${entry.option.stock}, diminta ${entry.total}`;
       }
     }
     const unitPrice = rowUnitPrice(row, chosen?.price);
-    return { product, options, chosen, quantity, issue, unitPrice, subtotal: unitPrice * quantity };
+    return { product, paket, options, chosen, quantity, issue, unitPrice, subtotal: unitPrice * quantity };
   });
 
   const stockIssues = rowInfo.filter((info) => info.issue && info.product && info.chosen).map((info) => info.issue);
@@ -584,21 +630,23 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
 
   /**
    * Item yang dikirim ke server saat Simpan (bentuknya sama persis). Dipakai juga untuk Cek
-   * Ongkir — cuma item yang sudah lengkap (punya produk + ukuran).
+   * Ongkir — cuma item yang sudah lengkap (punya produk + paket/ukuran).
+   * SATU aturan: baris paket (Cover & Hanger) memakai nama paket + ukuran penanda dari data;
+   * baris pakaian memakai pilihan warna/ukuran seperti biasa.
    */
-  const payloadItems = () =>
-    items
-      .map((row) => {
-        const product = resolveProduct(row);
-        const [color, size] = String(row.variant).split("||");
-        return {
-          product_id: product?.product_id || "",
-          color: color || "default",
-          size,
-          quantity: Number(row.quantity) || 0,
-        };
-      })
-      .filter((item) => item.product_id && item.size);
+  const rowPayload = (row) => {
+    const product = resolveProduct(row);
+    const paket = isPaketEntry(product);
+    const [variantColor, variantSize] = String(row.variant).split("||");
+    return {
+      product_id: product?.product_id || "",
+      color: paket ? product.color : variantColor || "default",
+      size: paket ? paketSize(product) : variantSize,
+      quantity: Number(row.quantity) || 0,
+    };
+  };
+
+  const payloadItems = () => items.map(rowPayload).filter((item) => item.product_id && item.size);
 
   /** Penanda "Ongkir mungkin berubah, cek ulang" — nilai ongkir yang sudah diisi tidak diubah. */
   const ongkirStale =
@@ -1009,6 +1057,12 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
   /** Baris item yang sedang terbuka (hanya satu) — dipakai untuk fokus kotak cari. */
   const openIndex = items.findIndex((row) => row.editing);
 
+  /**
+   * Baris yang sedang dibuka memakai alur PAKET (Cover & Hanger)? → teks petunjuk di kanan atas
+   * ikut menyesuaikan: "Cari produk → Paket → Qty" (tanpa Series/Ukuran).
+   */
+  const openRowIsPaket = openIndex >= 0 ? paketOptions(groupOf(items[openIndex])).length > 0 : false;
+
   /** Pilih grup produk pada satu baris; `null` = kosongkan pilihan lagi ("Ganti"). */
   const chooseGroup = (index, nextGroup) => {
     if (!nextGroup) {
@@ -1149,14 +1203,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
       // (bilangan bulat dalam batas) lalu menyimpannya sebagai `order_items.price` — harga itulah
       // yang dipakai semua angka pembukuan. Tanpa harga manual, server tetap memakai harga katalog.
       items: items.map((row) => {
-        const product = resolveProduct(row);
-        const [color, size] = String(row.variant).split("||");
-        const item = {
-          product_id: product?.product_id || "",
-          color: color || "default",
-          size,
-          quantity: Number(row.quantity) || 0,
-        };
+        const item = rowPayload(row);
         if (row.priceManual) item.price = Number(digits(row.price)) || 0;
         return item;
       }),
@@ -1810,7 +1857,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                 <div className="flex items-center justify-between gap-2">
                   <h4 className={sectionClass}>Produk</h4>
                   <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500">
-                    Cari produk → Series → Ukuran → Qty
+                    {openRowIsPaket ? "Cari produk → Paket → Qty" : "Cari produk → Series → Ukuran → Qty"}
                   </span>
                 </div>
 
@@ -1904,7 +1951,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                                 product: group?.name || row.product,
                                 kain: row.kain,
                                 series: step.show ? row.series : "",
-                                color: group && group.warnas.length > 1 ? row.warna : "",
+                                color: group && (group.warnas.length > 1 || paketOptions(group).length > 0) ? row.warna : "",
                                 size: info.chosen.size,
                               })}{" "}
                               × {info.quantity}
@@ -2004,9 +2051,47 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                           )}
                         </div>
 
-                        {/* Langkah ini memilih varian: untuk produk biasa = warna, untuk
-                            Cover & Hanger = nama varian (mis. "Hanger saja"). */}
-                        {group && group.warnas.length > 1 && !row.warna && (
+                        {/* Langkah varian: pakaian = Warna, Cover & Hanger = PAKET (nama paket +
+                            harga + sisa stok). Kalau paketnya cuma satu, otomatis terpilih. */}
+                        {group && paketOptions(group).length > 1 && !row.warna && (
+                          <div className="space-y-1">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                              Paket
+                            </p>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                              {paketOptions(group).map((paket) => {
+                                const sisa = Object.values(paket.sizes || {}).reduce((sum, n) => sum + (Number(n) || 0), 0);
+                                const habis = sisa <= 0;
+                                return (
+                                  <button
+                                    key={paket.color}
+                                    type="button"
+                                    disabled={habis}
+                                    onClick={() => updateRow(index, { warna: paket.color, series: null, variant: "", price: "", priceManual: false })}
+                                    className={`px-3 py-2 rounded-xl border-2 text-left transition-colors ${
+                                      habis
+                                        ? "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 opacity-60 cursor-not-allowed"
+                                        : "border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+                                    }`}
+                                  >
+                                    <span className={`block text-sm font-bold truncate ${habis ? "text-slate-400 dark:text-slate-500" : "text-slate-900 dark:text-white"}`}>
+                                      {paketNameOf(paket)}
+                                    </span>
+                                    <span className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                                      Rp {formatRupiah(paket.price)}
+                                    </span>
+                                    <span className={`block text-[11px] font-bold ${habis ? "text-slate-400 dark:text-slate-500" : "text-emerald-600 dark:text-emerald-400"}`}>
+                                      {habis ? "stok habis" : `sisa ${sisa}`}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Warna: hanya untuk produk pakaian dengan lebih dari satu warna asli */}
+                        {group && paketOptions(group).length === 0 && group.warnas.length > 1 && !row.warna && (
                           <div className="space-y-1">
                             <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                               {group.category === "Cover & Hanger" ? "Varian" : "Warna"}
@@ -2026,8 +2111,8 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                           </div>
                         )}
 
-                        {/* 2 · Series (nama + harga + sisa stok; urut seperti Laporan Stok) */}
-                        {group && row.warna && step.show && (
+                        {/* 2 · Series (nama + harga + sisa stok; urut seperti Laporan Stok) — dilewati untuk paket */}
+                        {group && row.warna && step.show && paketOptions(group).length === 0 && (
                           <div className="space-y-1">
                             <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Series</p>
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -2084,8 +2169,9 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                           </div>
                         )}
 
-                        {/* 3 · Ukuran (stok per ukuran = stock_efektif, jadi pengikut ikut induknya) */}
-                        {info.product && (
+                        {/* 3 · Ukuran (stok per ukuran = stock_efektif, jadi pengikut ikut induknya)
+                            — TIDAK berlaku untuk paket (Cover & Hanger): tidak ada ukuran. */}
+                        {info.product && !info.paket && (
                           <div className="space-y-1">
                             <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Ukuran</p>
                             <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
@@ -2229,11 +2315,13 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                             {info.chosen
                               ? `Rp ${formatRupiah(info.unitPrice)} / pcs${row.priceManual ? " (harga manual)" : ""} · subtotal Rp ${formatRupiah(info.subtotal)}`
                               : info.product
-                                ? "Pilih ukuran dulu"
+                                ? info.paket ? "Isi Qty di bawah" : "Pilih ukuran dulu"
                                 : group
-                                  ? step.show
-                                    ? "Pilih series di atas"
-                                    : "Pilih ukuran di atas"
+                                  ? paketOptions(group).length > 0
+                                    ? "Pilih paket di atas"
+                                    : step.show
+                                      ? "Pilih series di atas"
+                                      : "Pilih ukuran di atas"
                                   : "Cari & pilih produk di atas"}
                             {info.chosen?.linkedTo ? ` · stok mengikuti ${info.chosen.linkedTo}` : ""}
                           </p>

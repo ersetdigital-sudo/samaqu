@@ -6,6 +6,7 @@
  */
 
 import { BadgeCheck, Ban, Camera, CheckCircle2, Clock, Globe, MessageCircle, Music2, ShoppingBag, Store, Truck } from "lucide-react";
+import { isPaketItem, variantName } from "@/lib/item-label";
 
 /**
  * Badge warna + ikon per sumber transaksi.
@@ -79,6 +80,10 @@ export function itemSummaryLabel(parts) {
  */
 export function itemVariantText(item) {
   if (!item) return "";
+  // Cover & Hanger (paket): cukup nama paketnya — tanpa "ALL SIZE"/ukuran yang tidak berlaku.
+  if (isPaketItem(item)) {
+    return [item.kain ? `Kain ${item.kain}` : null, variantName(item.color) || variantName(item.series) || null].filter(Boolean).join(" · ");
+  }
   return [item.kain ? `Kain ${item.kain}` : null, item.series || null, item.size || null].filter(Boolean).join(" · ");
 }
 

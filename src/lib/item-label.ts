@@ -42,10 +42,13 @@ export function variantName(color?: string | null): string {
 export function itemVariantLabel(item?: {
   color?: string | null;
   size?: string | null;
+  /** Dipakai membaca paket dari data lama yang menaruh nama paketnya di kolom `series`. */
+  series?: string | null;
   category?: string | null;
 } | null): string {
   if (!item) return "";
-  if (isPaketItem(item)) return variantName(item.color);
+  // Paket: nama paketnya bisa tersimpan di `color` atau (data lama) di `series`.
+  if (isPaketItem(item)) return variantName(item.color) || variantName(item.series);
   return [variantName(item.color), String(item.size ?? "").trim()].filter(Boolean).join(" · ");
 }
 
