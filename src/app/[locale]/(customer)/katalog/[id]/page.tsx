@@ -19,7 +19,7 @@ import { getWhatsAppLink, useStoreSettings } from "@/lib/store-settings";
 import { supabase } from "@/lib/supabase";
 import { useWishlist } from "@/lib/use-wishlist";
 import { useSafeLocale } from "@/lib/safe-i18n";
-import { PAKET_CATEGORY, variantName as paketName } from "@/lib/item-label";
+import { isPaketKategori, variantName as paketName } from "@/lib/item-label";
 import { trackViewContent, trackAddToCart, trackWhatsAppClick, sendCAPIEvent } from "@/lib/meta-pixel";
 
 const FALLBACK_SIZES = ["S", "M", "L", "XL", "XXL"];
@@ -255,7 +255,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
    * Cover & Hanger bukan pakaian: variannya berupa NAMA paket (mis. "Hanger saja"), bukan
    * warna × ukuran. Label & validasi ukuran dilewati, dan judul cukup nama produk.
    */
-  const isPaket = product?.category === PAKET_CATEGORY;
+  const isPaket = isPaketKategori(product?.category);
   // ID produk yang sedang ditampilkan (bisa beda dari URL slug saat ganti series)
   const displayId = activeSeriesId || id;
 

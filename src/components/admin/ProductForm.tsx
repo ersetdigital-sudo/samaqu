@@ -12,6 +12,7 @@ import AdminShell from "@/components/AdminShell";
 import JenisKainForm from "@/components/JenisKainForm";
 import PresetColorPicker from "@/components/PresetColorPicker";
 import { colorMap } from "@/lib/katalog-data";
+import { isPaketKategori, isPaketSize, variantName } from "@/lib/item-label";
 import { uploadToCloudinary, validateMediaFile } from "@/lib/cloudinary";
 import { useStoreSettings } from "@/lib/store-settings";
 import { usePageUrl } from "@/lib/ops-router";
@@ -100,7 +101,7 @@ interface SeriesBlock {
   productId: string;
 }
 
-type SizeRow = { size: string; stock: number; priceOverride: string; sku: string; weight?: string };
+type SizeRow = { size: string; stock: number; priceOverride: string; sku: string; weight?: string; /** ID baris `product_variants` lama (dipakai mode Edit supaya ID tidak putus). */ id?: string };
 
 /**
  * Tabel ukuran yang dipakai dua tempat (blok series Thobe & varian biasa).
@@ -503,6 +504,8 @@ export default function TambahProdukPage({
   // nilai yang tampil sebagai "SKU" di panel detail produk.
   const [sku, setSku] = useState("");
   const [category, setCategory] = useState("");
+  /** ID baris `product_variants` Cover & Hanger yang dimuat saat Edit (supaya ID-nya tidak putus). */
+  const paketIdsLamaRef = useRef<string[]>([]);
   const [description, setDescription] = useState("");
   const [basePrice, setBasePrice] = useState("");
   const [weight, setWeight] = useState("");
@@ -553,7 +556,7 @@ export default function TambahProdukPage({
   const [originalSelectedSeries, setOriginalSelectedSeries] = useState<string[]>([]);
 
   // ── Cover & Hanger: kategori non-pakaian → varian berupa NAMA, bukan warna × ukuran ──
-  const isCoverHanger = category === COVER_HANGER;
+  const isCoverHanger = isPaketKategori(category);
   /** Ada isian varian yang bakal hilang kalau mode varian ikut ganti kategori (untuk konfirmasi). */
   const variantDataFilled = isCoverHanger
     ? variants.some((v) => String(v.color).trim() !== "" || v.sizes.some((s) => s.stock > 0))
@@ -591,7 +594,7 @@ export default function TambahProdukPage({
         setName(product.name);
         setOriginalName(product.name);
         setSlug(product.id);
-        setCategory(product.category);
+        setCategory(isPaketKategori(product.category) ? COVER_HANGER : product.category);
         setDescription(product.description || "");
         // Harga: mode Open Order membaca kolom `open_order_*` (fallback ke harga katalog bila
         // belum pernah diatur) supaya form tidak kosong; mode biasa membaca kolom katalog.
@@ -679,7 +682,26 @@ export default function TambahProdukPage({
 
         // Non-Thobe (atau Thobe tanpa series): varian & media global.
         const { data: dbVariants } = await supabase.from("product_variants").select("*").eq("product_id", editProductId).order("display_order");
-        if (dbVariants && dbVariants.length > 0) {
+        if (isPaketKategori(product.category)) {
+          // Cover & Hanger: tiap baris = satu NAMA varian (bukan warna × ukuran). Nama paket
+          // dibaca dari `color` (data lama bisa menyimpannya di `series`/nama produk), ukuran
+          // penanda (ALL SIZE) diabaikan sepenuhnya; stok, berat, harga khusus, dan SKU baris lama
+          // terbawa apa adanya. ID baris disimpan supaya menyimpan ulang tidak memutus referensi.
+          const rowsPaket = (dbVariants || []).map((v: { id: string; color: string | null; stock: number; weight: number | null; price_override: number | null; sku: string | null }) => ({
+            color: (isPaketSize(v.color) ? "" : variantName(v.color)) || variantName(product.series) || variantName(product.name),
+            hex: "",
+            sizes: [{
+              id: v.id,
+              size: COVER_HANGER_SIZE,
+              stock: Number(v.stock) || 0,
+              priceOverride: v.price_override ? String(v.price_override) : "",
+              sku: v.sku || "",
+              weight: v.weight ? String(v.weight) : "",
+            }],
+          }));
+          paketIdsLamaRef.current = rowsPaket.map((row) => row.sizes[0].id).filter((id): id is string => Boolean(id));
+          setVariants(rowsPaket.length > 0 ? rowsPaket : [emptyCoverHangerVariant()]);
+        } else if (dbVariants && dbVariants.length > 0) {
           const colorGroups: Record<string, Variant> = {};
           dbVariants.forEach((v: { color: string; hex: string | null; size: string; stock: number; weight: number | null; price_override: number | null; sku: string | null }) => {
             if (!colorGroups[v.color]) colorGroups[v.color] = { color: v.color, hex: v.hex || colorMap[v.color] || "#141414", sizes: [] };
@@ -688,9 +710,6 @@ export default function TambahProdukPage({
           const varList = Object.values(colorGroups);
           setVariants(varList);
           setActiveColor(varList[0]?.color || null);
-        } else if (product.category === COVER_HANGER) {
-          // Cover & Hanger tanpa varian tersimpan → mulai dari satu baris kosong siap diisi.
-          setVariants([emptyCoverHangerVariant()]);
         }
         const { data: dbImages } = await supabase.from("product_images").select("*").eq("product_id", editProductId).order("display_order");
         if (dbImages) {
@@ -1348,6 +1367,9 @@ export default function TambahProdukPage({
         // Insert variants
         const variantRows = variants.flatMap((v, vi) =>
           v.sizes.map((s, si) => ({
+            // ID baris lama (Cover & Hanger, mode Edit) ikut dikirim supaya baris itu diperbarui,
+            // bukan dihapus lalu dibuat ulang — referensi transaksi ke varian tetap nyambung.
+            ...(s.id ? { id: s.id } : {}),
             product_id: slug,
             color: v.color,
             hex: v.hex || null,
@@ -1360,11 +1382,29 @@ export default function TambahProdukPage({
           }))
         );
         if (isEdit) {
-          await supabase.from("product_variants").delete().eq("product_id", slug);
+          if (isCoverHanger) {
+            // Cover & Hanger: hapus HANYA baris yang memang dibuang di form; baris yang masih ada
+            // diperbarui in-place (ID tetap). Aturan varian biasa tidak diubah.
+            const idDisimpan = new Set(variantRows.map((row) => row.id).filter((id): id is string => Boolean(id)));
+            const idHapus = paketIdsLamaRef.current.filter((id) => !idDisimpan.has(id));
+            if (idHapus.length > 0) await supabase.from("product_variants").delete().in("id", idHapus);
+          } else {
+            await supabase.from("product_variants").delete().eq("product_id", slug);
+          }
           await supabase.from("product_images").delete().eq("product_id", slug);
         }
         if (variantRows.length > 0) {
-          await supabase.from("product_variants").upsert(variantRows, { onConflict: "product_id,color,size" });
+          if (isCoverHanger) {
+            for (const row of variantRows) {
+              if (!row.id) continue;
+              const { id, ...patch } = row;
+              await supabase.from("product_variants").update(patch).eq("id", id);
+            }
+            const rowsBaru = variantRows.filter((row) => !row.id);
+            if (rowsBaru.length > 0) await supabase.from("product_variants").insert(rowsBaru);
+          } else {
+            await supabase.from("product_variants").upsert(variantRows, { onConflict: "product_id,color,size" });
+          }
         }
 
         // Insert images

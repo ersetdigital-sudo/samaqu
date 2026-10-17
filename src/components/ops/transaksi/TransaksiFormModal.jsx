@@ -38,7 +38,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, Check, Info, Loader2, Pencil, Plus, RotateCcw, Save, Trash2, Truck, Wand2, X } from "lucide-react";
 import { base44 } from "@/lib/ops-api";
 import { MANUAL_PRICE_MAX, MANUAL_PRICE_MIN, MANUAL_SOURCE_KEYS, SOURCE_LABEL, manualPrice } from "@/lib/transaksi";
-import { PAKET_CATEGORY, PAKET_SIZE, variantName } from "@/lib/item-label";
+import { PAKET_SIZE, isPaketKategori, variantName } from "@/lib/item-label";
 import { OPS_STOCK_SIZES } from "@/lib/ops-stock";
 import { categoryRank, seriesRank, variantSortKey } from "@/lib/ops-order";
 import { formatWeightExact } from "@/lib/shipping-weight";
@@ -444,7 +444,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
       const key = `${entry.category}|${entry.kain}|${entry.product_name}`;
       let group = map.get(key);
       if (!group) {
-        group = { key, name: entry.product_name, category: entry.category, kain: entry.kain, warnas: [], series: [], stockTotal: 0 };
+        group = { key, product_id: entry.product_id, name: entry.product_name, category: entry.category, kain: entry.kain, warnas: [], series: [], stockTotal: 0 };
         map.set(key, group);
       }
       if (!group.warnas.includes(entry.warna)) group.warnas.push(entry.warna);
@@ -519,15 +519,19 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
      Paket = satu baris dataset per varian; nama paketnya tersimpan di `color` (data lama bisa
      menaruhnya di `series`/nama produk — dibaca lewat `variantName()`), dan ukuran (`ALL SIZE`
      atau kosong) DIIABAIKAN sepenuhnya: tidak pernah jadi syarat. ── */
-  const isPaketEntry = (entry) => entry?.category === PAKET_CATEGORY;
+  const isPaketEntry = (entry) => isPaketKategori(entry?.category);
   /** Nama paket: field warna → series (data lama) → nama produk. Data lama tidak diubah. */
   const paketNameOf = (entry) => variantName(entry?.color) || variantName(entry?.series) || String(entry?.product_name || "");
   /** Ukuran yang dipakai saat menyimpan paket: ukuran yang benar-benar ada di data (kalau kosong, penanda ALL SIZE). */
   const paketSize = (entry) => Object.keys(entry?.sizes || {})[0] || PAKET_SIZE;
-  /** Chip paket satu grup (satu baris dataset per paket). */
+  /** Chip paket satu grup (satu baris dataset per paket) — dicocokkan lewat ID produk. */
   const paketOptions = (group) =>
-    group?.category === PAKET_CATEGORY
-      ? dataset.filter((entry) => entry.category === group.category && entry.kain === group.kain && entry.product_name === group.name)
+    isPaketKategori(group?.category)
+      ? dataset.filter((entry) =>
+          group.product_id
+            ? entry.product_id === group.product_id
+            : entry.category === group.category && entry.kain === group.kain && entry.product_name === group.name,
+        )
       : [];
   /** Satu "pilihan" untuk baris paket supaya harga, stok, subtotal, dan simpan lewat jalur yang sama. */
   const paketChoice = (entry) =>
@@ -1074,12 +1078,14 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
       return;
     }
     // Produk dengan satu warna asli langsung terisi; yang multi-warna menunggu langkah Warna.
+    // Cover & Hanger: paketnya cuma satu → langsung terisi juga (chip paket tetap tampil).
     // Harga manual ikut dikosongkan: harganya milik varian yang lama.
+    const paketGroup = isPaketEntry(nextGroup) ? paketOptions(nextGroup) : [];
     updateRow(index, {
       product: nextGroup.name,
       category: nextGroup.category,
       kain: nextGroup.kain,
-      warna: nextGroup.warnas.length === 1 ? nextGroup.warnas[0] : "",
+      warna: paketGroup.length === 1 ? paketGroup[0].color : nextGroup.warnas.length === 1 ? nextGroup.warnas[0] : "",
       series: null,
       variant: "",
       price: "",
@@ -2063,8 +2069,9 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                         </div>
 
                         {/* Langkah varian: pakaian = Warna, Cover & Hanger = PAKET (nama paket +
-                            harga + sisa stok). Kalau paketnya cuma satu, otomatis terpilih. */}
-                        {group && paketOptions(group).length > 1 && !row.warna && (
+                            harga + sisa stok). Satu paket pun tetap ditampilkan sebagai chip supaya
+                            selalu bisa dipilih/diganti (kalau cuma satu, otomatis terpilih). */}
+                        {group && paketOptions(group).length >= 1 && !row.warna && (
                           <div className="space-y-1">
                             <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                               Paket
@@ -2105,7 +2112,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                         {group && paketOptions(group).length === 0 && group.warnas.length > 1 && !row.warna && (
                           <div className="space-y-1">
                             <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                              {group.category === "Cover & Hanger" ? "Varian" : "Warna"}
+                              {isPaketKategori(group.category) ? "Varian" : "Warna"}
                             </p>
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                               {group.warnas.map((warna) => (
