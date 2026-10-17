@@ -35,7 +35,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, Check, Loader2, Pencil, Plus, RotateCcw, Save, Trash2, Truck, Wand2, X } from "lucide-react";
+import { AlertCircle, Check, Info, Loader2, Pencil, Plus, RotateCcw, Save, Trash2, Truck, Wand2, X } from "lucide-react";
 import { base44 } from "@/lib/ops-api";
 import { MANUAL_PRICE_MAX, MANUAL_PRICE_MIN, MANUAL_SOURCE_KEYS, SOURCE_LABEL, manualPrice } from "@/lib/transaksi";
 import { PAKET_CATEGORY, PAKET_SIZE, variantName } from "@/lib/item-label";
@@ -896,15 +896,19 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
         postal_code: hasil.postal_code || "",
       });
       setPasteFilled(Array.isArray(hasil.filled) ? hasil.filled : []);
-      const belum = (Array.isArray(hasil.missing) ? hasil.missing : []).map((bagian) => LABEL_BAGIAN[bagian] || bagian);
-      setPasteStatus(
-        belum.length > 0
-          ? {
-              state: "partial",
-              message: `${belum.join(", ")} belum terdeteksi, silakan isi/pilih manual. Kolom lain sudah terisi dan bisa diubah.`,
-            }
-          : { state: "done", message: "Alamat terisi otomatis. Periksa lagi sebelum klik Lanjut." },
-      );
+      // Peringatan (oranye) hanya untuk kolom WAJIB: nama, nomor HP, provinsi, kota, kecamatan.
+      // Kode pos yang tidak ada di teks hanya info netral — aturan validasinya tidak diubah.
+      const gagal = (Array.isArray(hasil.missing) ? hasil.missing : []).filter((bagian) => bagian !== "postal_code");
+      const belum = gagal.map((bagian) => LABEL_BAGIAN[bagian] || bagian);
+      const catatan = Array.isArray(hasil.notes) ? hasil.notes : [];
+      setPasteStatus({
+        state: belum.length > 0 ? "partial" : "done",
+        message:
+          belum.length > 0
+            ? `${belum.join(", ")} belum terdeteksi, silakan isi/pilih manual. Kolom lain sudah terisi dan bisa diubah.`
+            : "Alamat terisi otomatis. Periksa lagi sebelum klik Lanjut.",
+        notes: catatan,
+      });
     } catch (error) {
       setPasteStatus({
         state: "error",
@@ -1575,6 +1579,13 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                             <span>{pasteStatus.message}</span>
                           </p>
                         ) : null}
+                        {/* Info netral (abu/biru): kode pos tidak ada di teks, data ganda, dst. */}
+                        {(pasteStatus.notes || []).map((catatan) => (
+                          <p key={catatan} className="flex items-start gap-1.5 text-[11px] font-semibold text-slate-500 dark:text-slate-400" role="status">
+                            <Info size={13} className="mt-px shrink-0" />
+                            <span>{catatan}</span>
+                          </p>
+                        ))}
                       </div>
                     </div>
 

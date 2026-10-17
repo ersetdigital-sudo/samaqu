@@ -2,20 +2,26 @@
  * Deteksi alamat dari teks yang ditempel: "Tempel alamat lengkap, isi otomatis"
  * (referensi: fitur serupa di J&T VIP).
  *
- * Aturan mainnya:
- *  - Nomor HP dikenali dari pola 08xx / 628xx / +628xx (boleh ada spasi/strip) dan
- *    dinormalkan ke bentuk `08xx`.
- *  - Nama = teks sebelum nomor HP (pemisah seperti `·`, koma, strip dibuang).
- *  - Provinsi/Kota/Kecamatan dicocokkan ke daftar wilayah yang dipakai dropdown
- *    (`src/lib/kota.ts`, dataset area J&T) — pencocokan dari BELAKANG teks, tidak
- *    sensitif huruf besar-kecil, awalan administratif diabaikan, dan typo ringan
- *    (beda 1 huruf) masih diterima. Yang tidak cocok DIBIARKAN KOSONG, tidak ditebak.
- *  - Kode pos hanya diambil kalau ada angka 5 digit (angka 6 digit diabaikan), dan
- *    dataset wilayah kita tidak menyimpan kode pos — jadi sumbernya cuma teks.
+ * Menerima DUA bentuk masukan:
+ *  1. teks bebas lama — "Nama · 08xx, Jl…, Kec…, Kota…, Provinsi…" (perilaku lama dipertahankan);
+ *  2. hasil copy dari spreadsheet (Excel/Google Sheets) — 4 sel dipisah TAB dengan urutan
+ *     Nama | Alamat lengkap | Kecamatan | No HP, sel alamat boleh dibungkus tanda kutip ganda
+ *     dan berisi baris baru, dan nomor HP dari sheet sering TANPA angka 0 di depan.
  *
- * Modul ini MURNI: sumber wilayah diinjeksi lewat `WilayahSource`, jadi tidak menarik
- * dataset area J&T ke bundle browser, bisa dipakai server (`/api/ops/alamat-tebak`), dan
- * bisa diuji tanpa database.
+ * Aturan mainnya:
+ *  - Nomor HP: 08xx / 628xx / +628xx (spasi/strip boleh) → dinormalkan ke `08xx`; angka murni
+ *    yang diawali `8` sepanjang 9–12 digit (nomor sheet tanpa 0) ditambah `0` di depan.
+ *  - Nama: kolom pertama (spreadsheet) atau teks sebelum nomor HP; tanda kutip pembungkus dibuang.
+ *  - Label eksplisit "Kecamatan:" / "Kec:" / "Kota:" / "Kabupaten:" / "Provinsi:" diprioritaskan.
+ *  - Provinsi/Kota/Kecamatan dicocokkan ke daftar wilayah yang dipakai dropdown
+ *    (`src/lib/kota.ts`, dataset area J&T). Pencocokan BERPERINGKAT (sama > memuat kata utuh >
+ *    typo 1 huruf) dan satu potongan teks tidak dipakai dua kali — mis. frasa provinsi
+ *    "DI Yogyakarta" tidak boleh ikut terbaca sebagai kota "Yogyakarta".
+ *  - Yang tidak bisa dipastikan DIBIARKAN KOSONG, tidak ditebak (lihat `missing`/`notes`).
+ *
+ * Modul ini MURNI: sumber wilayah diinjeksi lewat `WilayahSource`, jadi tidak menarik dataset
+ * area J&T ke bundle browser, bisa dipakai server (`/api/ops/alamat-tebak`), dan bisa diuji
+ * tanpa database.
  */
 
 export type WilayahSource = {
@@ -39,24 +45,117 @@ export type HasilDeteksi = {
   city: string;
   kecamatan: string;
   postal_code: string;
-  /** Bagian yang gagal dideteksi → ditampilkan sebagai pesan kecil, tidak ditebak. */
+  /** Bagian WAJIB yang gagal dideteksi (nama, HP, provinsi, kota, kecamatan). */
   missing: BagianAlamat[];
   /** Bagian yang berhasil diisi → dipakai tombol "Reset" supaya isian manual tidak ikut hilang. */
   filled: BagianAlamat[];
+  /** Info netral (abu/biru): kode pos tidak ada di teks, data ganda, kota perlu dipilih manual. */
+  notes: string[];
+  /** Kode pos tidak ada di teks — info netral, BUKAN peringatan. */
+  postal_missing: boolean;
 };
 
-/* ── Normalisasi & pencocokan ── */
+/* ── Normalisasi teks ── */
 
-const rapikan = (v: unknown) => String(v ?? "").replace(/\s+/g, " ").trim();
+const rapikan = (v: unknown) => String(v ?? "").replace(/[ \t]+/g, " ").replace(/\s*\n\s*/g, " ").trim();
 
 /** Bentuk pembanding: huruf kecil, tanda baca jadi spasi, spasi dirapikan. */
 const normal = (v: unknown) => rapikan(v).toLowerCase().replace(/[^a-z0-9]+/g, " ").replace(/\s+/g, " ").trim();
+
+/** Tanda kutip berpasangan (lurus & melengkung) yang dipakai spreadsheet. */
+const KUTIP = /["\u201C\u201D\u201E\u201F\u2033]/g;
+
+/**
+ * Pecah teks jadi sel-sel spreadsheet. Teks di dalam tanda kutip dihitung SATU sel (baris baru
+ * di dalamnya jadi koma), di luar kutip TAB memisah kolom dan baris baru memisah baris data.
+ */
+export function pecahSelSpreadsheet(teks: string): { rows: string[][]; adaTab: boolean } {
+  const sumber = String(teks ?? "").replace(KUTIP, '"');
+  const rows: string[][] = [];
+  let baris: string[] = [];
+  let sel = "";
+  let dalamKutip = false;
+  let adaTab = false;
+
+  const tutupSel = () => {
+    baris.push(rapikan(sel));
+    sel = "";
+  };
+  const tutupBaris = () => {
+    tutupSel();
+    if (baris.some((isi) => isi !== "")) rows.push(baris);
+    baris = [];
+  };
+
+  for (let i = 0; i < sumber.length; i += 1) {
+    const ch = sumber[i];
+    if (ch === '"') {
+      if (dalamKutip && sumber[i + 1] === '"') {
+        sel += '"';
+        i += 1;
+        continue;
+      }
+      dalamKutip = !dalamKutip;
+      continue;
+    }
+    if (dalamKutip) {
+      sel += ch === "\n" || ch === "\r" ? ", " : ch;
+      continue;
+    }
+    if (ch === "\t") {
+      adaTab = true;
+      tutupSel();
+      continue;
+    }
+    if (ch === "\n" || ch === "\r") {
+      if (ch === "\r" && sumber[i + 1] === "\n") i += 1;
+      tutupBaris();
+      continue;
+    }
+    sel += ch;
+  }
+  tutupBaris();
+
+  return { rows, adaTab };
+}
+
+/* ── Pencocokan tempat ── */
 
 /** Awalan administratif yang tidak membedakan pencocokan. */
 const AWALAN_ADMIN = new Set([
   "prov", "provinsi", "kab", "kabupaten", "kota", "kotamadya", "kodya",
   "kec", "kecamatan", "kel", "kelurahan", "desa", "dsn", "dusun",
+  "di", "dki", "daerah", "istimewa", "diy",
 ]);
+
+/**
+ * Alias provinsi yang lazim dipakai orang. Nilainya = nama provinsi seperti yang muncul di
+ * dropdown (hasil `prettifyProvince` di `src/lib/kota.ts` — dataset menulis DIY sebagai "DIY").
+ */
+const ALIAS_PROVINSI: { provinsi: string; alias: string[] }[] = [
+  { provinsi: "DKI Jakarta", alias: ["dki jakarta", "jakarta", "jakarta raya"] },
+  { provinsi: "DI Yogyakarta", alias: ["diy", "di yogyakarta", "daerah istimewa yogyakarta", "yogyakarta"] },
+  { provinsi: "Kepulauan Riau", alias: ["kepri", "kepulauan riau"] },
+  { provinsi: "Kepulauan Bangka Belitung", alias: ["babel", "bangka belitung", "kepulauan bangka belitung"] },
+  { provinsi: "Nusa Tenggara Barat", alias: ["ntb", "nusa tenggara barat"] },
+  { provinsi: "Nusa Tenggara Timur", alias: ["ntt", "nusa tenggara timur"] },
+  { provinsi: "Jawa Barat", alias: ["jabar"] },
+  { provinsi: "Jawa Tengah", alias: ["jateng"] },
+  { provinsi: "Jawa Timur", alias: ["jatim"] },
+  { provinsi: "Kalimantan Barat", alias: ["kalbar"] },
+  { provinsi: "Kalimantan Selatan", alias: ["kalsel"] },
+  { provinsi: "Kalimantan Timur", alias: ["kaltim"] },
+  { provinsi: "Kalimantan Tengah", alias: ["kalteng"] },
+  { provinsi: "Kalimantan Utara", alias: ["kaltara"] },
+  { provinsi: "Sulawesi Selatan", alias: ["sulsel"] },
+  { provinsi: "Sulawesi Utara", alias: ["sulut"] },
+  { provinsi: "Sulawesi Tengah", alias: ["sulteng"] },
+  { provinsi: "Sulawesi Tenggara", alias: ["sultra"] },
+  { provinsi: "Sulawesi Barat", alias: ["sulbar"] },
+  { provinsi: "Sumatera Utara", alias: ["sumut"] },
+  { provinsi: "Sumatera Barat", alias: ["sumbar"] },
+  { provinsi: "Sumatera Selatan", alias: ["sumsel"] },
+];
 
 /** "Kec. Cibitung" → "cibitung" (awalan administratif dibuang). */
 function tanpaAwalan(v: unknown): string {
@@ -65,7 +164,6 @@ function tanpaAwalan(v: unknown): string {
   return kata.join(" ");
 }
 
-/** Jarak Levenshtein (dipakai untuk toleransi typo ringan). */
 function jarak(a: string, b: string): number {
   const m = a.length;
   const n = b.length;
@@ -82,7 +180,6 @@ function jarak(a: string, b: string): number {
   return prev[n];
 }
 
-/** Urutan kata `needle` muncul utuh di dalam `haystack`. */
 function adaUrutanKata(haystack: string[], needle: string[]): boolean {
   if (needle.length === 0 || needle.length > haystack.length) return false;
   for (let i = 0; i + needle.length <= haystack.length; i += 1) {
@@ -92,32 +189,77 @@ function adaUrutanKata(haystack: string[], needle: string[]): boolean {
 }
 
 /**
- * Kecocokan longgar untuk satu frasa tempat: sama, salah satu memuat yang lain
- * (per kata utuh), atau beda maksimal 1 huruf untuk frasa ≥5 huruf.
+ * Skor kecocokan satu frasa teks dengan satu pilihan wilayah:
+ * 3 = sama persis (setelah awalan administratif dibuang), 2 = memuat kata utuh, 1 = typo ≤1 huruf, 0 = tidak cocok.
  */
-function cocok(kandidat: unknown, pilihan: unknown): boolean {
+export function skorCocok(kandidat: unknown, pilihan: unknown): number {
   const a = tanpaAwalan(kandidat);
   const b = tanpaAwalan(pilihan);
-  if (!a || !b) return false;
-  if (a === b) return true;
-  const kataA = a.split(" ");
-  const kataB = b.split(" ");
+  if (!a || !b) return 0;
+  if (a === b) return 3;
+  const kataA = a.split(" ").filter(Boolean);
+  const kataB = b.split(" ").filter(Boolean);
   const pendek = a.length <= b.length ? kataA : kataB;
   const panjang = a.length <= b.length ? kataB : kataA;
-  if (pendek.join("").length >= 4 && adaUrutanKata(panjang, pendek)) return true;
-  if (pendek.join(" ").length >= 5 && jarak(a, b) <= 1) return true;
-  return false;
+  if (pendek.join("").length >= 4 && adaUrutanKata(panjang, pendek)) return 2;
+  if (pendek.join(" ").length >= 5 && jarak(a, b) <= 1) return 1;
+  return 0;
+}
+
+type Temuan = { nilai: string; frasa: string; skor: number; segmen: number };
+
+/**
+ * Cari frasa tempat di daftar segmen. Kecocokan "sama persis" menang atas "memuat sebagian"
+ * (biar "Sleman" tidak kalah oleh "Yogyakarta" dari frasa provinsi), dan segmen yang sudah
+ * dipakai (`terpakai`) dilewati supaya satu potongan tidak dibaca dua kali.
+ */
+function cariTempat(segmen: string[], daftar: string[], terpakai: Set<number> = new Set()): Temuan | null {
+  let terbaik: Temuan | null = null;
+  for (let i = segmen.length - 1; i >= 0; i -= 1) {
+    if (terpakai.has(i)) continue;
+    const isi = segmen[i];
+    for (const pilihan of daftar) {
+      const skor = skorCocok(isi, pilihan);
+      if (skor === 0) continue;
+      const kataPilihan = tanpaAwalan(pilihan).split(" ").filter(Boolean);
+      const pola = new RegExp(`(?:${[...AWALAN_ADMIN].join("|")})?[\\s.]*${kataPilihan.join("[\\s.\\-]+")}`, "i");
+      const ketemu = skor === 3 ? null : isi.match(pola);
+      const kandidat: Temuan = { nilai: pilihan, frasa: ketemu ? ketemu[0] : isi, skor, segmen: i };
+      if (!terbaik || kandidat.skor > terbaik.skor || (kandidat.skor === terbaik.skor && kandidat.segmen > terbaik.segmen)) {
+        terbaik = kandidat;
+      }
+      if (terbaik.skor === 3) return terbaik;
+    }
+  }
+  return terbaik;
+}
+
+/* ── Segmentasi & pembersihan alamat ── */
+
+function potongSegmen(teks: string): string[] {
+  return String(teks || "")
+    .split(/[,;\n|·•]+/)
+    .map(rapikan)
+    .filter(Boolean);
+}
+
+/** Hapus SATU kemunculan teks (tanpa peduli besar-kecil huruf). */
+function hapusKemunculan(teks: string, potongan: string): string {
+  const cari = rapikan(potongan);
+  if (!cari) return teks;
+  const escaped = cari.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "\\s+");
+  return teks.replace(new RegExp(escaped, "i"), " ");
 }
 
 /* ── Nomor HP ── */
 
 const POLA_HP = /(?:\+?62|0)(?:[\s.-]?\d){6,18}/g;
+/** Nomor sheet TANPA 0 di depan: angka murni diawali 8, panjang 9–12 digit. */
+const POLA_HP_TANPA_NOL = /(?<!\d)8\d{8,11}(?!\d)/g;
 
-/** "08123456789 17510" (hp menempel kode pos) → hp dipotong, sisanya jadi kandidat kode pos. */
 function pisahHpDanKodePos(digit: string): { hp: string; sisa: string } {
   const bersih = digit.replace(/^62/, "0");
   if (bersih.length <= 13) return { hp: bersih, sisa: "" };
-  // Lebih dari 13 digit: pola paling umum adalah "hp + kode pos 5 digit" tanpa pemisah.
   const ekor = bersih.slice(-5);
   const kepala = bersih.slice(0, -5);
   if (kepala.length >= 10 && kepala.length <= 13) return { hp: kepala, sisa: ekor };
@@ -130,7 +272,7 @@ export function cariNomorHp(teks: string): { hp: string; mulai: number; selesai:
     const mentah = m[0];
     const digit = mentah.replace(/\D/g, "");
     if (!/^(0|62)?8/.test(digit.replace(/^62/, "0"))) continue;
-    if (digit.replace(/^62/, "0").length < 10) continue; // 08 + minimal 8 digit
+    if (digit.replace(/^62/, "0").length < 10) continue;
     const { hp, sisa } = pisahHpDanKodePos(digit);
     if (hp.length < 10 || hp.length > 13) continue;
     return { hp, mulai: m.index ?? 0, selesai: (m.index ?? 0) + mentah.length, ekor: sisa };
@@ -138,65 +280,54 @@ export function cariNomorHp(teks: string): { hp: string; mulai: number; selesai:
   return null;
 }
 
+/** Nomor HP tanpa 0 di depan (dari sel spreadsheet): "81802008110" → "081802008110". */
+export function normalHpTanpaNol(teks: string): string {
+  for (const m of String(teks || "").matchAll(POLA_HP_TANPA_NOL)) {
+    const hp = `0${m[0]}`;
+    if (hp.length >= 10 && hp.length <= 13) return hp;
+  }
+  return "";
+}
+
+/** Isi sel nomor HP: pakai selnya kalau memang nomor, kalau bukan cari satu nomor di dalamnya. */
+function hpDariSel(sel: string): string {
+  const isi = rapikan(sel);
+  if (!isi) return "";
+  if (/^[\d\s.+-]+$/.test(isi)) {
+    const digit = isi.replace(/\D/g, "");
+    if (/^08/.test(digit.replace(/^62/, "0"))) {
+      const { hp } = pisahHpDanKodePos(digit);
+      if (hp.length >= 10 && hp.length <= 13) return hp;
+    }
+    const tanpaNol = normalHpTanpaNol(isi);
+    if (tanpaNol) return tanpaNol;
+    return "";
+  }
+  const legacy = cariNomorHp(isi);
+  if (legacy) return legacy.hp;
+  return normalHpTanpaNol(isi);
+}
+
 /* ── Kode pos ── */
 
-/** Semua angka tepat 5 digit yang berdiri sendiri (bukan bagian angka lebih panjang). */
+/** Angka tepat 5 digit yang berdiri sendiri ("45A" & angka 6 digit tidak ikut). */
 export function cariKodePos(teks: string): string {
   const cocokan = [...String(teks || "").matchAll(/(?<!\d)\d{5}(?!\d)/g)].map((m) => m[0]);
   return cocokan.length > 0 ? cocokan[cocokan.length - 1] : "";
 }
 
-/* ── Segmentasi alamat ── */
+/** Segmen/teks yang memakai label wilayah eksplisit ("Kecamatan: …", "Kota: …"). */
+const POLA_LABEL = /(?:kecamatan|kec|kota|kabupaten|kab|provinsi)\s*:/i;
 
-/** Pecah jadi potongan per pemisah umum: koma, titik koma, garis baru, `·`, `|`. */
-function potongSegmen(teks: string): string[] {
-  return String(teks || "")
-    .split(/[,;\n|·•]+/)
-    .map(rapikan)
-    .filter(Boolean);
-}
-
-/** Hapus satu kemunculan teks (tanpa peduli besar-kecil huruf) dari alamat. */
-function hapusKemunculan(teks: string, potongan: string): string {
-  const cari = rapikan(potongan);
-  if (!cari) return teks;
-  const escaped = cari.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "\\s+");
-  return teks.replace(new RegExp(escaped, "i"), " ");
-}
-
-/**
- * Cari satu frasa tempat di dalam daftar segmen, dari BELAKANG (urutan alamat:
- * jalan → kelurahan → kecamatan → kota → provinsi). Mengembalikan frasa asli yang
- * cocok (untuk dihapus dari alamat lengkap) beserta nilainya.
- */
-function cariTempat(
-  segmen: string[],
-  daftar: string[],
-): { nilai: string; frasa: string } | null {
-  if (daftar.length === 0) return null;
-  for (let i = segmen.length - 1; i >= 0; i -= 1) {
-    const isi = segmen[i];
-    const langsung = daftar.find((pilihan) => cocok(isi, pilihan));
-    if (langsung) return { nilai: langsung, frasa: isi };
-    // Frasa tempat menempel di dalam segmen ("Jl. X Kel. Y Kec. Z") → cari per pilihan.
-    for (const pilihan of daftar) {
-      const kataPilihan = tanpaAwalan(pilihan).split(" ").filter(Boolean);
-      if (kataPilihan.join("").length < 4) continue;
-      const kataIsi = normal(isi).split(" ").filter(Boolean);
-      if (!adaUrutanKata(kataIsi, kataPilihan)) continue;
-      // Ambil potongan asli dari teks segmen: buang awalan administratif di depannya bila ada.
-      const pola = new RegExp(`(?:${[...AWALAN_ADMIN].join("|")})?[\\s.]*${kataPilihan.join("[\\s.]+")}`, "i");
-      const ketemu = isi.match(pola);
-      if (ketemu) return { nilai: pilihan, frasa: ketemu[0] };
-    }
-  }
-  return null;
+/** Ambil nilai setelah label eksplisit, mis. "Kecamatan:  manggala" → "manggala". */
+function nilaiLabel(teks: string, pola: RegExp): string {
+  const m = String(teks || "").match(pola);
+  return m ? rapikan(m[1]) : "";
 }
 
 /* ── Deteksi utama ── */
 
 export function deteksiAlamat(teks: string, sumber: WilayahSource): HasilDeteksi {
-  const mentah = rapikan(teks);
   const hasil: HasilDeteksi = {
     name: "",
     whatsapp: "",
@@ -207,21 +338,52 @@ export function deteksiAlamat(teks: string, sumber: WilayahSource): HasilDeteksi
     postal_code: "",
     missing: [],
     filled: [],
+    notes: [],
+    postal_missing: false,
   };
-  if (!mentah) return hasil;
 
-  /* 1 · Nomor HP */
-  const hp = cariNomorHp(mentah);
+  const { rows, adaTab } = pecahSelSpreadsheet(teks);
+  if (rows.length === 0) return hasil;
+
+  // Tanpa TAB = teks bebas lama → semua baris digabung lagi jadi satu blok (perilaku lama).
+  const baris = adaTab ? rows[0] : [rows.map((satuBarisRow) => satuBarisRow.join(", ")).join(", ")];
+  const satuBaris = baris.join(", ");
+  if (!rapikan(satuBaris)) return hasil;
+
+  /* 0 · Lebih dari satu data (baris spreadsheet lain juga berisi nomor HP) → pakai yang pertama */
+  if (adaTab) {
+    const barisLainBerisiHp = rows.slice(1).some((barisLain) => barisLain.some((sel) => hpDariSel(sel)));
+    if (barisLainBerisiHp) hasil.notes.push("Terdeteksi lebih dari 1 data, yang diisi hanya data pertama");
+  }
+
+  /* 1 · Nomor HP + 2 · Nama (spreadsheet: kolom 1 nama, kolom terakhir HP) */
+  let hp = "";
+  let nama = "";
+  let teksWilayah = "";
+  if (adaTab && baris.length >= 2) {
+    const selHp = baris[baris.length - 1] || "";
+    const selAlamat = baris.length >= 4 ? baris[1] : baris.slice(1, baris.length - 1).join(", ") || baris[1] || "";
+    hp = hpDariSel(selHp) || hpDariSel(satuBaris);
+    nama = rapikan(baris[0] || "");
+    // Kolom kecamatan ikut dipakai untuk MENCOCOKKAN (lewat `kandidatKecamatan`), tapi tidak
+    // dimasukkan sebagai segmen alamat supaya tidak ikut tampil di alamat lengkap.
+    teksWilayah = selAlamat;
+  } else {
+    const temuan = cariNomorHp(satuBaris);
+    hp = temuan?.hp || hpDariSel(satuBaris);
+    const sebelumHp = temuan ? satuBaris.slice(0, temuan.mulai) : "";
+    nama = rapikan(sebelumHp);
+    teksWilayah = temuan ? satuBaris.slice(temuan.selesai) : satuBaris;
+  }
+  // Nama: buang tanda kutip, angka panjang (nomor HP yang kebetulan ikut di kolom nama), dan
+  // pemisah di ujung. Huruf besar-kecil DIPERTAHANKAN seperti yang diketik.
+  nama = rapikan(nama.replace(KUTIP, " ").replace(/\d{6,}/g, " ").replace(/^[\s·,;|.\-]+|[\s·,;|.\-]+$/g, ""));
   if (hp) {
-    hasil.whatsapp = hp.hp;
+    hasil.whatsapp = hp;
     hasil.filled.push("whatsapp");
   } else {
     hasil.missing.push("whatsapp");
   }
-
-  /* 2 · Nama = teks sebelum nomor HP */
-  const sebelumHp = hp ? mentah.slice(0, hp.mulai) : "";
-  const nama = rapikan(sebelumHp.replace(/^[\s·,;|.\-–—]+|[\s·,;|.\-–—]+$/g, ""));
   if (nama) {
     hasil.name = nama;
     hasil.filled.push("name");
@@ -229,64 +391,183 @@ export function deteksiAlamat(teks: string, sumber: WilayahSource): HasilDeteksi
     hasil.missing.push("name");
   }
 
-  /* 3 · Bagian alamat = sisa teks setelah nomor HP */
-  const teksAlamat = hp ? mentah.slice(hp.selesai) : mentah;
-  const segmen = potongSegmen(teksAlamat);
+  /* 3 · Label eksplisit (diprioritaskan untuk pencocokan) */
+  const labelKecamatan = nilaiLabel(satuBaris, /(?:kecamatan|kec)\s*:\s*([^\n,;|]+)/i);
+  const labelKota = nilaiLabel(satuBaris, /(?:kota|kabupaten|kab)\s*:\s*([^\n,;|]+)/i);
+  const labelProvinsi = nilaiLabel(satuBaris, /provinsi\s*:\s*([^\n,;|]+)/i);
 
-  /* 4 · Kode pos: dari sisa HP atau angka 5 digit di teks (angka 6 digit diabaikan) */
-  const kodePos = hp?.ekor && /^\d{5}$/.test(hp.ekor) ? hp.ekor : cariKodePos(teksAlamat);
+  /* 4 · Segmen alamat */
+  const segmen = potongSegmen(teksWilayah);
+  const terpakai = new Set<number>();
+  const semuaKota = sumber.provinces.flatMap((provinsi) => sumber.citiesOf(provinsi).map((kota) => ({ provinsi, kota })));
+
+  /* 5 · Provinsi: segmen → label → alias umum (DIY, Jakarta, Kepri, Babel, NTB, …) */
+  const provinsiTemuan = cariTempat(segmen, sumber.provinces);
+  if (provinsiTemuan) {
+    hasil.province = provinsiTemuan.nilai;
+    hasil.filled.push("province");
+    terpakai.add(provinsiTemuan.segmen);
+  } else if (labelProvinsi) {
+    const dariLabel = sumber.provinces.find((p) => skorCocok(labelProvinsi, p) > 0);
+    if (dariLabel) {
+      hasil.province = dariLabel;
+      hasil.filled.push("province");
+    }
+  }
+  if (!hasil.province) {
+    const teksNormal = normal(satuBaris);
+    for (const { provinsi, alias } of ALIAS_PROVINSI) {
+      const kena = alias.some((a) => new RegExp(`(?:^|\\s)${a.split(" ").join("[\\s.]+")}(?=\\s|$)`).test(teksNormal));
+      if (!kena) continue;
+      const pilihan = sumber.provinces.find((p) => skorCocok(p, provinsi) > 0);
+      if (pilihan) {
+        hasil.province = pilihan;
+        hasil.filled.push("province");
+        break;
+      }
+    }
+  }
+
+  /* 6 · Kecamatan: label → kolom kecamatan → segmen di dalam provinsi → unik di seluruh dataset */
+  const kandidatKecamatan = [labelKecamatan, adaTab && baris.length >= 4 ? baris[2] : ""].map(rapikan).filter(Boolean);
+  const kotaDalamProvinsi = hasil.province ? semuaKota.filter((k) => skorCocok(k.provinsi, hasil.province) > 0) : semuaKota;
+  let kecamatanKetemu = "";
+  for (const kandidat of kandidatKecamatan) {
+    for (const { kota } of kotaDalamProvinsi) {
+      const ketemu = sumber.districtsOf(kota).find((d) => skorCocok(kandidat, d) > 0);
+      if (ketemu) {
+        kecamatanKetemu = ketemu;
+        break;
+      }
+    }
+    if (kecamatanKetemu) break;
+  }
+  if (!kecamatanKetemu) {
+    const kecamatanUnik = [...new Set(kotaDalamProvinsi.flatMap((k) => sumber.districtsOf(k.kota)))];
+    const dariSegmen = cariTempat(segmen, kecamatanUnik, terpakai);
+    if (dariSegmen) {
+      const sebaranDalamProvinsi = new Set(
+        kotaDalamProvinsi.filter((k) => sumber.districtsOf(k.kota).some((d) => skorCocok(dariSegmen.nilai, d) > 0)).map((k) => k.kota),
+      );
+      const sebaranGlobal = new Set(
+        semuaKota.filter((k) => sumber.districtsOf(k.kota).some((d) => skorCocok(dariSegmen.nilai, d) > 0)).map((k) => k.kota),
+      );
+      const aman = sebaranDalamProvinsi.size <= 1 || sebaranDalamProvinsi.size === sebaranGlobal.size;
+      if (aman) {
+        kecamatanKetemu = dariSegmen.nilai;
+        terpakai.add(dariSegmen.segmen);
+      }
+    }
+  }
+  if (kecamatanKetemu) {
+    hasil.kecamatan = kecamatanKetemu;
+    hasil.filled.push("kecamatan");
+  } else {
+    hasil.missing.push("kecamatan");
+  }
+
+  /* 7 · Kota: label → segmen (hanya kalau tidak ambigu) → dari kecamatan yang unik dalam provinsi */
+  let kotaKetemu = "";
+  if (labelKota) {
+    const dariLabel = semuaKota.find((k) => skorCocok(labelKota, k.kota) > 0);
+    if (dariLabel) kotaKetemu = dariLabel.kota;
+  }
+  if (!kotaKetemu) {
+    const dariSegmen = cariTempat(segmen, semuaKota.map((k) => k.kota), terpakai);
+    if (dariSegmen) {
+      const sebaranProvinsi = new Set(semuaKota.filter((k) => skorCocok(dariSegmen.nilai, k.kota) > 0).map((k) => k.provinsi));
+      // Nama kota "generik" (teks cuma "Jakarta", padahal opsinya Jakarta Selatan/Timur/…)
+      // TIDAK diisi di sini — diselesaikan lewat kecamatan di bawah supaya tidak salah kota.
+      if (dariSegmen.skor === 3 || sebaranProvinsi.size === 1) {
+        kotaKetemu = dariSegmen.nilai;
+        terpakai.add(dariSegmen.segmen);
+      }
+    }
+  }
+  if (!kotaKetemu && kecamatanKetemu) {
+    const kandidat = [
+      ...new Set(
+        semuaKota
+          .filter((k) => !hasil.province || skorCocok(k.provinsi, hasil.province) > 0)
+          .filter((k) => sumber.districtsOf(k.kota).some((d) => skorCocok(kecamatanKetemu, d) > 0))
+          .map((k) => k.kota),
+      ),
+    ];
+    if (kandidat.length === 1) kotaKetemu = kandidat[0];
+    else if (kandidat.length > 1) hasil.notes.push("Kota masih ambigu dari teks, pilih manual");
+  }
+  if (kotaKetemu) {
+    hasil.city = kotaKetemu;
+    hasil.filled.push("city");
+    if (!hasil.province) {
+      const dariData = semuaKota.find((k) => k.kota === kotaKetemu)?.provinsi || rapikan(sumber.provinceOfCity(kotaKetemu));
+      const pilihan = sumber.provinces.find((p) => skorCocok(p, dariData) > 0);
+      if (pilihan) {
+        hasil.province = pilihan;
+        hasil.filled.push("province");
+      }
+    }
+  } else {
+    hasil.missing.push("city");
+  }
+
+  /* 8 · Provinsi dari kecamatan (kalau provinsi belum ada tapi kecamatannya tunggal) */
+  if (!hasil.province && kecamatanKetemu) {
+    const provinsiKandidat = [
+      ...new Set(semuaKota.filter((k) => sumber.districtsOf(k.kota).some((d) => skorCocok(kecamatanKetemu, d) > 0)).map((k) => k.provinsi)),
+    ];
+    if (provinsiKandidat.length === 1) {
+      const pilihan = sumber.provinces.find((p) => skorCocok(p, provinsiKandidat[0]) > 0);
+      if (pilihan) {
+        hasil.province = pilihan;
+        hasil.filled.push("province");
+      }
+    }
+  }
+
+  /* 9 · Kode pos: angka 5 digit berdiri sendiri (info netral kalau tidak ada) */
+  const kodePos = cariKodePos(satuBaris);
   if (kodePos) {
     hasil.postal_code = kodePos;
     hasil.filled.push("postal_code");
   } else {
-    hasil.missing.push("postal_code");
+    hasil.postal_missing = true;
+    hasil.notes.push("Kode pos tidak ada di teks, isi manual jika diperlukan");
   }
 
-  /* 5 · Provinsi → Kota → Kecamatan (cocok dari belakang) */
-  const semuaKota = sumber.provinces.flatMap((provinsi) =>
-    sumber.citiesOf(provinsi).map((kota) => ({ provinsi, kota })),
-  );
-
-  const provinsi = cariTempat(segmen, sumber.provinces);
-  if (provinsi) {
-    hasil.province = provinsi.nilai;
-    hasil.filled.push("province");
-  }
-
-  const frasaDipakai: string[] = [];
-  const kota = cariTempat(segmen, semuaKota.map((baris) => baris.kota));
-  if (kota) {
-    hasil.city = kota.nilai;
-    frasaDipakai.push(kota.frasa);
-    if (!hasil.province) {
-      // Provinsi tidak disebut → ambil dari data kota (daftar provinsi dulu, lalu cadangan).
-      const dariDaftar = semuaKota.find((baris) => baris.kota === kota.nilai)?.provinsi || "";
-      const provinsiCadangan = dariDaftar || rapikan(sumber.provinceOfCity(kota.nilai));
-      const cocokDiDaftar = sumber.provinces.find((p) => cocok(p, provinsiCadangan));
-      if (cocokDiDaftar) {
-        hasil.province = cocokDiDaftar;
-        hasil.filled.push("province");
+  /* 10 · Alamat lengkap: buang segmen terpakai, label, kecamatan/kota/provinsi, kode pos, nama, HP.
+     Kecamatan hanya dibuang dari SATU kemunculan (paling belakang) supaya kelurahan dengan nama
+     sama tetap ikut tampil. */
+  let segmenKecamatanDibuang = -1;
+  if (hasil.kecamatan) {
+    for (let i = segmen.length - 1; i >= 0; i -= 1) {
+      if (terpakai.has(i) || POLA_LABEL.test(segmen[i])) continue;
+      if (skorCocok(segmen[i], hasil.kecamatan) > 0 || normal(segmen[i]).includes(normal(hasil.kecamatan))) {
+        segmenKecamatanDibuang = i;
+        break;
       }
     }
-    const kecamatan = cariTempat(segmen, sumber.districtsOf(kota.nilai));
-    if (kecamatan) {
-      hasil.kecamatan = kecamatan.nilai;
-      hasil.filled.push("kecamatan");
-      frasaDipakai.push(kecamatan.frasa);
-    } else {
-      hasil.missing.push("kecamatan");
+  }
+  const sisa: string[] = [];
+  for (let i = 0; i < segmen.length; i += 1) {
+    if (terpakai.has(i)) continue;
+    // Segmen yang isinya cuma label ("Kecamatan: Pasar Minggu Jakarta") tidak dianggap alamat.
+    if (POLA_LABEL.test(segmen[i])) continue;
+    let isi = segmen[i];
+    if (i === segmenKecamatanDibuang) isi = hapusKemunculan(isi, hasil.kecamatan);
+    for (const potongan of [hasil.city, hasil.province, hasil.name, hasil.whatsapp, kodePos]) {
+      if (potongan) isi = hapusKemunculan(isi, potongan);
     }
-  } else {
-    hasil.missing.push("city", "kecamatan");
+    isi = rapikan(isi.replace(/^[\s,;.\-]+|[\s,;.\-]+$/g, ""));
+    if (!isi) continue;
+    // Sisa yang isinya cuma potongan nama kota/provinsi (mis. baris "Jakarta 12520" setelah kode
+    // pos dibuang) tidak dianggap bagian alamat.
+    const kataSisa = normal(isi).split(" ").filter(Boolean);
+    const kataInduk = [hasil.city, hasil.province].filter(Boolean).flatMap((induk) => normal(induk).split(" "));
+    if (kataSisa.length > 0 && kataSisa.every((kata) => kataInduk.includes(kata))) continue;
+    sisa.push(isi);
   }
-
-  /* 6 · Alamat lengkap: buang kecamatan/kota/provinsi/hp/nama/kode pos (tanpa mengulang) */
-  let alamat = teksAlamat;
-  for (const potongan of [provinsi?.frasa, ...frasaDipakai, hasil.name, kodePos]) {
-    if (potongan) alamat = hapusKemunculan(alamat, potongan);
-  }
-  if (hp) alamat = hapusKemunculan(alamat, mentah.slice(hp.mulai, hp.selesai));
-  hasil.street = potongSegmen(alamat).join(", ");
+  hasil.street = sisa.join(", ");
   if (hasil.street) hasil.filled.push("address");
 
   return hasil;
