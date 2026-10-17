@@ -304,6 +304,10 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
     if (!key || prefilledAddressFor.current === key) return;
     prefilledAddressFor.current = key;
 
+    // Nama penerima ikut diisi dari pesanan terakhirnya (kolom `orders.customer_name` =
+    // "Nama penerima" di resi), bukan nama akun pelanggan — sama seperti alamat tersimpan.
+    const recipient = String(lastCustomerAddress.recipient_name || "").trim();
+
     setForm((current) =>
       current
         ? {
@@ -315,6 +319,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
             city: lastCustomerAddress.city || "",
             kecamatan: lastCustomerAddress.kecamatan || "",
             postal_code: lastCustomerAddress.postal_code || "",
+            ...(recipient ? { customer_name: recipient } : null),
           }
         : current,
     );
@@ -636,7 +641,18 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
     return semuaPelanggan.find((customer) => phoneKey(customer.whatsapp) === key) || null;
   }, [form?.customer_mode, form?.customer_whatsapp, semuaPelanggan]);
 
+  /**
+   * Alamat dari buku alamat dipakai → alamatnya diisi SEKALIGUS nama penerima & nomor HP-nya,
+   * sama seperti checkout website (`setNama(addr.recipient_name)`).
+   *
+   * `recipient_name` di buku alamat adalah nama PENERIMA paket, dan kolom `orders.customer_name`
+   * dibaca sebagai "Nama penerima" saat membuat resi J&T. Kalau yang dipakai nama AKUN pelanggan,
+   * nama penerimanya jadi salah — mis. akun atas nama A, tapi paketnya dikirim untuk B (alamat
+   * "Rumah" dipakai bersama). Nilai dari buku alamat hanya dipakai kalau memang terisi.
+   */
   const applySavedAddress = (address) => {
+    const recipient = String(address?.recipient_name || "").trim();
+    const phone = String(address?.phone || "").trim();
     setForm((current) => ({
       ...current,
       saved_address_id: address?.id || "",
@@ -645,6 +661,8 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
       city: address?.city || "",
       kecamatan: address?.kecamatan || "",
       postal_code: address?.postal_code || "",
+      ...(recipient ? { customer_name: recipient } : null),
+      ...(phone ? { customer_whatsapp: phone } : null),
     }));
   };
 
@@ -1201,7 +1219,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                 <p className="text-xs text-slate-500 dark:text-slate-400">
                   {form.customer_mode === "existing"
                     ? form.customer_name
-                      ? `Terpilih: ${form.customer_name} · ${form.customer_whatsapp || "nomor belum ada"}`
+                      ? `Penerima paket: ${form.customer_name} · ${form.customer_whatsapp || "nomor belum ada"}`
                       : "Pilih salah satu pelanggan, atau ganti ke Pelanggan baru."
                     : "Pelanggan baru dan alamatnya otomatis tersimpan di menu Pelanggan."}
                 </p>
@@ -1258,6 +1276,14 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                                 </span>
                               )}
                             </div>
+                            {/* Nama penerima + nomornya ditampilkan seperti di checkout website,
+                                supaya admin bisa memastikan paketnya memang untuk orang yang benar. */}
+                            {address.recipient_name ? (
+                              <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                                {address.recipient_name}
+                                {address.phone ? ` · ${address.phone}` : ""}
+                              </p>
+                            ) : null}
                             <p className="text-sm text-slate-700 dark:text-slate-200 mt-1 leading-relaxed">
                               {addressText(address)}
                             </p>

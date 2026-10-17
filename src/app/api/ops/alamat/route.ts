@@ -88,6 +88,9 @@ export async function GET(req: NextRequest) {
         city,
         province: String(match.shipping_province || "").trim() || provinceOfCity(city),
         postal_code: String(match.shipping_postal_code || "").trim(),
+        // Nama penerima paket pada pesanan itu (kolom `orders.customer_name`) — dipakai form
+        // Transaksi supaya nama penerimanya ikut terisi, bukan nama akun pelanggan.
+        recipient_name: String(match.customer_name || "").trim(),
       };
     }
   }
