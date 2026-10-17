@@ -1,0 +1,182 @@
+/* ── Menu Transaksi & Detail Transaksi panel admin — gaya mockup ──
+ *
+ * Nilai disalin dari mockup `samaqu-admin-dashboard-2/pages/transaksi/index.html`.
+ * SELURUH rule di-scope `.panel-tx` (kelas yang hanya dipasang di /panel-admin/transaksi),
+ * jadi halaman ops (/ops/transaksi, office.samaqu.id) TIDAK terpengaruh.
+ *
+ * Lapisan shell (sidebar/topbar) tidak ikut — itu milik PanelShell. Yang di-port hanya
+ * isi halaman (kartu KPI, tab, tabel) dan drawer Detail + modal Lacak.
+ */
+
+.panel-tx {
+  font-family: var(--font-inter), Inter, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: -0.005em;
+  line-height: 1.5;
+  font-feature-settings: "cv11", "ss01", "tnum";
+  color: #2a1a22;
+  font-size: 14px;
+}
+.panel-tx h1,
+.panel-tx h2,
+.panel-tx h3 { letter-spacing: -0.02em; }
+
+/* Judul halaman (mockup `.top .t`) — shell panel tidak lagi menampilkan judul halaman. */
+.panel-tx .ptx-title { margin-bottom: 14px; }
+.panel-tx .ptx-title small { font-size: 11px; color: #8a7d83; letter-spacing: .05em; text-transform: uppercase; }
+.panel-tx .ptx-title h1 { font-size: 20px; font-weight: 700; margin-top: 2px; }
+
+/* ── Kartu statistik ── */
+.panel-tx .ks { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 16px; }
+.panel-tx .card { background: #fff; border: 1px solid #f1e6ea; border-radius: 18px; padding: 18px; position: relative; overflow: hidden; }
+.panel-tx .k small { color: #8a7d83; font-size: 12px; font-weight: 600; }
+.panel-tx .k b { display: block; font-size: 24px; margin-top: 6px; font-weight: 800; }
+.panel-tx .k i { font-style: normal; font-size: 11px; color: #8a7d83; }
+
+/* ── Bar: tab status + filter ── */
+.panel-tx .bar { display: block; margin-bottom: 14px; }
+.panel-tx .tabs { display: flex; gap: 4px; background: transparent; border: 0; border-bottom: 1px solid #eee2e7; border-radius: 0; padding: 0; overflow-x: auto; }
+.panel-tx .tab {
+  flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px;
+  padding: 10px 14px; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px;
+  background: transparent; color: #8a7d83; font: 600 13px inherit; font-family: inherit; cursor: pointer; white-space: nowrap;
+}
+.panel-tx .tab:hover { color: #2a1a22; }
+.panel-tx .tab em {
+  font-style: normal; font-weight: 800; font-size: 11px; min-width: 20px; height: 20px;
+  border-radius: 11px; display: grid; place-items: center; background: #f6eef1; color: #8a7d83; padding: 0 6px;
+}
+.panel-tx .tab.on { color: #2a1a22; border-bottom-color: #c2255c; }
+.panel-tx .tab.on em { background: #c2255c; color: #fff; }
+
+.panel-tx .f { display: flex; gap: 8px; margin-top: 14px; justify-content: flex-end; flex-wrap: wrap; align-items: center; }
+.panel-tx .f input,
+.panel-tx .f select {
+  border: 1px solid #eee2e7; border-radius: 12px; padding: 9px 12px;
+  font-family: inherit; font-size: 13px; background: #fff; color: #2a1a22;
+}
+.panel-tx .f input { min-width: 220px; }
+.panel-tx .btn { background: #c2255c; color: #fff; border: 0; border-radius: 20px; padding: 11px 22px; font-weight: 600; font-family: inherit; font-size: 13px; cursor: pointer; }
+.panel-tx .btn:hover { background: #9d174d; }
+.panel-tx .btn-ghost { background: #fff; color: #c2255c; border: 1px solid #f3c7d6; border-radius: 20px; padding: 9px 16px; font-weight: 600; font-family: inherit; font-size: 13px; cursor: pointer; }
+
+/* Navigasi bulan (pertahankan kemampuan lihat bulan lain; tidak ada di mockup). */
+.panel-tx .ptx-month { display: inline-flex; align-items: center; gap: 2px; border: 1px solid #eee2e7; border-radius: 12px; padding: 2px 4px; background: #fff; }
+.panel-tx .ptx-month button { border: 0; background: transparent; color: #8a7d83; font-size: 16px; line-height: 1; padding: 6px 9px; cursor: pointer; }
+.panel-tx .ptx-month button:hover { color: #2a1a22; }
+.panel-tx .ptx-month b { font-size: 13px; min-width: 104px; text-align: center; }
+
+/* ── Tabel ── */
+.panel-tx .tw { padding: 0; overflow-x: auto; }
+.panel-tx table { width: 100%; border-collapse: collapse; min-width: 820px; }
+.panel-tx th { text-align: left; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: #8a7d83; padding: 14px 18px; background: #fdf8fa; border-bottom: 1px solid #f1e6ea; white-space: nowrap; }
+.panel-tx td { padding: 14px 18px; border-bottom: 1px solid #f6eef1; vertical-align: middle; }
+.panel-tx tbody tr { cursor: pointer; transition: background .15s; }
+.panel-tx tbody tr:hover { background: #fdf3f7; }
+.panel-tx td small { display: block; color: #8a7d83; font-size: 12px; margin-top: 2px; }
+.panel-tx .id { font-weight: 700; color: #c2255c; white-space: nowrap; }
+.panel-tx .src { font-size: 12px; color: #6b4b5a; }
+.panel-tx .mono { font-variant-numeric: tabular-nums; font-weight: 700; }
+.panel-tx .chev { color: #c2255c; font-weight: 700; }
+
+/* ── Badge status ── */
+.panel-tx .bd { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px; white-space: nowrap; }
+.panel-tx .bd:before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.panel-tx .s-bayar { background: #fff1db; color: #c76f00; }
+.panel-tx .s-proses { background: #e6effd; color: #2e64c9; }
+.panel-tx .s-kirim { background: #efe6fd; color: #7c4ddb; }
+.panel-tx .s-selesai { background: #e3f7ea; color: #2f9e5b; }
+.panel-tx .s-batal { background: #fde4e7; color: #d63340; }
+
+/* ── Drawer Detail Transaksi ── */
+.panel-tx .ov { position: fixed; inset: 0; background: rgba(31, 26, 29, .38); z-index: 20; }
+.panel-tx .dr {
+  position: fixed; top: 0; right: 0; height: 100vh; width: min(500px, 100vw);
+  background: #fff; z-index: 21; display: flex; flex-direction: column; overflow: hidden;
+  box-shadow: -20px 0 50px rgba(60, 20, 40, .15); border-radius: 20px 0 0 20px;
+}
+.panel-tx .dh { padding: 22px 24px 18px; border: 0; display: flex; align-items: flex-start; gap: 12px; }
+.panel-tx .dh small { color: #8a7d83; font-size: 12px; }
+.panel-tx .dh h3 { font-size: 20px; font-weight: 700; margin: 2px 0 0; }
+.panel-tx .x { margin-left: auto; width: 36px; height: 36px; border-radius: 50%; border: 1px solid #eee2e7; background: #fff; display: grid; place-items: center; cursor: pointer; color: #8a7d83; }
+.panel-tx .db { flex: 1; overflow: auto; padding: 0 24px 24px; display: flex; flex-direction: column; gap: 0; }
+
+/* Banner status + step progress */
+.panel-tx .ban { display: flex; flex-direction: column; align-items: stretch; gap: 16px; color: #2a1a22; padding: 18px; border-radius: 16px; margin-bottom: 8px; }
+.panel-tx .bt { display: flex; gap: 12px; align-items: flex-start; }
+.panel-tx .ban b { font-size: 15px; font-weight: 700; color: currentColor; }
+.panel-tx .ban p { color: #6b4b5a; font-size: 13px; margin-top: 4px; line-height: 1.45; }
+.panel-tx .ban .bd { margin-left: auto; background: #fff; color: inherit; flex-shrink: 0; }
+.panel-tx .b-bayar { background: #fff6e8; color: #c76f00; }
+.panel-tx .b-proses { background: #fdeef3; color: #c2255c; }
+.panel-tx .b-kirim { background: #f3edfd; color: #7c4ddb; }
+.panel-tx .b-selesai { background: #eaf8ef; color: #2f9e5b; }
+.panel-tx .b-batal { background: #f5f1f3; color: #8a7d83; }
+.panel-tx .stp { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.panel-tx .stp div { display: flex; flex-direction: column; gap: 6px; }
+.panel-tx .stp i { height: 4px; border-radius: 4px; background: rgba(0, 0, 0, .08); }
+.panel-tx .stp .d i { background: currentColor; }
+.panel-tx .stp span { font-size: 11px; font-weight: 600; color: #8a7d83; }
+.panel-tx .stp .d span { color: currentColor; }
+
+/* Seksi di dalam drawer */
+.panel-tx .sec2 { background: transparent; border-radius: 0; padding: 18px 0; border-bottom: 1px solid #f3ecef; }
+.panel-tx .sec2:last-child { border: 0; }
+.panel-tx .sh { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.panel-tx .sh svg { width: 16px; height: 16px; color: #8a7d83; }
+.panel-tx .sh b { font-size: 14px; font-weight: 700; }
+.panel-tx .sh a { margin-left: auto; color: #c2255c; font-size: 12px; font-weight: 600; cursor: pointer; }
+.panel-tx .kv { display: flex; justify-content: space-between; gap: 10px; padding: 5px 0; font-size: 13.5px; }
+.panel-tx .kv span { color: #8a7d83; }
+.panel-tx .kv b { font-weight: 600; text-align: right; }
+.panel-tx .cp { border: 0; background: none; color: #c2255c; font: 600 12px inherit; font-family: inherit; cursor: pointer; margin-left: 4px; }
+.panel-tx .last { display: flex; gap: 10px; align-items: center; margin-top: 10px; background: #f7f9f8; border: 1px solid #e7f2eb; border-radius: 10px; padding: 10px 12px; cursor: pointer; }
+.panel-tx .last i { width: 8px; height: 8px; border-radius: 50%; background: #2f9e5b; flex-shrink: 0; }
+.panel-tx .last b { font-size: 13px; color: #2f9e5b; }
+.panel-tx .last small { display: block; color: #8a7d83; font-size: 11px; }
+.panel-tx .last span { margin-left: auto; color: #8a7d83; }
+.panel-tx .adr { font-size: 13px; line-height: 1.6; color: #6b4b5a; }
+.panel-tx .adr b { color: #2a1a22; }
+.panel-tx .adr span { color: #8a7d83; }
+
+/* Item & total */
+.panel-tx .it { display: flex; gap: 12px; align-items: center; padding: 8px 0; }
+.panel-tx .it .th { width: 56px; height: 56px; border-radius: 14px; display: grid; place-items: center; flex: 0 0 56px; overflow: hidden; }
+.panel-tx .it .th img { width: 100%; height: 100%; object-fit: cover; }
+.panel-tx .it div { flex: 1; min-width: 0; }
+.panel-tx .it small { color: #8a7d83; font-size: 12px; display: block; }
+.panel-tx .it b { font-size: 14px; font-weight: 600; }
+.panel-tx .rw { display: flex; justify-content: space-between; padding: 4px 0; color: #6b4b5a; font-size: 13px; }
+.panel-tx .rw.t { border-top: 1px dashed #eadfe4; margin-top: 10px; padding-top: 12px; color: #2a1a22; font-weight: 800; font-size: 17px; }
+.panel-tx .note { background: #fff8ec; border: 1px solid #fbe3bf; border-radius: 12px; padding: 12px; color: #7a5520; font-size: 13px; margin: 14px 0 0; }
+
+/* Footer aksi drawer */
+.panel-tx .df { padding: 16px 24px 20px; border-top: 1px solid #f3ecef; display: flex; gap: 10px; }
+.panel-tx .df button { flex: 1; border-radius: 12px; padding: 13px; font: 600 14px inherit; font-family: inherit; cursor: pointer; }
+.panel-tx .df button:disabled { opacity: .4; cursor: not-allowed; }
+.panel-tx .b1 { background: #c2255c; color: #fff; border: 0; }
+.panel-tx .b2 { background: #fff; color: #c2255c; border: 1px solid #f3c7d6; }
+.panel-tx .b-danger { background: #fff; color: #d63340; border: 1px solid #f6c9ce; }
+
+/* ── Modal Lacak Pengiriman ── */
+.panel-tx .md { position: fixed; inset: 0; background: rgba(31, 26, 29, .4); z-index: 30; display: grid; place-items: center; padding: 16px; }
+.panel-tx .mc { background: #fff; border-radius: 18px; width: min(420px, 100%); max-height: 85vh; overflow: auto; }
+.panel-tx .mc .dh { padding: 20px 24px; border-bottom: 1px solid #f1e6ea; }
+.panel-tx .trk { list-style: none; padding: 20px 24px 20px 44px; position: relative; }
+.panel-tx .trk:before { content: ''; position: absolute; left: 28px; top: 26px; bottom: 34px; width: 2px; background: #eee2e7; }
+.panel-tx .trk li { position: relative; padding-bottom: 18px; color: #8a7d83; }
+.panel-tx .trk li:before { content: ''; position: absolute; left: -20px; top: 4px; width: 10px; height: 10px; border-radius: 50%; background: #e2d6db; }
+.panel-tx .trk li.d { color: #2f9e5b; }
+.panel-tx .trk li.d:before { background: #2f9e5b; box-shadow: 0 0 0 4px #e3f7ea; }
+.panel-tx .trk b { font-size: 13px; }
+.panel-tx .trk small { display: block; font-size: 12px; color: #8a7d83; margin-top: 2px; }
+.panel-tx .trk .full { display: block; }
+
+/* ── Responsif ── */
+@media (max-width: 1050px) {
+  .panel-tx .ks { grid-template-columns: 1fr 1fr; }
+  .panel-tx .f { margin-left: 0; width: 100%; }
+}
+@media (max-width: 700px) {
+  .panel-tx .ks { grid-template-columns: 1fr; }
+}

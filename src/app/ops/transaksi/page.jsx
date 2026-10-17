@@ -45,7 +45,9 @@ const digits = (value) => String(value ?? "").replace(/\D/g, "");
 /** Bandingkan nomor HP tanpa peduli 08… / 628… / 8…. */
 const phoneKey = (value) => digits(value).replace(/^0+/, "").replace(/^62/, "");
 
-export default function Transaksi() {
+export default function Transaksi({ variant = "ops" }) {
+  // `variant="panel"` merender tampilan ala mockup (panel admin). Default "ops" = tak berubah.
+  const isPanel = variant === "panel";
   const now = new Date();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -220,6 +222,275 @@ export default function Transaksi() {
     { label: "Total Pcs Terjual", value: String(stats.pieces), icon: Package, caption: "dari pesanan sudah dibayar" },
     { label: "Transaksi Dibatalkan", value: String(stats.cancelled), icon: XCircle, caption: "tidak dihitung omset" },
   ];
+
+  // ── Data khusus tampilan panel (ala mockup) ──
+  // KPI dihitung dari SELURUH data bulan (bukan hasil filter) — sama seperti mockup.
+  // Omset tetap memakai aturan `SALE_STATUSES` (bukan sekadar "bukan batal") supaya angkanya
+  // sama dengan menu lain, bukan angka karangan.
+  const panelKpis = useMemo(() => {
+    const sold = orders.filter((order) => SALE_STATUSES.includes(order.status));
+    return {
+      total: orders.length,
+      revenue: sold.reduce((sum, order) => sum + (order.total || 0), 0),
+      unpaid: orders.filter((order) => order.status === "pending").length,
+      toProcess: orders.filter((order) => order.status === "diproses").length,
+    };
+  }, [orders]);
+
+  // Tab status = status ASLI dari data (`STATUS_LABEL`). Mockup punya "Perlu Dipacking" yang
+  // tidak ada padanannya di DB, jadi tidak dikarang.
+  const statusTabs = useMemo(
+    () => [
+      { key: "all", label: "Semua", count: orders.length },
+      ...Object.keys(STATUS_LABEL).map((key) => ({
+        key,
+        label: STATUS_LABEL[key],
+        count: orders.filter((order) => order.status === key).length,
+      })),
+    ],
+    [orders],
+  );
+
+  // Kelas warna status ala mockup (badge `.bd`).
+  const panelStatusKey = (status) =>
+    ({ pending: "bayar", diproses: "proses", dikirim: "kirim", selesai: "selesai", dibatalkan: "batal" }[status] || "batal");
+
+  // Modal/overlay dipakai bersama oleh tampilan ops & panel supaya tidak ada logika kembar.
+  const overlays = (
+    <>
+      <TransaksiFormModal
+        isOpen={formOpen}
+        onClose={() => {
+          setFormOpen(false);
+          setEditing(null);
+        }}
+        initialData={editing}
+        onSaved={() => queryClient.invalidateQueries({ queryKey: ["transaksi"] })}
+      />
+
+      <TransaksiDetailDrawer
+        open={!!detail}
+        order={detail}
+        variant={isPanel ? "panel" : "ops"}
+        onResiCreated={handleResiCreated}
+        onClose={() => setDetail(null)}
+        onEdit={(order) => {
+          setDetail(null);
+          setEditing(order);
+          setFormOpen(true);
+        }}
+        onCancel={(order) => setCancelTarget(order)}
+        onDelete={(order) => setDeleteTarget(order)}
+      />
+
+      <ConfirmDeleteModal
+        isOpen={!!cancelTarget}
+        onClose={() => setCancelTarget(null)}
+        onConfirm={() => cancelMutation.mutate(cancelTarget)}
+        title="Batalkan transaksi ini?"
+        itemName={cancelTarget ? `${cancelTarget.order_number} · ${cancelTarget.customer_name}` : undefined}
+        message={
+          cancelTarget?.awb_no
+            ? `Resi J&T ${cancelTarget.awb_no} akan dibatalkan (void) LEBIH DULU di J&T. Kalau paketnya sudah dijemput/diproses J&T, pembatalan akan ditolak dan stok tidak dikembalikan.`
+            : "Stok produk dikembalikan kalau pesanannya belum dikirim."
+        }
+        confirmLabel="Batalkan"
+        busyLabel="Membatalkan..."
+        isDeleting={cancelMutation.isPending}
+      />
+
+      <ConfirmDeleteModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => deleteMutation.mutate(deleteTarget)}
+        title="Hapus transaksi ini?"
+        itemName={deleteTarget ? `${deleteTarget.order_number} · ${deleteTarget.customer_name}` : undefined}
+        message={
+          deleteTarget?.awb_no
+            ? "Transaksi, produk, dan riwayat resinya dihapus permanen. Resinya sudah di-void saat pembatalan — kalau ragu, cek dulu di J&T. Tindakan ini tidak bisa dibatalkan."
+            : "Transaksi dan produknya dihapus permanen, dan stok dikembalikan lebih dulu. Tindakan ini tidak bisa dibatalkan."
+        }
+        confirmLabel="Hapus"
+        busyLabel="Menghapus..."
+        isDeleting={deleteMutation.isPending}
+      />
+    </>
+  );
+
+  // ── Tampilan PANEL (ala mockup) ──
+  if (isPanel) {
+    return (
+      <div>
+        <div className="ptx-title">
+          <small>SAMAQU · PANEL ADMIN</small>
+          <h1>Transaksi</h1>
+        </div>
+
+        <section className="ks">
+          <div className="card k">
+            <small>Total transaksi</small>
+            <b>{panelKpis.total}</b>
+            <i>{coverageLabel}</i>
+          </div>
+          <div className="card k">
+            <small>Omset bulan ini</small>
+            <b>Rp {formatRupiah(panelKpis.revenue)}</b>
+            <i>Tidak termasuk dibatalkan</i>
+          </div>
+          <div className="card k">
+            <small>Belum bayar</small>
+            <b style={{ color: "#c76f00" }}>{panelKpis.unpaid}</b>
+            <i>Perlu follow-up</i>
+          </div>
+          <div className="card k">
+            <small>Perlu diproses</small>
+            <b style={{ color: "#2e64c9" }}>{panelKpis.toProcess}</b>
+            <i>Packing + siap kirim</i>
+          </div>
+        </section>
+
+        <div className="bar">
+          <div className="tabs">
+            {statusTabs.map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                className={`tab${statusFilter === tab.key ? " on" : ""}`}
+                onClick={() => setStatusFilter(tab.key)}
+              >
+                <span>{tab.label}</span>
+                <em>{tab.count}</em>
+              </button>
+            ))}
+          </div>
+
+          <div className="f">
+            <input
+              value={searchInput}
+              onChange={(event) => setSearchInput(event.target.value)}
+              placeholder="Cari nama / nomor HP / No. Order..."
+              aria-label="Cari transaksi"
+            />
+            <div className="ptx-month">
+              <button type="button" onClick={prevMonth} aria-label="Bulan sebelumnya">
+                ‹
+              </button>
+              <b>
+                {MONTHS[month]} {year}
+              </b>
+              <button type="button" onClick={nextMonth} aria-label="Bulan berikutnya">
+                ›
+              </button>
+            </div>
+            <DateFilter
+              value={selectedDate}
+              onChange={setSelectedDate}
+              month={month}
+              year={year}
+              onMonthChange={(nextYear, nextMonthIndex) => {
+                setYear(nextYear);
+                setMonth(nextMonthIndex);
+              }}
+              markedDates={markedDates}
+              markedLabel="ada transaksi"
+            />
+            <select value={sourceFilter} onChange={(event) => setSourceFilter(event.target.value)} aria-label="Filter sumber">
+              <option value="all">Semua sumber</option>
+              {sourceOptions.map((source) => (
+                <option key={source} value={source}>
+                  {SOURCE_STYLES[source]?.label || source}
+                </option>
+              ))}
+            </select>
+            {filtersActive && (
+              <button type="button" className="btn-ghost" onClick={resetFilters}>
+                Reset
+              </button>
+            )}
+            <button
+              type="button"
+              className="btn"
+              onClick={() => {
+                setEditing(null);
+                setFormOpen(true);
+              }}
+            >
+              Tambah Transaksi
+            </button>
+          </div>
+        </div>
+
+        <div className="card tw">
+          {isLoading ? (
+            <div style={{ padding: 48, textAlign: "center", color: "#8a7d83" }}>Memuat…</div>
+          ) : visibleOrders.length === 0 ? (
+            <div style={{ padding: 48, textAlign: "center", color: "#8a7d83" }}>
+              <b style={{ color: "#2a1a22" }}>
+                {filtersActive ? "Tidak ada transaksi yang cocok" : `Belum ada transaksi di ${MONTHS[month]} ${year}`}
+              </b>
+              <p style={{ fontSize: 13, marginTop: 4 }}>
+                {filtersActive ? "Ubah pencarian atau filter, atau tampilkan semua." : 'Klik "Tambah Transaksi" untuk mencatat penjualan manual.'}
+              </p>
+            </div>
+          ) : (
+            <table>
+              <thead>
+                <tr>
+                  <th>No. Pesanan</th>
+                  <th>Pelanggan</th>
+                  <th>Produk</th>
+                  <th>Sumber</th>
+                  <th style={{ textAlign: "right" }}>Total</th>
+                  <th>Status</th>
+                  <th />
+                </tr>
+              </thead>
+              <tbody>
+                {visibleOrders.map((order) => {
+                  const firstItem = order.items?.[0] || null;
+                  const extraItems = Math.max(0, (order.items?.length || 0) - 1);
+                  const variantText = itemVariantText(firstItem);
+                  return (
+                    <tr key={order.id} onClick={() => setDetail(order)}>
+                      <td>
+                        <span className="id">{order.order_number}</span>
+                        <small>
+                          {formatTanggalSingkatID(order.date_wib)} · {order.time_wib} WIB
+                        </small>
+                      </td>
+                      <td>
+                        <b>{order.customer_name}</b>
+                        <small>{order.customer_whatsapp || "-"}</small>
+                      </td>
+                      <td>
+                        <span style={{ fontWeight: 600 }}>{firstItem ? firstItem.product_name : order.item_summary}</span>
+                        <small>
+                          {variantText ? `${variantText} × ${firstItem?.quantity}` : `× ${order.qty_total}`}
+                          {extraItems > 0 ? ` · +${extraItems} lainnya` : ""}
+                        </small>
+                      </td>
+                      <td className="src">{SOURCE_STYLES[order.source]?.label || order.source_label}</td>
+                      <td className="mono" style={{ textAlign: "right" }}>
+                        Rp {formatRupiah(order.total)}
+                      </td>
+                      <td>
+                        <span className={`bd s-${panelStatusKey(order.status)}`}>{order.status_label}</span>
+                      </td>
+                      <td className="chev" style={{ textAlign: "right" }}>
+                        ›
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        {overlays}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -532,60 +803,7 @@ export default function Transaksi() {
         )}
       </div>
 
-      <TransaksiFormModal
-        isOpen={formOpen}
-        onClose={() => {
-          setFormOpen(false);
-          setEditing(null);
-        }}
-        initialData={editing}
-        onSaved={() => queryClient.invalidateQueries({ queryKey: ["transaksi"] })}
-      />
-
-      <TransaksiDetailDrawer
-        open={!!detail}
-        order={detail}
-        onResiCreated={handleResiCreated}
-        onClose={() => setDetail(null)}
-        onEdit={(order) => {
-          setDetail(null);
-          setEditing(order);
-          setFormOpen(true);
-        }}
-        onCancel={(order) => setCancelTarget(order)}
-      />
-
-      <ConfirmDeleteModal
-        isOpen={!!cancelTarget}
-        onClose={() => setCancelTarget(null)}
-        onConfirm={() => cancelMutation.mutate(cancelTarget)}
-        title="Batalkan transaksi ini?"
-        itemName={cancelTarget ? `${cancelTarget.order_number} · ${cancelTarget.customer_name}` : undefined}
-        message={
-          cancelTarget?.awb_no
-            ? `Resi J&T ${cancelTarget.awb_no} akan dibatalkan (void) LEBIH DULU di J&T. Kalau paketnya sudah dijemput/diproses J&T, pembatalan akan ditolak dan stok tidak dikembalikan.`
-            : "Stok produk dikembalikan kalau pesanannya belum dikirim."
-        }
-        confirmLabel="Batalkan"
-        busyLabel="Membatalkan..."
-        isDeleting={cancelMutation.isPending}
-      />
-
-      <ConfirmDeleteModal
-        isOpen={!!deleteTarget}
-        onClose={() => setDeleteTarget(null)}
-        onConfirm={() => deleteMutation.mutate(deleteTarget)}
-        title="Hapus transaksi ini?"
-        itemName={deleteTarget ? `${deleteTarget.order_number} · ${deleteTarget.customer_name}` : undefined}
-        message={
-          deleteTarget?.awb_no
-            ? "Transaksi, produk, dan riwayat resinya dihapus permanen. Resinya sudah di-void saat pembatalan — kalau ragu, cek dulu di J&T. Tindakan ini tidak bisa dibatalkan."
-            : "Transaksi dan produknya dihapus permanen, dan stok dikembalikan lebih dulu. Tindakan ini tidak bisa dibatalkan."
-        }
-        confirmLabel="Hapus"
-        busyLabel="Menghapus..."
-        isDeleting={deleteMutation.isPending}
-      />
+      {overlays}
     </div>
   );
 }

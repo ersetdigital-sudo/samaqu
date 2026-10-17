@@ -10,7 +10,7 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Ban, Pencil, Receipt, Truck, X } from "lucide-react";
+import { Ban, CreditCard, MapPin, Pencil, Receipt, ShoppingBag, Trash2, Truck, X } from "lucide-react";
 import { NEUTRAL_ITEM_PHOTO } from "@/lib/order-photo";
 import { isPaketItem, variantName } from "@/lib/item-label";
 import { supabase } from "@/lib/supabase";
@@ -19,7 +19,8 @@ import { formatTrackingTime, sortHistoryDesc, trackingRow, trackingSummary } fro
 import { SOURCE_STYLES, STATUS_STYLES, formatRupiah, formatTanggalJamID } from "@/components/ops/transaksi/transaksi-format";
 import TransaksiResiPanel from "@/components/ops/transaksi/TransaksiResiPanel";
 
-export default function TransaksiDetailDrawer({ open, order, onClose, onEdit, onCancel, onResiCreated }) {
+export default function TransaksiDetailDrawer({ open, order, variant = "ops", onClose, onEdit, onCancel, onDelete, onResiCreated }) {
+  const isPanel = variant === "panel";
   const status = order ? STATUS_STYLES[order.status] : null;
   const source = order ? SOURCE_STYLES[order.source] : null;
 
@@ -31,6 +32,7 @@ export default function TransaksiDetailDrawer({ open, order, onClose, onEdit, on
     setTrack({ status: "idle", history: [], error: "" });
     setTrackOpen(false);
     setTrackBusy(false);
+    setTrackModal(false);
     return undefined;
   }, [open]);
 
@@ -38,7 +40,11 @@ export default function TransaksiDetailDrawer({ open, order, onClose, onEdit, on
   const [track, setTrack] = useState({ status: "idle", history: [], error: "" });
   const [trackOpen, setTrackOpen] = useState(false);
   const [trackBusy, setTrackBusy] = useState(false);
+  // Modal Lacak (khusus tampilan panel ala mockup).
+  const [trackModal, setTrackModal] = useState(false);
   const trackRows = trackOpen ? sortHistoryDesc(track.history).map(trackingRow) : [];
+  // Riwayat urut terbaru → lama (dipakai drawer panel: kotak "scan terakhir" + modal).
+  const historyRows = sortHistoryDesc(track.history).map(trackingRow);
   // Ringkasan sama seperti yang dipakai dashboard admin (mis. "Diterima oleh: Lea").
   const trackSummary = trackOpen ? trackingSummary(track.history) : null;
 
@@ -84,6 +90,12 @@ export default function TransaksiDetailDrawer({ open, order, onClose, onEdit, on
     if (next) loadTrack(true);
   };
 
+  /** Buka modal Lacak (tampilan panel) — ambil riwayat terbaru dari J&T (read-only). */
+  const openTrackModal = () => {
+    setTrackModal(true);
+    loadTrack(true);
+  };
+
   // Scroll halaman dikunci selama drawer terbuka supaya scrollbar halaman tidak menimpa
   // tepi kanan drawer.
   useEffect(() => {
@@ -99,6 +111,262 @@ export default function TransaksiDetailDrawer({ open, order, onClose, onEdit, on
       body.style.paddingRight = previousPadding;
     };
   }, [open]);
+
+  // ── Tampilan PANEL (ala mockup) ──
+  if (isPanel && order) {
+    const panelKey =
+      { pending: "bayar", diproses: "proses", dikirim: "kirim", selesai: "selesai", dibatalkan: "batal" }[order.status] || "batal";
+    const banner =
+      {
+        pending: ["Menunggu pembayaran", "Pesanan akan dibatalkan otomatis jika belum dibayar dalam 24 jam."],
+        diproses: ["Pesanan perlu dikemas", "Segera kemas pesanan dan siapkan resi sebelum batas kirim."],
+        dikirim: ["Pesanan dalam perjalanan", "Paket sedang diantar oleh kurir ke alamat pembeli."],
+        selesai: ["Pesanan selesai", "Pesanan telah diterima oleh pembeli."],
+        dibatalkan: ["Pesanan dibatalkan", order.notes || "Pesanan dibatalkan."],
+      }[order.status] || ["Pesanan", ""];
+    const stepLevel = { pending: 0, diproses: 1, dikirim: 3, selesai: 4 }[order.status] ?? 0;
+    const payLabel = order.payment_method
+      ? { cash: "Tunai", transfer: "Transfer bank", bank_transfer: "Transfer bank", qris: "QRIS", cod: "COD", ewallet: "E-Wallet" }[
+          order.payment_method
+        ] || order.payment_method
+      : "-";
+    const lastScan = historyRows[0] || null;
+    const region = [order.shipping_kecamatan, order.kota, order.shipping_province, order.shipping_postal_code].filter(Boolean).join(", ");
+    const canDelete = (!order.awb_no || order.status === "dibatalkan") && order.source !== "website";
+
+    return (
+      <AnimatePresence>
+        {open && order && (
+          <>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="ov" onClick={onClose} />
+            <motion.aside
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "tween", duration: 0.22 }}
+              className="dr"
+              role="dialog"
+              aria-label="Detail Transaksi"
+            >
+              <div className="dh">
+                <div>
+                  <small>{order.source_label}</small>
+                  <h3>Detail Pesanan</h3>
+                </div>
+                <button type="button" className="x" onClick={onClose} aria-label="Tutup">
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="db">
+                <div className={`ban b-${panelKey}`}>
+                  <div className="bt">
+                    <div>
+                      <b>{banner[0]}</b>
+                      <p>{banner[1]}</p>
+                    </div>
+                    <span className={`bd s-${panelKey}`}>{order.status_label}</span>
+                  </div>
+                  {order.status !== "dibatalkan" ? (
+                    <div className="stp">
+                      {["Dibayar", "Dikemas", "Dikirim", "Selesai"].map((label, index) => (
+                        <div key={label} className={index < stepLevel ? "d" : ""}>
+                          <i />
+                          <span>{label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+
+                <div className="sec2">
+                  <div className="sh">
+                    <Truck />
+                    <b>Informasi Pengiriman</b>
+                    {awb ? (
+                      <a onClick={openTrackModal} role="button" tabIndex={0}>
+                        Lihat ›
+                      </a>
+                    ) : null}
+                  </div>
+                  <div className="kv">
+                    <span>Kurir</span>
+                    <b>J&amp;T Express</b>
+                  </div>
+                  {/* Panel resi (nomor + salin + cetak + buat resi) — komponen bersama, logika tak berubah. */}
+                  <TransaksiResiPanel order={order} onResiCreated={onResiCreated} />
+                  {awb && lastScan ? (
+                    <div className="last" onClick={openTrackModal} role="button" tabIndex={0}>
+                      <i />
+                      <div>
+                        <b>{lastScan.status}</b>
+                        <small>{[lastScan.location, formatTrackingTime(lastScan.dateTime)].filter(Boolean).join(" · ")}</small>
+                      </div>
+                      <span>›</span>
+                    </div>
+                  ) : null}
+                </div>
+
+                {order.shipping_address ? (
+                  <div className="sec2">
+                    <div className="sh">
+                      <MapPin />
+                      <b>Alamat Pengiriman</b>
+                    </div>
+                    <p className="adr">
+                      <b>{order.customer_name}</b> {order.customer_whatsapp ? <span>({order.customer_whatsapp})</span> : null}
+                      <br />
+                      {order.shipping_address}
+                      {region ? (
+                        <>
+                          <br />
+                          {region}
+                        </>
+                      ) : null}
+                    </p>
+                  </div>
+                ) : null}
+
+                <div className="sec2">
+                  <div className="sh">
+                    <ShoppingBag />
+                    <b>SAMAQU Official</b>
+                  </div>
+                  {(order.items || []).map((item, index) => (
+                    <div className="it" key={`${item.product_id}-${item.color}-${item.size}-${index}`}>
+                      <div className="th">
+                        <img src={item.product_image || NEUTRAL_ITEM_PHOTO} alt={item.product_name} loading="lazy" decoding="async" />
+                      </div>
+                      <div>
+                        <b>{item.product_name}</b>
+                        <small>
+                          {isPaketItem(item)
+                            ? [item.kain ? `Kain ${item.kain}` : null, variantName(item.color) || variantName(item.series) || null]
+                                .filter(Boolean)
+                                .join(" · ")
+                            : [item.kain ? `Kain ${item.kain}` : null, item.series, item.color && item.color !== "default" ? item.color : null, item.size]
+                                .filter(Boolean)
+                                .join(" · ")}
+                        </small>
+                        <small>× {item.quantity}</small>
+                      </div>
+                      <b className="mono">Rp {formatRupiah(item.price * item.quantity)}</b>
+                    </div>
+                  ))}
+                  {(order.items || []).length === 0 ? <p className="adr">Tidak ada produk tercatat.</p> : null}
+                  <div className="rw">
+                    <span>Subtotal Produk</span>
+                    <span>Rp {formatRupiah(order.subtotal)}</span>
+                  </div>
+                  <div className="rw">
+                    <span>Subtotal Pengiriman</span>
+                    <span>Rp {formatRupiah(order.shipping_cost)}</span>
+                  </div>
+                  {order.discount > 0 ? (
+                    <div className="rw">
+                      <span>Voucher Toko</span>
+                      <span style={{ color: "#2f9e5b" }}>- Rp {formatRupiah(order.discount)}</span>
+                    </div>
+                  ) : null}
+                  <div className="rw t">
+                    <span>Total Pesanan</span>
+                    <span style={{ color: "#c2255c" }}>Rp {formatRupiah(order.total)}</span>
+                  </div>
+                </div>
+
+                <div className="sec2">
+                  <div className="sh">
+                    <CreditCard />
+                    <b>Metode Pembayaran</b>
+                    <span style={{ marginLeft: "auto", color: "#6b4b5a", fontWeight: 600 }}>{payLabel}</span>
+                  </div>
+                </div>
+
+                {order.notes ? <div className="note">Catatan pembeli: {order.notes}</div> : null}
+
+                <div className="sec2">
+                  <div className="kv">
+                    <span>No. Pesanan</span>
+                    <b>{order.order_number}</b>
+                  </div>
+                  <div className="kv">
+                    <span>Waktu Pemesanan</span>
+                    <b>{formatTanggalJamID(order.created_at)}</b>
+                  </div>
+                  <div className="kv">
+                    <span>Waktu Pembayaran</span>
+                    <b>{order.paid_at ? formatTanggalJamID(order.paid_at) : "-"}</b>
+                  </div>
+                </div>
+              </div>
+
+              {order.can_edit || order.can_cancel || canDelete ? (
+                <div className="df">
+                  {canDelete ? (
+                    <button type="button" className="b-danger" onClick={() => onDelete?.(order)}>
+                      Hapus
+                    </button>
+                  ) : null}
+                  {order.can_edit ? (
+                    <button type="button" className="b2" onClick={() => onEdit?.(order)}>
+                      Ubah
+                    </button>
+                  ) : null}
+                  {order.can_cancel ? (
+                    <button type="button" className="b1" onClick={() => onCancel?.(order)}>
+                      Batalkan
+                    </button>
+                  ) : null}
+                </div>
+              ) : null}
+            </motion.aside>
+
+            {trackModal ? (
+              <div
+                className="md"
+                onClick={(event) => {
+                  if (event.target === event.currentTarget) setTrackModal(false);
+                }}
+              >
+                <div className="mc">
+                  <div className="dh">
+                    <div>
+                      <small>J&amp;T Express</small>
+                      <h3>Lacak Pengiriman</h3>
+                      <small>
+                        No. Resi <b style={{ color: "#2a1a22" }}>{awb}</b>
+                      </small>
+                    </div>
+                    <button type="button" className="x" onClick={() => setTrackModal(false)} aria-label="Tutup">
+                      <X size={18} />
+                    </button>
+                  </div>
+                  {track.status === "loading" ? (
+                    <p style={{ padding: "20px 24px", color: "#8a7d83", fontSize: 13 }}>Memuat riwayat dari J&amp;T…</p>
+                  ) : track.status === "error" ? (
+                    <p style={{ padding: "20px 24px", color: "#d63340", fontSize: 13, fontWeight: 600 }}>{track.error}</p>
+                  ) : historyRows.length === 0 ? (
+                    <p style={{ padding: "20px 24px", color: "#8a7d83", fontSize: 13 }}>Belum ada riwayat dari J&amp;T.</p>
+                  ) : (
+                    <ul className="trk">
+                      {historyRows.map((row, index) => (
+                        <li key={`${row.dateTime}-${index}`} className={index === 0 ? "d" : ""}>
+                          <b>{row.status}</b>
+                          <small>{[row.location, formatTrackingTime(row.dateTime)].filter(Boolean).join(" · ")}</small>
+                          {row.note ? <small className="full">Catatan: {row.note}</small> : null}
+                          {row.receiver ? <small className="full">Diterima oleh: {row.receiver}</small> : null}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+            ) : null}
+          </>
+        )}
+      </AnimatePresence>
+    );
+  }
 
   return (
     <AnimatePresence>
