@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { ShieldCheck, Copy, Check, Clock, MessageCircle, ArrowLeft } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { trackPurchase, trackLead, sendCAPIEvent } from "@/lib/meta-pixel";
+import { isPaketItem } from "@/lib/item-label";
 import { normalizeMethodType, paymentMethodLabel, type PaymentMethodRow } from "@/lib/payment-methods";
 import { useResolvedPaymentMethod } from "@/lib/use-payment-methods";
 import { startOnlinePayment } from "@/lib/mayar-client";
@@ -212,7 +213,7 @@ function CheckoutSuccessContent() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium font-ui truncate" style={{ color: "var(--espresso)" }}>{item.product_name}</p>
-                <p className="text-xs font-ui" style={{ color: "var(--text-muted)" }}>{[item.kain ? `Kain ${item.kain}` : null, item.series, (item.color !== "-" && item.color !== "default") ? item.color : null, item.size].filter(Boolean).join(' · ')} · {item.quantity} item</p>
+                <p className="text-xs font-ui" style={{ color: "var(--text-muted)" }}>{[item.kain ? `Kain ${item.kain}` : null, item.series, (item.color !== "-" && item.color !== "default") ? item.color : null, isPaketItem(item) ? null : item.size].filter(Boolean).join(' · ')} · {item.quantity} item</p>
               </div>
               <p className="text-sm font-medium font-ui shrink-0" style={{ color: "var(--espresso)" }}>Rp {(item.price * item.quantity).toLocaleString("id-ID")}</p>
             </div>

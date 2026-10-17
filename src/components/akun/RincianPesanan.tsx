@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useSafeLocale, useSafeTranslations } from "@/lib/safe-i18n";
 import { strukStatus, strukSteps, tglJamID, rupiah } from "@/lib/akun-format";
+import { isPaketItem, itemVariantLabel } from "@/lib/item-label";
 import {
   formatWeightExact,
   productWeightMapFromRows,
@@ -233,7 +234,7 @@ function Chevron() {
 }
 
 const VARIAN_LINE = (item: RincianOrderItem) =>
-  [item.color, item.size && `Size ${item.size}`, `x${item.quantity}`].filter(Boolean).join(" • ");
+  [itemVariantLabel(item), item.size && !isPaketItem(item) ? `Size ${item.size}` : "", `x${item.quantity}`].filter(Boolean).join(" • ");
 
 export default function RincianPesanan({ order }: { order: RincianOrder }) {
   const locale = useSafeLocale();

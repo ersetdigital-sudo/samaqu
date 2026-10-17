@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import { ShieldCheck, Copy, Check, Clock, MessageCircle, ArrowLeft } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { trackPurchase, trackLead, sendCAPIEvent } from "@/lib/meta-pixel";
+import { isPaketItem, itemNameSuffix } from "@/lib/item-label";
 import { normalizeMethodType, paymentMethodLabel, type PaymentMethodRow } from "@/lib/payment-methods";
 import { useResolvedPaymentMethod } from "@/lib/use-payment-methods";
 import { startOnlinePayment } from "@/lib/mayar-client";
@@ -229,7 +230,7 @@ function CheckoutSuccessContent() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium font-ui truncate" style={{ color: "var(--espresso)" }}>{item.product_name}</p>
-                <p className="text-xs font-ui" style={{ color: "var(--text-muted)" }}>{item.quantity} item · {item.color} / {item.size}</p>
+                <p className="text-xs font-ui" style={{ color: "var(--text-muted)" }}>{isPaketItem(item) ? `${item.quantity} item · ${item.product_name}${itemNameSuffix(item)}` : `${item.quantity} item · ${item.color} / ${item.size}`}</p>
               </div>
               <p className="text-sm font-medium font-ui shrink-0" style={{ color: "var(--espresso)" }}>Rp {(item.price * item.quantity).toLocaleString("id-ID")}</p>
             </div>

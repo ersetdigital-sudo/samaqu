@@ -19,6 +19,7 @@ import { getWhatsAppLink, useStoreSettings } from "@/lib/store-settings";
 import { supabase } from "@/lib/supabase";
 import { useWishlist } from "@/lib/use-wishlist";
 import { useSafeLocale } from "@/lib/safe-i18n";
+import { PAKET_CATEGORY, variantName as paketName } from "@/lib/item-label";
 import { trackViewContent, trackAddToCart, trackWhatsAppClick, sendCAPIEvent } from "@/lib/meta-pixel";
 
 const FALLBACK_SIZES = ["S", "M", "L", "XL", "XXL"];
@@ -225,6 +226,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const [selectedSize, setSelectedSize] = useState("M");
   const [availableSizes, setAvailableSizes] = useState<string[]>(FALLBACK_SIZES);
   const [variantPrice, setVariantPrice] = useState<number | null>(null);
+  /** Berat varian/paket yang sedang dipilih (gram) — dipakai untuk Cover & Hanger. */
+  const [variantWeight, setVariantWeight] = useState<number | null>(null);
   const [stock, setStock] = useState<number | null>(null);
   const [qty, setQty] = useState(1);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -248,6 +251,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const { isWishlisted, toggle: toggleWishlist, isLoggedIn } = useWishlist();
   const cypMicrocopy = product?.cyp_microcopy_override || storeSettings.cyp_microcopy || "Harga Minimum boleh dipilih. Itulah alasan kami membuat Create Your Price.";
   const isThobe = product?.category === "Thobe";
+  /**
+   * Cover & Hanger bukan pakaian: variannya berupa NAMA paket (mis. "Hanger saja"), bukan
+   * warna × ukuran. Label & validasi ukuran dilewati, dan judul cukup nama produk.
+   */
+  const isPaket = product?.category === PAKET_CATEGORY;
   // ID produk yang sedang ditampilkan (bisa beda dari URL slug saat ganti series)
   const displayId = activeSeriesId || id;
 
@@ -354,6 +362,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   // Reset variant state when switching series (avoid stale data from old product)
   useEffect(() => {
     setVariantPrice(null);
+    setVariantWeight(null);
     setStock(null);
   }, [displayId]);
 
@@ -394,10 +403,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   }, [displayId, selectedColor]);
 
   useEffect(() => {
-    if (!displayId || !selectedColor || !selectedSize) { setVariantPrice(null); setStock(null); return; }
-    supabase.from("product_variants").select("price_override, stock, base_product_id, base_size").eq("product_id", displayId).eq("color", selectedColor).eq("size", selectedSize).maybeSingle().then(async ({ data, error }) => {
-      if (error) { setVariantPrice(null); setStock(null); return; }
+    if (!displayId || !selectedColor || !selectedSize) { setVariantPrice(null); setVariantWeight(null); setStock(null); return; }
+    supabase.from("product_variants").select("price_override, stock, weight, base_product_id, base_size").eq("product_id", displayId).eq("color", selectedColor).eq("size", selectedSize).maybeSingle().then(async ({ data, error }) => {
+      if (error) { setVariantPrice(null); setVariantWeight(null); setStock(null); return; }
       setVariantPrice(data?.price_override ?? null);
+      setVariantWeight(Number(data?.weight) || null);
       // If variant has a base product link, fetch stock from the base product instead
       if (data?.base_product_id && data?.base_size) {
         const { data: baseVariant } = await supabase.from("product_variants").select("stock").eq("product_id", data.base_product_id).eq("color", selectedColor).eq("size", data.base_size).maybeSingle();
@@ -533,7 +543,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     const kainName = product.jenis_kain?.name || product.kain || "";
     const color = selectedColor || product.colors[0] || "-";
     const variantParts = [kainName, seriesName, color !== "default" ? color : null].filter(Boolean).join(" - ");
-    const msg = `Halo, saya mau pesan produk:\n${product.name}${variantParts ? " - " + variantParts : ""} - Ukuran ${selectedSize}\nHarga: Rp ${effectivePrice.toLocaleString("id-ID")}\nJumlah: ${qty}`;
+    // Cover & Hanger: tidak ada ukuran pakaian — paketnya sudah disebut di nama varian.
+    const ukuranPart = isPaket ? "" : ` - Ukuran ${selectedSize}`;
+    const msg = `Halo, saya mau pesan produk:\n${product.name}${variantParts ? " - " + variantParts : ""}${ukuranPart}\nHarga: Rp ${effectivePrice.toLocaleString("id-ID")}\nJumlah: ${qty}`;
     trackWhatsAppClick("product_detail", displayId);
     window.open(getWhatsAppLink(msg), "_blank");
   }
@@ -613,9 +625,14 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       ? supabaseMedia
       : (product.media.length > 0 ? product.media : [{ src: product.image, type: "image" as const }])
   );
-  const media = selectedColor
+  const mediaPerVarian = selectedColor
     ? baseMedia.filter((m) => !m.color || m.color === selectedColor)
     : baseMedia;
+  // Cover & Hanger: kalau foto untuk paket itu belum ada, pakai semua foto produk
+  // supaya galeri tidak kosong saat pembeli memilih paket.
+  const media = isPaket && mediaPerVarian.length === 0 ? baseMedia : mediaPerVarian;
+  // Berat yang ditampilkan: berat PAKET yang dipilih untuk Cover & Hanger, selain itu berat produk.
+  const beratTampil = isPaket && variantWeight ? variantWeight : product.weight;
   // Setiap video diberi poster foto yang BEDA (hindari foto utama muncul 3×:
   // poster utama + thumbnail video 1 + thumbnail video 2 semuanya foto pertama)
   const usedPosters = new Set<string>();
@@ -714,14 +731,14 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           </p>
           <h1 className="text-[1.5rem] sm:text-[1.8rem] font-semibold leading-tight mb-1.5"
             style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "#000000" }}>
-              {product.name}{product.category === "Koko" ? (selectedColor && selectedColor !== "default" ? <span style={{ color: "#000000" }}> - {selectedColor}</span> : null) : product.jenis_kain?.name ? <span style={{ color: "#000000" }}> — Kain {product.jenis_kain.name}</span> : product.kain ? <span style={{ color: "#000000" }}> — Kain {product.kain}</span> : product.series ? <span style={{ color: "#000000" }}> — {product.series}</span> : selectedColor && selectedColor !== "default" ? <span style={{ color: "#000000" }}> — {selectedColor}</span> : null}
+              {product.name}{isPaket ? null : product.category === "Koko" ? (selectedColor && selectedColor !== "default" ? <span style={{ color: "#000000" }}> - {selectedColor}</span> : null) : product.jenis_kain?.name ? <span style={{ color: "#000000" }}> — Kain {product.jenis_kain.name}</span> : product.kain ? <span style={{ color: "#000000" }}> — Kain {product.kain}</span> : product.series ? <span style={{ color: "#000000" }}> — {product.series}</span> : selectedColor && selectedColor !== "default" ? <span style={{ color: "#000000" }}> — {selectedColor}</span> : null}
           </h1>
           <p className="text-[13px] font-ui mb-5" style={{ color: "rgba(0,0,0,.55)" }}>
             {product.category !== "Koko" && product.jenis_kain?.name && <span>Jenis kain <span style={{ color: "#000000" }}>{product.jenis_kain.name}</span></span>}
             {product.category !== "Koko" && !product.jenis_kain?.name && product.kain && <span>Jenis kain <span style={{ color: "#000000" }}>{product.kain}</span></span>}
             {product.category !== "Koko" && (product.jenis_kain?.name || product.kain) && " · "}
             <span style={{ color: "#000000" }}>{product.category}</span>
-            {product.weight ? <span>{` · ${product.weight >= 1000 ? (product.weight / 1000).toFixed(1) + " kg" : product.weight + " g"}`}</span> : " · ready stock"}
+            {beratTampil ? <span>{` · ${beratTampil >= 1000 ? (beratTampil / 1000).toFixed(1) + " kg" : beratTampil + " g"}`}</span> : " · ready stock"}
           </p>
 
           {/* Series Selector — selalu tampilkan untuk Thobe */}
@@ -758,18 +775,19 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             </div>
           )}
 
-          {/* Colors — TAMPIL DI ATAS Pilih Ukuran (khusus produk dengan varian warna) */}
+          {/* Varian: warna untuk pakaian, NAMA PAKET untuk Cover & Hanger (tanpa bulatan warna).
+              Tampil di ATAS Pilih Ukuran. */}
           {product.category !== "Thobe" && product.colors.length > 0 && !(product.colors.length === 1 && product.colors[0] === "default") && (
             <div className="mb-5">
               <p className="text-[10px] tracking-[0.1em] uppercase font-ui font-medium mb-2.5" style={{ color: "#000000" }}>
-                Pilih Warna
+                {isPaket ? "Pilih Paket" : "Pilih Warna"}
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {product.colors.map((c) => (
                   <button key={c} onClick={() => { setSelectedColor(c); scrollToGalleryOnMobile(); }}
                     className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-ui rounded-sm transition-all duration-200"
                     style={{ background: selectedColor === c ? "#000000" : "transparent", color: selectedColor === c ? "#ffffff" : "#000000", border: `1px solid ${selectedColor === c ? "#000000" : "rgba(0,0,0,.15)"}` }}>
-                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: colorHex[c] || colorMap[c] || "#ccc", border: "1px solid rgba(0,0,0,.1)" }} />
+                    {!isPaket && <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: colorHex[c] || colorMap[c] || "#ccc", border: "1px solid rgba(0,0,0,.1)" }} />}
                     {c}
                   </button>
                 ))}
@@ -777,7 +795,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             </div>
           )}
 
-          {/* Sizes */}
+          {/* Sizes — dilewati untuk Cover & Hanger (paket, bukan ukuran pakaian) */}
+          {!isPaket && (
           <div className="mb-5">
             <p className="text-[10px] tracking-[0.1em] uppercase font-ui font-medium mb-2.5" style={{ color: "#000000" }}>Pilih Ukuran</p>
             <div className="flex gap-1.5">
@@ -790,6 +809,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               ))}
             </div>
           </div>
+          )}
 
           {/* Price card */}
           <div className="mb-5 rounded-2xl p-5" style={{ background: "#ffffff", border: "1px solid rgba(0,0,0,.12)" }}>
@@ -898,7 +918,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               </p>
             </div>
             <p className="text-[10px] font-ui" style={{ color: "rgba(0,0,0,.55)" }}>
-              {selectedSize}{selectedColor !== "-" && ` / ${selectedColor}`}
+              {isPaket ? paketName(selectedColor) : <>{selectedSize}{selectedColor !== "-" && ` / ${selectedColor}`}</>}
               {qty > 1 && ` × ${qty}`}
             </p>
           </div>
@@ -1006,14 +1026,14 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             </p>
             <h1 className="text-[2rem] sm:text-[2.5rem] lg:text-[2.8rem] font-semibold leading-tight mb-2"
               style={{ fontFamily: "var(--font-cormorant), Georgia, serif", color: "#000000" }}>
-            {product.name}{product.category === "Koko" ? (selectedColor && selectedColor !== "default" ? <span style={{ color: "#000000" }}> - {selectedColor}</span> : null) : product.jenis_kain?.name ? <span style={{ color: "#000000" }}> — Kain {product.jenis_kain.name}</span> : product.kain ? <span style={{ color: "#000000" }}> — Kain {product.kain}</span> : product.series ? <span style={{ color: "#000000" }}> — {product.series}</span> : selectedColor && selectedColor !== "default" ? <span style={{ color: "#000000" }}> — {selectedColor}</span> : null}
+            {product.name}{isPaket ? null : product.category === "Koko" ? (selectedColor && selectedColor !== "default" ? <span style={{ color: "#000000" }}> - {selectedColor}</span> : null) : product.jenis_kain?.name ? <span style={{ color: "#000000" }}> — Kain {product.jenis_kain.name}</span> : product.kain ? <span style={{ color: "#000000" }}> — Kain {product.kain}</span> : product.series ? <span style={{ color: "#000000" }}> — {product.series}</span> : selectedColor && selectedColor !== "default" ? <span style={{ color: "#000000" }}> — {selectedColor}</span> : null}
             </h1>
             <p className="text-[13px] font-ui mb-6" style={{ color: "rgba(0,0,0,.55)" }}>
               {product.category !== "Koko" && product.jenis_kain?.name && <span>Jenis kain <span style={{ color: "#000000" }}>{product.jenis_kain.name}</span></span>}
               {product.category !== "Koko" && !product.jenis_kain?.name && product.kain && <span>Jenis kain <span style={{ color: "#000000" }}>{product.kain}</span></span>}
               {product.category !== "Koko" && (product.jenis_kain?.name || product.kain) && " · "}
               <span style={{ color: "#000000" }}>{product.category}</span>
-              {product.weight ? <span>{` · ${product.weight >= 1000 ? (product.weight / 1000).toFixed(1) + " kg" : product.weight + " g"}`}</span> : " · ready stock"}
+              {beratTampil ? <span>{` · ${beratTampil >= 1000 ? (beratTampil / 1000).toFixed(1) + " kg" : beratTampil + " g"}`}</span> : " · ready stock"}
             </p>
             {/* Series Selector — desktop */}
             {(availableSeries.length > 1 || isThobe) && (
@@ -1054,25 +1074,26 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 </div>
               </div>
             )}
-            {/* Colors — TAMPIL DI ATAS Pilih Ukuran (khusus produk dengan varian warna) */}
+            {/* Varian: warna untuk pakaian, NAMA PAKET untuk Cover & Hanger (tanpa bulatan warna) */}
             {product.category !== "Thobe" && product.colors.length > 0 && !(product.colors.length === 1 && product.colors[0] === "default") && (
               <div className="mb-6">
                 <p className="text-[11px] sm:text-[12px] tracking-[0.12em] uppercase font-ui font-medium mb-3" style={{ color: "#000000" }}>
-                  Pilih Warna
+                  {isPaket ? "Pilih Paket" : "Pilih Warna"}
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {product.colors.map((c) => (
                     <button key={c} onClick={() => setSelectedColor(c)}
                       className="flex items-center gap-2 px-3 py-2 text-[12px] font-ui rounded-sm transition-all duration-200"
                       style={{ background: selectedColor === c ? "#000000" : "transparent", color: selectedColor === c ? "#ffffff" : "#000000", border: `1px solid ${selectedColor === c ? "#000000" : "rgba(0,0,0,.15)"}` }}>
-                      <span className="w-3 h-3 rounded-full shrink-0" style={{ background: colorHex[c] || colorMap[c] || "#ccc", border: "1px solid rgba(0,0,0,.1)" }} />
+                      {!isPaket && <span className="w-3 h-3 rounded-full shrink-0" style={{ background: colorHex[c] || colorMap[c] || "#ccc", border: "1px solid rgba(0,0,0,.1)" }} />}
                       {c}
                     </button>
                   ))}
                 </div>
               </div>
             )}
-            {/* Sizes — desktop */}
+            {/* Sizes — dilewati untuk Cover & Hanger (paket, bukan ukuran pakaian) */}
+            {!isPaket && (
             <div className="mb-6">
               <p className="text-[10.5px] tracking-[0.18em] uppercase text-[var(--muted)] mb-2.5">Pilih Ukuran</p>
               <div className="flex flex-wrap gap-2">
@@ -1085,6 +1106,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 ))}
               </div>
             </div>
+            )}
             {/* Price card */}
             <div className="mb-8 rounded-2xl p-6" style={{ background: "#ffffff", border: "1px solid rgba(0,0,0,.12)" }}>
               {isCYP ? (

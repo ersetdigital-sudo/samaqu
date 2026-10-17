@@ -9,6 +9,7 @@ import { supabase } from "@/lib/supabase";
 import { getWhatsAppLink } from "@/lib/store-settings";
 import { localPhone } from "@/lib/whatsapp";
 import { trackInitiateCheckout, sendCAPIEvent } from "@/lib/meta-pixel";
+import { isPaketItem, isPaketSize, variantName } from "@/lib/item-label";
 import { PaymentIcon } from "@/lib/payment-icons";
 import { fetchActivePaymentMethods, normalizeMethodType, paymentMethodLabel, type PaymentMethodRow } from "@/lib/payment-methods";
 
@@ -935,7 +936,7 @@ function CheckoutContent() {
                     <div className="flex-1 min-w-0">
                       <p className="text-[13px] sm:text-sm font-ui font-medium leading-snug" style={{ color: "var(--espresso)" }}>{item.name}</p>
                       <p className="text-[11px] sm:text-xs font-ui mt-0.5" style={{ color: "var(--text-muted)" }}>
-                        {[item.kain ? `Kain ${item.kain}` : null, item.series, (item.color !== "-" && item.color !== "default") ? `Warna: ${item.color}` : null, `Ukuran: ${item.size}`, `×${item.qty}`].filter(Boolean).join(' · ')}
+                        {[item.kain ? `Kain ${item.kain}` : null, item.series, (item.color !== "-" && item.color !== "default") ? (isPaketItem(item) ? item.color : `Warna: ${item.color}`) : null, isPaketItem(item) ? null : `Ukuran: ${item.size}`, `×${item.qty}`].filter(Boolean).join(' · ')}
                       </p>
                       <p className="text-[10px] sm:text-[11px] font-ui mt-0.5" style={{ color: "var(--text-muted)" }}>
                         Berat: {(() => { const p = getProductById(item.id); const w = p?.weight || weightMap[p?.category || "Thobe"] || 800; return w >= 1000 ? `${(w/1000).toFixed(1)} kg` : `${w} g`; })()} / item
@@ -955,7 +956,7 @@ function CheckoutContent() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[13px] sm:text-sm font-ui font-medium leading-snug" style={{ color: "var(--espresso)" }}>{product!.name}</p>
-                  <p className="text-[11px] sm:text-xs font-ui mt-0.5" style={{ color: "var(--text-muted)" }}>Warna: {selectedColor} · Ukuran: {selectedSize}</p>
+                  <p className="text-[11px] sm:text-xs font-ui mt-0.5" style={{ color: "var(--text-muted)" }}>{isPaketSize(selectedSize) ? variantName(selectedColor) : `Warna: ${selectedColor} · Ukuran: ${selectedSize}`}</p>
                   <p className="text-[10px] sm:text-[11px] font-ui mt-0.5" style={{ color: "var(--text-muted)" }}>
                     Berat: {(() => { const w = product!.weight || weightMap[product!.category] || 800; return w >= 1000 ? `${(w/1000).toFixed(1)} kg` : `${w} g`; })()} / item
                   </p>

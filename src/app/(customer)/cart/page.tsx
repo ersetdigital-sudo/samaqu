@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Minus, Plus, Trash2, Tag, ShoppingBag } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { colorMap } from "@/lib/katalog-data";
+import { isPaketItem } from "@/lib/item-label";
 
 export default function CartPage() {
   const router = useRouter();
@@ -124,12 +125,18 @@ export default function CartPage() {
                           {((item.kain || item.series) && item.color !== "-" && item.color !== "default") && <span className="text-[10px]" style={{ color: "var(--clay)" }}>·</span>}
                           {item.color !== "-" && item.color !== "default" && (
                             <span className="flex items-center gap-1 text-[11px] font-ui" style={{ color: "var(--coffee)" }}>
-                              <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: colorMap[item.color] || "#ccc", border: "1px solid rgba(0,0,0,.1)" }} />
+                              {/* Cover & Hanger: variannya NAMA paket, jadi tanpa bulatan warna */}
+                              {!isPaketItem(item) && <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: colorMap[item.color] || "#ccc", border: "1px solid rgba(0,0,0,.1)" }} />}
                               {item.color}
                             </span>
                           )}
-                          <span className="text-[10px]" style={{ color: "var(--clay)" }}>|</span>
-                          <span className="text-[11px] font-ui" style={{ color: "var(--coffee)" }}>UK {item.size}</span>
+                          {/* Ukuran tidak berlaku untuk paket (Cover & Hanger) */}
+                          {!isPaketItem(item) && (
+                            <>
+                              <span className="text-[10px]" style={{ color: "var(--clay)" }}>|</span>
+                              <span className="text-[11px] font-ui" style={{ color: "var(--coffee)" }}>UK {item.size}</span>
+                            </>
+                          )}
                         </div>
                         {/* CYP price or fixed price */}
                         {item.create_your_price_enabled ? (

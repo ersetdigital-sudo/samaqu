@@ -21,6 +21,7 @@
 
 import { getSupabaseAdmin } from "./supabase-admin";
 import { SITE_URL } from "./site-config";
+import { isPaketItem, itemNameSuffix } from "./item-label";
 
 const FONNTE_ENDPOINT = "https://api.fonnte.com/send";
 const REQUEST_TIMEOUT_MS = 8000;
@@ -266,9 +267,8 @@ export interface NewOrderNotification {
 export function buildNewOrderMessage(order: NewOrderNotification): string {
   const itemLines = order.items
     .map((item) => {
-      const variant = [item.color, item.size].filter(Boolean).join(" / ");
-      const suffix = variant ? ` (${variant})` : "";
-      return `- ${item.quantity}x ${item.name}${suffix} — ${rupiah(item.price * item.quantity)}`;
+      // Cover & Hanger: " - Hanger saja" (nama paket, tanpa ukuran); lainnya " (warna / ukuran)".
+      return `- ${item.quantity}x ${item.name}${itemNameSuffix(item)} — ${rupiah(item.price * item.quantity)}`;
     })
     .join("\n");
 
@@ -447,16 +447,18 @@ export function paymentInstructionFrom(row: {
   };
 }
 
-/** Ringkasan produk satu baris: "Thobe Navy (Uk. M) x1, Cover & Hanger x1". */
+/** Ringkasan produk satu baris: "Thobe Navy (Uk. M) x1, Cover Hanger - Hanger saja x1". */
 function productSummary(items: NewOrderNotificationItem[]): string {
   const list = (items || [])
     .map((item) => {
+      const qty = item.quantity || 1;
+      // Cover & Hanger: paketnya bukan warna/ukuran — tampil sebagai " - Hanger saja".
+      if (isPaketItem(item)) return `${item.name}${itemNameSuffix(item)} x${qty}`;
       const rawColor = item.color && item.color !== "default" && item.color !== "-" ? item.color : null;
       // Nama produk sering sudah memuat warnanya ("Thobe Superblack" + "Superblack") — jangan diulang.
       const color =
         rawColor && !item.name.toLowerCase().includes(rawColor.toLowerCase()) ? rawColor : null;
       const variant = [color, item.size ? `Uk. ${item.size}` : null].filter(Boolean).join(" · ");
-      const qty = item.quantity || 1;
       return `${item.name}${variant ? ` (${variant})` : ""} x${qty}`;
     })
     .filter(Boolean);
