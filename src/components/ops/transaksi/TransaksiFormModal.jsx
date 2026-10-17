@@ -1133,6 +1133,15 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
     setItems((rows) => rows.map((row, i) => (i === index ? { ...row, ...patch } : row)));
   };
 
+  /**
+   * Tutup baris yang sudah lengkap → berubah jadi satu baris list ringkas.
+   * Baris TIDAK ditutup otomatis: admin masih bisa atur qty/harga dulu, lalu klik "Simpan produk".
+   */
+  const saveRow = (index) => {
+    setTouched(true);
+    setItems((rows) => rows.map((row, i) => (i === index ? { ...row, editing: false } : row)));
+  };
+
   const removeRow = (index) => {
     setTouched(true);
     setItems((rows) => rows.filter((_, i) => i !== index));
@@ -2460,6 +2469,17 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                             </p>
                           ) : null}
                         </div>
+
+                        {/* Baris lengkap → tombol Simpan; setelah diklik baris jadi list ringkas. */}
+                        {rowComplete(row) && info.chosen && !info.issue ? (
+                          <button
+                            type="button"
+                            onClick={() => saveRow(index)}
+                            className="w-full inline-flex items-center justify-center gap-2 px-3 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-sm font-bold rounded-xl hover:bg-slate-800 dark:hover:bg-slate-100 transition-all"
+                          >
+                            <Save size={15} /> Simpan produk
+                          </button>
+                        ) : null}
                       </div>
                     );
                   })}
