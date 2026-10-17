@@ -99,8 +99,10 @@ export async function GET(req: NextRequest) {
 
   const admin = getSupabaseAdmin();
   const [{ data: products }, { data: rows }] = await Promise.all([
-    admin.from("products").select("id, name, series, price, hpp, category, jenis_kain(name)"),
-    admin.from("product_variants").select("product_id, color, size, stock, price_override, hex, display_order, base_product_id"),
+    // `weight` = berat produk (gram), fallback kalau berat per ukuran kosong.
+    admin.from("products").select("id, name, series, price, hpp, category, weight, jenis_kain(name)"),
+    // `weight` = berat per ukuran (gram) — sumber utama yang sama dengan cek ongkir & resi.
+    admin.from("product_variants").select("product_id, color, size, stock, price_override, hex, display_order, base_product_id, weight"),
   ]);
 
   const byId: Record<string, any> = {};
@@ -128,6 +130,10 @@ export async function GET(req: NextRequest) {
         price: prod.price ?? 0,
         hpp: prod.hpp ?? 0,
         stock: {},
+        /** Berat per ukuran (gram) — dipakai ringkasan transaksi supaya angkanya sama
+         *  dengan perhitungan ongkir/resi (varian → produk). */
+        weights: {},
+        product_weight: Number(prod.weight) || 0,
         // Terisi hanya kalau varian ini menumpang stok produk lain (series turunan).
         base_product_id: baseId,
         base_product_name: baseId ? byId[baseId]?.name || baseId : null,
@@ -138,6 +144,8 @@ export async function GET(req: NextRequest) {
     }
     const size = (r.size || "").toUpperCase();
     if (size) grouped[key].stock[size] = Number(r.stock) || 0;
+    const weight = Number(r.weight) || 0;
+    if (size && weight > 0) grouped[key].weights[size] = weight;
   }
 
   const items = Object.values(grouped).map((v: any) => {
