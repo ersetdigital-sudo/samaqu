@@ -47,6 +47,8 @@ const TransaksiResiPanel = forwardRef(function TransaksiResiPanel({ order, onRes
   const [resiBusy, setResiBusy] = useState(false);
   const [resiError, setResiError] = useState("");
   const [resiIssuedWarning, setResiIssuedWarning] = useState(false);
+  /** Pengaman klik tak sengaja: wajib dicentang sebelum resi benar-benar dibuat. */
+  const [siapKirim, setSiapKirim] = useState(false);
   const [copied, setCopied] = useState(false);
   /** Resi yang baru saja dibuat dari panel ini (langsung tampil tanpa menunggu muat ulang). */
   const [createdAwb, setCreatedAwb] = useState("");
@@ -78,6 +80,8 @@ const TransaksiResiPanel = forwardRef(function TransaksiResiPanel({ order, onRes
     setResiChecking(true);
     setResiError("");
     setResiIssuedWarning(false);
+    // Selalu mulai dari belum dicentang — pengaman dari klik tak sengaja.
+    setSiapKirim(false);
     setResiCheck(null);
     try {
       const result = await base44.entities.Resi.check(order.order_number);
@@ -94,6 +98,7 @@ const TransaksiResiPanel = forwardRef(function TransaksiResiPanel({ order, onRes
     if (resiBusy) return;
     setResiCheck(null);
     setResiError("");
+    setSiapKirim(false);
   };
 
   /** Langkah 2: panggil pembuatan resi (aksi sungguhan ke J&T). Tidak ada retry otomatis. */
@@ -304,6 +309,20 @@ const TransaksiResiPanel = forwardRef(function TransaksiResiPanel({ order, onRes
                 <span>Ini membuat order sungguhan di J&T dan kurir akan menjemput. Pastikan alamat dan ongkir sudah benar.</span>
               </p>
 
+              {/* Pengaman aksi tak sengaja: tombol "Buat Resi" baru aktif setelah ini dicentang. */}
+              <label className="mt-3 flex items-start gap-2 rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-2.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={siapKirim}
+                  onChange={(event) => setSiapKirim(event.target.checked)}
+                  disabled={resiBusy}
+                  className="mt-0.5 h-4 w-4 shrink-0 accent-slate-900 dark:accent-white"
+                />
+                <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                  Barang sudah ready dan siap diserahkan ke kurir.
+                </span>
+              </label>
+
               {resiError ? <p className="mt-2 text-xs font-semibold text-red-600 dark:text-red-400">{resiError}</p> : null}
 
               <div className="flex gap-2 mt-4">
@@ -318,7 +337,7 @@ const TransaksiResiPanel = forwardRef(function TransaksiResiPanel({ order, onRes
                 <button
                   type="button"
                   onClick={submitResi}
-                  disabled={resiBusy || !resiCheck.ok}
+                  disabled={resiBusy || !resiCheck.ok || !siapKirim}
                   className="flex-1 px-4 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold rounded-xl hover:bg-slate-800 dark:hover:bg-slate-100 disabled:opacity-60 transition-all"
                 >
                   {resiBusy ? "Membuat resi…" : "Buat Resi"}
