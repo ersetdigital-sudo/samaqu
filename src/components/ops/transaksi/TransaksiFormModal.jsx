@@ -305,6 +305,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
         time: parts.time,
         shipping_cost: String(initialData.shipping_cost || ""),
         discount: String(initialData.discount || ""),
+        payment_status: initialData.payment_status === "unpaid" ? "unpaid" : "paid",
         notes: initialData.notes || "",
         // Alamat transaksi ini sudah tersimpan di pesanan, jadi isiannya langsung terisi.
         address_mode: "new",
@@ -327,6 +328,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
         time: now.time,
         shipping_cost: "",
         discount: "",
+        payment_status: "paid",
         notes: "",
         address_mode: "saved",
         saved_address_id: "",
@@ -1217,6 +1219,9 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
       created_at: createdAt,
       shipping_cost: shippingValue,
       discount: Math.min(discountValue, subtotal),
+      // "Belum Lunas" → server menyimpan status `pending` (di luar SALE_STATUSES, jadi tidak
+      // ikut omset) dan otomatis mengirim invoice berisi nomor rekening ke WA pembeli.
+      payment_status: form.payment_status === "unpaid" ? "unpaid" : "paid",
       notes: form.notes.trim(),
       // Alamat yang dipakai transaksi ini tersimpan di pesanan (dan di buku alamat kalau baru).
       shipping: {
@@ -2517,6 +2522,44 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                   </div>
                 </div>
               </section>
+
+              {/* Status pembayaran: menentukan server menulis "Lunas" (status diproses) atau
+                  "Belum Lunas" (status pending, di luar omset + invoice WA otomatis).
+                  Hanya untuk transaksi baru — status transaksi yang sudah tercatat diubah
+                  lewat tombol "Tandai Lunas" di detail transaksi. */}
+              {!isEdit ? (
+                <section className="space-y-2">
+                  <h4 className={sectionClass}>Status Pembayaran</h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { value: "paid", label: "Lunas" },
+                      { value: "unpaid", label: "Belum Lunas" },
+                    ].map((opsi) => {
+                      const active = (form.payment_status || "paid") === opsi.value;
+                      return (
+                        <button
+                          key={opsi.value}
+                          type="button"
+                          onClick={() => updateForm({ payment_status: opsi.value })}
+                          className={`rounded-xl border-2 px-3 py-2.5 text-sm font-bold transition-colors ${
+                            active
+                              ? "border-slate-900 dark:border-white bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
+                              : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                          }`}
+                        >
+                          {opsi.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {form.payment_status === "unpaid" ? (
+                    <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                      Belum ikut dihitung sebagai omset sampai ditandai lunas. Invoice berisi nomor rekening
+                      otomatis dikirim ke WA pembeli saat Simpan.
+                    </p>
+                  ) : null}
+                </section>
+              ) : null}
 
               {/* Catatan */}
               <section className="space-y-2">

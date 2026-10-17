@@ -55,6 +55,10 @@ export async function GET(request: NextRequest) {
     )
     .eq("status", "pending")
     .is("paid_at", null)
+    // Hanya pesanan website (`SMQ-`) & Open Order (`CYO-`). Transaksi manual dari ops/admin
+    // bernomor `OPS-…` dan boleh berstatus pending ("Belum Lunas") — itu urusan admin, jangan
+    // pernah diingatkan atau dibatalkan otomatis oleh cron.
+    .or("order_number.like.SMQ-%,order_number.like.CYO-%")
     .is("reminded_at", null)
     .gt("created_at", windowStart)
     .lt("created_at", windowEnd)
@@ -119,6 +123,8 @@ export async function GET(request: NextRequest) {
     )
     .eq("status", "pending")
     .is("paid_at", null)
+    // Sama seperti reminder: transaksi manual `OPS-…` ("Belum Lunas") tidak ikut dibatalkan.
+    .or("order_number.like.SMQ-%,order_number.like.CYO-%")
     .lt("created_at", cutoff);
 
   if (fetchError) {

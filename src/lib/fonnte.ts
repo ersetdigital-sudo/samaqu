@@ -21,7 +21,7 @@
 
 import { getSupabaseAdmin } from "./supabase-admin";
 import { SITE_URL } from "./site-config";
-import { isPaketItem, itemNameSuffix } from "./item-label";
+import { isPaketItem, itemNameSuffix, variantName } from "./item-label";
 
 const FONNTE_ENDPOINT = "https://api.fonnte.com/send";
 const REQUEST_TIMEOUT_MS = 8000;
@@ -704,4 +704,115 @@ export async function notifyCustomerOrderCancelled(
   order: OrderCancelledNotification
 ): Promise<boolean> {
   return sendToCustomer(order.customerWhatsapp, buildOrderCancelledMessage(order));
+}
+
+/* ── Invoice transaksi manual ("Belum Lunas") ── */
+
+/** Batas waktu pembayaran yang disebut di invoice. */
+export const INVOICE_DUE_HOURS = 3;
+
+/** Item invoice: sama seperti item notifikasi order, plus `series` untuk nama paket data lama. */
+export interface InvoiceItem extends NewOrderNotificationItem {
+  series?: string | null;
+}
+
+export interface InvoiceNotification {
+  orderNumber: string;
+  customerName?: string | null;
+  customerWhatsapp?: string | null;
+  items: InvoiceItem[];
+  subtotal: number;
+  discount?: number | null;
+  shippingCost?: number | null;
+  total: number;
+  /** false = belum lunas → invoice memuat nomor rekening + batas waktu pembayaran. */
+  paid: boolean;
+  hours?: number | null;
+}
+
+/** Rupiah rapat tanpa spasi, mengikuti contoh invoice: "Rp389.000". */
+function rupiahRapat(value: number): string {
+  return `Rp${Math.round(Number(value) || 0).toLocaleString("id-ID")}`;
+}
+
+/** Satu baris item invoice: "Thobe Superblack (L) × 1 — Rp389.000". */
+function invoiceItemLine(item: InvoiceItem): string {
+  const qty = item.quantity || 1;
+  const paket = isPaketItem(item);
+  const rawColor = item.color && item.color !== "default" && item.color !== "-" ? item.color : null;
+  // Nama produk sering sudah memuat warnanya ("Thobe Superblack" + "Superblack") — jangan diulang.
+  const color = rawColor && !item.name.toLowerCase().includes(rawColor.toLowerCase()) ? rawColor : null;
+  const size = String(item.size ?? "").trim();
+  const variant = paket
+    ? variantName(item.color) || variantName(item.series)
+    : [color, size].filter(Boolean).join(" / ");
+  const lineTotal = (Number(item.price) || 0) * qty;
+  return `${item.name}${variant ? ` (${variant})` : ""} × ${qty} — ${rupiahRapat(lineTotal)}`;
+}
+
+/**
+ * Invoice satu pesanan untuk pembeli. Belum lunas → memuat daftar rekening aktif dari
+ * Pengaturan (tabel `payment_methods`) + batas waktu transfer; lunas → cukup nota.
+ */
+export function buildInvoiceMessage(invoice: InvoiceNotification, banks: PaymentInstruction[] = []): string {
+  const ka = greetingName(invoice.customerName);
+  const lines: string[] = [
+    "🧾 *INVOICE SAMAQU*",
+    `No. ${invoice.orderNumber}`,
+    "",
+    `Halo Ka ${ka},`,
+    "",
+    "Berikut rincian pesanan Ka di SAMAQU:",
+    "",
+    ...invoice.items.map(invoiceItemLine),
+    "",
+    `Subtotal: ${rupiahRapat(invoice.subtotal)}`,
+  ];
+  if ((invoice.shippingCost ?? 0) > 0) lines.push(`Ongkir: ${rupiahRapat(Number(invoice.shippingCost))}`);
+  if ((invoice.discount ?? 0) > 0) lines.push(`Diskon: -${rupiahRapat(Number(invoice.discount))}`);
+  lines.push(`*TOTAL: ${rupiahRapat(invoice.total)}*`, "", `Status: *${invoice.paid ? "LUNAS" : "Belum Lunas"}*`);
+
+  if (!invoice.paid) {
+    for (const bank of banks) {
+      const namaBank = (bank.bankName || bank.label || "Transfer Bank").toUpperCase();
+      lines.push("", `*Pembayaran ${namaBank}*`);
+      if (bank.accountNumber) lines.push(bank.accountNumber);
+      if (bank.accountName) lines.push(`a.n. ${bank.accountName}`);
+      if (bank.accountInfo) lines.push(bank.accountInfo);
+    }
+    const jam = Number(invoice.hours) > 0 ? Number(invoice.hours) : INVOICE_DUE_HOURS;
+    lines.push(
+      "",
+      `Mohon lakukan pembayaran maksimal ${jam} jam setelah invoice diterima ya, Ka. Jika sudah transfer, kirim bukti pembayarannya ke chat ini untuk kami verifikasi.`,
+    );
+  }
+
+  lines.push("", "Terima kasih sudah berbelanja di SAMAQU.");
+  return lines.join("\n");
+}
+
+/** Rekening bank aktif dari Pengaturan → Payment Methods (satu baris = satu rekening). */
+async function activeBankInstructions(): Promise<PaymentInstruction[]> {
+  try {
+    const admin = getSupabaseAdmin();
+    const { data, error } = await admin
+      .from("payment_methods")
+      .select("label, method_type, bank_name, account_name, account_number, account_info, instructions, is_active, display_order")
+      .eq("is_active", true)
+      .order("display_order");
+    if (error) {
+      console.error("[FONNTE] Gagal membaca payment_methods:", error.message);
+      return [];
+    }
+    return (data || []).map((row) => paymentInstructionFrom(row)).filter((item) => item.type === "bank");
+  } catch (error) {
+    console.error("[FONNTE] Gagal menyiapkan rekening invoice:", error);
+    return [];
+  }
+}
+
+/** Kirim invoice ke WA pembeli. Tidak pernah melempar error (kontrak modul ini). */
+export async function notifyCustomerInvoice(invoice: InvoiceNotification): Promise<boolean> {
+  const banks = invoice.paid ? [] : await activeBankInstructions();
+  return sendToCustomer(invoice.customerWhatsapp, buildInvoiceMessage(invoice, banks));
 }
