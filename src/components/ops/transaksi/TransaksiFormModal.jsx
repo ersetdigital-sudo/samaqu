@@ -8,6 +8,12 @@
  * Kalau sudah ada isian lalu drawer ditutup, muncul konfirmasi singkat supaya isian
  * tidak hilang karena salah klik.
  *
+ * Pemilihan pelanggan memakai pemilih cepat yang sama polanya: ketik nama / nomor HP → daftar
+ * tersaring → klik satu pelanggan (nomor dicocokkan setelah dinormalkan lewat `phoneKey`, jadi
+ * "0878…", "62878…", dan "878…" sama). Pelanggan yang sudah terpilih diringkas jadi satu baris
+ * dengan tombol "Ganti". Pelanggan tanpa akun tidak punya `customer_id`, jadi pilihan itu
+ * dicocokkan lewat nama + nomor HP supaya barisnya tidak tampil kosong lagi.
+ *
  * Pemilihan produk memakai pemilih cepat: cari produk → tombol Series (harga + sisa stok) →
  * tombol Ukuran (sisa stok per ukuran) → Qty. Grup produk (nama + jenis kain) diambil dari
  * data yang sama dengan Laporan Stok (`/api/ops/product-variants`), urutan series memakai
@@ -168,6 +174,9 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
   const [search, setSearch] = useState("");
   const [catChip, setCatChip] = useState("all");
   const searchRef = useRef(null);
+  /** Pencarian pelanggan di langkah 1 — nama atau nomor HP (pemilih pelanggan cepat). */
+  const [customerSearch, setCustomerSearch] = useState("");
+  const customerSearchRef = useRef(null);
   /** Area isi drawer (yang di-scroll) + penanda supaya validasi gagal menggeser ke isian error. */
   const bodyRef = useRef(null);
   const [scrollKick, setScrollKick] = useState(0);
@@ -261,6 +270,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
     setAddressBackup(null);
     setOngkir(EMPTY_ONGKIR);
     setAddressPrefilledFrom("");
+    setCustomerSearch("");
     setStep(0);
     if (initialData) {
       const parts = isoToWibInput(initialData.created_at);
@@ -648,6 +658,44 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
     [customers],
   );
 
+  /**
+   * Hasil pencarian pelanggan: nama ATAU nomor HP. Nomornya dinormalkan lewat `phoneKey`
+   * (lihat fungsi di atas) supaya "0878…", "62878…", dan "878…" sama-sama cocok — admin sering
+   * hanya mengetik sebagian nomor. Kosong = seluruh daftar, urutannya tetap "alamatnya siap" di atas.
+   */
+  const customerMatches = useMemo(() => {
+    const query = customerSearch.trim().toLowerCase();
+    const phoneQuery = phoneKey(customerSearch);
+    if (!query) return customerOptions;
+    return customerOptions.filter((customer) => {
+      if (String(customer.name || "").toLowerCase().includes(query)) return true;
+      return phoneQuery.length >= 3 && phoneKey(customer.whatsapp).includes(phoneQuery);
+    });
+  }, [customerOptions, customerSearch]);
+
+  /**
+   * Pelanggan yang sedang terpilih. Pelanggan tanpa akun tidak punya `customer_id`, jadi
+   * dicocokkan lewat nama + nomor HP-nya — dulu pilihan seperti itu tampil kosong lagi
+   * walaupun nama & nomornya sudah terisi.
+   */
+  const pickedCustomer = useMemo(() => {
+    if (form?.customer_mode !== "existing") return null;
+    if (form?.customer_id) {
+      return customerOptions.find((customer) => (customer.id || customer.key) === form.customer_id) || null;
+    }
+    const name = String(form?.customer_name || "").trim().toLowerCase();
+    const phone = phoneKey(form?.customer_whatsapp || "");
+    if (!name) return null;
+    return (
+      customerOptions.find(
+        (customer) => String(customer.name || "").trim().toLowerCase() === name && (!phone || phoneKey(customer.whatsapp) === phone),
+      ) || null
+    );
+  }, [form?.customer_mode, form?.customer_id, form?.customer_name, form?.customer_whatsapp, customerOptions]);
+
+  /** Ada pelanggan terpilih (akun maupun tamu) → tampilkan baris ringkas, bukan kotak pencarian. */
+  const customerChosen = form?.customer_mode === "existing" && Boolean(form?.customer_id || String(form?.customer_name || "").trim());
+
   /* ── Alamat pengiriman (sama seperti checkout website) ── */
   const addressErrors = {
     address: String(form?.address || "").trim() ? "" : "Alamat lengkap wajib diisi",
@@ -703,6 +751,48 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
       ...(recipient ? { customer_name: recipient } : null),
       ...(phone ? { customer_whatsapp: phone } : null),
     }));
+  };
+
+  /** Pilih pelanggan dari hasil pencarian: alamat diisi ulang dari buku alamatnya (efek di atas). */
+  const pickCustomer = (customer) => {
+    setCustomerSearch("");
+    setNewAddressForCustomer(false);
+    setAddressEditing(false);
+    setAddressBackup(null);
+    // Ganti pelanggan → alamat ikut diganti (alamat utama terpilih otomatis).
+    updateForm({
+      customer_mode: "existing",
+      customer_id: customer.id || "",
+      customer_name: customer.name || "",
+      customer_whatsapp: customer.whatsapp || "",
+      address_mode: "saved",
+      saved_address_id: "",
+      address: "",
+      province: "",
+      city: "",
+      kecamatan: "",
+      postal_code: "",
+    });
+  };
+
+  /** Batalkan pilihan pelanggan → kembali ke kotak pencarian. */
+  const clearPickedCustomer = () => {
+    setCustomerSearch("");
+    setNewAddressForCustomer(false);
+    setAddressEditing(false);
+    setAddressBackup(null);
+    updateForm({
+      customer_id: "",
+      customer_name: "",
+      customer_whatsapp: "",
+      address_mode: "saved",
+      saved_address_id: "",
+      address: "",
+      province: "",
+      city: "",
+      kecamatan: "",
+      postal_code: "",
+    });
   };
 
   const useExistingCustomer = (customer) => {
@@ -862,6 +952,15 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
     const timer = setTimeout(() => searchRef.current?.focus(), 80);
     return () => clearTimeout(timer);
   }, [isOpen, step, openIndex]);
+
+  /* Langkah Pelanggan dibuka tanpa pelanggan terpilih → kotak pencarian pelanggan langsung
+     difokuskan supaya admin bisa langsung mengetik nama/nomor tanpa klik dulu. */
+  useEffect(() => {
+    if (!isOpen || step !== 0 || customerChosen) return undefined;
+    if (form?.customer_mode !== "existing") return undefined;
+    const timer = setTimeout(() => customerSearchRef.current?.focus(), 80);
+    return () => clearTimeout(timer);
+  }, [isOpen, step, customerChosen, form?.customer_mode]);
 
   /* Ganti langkah → posisi scroll isi drawer kembali ke atas. */
   useEffect(() => {
@@ -1187,44 +1286,101 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                 </div>
 
                 {form.customer_mode === "existing" ? (
-                  <select
-                    value={form.customer_id}
-                    data-invalid={
-                      form.customer_mode === "existing" && (!form.customer_name.trim() || !form.customer_whatsapp.trim())
-                        ? "true"
-                        : undefined
-                    }
-                    onChange={(event) => {
-                      const picked = customerOptions.find((entry) => (entry.id || entry.key) === event.target.value);
-                      setNewAddressForCustomer(false);
-                      setAddressEditing(false);
-                      setAddressBackup(null);
-                      // Ganti pelanggan → alamat ikut diganti (alamat utama terpilih otomatis).
-                      updateForm({
-                        customer_id: picked?.id || "",
-                        customer_name: picked?.name || "",
-                        customer_whatsapp: picked?.whatsapp || "",
-                        address_mode: "saved",
-                        saved_address_id: "",
-                        address: "",
-                        province: "",
-                        city: "",
-                        kecamatan: "",
-                        postal_code: "",
-                      });
-                    }}
-                    className={inputClass}
-                  >
-                    <option value="">— Pilih pelanggan —</option>
-                    {customerOptions.map((customer) => (
-                      <option key={customer.id || customer.key} value={customer.id || customer.key}>
-                        {customer.name}
-                        {customer.whatsapp ? ` · ${customer.whatsapp}` : ""}
-                        {customer.registered ? "" : " (belum daftar)"}
-                        {customer.hasAddress === false ? " — belum ada alamat" : ""}
-                      </option>
-                    ))}
-                  </select>
+                  customerChosen ? (
+                    /* Sudah terpilih → satu baris ringkas + "Ganti" (pola sama dengan baris produk) */
+                    <div
+                      className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 dark:bg-slate-900 px-3 py-2"
+                      data-invalid={
+                        form.customer_mode === "existing" && (!form.customer_name.trim() || !form.customer_whatsapp.trim())
+                          ? "true"
+                          : undefined
+                      }
+                    >
+                      <span className="min-w-0">
+                        <span className="block text-sm font-bold text-slate-900 dark:text-white truncate">
+                          {pickedCustomer?.name || form.customer_name || "Tanpa nama"}
+                        </span>
+                        <span className="block text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                          {[
+                            pickedCustomer?.whatsapp || form.customer_whatsapp || "nomor belum ada",
+                            pickedCustomer && !pickedCustomer.registered ? "belum daftar" : "",
+                            pickedCustomer?.hasAddress === false ? "belum ada alamat" : "",
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={clearPickedCustomer}
+                        className="shrink-0 px-2 py-1 rounded-lg text-[11px] font-bold text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-colors"
+                      >
+                        Ganti
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Pemilih pelanggan cepat: ketik nama / nomor HP → daftar tersaring */}
+                      <input
+                        ref={customerSearchRef}
+                        type="text"
+                        value={customerSearch}
+                        onChange={(event) => setCustomerSearch(event.target.value)}
+                        placeholder="Cari pelanggan… (nama atau nomor HP)"
+                        aria-label="Cari pelanggan"
+                        data-invalid={
+                          form.customer_mode === "existing" && (!form.customer_name.trim() || !form.customer_whatsapp.trim())
+                            ? "true"
+                            : undefined
+                        }
+                        className={inputClass}
+                      />
+
+                      <div className="rounded-lg border border-slate-200 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800 max-h-[214px] overflow-y-auto no-scrollbar">
+                        {customerOptions.length === 0 ? (
+                          <p className="px-3 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                            Belum ada pelanggan terdaftar. Pakai tab “Pelanggan baru”.
+                          </p>
+                        ) : customerMatches.length === 0 ? (
+                          <p className="px-3 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                            Pelanggan tidak ditemukan. Coba nama atau nomor HP lain.
+                          </p>
+                        ) : (
+                          customerMatches.map((customer) => (
+                            <button
+                              key={customer.id || customer.key}
+                              type="button"
+                              onClick={() => pickCustomer(customer)}
+                              className="w-full flex items-center justify-between gap-2 px-3 py-2.5 text-left hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                            >
+                              <span className="min-w-0">
+                                <span className="block text-sm font-bold text-slate-900 dark:text-white truncate">
+                                  {customer.name}
+                                </span>
+                                <span className="block text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                                  {[
+                                    customer.whatsapp || "nomor belum ada",
+                                    customer.registered ? "" : "belum daftar",
+                                    customer.hasAddress === false ? "belum ada alamat" : "",
+                                  ]
+                                    .filter(Boolean)
+                                    .join(" · ")}
+                                </span>
+                              </span>
+                            </button>
+                          ))
+                        )}
+                      </div>
+
+                      {customerOptions.length > 0 && (
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                          {customerSearch.trim()
+                            ? `Menampilkan ${customerMatches.length} dari ${customerOptions.length} pelanggan`
+                            : `${customerOptions.length} pelanggan siap dipilih`}
+                        </p>
+                      )}
+                    </>
+                  )
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <input
