@@ -184,6 +184,8 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
   const [search, setSearch] = useState("");
   const [catChip, setCatChip] = useState("all");
   const searchRef = useRef(null);
+  /** Blok "Ukuran" baris yang sedang terbuka — tujuan auto-scroll setelah series dipilih. */
+  const sizeStepRef = useRef(null);
   /** Pencarian pelanggan di langkah 1 — nama atau nomor HP (pemilih pelanggan cepat). */
   const [customerSearch, setCustomerSearch] = useState("");
   const customerSearchRef = useRef(null);
@@ -2293,7 +2295,15 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                                     key={option.series || "tanpa-series"}
                                     type="button"
                                     disabled={soldOut}
-                                    onClick={() => updateRow(index, { series: option.series, variant: "", price: "", priceManual: false })}
+                                    onClick={() => {
+                                      updateRow(index, { series: option.series, variant: "", price: "", priceManual: false });
+                                      // Series adalah langkah terakhir sebelum ukuran — geser otomatis
+                                      // ke blok "Ukuran" supaya admin tidak perlu scroll manual.
+                                      setTimeout(
+                                        () => sizeStepRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }),
+                                        60,
+                                      );
+                                    }}
                                     className={`px-3 py-2 rounded-xl border-2 text-left transition-colors ${
                                       active
                                         ? "border-slate-900 dark:border-white bg-slate-900 dark:bg-white"
@@ -2341,7 +2351,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                         {/* 3 · Ukuran (stok per ukuran = stock_efektif, jadi pengikut ikut induknya)
                             — TIDAK berlaku untuk paket (Cover & Hanger): tidak ada ukuran. */}
                         {info.product && !info.paket && (
-                          <div className="space-y-1">
+                          <div className="space-y-1" ref={sizeStepRef}>
                             <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Ukuran</p>
                             <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                               {info.options.map((option) => {
