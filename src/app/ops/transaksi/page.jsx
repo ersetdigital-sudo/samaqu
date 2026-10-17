@@ -265,9 +265,19 @@ export default function Transaksi({ variant = "ops" }) {
    *   supaya admin melihat kondisi sebenarnya.
    */
   const handleResiCreated = async (patch, refreshFromServer = false) => {
-    if (patch && !refreshFromServer) setDetail((current) => (current ? { ...current, ...patch } : current));
+    if (patch && !refreshFromServer) {
+      setDetail((current) => (current ? { ...current, ...patch } : current));
+      // Perbarui baris tabel SEKARANG, tanpa menunggu refetch. Dulu tabel baru berubah
+      // setelah reload karena cache daftar masih dianggap segar (staleTime 60 detik).
+      queryClient.setQueryData(["transaksi", "orders", start, end], (rows) =>
+        Array.isArray(rows)
+          ? rows.map((row) => (row.order_number === detail?.order_number ? { ...row, ...patch } : row))
+          : rows,
+      );
+    }
     try {
-      const fresh = await queryClient.fetchQuery({ queryKey: ["transaksi", "orders", start, end] });
+      // `staleTime: 0` memaksa ambil data server — bukan mengembalikan cache yang masih segar.
+      const fresh = await queryClient.fetchQuery({ queryKey: ["transaksi", "orders", start, end], staleTime: 0 });
       if (refreshFromServer) {
         const found = (fresh || []).find((row) => row.order_number === detail?.order_number);
         if (found) setDetail(found);

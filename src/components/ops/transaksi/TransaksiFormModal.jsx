@@ -776,9 +776,13 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
   };
 
   /** Setelah resi dibuat dari panel "Transaksi tercatat", simpan nomor resinya di panel. */
-  const handleResiCreated = (patch) => {
-    if (!patch) return;
-    setSavedOrder((current) => (current ? { ...current, ...patch } : current));
+  const handleResiCreated = (patch, refreshFromServer = false) => {
+    if (patch && !refreshFromServer) {
+      setSavedOrder((current) => (current ? { ...current, ...patch } : current));
+    }
+    // Daftar transaksi di belakang drawer juga harus ikut segar, supaya kolom No. Resi /
+    // penanda packing langsung berubah tanpa reload (dulu hanya panel ini yang diperbarui).
+    queryClient.invalidateQueries({ queryKey: ["transaksi"] });
   };
 
   /**
