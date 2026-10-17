@@ -87,11 +87,11 @@ export default function TransaksiDetailDrawer({ open, order, variant = "ops", on
     }
   };
 
-  // Status terbaru J&T dimuat otomatis saat drawer dibuka, jadi baris "Status terbaru"
-  // tidak menunggu admin klik "Lihat". Endpoint punya cache 5 menit, jadi tidak membanjiri J&T.
+  // Status terbaru J&T SELALU diambil fresh saat drawer dibuka (bypass cache 5 menit),
+  // supaya tidak menunggu klik "Lihat" dan tidak kena cache lama/riwayat kosong.
   useEffect(() => {
     if (!open || !awb) return;
-    loadTrack(false);
+    loadTrack(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, awb]);
 
