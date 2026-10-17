@@ -22,6 +22,7 @@
 import { getSupabaseAdmin } from "./supabase-admin";
 import { SITE_URL } from "./site-config";
 import { isPaketItem, itemNameSuffix, variantName } from "./item-label";
+import { buildNotifikasi } from "./notifikasi-template";
 
 const FONNTE_ENDPOINT = "https://api.fonnte.com/send";
 const REQUEST_TIMEOUT_MS = 8000;
@@ -328,7 +329,28 @@ export async function notifyAdminNewOrder(order: NewOrderNotification): Promise<
     return false;
   }
 
-  return sendFonnteMessage(admin.token, target, buildNewOrderMessage(order));
+  return sendFonnteMessage(
+    admin.token,
+    target,
+    await buildNotifikasi("pesanan-baru-admin", buildNewOrderMessage(order), {
+      nama: order.customerName,
+      nomor: order.orderNumber,
+      wa: order.customerWhatsapp,
+      pembayaran: order.paymentType,
+      total: rupiah(order.total),
+      daftar_produk: order.items
+        .map((item) => `- ${item.quantity}x ${item.name}${itemNameSuffix(item)} — ${rupiah(item.price * item.quantity)}`)
+        .join("\n"),
+      info_tambahan: [
+        order.shippingCity ? `Tujuan: ${order.shippingCity}` : "",
+        order.source ? `Sumber: ${order.source}` : "",
+        order.notes ? `Catatan: ${order.notes}` : "",
+      ]
+        .filter(Boolean)
+        .join("\n"),
+      tautan_admin: `${SITE_URL}/admin?panel=orders`,
+    }),
+  );
 }
 
 /** Kabari admin bahwa sebuah pesanan dibatalkan. */
@@ -341,7 +363,15 @@ export async function notifyAdminOrderCancelled(
   const target = await resolveAdminTargets(admin.adminNumber);
   if (!target) return false;
 
-  return sendFonnteMessage(admin.token, target, buildAdminOrderCancelledMessage(order));
+  return sendFonnteMessage(
+    admin.token,
+    target,
+    await buildNotifikasi("pesanan-dibatalkan-admin", buildAdminOrderCancelledMessage(order), {
+      nomor: order.orderNumber,
+      nama: String(order.customerName || ""),
+      alasan: order.reason,
+    }),
+  );
 }
 
 /* ══════════════════════════════════════════
@@ -679,31 +709,79 @@ async function sendToCustomer(
 export async function notifyCustomerOrderCreated(
   order: CustomerOrderNotification
 ): Promise<boolean> {
-  return sendToCustomer(order.customerWhatsapp, buildCustomerOrderMessage(order));
+  return sendToCustomer(
+    order.customerWhatsapp,
+    await buildNotifikasi("pesanan-diterima", buildCustomerOrderMessage(order), {
+      nama: greetingName(order.customerName),
+      nomor: order.orderNumber,
+      wa: order.customerWhatsapp,
+      total: rupiah(order.total),
+      daftar_produk: order.items
+        .map((item) => `- ${item.quantity}x ${item.name}${itemNameSuffix(item)} — ${rupiah(item.price * item.quantity)}`)
+        .join("\n"),
+      instruksi_pembayaran: paymentInstructionBlock(order.paymentMethod, order.paymentUrl).join("\n"),
+    }),
+  );
 }
 
 export async function notifyCustomerOrderPaid(order: OrderPaidNotification): Promise<boolean> {
-  return sendToCustomer(order.customerWhatsapp, buildOrderPaidMessage(order));
+  return sendToCustomer(
+    order.customerWhatsapp,
+    await buildNotifikasi("pembayaran-diterima", buildOrderPaidMessage(order), {
+      nama: greetingName(order.customerName),
+      nomor: order.orderNumber,
+      total: rupiah(order.total),
+    }),
+  );
 }
 
 export async function notifyCustomerOrderShipped(order: ShippedNotification): Promise<boolean> {
-  return sendToCustomer(order.customerWhatsapp, buildOrderShippedMessage(order));
+  return sendToCustomer(
+    order.customerWhatsapp,
+    await buildNotifikasi("pesanan-dikirim", buildOrderShippedMessage(order), {
+      nama: greetingName(order.customerName),
+      nomor: order.orderNumber,
+      resi: order.awbNo,
+    }),
+  );
 }
 
 export async function notifyCustomerOrderDelivered(order: DeliveredNotification): Promise<boolean> {
-  return sendToCustomer(order.customerWhatsapp, buildOrderDeliveredMessage(order));
+  return sendToCustomer(
+    order.customerWhatsapp,
+    await buildNotifikasi("pesanan-sampai", buildOrderDeliveredMessage(order), {
+      nama: greetingName(order.customerName),
+      nomor: order.orderNumber,
+    }),
+  );
 }
 
 export async function notifyCustomerPaymentReminder(
   order: PaymentReminderNotification
 ): Promise<boolean> {
-  return sendToCustomer(order.customerWhatsapp, buildPaymentReminderMessage(order));
+  return sendToCustomer(
+    order.customerWhatsapp,
+    await buildNotifikasi("pengingat-bayar", buildPaymentReminderMessage(order), {
+      nama: greetingName(order.customerName),
+      nomor: order.orderNumber,
+      total: rupiah(order.total),
+      instruksi_pembayaran: paymentInstructionBlock(order.paymentMethod, order.paymentUrl).join("\n"),
+    }),
+  );
 }
 
 export async function notifyCustomerOrderCancelled(
   order: OrderCancelledNotification
 ): Promise<boolean> {
-  return sendToCustomer(order.customerWhatsapp, buildOrderCancelledMessage(order));
+  return sendToCustomer(
+    order.customerWhatsapp,
+    await buildNotifikasi("pesanan-dibatalkan-pembeli", buildOrderCancelledMessage(order), {
+      nama: greetingName(order.customerName),
+      nomor: order.orderNumber,
+      alasan: order.reason,
+      info_refund: String(order.refundInfo || ""),
+    }),
+  );
 }
 
 /* ── Invoice transaksi manual ("Belum Lunas") ── */
@@ -814,7 +892,32 @@ async function activeBankInstructions(): Promise<PaymentInstruction[]> {
 /** Kirim invoice ke WA pembeli. Tidak pernah melempar error (kontrak modul ini). */
 export async function notifyCustomerInvoice(invoice: InvoiceNotification): Promise<boolean> {
   const banks = invoice.paid ? [] : await activeBankInstructions();
-  return sendToCustomer(invoice.customerWhatsapp, buildInvoiceMessage(invoice, banks));
+  const bawaan = buildInvoiceMessage(invoice, banks);
+  return sendToCustomer(
+    invoice.customerWhatsapp,
+    await buildNotifikasi("invoice-belum-lunas", bawaan, {
+      nama: greetingName(invoice.customerName),
+      nomor: invoice.orderNumber,
+      daftar_produk: invoice.items.map(invoiceItemLine).join("\n"),
+      subtotal: rupiahRapat(invoice.subtotal),
+      ongkir: rupiahRapat(Number(invoice.shippingCost) || 0),
+      diskon: rupiahRapat(Number(invoice.discount) || 0),
+      total: rupiahRapat(invoice.total),
+      status: invoice.paid ? "LUNAS" : "Belum Lunas",
+      blok_rekening: banks
+        .map((bank) =>
+          [
+            `*Pembayaran ${(bank.bankName || bank.label || "Transfer Bank").toUpperCase()}*`,
+            bank.accountNumber || "",
+            bank.accountName ? `a.n. ${bank.accountName}` : "",
+            bank.accountInfo || "",
+          ]
+            .filter(Boolean)
+            .join("\n"),
+        )
+        .join("\n\n"),
+    }),
+  );
 }
 
 /* ── Katalog notifikasi (dibaca panel Pengaturan admin supaya semua pesan kelihatan) ── */
