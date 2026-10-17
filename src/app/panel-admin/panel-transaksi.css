@@ -219,6 +219,13 @@
   .panel-tx .ks { grid-template-columns: 1fr; }
 }
 
+/* Footer drawer bisa berisi 4 tombol (Hapus/Ubah/Cetak Resi/Batalkan) — di layar sempit
+ * disusun 2 × 2 supaya label tidak terpotong dan tetap rapi. */
+@media (max-width: 480px) {
+  .panel-tx .df { flex-wrap: wrap; }
+  .panel-tx .df button { flex: 1 1 calc(50% - 5px); }
+}
+
 /* Tabel di layar sedang: kolom menyusut proporsional (persen), jadi padding & font
  * dirapatkan lebih dulu supaya nomor resi, status, dan total tetap utuh sebelum
  * tabel mulai menggulir mendatar di bawah 900px. */

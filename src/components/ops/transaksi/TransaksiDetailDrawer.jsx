@@ -8,7 +8,7 @@
  * ditampilkan (datanya belum ada).
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Ban, CreditCard, MapPin, Pencil, Receipt, ShoppingBag, Trash2, Truck, X } from "lucide-react";
 import { NEUTRAL_ITEM_PHOTO } from "@/lib/order-photo";
@@ -31,6 +31,8 @@ export default function TransaksiDetailDrawer({ open, order, variant = "ops", on
   const { name: paymentName } = usePaymentMethodName(order?.payment_method);
 
   const awb = order?.awb_no || "";
+  // Akses ke dialog "Cetak Resi" milik TransaksiResiPanel (panel admin: tombolnya di footer).
+  const resiPanelRef = useRef(null);
 
   // Data lama `order` bisa berubah setelah resi dibuat; panel resi di-reset saat drawer ditutup.
   useEffect(() => {
@@ -136,6 +138,9 @@ export default function TransaksiDetailDrawer({ open, order, variant = "ops", on
     const lastScan = historyRows[0] || null;
     const region = [order.shipping_kecamatan, order.kota, order.shipping_province, order.shipping_postal_code].filter(Boolean).join(", ");
     const canDelete = (!order.awb_no || order.status === "dibatalkan") && order.source !== "website";
+    // Tombol "Cetak Resi" ikut pindah ke footer, jadi footer juga harus tampil walau
+    // pesanan tidak punya aksi lain (mis. pesanan website yang sudah dikirim).
+    const canPrint = Boolean(awb) && order.status !== "dibatalkan";
 
     return (
       <AnimatePresence>
@@ -196,8 +201,9 @@ export default function TransaksiDetailDrawer({ open, order, variant = "ops", on
                     <span>Kurir</span>
                     <b>J&amp;T Express</b>
                   </div>
-                  {/* Panel resi (nomor + salin + cetak + buat resi) — komponen bersama, logika tak berubah. */}
-                  <TransaksiResiPanel order={order} onResiCreated={onResiCreated} />
+                  {/* Panel resi (nomor + salin + buat resi) — komponen bersama. Tombol cetak
+                      dipindah ke footer drawer lewat ref supaya berdampingan dengan "Ubah". */}
+                  <TransaksiResiPanel ref={resiPanelRef} order={order} onResiCreated={onResiCreated} hidePrintButton />
                   {awb && lastScan ? (
                     <div className="last" onClick={openTrackModal} role="button" tabIndex={0}>
                       <i />
@@ -303,7 +309,7 @@ export default function TransaksiDetailDrawer({ open, order, variant = "ops", on
                 </div>
               </div>
 
-              {order.can_edit || order.can_cancel || canDelete ? (
+              {order.can_edit || order.can_cancel || canDelete || canPrint ? (
                 <div className="df">
                   {canDelete ? (
                     <button type="button" className="b-danger" onClick={() => onDelete?.(order)}>
@@ -313,6 +319,11 @@ export default function TransaksiDetailDrawer({ open, order, variant = "ops", on
                   {order.can_edit ? (
                     <button type="button" className="b2" onClick={() => onEdit?.(order)}>
                       Ubah
+                    </button>
+                  ) : null}
+                  {canPrint ? (
+                    <button type="button" className="b2" onClick={() => resiPanelRef.current?.print()}>
+                      Cetak Resi
                     </button>
                   ) : null}
                   {order.can_cancel ? (
