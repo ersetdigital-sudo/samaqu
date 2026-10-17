@@ -268,6 +268,9 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
         // HPP produk — hanya untuk peringatan kalau harga manual di bawah HPP.
         hpp: Number(variant.hpp) || 0,
         sizes: variant.stock_efektif || variant.stock || {},
+        // Berat per ukuran + berat produk (gram) — dari API varian yang sama dengan ongkir/resi.
+        weights: variant.weights || {},
+        product_weight: Number(variant.product_weight) || 0,
         linkedTo: variant.base_series_name || variant.base_product_name || null,
       })),
     [variants],
@@ -549,6 +552,19 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
   const paketNameOf = (entry) => variantName(entry?.color) || variantName(entry?.series) || String(entry?.product_name || "");
   /** Ukuran yang dipakai saat menyimpan paket: ukuran yang benar-benar ada di data (kalau kosong, penanda ALL SIZE). */
   const paketSize = (entry) => Object.keys(entry?.sizes || {})[0] || PAKET_SIZE;
+  /**
+   * Berat SATU unit (gram) — aturannya sama dengan `resolveLineWeight` di server:
+   * berat varian (per ukuran) → berat produk → belum ada. Tidak ada angka tebakan di sini.
+   */
+  const unitWeightOf = (product, paket, chosen) => {
+    if (!product) return { grams: 0, source: "missing" };
+    const size = String(paket ? paketSize(product) : chosen?.size || "").toUpperCase();
+    const variantWeight = Number(product.weights?.[size]);
+    if (Number.isFinite(variantWeight) && variantWeight > 0) return { grams: variantWeight, source: "variant" };
+    const productWeight = Number(product.product_weight);
+    if (Number.isFinite(productWeight) && productWeight > 0) return { grams: productWeight, source: "product" };
+    return { grams: 0, source: "missing" };
+  };
   /** Chip paket satu grup (satu baris dataset per paket) — dicocokkan lewat ID produk. */
   const paketOptions = (group) =>
     isPaketKategori(group?.category)
@@ -650,13 +666,39 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
       }
     }
     const unitPrice = rowUnitPrice(row, chosen?.price);
-    return { product, paket, options, chosen, quantity, issue, unitPrice, subtotal: unitPrice * quantity };
+    return {
+      product,
+      paket,
+      options,
+      chosen,
+      quantity,
+      issue,
+      unitPrice,
+      subtotal: unitPrice * quantity,
+      unitWeight: unitWeightOf(product, paket, chosen),
+    };
   });
 
   const stockIssues = rowInfo.filter((info) => info.issue && info.product && info.chosen).map((info) => info.issue);
   const incomplete = rowInfo.some((info) => info.issue);
 
   const subtotal = rowInfo.reduce((sum, info) => sum + info.subtotal, 0);
+  /**
+   * Ringkasan berat untuk step Pembayaran. Hanya baris yang sudah lengkap (produk + ukuran/
+   * paket) yang dihitung; baris tanpa berat dicatat terpisah supaya tidak ditutupi angka
+   * default — sama seperti aturan berat di server (varian → produk).
+   */
+  const weightSummary = rowInfo.reduce(
+    (acc, info) => {
+      if (!info.product || !info.chosen) return acc;
+      const qty = Number(info.quantity) || 0;
+      if (qty < 1) return acc;
+      if (info.unitWeight.grams > 0) acc.grams += info.unitWeight.grams * qty;
+      else acc.missingQty += qty;
+      return acc;
+    },
+    { grams: 0, missingQty: 0 },
+  );
   const discountValue = Number(digits(form?.discount)) || 0;
   const shippingValue = Number(digits(form?.shipping_cost)) || 0;
   const total = Math.max(0, subtotal - Math.min(discountValue, subtotal)) + shippingValue;
@@ -2623,17 +2665,30 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                       size: isPaketEntry(row) ? "" : info.chosen.size,
                     });
                     const label = labelParts.join(" · ");
+                    const weightMissing = info.unitWeight.source === "missing";
                     return (
                       <div key={index} className="flex items-start justify-between gap-3 text-sm">
-                        <span
-                          className="min-w-0 leading-snug font-bold text-slate-900 dark:text-white"
-                          title={label}
-                        >
-                          {labelParts[0]}
-                          {labelParts.length > 1 ? (
-                            <span className="font-semibold text-slate-500 dark:text-slate-400"> · {labelParts.slice(1).join(" · ")}</span>
-                          ) : null}
-                        </span>
+                        <div className="min-w-0">
+                          <span
+                            className="block leading-snug font-bold text-slate-900 dark:text-white"
+                            title={label}
+                          >
+                            {labelParts[0]}
+                            {labelParts.length > 1 ? (
+                              <span className="font-semibold text-slate-500 dark:text-slate-400"> · {labelParts.slice(1).join(" · ")}</span>
+                            ) : null}
+                          </span>
+                          {/* Berat per item — label eksplisit, bukan angka yang ditempel di baris lain. */}
+                          <span className="mt-0.5 block text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                            Berat:{" "}
+                            <b className={weightMissing ? "text-amber-600 dark:text-amber-400" : "text-slate-700 dark:text-slate-200"}>
+                              {weightMissing ? "belum diisi" : formatWeightExact(info.unitWeight.grams)}
+                            </b>
+                            {info.unitWeight.source === "product" ? (
+                              <span className="font-bold text-amber-600 dark:text-amber-400"> · fallback berat produk</span>
+                            ) : null}
+                          </span>
+                        </div>
                         <span className="shrink-0 text-slate-900 dark:text-white font-semibold whitespace-nowrap">
                           x{info.quantity} · Rp {formatRupiah(info.subtotal)}
                           {row.priceManual ? " (harga manual)" : ""}
@@ -2644,6 +2699,21 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                 </div>
 
                 <div className="border-t border-slate-100 dark:border-slate-800 pt-2 space-y-1 text-sm">
+                  {/* Total berat semua item — gram apa adanya, kg cuma pelengkap.
+                      Item yang beratnya belum diisi ditandai, tidak ditutupi angka default. */}
+                  {rowInfo.some((info) => info.chosen) ? (
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="text-slate-500 dark:text-slate-400">Total berat</span>
+                      <span className="text-right font-semibold text-slate-900 dark:text-white whitespace-nowrap">
+                        {weightSummary.grams > 0 ? formatWeightExact(weightSummary.grams) : "-"}
+                        {weightSummary.missingQty > 0 ? (
+                          <span className="block text-[11px] font-bold text-amber-600 dark:text-amber-400">
+                            {weightSummary.missingQty} item belum ada berat
+                          </span>
+                        ) : null}
+                      </span>
+                    </div>
+                  ) : null}
                   <div className="flex items-center justify-between">
                     <span className="text-slate-500 dark:text-slate-400">Subtotal</span>
                     <span className="font-semibold text-slate-900 dark:text-white">Rp {formatRupiah(subtotal)}</span>
