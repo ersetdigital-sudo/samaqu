@@ -9,6 +9,22 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
+/* ─── Monokrom hitam-putih — token yang sama dengan komponen beranda
+   (`CaraPemesanan.tsx`, `Koleksi.tsx`, `FinalCta.tsx`), supaya halaman bio tidak
+   memakai palet sendiri (dulu: latar espresso + kartu krem + aksen emas). ─── */
+const INK = "#000000";
+const MUTED = "rgba(0,0,0,.6)";
+const MUTED_SOFT = "rgba(0,0,0,.35)";
+const LINE = "rgba(0,0,0,.1)";
+const CARD_BG = "#ffffff";
+const CARD_BORDER = "rgba(0,0,0,.08)";
+const CARD_SHADOW = "0 14px 34px -20px rgba(0,0,0,.18)";
+const CARD_SHADOW_HOVER = "0 20px 44px -22px rgba(0,0,0,.26)";
+/** Permukaan kaca di atas foto (tombol carousel) — idiom tombol hero beranda. */
+const GLASS = "rgba(255,255,255,.75)";
+const FONT_UI = "var(--font-inter), system-ui, sans-serif";
+const FONT_DISPLAY = "var(--font-cormorant), Georgia, serif";
+
 const FALLBACK_SLIDES = [
   { src: "/bio-images/7ac920f0-0cd1-4296-8604-1ada8c4cd69f.png", alt: "Koleksi Samaqu 1" },
   { src: "/bio-images/1db09a85-30ed-4d90-82d3-267b6618b580.png", alt: "Koleksi Samaqu 2" },
@@ -103,7 +119,7 @@ export default function BioLinkPage() {
   }, {});
 
   return (
-    <main className="min-h-screen" style={{ background: "#0d0b0a", color: "#f4efe8", fontFamily: '"Manrope", system-ui, sans-serif' }}>
+    <main className="min-h-screen" style={{ background: CARD_BG, color: INK, fontFamily: FONT_UI }}>
       <div className="mx-auto" style={{ maxWidth: 520 }}>
 
         {/* Carousel */}
@@ -122,52 +138,62 @@ export default function BioLinkPage() {
               ))}
             </div>
 
-            {/* Pagination */}
-            <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 z-10">
-              {slides.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setCurrent(i)}
-                  className="rounded-full transition-all duration-300"
-                  style={{
-                    width: 6,
-                    height: 6,
-                    background: i === current ? "#c8a97e" : "#fff",
-                    opacity: i === current ? 1 : 0.35,
-                  }}
-                  aria-label={`Slide ${i + 1}`}
-                />
-              ))}
+            {/* Pagination — titik di dalam pilihan kaca putih supaya tetap terbaca di atas foto */}
+            <div className="absolute bottom-3 left-0 right-0 flex justify-center z-10">
+              <div
+                className="flex items-center rounded-full"
+                style={{ background: GLASS, backdropFilter: "blur(12px)", border: `1px solid ${CARD_BORDER}`, padding: 4 }}
+              >
+                {slides.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setCurrent(i)}
+                    className="dot"
+                    aria-label={`Slide ${i + 1}`}
+                    aria-current={i === current ? "true" : undefined}
+                  >
+                    <span
+                      style={{
+                        display: "block",
+                        width: 6,
+                        height: 6,
+                        borderRadius: 999,
+                        background: i === current ? INK : "rgba(0,0,0,.35)",
+                      }}
+                    />
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Nav buttons */}
             <button
               onClick={prev}
-              className="absolute left-3 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center rounded-full"
-              style={{ width: 30, height: 30, background: "rgba(0,0,0,.45)", backdropFilter: "blur(4px)" }}
+              className="nav-btn absolute left-3 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center rounded-full"
+              style={{ width: 30, height: 30, background: GLASS, backdropFilter: "blur(12px)", border: `1px solid ${CARD_BORDER}` }}
               aria-label="Sebelumnya"
             >
-              <svg style={{ width: 18, height: 18, stroke: "#fff", fill: "none", strokeWidth: 1.6, strokeLinecap: "round", strokeLinejoin: "round" }} viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6" /></svg>
+              <svg style={{ width: 18, height: 18, stroke: INK, fill: "none", strokeWidth: 1.6, strokeLinecap: "round", strokeLinejoin: "round" }} viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6" /></svg>
             </button>
             <button
               onClick={next}
-              className="absolute right-3 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center rounded-full"
-              style={{ width: 30, height: 30, background: "rgba(0,0,0,.45)", backdropFilter: "blur(4px)" }}
+              className="nav-btn absolute right-3 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center rounded-full"
+              style={{ width: 30, height: 30, background: GLASS, backdropFilter: "blur(12px)", border: `1px solid ${CARD_BORDER}` }}
               aria-label="Berikutnya"
             >
-              <svg style={{ width: 18, height: 18, stroke: "#fff", fill: "none", strokeWidth: 1.6, strokeLinecap: "round", strokeLinejoin: "round" }} viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" /></svg>
+              <svg style={{ width: 18, height: 18, stroke: INK, fill: "none", strokeWidth: 1.6, strokeLinecap: "round", strokeLinejoin: "round" }} viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" /></svg>
             </button>
 
-            {/* Fade bottom */}
-            <div className="absolute inset-x-0 bottom-0 h-[110px] pointer-events-none" style={{ background: "linear-gradient(to top, #0d0b0a, transparent)" }} />
+            {/* Fade bottom — menyatu ke latar putih halaman */}
+            <div className="absolute inset-x-0 bottom-0 h-[110px] pointer-events-none" style={{ background: `linear-gradient(to top, ${CARD_BG}, transparent)` }} />
           </div>
         </section>
 
         {/* Header */}
-        <header className="px-6 pt-2 pb-7 text-center" style={{ background: "radial-gradient(120% 60% at 50% 0%,rgba(200,169,126,.16),transparent 70%)" }}>
-          <h1 className="text-4xl sm:text-5xl font-light tracking-[0.32em]" style={{ fontFamily: '"Cormorant Garamond", serif', paddingLeft: "0.32em" }}>SAMAQU</h1>
-          <p className="text-lg sm:text-xl mt-2" style={{ fontFamily: '"Cormorant Garamond", serif', color: "#e9dfd1" }}>Untuk Orang Biasa yang Sedang Bertumbuh.</p>
-          <p className="text-[13px] leading-relaxed mt-3 max-w-[380px] mx-auto" style={{ color: "#a89c8e" }}>
+        <header className="px-6 pt-2 pb-7 text-center" style={{ background: "radial-gradient(120% 60% at 50% 0%,rgba(0,0,0,.05),transparent 70%)" }}>
+          <h1 className="text-4xl sm:text-5xl font-light tracking-[0.32em]" style={{ fontFamily: FONT_DISPLAY, color: INK, paddingLeft: "0.32em" }}>SAMAQU</h1>
+          <p className="text-lg sm:text-xl mt-2" style={{ fontFamily: FONT_DISPLAY, color: INK }}>Untuk Orang Biasa yang Sedang Bertumbuh.</p>
+          <p className="text-[13px] leading-relaxed mt-3 max-w-[380px] mx-auto" style={{ color: MUTED }}>
             Samaqu hadir untuk menemani perjalananmu, agar tampil lebih percaya diri dan terus bertumbuh untuk memberi manfaat.
           </p>
         </header>
@@ -176,7 +202,7 @@ export default function BioLinkPage() {
           {Object.entries(sections).map(([section, items]) => (
             <section key={section}>
               <div className="flex items-center gap-2 mb-3 px-1">
-                <svg className="icon text-[#c8a97e]" viewBox="0 0 24 24">
+                <svg className="icon" style={{ color: MUTED }} viewBox="0 0 24 24">
                   <path d={SECTION_ICONS[section] || SECTION_ICONS.Belanja} />
                 </svg>
                 <span className="sec-label">{section}</span>
@@ -214,10 +240,10 @@ export default function BioLinkPage() {
                       <span className="flex-1">
                         <span className="block text-[14px] font-medium">{link.label}</span>
                         {link.subtitle && (
-                          <span className="block text-[11px] text-black/45">{link.subtitle}</span>
+                          <span className="block text-[11px]" style={{ color: MUTED }}>{link.subtitle}</span>
                         )}
                       </span>
-                      <svg className="icon opacity-40 shrink-0" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" /></svg>
+                      <svg className="icon shrink-0" style={{ color: MUTED_SOFT }} viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" /></svg>
                     </a>
                   ))}
                 </div>
@@ -227,17 +253,22 @@ export default function BioLinkPage() {
         </div>
 
         {/* Footer */}
-        <footer className="py-6 text-center" style={{ borderTop: "1px solid rgba(200,169,126,.22)" }}>
-          <div className="tracking-[0.42em] text-sm" style={{ fontFamily: '"Cormorant Garamond", serif', color: "#e9dfd1", paddingLeft: "0.42em" }}>SAMAQU</div>
-          <p className="text-[11px] mt-2" style={{ color: "#6f665c" }}>© 2024 Samaqu. All rights reserved.</p>
+        <footer className="py-6 text-center" style={{ borderTop: `1px solid ${LINE}` }}>
+          <div className="tracking-[0.42em] text-sm" style={{ fontFamily: FONT_DISPLAY, color: INK, paddingLeft: "0.42em" }}>SAMAQU</div>
+          <p className="text-[11px] mt-2" style={{ color: MUTED }}>© 2024 Samaqu. All rights reserved.</p>
         </footer>
       </div>
 
       <style>{`
         .icon { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
-        .card { background: linear-gradient(180deg, #ece6dd, #e3dcd1); color: #1a1613; border-radius: 14px; transition: transform .18s ease, box-shadow .18s ease; box-shadow: 0 1px 0 rgba(255,255,255,.5) inset, 0 6px 18px rgba(0,0,0,.35); text-decoration: none; }
-        .card:hover { transform: translateY(-2px); box-shadow: 0 10px 26px rgba(0,0,0,.5); }
-        .sec-label { letter-spacing: .28em; font-size: 11px; color: #c8a97e; text-transform: uppercase; }
+        /* Kartu putih + garis rambut, sama seperti kartu beranda (CaraPemesanan: CARD_BG/CARD_BORDER). */
+        .card { background: ${CARD_BG}; color: ${INK}; border: 1px solid ${CARD_BORDER}; border-radius: 14px; transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; box-shadow: ${CARD_SHADOW}; text-decoration: none; }
+        .card:hover { transform: translateY(-2px); box-shadow: ${CARD_SHADOW_HOVER}; border-color: rgba(0,0,0,.14); }
+        .sec-label { letter-spacing: .28em; font-size: 11px; color: ${MUTED}; text-transform: uppercase; }
+        .dot { display: grid; place-items: center; width: 14px; height: 14px; padding: 0; border: 0; background: none; border-radius: 999px; cursor: pointer; }
+        .nav-btn { transition: background .18s ease; }
+        .nav-btn:hover { background: #ffffff; }
+        .card:focus-visible, .dot:focus-visible, .nav-btn:focus-visible { outline: 2px solid ${INK}; outline-offset: 2px; }
       `}</style>
     </main>
   );
