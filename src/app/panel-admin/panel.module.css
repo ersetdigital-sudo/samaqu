@@ -616,7 +616,6 @@ svg.heart { width: 14px; height: 14px; fill: #e46a92; stroke: none; color: #e46a
   background-clip: content-box;
 }
 .aiLog::-webkit-scrollbar-thumb:hover { background: rgba(194, 37, 92, 0.4); background-clip: content-box; }
-.aiEmpty { margin: auto; text-align: center; color: var(--mut); font-size: 13.5px; line-height: 1.6; max-width: 48ch; }
 .aiRow { display: flex; flex: none; }
 .aiRowUser { justify-content: flex-end; }
 .aiBubble {

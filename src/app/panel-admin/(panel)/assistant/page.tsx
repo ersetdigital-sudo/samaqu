@@ -8,11 +8,14 @@ import {
   accountNs,
   appendArchive,
   completeMessages,
+  hasUserTurn,
   parseHistory,
+  seedIfEmpty,
   storageKeys,
   type HistoryMsg,
   type StorageKeys,
 } from "../../assistant-history";
+import { GREETING, busyLabel } from "../../assistant-copy";
 import styles from "../../panel.module.css";
 
 /**
@@ -36,26 +39,6 @@ const SUGGESTIONS = [
   "Pesanan mana yang perlu dikirim?",
   "Produk apa saja yang stoknya menipis?",
 ];
-
-/**
- * Teks indikator saat asisten bekerja. Murni tampilan (bukan bagian dari logika AI/API):
- * dipilih dari kata kunci pertanyaan terakhir supaya terasa mengikuti aktivitasnya.
- * Urutan penting — pola yang lebih spesifik diperiksa lebih dulu.
- */
-const BUSY_LABELS: { re: RegExp; text: string }[] = [
-  { re: /mengapa|kenapa|penyebab|masalah|kendala|error|gagal|komplain|keluhan|batal|terlambat|telat/i, text: "Aku telusuri informasinya dulu ya..." },
-  { re: /pesanan|pesan|order|resi|pengiriman|dikirim|kirim|ekspedisi|paket|awb/i, text: "Aku cari pesanannya dulu ya, Lea..." },
-  { re: /stok|habis|menipis|varian|gudang|restock|barang/i, text: "Sebentar ya, aku cek stoknya..." },
-  { re: /omset|omzet|penjualan|pendapatan|revenue|keuntungan|laba|margin/i, text: "Aku hitungkan dulu ya, Lea..." },
-  { re: /rangkum|ringkas|kondisi|operasional|situasi|aktivitas|kabar|hari ini/i, text: "Aku rangkum kondisi toko dulu ya..." },
-];
-
-const BUSY_FALLBACK = "Sebentar ya, Lea. Aku bantu cek dulu...";
-
-function busyLabel(question: string): string {
-  for (const { re, text } of BUSY_LABELS) if (re.test(question)) return text;
-  return BUSY_FALLBACK;
-}
 
 function newSessionId(): string {
   try {
@@ -133,9 +116,9 @@ export default function AssistantPage() {
         localStorage.setItem(keys.session, sid);
         sessionIdRef.current = sid;
 
-        // Riwayat lama tetap dipakai; jawaban terpotong tidak pernah dimuat (lihat parseHistory).
-        const loaded = parseHistory(raw);
-        if (loaded.length) setMessages(loaded);
+        // Percakapan lama dipakai apa adanya. Kalau kosong (percakapan baru), Ara menyapa
+        // sekali — sapaan ikut tersimpan sehingga tidak berulang saat refresh/pindah menu.
+        setMessages(seedIfEmpty(parseHistory(raw), GREETING));
       } catch {
         // mode privat: sesi hanya hidup di memori
       }
@@ -202,7 +185,7 @@ export default function AssistantPage() {
     if (busy) return;
     const keys = keysRef.current;
     try {
-      if (keys && messages.length) {
+      if (keys && hasUserTurn(messages)) {
         const entry = {
           at: new Date().toISOString(),
           sessionId: sessionIdRef.current,
@@ -217,7 +200,8 @@ export default function AssistantPage() {
     } catch {
       // mode privat: percakapan baru tetap jalan, hanya tidak tersimpan
     }
-    setMessages([]);
+    // Percakapan baru dimulai lagi dengan sapaan Ara (sekali saja).
+    setMessages(seedIfEmpty([], GREETING));
     setInput("");
     setError(null);
     setNotice(null);
@@ -346,7 +330,7 @@ export default function AssistantPage() {
           type="button"
           className={styles.aiNew}
           onClick={startNewConversation}
-          disabled={busy || messages.length === 0}
+          disabled={busy || !hasUserTurn(messages)}
           title="Mulai percakapan kosong (percakapan sekarang tetap tersimpan)"
         >
           + Percakapan baru
@@ -354,27 +338,14 @@ export default function AssistantPage() {
       </div>
 
       <div className={styles.aiLog} ref={listRef}>
-        {messages.length === 0 ? (
-          <div className={styles.aiEmpty}>
-            <p style={{ margin: "0 0 12px" }}>Belum ada percakapan. Coba salah satu pertanyaan ini:</p>
-            <div className={styles.aiChips}>
-              {SUGGESTIONS.map((s) => (
-                <button key={s} type="button" className={styles.aiChip} onClick={() => void send(s)}>
-                  {s}
-                </button>
-              ))}
+        {messages.map((m, i) => (
+          <div key={i} className={`${styles.aiRow} ${m.role === "user" ? styles.aiRowUser : ""}`}>
+            <div className={`${styles.aiBubble} ${m.role === "user" ? styles.aiUser : styles.aiBot}`}>
+              <RichText text={m.content} />
+              {m.incomplete ? <span className={styles.aiTag}>belum lengkap</span> : null}
             </div>
           </div>
-        ) : (
-          messages.map((m, i) => (
-            <div key={i} className={`${styles.aiRow} ${m.role === "user" ? styles.aiRowUser : ""}`}>
-              <div className={`${styles.aiBubble} ${m.role === "user" ? styles.aiUser : styles.aiBot}`}>
-                <RichText text={m.content} />
-                {m.incomplete ? <span className={styles.aiTag}>belum lengkap</span> : null}
-              </div>
-            </div>
-          ))
-        )}
+        ))}
         {busy ? (
           <div className={styles.aiRow}>
             <div className={`${styles.aiBubble} ${styles.aiBot}`}>{busyLabel(activeQuestion)}</div>
@@ -382,15 +353,13 @@ export default function AssistantPage() {
         ) : null}
       </div>
 
-      {messages.length > 0 ? (
-        <div className={styles.aiChips}>
-          {SUGGESTIONS.map((s) => (
-            <button key={s} type="button" className={styles.aiChip} disabled={busy} onClick={() => void send(s)}>
-              {s}
-            </button>
-          ))}
-        </div>
-      ) : null}
+      <div className={styles.aiChips}>
+        {SUGGESTIONS.map((s) => (
+          <button key={s} type="button" className={styles.aiChip} disabled={busy} onClick={() => void send(s)}>
+            {s}
+          </button>
+        ))}
+      </div>
 
       {notice ? <p className={styles.aiNotice}>{notice}</p> : null}
       {error ? <p className={styles.aiError}>{error}</p> : null}
