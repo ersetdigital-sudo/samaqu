@@ -286,6 +286,11 @@ export const base44 = {
         const json = await call<{ districts: string[] }>("GET", `${WILAYAH}?${params.toString()}`);
         return json.districts ?? [];
       },
+      /** Kode pos yang mungkin untuk kota + kecamatan (bantuan isi alamat). */
+      async postalCodes(city: string, district: string) {
+        const params = new URLSearchParams({ city, district });
+        return call<{ postal_codes: string[] }>("GET", `${WILAYAH}?${params.toString()}`);
+      },
     },
 
     /**

@@ -253,6 +253,29 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
   });
 
   /**
+   * Bantuan kode pos: setelah kota + kecamatan dipilih, ambil kode pos dari peta yang sama
+   * dengan fitur "tempel alamat". Satu kode pos → isi otomatis; lebih dari satu → tampilkan
+   * pilihan (tidak menebak).
+   */
+  const { data: postalLookup } = useQuery({
+    queryKey: ["transaksi", "kodepos", form?.city || "", form?.kecamatan || ""],
+    queryFn: () => base44.entities.Wilayah.postalCodes(form?.city || "", form?.kecamatan || ""),
+    enabled: isOpen && Boolean(form?.city) && Boolean(form?.kecamatan),
+    staleTime: 24 * 60 * 60 * 1000,
+  });
+  const postalCodes = postalLookup?.postal_codes || [];
+  const autoPostal = postalCodes.length === 1 ? postalCodes[0] : "";
+
+  useEffect(() => {
+    if (!isOpen || !autoPostal) return;
+    // Jangan timpa kode pos yang sudah diketik admin; isi hanya kalau kolomnya masih kosong.
+    setForm((current) => (current && !current.postal_code ? { ...current, postal_code: autoPostal } : current));
+  }, [isOpen, autoPostal]);
+
+  /** Pilihan kode pos: hasil lookup wilayah didahulukan, lalu saran dari teks yang ditempel. */
+  const postalSuggestions = postalCodes.length > 0 ? postalCodes : pastePostal;
+
+  /**
    * Satu baris data per (produk + warna). Urutan & "warna" memakai aturan bersama
    * `variantSortKey` — sama dengan Daftar Produk & Laporan Stok (varian Thobe menyimpan
    * warna `default`, jadi warnanya diambil dari nama produk).
@@ -1851,7 +1874,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                           label="Provinsi"
                           value={form.province}
                           options={provinces}
-                          onChange={(value) => updateForm({ province: value, city: "", kecamatan: "" })}
+                          onChange={(value) => updateForm({ province: value, city: "", kecamatan: "", postal_code: "" })}
                           error={addressErrorText("province")}
                         />
                         <WilayahSelect
@@ -1859,7 +1882,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                           value={form.city}
                           options={cities}
                           disabled={!form.province}
-                          onChange={(value) => updateForm({ city: value, kecamatan: "" })}
+                          onChange={(value) => updateForm({ city: value, kecamatan: "", postal_code: "" })}
                           error={addressErrorText("city")}
                         />
                         <WilayahSelect
@@ -1867,7 +1890,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                           value={form.kecamatan}
                           options={districts}
                           disabled={!form.city}
-                          onChange={(value) => updateForm({ kecamatan: value })}
+                          onChange={(value) => updateForm({ kecamatan: value, postal_code: "" })}
                           error={addressErrorText("kecamatan")}
                           hint={
                             addressPrefilledFrom && !form.kecamatan
@@ -1887,14 +1910,19 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                             placeholder="55581"
                             className={`${inputClass} ${saveAttempted && addressErrors.postal_code ? "border-red-300 dark:border-red-900/60" : ""}`}
                           />
+                          {autoPostal && form.postal_code === autoPostal ? (
+                            <p className="mt-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                              Kode pos terisi otomatis dari kecamatan.
+                            </p>
+                          ) : null}
                           {/* Kecamatan ini punya beberapa kode pos di data wilayah → tawarkan
                               pilihannya, tidak menebak satu. Chip hilang setelah kolom terisi. */}
-                          {pastePostal.length > 0 && !form.postal_code ? (
+                          {postalSuggestions.length > 0 && !form.postal_code ? (
                             <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                                Pilih
+                                Pilih kode pos
                               </span>
-                              {pastePostal.map((kode) => (
+                              {postalSuggestions.map((kode) => (
                                 <button
                                   key={kode}
                                   type="button"
@@ -2476,28 +2504,34 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                           ) : null}
                         </div>
 
-                        {/* Baris lengkap → tombol Simpan; setelah diklik baris jadi list ringkas. */}
-                        {rowComplete(row) && info.chosen && !info.issue ? (
-                          <button
-                            type="button"
-                            onClick={() => saveRow(index)}
-                            className="w-full inline-flex items-center justify-center gap-2 px-3 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-sm font-bold rounded-xl hover:bg-slate-800 dark:hover:bg-slate-100 transition-all"
-                          >
-                            <Save size={15} /> Simpan produk
-                          </button>
-                        ) : null}
                       </div>
                     );
                   })}
                 </div>
 
-                <button
-                  type="button"
-                  onClick={addRow}
-                  className="inline-flex items-center gap-2 px-3.5 py-2 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-sm font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
-                >
-                  <Plus size={15} /> Tambah produk
-                </button>
+                {/* Aksi baris DI LUAR area scroll daftar item: tombol Simpan selalu kelihatan
+                    walau isi baris lagi di-scroll. */}
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={addRow}
+                    className="inline-flex items-center gap-2 px-3.5 py-2 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-sm font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
+                  >
+                    <Plus size={15} /> Tambah produk
+                  </button>
+                  {openIndex >= 0 &&
+                  rowComplete(items[openIndex]) &&
+                  rowInfo[openIndex]?.chosen &&
+                  !rowInfo[openIndex]?.issue ? (
+                    <button
+                      type="button"
+                      onClick={() => saveRow(openIndex)}
+                      className="ml-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-sm font-bold rounded-xl hover:bg-slate-800 dark:hover:bg-slate-100 transition-all"
+                    >
+                      <Save size={15} /> Simpan produk
+                    </button>
+                  ) : null}
+                </div>
               </section>
                 </>
               )}
