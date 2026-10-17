@@ -75,6 +75,22 @@
   font-family: inherit; font-size: 13px; background: #fff; color: #2a1a22;
 }
 .panel-tx .f input { min-width: 220px; }
+/* Filter cepat "Belum di packing" — pengganti tab packing (sub-status pesanan lunas). */
+.panel-tx .packf {
+  display: inline-flex; align-items: center; gap: 7px;
+  border: 1px solid #eee2e7; border-radius: 12px; padding: 9px 12px;
+  background: #fff; color: #6b4b5a; font: 600 12px inherit; font-family: inherit;
+  cursor: pointer; white-space: nowrap;
+  transition: background .18s ease, color .18s ease, border-color .18s ease;
+}
+.panel-tx .packf:hover { background: #fdf3f7; color: #2a1a22; }
+.panel-tx .packf em {
+  font-style: normal; font-weight: 800; font-size: 11px; min-width: 20px; height: 20px;
+  border-radius: 10px; display: grid; place-items: center;
+  background: #f6eef1; color: #6b4b5a; padding: 0 6px;
+}
+.panel-tx .packf.on { background: #c2255c; border-color: #c2255c; color: #fff; }
+.panel-tx .packf.on em { background: rgba(255, 255, 255, .26); color: #fff; }
 .panel-tx .btn { background: #c2255c; color: #fff; border: 0; border-radius: 20px; padding: 11px 22px; font-weight: 600; font-family: inherit; font-size: 13px; cursor: pointer; }
 .panel-tx .btn:hover { background: #9d174d; }
 
@@ -109,6 +125,9 @@
 }
 .panel-tx .resi-void { color: #b9a8af; text-decoration: line-through; }
 .panel-tx .resi-empty { color: #b9a8af; font-size: 12px; }
+/* Penanda packing di bawah nomor resi. */
+.panel-tx td small.pack-todo { color: #c76f00; font-weight: 600; }
+.panel-tx td small.pack-done { color: #2f9e5b; font-weight: 600; }
 /* Kolom panah: `td` umumnya `overflow:hidden` + padding 14px, sehingga di kolom sempit "›"
  * ikut terpotong. Padding dipangkas dan overflow dibuka khusus kolom ini. */
 .panel-tx .chev { color: #c2255c; font-weight: 700; }

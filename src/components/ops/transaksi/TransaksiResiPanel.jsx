@@ -19,7 +19,7 @@
 
 import { forwardRef, useImperativeHandle, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertCircle, Check, Truck } from "lucide-react";
+import { AlertCircle, Clipboard, ClipboardCheck, Truck } from "lucide-react";
 import { base44 } from "@/lib/ops-api";
 import { formatWeightExact } from "@/lib/shipping-weight";
 
@@ -164,9 +164,13 @@ const TransaksiResiPanel = forwardRef(function TransaksiResiPanel({ order, onRes
             <button
               type="button"
               onClick={copyAwb}
-              className="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-[11px] font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+              className={`shrink-0 inline-flex items-center justify-center p-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors ${
+                copied ? "text-emerald-600 dark:text-emerald-400" : "text-slate-600 dark:text-slate-300"
+              }`}
+              aria-label={copied ? "Nomor resi tersalin" : "Salin nomor resi"}
+              title={copied ? "Tersalin" : "Salin nomor resi"}
             >
-              <Check size={13} /> {copied ? "Tersalin" : "Salin"}
+              {copied ? <ClipboardCheck size={15} /> : <Clipboard size={15} />}
             </button>
           </div>
 
