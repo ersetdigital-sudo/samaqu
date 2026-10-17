@@ -17,7 +17,7 @@
  * `Transaction.createResi` (route admin `PATCH /api/admin/orders` aksi `createJnt`, apa adanya).
  */
 
-import { useRef, useState } from "react";
+import { forwardRef, useImperativeHandle, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertCircle, Check, Truck } from "lucide-react";
 import { base44 } from "@/lib/ops-api";
@@ -41,7 +41,7 @@ function readLabelSize() {
   }
 }
 
-export default function TransaksiResiPanel({ order, onResiCreated }) {
+const TransaksiResiPanel = forwardRef(function TransaksiResiPanel({ order, onResiCreated, hidePrintButton = false }, ref) {
   const [resiCheck, setResiCheck] = useState(null);
   const [resiChecking, setResiChecking] = useState(false);
   const [resiBusy, setResiBusy] = useState(false);
@@ -56,11 +56,20 @@ export default function TransaksiResiPanel({ order, onResiCreated }) {
   /** Kunci proses per transaksi: klik beruntun / Enter berulang tidak mengirim dua panggilan. */
   const resiLock = useRef(false);
 
+  const awb = createdAwb || order?.awb_no || "";
+  const cancelled = order?.status === "dibatalkan";
+
+  // Panel admin menaruh tombol "Cetak Resi" di footer drawer (sebelah "Ubah"). Aksinya
+  // dipanggil dari luar lewat ref, supaya dialog pilih ukuran tetap satu sumber di sini.
+  useImperativeHandle(ref, () => ({
+    print: () => {
+      if (awb && !cancelled) setPrintSize(labelSize);
+    },
+  }), [awb, cancelled, labelSize]);
+
   if (!order) return null;
 
-  const awb = createdAwb || order.awb_no || "";
   const shippingStatus = createdAwb ? "menunggu_pickup" : order.shipping_status || "";
-  const cancelled = order.status === "dibatalkan";
 
   /** Langkah 1: pra-cek baca-saja (server memeriksa alamat, nomor, kode area J&T, berat). */
   const openResiConfirm = async () => {
@@ -174,7 +183,7 @@ export default function TransaksiResiPanel({ order, onResiCreated }) {
             </p>
           ) : null}
 
-          {!cancelled ? (
+          {!cancelled && !hidePrintButton ? (
             /* Satu tombol saja (alurnya sama dengan "Buat Resi" / "Atur Pesanan"): klik → popup
                → pilih ukuran label → halaman label dibuka di tab baru. */
             <button
@@ -395,4 +404,6 @@ export default function TransaksiResiPanel({ order, onResiCreated }) {
       </AnimatePresence>
     </>
   );
-}
+});
+
+export default TransaksiResiPanel;
