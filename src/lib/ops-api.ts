@@ -44,6 +44,8 @@ const TRANSAKSI = "/api/ops/transaksi";
 const ALAMAT = "/api/ops/alamat";
 /** Provinsi/kota/kecamatan dari dataset area J&T (untuk isian alamat). */
 const WILAYAH = "/api/ops/wilayah";
+/** Deteksi alamat dari teks yang ditempel (tombol "Isi otomatis" di drawer Transaksi). */
+const ALAMAT_TEBAK = "/api/ops/alamat-tebak";
 /** Sebaran pesanan per kota (menu Database Kota). */
 const KOTA = "/api/ops/kota";
 /** Cek ongkir J&T: berat dihitung di server, tarifnya dari /api/shipping/jnt-cost (checkout). */
@@ -283,6 +285,27 @@ export const base44 = {
         const params = new URLSearchParams({ city });
         const json = await call<{ districts: string[] }>("GET", `${WILAYAH}?${params.toString()}`);
         return json.districts ?? [];
+      },
+    },
+
+    /**
+     * "Tempel alamat lengkap, isi otomatis": kirim teks mentah, server mendeteksi
+     * nama/nomor HP + provinsi/kota/kecamatan/kode pos dari data wilayah yang dipakai
+     * dropdown. Bagian yang tidak dikenali dibiarkan kosong (tidak ditebak).
+     */
+    AlamatTebak: {
+      async deteksi(text: string) {
+        return call<{
+          name: string;
+          whatsapp: string;
+          street: string;
+          province: string;
+          city: string;
+          kecamatan: string;
+          postal_code: string;
+          missing: string[];
+          filled: string[];
+        }>("POST", ALAMAT_TEBAK, { text });
       },
     },
 
