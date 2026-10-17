@@ -74,6 +74,55 @@ export async function GET(req: NextRequest) {
     };
   });
 
-  mapped.sort((a, b) => (desc ? String(b.created_date).localeCompare(String(a.created_date)) : String(a.created_date).localeCompare(String(b.created_date))));
-  return NextResponse.json({ items: mapped.slice(0, limit) });
+  // Barang keluar dari Tukar Size/Return tidak berasal dari order penjualan; diambil dari
+  // ledger `stock_movements` supaya riwayat stok tetap satu sumber.
+  const { data: movements } = await admin
+    .from("stock_movements")
+    .select("id, product_id, color, size, qty, source, ref_id, notes, created_at")
+    .eq("direction", "out")
+    .in("source", ["tukar_size", "return"])
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  let returnOut: any[] = [];
+  if (movements && movements.length > 0) {
+    const productIds = [...new Set(movements.map((row) => row.product_id).filter(Boolean))];
+    const refIds = [...new Set(movements.map((row) => row.ref_id).filter(Boolean))];
+    const [{ data: productRows }, { data: returnRows }] = await Promise.all([
+      admin.from("products").select("id, name").in("id", productIds),
+      refIds.length > 0
+        ? admin.from("returns").select("id, return_number, order_number").in("id", refIds)
+        : Promise.resolve({ data: [] }),
+    ]);
+    const productName = new Map((productRows || []).map((row) => [row.id, row.name]));
+    const returnRef = new Map((returnRows || []).map((row) => [row.id, row]));
+    returnOut = movements.map((row) => {
+      const ref = returnRef.get(row.ref_id);
+      return {
+        id: `movement-${row.id}`,
+        date: String(row.created_at || "").slice(0, 10),
+        order_id: ref?.return_number || "-",
+        product_id: row.product_id,
+        product_name: productName.get(row.product_id) || row.product_id,
+        variant_color: row.color,
+        variant_size: row.size,
+        series: null,
+        kain: null,
+        qty: Number(row.qty) || 0,
+        price: 0,
+        total: 0,
+        ongkir: 0,
+        platform: row.source === "tukar_size" ? "Tukar Size" : "Return",
+        status: row.source === "tukar_size" ? "tukar_size" : "retur",
+        payment_method: null,
+        is_free_gift: false,
+        is_stock_movement: true,
+        created_date: row.created_at,
+      };
+    });
+  }
+
+  const combined = [...mapped, ...returnOut];
+  combined.sort((a, b) => (desc ? String(b.created_date).localeCompare(String(a.created_date)) : String(a.created_date).localeCompare(String(b.created_date))));
+  return NextResponse.json({ items: combined.slice(0, limit) });
 }

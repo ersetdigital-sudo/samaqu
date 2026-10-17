@@ -74,6 +74,16 @@ export async function DELETE(req: NextRequest) {
 
     const admin = getSupabaseAdmin();
     const { data: row } = await admin.from("stock_in").select("*").eq("id", id).maybeSingle();
+
+    // Baris otomatis (pembatalan/retur/tukar size) tidak boleh dihapus dari sini:
+    // stoknya sudah diterapkan oleh alur asalnya dan pembalikannya harus lewat alur itu.
+    if (row && ["batal", "tukar_size", "return"].includes(String(row.source || ""))) {
+      return NextResponse.json(
+        { error: "Baris otomatis dari retur/pembatalan tidak bisa dihapus dari sini" },
+        { status: 400 },
+      );
+    }
+
     const { error, count } = await admin.from("stock_in").delete({ count: "exact" }).eq("id", id);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 

@@ -35,7 +35,7 @@ const MENU_GROUPS: { label: string; items: MenuItem[] }[] = [
     label: "Penjualan",
     items: [
       { title: "Transaksi", href: "/ops/transaksi", icon: FileText },
-      { title: "Return", href: "/ops/retur", icon: RotateCcw, soon: true },
+      { title: "Return", href: "/ops/retur", icon: RotateCcw },
       { title: "Leads", href: "/ops/leads", icon: Users },
       { title: "Follow-up", href: "/ops/follow-up", icon: IconPhoneCall },
       { title: "Laporan Leads", href: "/ops/leads/laporan", icon: BarChart3 },
