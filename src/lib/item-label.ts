@@ -20,10 +20,21 @@ export function isPaketSize(size?: string | null): boolean {
   return String(size ?? "").trim().toUpperCase() === PAKET_SIZE;
 }
 
+/**
+ * Kategori Cover & Hanger ditulis beda-beda di data lama ("Cover Hanger", "COVER & HANGER",
+ * "Cover&Hanger", "Hanger"). Dipakai SEMUA tempat supaya kategori ini tidak pernah lagi
+ * jatuh ke alur pakaian hanya karena ejaannya berbeda.
+ */
+export function isPaketKategori(category?: string | null): boolean {
+  const teks = String(category ?? "").toLowerCase().replace(/[^a-z]+/g, " ").trim();
+  if (!teks) return false;
+  return teks.split(" ").includes("hanger") || teks === "cover";
+}
+
 /** Item ini varian "paket" (Cover & Hanger)? */
 export function isPaketItem(item?: { size?: string | null; category?: string | null } | null): boolean {
   if (!item) return false;
-  if (String(item.category ?? "").trim() === PAKET_CATEGORY) return true;
+  if (isPaketKategori(item.category)) return true;
   return isPaketSize(item.size);
 }
 
