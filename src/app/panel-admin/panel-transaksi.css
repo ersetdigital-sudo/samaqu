@@ -98,8 +98,18 @@
 .panel-tx tbody tr:hover { background: #fdf3f7; }
 .panel-tx td small { display: block; color: #8a7d83; font-size: 11px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .panel-tx .id { font-weight: 700; color: #c2255c; white-space: nowrap; font-size: 13px; }
-.panel-tx .src { font-size: 11px; color: #6b4b5a; }
+/* Sumber pesanan kini jadi baris kecil di bawah nominal Total — bukan kolom sendiri. */
+.panel-tx .mono small { font-weight: 400; font-variant-numeric: normal; color: #8a7d83; }
 .panel-tx .mono { font-variant-numeric: tabular-nums; font-weight: 700; white-space: nowrap; font-size: 13px; }
+/* Nomor resi J&T. Monospace-tabular supaya digit tidak "geser" antar baris. */
+.panel-tx .resi-no {
+  display: inline-block; max-width: 100%; vertical-align: bottom;
+  font-variant-numeric: tabular-nums; font-weight: 600; font-size: 12px;
+  letter-spacing: .01em; color: #2a1a22;
+  overflow: hidden; text-overflow: ellipsis;
+}
+.panel-tx .resi-void { color: #b9a8af; text-decoration: line-through; }
+.panel-tx .resi-empty { color: #b9a8af; font-size: 12px; }
 .panel-tx .chev { color: #c2255c; font-weight: 700; }
 
 /* ── Badge status ── */
