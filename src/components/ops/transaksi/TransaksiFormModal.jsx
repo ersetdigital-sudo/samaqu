@@ -35,7 +35,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, Check, Info, Loader2, Pencil, Plus, RotateCcw, Save, Trash2, Truck, Wand2, X } from "lucide-react";
+import { AlertCircle, Check, Clock, Info, Loader2, Pencil, Plus, RotateCcw, Save, Trash2, Truck, Wand2, X } from "lucide-react";
 import { base44 } from "@/lib/ops-api";
 import { MANUAL_PRICE_MAX, MANUAL_PRICE_MIN, MANUAL_SOURCE_KEYS, SOURCE_LABEL, manualPrice } from "@/lib/transaksi";
 import { PAKET_SIZE, isPaketKategori, variantName } from "@/lib/item-label";
@@ -161,6 +161,9 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
   const [addressBackup, setAddressBackup] = useState(null);
   /** Hasil "Cek Ongkir" terakhir (daftar layanan J&T + berat & tujuan yang dipakai). */
   const [ongkir, setOngkir] = useState(EMPTY_ONGKIR);
+  /** Layanan yang dipilih — kunci `service|cost`. Dua layanan bisa punya tarif sama,
+   *  jadi ongkir saja tidak cukup untuk menandai baris mana yang aktif. */
+  const [selectedService, setSelectedService] = useState("");
   /**
    * Setelah transaksi tersimpan, drawer TIDAK langsung ditutup: diganti panel "Transaksi tercatat"
    * yang isinya aksi resi (buat + cetak), supaya admin tidak perlu mencari barisnya di daftar.
@@ -295,6 +298,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
     setAddressEditing(false);
     setAddressBackup(null);
     setOngkir(EMPTY_ONGKIR);
+    setSelectedService("");
     setAddressPrefilledFrom("");
     setCustomerSearch("");
     // Drawer dibuka ulang → isian "tempel alamat" tidak boleh menempel dari sesi sebelumnya.
@@ -747,6 +751,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
       return;
     }
 
+    setSelectedService("");
     setOngkir({ ...EMPTY_ONGKIR, status: "loading", destination });
     try {
       const result = await base44.entities.Ongkir.check({ city, kecamatan, items: orderItems });
@@ -772,6 +777,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
   /** Klik salah satu layanan → kolom Ongkir terisi tarifnya (masih bisa diedit manual). */
   const applyOngkir = (service) => {
     setTouched(true);
+    setSelectedService(`${service?.service}|${service?.cost}`);
     updateForm({ shipping_cost: digits(service?.cost) });
   };
 
@@ -2500,7 +2506,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
               {step === 2 && (
                 <>
               {/* Ongkir & diskon */}
-              <section className="space-y-2">
+              <section className="space-y-2.5">
                 <h4 className={sectionClass}>Ongkir &amp; Diskon</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div>
@@ -2511,76 +2517,28 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                         type="text"
                         inputMode="numeric"
                         value={form.shipping_cost}
-                        onChange={(event) => updateForm({ shipping_cost: digits(event.target.value) })}
+                        onChange={(event) => {
+                          // Edit manual = pilihan layanan dilepas (tarif bisa sama antar layanan).
+                          setSelectedService("");
+                          updateForm({ shipping_cost: digits(event.target.value) });
+                        }}
                         placeholder="0"
                         className={`${inputClass} pl-10`}
                       />
                     </div>
-
                     <button
                       type="button"
                       onClick={checkOngkir}
                       disabled={ongkir.status === "loading"}
-                      className="mt-1.5 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-[11px] font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-60 disabled:cursor-wait transition-colors"
+                      className="mt-2 w-full inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border-2 border-[#f3c7d6] dark:border-rose-900/50 text-[#c2255c] dark:text-rose-300 text-sm font-bold hover:bg-[#fdf3f7] dark:hover:bg-rose-900/20 disabled:opacity-60 disabled:cursor-wait transition-colors"
                     >
-                      <Truck size={13} />
-                      {ongkir.status === "loading" ? "Menghitung…" : "Cek Ongkir"}
+                      {ongkir.status === "loading" ? (
+                        <Loader2 size={15} className="animate-spin" />
+                      ) : (
+                        <Truck size={15} />
+                      )}
+                      {ongkir.status === "loading" ? "Menghitung ongkir…" : "Cek Ongkir J&T"}
                     </button>
-
-                    {ongkirStale && (
-                      <p className="mt-1 text-[11px] font-bold text-amber-600 dark:text-amber-400">
-                        Ongkir mungkin berubah, cek ulang
-                      </p>
-                    )}
-
-                    {ongkir.status === "error" && (
-                      <p className="mt-1 text-[11px] font-semibold text-red-600 dark:text-red-400">{ongkir.error}</p>
-                    )}
-
-                    {ongkir.status === "done" && ongkir.services.length > 0 && (
-                      <div className="mt-1.5 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-                        <p className="px-3 py-2 bg-slate-50 dark:bg-slate-900 text-[11px] font-bold text-slate-600 dark:text-slate-300">
-                          Berat {formatWeightExact(ongkir.weightGrams)}
-                          {ongkir.destination ? ` · Tujuan ${ongkir.destination}` : ""}
-                        </p>
-                        <div className="divide-y divide-slate-100 dark:divide-slate-800 max-h-[168px] overflow-y-auto no-scrollbar">
-                          {ongkir.services.map((service) => {
-                            const active = digits(form.shipping_cost) === digits(service.cost);
-                            return (
-                              <button
-                                key={`${service.service}-${service.cost}`}
-                                type="button"
-                                onClick={() => applyOngkir(service)}
-                                className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-left transition-colors ${
-                                  active ? "bg-slate-900 dark:bg-white" : "hover:bg-slate-50 dark:hover:bg-slate-800"
-                                }`}
-                              >
-                                <span
-                                  className={`text-xs font-bold truncate ${
-                                    active ? "text-white dark:text-slate-900" : "text-slate-800 dark:text-slate-200"
-                                  }`}
-                                >
-                                  J&amp;T · {service.service}
-                                  {service.description ? <span className="font-semibold"> · {service.description}</span> : null}
-                                  {service.etd ? <span className="font-semibold"> · Estimasi {service.etd} hari</span> : null}
-                                </span>
-                                <span
-                                  className={`text-xs font-black whitespace-nowrap ${
-                                    active ? "text-white dark:text-slate-900" : "text-slate-900 dark:text-white"
-                                  }`}
-                                >
-                                  Rp {formatRupiah(service.cost)}
-                                </span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-
-                    {ongkir.status === "done" && ongkir.services.length === 0 && ongkir.error && (
-                      <p className="mt-1 text-[11px] font-semibold text-slate-500 dark:text-slate-400">{ongkir.error}</p>
-                    )}
                   </div>
                   <div>
                     <label className={labelClass}>Diskon (opsional)</label>
@@ -2597,6 +2555,91 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                     </div>
                   </div>
                 </div>
+
+                {ongkirStale && (
+                  <p className="text-[11px] font-bold text-amber-600 dark:text-amber-400">
+                    Ongkir mungkin berubah, cek ulang
+                  </p>
+                )}
+
+                {ongkir.status === "error" && (
+                  <p className="text-[11px] font-semibold text-red-600 dark:text-red-400">{ongkir.error}</p>
+                )}
+
+                {/* Hasil tarif dibuat full-width (bukan di dalam kolom input) supaya nama
+                    layanan, estimasi, dan harga tidak berdesakan/terpotong. */}
+                {ongkir.status === "done" && ongkir.services.length > 0 && (
+                  <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+                    <div className="flex items-start gap-2.5 px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
+                      <Truck size={15} className="mt-0.5 shrink-0 text-[#c2255c]" />
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                          Berat kirim
+                        </p>
+                        <p className="text-sm font-bold text-slate-900 dark:text-white">
+                          {formatWeightExact(ongkir.weightGrams)}
+                        </p>
+                        {ongkir.destination ? (
+                          <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 truncate" title={ongkir.destination}>
+                            Tujuan {ongkir.destination}
+                          </p>
+                        ) : null}
+                      </div>
+                    </div>
+                    <div className="divide-y divide-slate-100 dark:divide-slate-800 max-h-[220px] overflow-y-auto no-scrollbar">
+                      {ongkir.services.map((service) => {
+                        const key = `${service.service}|${service.cost}`;
+                        const active = selectedService === key;
+                        const detail = [service.description, service.etd ? `Estimasi ${service.etd} hari` : ""]
+                          .filter(Boolean)
+                          .join(" · ");
+                        return (
+                          <button
+                            key={key}
+                            type="button"
+                            onClick={() => applyOngkir(service)}
+                            aria-pressed={active}
+                            className={`w-full flex items-center gap-3 px-3.5 py-3 text-left transition-colors ${
+                              active
+                                ? "bg-[#fdf3f7] dark:bg-rose-900/20"
+                                : "hover:bg-slate-50 dark:hover:bg-slate-800"
+                            }`}
+                          >
+                            <span
+                              className={`grid place-items-center w-5 h-5 shrink-0 rounded-full border-2 transition-colors ${
+                                active
+                                  ? "border-[#c2255c] bg-[#c2255c] text-white"
+                                  : "border-slate-300 dark:border-slate-600 text-transparent"
+                              }`}
+                            >
+                              <Check size={12} strokeWidth={3} />
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <span className="block text-sm font-bold text-slate-900 dark:text-white truncate">
+                                {service.service}
+                              </span>
+                              {detail ? (
+                                <span className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 truncate">
+                                  {detail}
+                                </span>
+                              ) : null}
+                            </span>
+                            <span className="shrink-0 text-sm font-black text-slate-900 dark:text-white whitespace-nowrap">
+                              Rp {formatRupiah(service.cost)}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p className="px-3.5 py-2 text-[10px] font-semibold text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800">
+                      Pilih layanan untuk mengisi ongkir otomatis. Nominalnya masih bisa diedit.
+                    </p>
+                  </div>
+                )}
+
+                {ongkir.status === "done" && ongkir.services.length === 0 && ongkir.error && (
+                  <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">{ongkir.error}</p>
+                )}
               </section>
 
               {/* Status pembayaran: menentukan server menulis "Lunas" (status diproses) atau
@@ -2606,34 +2649,37 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
               {!isEdit ? (
                 <section className="space-y-2">
                   <h4 className={sectionClass}>Status Pembayaran</h4>
-                  <div className="grid grid-cols-2 gap-2">
+                  {/* Segmented control: pilihan aktif solid + ikon, jadi tidak cuma beda border tipis. */}
+                  <div className="grid grid-cols-2 gap-1 rounded-xl bg-slate-100 dark:bg-slate-800 p-1">
                     {[
-                      { value: "paid", label: "Lunas" },
-                      { value: "unpaid", label: "Belum Lunas" },
+                      { value: "paid", label: "Lunas", icon: Check },
+                      { value: "unpaid", label: "Belum Lunas", icon: Clock },
                     ].map((opsi) => {
                       const active = (form.payment_status || "paid") === opsi.value;
+                      const Icon = opsi.icon;
                       return (
                         <button
                           key={opsi.value}
                           type="button"
                           onClick={() => updateForm({ payment_status: opsi.value })}
-                          className={`rounded-xl border-2 px-3 py-2.5 text-sm font-bold transition-colors ${
+                          aria-pressed={active}
+                          className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-bold transition-all ${
                             active
-                              ? "border-slate-900 dark:border-white bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
-                              : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                              ? "bg-slate-900 text-white shadow-sm dark:bg-white dark:text-slate-900"
+                              : "text-slate-600 dark:text-slate-300 hover:bg-white/70 dark:hover:bg-slate-700"
                           }`}
                         >
+                          <Icon size={15} />
                           {opsi.label}
                         </button>
                       );
                     })}
                   </div>
-                  {form.payment_status === "unpaid" ? (
-                    <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-                      Belum ikut dihitung sebagai omset sampai ditandai lunas. Invoice berisi nomor rekening
-                      otomatis dikirim ke WA pembeli saat Simpan.
-                    </p>
-                  ) : null}
+                  <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                    {form.payment_status === "unpaid"
+                      ? "Belum ikut dihitung sebagai omset sampai ditandai lunas. Invoice berisi nomor rekening otomatis dikirim ke WA pembeli saat Simpan."
+                      : "Transaksi langsung dianggap lunas dan masuk ke omset."}
+                  </p>
                 </section>
               ) : null}
 
