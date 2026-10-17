@@ -33,7 +33,7 @@ import {
 } from "lucide-react";
 import { base44 } from "@/lib/ops-api";
 import { SALE_STATUSES, STATUS_LABEL } from "@/lib/transaksi";
-import { ORDER_STAGE_LABEL, ORDER_STAGE_TABS, matchesStage, orderStage } from "@/lib/order-flow";
+import { ORDER_STAGE_TABS, matchesStage, orderStage } from "@/lib/order-flow";
 import DateFilter, { formatTanggalID } from "@/components/ops/leads/DateFilter";
 import ConfirmDeleteModal from "@/components/ops/ConfirmDeleteModal";
 import TransaksiFormModal from "@/components/ops/transaksi/TransaksiFormModal";
@@ -310,9 +310,8 @@ export default function Transaksi({ variant = "ops" }) {
     [orders],
   );
 
-  // Kelas warna TAHAP ala mockup (badge `.bd` + banner `.ban`).
-  const stageColorKey = (stage) =>
-    ({ belum_bayar: "bayar", belum_dipacking: "packing", sudah_dipacking: "siap", dikirim: "kirim", selesai: "selesai", dibatalkan: "batal" }[stage] || "batal");
+  // Warna badge STATUS pesanan (bukan tahap packing) untuk tabel panel.
+  const PANEL_STATUS_COLOR = { pending: "bayar", diproses: "siap", dikirim: "kirim", selesai: "selesai", dibatalkan: "batal" };
 
   // Modal/overlay dipakai bersama oleh tampilan ops & panel supaya tidak ada logika kembar.
   const overlays = (
@@ -405,7 +404,7 @@ export default function Transaksi({ variant = "ops" }) {
 
         <div className="bar">
           <div className="tabs">
-            {stageTabs.map((tab) => (
+            {stageTabs.filter((tab) => tab.key !== "belum_dipacking" && tab.key !== "sudah_dipacking").map((tab) => (
               <button
                 key={tab.key}
                 type="button"
@@ -428,6 +427,18 @@ export default function Transaksi({ variant = "ops" }) {
               placeholder="Cari nama / nomor HP / No. Order..."
               aria-label="Cari transaksi"
             />
+            {/* Filter cepat khusus admin: antrean pesanan yang belum dipacking.
+                Bukan tab — packing adalah sub-status dari pesanan `diproses`. */}
+            <button
+              type="button"
+              className={`packf${stageFilter === "belum_dipacking" ? " on" : ""}`}
+              onClick={() => setStageFilter((current) => (current === "belum_dipacking" ? "semua" : "belum_dipacking"))}
+              aria-pressed={stageFilter === "belum_dipacking"}
+              title="Tampilkan hanya pesanan yang belum dipacking"
+            >
+              Belum di packing
+              <em>{stageTabs.find((tab) => tab.key === "belum_dipacking")?.count ?? 0}</em>
+            </button>
             <div className="ptx-month">
               <button type="button" onClick={prevMonth} aria-label="Bulan sebelumnya">
                 ‹
@@ -552,9 +563,16 @@ export default function Transaksi({ variant = "ops" }) {
                         ) : (
                           <span className="resi-empty">–</span>
                         )}
+                        {/* Penanda packing khusus pesanan lunas yang belum dikirim:
+                            "Sudah di packing" = resi J&T sudah dibuat. */}
+                        {order.status === "diproses" ? (
+                          <small className={order.awb_no ? "pack-done" : "pack-todo"}>
+                            {order.awb_no ? "Sudah di packing" : "Belum di packing"}
+                          </small>
+                        ) : null}
                       </td>
                       <td>
-                        <span className={`bd s-${stageColorKey(orderStage(order))}`}>{ORDER_STAGE_LABEL[orderStage(order)]}</span>
+                        <span className={`bd s-${PANEL_STATUS_COLOR[order.status] || "batal"}`}>{order.status_label}</span>
                       </td>
                       <td className="chev" style={{ textAlign: "right" }}>
                         ›
