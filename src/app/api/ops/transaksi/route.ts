@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { isOpsAdmin, unauthorized } from "@/lib/ops-auth";
 import { cancelOrderCompletely, type CancelableOrder } from "@/lib/cancel-order";
-import { MANUAL_SOURCE_KEYS, itemSummary, sourceKey, sourceLabel, statusLabel } from "@/lib/transaksi";
+import { MANUAL_PRICE_MAX, MANUAL_PRICE_MIN, MANUAL_SOURCE_KEYS, hasManualPrice, itemSummary, manualPrice, sourceKey, sourceLabel, statusLabel } from "@/lib/transaksi";
 import { localPhone } from "@/lib/whatsapp";
 import { kotaFromShipping } from "@/lib/kota";
 import { itemProductIds, loadOrderPhotoLookup } from "@/lib/order-photo-data";
@@ -28,6 +28,11 @@ import {
  * Stok memakai jalur yang sama dengan checkout: RPC `samaqu_decrement_stock` saat dicatat
  * (sudah menghormati stok bersama ala series) dan `samaqu_restore_stock` saat dibatalkan
  * (lewat `cancelOrderCompletely`, penandanya `orders.stock_reserved`).
+ *
+ * Harga satuan: default dibaca ulang dari `products.price` (harga katalog). Admin boleh menimpanya
+ * dengan harga manual per item (kolom "Harga" di drawer Tambah/Ubah Transaksi) — nilai itu
+ * divalidasi `manualPrice()` lalu disimpan sebagai `order_items.price`, sehingga subtotal/total
+ * pesanan dan semua angka pembukuan (omset, laba, Produk Terlaris) memakai harga yang diketik.
  */
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -57,7 +62,7 @@ function newOrderNumber(createdAt: Date) {
   return `OPS-${createdAt.toISOString().slice(0, 10).replace(/-/g, "")}-${String(Math.floor(Math.random() * 900) + 100)}`;
 }
 
-type ItemInput = { product_id?: unknown; color?: unknown; size?: unknown; quantity?: unknown };
+type ItemInput = { product_id?: unknown; color?: unknown; size?: unknown; quantity?: unknown; price?: unknown };
 
 type Shipping = {
   address: string;
@@ -132,14 +137,23 @@ type Snapshot = {
   size: string;
   quantity: number;
   price: number;
+  /** true = harga baris ini diketik admin (bukan harga katalog). */
+  manual_price: boolean;
 };
 
 type Admin = ReturnType<typeof getSupabaseAdmin>;
 
 /**
- * Harga & nama produk SELALU dibaca ulang dari database (tidak dipercaya dari layar),
- * sama seperti checkout website. Ukuran juga divalidasi harus benar-benar ada supaya
- * pemotongan stok tidak diam-diam terlewat.
+ * Nama & harga produk dibaca ulang dari database (tidak dipercaya dari layar), sama seperti
+ * checkout website. Ukuran juga divalidasi harus benar-benar ada supaya pemotongan stok tidak
+ * diam-diam terlewat.
+ *
+ * PENGECUALIAN — harga manual: kolom "Harga" di drawer Transaksi boleh diisi admin (mis. harga
+ * nego). Nilai itu ikut dikirim sebagai `price` per item dan DIPAKAI sebagai harga baris, supaya
+ * pembukuan (subtotal/total pesanan, omset, laba, Produk Terlaris) memakai harga yang benar-benar
+ * disepakati — bukan harga katalog. Nilainya tetap divalidasi di sini (`manualPrice`), jadi yang
+ * diterima hanya bilangan bulat dalam batas `MANUAL_PRICE_MIN`–`MANUAL_PRICE_MAX`; selain itu
+ * permintaannya ditolak. Tanpa `price`, harga katalog database yang dipakai seperti biasa.
  */
 async function buildSnapshot(admin: Admin, input: ItemInput[]): Promise<{ items?: Snapshot[]; error?: string }> {
   const cleaned = input
@@ -148,6 +162,8 @@ async function buildSnapshot(admin: Admin, input: ItemInput[]): Promise<{ items?
       color: String(row?.color || "default").trim() || "default",
       size: String(row?.size || "").trim().toUpperCase(),
       quantity: Math.round(Number(row?.quantity) || 0),
+      /** Harga manual ketikan admin; `undefined`/kosong = pakai harga katalog. */
+      price: row?.price,
     }))
     .filter((row) => row.product_id);
 
@@ -173,6 +189,22 @@ async function buildSnapshot(admin: Admin, input: ItemInput[]): Promise<{ items?
     if (!variantSet.has(`${row.product_id}||${row.color}||${row.size}`)) {
       return { error: `Ukuran ${row.size} tidak tersedia untuk ${product.name}` };
     }
+
+    // Harga katalog dari database sebagai default; harga manual hanya dipakai kalau dikirim
+    // DAN lolos validasi batas. Yang dikirim klien tidak pernah masuk tanpa diperiksa.
+    let price = Number(product.price) || 0;
+    let manual = false;
+    if (hasManualPrice(row.price)) {
+      const typed = manualPrice(row.price);
+      if (typed === null) {
+        return {
+          error: `Harga manual "${product.name}" tidak valid — isi Rp ${MANUAL_PRICE_MIN} sampai Rp ${MANUAL_PRICE_MAX}`,
+        };
+      }
+      price = typed;
+      manual = true;
+    }
+
     items.push({
       product_id: row.product_id,
       product_name: product.name,
@@ -181,7 +213,8 @@ async function buildSnapshot(admin: Admin, input: ItemInput[]): Promise<{ items?
       color: row.color,
       size: row.size,
       quantity: row.quantity,
-      price: Number(product.price) || 0,
+      price,
+      manual_price: manual,
     });
   }
   return { items };
@@ -574,6 +607,7 @@ export async function PATCH(req: NextRequest) {
         size: d.size,
         quantity: d.qty,
         price: 0,
+        manual_price: false,
       })),
     );
     if (!deducted.ok) {
@@ -591,6 +625,7 @@ export async function PATCH(req: NextRequest) {
         size: d.size,
         quantity: Math.abs(d.qty),
         price: 0,
+        manual_price: false,
       })),
     );
 
