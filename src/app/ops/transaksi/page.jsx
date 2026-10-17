@@ -488,12 +488,12 @@ export default function Transaksi({ variant = "ops" }) {
             <table>
               {/* Lebar kolom dipatok di sini (`table-layout: fixed`) supaya semua tab tampil sama. */}
               <colgroup>
-                <col style={{ width: "16%" }} />
-                <col style={{ width: "16%" }} />
-                <col style={{ width: "27%" }} />
-                <col style={{ width: "10%" }} />
+                <col style={{ width: "19%" }} />
+                <col style={{ width: "15%" }} />
+                <col style={{ width: "24%" }} />
+                <col style={{ width: "9%" }} />
                 <col style={{ width: "12%" }} />
-                <col style={{ width: "14%" }} />
+                <col style={{ width: "16%" }} />
                 <col />
               </colgroup>
               <thead>

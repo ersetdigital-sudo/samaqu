@@ -198,7 +198,9 @@ export default function Leads() {
                 <span className="text-[9px] font-black text-slate-300 dark:text-slate-600 tracking-widest">{String(i + 1).padStart(2, '0')}</span>
               </div>
               <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{c.label}</p>
-              <p className="text-2xl font-black font-heading text-slate-900 dark:text-white mt-0.5 tracking-tight">{c.value}</p>
+              {/* Ukuran nilai ikut lebar layar + tidak boleh membungkus, supaya "Rp" dan nominalnya
+                  selalu sebaris (dulu `text-2xl` tetap sehingga "Rp 8.343.000" pindah baris). */}
+              <p className="text-[clamp(1rem,1.35vw,1.5rem)] font-black font-heading text-slate-900 dark:text-white mt-0.5 tracking-tight whitespace-nowrap">{c.value}</p>
             </div>
           );
         })}

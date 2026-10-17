@@ -52,8 +52,10 @@
 }
 
 /* ---------- sidebar ---------- */
+/* 224px (bukan 248) supaya terasa lebih ringan seperti sidebar dashboard ops.
+   Lebarnya tetap tetap (`flex: none`), jadi isi kanan tidak pernah tertekan. */
 .side {
-  width: 248px;
+  width: 224px;
   background: var(--side);
   color: #e9dfe4;
   display: flex;
