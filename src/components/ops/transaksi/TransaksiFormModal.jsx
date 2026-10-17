@@ -510,7 +510,17 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
 
   /** Produk yang cocok dengan seluruh langkah yang sudah dipilih. */
   const resolveProduct = (row) => {
-    if (!row.category || !row.kain || !row.warna) return null;
+    if (!row.category || !row.warna) return null;
+    // Cover & Hanger tidak punya jenis kain & series — cukup kategori + nama paket.
+    // (Sebelumnya `kain` wajib terisi, jadi produk paket SELALU gagal di-resolve dan
+    // paketnya tidak pernah bisa dipilih di form transaksi.)
+    if (isPaketEntry(row)) {
+      const paket = rowsFor(row.category, row.kain, row.warna).filter(
+        (entry) => !row.product || entry.product_name === row.product,
+      );
+      return paket[0] || null;
+    }
+    if (!row.kain) return null;
     const step = seriesStep(row.category, row.kain, row.warna);
     if (step.show && row.series === null) return null;
     const series = step.show ? row.series : "";
@@ -543,6 +553,10 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
           value: `${entry.color}||${paketSize(entry)}`,
           size: paketSize(entry),
           color: entry.color,
+          // Dibawa supaya `paketNameOf()` bisa membaca nama paket data lama (color kosong →
+          // series/nama produk) waktu menyusun label ringkasan.
+          series: entry.series,
+          product_name: entry.product_name,
           showColor: false,
           stock: Object.values(entry.sizes || {}).reduce((sum, n) => sum + (Number(n) || 0), 0),
           price: entry.price,
@@ -1914,8 +1928,14 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                         product: group?.name || row.product,
                         kain: row.kain,
                         series: step.show ? row.series : "",
-                        color: group && group.warnas.length > 1 ? row.warna : "",
-                        size: `${info.chosen.size} × ${info.quantity}`,
+                        // Paket: nama paketnya selalu tampil (walau paketnya cuma satu) dan
+                        // ukurannya tidak pernah ikut ("ALL SIZE" = penanda internal).
+                        color: isPaketEntry(row)
+                          ? paketNameOf(info.chosen) || row.warna
+                          : group && group.warnas.length > 1
+                            ? row.warna
+                            : "",
+                        size: isPaketEntry(row) ? `× ${info.quantity}` : `${info.chosen.size} × ${info.quantity}`,
                       });
                       const summary = summaryParts.join(" · ");
                       return (
@@ -2094,7 +2114,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                         {/* Langkah varian: pakaian = Warna, Cover & Hanger = PAKET (nama paket +
                             harga + sisa stok). Satu paket pun tetap ditampilkan sebagai chip supaya
                             selalu bisa dipilih/diganti (kalau cuma satu, otomatis terpilih). */}
-                        {group && paketOptions(group).length >= 1 && !row.warna && (
+                        {group && paketOptions(group).length >= 1 && (
                           <div className="space-y-1">
                             <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                               Paket
@@ -2103,6 +2123,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                               {paketOptions(group).map((paket) => {
                                 const sisa = Object.values(paket.sizes || {}).reduce((sum, n) => sum + (Number(n) || 0), 0);
                                 const habis = sisa <= 0;
+                                const aktif = row.warna === paket.color;
                                 return (
                                   <button
                                     key={paket.color}
@@ -2112,7 +2133,9 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                                     className={`px-3 py-2 rounded-xl border-2 text-left transition-colors ${
                                       habis
                                         ? "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 opacity-60 cursor-not-allowed"
-                                        : "border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+                                        : aktif
+                                          ? "border-slate-900 dark:border-white bg-slate-50 dark:bg-slate-800"
+                                          : "border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
                                     }`}
                                   >
                                     <span className={`block text-sm font-bold truncate ${habis ? "text-slate-400 dark:text-slate-500" : "text-slate-900 dark:text-white"}`}>
@@ -2539,8 +2562,12 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                       product: group?.name || row.product,
                       kain: row.kain,
                       series: seri.show ? row.series : "",
-                      color: group && group.warnas.length > 1 ? row.warna : "",
-                      size: info.chosen.size,
+                      color: isPaketEntry(row)
+                        ? paketNameOf(info.chosen) || row.warna
+                        : group && group.warnas.length > 1
+                          ? row.warna
+                          : "",
+                      size: isPaketEntry(row) ? "" : info.chosen.size,
                     });
                     const label = labelParts.join(" · ");
                     return (
