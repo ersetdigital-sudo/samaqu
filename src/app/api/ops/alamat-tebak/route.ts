@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isOpsAdmin, unauthorized } from "@/lib/ops-auth";
 import { WILAYAH_PROVINSI, citiesOfProvince, districtsOfCity, provinceOfCity } from "@/lib/kota";
+import { kodePosDariWilayah } from "@/lib/kodepos";
 import { deteksiAlamat } from "@/lib/alamat-deteksi";
 
 /**
@@ -10,7 +11,9 @@ import { deteksiAlamat } from "@/lib/alamat-deteksi";
  *
  * Pencocokan provinsi/kota/kecamatan memakai daftar wilayah yang SAMA dengan isi dropdown
  * (`src/lib/kota.ts`, dataset area J&T), jadi nilai yang terisi otomatis pasti ada di daftar
- * pilihan admin. Dataset itu dibaca di server — browser tidak perlu memuatnya.
+ * pilihan admin. Kode pos diambil dari teks yang ditempel; kalau tidak ada, dilengkapi dari
+ * peta kode pos per kecamatan (`src/lib/kodepos.ts`). Kedua dataset dibaca di server — browser
+ * tidak perlu memuatnya.
  *
  * Hanya membaca: tidak menulis database dan tidak memanggil layanan luar.
  */
@@ -28,6 +31,7 @@ export async function POST(req: NextRequest) {
         citiesOf: citiesOfProvince,
         districtsOf: districtsOfCity,
         provinceOfCity,
+        postalOf: kodePosDariWilayah,
       }),
     );
   } catch (error) {
