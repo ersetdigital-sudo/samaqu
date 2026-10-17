@@ -4,6 +4,7 @@ import { isOpsAdmin, unauthorized } from "@/lib/ops-auth";
 import { cancelOrderCompletely, type CancelableOrder } from "@/lib/cancel-order";
 import { MANUAL_PRICE_MAX, MANUAL_PRICE_MIN, MANUAL_SOURCE_KEYS, hasManualPrice, itemSummary, manualPrice, sourceKey, sourceLabel, statusLabel } from "@/lib/transaksi";
 import { localPhone } from "@/lib/whatsapp";
+import { notifyCustomerInvoice } from "@/lib/fonnte";
 import { kotaFromShipping } from "@/lib/kota";
 import { itemProductIds, loadOrderPhotoLookup } from "@/lib/order-photo-data";
 import { resolveItemPhotos } from "@/lib/order-photo";
@@ -416,6 +417,11 @@ export async function POST(req: NextRequest) {
       return bad(deducted.message);
     }
 
+    // Status bayar dipilih admin di drawer ("Lunas" bawaan, atau "Belum Lunas"). Belum lunas
+    // memakai status `pending` yang sudah ada ("Belum Bayar") supaya TIDAK ikut dihitung sebagai
+    // omset/laba — semua laporan memakai `SALE_STATUSES` (diproses/dikirim/selesai).
+    const paid = String(body?.payment_status || "paid").trim().toLowerCase() !== "unpaid";
+
     const orderRow = {
       customer_id: customerId,
       customer_name: customerName,
@@ -430,12 +436,12 @@ export async function POST(req: NextRequest) {
       shipping_notes: notes || null,
       shipping_cost: shippingCost,
       payment_method: "cash",
-      payment_status: "paid",
-      paid_at: createdAt.toISOString(),
+      payment_status: paid ? "paid" : "unpaid",
+      paid_at: paid ? createdAt.toISOString() : null,
       subtotal,
       discount: finalDiscount,
       total,
-      status: "diproses",
+      status: paid ? "diproses" : "pending",
       // Stok sudah dipotong di atas → pembatalan wajib mengembalikannya.
       stock_reserved: true,
       source,
@@ -486,6 +492,30 @@ export async function POST(req: NextRequest) {
 
     // Alamat baru (kalau admin menambahkannya) ikut masuk buku alamat pelanggan.
     if (body?.save_address) await saveCustomerAddress(admin, customerId, customerName, customerWhatsapp, shipping);
+
+    // Belum lunas → invoice otomatis ke WA pembeli. Nomor rekening diambil dari Pengaturan →
+    // Payment Methods (`payment_methods`, method_type "bank" & aktif). Kalau pengiriman gagal,
+    // transaksi tetap tersimpan (fungsi fonnte tidak pernah melempar error).
+    if (!paid) {
+      await notifyCustomerInvoice({
+        orderNumber: order.order_number,
+        customerName,
+        customerWhatsapp,
+        items: items.map((item) => ({
+          name: item.product_name,
+          color: item.color,
+          size: item.size,
+          series: item.series,
+          quantity: item.quantity,
+          price: item.price,
+        })),
+        subtotal,
+        discount: finalDiscount,
+        shippingCost,
+        total,
+        paid: false,
+      });
+    }
 
     return NextResponse.json({ order_number: order.order_number, total });
   } catch (e) {
