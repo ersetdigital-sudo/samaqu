@@ -1695,7 +1695,7 @@ export default function MasterProduk() {
               transition={{ duration: 0.2 }}
             >
               {(() => {
-                const manualStockIns = stockIns.filter(si => si.source === 'manual' || !si.source);
+                const manualStockIns = stockIns.filter(si => !si.source || si.source === 'manual' || si.source === 'batal');
                 return (
                   <>
                     {/* Action Button */}
@@ -1771,13 +1771,22 @@ export default function MasterProduk() {
                                       {si.notes || '-'}
                                     </td>
                                     <td className="px-4 py-3.5 text-center align-middle">
-                                      <button
-                                        onClick={() => handleDeleteClick(si, 'stockin')}
-                                        className="w-8 h-8 flex items-center justify-center bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
-                                        title="Hapus"
-                                      >
-                                        <Trash2 size={16} />
-                                      </button>
+                                      {si.source === 'batal' ? (
+                                        <span
+                                          className="text-xs font-semibold text-gray-400 dark:text-slate-500"
+                                          title="Baris otomatis dari pembatalan pesanan — stok sudah kembali, tidak dihapus dari sini"
+                                        >
+                                          otomatis
+                                        </span>
+                                      ) : (
+                                        <button
+                                          onClick={() => handleDeleteClick(si, 'stockin')}
+                                          className="w-8 h-8 flex items-center justify-center bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
+                                          title="Hapus"
+                                        >
+                                          <Trash2 size={16} />
+                                        </button>
+                                      )}
                                     </td>
                                   </tr>
                                 );

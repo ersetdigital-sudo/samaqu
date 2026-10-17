@@ -9,6 +9,7 @@ import { format } from "date-fns";
 import { usePageUrl } from "@/lib/ops-router";
 import { useToast } from "@/components/ops/ui/use-toast";
 import { SIZES, normalizeStock } from "@/lib/ops-variants";
+import { variantName } from "@/lib/item-label";
 
 export default function TambahBarangMasuk() {
   const navigate = useNavigate();
@@ -44,6 +45,13 @@ export default function TambahBarangMasuk() {
 
   const variantsOf = (productId) => allVariants.filter(v => v.product_id === productId);
   const selectedVariant = allVariants.find(v => v.id === formData.variant_id);
+
+  // Varian katalog ini disimpan per (produk, warna). Thobe berseri TIDAK punya warna asli: tiap
+  // seri adalah baris produk sendiri dan `color`-nya cuma penanda "default". Jadi langkah "Warna"
+  // hanya muncul kalau produknya memang punya >1 varian; kalau cuma satu, variannya dipilih
+  // otomatis dan admin langsung memilih ukuran (konsisten dengan form Tambah/Edit Produk).
+  const productVariants = variantsOf(formData.product_id);
+  const needsColor = productVariants.length > 1;
 
   const formatRupiah = (value) => {
     if (value === null || value === undefined) return '';
@@ -138,8 +146,16 @@ export default function TambahBarangMasuk() {
 
   const handleProductChange = (productId) => {
     const product = products.find(p => p.id === productId);
+    const groups = allVariants.filter(v => v.product_id === productId);
     setSelectedProduct(product);
-    setFormData({ ...formData, product_id: productId, variant_id: '', size: '' });
+    setFormData({
+      ...formData,
+      product_id: productId,
+      // Produk dengan satu varian saja (mis. Thobe per seri, `color` "default") langsung dipilih
+      // supaya tidak ada langkah "Warna" yang isinya cuma "default".
+      variant_id: groups.length === 1 ? groups[0].id : '',
+      size: '',
+    });
   };
 
   const handleQtyChange = (e) => {
@@ -169,7 +185,7 @@ export default function TambahBarangMasuk() {
     if (!formData.variant_id || !formData.size) {
       toast({
         title: "⚠️ Form tidak lengkap",
-        description: "Pilih warna dan ukuran",
+        description: needsColor ? "Pilih warna dan ukuran" : "Pilih ukuran",
         variant: "destructive",
       });
       return;
@@ -339,31 +355,33 @@ export default function TambahBarangMasuk() {
                 </div>
               </div>
 
-              {/* ✅ Variant: Warna + Ukuran */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="block font-inter tracking-label" style={{ fontSize: '13px', fontWeight: 700, color: '#1E293B', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-                    Warna <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    required
-                    value={formData.variant_id}
-                    onChange={(e) => setFormData({ ...formData, variant_id: e.target.value, size: '' })}
-                    disabled={!formData.product_id}
-                    className="w-full px-4 py-3.5 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:bg-white focus:ring-2 focus:ring-green-100 transition-all duration-200 appearance-none cursor-pointer font-inter disabled:bg-gray-100 disabled:cursor-not-allowed"
-                    style={{ fontSize: '15px', fontWeight: 600, letterSpacing: '0.01em' }}
-                  >
-                    <option value="">{formData.product_id ? 'Pilih warna...' : 'Pilih produk dulu'}</option>
-                    {variantsOf(formData.product_id).map(v => {
-                      const total = Object.values(normalizeStock(v.stock)).reduce((a, b) => a + b, 0);
-                      return (
-                        <option key={v.id} value={v.id}>
-                          {v.color}{v.series_name ? ` - ${v.series_name}` : ''} (stok {total} pcs)
-                        </option>
-                      );
-                    })}
-                  </select>
-                </div>
+              {/* ✅ Varian: Warna (hanya kalau produknya punya >1 varian) + Ukuran */}
+              <div className={`grid grid-cols-1 gap-6 ${needsColor ? 'md:grid-cols-2' : ''}`}>
+                {needsColor && (
+                  <div className="space-y-2">
+                    <label className="block font-inter tracking-label" style={{ fontSize: '13px', fontWeight: 700, color: '#1E293B', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                      Warna <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      required
+                      value={formData.variant_id}
+                      onChange={(e) => setFormData({ ...formData, variant_id: e.target.value, size: '' })}
+                      disabled={!formData.product_id}
+                      className="w-full px-4 py-3.5 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:bg-white focus:ring-2 focus:ring-green-100 transition-all duration-200 appearance-none cursor-pointer font-inter disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      style={{ fontSize: '15px', fontWeight: 600, letterSpacing: '0.01em' }}
+                    >
+                      <option value="">{formData.product_id ? 'Pilih warna...' : 'Pilih produk dulu'}</option>
+                      {productVariants.map(v => {
+                        const total = Object.values(normalizeStock(v.stock)).reduce((a, b) => a + b, 0);
+                        return (
+                          <option key={v.id} value={v.id}>
+                            {[variantName(v.color), v.series_name].filter(Boolean).join(' · ') || 'Varian'} (stok {total} pcs)
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
+                )}
                 <div className="space-y-2">
                   <label className="block font-inter tracking-label" style={{ fontSize: '13px', fontWeight: 700, color: '#1E293B', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
                     Ukuran <span className="text-red-500">*</span>
@@ -376,7 +394,9 @@ export default function TambahBarangMasuk() {
                     className="w-full px-4 py-3.5 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:bg-white focus:ring-2 focus:ring-green-100 transition-all duration-200 appearance-none cursor-pointer font-inter disabled:bg-gray-100 disabled:cursor-not-allowed"
                     style={{ fontSize: '15px', fontWeight: 600, letterSpacing: '0.01em' }}
                   >
-                    <option value="">{formData.variant_id ? 'Pilih ukuran...' : 'Pilih warna dulu'}</option>
+                    <option value="">
+                      {formData.variant_id ? 'Pilih ukuran...' : needsColor ? 'Pilih warna dulu' : 'Pilih produk dulu'}
+                    </option>
                     {SIZES.map(size => {
                       const available = normalizeStock(selectedVariant?.stock)[size] || 0;
                       return (
