@@ -8,11 +8,11 @@ import { supabase } from "@/lib/supabase";
  * Pratinjau + editor SEMUA notifikasi WhatsApp sistem — panel Pengaturan dashboard admin.
  *
  * - Kartu menampilkan pesan bawaan hasil render template yang benar-benar dipakai mengirim.
- * - Tombol "Ubah pesan" membuka kotak teks: isinya dipakai apa adanya menggantikan pesan
- *   bawaan, dengan penanda `{nama}`, `{nomor}`, `{total}`, `{daftar_produk}`, `{blok_rekening}`,
- *   `{resi}`, dst. yang diisi otomatis saat mengirim. Kosongkan = kembali ke teks bawaan.
- * - Penanda yang tidak dikenal TIDAK dihapus, jadi salah ketik kelihatan di pesan (bukan hilang
- *   diam-diam). Pratinjau menampilkan penanda apa adanya supaya strukturnya jelas.
+ * - Tombol "Ubah pesan" membuka editor yang ISI AWALNYA template mentah: kalau admin sudah
+ *   pernah mengubah, isinya versi tersimpan; kalau belum, isinya teks bawaan sistem. Penanda
+ *   variabel tetap tampil sebagai penanda ({nama}, {nomor}, {alasan}, …) — bukan data contoh.
+ * - "Kembalikan ke default" mengembalikan isi ke teks bawaan sistem (dengan konfirmasi).
+ * - Kosongkan kotak = kembali ke teks bawaan saat disimpan.
  */
 
 type Item = {
@@ -21,8 +21,11 @@ type Item = {
   ke: "Pembeli" | "Admin";
   kapan: string;
   isi: string;
-  aktif: boolean;
+  /** Teks mentah dengan penanda — isi awal editor. */
+  template: string;
+  /** Teks pengganti yang tersimpan (kosong = belum pernah diubah). */
   override: string;
+  aktif: boolean;
 };
 
 async function authHeaders() {
@@ -58,11 +61,14 @@ export default function NotifikasiKatalog() {
     load();
   }, [load]);
 
-  const penandaDraf = useMemo(() => [...new Set([...draf.matchAll(/\{([a-zA-Z0-9_]+)\}/g)].map((m) => m[1]))], [draf]);
+  const penandaDiDraf = useMemo(
+    () => [...new Set([...draf.matchAll(/\{([a-zA-Z0-9_]+)\}/g)].map((m) => m[1]))],
+    [draf],
+  );
 
   async function salin(item: Item) {
     try {
-      await navigator.clipboard.writeText(item.override || item.isi);
+      await navigator.clipboard.writeText(item.override || item.template || item.isi);
       setTersalin(item.key);
       setTimeout(() => setTersalin((k) => (k === item.key ? "" : k)), 2000);
     } catch {
@@ -83,7 +89,7 @@ export default function NotifikasiKatalog() {
       if (!res.ok) throw new Error(json.error || "Gagal menyimpan template");
       setPesan(
         json.kembaliKeBawaan
-          ? `Template "${item.label}" dikembalikan ke teks bawaan.`
+          ? `Template "${item.label}" kembali ke teks bawaan sistem.`
           : `Template "${item.label}" tersimpan dan langsung dipakai untuk pesan berikutnya.`,
       );
       setSuntingKey("");
@@ -96,6 +102,17 @@ export default function NotifikasiKatalog() {
     }
   }
 
+  /** Kembalikan ke default: kalau ada versi tersimpan, hapus; kalau belum, isi editor dengan teks bawaan. */
+  async function kembalikanDefault(item: Item) {
+    const yakin = window.confirm(
+      `Kembalikan "${item.label}" ke teks bawaan sistem? Perubahan yang pernah disimpan akan hilang.`,
+    );
+    if (!yakin) return;
+    if (item.override) return simpan(item, "");
+    setDraf(item.template);
+    setPesan(`Isi editor "${item.label}" dikembalikan ke teks bawaan sistem. Klik Simpan untuk memakai ini.`);
+  }
+
   return (
     <section className="card p-6">
       <div className="flex items-start justify-between gap-3">
@@ -104,8 +121,8 @@ export default function NotifikasiKatalog() {
             Notifikasi WhatsApp (semua pesan sistem)
           </h3>
           <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
-            Pesan bawaan yang tampil = pesan yang benar-benar dikirim. Tombol <b>Ubah pesan</b> mengganti teksnya;
-            biarkan kosong kalau ingin kembali ke teks bawaan.
+            Yang tampil di kartu = pesan yang benar-benar dikirim. Tombol <b>Ubah pesan</b> membuka editor berisi
+            template mentah (dengan penanda), jadi tinggal ubah bagian yang perlu.
           </p>
         </div>
         <button
@@ -130,6 +147,7 @@ export default function NotifikasiKatalog() {
         <div className="mt-4 space-y-3">
           {items.map((item) => {
             const sedangSunting = suntingKey === item.key;
+            const daftarPenanda = [...new Set([...item.template.matchAll(/\{([a-zA-Z0-9_]+)\}/g)].map((m) => m[1]))];
             return (
               <div key={item.key} className="rounded-xl border" style={{ borderColor: "rgba(0,0,0,.08)" }}>
                 <div className="flex items-start justify-between gap-3 p-4">
@@ -163,9 +181,14 @@ export default function NotifikasiKatalog() {
                     <button
                       type="button"
                       onClick={() => {
-                        setSuntingKey(sedangSunting ? "" : item.key);
-                        setDraf(item.override || "");
-                        setPesan("");
+                        if (sedangSunting) {
+                          setSuntingKey("");
+                        } else {
+                          // Isi awal: versi tersimpan kalau ada, kalau belum → template bawaan (penanda).
+                          setSuntingKey(item.key);
+                          setDraf(item.override || item.template);
+                          setPesan("");
+                        }
                       }}
                       className="flex items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-semibold"
                       style={{ borderColor: "rgba(0,0,0,.12)", color: "var(--text-secondary)" }}
@@ -187,17 +210,39 @@ export default function NotifikasiKatalog() {
                 {sedangSunting ? (
                   <div className="border-t px-4 py-3" style={{ borderColor: "rgba(0,0,0,.08)" }}>
                     <textarea
-                      rows={10}
+                      rows={12}
                       value={draf}
                       onChange={(e) => setDraf(e.target.value)}
-                      placeholder="Kosongkan untuk memakai teks bawaan. Tulis pesan baru di sini, penanda {nama}, {nomor}, {total}, {daftar_produk}, {blok_rekening}, {resi} akan diisi otomatis."
+                      placeholder="Kosongkan untuk memakai teks bawaan sistem."
                       className="w-full rounded-xl border px-3 py-2 font-mono text-xs outline-none"
                       style={{ borderColor: "rgba(0,0,0,.15)", color: "var(--espresso)" }}
                     />
+
+                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                      <span className="text-[11px] font-semibold" style={{ color: "var(--text-muted)" }}>
+                        Penanda tersedia:
+                      </span>
+                      {daftarPenanda.length === 0 ? (
+                        <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>
+                          tidak ada (pesan ini teks tetap)
+                        </span>
+                      ) : (
+                        daftarPenanda.map((nama) => (
+                          <code
+                            key={nama}
+                            className="rounded-md border px-1.5 py-0.5 text-[10px] font-semibold"
+                            style={{ borderColor: "rgba(0,0,0,.12)", color: "var(--text-secondary)" }}
+                          >
+                            {`{${nama}}`}
+                          </code>
+                        ))
+                      )}
+                    </div>
                     <p className="mt-1 text-[11px]" style={{ color: "var(--text-muted)" }}>
-                      Penanda di teks ini: {penandaDraf.length > 0 ? penandaDraf.join(", ") : "belum ada"} · penanda yang
-                      tidak dikenal akan tampil apa adanya di pesan, jadi gampang ketahuan.
+                      {penandaDiDraf.length > 0 ? `Dipakai di editor ini: ${penandaDiDraf.map((n) => `{${n}}`).join(", ")}.` : ""}{" "}
+                      Penanda yang tidak dikenal akan tampil apa adanya di pesan, jadi salah ketik gampang ketahuan.
                     </p>
+
                     <div className="mt-2 flex flex-wrap items-center gap-2">
                       <button
                         type="button"
@@ -209,15 +254,15 @@ export default function NotifikasiKatalog() {
                       </button>
                       <button
                         type="button"
-                        disabled={menyimpan || !item.override}
-                        onClick={() => simpan(item, "")}
+                        disabled={menyimpan}
+                        onClick={() => kembalikanDefault(item)}
                         className="flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-semibold disabled:opacity-40"
                         style={{ borderColor: "rgba(0,0,0,.12)", color: "var(--text-secondary)" }}
                       >
-                        <RotateCcw size={12} /> Kembalikan ke bawaan
+                        <RotateCcw size={12} /> Kembalikan ke default
                       </button>
                       <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-                        Contoh di bawah tetap teks bawaan — pembanding sebelum &amp; sesudah.
+                        Contoh kirim tetap ditampilkan di bawah sebagai pembanding.
                       </span>
                     </div>
                   </div>
@@ -233,8 +278,8 @@ export default function NotifikasiKatalog() {
             );
           })}
           <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-            Pesan bertanda "belum aktif" belum dikirim oleh sistem. Template yang sudah diubah disimpan di server
-            (tabel dengan akses khusus admin) dan langsung dipakai untuk pesan berikutnya.
+            Kartu bertanda "belum aktif" belum dikirim sistem. Template yang sudah diubah disimpan di server (akses
+            khusus admin) dan langsung dipakai untuk pesan berikutnya — paling lambat 1 menit setelah disimpan.
           </p>
         </div>
       )}
