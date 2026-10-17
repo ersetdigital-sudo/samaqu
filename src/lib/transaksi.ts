@@ -67,3 +67,31 @@ export function itemSummary(
   const rest = items.length - 1;
   return rest > 0 ? `${head} +${rest} lainnya` : head;
 }
+
+/* ── Harga manual (admin boleh mengetik harga satuan sendiri) ── */
+
+/**
+ * Batas harga manual di form Tambah/Ubah Transaksi. Dipakai bersama oleh form (penanda
+ * error di baris) dan `/api/ops/transaksi` (validasi server) supaya aturannya satu.
+ * Batas atas hanya penjaga salah ketik; bawah tidak boleh 0 karena baris pesanan
+ * menyimpan harga satuan yang benar-benar dibayar.
+ */
+export const MANUAL_PRICE_MIN = 1;
+export const MANUAL_PRICE_MAX = 99_999_999;
+
+/** Harga manual benar-benar dikirim/diisi? (dipakai untuk membedakan "kosong" dari "salah isi"). */
+export function hasManualPrice(value: unknown): boolean {
+  return value !== undefined && value !== null && String(value).trim() !== "";
+}
+
+/**
+ * Normalisasi harga manual → bilangan bulat dalam batas, atau `null` kalau tidak sah
+ * (bukan angka, 0, negatif, atau di luar batas). Pemanggil yang memutuskan:
+ * server menolak permintaan, form menandai barisnya salah.
+ */
+export function manualPrice(value: unknown): number | null {
+  if (!hasManualPrice(value)) return null;
+  const n = Math.round(Number(String(value).trim()));
+  if (!Number.isFinite(n) || n < MANUAL_PRICE_MIN || n > MANUAL_PRICE_MAX) return null;
+  return n;
+}

@@ -19,8 +19,11 @@
  * varian Thobe menyimpan warna `default` (warna sebenarnya ada di nama produk), jadi langkah
  * itu dilewati. Nilai `color` yang dikirim ke server tetap nilai asli di `product_variants`.
  *
- * Catatan: harga & stok di sini hanya untuk tampilan/peringatan. Saat Simpan, server tetap
- * membaca ulang harga dari database dan memotong stok lewat RPC yang sama dengan checkout.
+ * Catatan: stok di sini hanya untuk tampilan/peringatan; server tetap memotong stok lewat RPC yang
+ * sama dengan checkout. Harga juga dibaca ulang dari database — KECUALI kalau admin mengisi kolom
+ * "Harga" di baris produk (harga manual): nilai itu ikut dikirim, divalidasi server
+ * (`MANUAL_PRICE_MIN`–`MANUAL_PRICE_MAX` di `src/lib/transaksi.ts`), lalu disimpan sebagai
+ * `order_items.price`. Harga itulah yang dipakai subtotal pesanan dan semua angka pembukuan.
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -28,7 +31,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, Check, Pencil, Plus, Save, Trash2, Truck, X } from "lucide-react";
 import { base44 } from "@/lib/ops-api";
-import { MANUAL_SOURCE_KEYS, SOURCE_LABEL } from "@/lib/transaksi";
+import { MANUAL_PRICE_MAX, MANUAL_PRICE_MIN, MANUAL_SOURCE_KEYS, SOURCE_LABEL, manualPrice } from "@/lib/transaksi";
 import { OPS_STOCK_SIZES } from "@/lib/ops-stock";
 import { categoryRank, seriesRank, variantSortKey } from "@/lib/ops-order";
 import { formatWeightExact } from "@/lib/shipping-weight";
@@ -71,6 +74,10 @@ const emptyRow = () => ({
   warna: "",
   series: null,
   variant: "",
+  /** Harga satuan ketikan admin (digit saja). Kosong = pakai harga katalog produk. */
+  price: "",
+  /** true = admin memang mengetik harga sendiri → `price` ikut dikirim ke server. */
+  priceManual: false,
   quantity: 1,
   editing: true,
 });
@@ -79,6 +86,28 @@ const emptyRow = () => ({
 const clampQty = (value, max) => {
   const top = Number(max) > 0 ? Number(max) : 99;
   return Math.max(1, Math.min(top, Number(value) || 1));
+};
+
+/**
+ * Harga satuan yang dipakai satu baris: harga ketikan admin kalau ada, kalau tidak harga katalog.
+ * Harga inilah yang dikirim ke server sebagai `order_items.price`, jadi subtotal pesanan — dan
+ * semua angka pembukuan yang membacanya (omset, laba, Produk Terlaris) — ikut harga manual.
+ */
+const rowUnitPrice = (row, catalogPrice) => {
+  const manual = row?.priceManual ? manualPrice(row.price) : null;
+  return manual ?? (Number(catalogPrice) || 0);
+};
+
+/**
+ * Mode Ubah: harga baris pesanan lama dianggap "harga manual" kalau berbeda dari harga katalog
+ * produk itu sekarang. Dipakai supaya harga yang sudah tercatat tidak diam-diam kembali ke harga
+ * katalog saat transaksi diubah. Kalau harga katalog sempat berubah setelah transaksi dibuat,
+ * baris lama bisa terlihat sebagai harga manual — labelnya saja, nilainya tetap benar.
+ */
+const recordedManualPrice = (recordedPrice, catalogPrice) => {
+  const recorded = Number(recordedPrice);
+  if (!Number.isFinite(recorded) || recorded <= 0) return null;
+  return recorded === Number(catalogPrice) ? null : recorded;
 };
 
 /**
@@ -208,6 +237,8 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
         series: variant.series_name || "",
         color: String(variant.color || "").trim() || "default",
         price: Number(variant.price) || 0,
+        // HPP produk — hanya untuk peringatan kalau harga manual di bawah HPP.
+        hpp: Number(variant.hpp) || 0,
         sizes: variant.stock_efektif || variant.stock || {},
         linkedTo: variant.base_series_name || variant.base_product_name || null,
       })),
@@ -349,6 +380,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
       if (!group) {
         return { ...emptyRow(), variant: `${item.color || "default"}||${String(item.size).toUpperCase()}`, quantity: item.quantity };
       }
+      const manual = recordedManualPrice(item.price, group.price);
       return {
         product: group.product_name,
         category: group.category,
@@ -356,6 +388,10 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
         warna: group.warna,
         series: group.series || "",
         variant: `${group.color}||${String(item.size).toUpperCase()}`,
+        // Harga yang sudah tercatat dipakai apa adanya; kalau beda dari harga katalog sekarang,
+        // barisnya ditandai sebagai harga manual supaya tidak hilang saat transaksi diubah.
+        price: manual === null ? "" : String(manual),
+        priceManual: manual !== null,
         quantity: item.quantity,
         editing: false,
       };
@@ -501,13 +537,16 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
     if (!product) issue = "Pilih produk dulu (cari produk → series → ukuran)";
     else if (!row.variant) issue = "Ukuran belum dipilih";
     else if (quantity < 1) issue = "Jumlah minimal 1";
-    else {
+    else if (row.priceManual && manualPrice(row.price) === null) {
+      issue = `Harga manual harus bilangan bulat Rp ${formatRupiah(MANUAL_PRICE_MIN)} - Rp ${formatRupiah(MANUAL_PRICE_MAX)}`;
+    } else {
       const entry = requested[`${product.product_id}||${row.variant}`];
       if (entry && entry.total > entry.option.stock) {
         issue = `Stok ${entry.option.size} tinggal ${entry.option.stock}, diminta ${entry.total}`;
       }
     }
-    return { product, options, chosen, quantity, issue, subtotal: (chosen?.price || 0) * quantity };
+    const unitPrice = rowUnitPrice(row, chosen?.price);
+    return { product, options, chosen, quantity, issue, unitPrice, subtotal: unitPrice * quantity };
   });
 
   const stockIssues = rowInfo.filter((info) => info.issue && info.product && info.chosen).map((info) => info.issue);
@@ -794,10 +833,11 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
   /** Pilih grup produk pada satu baris; `null` = kosongkan pilihan lagi ("Ganti"). */
   const chooseGroup = (index, nextGroup) => {
     if (!nextGroup) {
-      updateRow(index, { product: "", category: "", kain: "", warna: "", series: null, variant: "" });
+      updateRow(index, { product: "", category: "", kain: "", warna: "", series: null, variant: "", price: "", priceManual: false });
       return;
     }
     // Produk dengan satu warna asli langsung terisi; yang multi-warna menunggu langkah Warna.
+    // Harga manual ikut dikosongkan: harganya milik varian yang lama.
     updateRow(index, {
       product: nextGroup.name,
       category: nextGroup.category,
@@ -805,6 +845,8 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
       warna: nextGroup.warnas.length === 1 ? nextGroup.warnas[0] : "",
       series: null,
       variant: "",
+      price: "",
+      priceManual: false,
     });
   };
 
@@ -915,15 +957,20 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
         postal_code: form.postal_code.trim(),
       },
       save_address: newAddressForCustomer && form.customer_mode === "existing" && Boolean(form.customer_id),
+      // `price` dikirim HANYA kalau admin memang mengetik harga manual; server memvalidasi ulang
+      // (bilangan bulat dalam batas) lalu menyimpannya sebagai `order_items.price` — harga itulah
+      // yang dipakai semua angka pembukuan. Tanpa harga manual, server tetap memakai harga katalog.
       items: items.map((row) => {
         const product = resolveProduct(row);
         const [color, size] = String(row.variant).split("||");
-        return {
+        const item = {
           product_id: product?.product_id || "",
           color: color || "default",
           size,
           quantity: Number(row.quantity) || 0,
         };
+        if (row.priceManual) item.price = Number(digits(row.price)) || 0;
+        return item;
       }),
     });
   };
@@ -1492,6 +1539,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                             </p>
                             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                               Rp {formatRupiah(info.subtotal)}
+                              {row.priceManual ? ` · harga manual Rp ${formatRupiah(info.unitPrice)}/pcs` : ""}
                               {` · stok ${info.chosen.stock}`}
                               {info.chosen.linkedTo ? ` · stok mengikuti ${info.chosen.linkedTo}` : ""}
                             </p>
@@ -1659,7 +1707,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                                 <button
                                   key={warna}
                                   type="button"
-                                  onClick={() => updateRow(index, { warna, series: null, variant: "" })}
+                                  onClick={() => updateRow(index, { warna, series: null, variant: "", price: "", priceManual: false })}
                                   className="px-3 py-2 rounded-xl border-2 border-slate-200 dark:border-slate-700 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                                 >
                                   {warna}
@@ -1682,7 +1730,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                                     key={option.series || "tanpa-series"}
                                     type="button"
                                     disabled={soldOut}
-                                    onClick={() => updateRow(index, { series: option.series, variant: "" })}
+                                    onClick={() => updateRow(index, { series: option.series, variant: "", price: "", priceManual: false })}
                                     className={`px-3 py-2 rounded-xl border-2 text-left transition-colors ${
                                       active
                                         ? "border-slate-900 dark:border-white bg-slate-900 dark:bg-white"
@@ -1740,7 +1788,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                                     key={option.value}
                                     type="button"
                                     disabled={soldOut}
-                                    onClick={() => updateRow(index, { variant: option.value })}
+                                    onClick={() => updateRow(index, { variant: option.value, price: "", priceManual: false })}
                                     className={`px-2 py-2 rounded-xl border-2 text-center transition-colors ${
                                       active
                                         ? "border-slate-900 dark:border-white bg-slate-900 dark:bg-white"
@@ -1820,10 +1868,57 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                           </div>
                         )}
 
+                        {/* 5 · Harga satuan. Kosong = harga katalog produk; kalau admin mengetik,
+                            harga itu yang dipakai di subtotal pesanan & seluruh angka pembukuan
+                            (omset, laba, Produk Terlaris) — bukan harga katalog. */}
+                        {info.chosen && (
+                          <div className="space-y-1">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Harga</p>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <div className="relative w-36">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 font-semibold text-sm">Rp</span>
+                                <input
+                                  type="text"
+                                  inputMode="numeric"
+                                  value={row.price}
+                                  onChange={(event) => updateRow(index, { price: digits(event.target.value), priceManual: true })}
+                                  placeholder={String(info.chosen.price)}
+                                  aria-label="Harga satuan"
+                                  data-invalid={row.priceManual && manualPrice(row.price) === null ? "true" : undefined}
+                                  className={`${inputClass} pl-10`}
+                                />
+                              </div>
+                              {row.priceManual ? (
+                                <button
+                                  type="button"
+                                  onClick={() => updateRow(index, { price: "", priceManual: false })}
+                                  className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline"
+                                >
+                                  Pakai harga katalog
+                                </button>
+                              ) : (
+                                <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                                  Harga katalog Rp {formatRupiah(info.chosen.price)}
+                                </span>
+                              )}
+                            </div>
+                            {row.priceManual && manualPrice(row.price) !== null ? (
+                              <p className="text-[11px] font-bold text-slate-700 dark:text-slate-200">
+                                Harga manual Rp {formatRupiah(info.unitPrice)} / pcs · katalog Rp {formatRupiah(info.chosen.price)}
+                              </p>
+                            ) : null}
+                            {row.priceManual && manualPrice(row.price) !== null && info.chosen.hpp > 0 && info.unitPrice < info.chosen.hpp ? (
+                              <p className="text-[11px] font-bold text-amber-600 dark:text-amber-400">
+                                Di bawah HPP (Rp {formatRupiah(info.chosen.hpp)}) — labanya negatif, pastikan memang begitu.
+                              </p>
+                            ) : null}
+                          </div>
+                        )}
+
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
                             {info.chosen
-                              ? `Rp ${formatRupiah(info.chosen.price)} / pcs · subtotal Rp ${formatRupiah(info.subtotal)}`
+                              ? `Rp ${formatRupiah(info.unitPrice)} / pcs${row.priceManual ? " (harga manual)" : ""} · subtotal Rp ${formatRupiah(info.subtotal)}`
                               : info.product
                                 ? "Pilih ukuran dulu"
                                 : group
@@ -2023,6 +2118,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                         </span>
                         <span className="shrink-0 text-slate-900 dark:text-white font-semibold whitespace-nowrap">
                           x{info.quantity} · Rp {formatRupiah(info.subtotal)}
+                          {row.priceManual ? " (harga manual)" : ""}
                         </span>
                       </div>
                     );
