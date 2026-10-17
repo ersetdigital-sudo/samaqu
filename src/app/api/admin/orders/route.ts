@@ -57,7 +57,7 @@ export async function PATCH(request: NextRequest) {
       const { data: order, error: fetchError } = await supabaseAdmin
         .from("orders")
         .select(
-          "id, order_number, customer_name, customer_whatsapp, shipping_address, shipping_city, shipping_kecamatan, shipping_postal_code, total, weight, payment_method, awb_no, status, order_items(product_id, product_name, color, size, quantity)"
+          "id, order_number, customer_name, customer_whatsapp, shipping_address, shipping_city, shipping_kecamatan, shipping_postal_code, total, shipping_cost, weight, payment_method, awb_no, status, order_items(product_id, product_name, color, size, quantity)"
         )
         .eq("order_number", identifier)
         .single();
@@ -86,6 +86,9 @@ export async function PATCH(request: NextRequest) {
         shipping_kecamatan: order.shipping_kecamatan,
         shipping_postal_code: order.shipping_postal_code,
         total: order.total,
+        // Ongkir tersimpan dipakai mencocokkan layanan (EZ/ECO) supaya resinya sama dengan
+        // layanan yang ditagih ke pembeli.
+        shipping_cost: order.shipping_cost,
         weight: order.weight,
         payment_method: order.payment_method,
         order_items: order.order_items ?? [],

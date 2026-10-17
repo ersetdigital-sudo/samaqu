@@ -1,7 +1,9 @@
 import { getSupabaseAdmin } from "../supabase-admin";
 import { isPaymentMethodId, legacyPaymentType } from "../payment-methods";
 import { createOrder } from "./order";
-import { getDestinationCode, getOriginCode, getReceiverArea } from "./area-mapping";
+import { getDestinationCode, getOriginCode, getReceiverArea, getSendSiteCode, resolveTariffCodes } from "./area-mapping";
+import { checkTariffSemua } from "./tariff";
+import { expressTypeUntuk, layananByCode } from "./layanan";
 import type { OrderResponse } from "./types";
 import { sumWeightGramsBySize, productWeightMapFromRows, variantWeightMapFromRows } from "../shipping-weight";
 
@@ -48,6 +50,8 @@ export interface JntOrderSource {
   total: number;
   weight?: number | null;
   payment_method?: string | null;
+  /** Ongkir yang ditagih ke pembeli — dipakai menebak layanan J&T yang harus dipakai resinya. */
+  shipping_cost?: number | null;
   order_items: JntOrderSourceItem[];
 }
 
@@ -165,6 +169,27 @@ export async function createJntOrderForOrder(order: JntOrderSource): Promise<Jnt
   const resolved = await resolveWeightGrams(order, items);
   const weightGrams = resolved.grams;
 
+  // Layanan resi harus SAMA dengan layanan yang ditagih ke pembeli (EZ atau ECO): kalau tidak,
+  // toko bisa menanggung selisihnya. Ongkir yang tersimpan di pesanan dicocokkan dengan tarif
+  // EZ/ECO untuk rute ini; kalau tidak ada yang cocok (atau ongkir tidak tersimpan), pakai EZ —
+  // persis perilaku lama.
+  const beratKg = Math.max(weightGrams / 1000, 0.1);
+  let serviceCode = "EZ";
+  const biayaOngkir = Math.round(Number(order.shipping_cost) || 0);
+  if (biayaOngkir > 0) {
+    try {
+      const tarif = await checkTariffSemua({
+        weight: beratKg,
+        originCode: getSendSiteCode(SAMAQU_ORIGIN.city) || SAMAQU_ORIGIN.city,
+        destAreaCode: resolveTariffCodes(city, district).destAreaCode,
+      });
+      const cocok = tarif.filter((option) => Math.abs(option.cost - biayaOngkir) <= 1000);
+      if (cocok.length === 1) serviceCode = cocok[0].serviceCode;
+    } catch (error) {
+      console.error("[J&T] Gagal mencocokkan layanan resi, memakai EZ:", error);
+    }
+  }
+
   const result = await createOrder({
     orderId: order.order_number,
     shipperName: SAMAQU_ORIGIN.name,
@@ -183,6 +208,7 @@ export async function createJntOrderForOrder(order: JntOrderSource): Promise<Jnt
     itemName: items.map((item) => item.product_name).join(" ").slice(0, 50),
     goodsValue: total,
     cod: await resolveCod(order.payment_method, total),
+    ...(layananByCode(serviceCode) ? { expressType: expressTypeUntuk(serviceCode) } : {}),
   });
 
   if (!result.success || !result.awbNo) {

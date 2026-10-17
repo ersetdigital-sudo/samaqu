@@ -29,6 +29,8 @@ export async function createOrder(params: {
   goodsDesc: string;
   itemName: string;
   goodsValue: number;
+  /** Layanan yang dipakai (`expresstype` J&T). Kosong → "1" (EZ) seperti perilaku lama. */
+  expressType?: string;
   cod?: number;
   insurance?: number;
   serviceType?: number;
@@ -67,7 +69,7 @@ export async function createOrder(params: {
     cod: params.cod ?? 0,
     sendstarttime: "",
     sendendtime: "",
-    expresstype: "1",
+    expresstype: params.expressType || "1",
     goodsvalue: params.goodsValue,
   };
 

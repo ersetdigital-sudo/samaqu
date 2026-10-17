@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { checkTariff } from "@/lib/jnt/tariff";
+import { checkTariffSemua } from "@/lib/jnt/tariff";
+import { labelLayanan } from "@/lib/jnt/layanan";
 import { getJntConfig } from "@/lib/jnt/config";
 import { getSendSiteCode, resolveTariffCodes } from "@/lib/jnt/area-mapping";
 
@@ -47,22 +48,25 @@ export async function POST(req: Request) {
       return NextResponse.json(cached.data);
     }
 
-    const result = await checkTariff({
+    // Semua layanan yang didukung (EZ + ECO). Rute yang tidak dilayani sebuah layanan tidak
+    // dikembalikan J&T, jadi pilihannya hanya muncul kalau memang ada (mis. ECO cuma untuk jauh).
+    const layanan = await checkTariffSemua({
       weight: weight / 1000,
       originCode,
       destAreaCode: resolved.destAreaCode,
     });
 
-    if (!result.success || result.services.length === 0) {
-      console.error("[JNT-COST] Tariff check failed or empty:", result.raw);
+    if (layanan.length === 0) {
+      console.error("[JNT-COST] Tariff check empty untuk", originCode, resolved.destAreaCode);
       return NextResponse.json({ error: "Tidak ada opsi pengiriman J&T untuk tujuan ini. Pastikan kode area sudah benar." }, { status: 404 });
     }
 
-    const shipOptions = result.services.map((s) => ({
+    const shipOptions = layanan.map((option) => ({
       courier: "J&T",
-      service: s.name,
-      description: `Layanan ${s.name} J&T`,
-      cost: parseInt(s.cost) || 0,
+      service: labelLayanan(option.serviceCode),
+      serviceCode: option.serviceCode,
+      description: `Layanan ${option.serviceCode} J&T`,
+      cost: option.cost,
       etd: "",
     }));
 
