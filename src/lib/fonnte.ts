@@ -816,3 +816,157 @@ export async function notifyCustomerInvoice(invoice: InvoiceNotification): Promi
   const banks = invoice.paid ? [] : await activeBankInstructions();
   return sendToCustomer(invoice.customerWhatsapp, buildInvoiceMessage(invoice, banks));
 }
+
+/* ── Katalog notifikasi (dibaca panel Pengaturan admin supaya semua pesan kelihatan) ── */
+
+export type NotifikasiInfo = {
+  key: string;
+  label: string;
+  /** Siapa penerimanya: pembeli atau admin toko. */
+  ke: "Pembeli" | "Admin";
+  /** Kapan pesan ini benar-benar dikirim (termasuk pintu masuknya: website, Open Order, atau transaksi manual). */
+  kapan: string;
+  /** Contoh isi pesan (data karangan) untuk pratinjau di panel. */
+  isi: string;
+  /** `false` = belum dikirim oleh sistem (masih rencana) — supaya jelas mana yang sudah jalan. */
+  aktif: boolean;
+};
+
+/** Data karangan untuk pratinjau — TIDAK pernah dipakai untuk mengirim pesan sungguhan. */
+const SAMPEL_BANK: PaymentInstruction = {
+  label: "Transfer Bank (BSI)",
+  type: "bank",
+  bankName: "BSI",
+  accountName: "Contoh Nama Pemilik Rekening",
+  accountNumber: "0000000000",
+  accountInfo: null,
+  instructions: null,
+};
+
+const SAMPEL_ITEM: NewOrderNotificationItem[] = [
+  { name: "Thobe Superblack", color: "Superblack", size: "L", quantity: 1, price: 389000 },
+  { name: "Cover Hanger", color: "Hanger saja", size: "ALL SIZE", quantity: 2, price: 89000 },
+];
+
+/**
+ * Daftar SEMUA notifikasi WhatsApp yang dikirim aplikasi, lengkap dengan pratinjau isinya.
+ * Satu sumber: kalau template di atas berubah, pratinjau di panel Pengaturan ikut berubah —
+ * jadi tidak ada notifikasi "hantu" yang jalan tanpa kelihatan di UI.
+ */
+export function katalogNotifikasi(): NotifikasiInfo[] {
+  const pembeli = { orderNumber: "SMQ-20261017-000", customerName: "Contoh Pembeli", customerWhatsapp: "08123456789" };
+  return [
+    {
+      key: "pesanan-baru-admin",
+      label: "Pesanan baru",
+      ke: "Admin",
+      aktif: true,
+      kapan: "Pesanan masuk dari checkout website atau Open Order",
+      isi: buildNewOrderMessage({
+        ...pembeli,
+        total: 567000,
+        paymentType: "Transfer Bank (BSI)",
+        items: SAMPEL_ITEM,
+        shippingCity: "MANGGALA, KOTA MAKASSAR",
+        source: "Website",
+      }),
+    },
+    {
+      key: "pesanan-diterima",
+      label: "Pesanan diterima + instruksi bayar",
+      ke: "Pembeli",
+      aktif: true,
+      kapan: "Begitu pembeli selesai checkout (website atau Open Order)",
+      isi: buildCustomerOrderMessage({ ...pembeli, items: SAMPEL_ITEM, total: 567000, paymentMethod: SAMPEL_BANK }),
+    },
+    {
+      key: "invoice-belum-lunas",
+      label: "Invoice pesanan belum lunas",
+      ke: "Pembeli",
+      aktif: true,
+      kapan: 'Transaksi manual yang diinput admin/ops disimpan dengan status "Belum Lunas"',
+      isi: buildInvoiceMessage(
+        {
+          ...pembeli,
+          items: SAMPEL_ITEM,
+          subtotal: 567000,
+          discount: 0,
+          shippingCost: 22000,
+          total: 589000,
+          paid: false,
+        },
+        [SAMPEL_BANK],
+      ),
+    },
+    {
+      key: "nota-transaksi-lunas",
+      label: "Nota transaksi manual (Lunas)",
+      ke: "Pembeli",
+      aktif: false,
+      kapan:
+        "BELUM AKTIF. Sekarang transaksi manual yang Lunas tidak mengirim pesan apa pun ke pembeli — hanya transaksi Belum Lunas yang dapat invoice.",
+      isi: [
+        "USULAN FORMAT (belum jalan):",
+        "",
+        "Halo Ka {nama depan},",
+        "",
+        "Pesanan {nomor pesanan} sudah kami catat dan berstatus LUNAS.",
+        "",
+        "{nama produk} ({ukuran atau nama paket}) x {qty} — Rp{total baris}",
+        "Subtotal: Rp{subtotal}",
+        "Ongkir: Rp{ongkir}",
+        "*TOTAL: Rp{total}*",
+        "",
+        "Terima kasih sudah berbelanja di SAMAQU.",
+      ].join("\n"),
+    },
+    {
+      key: "pembayaran-diterima",
+      label: "Pembayaran diterima",
+      ke: "Pembeli",
+      aktif: true,
+      kapan: "Setelah pembayaran terverifikasi (webhook Mayar atau verifikasi admin)",
+      isi: buildOrderPaidMessage({ ...pembeli, total: 589000 }),
+    },
+    {
+      key: "pengingat-bayar",
+      label: "Pengingat pembayaran",
+      ke: "Pembeli",
+      aktif: true,
+      kapan: "20–23 jam setelah pesanan website/Open Order dibuat, maksimal sekali (cron auto-cancel)",
+      isi: buildPaymentReminderMessage({ ...pembeli, total: 338000, paymentMethod: SAMPEL_BANK }),
+    },
+    {
+      key: "pesanan-dikirim",
+      label: "Pesanan dikirim + nomor resi",
+      ke: "Pembeli",
+      aktif: true,
+      kapan: "Saat resi J&T terbit atau status pesanan naik ke dikirim",
+      isi: buildOrderShippedMessage({ ...pembeli, awbNo: "JP0000000000" }),
+    },
+    {
+      key: "pesanan-sampai",
+      label: "Pesanan sampai",
+      ke: "Pembeli",
+      aktif: true,
+      kapan: "Saat tracking J&T menandai paket terkirim",
+      isi: buildOrderDeliveredMessage({ ...pembeli }),
+    },
+    {
+      key: "pesanan-dibatalkan-pembeli",
+      label: "Pesanan dibatalkan",
+      ke: "Pembeli",
+      aktif: true,
+      kapan: "Saat pesanan dibatalkan (pembeli, admin, atau cron)",
+      isi: buildOrderCancelledMessage({ ...pembeli, reason: "Belum dibayar 24 jam" }),
+    },
+    {
+      key: "pesanan-dibatalkan-admin",
+      label: "Pesanan dibatalkan (pemberitahuan internal)",
+      ke: "Admin",
+      aktif: true,
+      kapan: "Saat pesanan dibatalkan",
+      isi: buildAdminOrderCancelledMessage({ orderNumber: pembeli.orderNumber, customerName: pembeli.customerName, reason: "Belum dibayar 24 jam" }),
+    },
+  ];
+}
