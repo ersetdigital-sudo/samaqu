@@ -360,10 +360,13 @@ export function deteksiAlamat(teks: string, sumber: WilayahSource): HasilDeteksi
   let hp = "";
   let nama = "";
   let teksWilayah = "";
+  /** Sisa 5 digit di ekor nomor HP (HP menempel kode pos, mis. "0878… 16412") → kandidat kode pos. */
+  let hpEkor = "";
   if (adaTab && baris.length >= 2) {
     const selHp = baris[baris.length - 1] || "";
     const selAlamat = baris.length >= 4 ? baris[1] : baris.slice(1, baris.length - 1).join(", ") || baris[1] || "";
     hp = hpDariSel(selHp) || hpDariSel(satuBaris);
+    hpEkor = cariNomorHp(satuBaris)?.ekor || "";
     nama = rapikan(baris[0] || "");
     // Kolom kecamatan ikut dipakai untuk MENCOCOKKAN (lewat `kandidatKecamatan`), tapi tidak
     // dimasukkan sebagai segmen alamat supaya tidak ikut tampil di alamat lengkap.
@@ -371,6 +374,7 @@ export function deteksiAlamat(teks: string, sumber: WilayahSource): HasilDeteksi
   } else {
     const temuan = cariNomorHp(satuBaris);
     hp = temuan?.hp || hpDariSel(satuBaris);
+    hpEkor = temuan?.ekor || "";
     const sebelumHp = temuan ? satuBaris.slice(0, temuan.mulai) : "";
     nama = rapikan(sebelumHp);
     teksWilayah = temuan ? satuBaris.slice(temuan.selesai) : satuBaris;
@@ -525,8 +529,9 @@ export function deteksiAlamat(teks: string, sumber: WilayahSource): HasilDeteksi
     }
   }
 
-  /* 9 · Kode pos: angka 5 digit berdiri sendiri (info netral kalau tidak ada) */
-  const kodePos = cariKodePos(satuBaris);
+  /* 9 · Kode pos: ekor nomor HP (HP menempel kode pos, mis. "0878… 16412") → angka 5 digit yang
+     berdiri sendiri. Kalau tidak ada di teks, cukup info netral — aturan validasi tidak diubah. */
+  const kodePos = hpEkor && /^\d{5}$/.test(hpEkor) ? hpEkor : cariKodePos(satuBaris);
   if (kodePos) {
     hasil.postal_code = kodePos;
     hasil.filled.push("postal_code");
