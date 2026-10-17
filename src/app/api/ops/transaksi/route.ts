@@ -425,6 +425,17 @@ export async function POST(req: NextRequest) {
     // omset/laba — semua laporan memakai `SALE_STATUSES` (diproses/dikirim/selesai).
     const paid = String(body?.payment_status || "paid").trim().toLowerCase() !== "unpaid";
 
+    // Metode pembayaran: transaksi manual memakai metode BANK AKTIF dari Pengaturan → Payment
+    // Methods (id asli), bukan lagi string hardcoded "cash" yang tidak pernah terdaftar sebagai
+    // metode. Kalau admin belum punya metode bank aktif, kolom dibiarkan kosong (tampil "-") —
+    // lebih baik kosong daripada menampilkan nama metode yang tidak ada.
+    const { data: activeMethods } = await admin
+      .from("payment_methods")
+      .select("id, method_type")
+      .eq("is_active", true)
+      .order("display_order");
+    const paymentMethod = (activeMethods || []).find((m) => m.method_type === "bank")?.id ?? null;
+
     const orderRow = {
       customer_id: customerId,
       customer_name: customerName,
@@ -438,7 +449,7 @@ export async function POST(req: NextRequest) {
       shipping_postal_code: shipping.postal_code,
       shipping_notes: notes || null,
       shipping_cost: shippingCost,
-      payment_method: "cash",
+      payment_method: paymentMethod,
       payment_status: paid ? "paid" : "unpaid",
       paid_at: paid ? createdAt.toISOString() : null,
       subtotal,

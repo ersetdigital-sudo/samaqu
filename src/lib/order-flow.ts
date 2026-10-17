@@ -8,19 +8,23 @@
  *   bukan sekadar karena resi sudah terbit.
  * - `orders.shipping_status`: `menunggu_pickup` → `dikirim` → `selesai` (NULL = resi belum dibuat).
  *
- * Tahap daftar diturunkan murni dari `orders.status`:
- * `pending`=Belum Bayar, `diproses`=Perlu Dikirim (resi bisa belum/sudah terbit), `dikirim`,
- * `selesai`, `dibatalkan`. Informasi "Menunggu Pickup" dsb. ditampilkan terpisah lewat
- * `shippingLine()`, bukan sebagai tahap.
+ * Tahap daftar diturunkan dari `orders.status` + `orders.awb_no`:
+ * `pending` = Belum Bayar; `diproses` = **Belum di Packing** (resi belum dibuat) atau
+ * **Sudah di Packing** (resi sudah dibuat → paket siap diserahkan kurir); `dikirim` = Dikirim
+ * (J&T sudah memindai/menjemput); `selesai`; `dibatalkan`. "Sudah di Pick Up" sengaja TIDAK
+ * dipisah dari `dikirim` karena J&T hanya memberi satu sinyal pindai (jemput = transit).
+ * Detail pengiriman lain ("Menunggu Pickup" dsb.) ditampilkan lewat `shippingLine()`, bukan tahap.
  *
  * Modul ini murni lapisan tampilan: tidak menulis status apa pun ke database.
  */
 
-export type OrderStage = "belum_bayar" | "perlu_dikirim" | "dikirim" | "selesai" | "dibatalkan";
+export type OrderStage = "belum_bayar" | "belum_dipacking" | "sudah_dipacking" | "dikirim" | "selesai" | "dibatalkan";
 
-/** Field minimum untuk menentukan tahap: status pesanan. */
+/** Field minimum untuk menentukan tahap: status pesanan + ada/tidaknya resi. */
 export interface StageSource {
   status: string;
+  /** Nomor resi J&T — pembeda "Belum di Packing" (belum dibuat) vs "Sudah di Packing". */
+  awb_no?: string | null;
 }
 
 export function orderStage(order: StageSource): OrderStage {
@@ -34,14 +38,17 @@ export function orderStage(order: StageSource): OrderStage {
     case "dibatalkan":
       return "dibatalkan";
     default:
-      // `diproses` (dibayar, belum diserahkan ke kurir) dan status tak dikenal.
-      return "perlu_dikirim";
+      // `diproses` (sudah dibayar, belum diserahkan ke kurir) dan status tak dikenal. Resi yang
+      // sudah terbit menandakan paket selesai dipacking & siap diserahkan — itulah penanda
+      // "Sudah di Packing"; tanpa resi berarti masih "Belum di Packing".
+      return order.awb_no ? "sudah_dipacking" : "belum_dipacking";
   }
 }
 
 export const ORDER_STAGE_LABEL: Record<OrderStage, string> = {
   belum_bayar: "Belum Bayar",
-  perlu_dikirim: "Perlu Dikirim",
+  belum_dipacking: "Belum di Packing",
+  sudah_dipacking: "Sudah di Packing",
   dikirim: "Dikirim",
   selesai: "Selesai",
   dibatalkan: "Dibatalkan",
@@ -54,7 +61,8 @@ export type OrderStageFilter = OrderStage | "semua";
 export const ORDER_STAGE_TABS: { key: OrderStageFilter; label: string }[] = [
   { key: "semua", label: "Semua" },
   { key: "belum_bayar", label: ORDER_STAGE_LABEL.belum_bayar },
-  { key: "perlu_dikirim", label: ORDER_STAGE_LABEL.perlu_dikirim },
+  { key: "belum_dipacking", label: ORDER_STAGE_LABEL.belum_dipacking },
+  { key: "sudah_dipacking", label: ORDER_STAGE_LABEL.sudah_dipacking },
   { key: "dikirim", label: ORDER_STAGE_LABEL.dikirim },
   { key: "selesai", label: ORDER_STAGE_LABEL.selesai },
   { key: "dibatalkan", label: ORDER_STAGE_LABEL.dibatalkan },
@@ -69,14 +77,15 @@ export function matchesStage(order: StageSource, filter: OrderStageFilter): bool
  * menyorot tab dan tombol aksi di daftar, ala badge "Perlu Dikirim" Shopee.
  */
 export function stageNeedsAdminAction(stage: OrderStageFilter): boolean {
-  return stage === "perlu_dikirim";
+  return stage === "belum_dipacking";
 }
 
 /** Warna pill tahap — daftar pesanan memakainya supaya tab dan baris memakai istilah yang sama. */
 export const ORDER_STAGE_STYLE: Record<OrderStage, { bg: string; color: string; border: string }> = {
   belum_bayar: { bg: "#fffbeb", color: "#b45309", border: "#fef3c7" },
-  perlu_dikirim: { bg: "#fff7ed", color: "#c2410c", border: "#ffedd5" },
-  dikirim: { bg: "#eff6ff", color: "#1d4ed8", border: "#dbeafe" },
+  belum_dipacking: { bg: "#fff7ed", color: "#c2410c", border: "#ffedd5" },
+  sudah_dipacking: { bg: "#eff6ff", color: "#1d4ed8", border: "#dbeafe" },
+  dikirim: { bg: "#f5f3ff", color: "#6d28d9", border: "#ede9fe" },
   selesai: { bg: "#ecfdf5", color: "#047857", border: "#d1fae5" },
   dibatalkan: { bg: "#f4f4f5", color: "#52525b", border: "#e4e4e7" },
 };
@@ -123,7 +132,7 @@ export function shippingLine(
 ): { courier: string; resi: string; status: string | null; awaiting: boolean; cancelled: boolean } {
   const stage = orderStage(order);
   const cancelled = stage === "dibatalkan";
-  const awaiting = !order.awb_no && stage === "perlu_dikirim";
+  const awaiting = stage === "belum_dipacking";
   const ss = shippingStatusOf(order);
   return {
     courier: order.shipping_method || "Pengiriman",

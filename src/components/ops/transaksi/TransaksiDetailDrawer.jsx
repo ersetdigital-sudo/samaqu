@@ -122,16 +122,17 @@ export default function TransaksiDetailDrawer({ open, order, variant = "ops", on
   if (isPanel && order) {
     const stage = orderStage(order);
     const panelKey =
-      { belum_bayar: "bayar", perlu_dikirim: "proses", dikirim: "kirim", selesai: "selesai", dibatalkan: "batal" }[stage] || "batal";
+      { belum_bayar: "bayar", belum_dipacking: "packing", sudah_dipacking: "siap", dikirim: "kirim", selesai: "selesai", dibatalkan: "batal" }[stage] || "batal";
     const banner =
       {
         belum_bayar: ["Menunggu pembayaran", "Pesanan akan dibatalkan otomatis jika belum dibayar dalam 24 jam."],
-        perlu_dikirim: ["Pesanan perlu dikirim", "Segera kemas pesanan dan siapkan resi, lalu serahkan ke kurir."],
+        belum_dipacking: ["Pesanan perlu dipacking", "Kemas pesanan, lalu buat resi supaya paket siap diserahkan ke kurir."],
+        sudah_dipacking: ["Pesanan siap dikirim", "Paket sudah dipacking dan resinya sudah dibuat — serahkan ke kurir."],
         dikirim: ["Pesanan dalam perjalanan", "Paket sedang diantar oleh kurir ke alamat pembeli."],
         selesai: ["Pesanan selesai", "Pesanan telah diterima oleh pembeli."],
         dibatalkan: ["Pesanan dibatalkan", order.notes || "Pesanan dibatalkan."],
       }[stage] || ["Pesanan", ""];
-    const stepLevel = { belum_bayar: 0, perlu_dikirim: 1, dikirim: 3, selesai: 4 }[stage] ?? 0;
+    const stepLevel = { belum_bayar: 0, belum_dipacking: 1, sudah_dipacking: 2, dikirim: 3, selesai: 4 }[stage] ?? 0;
     const lastScan = historyRows[0] || null;
     const region = [order.shipping_kecamatan, order.kota, order.shipping_province, order.shipping_postal_code].filter(Boolean).join(", ");
     const canDelete = (!order.awb_no || order.status === "dibatalkan") && order.source !== "website";
@@ -167,7 +168,7 @@ export default function TransaksiDetailDrawer({ open, order, variant = "ops", on
                       <b>{banner[0]}</b>
                       <p>{banner[1]}</p>
                     </div>
-                    <span className={`bd s-${panelKey}`}>{stage === "dikirim" ? "Dikirim / Transit" : ORDER_STAGE_LABEL[stage]}</span>
+                    <span className={`bd s-${panelKey}`}>{ORDER_STAGE_LABEL[stage]}</span>
                   </div>
                   {stage !== "dibatalkan" ? (
                     <div className="stp">
