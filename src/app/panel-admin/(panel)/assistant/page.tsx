@@ -34,6 +34,26 @@ const SUGGESTIONS = [
   "Produk apa saja yang stoknya menipis?",
 ];
 
+/**
+ * Teks indikator saat asisten bekerja. Murni tampilan (bukan bagian dari logika AI/API):
+ * dipilih dari kata kunci pertanyaan terakhir supaya terasa mengikuti aktivitasnya.
+ * Urutan penting — pola yang lebih spesifik diperiksa lebih dulu.
+ */
+const BUSY_LABELS: { re: RegExp; text: string }[] = [
+  { re: /mengapa|kenapa|penyebab|masalah|kendala|error|gagal|komplain|keluhan|batal|terlambat|telat/i, text: "Aku telusuri informasinya dulu ya..." },
+  { re: /pesanan|pesan|order|resi|pengiriman|dikirim|kirim|ekspedisi|paket|awb/i, text: "Aku cari pesanannya dulu ya, Lea..." },
+  { re: /stok|habis|menipis|varian|gudang|restock|barang/i, text: "Sebentar ya, aku cek stoknya..." },
+  { re: /omset|omzet|penjualan|pendapatan|revenue|keuntungan|laba|margin/i, text: "Aku hitungkan dulu ya, Lea..." },
+  { re: /rangkum|ringkas|kondisi|operasional|situasi|aktivitas|kabar|hari ini/i, text: "Aku rangkum kondisi toko dulu ya..." },
+];
+
+const BUSY_FALLBACK = "Sebentar ya, Lea. Aku bantu cek dulu...";
+
+function busyLabel(question: string): string {
+  for (const { re, text } of BUSY_LABELS) if (re.test(question)) return text;
+  return BUSY_FALLBACK;
+}
+
 function newSessionId(): string {
   try {
     if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") return crypto.randomUUID();
@@ -256,6 +276,8 @@ export default function AssistantPage() {
     }
   }
 
+  const activeQuestion = [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
+
   return (
     <div className={styles.aiWrap}>
       <div className={styles.aiHead}>
@@ -289,7 +311,7 @@ export default function AssistantPage() {
         )}
         {busy ? (
           <div className={styles.aiRow}>
-            <div className={`${styles.aiBubble} ${styles.aiBot}`}>Sedang memeriksa data…</div>
+            <div className={`${styles.aiBubble} ${styles.aiBot}`}>{busyLabel(activeQuestion)}</div>
           </div>
         ) : null}
       </div>
