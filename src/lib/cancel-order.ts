@@ -67,18 +67,48 @@ export async function cancelOrderCompletely(
   if (hasStockReservation(order)) {
     const { data: items } = await supabase
       .from("order_items")
-      .select("product_id, color, size, quantity")
+      .select("product_id, product_name, color, size, quantity")
       .eq("order_id", order.id);
 
-    for (const item of items ?? []) {
-      if (item.product_id && item.color && item.size && item.quantity) {
-        await supabase.rpc("samaqu_restore_stock", {
-          p_product_id: item.product_id,
-          p_color: item.color,
-          p_size: item.size,
-          p_qty: item.quantity,
-        });
-      }
+    const restored = (items ?? []).filter(
+      (item) => item.product_id && item.color && item.size && Number(item.quantity) > 0
+    );
+
+    for (const item of restored) {
+      await supabase.rpc("samaqu_restore_stock", {
+        p_product_id: item.product_id,
+        p_color: item.color,
+        p_size: item.size,
+        p_qty: item.quantity,
+      });
+    }
+
+    // Pengembalian stok DICATAT sebagai baris "Barang Masuk" (menu Produk → tab Barang Masuk)
+    // supaya pergerakan stok terlihat, bukan cuma berubah diam-diam. `source = "batal"`
+    // membedakannya dari penerimaan produksi/manual dan `notes` menyebut nomor pesanannya.
+    // Kalau pencatatan gagal, pembatalan TETAP dianggap sukses (stok sudah kembali) — hanya
+    // dicatat di log server, tidak menggagalkan aksi yang sudah tersimpan.
+    if (restored.length > 0) {
+      const ids = [...new Set(restored.map((r) => String(r.product_id)))];
+      const { data: products } = await supabase.from("products").select("id, name, sku").in("id", ids);
+      const byId = new Map((products ?? []).map((p) => [String(p.id), p]));
+      // Tanggal WIB (bukan UTC) supaya barisnya tidak jatuh ke tanggal sebelumnya.
+      const tanggalWib = new Date(Date.now() + 7 * 3600 * 1000).toISOString().slice(0, 10);
+      const { error: stockInError } = await supabase.from("stock_in").insert(
+        restored.map((r) => ({
+          date: tanggalWib,
+          product_id: r.product_id,
+          product_name: byId.get(String(r.product_id))?.name || r.product_name || "",
+          sku: byId.get(String(r.product_id))?.sku || "",
+          variant_color: r.color,
+          variant_size: r.size,
+          qty: Number(r.quantity),
+          cost_per_unit: 0,
+          notes: `Pengembalian stok — pesanan ${order.order_number} dibatalkan`,
+          source: "batal",
+        }))
+      );
+      if (stockInError) console.error("[CANCEL] gagal mencatat barang masuk:", order.order_number, stockInError);
     }
   }
 
