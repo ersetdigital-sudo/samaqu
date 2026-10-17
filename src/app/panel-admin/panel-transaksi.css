@@ -39,20 +39,34 @@
 .panel-tx .k i { font-style: normal; font-size: 11px; color: #8a7d83; }
 
 /* ── Bar: tab status + filter ── */
+/* Tab berbentuk pill berwarna seperti menu Produk (ikon + label + jumlah, aktif solid berry).
+ * Sebelumnya cuma garis bawah — sekarang disamakan supaya bahasa visualnya konsisten. */
 .panel-tx .bar { display: block; margin-bottom: 14px; }
-.panel-tx .tabs { display: flex; gap: 4px; background: transparent; border: 0; border-bottom: 1px solid #eee2e7; border-radius: 0; padding: 0; overflow-x: auto; }
-.panel-tx .tab {
-  flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px;
-  padding: 10px 14px; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px;
-  background: transparent; color: #8a7d83; font: 600 13px inherit; font-family: inherit; cursor: pointer; white-space: nowrap;
+.panel-tx .tabs {
+  display: flex; flex-wrap: wrap; gap: 4px;
+  background: #fff; border: 1px solid #eee2e7; border-radius: 14px; padding: 4px;
 }
-.panel-tx .tab:hover { color: #2a1a22; }
+.panel-tx .tab {
+  flex: 0 0 auto; display: inline-flex; align-items: center; gap: 7px;
+  padding: 9px 13px; border: 0; border-radius: 10px; background: transparent;
+  color: #6b4b5a; font: 600 13px inherit; font-family: inherit; cursor: pointer; white-space: nowrap;
+  transition: background .18s ease, color .18s ease;
+}
+.panel-tx .tab:hover { background: #fdf3f7; color: #2a1a22; }
+.panel-tx .tab .ti { display: grid; place-items: center; flex: none; }
+.panel-tx .tab .ti svg {
+  width: 15px; height: 15px; stroke: currentColor; fill: none;
+  stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+}
 .panel-tx .tab em {
   font-style: normal; font-weight: 800; font-size: 11px; min-width: 20px; height: 20px;
-  border-radius: 11px; display: grid; place-items: center; background: #f6eef1; color: #8a7d83; padding: 0 6px;
+  border-radius: 11px; display: grid; place-items: center; background: #f6eef1; color: #6b4b5a; padding: 0 6px;
 }
-.panel-tx .tab.on { color: #2a1a22; border-bottom-color: #c2255c; }
-.panel-tx .tab.on em { background: #c2255c; color: #fff; }
+.panel-tx .tab.on {
+  background: #c2255c; color: #fff;
+  box-shadow: 0 6px 14px -8px rgba(157, 23, 77, .9);
+}
+.panel-tx .tab.on em { background: rgba(255, 255, 255, .26); color: #fff; }
 
 .panel-tx .f { display: flex; gap: 8px; margin-top: 14px; justify-content: flex-end; flex-wrap: wrap; align-items: center; }
 .panel-tx .f input,
