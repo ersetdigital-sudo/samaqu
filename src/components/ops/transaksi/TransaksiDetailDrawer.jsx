@@ -13,6 +13,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Ban, CreditCard, MapPin, Pencil, Receipt, ShoppingBag, Trash2, Truck, X } from "lucide-react";
 import { NEUTRAL_ITEM_PHOTO } from "@/lib/order-photo";
 import { isPaketItem, variantName } from "@/lib/item-label";
+import { ORDER_STAGE_LABEL, orderStage } from "@/lib/order-flow";
+import { usePaymentMethodName } from "@/lib/use-payment-methods";
 import { supabase } from "@/lib/supabase";
 import { formatWeightExact } from "@/lib/shipping-weight";
 import { formatTrackingTime, sortHistoryDesc, trackingRow, trackingSummary } from "@/lib/jnt/track-status";
@@ -23,6 +25,10 @@ export default function TransaksiDetailDrawer({ open, order, variant = "ops", on
   const isPanel = variant === "panel";
   const status = order ? STATUS_STYLES[order.status] : null;
   const source = order ? SOURCE_STYLES[order.source] : null;
+
+  // Nama metode pembayaran: `orders.payment_method` bisa berupa id ke tabel `payment_methods`
+  // (pesanan baru) atau string lama ('bank'/'qris'/'cod'/'cash'). Hook ini yang menerjemahkannya.
+  const { name: paymentName } = usePaymentMethodName(order?.payment_method);
 
   const awb = order?.awb_no || "";
 
@@ -114,22 +120,18 @@ export default function TransaksiDetailDrawer({ open, order, variant = "ops", on
 
   // ── Tampilan PANEL (ala mockup) ──
   if (isPanel && order) {
+    const stage = orderStage(order);
     const panelKey =
-      { pending: "bayar", diproses: "proses", dikirim: "kirim", selesai: "selesai", dibatalkan: "batal" }[order.status] || "batal";
+      { belum_bayar: "bayar", perlu_dikirim: "proses", dikirim: "kirim", selesai: "selesai", dibatalkan: "batal" }[stage] || "batal";
     const banner =
       {
-        pending: ["Menunggu pembayaran", "Pesanan akan dibatalkan otomatis jika belum dibayar dalam 24 jam."],
-        diproses: ["Pesanan perlu dikemas", "Segera kemas pesanan dan siapkan resi sebelum batas kirim."],
+        belum_bayar: ["Menunggu pembayaran", "Pesanan akan dibatalkan otomatis jika belum dibayar dalam 24 jam."],
+        perlu_dikirim: ["Pesanan perlu dikirim", "Segera kemas pesanan dan siapkan resi, lalu serahkan ke kurir."],
         dikirim: ["Pesanan dalam perjalanan", "Paket sedang diantar oleh kurir ke alamat pembeli."],
         selesai: ["Pesanan selesai", "Pesanan telah diterima oleh pembeli."],
         dibatalkan: ["Pesanan dibatalkan", order.notes || "Pesanan dibatalkan."],
-      }[order.status] || ["Pesanan", ""];
-    const stepLevel = { pending: 0, diproses: 1, dikirim: 3, selesai: 4 }[order.status] ?? 0;
-    const payLabel = order.payment_method
-      ? { cash: "Tunai", transfer: "Transfer bank", bank_transfer: "Transfer bank", qris: "QRIS", cod: "COD", ewallet: "E-Wallet" }[
-          order.payment_method
-        ] || order.payment_method
-      : "-";
+      }[stage] || ["Pesanan", ""];
+    const stepLevel = { belum_bayar: 0, perlu_dikirim: 1, dikirim: 3, selesai: 4 }[stage] ?? 0;
     const lastScan = historyRows[0] || null;
     const region = [order.shipping_kecamatan, order.kota, order.shipping_province, order.shipping_postal_code].filter(Boolean).join(", ");
     const canDelete = (!order.awb_no || order.status === "dibatalkan") && order.source !== "website";
@@ -165,9 +167,9 @@ export default function TransaksiDetailDrawer({ open, order, variant = "ops", on
                       <b>{banner[0]}</b>
                       <p>{banner[1]}</p>
                     </div>
-                    <span className={`bd s-${panelKey}`}>{order.status_label}</span>
+                    <span className={`bd s-${panelKey}`}>{stage === "dikirim" ? "Dikirim / Transit" : ORDER_STAGE_LABEL[stage]}</span>
                   </div>
-                  {order.status !== "dibatalkan" ? (
+                  {stage !== "dibatalkan" ? (
                     <div className="stp">
                       {["Dibayar", "Dikemas", "Dikirim", "Selesai"].map((label, index) => (
                         <div key={label} className={index < stepLevel ? "d" : ""}>
@@ -278,7 +280,7 @@ export default function TransaksiDetailDrawer({ open, order, variant = "ops", on
                   <div className="sh">
                     <CreditCard />
                     <b>Metode Pembayaran</b>
-                    <span style={{ marginLeft: "auto", color: "#6b4b5a", fontWeight: 600 }}>{payLabel}</span>
+                    <span style={{ marginLeft: "auto", color: "#6b4b5a", fontWeight: 600 }}>{paymentName || "-"}</span>
                   </div>
                 </div>
 

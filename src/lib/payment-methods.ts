@@ -70,11 +70,13 @@ export function paymentMethodLabel(pm?: PaymentMethodRow | null): string {
   return defaultMethodLabel(normalizeMethodType(pm.method_type));
 }
 
-/** Label untuk pesanan lama yang payment_method-nya masih 'bank' / 'qris' / 'cod'. */
+/** Label untuk pesanan lama yang payment_method-nya masih 'bank' / 'qris' / 'cod' / 'cash'. */
 export function legacyPaymentLabel(value?: string | null): string | null {
   if (value === "bank") return "Transfer Bank";
   if (value === "qris") return "QRIS / E-Wallet";
   if (value === "cod") return "COD";
+  // Transaksi manual dari panel ops disimpan apa adanya sebagai "cash" (selalu lunas).
+  if (value === "cash") return "Tunai";
   return null;
 }
 

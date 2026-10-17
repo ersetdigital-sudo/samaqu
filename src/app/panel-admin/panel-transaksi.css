@@ -21,10 +21,15 @@
 .panel-tx h2,
 .panel-tx h3 { letter-spacing: -0.02em; }
 
-/* Judul halaman (mockup `.top .t`) — shell panel tidak lagi menampilkan judul halaman. */
-.panel-tx .ptx-title { margin-bottom: 14px; }
-.panel-tx .ptx-title small { font-size: 11px; color: #8a7d83; letter-spacing: .05em; text-transform: uppercase; }
-.panel-tx .ptx-title h1 { font-size: 20px; font-weight: 700; margin-top: 2px; }
+/* Pembungkus halaman adalah `div.ops-root.panel-ops.panel-tx`. Tema ops (`ops.css`) memasang
+ * latar `#f1f5f9` + `min-height:100vh` pada `.ops-root`, sehingga area Transaksi tampak kelabu dan
+ * berbeda dari kanvas mockup (`#fbf6f8`) yang dipakai Beranda. Dua kelas (`.ops-root.panel-tx`)
+ * mengalahkan `.ops-root`, jadi latar/tinggi paksa itu dibatalkan di sini. */
+.ops-root.panel-tx {
+  background: #fbf6f8;
+  min-height: 0;
+  color: #2a1a22;
+}
 
 /* ── Kartu statistik ── */
 .panel-tx .ks { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 16px; }
@@ -67,16 +72,20 @@
 .panel-tx .ptx-month b { font-size: 13px; min-width: 104px; text-align: center; }
 
 /* ── Tabel ── */
+/* `table-layout: fixed` + lebar kolom tetap (`<colgroup>` di komponen) supaya SEMUA tab
+ * (Semua / Belum Bayar / Dikirim / …) memakai lebar kolom yang sama. Kalau dibiarkan otomatis,
+ * tiap tab menghitung lebar sendiri dari isinya → kolom bergeser-geser dan sel panjang membungkus
+ * jadi baris tidak rata. Sel dibuat nowrap + ellipsis supaya tinggi baris selalu konsisten. */
 .panel-tx .tw { padding: 0; overflow-x: auto; }
-.panel-tx table { width: 100%; border-collapse: collapse; min-width: 820px; }
+.panel-tx table { width: 100%; border-collapse: collapse; min-width: 900px; table-layout: fixed; }
 .panel-tx th { text-align: left; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: #8a7d83; padding: 14px 18px; background: #fdf8fa; border-bottom: 1px solid #f1e6ea; white-space: nowrap; }
-.panel-tx td { padding: 14px 18px; border-bottom: 1px solid #f6eef1; vertical-align: middle; }
+.panel-tx td { padding: 14px 18px; border-bottom: 1px solid #f6eef1; vertical-align: middle; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .panel-tx tbody tr { cursor: pointer; transition: background .15s; }
 .panel-tx tbody tr:hover { background: #fdf3f7; }
-.panel-tx td small { display: block; color: #8a7d83; font-size: 12px; margin-top: 2px; }
+.panel-tx td small { display: block; color: #8a7d83; font-size: 12px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .panel-tx .id { font-weight: 700; color: #c2255c; white-space: nowrap; }
 .panel-tx .src { font-size: 12px; color: #6b4b5a; }
-.panel-tx .mono { font-variant-numeric: tabular-nums; font-weight: 700; }
+.panel-tx .mono { font-variant-numeric: tabular-nums; font-weight: 700; white-space: nowrap; }
 .panel-tx .chev { color: #c2255c; font-weight: 700; }
 
 /* ── Badge status ── */

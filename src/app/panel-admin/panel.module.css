@@ -149,6 +149,10 @@
 }
 .mainFill > .top { flex: none; margin-bottom: 12px; }
 .top { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+/* Judul halaman di topbar (mockup `.top .t`) — hanya halaman yang terdaftar di PAGE_TITLES. */
+.t { flex-shrink: 0; }
+.t small { display: block; font-size: 11px; color: var(--mut); letter-spacing: 0.05em; text-transform: uppercase; }
+.t h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; margin-top: 2px; color: var(--plum); }
 
 .search {
   margin-left: auto;

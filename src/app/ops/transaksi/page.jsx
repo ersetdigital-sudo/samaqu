@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import { base44 } from "@/lib/ops-api";
 import { SALE_STATUSES, STATUS_LABEL } from "@/lib/transaksi";
+import { ORDER_STAGE_LABEL, ORDER_STAGE_TABS, matchesStage, orderStage } from "@/lib/order-flow";
 import DateFilter, { formatTanggalID } from "@/components/ops/leads/DateFilter";
 import ConfirmDeleteModal from "@/components/ops/ConfirmDeleteModal";
 import TransaksiFormModal from "@/components/ops/transaksi/TransaksiFormModal";
@@ -58,6 +59,8 @@ export default function Transaksi({ variant = "ops" }) {
   const search = useDeferredValue(searchInput).trim();
   const [sourceFilter, setSourceFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  // Filter TAHAP khusus tampilan panel (`order-flow`: Belum Bayar / Perlu Dikirim / …).
+  const [stageFilter, setStageFilter] = useState("semua");
 
   // Filter TANGGAL (satu hari, WIB) — disimpan di URL seperti halaman Leads.
   const [selectedDate, setSelectedDate] = useState("");
@@ -91,7 +94,8 @@ export default function Transaksi({ variant = "ops" }) {
     const queryPhone = phoneKey(search);
     return orders.filter((order) => {
       if (sourceFilter !== "all" && order.source !== sourceFilter) return false;
-      if (statusFilter !== "all" && order.status !== statusFilter) return false;
+      // Panel: saring per TAHAP (order-flow, sama seperti halaman Pesanan admin). Ops: per status tersimpan (perilaku lama).
+      if (isPanel ? !matchesStage(order, stageFilter) : statusFilter !== "all" && order.status !== statusFilter) return false;
       if (selectedDate && order.date_wib !== selectedDate) return false;
       if (!query) return true;
       if (String(order.customer_name || "").toLowerCase().includes(query)) return true;
@@ -102,7 +106,7 @@ export default function Transaksi({ variant = "ops" }) {
       if ((order.items || []).some((item) => `${item.product_name || ""} ${itemVariantText(item)}`.toLowerCase().includes(query))) return true;
       return queryPhone.length >= 4 && phoneKey(order.customer_whatsapp).includes(queryPhone);
     });
-  }, [orders, search, sourceFilter, statusFilter, selectedDate]);
+  }, [orders, search, sourceFilter, statusFilter, stageFilter, selectedDate, isPanel]);
 
   // Opsi filter diambil dari data yang benar-benar ada di bulan itu.
   const sourceOptions = useMemo(() => [...new Set(orders.map((o) => o.source))], [orders]);
@@ -122,12 +126,17 @@ export default function Transaksi({ variant = "ops" }) {
   const markedDates = useMemo(() => [...new Set(orders.map((o) => o.date_wib).filter(Boolean))], [orders]);
 
   const filtersActive =
-    Boolean(search) || sourceFilter !== "all" || statusFilter !== "all" || Boolean(selectedDate);
+    Boolean(search) ||
+    sourceFilter !== "all" ||
+    statusFilter !== "all" ||
+    (isPanel && stageFilter !== "semua") ||
+    Boolean(selectedDate);
 
   const resetFilters = () => {
     setSearchInput("");
     setSourceFilter("all");
     setStatusFilter("all");
+    setStageFilter("semua");
     setSelectedDate("");
   };
 
@@ -232,28 +241,28 @@ export default function Transaksi({ variant = "ops" }) {
     return {
       total: orders.length,
       revenue: sold.reduce((sum, order) => sum + (order.total || 0), 0),
-      unpaid: orders.filter((order) => order.status === "pending").length,
-      toProcess: orders.filter((order) => order.status === "diproses").length,
+      unpaid: orders.filter((order) => orderStage(order) === "belum_bayar").length,
+      toSend: orders.filter((order) => orderStage(order) === "perlu_dikirim").length,
     };
   }, [orders]);
 
-  // Tab status = status ASLI dari data (`STATUS_LABEL`). Mockup punya "Perlu Dipacking" yang
-  // tidak ada padanannya di DB, jadi tidak dikarang.
-  const statusTabs = useMemo(
-    () => [
-      { key: "all", label: "Semua", count: orders.length },
-      ...Object.keys(STATUS_LABEL).map((key) => ({
-        key,
-        label: STATUS_LABEL[key],
-        count: orders.filter((order) => order.status === key).length,
+  // Tab = TAHAP resmi aplikasi (`ORDER_STAGE_TABS` order-flow — SAMA dengan halaman Pesanan admin):
+  // Semua · Belum Bayar · Perlu Dikirim · Dikirim · Selesai · Dibatalkan.
+  const stageTabs = useMemo(
+    () =>
+      ORDER_STAGE_TABS.map((tab) => ({
+        ...tab,
+        count: tab.key === "semua" ? orders.length : orders.filter((order) => orderStage(order) === tab.key).length,
       })),
-    ],
     [orders],
   );
 
-  // Kelas warna status ala mockup (badge `.bd`).
-  const panelStatusKey = (status) =>
-    ({ pending: "bayar", diproses: "proses", dikirim: "kirim", selesai: "selesai", dibatalkan: "batal" }[status] || "batal");
+  // Kelas warna TAHAP ala mockup (badge `.bd` + banner `.ban`).
+  const stageColorKey = (stage) =>
+    ({ belum_bayar: "bayar", perlu_dikirim: "proses", dikirim: "kirim", selesai: "selesai", dibatalkan: "batal" }[stage] || "batal");
+
+  // Label tahap khusus tampilan panel: mockup memakai "Dikirim / Transit" untuk tahap `dikirim`.
+  const panelStageLabel = (stage) => (stage === "dikirim" ? "Dikirim / Transit" : ORDER_STAGE_LABEL[stage]);
 
   // Modal/overlay dipakai bersama oleh tampilan ops & panel supaya tidak ada logika kembar.
   const overlays = (
@@ -321,11 +330,6 @@ export default function Transaksi({ variant = "ops" }) {
   if (isPanel) {
     return (
       <div>
-        <div className="ptx-title">
-          <small>SAMAQU · PANEL ADMIN</small>
-          <h1>Transaksi</h1>
-        </div>
-
         <section className="ks">
           <div className="card k">
             <small>Total transaksi</small>
@@ -344,21 +348,21 @@ export default function Transaksi({ variant = "ops" }) {
           </div>
           <div className="card k">
             <small>Perlu diproses</small>
-            <b style={{ color: "#2e64c9" }}>{panelKpis.toProcess}</b>
+            <b style={{ color: "#2e64c9" }}>{panelKpis.toSend}</b>
             <i>Packing + siap kirim</i>
           </div>
         </section>
 
         <div className="bar">
           <div className="tabs">
-            {statusTabs.map((tab) => (
+            {stageTabs.map((tab) => (
               <button
                 key={tab.key}
                 type="button"
-                className={`tab${statusFilter === tab.key ? " on" : ""}`}
-                onClick={() => setStatusFilter(tab.key)}
+                className={`tab${stageFilter === tab.key ? " on" : ""}`}
+                onClick={() => setStageFilter(tab.key)}
               >
-                <span>{tab.label}</span>
+                <span>{tab.key === "semua" ? tab.label : panelStageLabel(tab.key)}</span>
                 <em>{tab.count}</em>
               </button>
             ))}
@@ -434,6 +438,16 @@ export default function Transaksi({ variant = "ops" }) {
             </div>
           ) : (
             <table>
+              {/* Lebar kolom dipatok di sini (`table-layout: fixed`) supaya semua tab tampil sama. */}
+              <colgroup>
+                <col style={{ width: "16%" }} />
+                <col style={{ width: "16%" }} />
+                <col style={{ width: "27%" }} />
+                <col style={{ width: "10%" }} />
+                <col style={{ width: "12%" }} />
+                <col style={{ width: "14%" }} />
+                <col />
+              </colgroup>
               <thead>
                 <tr>
                   <th>No. Pesanan</th>
@@ -474,7 +488,7 @@ export default function Transaksi({ variant = "ops" }) {
                         Rp {formatRupiah(order.total)}
                       </td>
                       <td>
-                        <span className={`bd s-${panelStatusKey(order.status)}`}>{order.status_label}</span>
+                        <span className={`bd s-${stageColorKey(orderStage(order))}`}>{panelStageLabel(orderStage(order))}</span>
                       </td>
                       <td className="chev" style={{ textAlign: "right" }}>
                         ›
