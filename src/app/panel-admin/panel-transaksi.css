@@ -85,13 +85,12 @@
 .panel-tx .ptx-month b { font-size: 13px; min-width: 104px; text-align: center; }
 
 /* ── Tabel ── */
-/* `table-layout: fixed` + lebar kolom tetap (`<colgroup>` di komponen) supaya SEMUA tab
- * memakai lebar kolom yang sama. `min-width` dinaikkan ke 1000px (dari 900px) dan padding sel
- * dipangkas 18px → 14px supaya isi kolom (nomor pesanan, jam, nama, sumber, badge) MUAT UTUH —
- * tidak ada lagi teks terpotong "...". Kalau jendela lebih sempit dari 1000px, tabelnya
- * menggulir mendatar (`.tw` overflow-x) dan lebar kolom tetap, jadi teks tetap utuh. */
+/* `table-layout: fixed` + lebar kolom persen (`<colgroup>` di komponen) supaya SEMUA tab
+ * memakai lebar kolom yang sama dan tabel menyusut proporsional mengikuti lebar konten.
+ * `min-width` 900px: di bawah itu tabel menggulir mendatar (`.tw` overflow-x) — bukan
+ * memotong isi. Padding/font dirapatkan lagi lewat media query di bawah. */
 .panel-tx .tw { padding: 0; overflow-x: auto; }
-.panel-tx table { width: 100%; border-collapse: collapse; min-width: 1000px; table-layout: fixed; }
+.panel-tx table { width: 100%; border-collapse: collapse; min-width: 900px; table-layout: fixed; }
 .panel-tx th { text-align: left; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: #8a7d83; padding: 14px; background: #fdf8fa; border-bottom: 1px solid #f1e6ea; white-space: nowrap; }
 .panel-tx td { padding: 14px; border-bottom: 1px solid #f6eef1; vertical-align: middle; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13px; }
 .panel-tx tbody tr { cursor: pointer; transition: background .15s; }
@@ -110,7 +109,11 @@
 }
 .panel-tx .resi-void { color: #b9a8af; text-decoration: line-through; }
 .panel-tx .resi-empty { color: #b9a8af; font-size: 12px; }
+/* Kolom panah: `td` umumnya `overflow:hidden` + padding 14px, sehingga di kolom sempit "›"
+ * ikut terpotong. Padding dipangkas dan overflow dibuka khusus kolom ini. */
 .panel-tx .chev { color: #c2255c; font-weight: 700; }
+.panel-tx th.chev,
+.panel-tx td.chev { padding-left: 2px; padding-right: 12px; overflow: visible; text-overflow: clip; }
 
 /* ── Badge status ── */
 .panel-tx .bd { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px; white-space: nowrap; }
@@ -214,4 +217,17 @@
 }
 @media (max-width: 700px) {
   .panel-tx .ks { grid-template-columns: 1fr; }
+}
+
+/* Tabel di layar sedang: kolom menyusut proporsional (persen), jadi padding & font
+ * dirapatkan lebih dulu supaya nomor resi, status, dan total tetap utuh sebelum
+ * tabel mulai menggulir mendatar di bawah 900px. */
+@media (max-width: 1250px) {
+  .panel-tx th,
+  .panel-tx td { padding: 12px 10px; }
+  .panel-tx th.chev,
+  .panel-tx td.chev { padding-left: 2px; padding-right: 8px; }
+  .panel-tx .mono { font-size: 12px; }
+  .panel-tx .resi-no { font-size: 11px; }
+  .panel-tx table .bd { font-size: 10.5px; padding: 4px 8px; gap: 5px; }
 }
