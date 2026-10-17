@@ -8,6 +8,7 @@ import PaymentMethodsManager from "@/components/admin/PaymentMethodsManager";
 import MayarSettingsForm from "@/components/admin/MayarSettingsForm";
 import { SettingsCard, Field } from "@/components/admin/SettingsCard";
 import { FonnteSections } from "@/components/admin/FonnteSettingsCards";
+import NotifikasiKatalog from "@/components/admin/NotifikasiKatalog";
 
 /**
  * Seluruh isi panel "Pengaturan" dashboard admin (dulu ditulis inline di
@@ -32,6 +33,7 @@ export default function SettingsPanel() {
       <SocialMediaSection />
       <MetaPixelSection />
       <FonnteSections />
+      <NotifikasiKatalog />
       <PaymentMethodsManager />
       <MayarSettingsForm />
     </div>
