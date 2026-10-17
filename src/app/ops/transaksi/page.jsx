@@ -334,6 +334,7 @@ export default function Transaksi({ variant = "ops" }) {
         }}
         initialData={editing}
         onSaved={() => queryClient.invalidateQueries({ queryKey: ["transaksi"] })}
+        variant={isPanel ? "panel" : "ops"}
       />
 
       <TransaksiDetailDrawer

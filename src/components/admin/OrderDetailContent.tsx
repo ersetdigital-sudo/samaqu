@@ -231,6 +231,35 @@ export default function OrderDetailContent({
   const [showRaw, setShowRaw] = useState(false);
   const t = useSafeTranslations("tracking");
 
+  /** Status terbaru J&T (read-only) — diambil otomatis saat drawer dibuka. */
+  const [liveTrack, setLiveTrack] = useState<{ status: string; location?: string; dateTime?: string } | null>(null);
+  useEffect(() => {
+    if (!resi) {
+      setLiveTrack(null);
+      return undefined;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const res = await fetch(`/api/jnt/track?awb=${encodeURIComponent(resi)}&refresh=1`, {
+          cache: "no-store",
+          headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : undefined,
+        });
+        const json = await res.json().catch(() => null);
+        if (!res.ok || !json?.success) return;
+        const history = Array.isArray(json.data?.history) ? json.data.history : [];
+        const latest = sortHistoryDesc(history)[0];
+        if (!latest || cancelled) return;
+        const row = trackingRow(latest);
+        setLiveTrack({ status: row.status, location: row.location, dateTime: row.dateTime });
+      } catch {
+        // Diam saja — snapshot tersimpan tetap dipakai sebagai cadangan.
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [resi, order.order_number]);
+
   // Berat per ITEM (gram) — dihitung dari `product_variants.weight` (per produk + warna + ukuran);
   // `products.weight` hanya cadangan. `order_items` tidak menyimpan berat, jadi dihitung saat dibuka.
   const [itemWeights, setItemWeights] = useState<Record<string, ResolvedLineWeight>>({});
@@ -484,26 +513,35 @@ export default function OrderDetailContent({
                   </div>
                 )}
 
-                {/* Status pengiriman terpisah dari status pesanan + pemindaian terakhir J&T.
-                    Resi terbit = "Menunggu Pickup"; naik ke "Dikirim" setelah J&T memindai. */}
+                {/* Status terbaru J&T — disamakan dengan panel admin. Sumbernya bisa live
+                    (read-only), snapshot tersimpan, atau status pengiriman di database. */}
                 {resi ? (() => {
-                  const ss = shippingStatusOf(order);
-                  return ss ? (
-                    <div className="rp-line" style={{ marginTop: 8 }}>
-                      <span className="rp-sub">Status pengiriman</span>
-                      <span className="rp-strong" style={{ marginLeft: "auto" }}>{SHIPPING_STATUS_LABEL[ss]}</span>
+                  const latest = liveTrack
+                    ? {
+                        status: liveTrack.status,
+                        meta: [liveTrack.location, formatTrackingTime(liveTrack.dateTime)].filter(Boolean).join(" · "),
+                      }
+                    : order.tracking_status_text
+                      ? {
+                          status: trackingRow({ status: order.tracking_status_text, status_code: order.tracking_status_code }).status,
+                          meta: order.tracking_city ? String(order.tracking_city) : "",
+                        }
+                      : (() => {
+                          const ss = shippingStatusOf(order);
+                          return ss ? { status: SHIPPING_STATUS_LABEL[ss], meta: "" } : null;
+                        })();
+                  return latest ? (
+                    <div className="rp-line" style={{ marginTop: 8, alignItems: "flex-start" }}>
+                      <span className="rp-sub">Status terbaru</span>
+                      <span className="rp-strong" style={{ marginLeft: "auto", textAlign: "right", maxWidth: "68%" }}>
+                        {latest.status}
+                        {latest.meta ? (
+                          <span className="rp-sub" style={{ display: "block", marginTop: 2 }}>{latest.meta}</span>
+                        ) : null}
+                      </span>
                     </div>
                   ) : null;
                 })() : null}
-                {resi && order.tracking_status_text ? (
-                  <div className="rp-line" style={{ marginTop: 8 }}>
-                    <span className="rp-sub">Tracking terakhir</span>
-                    <span className="rp-strong" style={{ marginLeft: "auto", textAlign: "right" }}>
-                      {trackingRow({ status: order.tracking_status_text, status_code: order.tracking_status_code }).status}
-                      {order.tracking_city ? ` · ${order.tracking_city}` : ""}
-                    </span>
-                  </div>
-                ) : null}
               </div>
 
               {/* Metode pembayaran selalu terlihat (dulu hanya ada di dalam ringkasan "Total

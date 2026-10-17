@@ -135,8 +135,10 @@ const sizeRank = (size) => {
   return index === -1 ? OPS_STOCK_SIZES.length : index;
 };
 
-export default function TransaksiFormModal({ isOpen, onClose, initialData = null, onSaved }) {
+export default function TransaksiFormModal({ isOpen, onClose, initialData = null, onSaved, variant = "ops" }) {
   const isEdit = !!initialData;
+  // Tema pink hanya untuk panel admin; dashboard ops tetap slate/black.
+  const isPanelForm = variant === "panel";
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -2626,7 +2628,11 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                       type="button"
                       onClick={checkOngkir}
                       disabled={ongkir.status === "loading"}
-                      className="mt-2 w-full inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border-2 border-[#f3c7d6] dark:border-rose-900/50 text-[#c2255c] dark:text-rose-300 text-sm font-bold hover:bg-[#fdf3f7] dark:hover:bg-rose-900/20 disabled:opacity-60 disabled:cursor-wait transition-colors"
+                      className={`mt-2 w-full inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border-2 text-sm font-bold disabled:opacity-60 disabled:cursor-wait transition-colors ${
+                        isPanelForm
+                          ? "border-[#f3c7d6] dark:border-rose-900/50 text-[#c2255c] dark:text-rose-300 hover:bg-[#fdf3f7] dark:hover:bg-rose-900/20"
+                          : "border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+                      }`}
                     >
                       {ongkir.status === "loading" ? (
                         <Loader2 size={15} className="animate-spin" />
@@ -2667,7 +2673,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                 {ongkir.status === "done" && ongkir.services.length > 0 && (
                   <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
                     <div className="flex items-start gap-2.5 px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
-                      <Truck size={15} className="mt-0.5 shrink-0 text-[#c2255c]" />
+                      <Truck size={15} className={`mt-0.5 shrink-0 ${isPanelForm ? "text-[#c2255c]" : "text-slate-500 dark:text-slate-400"}`} />
                       <div className="min-w-0">
                         <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                           Berat kirim
@@ -2697,14 +2703,18 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                             aria-pressed={active}
                             className={`w-full flex items-center gap-3 px-3.5 py-3 text-left transition-colors ${
                               active
-                                ? "bg-[#fdf3f7] dark:bg-rose-900/20"
+                                ? isPanelForm
+                                  ? "bg-[#fdf3f7] dark:bg-rose-900/20"
+                                  : "bg-slate-100 dark:bg-slate-800"
                                 : "hover:bg-slate-50 dark:hover:bg-slate-800"
                             }`}
                           >
                             <span
                               className={`grid place-items-center w-5 h-5 shrink-0 rounded-full border-2 transition-colors ${
                                 active
-                                  ? "border-[#c2255c] bg-[#c2255c] text-white"
+                                  ? isPanelForm
+                                    ? "border-[#c2255c] bg-[#c2255c] text-white"
+                                    : "border-slate-900 bg-slate-900 text-white dark:border-white dark:bg-white dark:text-slate-900"
                                   : "border-slate-300 dark:border-slate-600 text-transparent"
                               }`}
                             >
