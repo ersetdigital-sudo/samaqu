@@ -79,8 +79,9 @@ export default function OrderDetailDrawer({
           >
             <header className="odr-head">
               <div className="odr-head-txt">
-                <h2 className="odr-title">{order.order_number}</h2>
+                <h2 className="odr-title">Detail Pesanan</h2>
                 <p className="odr-date">
+                  {order.order_number} ·{" "}
                   {new Date(order.created_at).toLocaleDateString("id-ID", {
                     weekday: "long",
                     day: "numeric",
@@ -123,7 +124,7 @@ const ODR_CSS = `
 /* Panel = kertasnya sendiri (krem terang yang sama dengan lembar struk), jadi isi struk duduk
    langsung di atasnya tanpa kartu krem kedua di dalamnya. 520px: cukup untuk baris produk &
    linimasa, tapi tidak lagi menutupi hampir seluruh layar tablet seperti versi 640px. */
-.odr-panel{width:520px;max-width:100%;height:100%;display:flex;flex-direction:column;background:#FFFDF8;box-shadow:-24px 0 60px -24px rgba(42,33,27,.35)}
+.odr-panel{width:520px;max-width:100%;height:100%;display:flex;flex-direction:column;background:#fff;box-shadow:-24px 0 60px -24px rgba(42,33,27,.35)}
 .odr-head{flex:none;display:flex;align-items:flex-start;gap:12px;padding:18px 20px;border-bottom:1px solid rgba(42,33,27,.09)}
 .odr-head-txt{min-width:0}
 /* Nomor pesanan memakai font UI admin yang sama dengan isi struk (dulu serif Cormorant) supaya seragam. */
@@ -135,7 +136,7 @@ const ODR_CSS = `
 
 /* Mobile: drawer memakai lebar penuh dan header lebih rapat. */
 @media (max-width:767.98px){
- .odr-panel{width:100%;background:var(--cream,#f8f5f1)}
+ .odr-panel{width:100%;background:#fff}
  .odr-head{padding:14px 16px}
 }
 `;
