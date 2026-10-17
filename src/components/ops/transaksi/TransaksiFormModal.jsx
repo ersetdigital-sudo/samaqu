@@ -2019,8 +2019,9 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                   </span>
                 </div>
 
-                {/* Daftar item punya area sendiri; kalau itemnya banyak hanya area ini yang scroll */}
-                <div className="space-y-2 max-h-[46vh] min-h-[168px] overflow-y-auto no-scrollbar pr-0.5">
+                {/* Daftar item tidak lagi punya kotak scroll sendiri: pemilih produk ikut
+                    mengalir lega, dan halaman drawer yang men-scroll (satu scrollbar saja). */}
+                <div className="space-y-2">
                   {items.map((row, index) => {
                     const info = rowInfo[index];
                     const step = seriesStep(row.category, row.kain, row.warna);
@@ -2509,9 +2510,9 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                   })}
                 </div>
 
-                {/* Aksi baris DI LUAR area scroll daftar item: tombol Simpan selalu kelihatan
-                    walau isi baris lagi di-scroll. */}
-                <div className="flex items-center gap-2">
+                {/* Aksi baris DI LUAR daftar item dan menempel di bawah area scroll drawer,
+                    jadi "Simpan produk" selalu kelihatan tanpa scroll ke dalam baris. */}
+                <div className="sticky bottom-0 z-10 flex items-center gap-2 bg-white/95 dark:bg-[#1a1d28]/95 backdrop-blur pt-2 pb-1 border-t border-slate-100 dark:border-slate-800">
                   <button
                     type="button"
                     onClick={addRow}
