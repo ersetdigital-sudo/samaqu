@@ -149,100 +149,10 @@
 }
 .mainFill > .top { flex: none; margin-bottom: 12px; }
 .top { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
-/* Judul halaman di topbar (mockup `.top .t`) — hanya halaman yang terdaftar di PAGE_TITLES. */
-.t { flex-shrink: 0; }
-.t small { display: block; font-size: 11px; color: var(--mut); letter-spacing: 0.05em; text-transform: uppercase; }
-.t h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; margin-top: 2px; color: var(--plum); }
 
-.search {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: #fff;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 10px 14px;
-  color: #9a8a92;
-  font-size: 13px;
-}
-.topSearch { width: auto; flex: 0 1 330px; min-width: 160px; }
-.searchInput {
-  border: 0;
-  outline: none;
-  background: transparent;
-  width: 100%;
-  min-width: 0;
-  font-size: 13px;
-  color: var(--plum);
-  text-overflow: ellipsis;
-}
-.searchInput::placeholder { color: #9a8a92; }
-
-/* ---------- hasil pencarian topbar ---------- */
-.searchPanel {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  right: 0;
-  z-index: 60;
-  max-height: 340px;
-  overflow: auto;
-  padding: 6px;
-  background: #ffffff;
-  border: 1px solid #f1e6ea;
-  border-radius: 12px;
-  box-shadow: 0 12px 28px -8px rgba(42, 26, 34, 0.18);
-}
-.searchNote {
-  margin: 0;
-  padding: 10px 12px;
-  font-size: 12.5px;
-  color: #8a7d83;
-}
-.searchHit {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 8px 10px;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  text-align: left;
-  cursor: pointer;
-}
-.searchHit:hover { background: #f8eef2; }
-.searchKind {
-  flex: none;
-  padding: 2px 8px;
-  border-radius: 20px;
-  background: #fdeaf3;
-  color: #c2255c;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-.searchMain { min-width: 0; }
-.searchMain b {
-  display: block;
-  font-size: 13px;
-  color: #2a1a22;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.searchMain small {
-  display: block;
-  font-size: 11.5px;
-  color: #8a7d83;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
+/* ---------- tanggal topbar (satu-satunya isi kiri setelah search dihapus) ---------- */
 .date {
+  margin-left: auto;
   display: flex;
   gap: 8px;
   align-items: center;
@@ -254,6 +164,7 @@
   white-space: nowrap;
   flex-shrink: 0;
 }
+
 .date svg { color: var(--pink); }
 
 .bell {
@@ -459,7 +370,6 @@ svg.heart { width: 14px; height: 14px; fill: #e46a92; stroke: none; color: #e46a
   .side { width: 100%; height: auto; position: static; }
   .foot { display: none; }
   .top { flex-wrap: wrap; }
-  .topSearch { width: 100%; order: 5; margin: 0; flex: 1 1 100%; }
   .hero { display: flex; flex-direction: column; align-items: flex-start; padding: 24px; min-height: 0; }
   .heroTitle { white-space: normal; flex-wrap: wrap; }
   .heroArt { width: 100%; height: 180px; }

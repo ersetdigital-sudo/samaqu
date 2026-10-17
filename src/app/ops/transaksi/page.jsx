@@ -459,11 +459,6 @@ export default function Transaksi({ variant = "ops" }) {
                 </option>
               ))}
             </select>
-            {filtersActive && (
-              <button type="button" className="btn-ghost" onClick={resetFilters}>
-                Reset
-              </button>
-            )}
             <button
               type="button"
               className="btn"

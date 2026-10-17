@@ -77,7 +77,6 @@
 .panel-tx .f input { min-width: 220px; }
 .panel-tx .btn { background: #c2255c; color: #fff; border: 0; border-radius: 20px; padding: 11px 22px; font-weight: 600; font-family: inherit; font-size: 13px; cursor: pointer; }
 .panel-tx .btn:hover { background: #9d174d; }
-.panel-tx .btn-ghost { background: #fff; color: #c2255c; border: 1px solid #f3c7d6; border-radius: 20px; padding: 9px 16px; font-weight: 600; font-family: inherit; font-size: 13px; cursor: pointer; }
 
 /* Navigasi bulan (pertahankan kemampuan lihat bulan lain; tidak ada di mockup). */
 .panel-tx .ptx-month { display: inline-flex; align-items: center; gap: 2px; border: 1px solid #eee2e7; border-radius: 12px; padding: 2px 4px; background: #fff; }
