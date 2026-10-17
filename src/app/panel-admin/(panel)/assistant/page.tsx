@@ -1,7 +1,18 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { authToken } from "../../panel-api";
+import { authToken, sessionEmail } from "../../panel-api";
+import {
+  LEGACY_HISTORY_KEY,
+  LEGACY_SESSION_KEY,
+  accountNs,
+  appendArchive,
+  completeMessages,
+  parseHistory,
+  storageKeys,
+  type HistoryMsg,
+  type StorageKeys,
+} from "../../assistant-history";
 import styles from "../../panel.module.css";
 
 /**
@@ -16,16 +27,8 @@ import styles from "../../panel.module.css";
  * "belum lengkap" dan TIDAK ikut disimpan sebagai jawaban penuh.
  */
 
-interface Msg {
-  role: "user" | "assistant";
-  content: string;
-  /** Jawaban terpotong (user menekan Stop / batas waktu server). */
-  incomplete?: boolean;
-}
-
-const SESSION_KEY = "samaqu_admin_ai_sid";
-const HISTORY_KEY = "samaqu_admin_ai_history";
-const HISTORY_MAX = 30;
+/** Satu pesan percakapan — bentuknya sama dengan yang disimpan di riwayat. */
+type Msg = HistoryMsg;
 
 const SUGGESTIONS = [
   "Bagaimana kondisi operasional hari ini?",
@@ -89,51 +92,72 @@ export default function AssistantPage() {
   const [notice, setNotice] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const sessionIdRef = useRef("");
+  const keysRef = useRef<StorageKeys | null>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(SESSION_KEY);
-      const sid = stored || newSessionId();
-      localStorage.setItem(SESSION_KEY, sid);
-      sessionIdRef.current = sid;
-
-      const raw = localStorage.getItem(HISTORY_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) {
-          setMessages(
-            parsed
-              .filter(
-                (m): m is Msg =>
-                  !!m &&
-                  typeof m.content === "string" &&
-                  (m.role === "user" || m.role === "assistant") &&
-                  // jangan pernah memuat jawaban yang ditandai belum lengkap
-                  m.incomplete !== true
-              )
-              .slice(-HISTORY_MAX)
-          );
-        }
+    let cancelled = false;
+    (async () => {
+      // Riwayat dipisah per akun admin (browser bersama tidak saling menimpa).
+      let email: string | null = null;
+      try {
+        email = await sessionEmail();
+      } catch {
+        // sesi tidak terbaca → namespace "anon"; halaman ini tetap di balik gerbang login panel
       }
-    } catch {
-      // mode privat: sesi hanya hidup di memori
-    }
-    setReady(true);
+      if (cancelled) return;
+      const keys = storageKeys(accountNs(email));
+      keysRef.current = keys;
+
+      try {
+        let sid = localStorage.getItem(keys.session);
+        let raw = localStorage.getItem(keys.history);
+
+        // Migrasi sekali dari kunci lama (versi sebelum riwayat dipisah per akun).
+        if (!sid && !raw) {
+          const oldSid = localStorage.getItem(LEGACY_SESSION_KEY);
+          const oldHistory = localStorage.getItem(LEGACY_HISTORY_KEY);
+          if (oldSid) {
+            sid = oldSid;
+            localStorage.setItem(keys.session, oldSid);
+          }
+          if (oldHistory) {
+            raw = oldHistory;
+            localStorage.setItem(keys.history, oldHistory);
+          }
+        }
+
+        if (!sid) sid = newSessionId();
+        localStorage.setItem(keys.session, sid);
+        sessionIdRef.current = sid;
+
+        // Riwayat lama tetap dipakai; jawaban terpotong tidak pernah dimuat (lihat parseHistory).
+        const loaded = parseHistory(raw);
+        if (loaded.length) setMessages(loaded);
+      } catch {
+        // mode privat: sesi hanya hidup di memori
+      }
+      if (!cancelled) setReady(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  // Riwayat HANYA menyimpan jawaban yang lengkap (R8).
+  // Riwayat HANYA menyimpan jawaban yang lengkap (R8) dan tidak pernah disimpan saat
+  // jawaban masih berjalan — supaya jawaban terpotong tidak terbaca sebagai jawaban penuh.
   useEffect(() => {
-    if (!ready) return;
+    if (!ready || busy) return;
+    const keys = keysRef.current;
+    if (!keys) return;
     try {
-      const complete = messages.filter((m) => !m.incomplete).slice(-HISTORY_MAX);
-      localStorage.setItem(HISTORY_KEY, JSON.stringify(complete));
+      localStorage.setItem(keys.history, JSON.stringify(completeMessages(messages)));
     } catch {
       // diabaikan
     }
-  }, [messages, ready]);
+  }, [messages, busy, ready]);
 
   // Tinggalkan halaman saat masih streaming → batalkan supaya tidak ada panggilan model
   // yang jalan sia-sia.
@@ -167,6 +191,37 @@ export default function AssistantPage() {
     abortRef.current = null;
     setBusy(false);
     setNotice("Dihentikan oleh Anda. Jawaban di atas belum lengkap.");
+  }
+
+  /**
+   * Mulai percakapan kosong. Percakapan yang sedang berjalan TIDAK dihapus — diarsipkan dulu
+   * di penyimpanan akun (belum ada UI daftar riwayat), lalu sesi baru dibuat supaya konteks
+   * lanjutan tidak tercampur dengan percakapan lama.
+   */
+  function startNewConversation() {
+    if (busy) return;
+    const keys = keysRef.current;
+    try {
+      if (keys && messages.length) {
+        const entry = {
+          at: new Date().toISOString(),
+          sessionId: sessionIdRef.current,
+          messages: completeMessages(messages),
+        };
+        localStorage.setItem(keys.archive, appendArchive(localStorage.getItem(keys.archive), entry));
+        localStorage.setItem(keys.history, JSON.stringify([]));
+      }
+      const sid = newSessionId();
+      sessionIdRef.current = sid;
+      if (keys) localStorage.setItem(keys.session, sid);
+    } catch {
+      // mode privat: percakapan baru tetap jalan, hanya tidak tersimpan
+    }
+    setMessages([]);
+    setInput("");
+    setError(null);
+    setNotice(null);
+    inputRef.current?.focus();
   }
 
   async function send(text: string) {
@@ -281,10 +336,21 @@ export default function AssistantPage() {
   return (
     <div className={styles.aiWrap}>
       <div className={styles.aiHead}>
-        <h1 className={styles.aiTitle}>Asisten Operasional</h1>
-        <p className={styles.aiSub}>
-          Tanya kondisi toko dengan bahasa biasa. Asisten membaca data langsung dari database dan hanya bisa melihat — tidak mengubah apa pun.
-        </p>
+        <div className={styles.aiHeadText}>
+          <h1 className={styles.aiTitle}>Asisten Operasional</h1>
+          <p className={styles.aiSub}>
+            Tanya kondisi toko dengan bahasa biasa. Asisten membaca data langsung dari database dan hanya bisa melihat — tidak mengubah apa pun.
+          </p>
+        </div>
+        <button
+          type="button"
+          className={styles.aiNew}
+          onClick={startNewConversation}
+          disabled={busy || messages.length === 0}
+          title="Mulai percakapan kosong (percakapan sekarang tetap tersimpan)"
+        >
+          + Percakapan baru
+        </button>
       </div>
 
       <div className={styles.aiLog} ref={listRef}>
