@@ -53,6 +53,8 @@ export default function TransaksiDetailDrawer({ open, order, variant = "ops", on
   const trackRows = trackOpen ? sortHistoryDesc(track.history).map(trackingRow) : [];
   // Riwayat urut terbaru → lama (dipakai drawer panel: kotak "scan terakhir" + modal).
   const historyRows = sortHistoryDesc(track.history).map(trackingRow);
+  /** Scan terakhir dari J&T — dipakai sama di panel admin & dashboard ops. */
+  const lastScan = historyRows[0] || null;
   // Ringkasan sama seperti yang dipakai dashboard admin (mis. "Diterima oleh: Lea").
   const trackSummary = trackOpen ? trackingSummary(track.history) : null;
 
@@ -143,7 +145,6 @@ export default function TransaksiDetailDrawer({ open, order, variant = "ops", on
         dibatalkan: ["Pesanan dibatalkan", order.notes || "Pesanan dibatalkan."],
       }[stage] || ["Pesanan", ""];
     const stepLevel = { belum_bayar: 0, belum_dipacking: 1, sudah_dipacking: 2, dikirim: 3, selesai: 4 }[stage] ?? 0;
-    const lastScan = historyRows[0] || null;
     const region = [order.shipping_kecamatan, order.kota, order.shipping_province, order.shipping_postal_code].filter(Boolean).join(", ");
     const canDelete = (!order.awb_no || order.status === "dibatalkan") && order.source !== "website";
     // Tombol "Cetak Resi" ikut pindah ke footer, jadi footer juga harus tampil walau
@@ -443,6 +444,11 @@ export default function TransaksiDetailDrawer({ open, order, variant = "ops", on
                 <Row label="Nomor HP" value={order.customer_whatsapp || "-"} />
                 <Row label="Waktu dicatat" value={formatTanggalJamID(order.created_at)} />
                 <Row label="No. Order" value={order.order_number} mono />
+                <Row label="Metode pembayaran" value={paymentName || "-"} />
+                <Row
+                  label="Waktu pembayaran"
+                  value={order.paid_at ? formatTanggalJamID(order.paid_at) : "-"}
+                />
                 {order.notes ? <Row label="Catatan" value={order.notes} /> : null}
               </div>
 
@@ -470,7 +476,12 @@ export default function TransaksiDetailDrawer({ open, order, variant = "ops", on
                 <div className="rounded-xl border border-slate-200 dark:border-slate-800 px-3.5 py-3 space-y-2.5">
                   {/* Nomor resi + tombol cetak + tombol Buat Resi — komponen bersama dengan
                       panel "Transaksi tercatat" setelah menyimpan transaksi baru. */}
-                  <TransaksiResiPanel order={order} onResiCreated={onResiCreated} />
+                  <TransaksiResiPanel
+                    order={order}
+                    onResiCreated={onResiCreated}
+                    latestTracking={lastScan}
+                    trackingState={track.status}
+                  />
 
                   {/* Lacak Resi cuma relevan kalau resinya sudah ada */}
                   {awb ? (
