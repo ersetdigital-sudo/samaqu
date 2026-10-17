@@ -492,9 +492,9 @@ export default function Transaksi({ variant = "ops" }) {
                 <col style={{ width: "19%" }} />
                 <col style={{ width: "20%" }} />
                 <col style={{ width: "12%" }} />
+                <col style={{ width: "12%" }} />
                 <col style={{ width: "15%" }} />
-                <col style={{ width: "14%" }} />
-                <col />
+                <col style={{ width: "5%" }} />
               </colgroup>
               <thead>
                 <tr>
@@ -502,9 +502,9 @@ export default function Transaksi({ variant = "ops" }) {
                   <th>Pelanggan</th>
                   <th>Produk</th>
                   <th style={{ textAlign: "right" }}>Total</th>
-                  <th>Status</th>
                   <th>No. Resi</th>
-                  <th />
+                  <th>Status</th>
+                  <th className="chev" />
                 </tr>
               </thead>
               <tbody>
@@ -538,9 +538,6 @@ export default function Transaksi({ variant = "ops" }) {
                         </small>
                       </td>
                       <td>
-                        <span className={`bd s-${stageColorKey(orderStage(order))}`}>{ORDER_STAGE_LABEL[orderStage(order)]}</span>
-                      </td>
-                      <td>
                         {order.awb_no ? (
                           <span
                             className={`resi-no${order.status === "dibatalkan" ? " resi-void" : ""}`}
@@ -555,6 +552,9 @@ export default function Transaksi({ variant = "ops" }) {
                         ) : (
                           <span className="resi-empty">–</span>
                         )}
+                      </td>
+                      <td>
+                        <span className={`bd s-${stageColorKey(orderStage(order))}`}>{ORDER_STAGE_LABEL[orderStage(order)]}</span>
                       </td>
                       <td className="chev" style={{ textAlign: "right" }}>
                         ›
