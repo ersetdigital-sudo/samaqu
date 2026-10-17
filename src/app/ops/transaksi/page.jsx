@@ -488,12 +488,12 @@ export default function Transaksi({ variant = "ops" }) {
             <table>
               {/* Lebar kolom dipatok di sini (`table-layout: fixed`) supaya semua tab tampil sama. */}
               <colgroup>
-                <col style={{ width: "18%" }} />
+                <col style={{ width: "17%" }} />
+                <col style={{ width: "19%" }} />
                 <col style={{ width: "20%" }} />
-                <col style={{ width: "23%" }} />
-                <col style={{ width: "9%" }} />
                 <col style={{ width: "12%" }} />
                 <col style={{ width: "15%" }} />
+                <col style={{ width: "14%" }} />
                 <col />
               </colgroup>
               <thead>
@@ -501,9 +501,9 @@ export default function Transaksi({ variant = "ops" }) {
                   <th>No. Pesanan</th>
                   <th>Pelanggan</th>
                   <th>Produk</th>
-                  <th>Sumber</th>
                   <th style={{ textAlign: "right" }}>Total</th>
                   <th>Status</th>
+                  <th>No. Resi</th>
                   <th />
                 </tr>
               </thead>
@@ -531,12 +531,30 @@ export default function Transaksi({ variant = "ops" }) {
                           {extraItems > 0 ? ` · +${extraItems} lainnya` : ""}
                         </small>
                       </td>
-                      <td className="src">{SOURCE_STYLES[order.source]?.label || order.source_label}</td>
                       <td className="mono" style={{ textAlign: "right" }}>
                         Rp {formatRupiah(order.total)}
+                        <small style={{ textAlign: "right" }}>
+                          {SOURCE_STYLES[order.source]?.label || order.source_label}
+                        </small>
                       </td>
                       <td>
                         <span className={`bd s-${stageColorKey(orderStage(order))}`}>{ORDER_STAGE_LABEL[orderStage(order)]}</span>
+                      </td>
+                      <td>
+                        {order.awb_no ? (
+                          <span
+                            className={`resi-no${order.status === "dibatalkan" ? " resi-void" : ""}`}
+                            title={
+                              order.status === "dibatalkan"
+                                ? `Resi ${order.awb_no} sudah di-void (pesanan dibatalkan)`
+                                : `No. Resi J&T ${order.awb_no}`
+                            }
+                          >
+                            {order.awb_no}
+                          </span>
+                        ) : (
+                          <span className="resi-empty">–</span>
+                        )}
                       </td>
                       <td className="chev" style={{ textAlign: "right" }}>
                         ›
