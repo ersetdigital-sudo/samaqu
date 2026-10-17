@@ -87,6 +87,14 @@ export default function TransaksiDetailDrawer({ open, order, variant = "ops", on
     }
   };
 
+  // Status terbaru J&T dimuat otomatis saat drawer dibuka, jadi baris "Status terbaru"
+  // tidak menunggu admin klik "Lihat". Endpoint punya cache 5 menit, jadi tidak membanjiri J&T.
+  useEffect(() => {
+    if (!open || !awb) return;
+    loadTrack(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, awb]);
+
   /**
    * Buka/tutup panel riwayat. SETIAP kali dibuka, riwayat diambil langsung dari J&T
    * (`refresh=1` → lewati cache 5 menit), jadi yang tampil selalu data terbaru.
@@ -203,17 +211,14 @@ export default function TransaksiDetailDrawer({ open, order, variant = "ops", on
                   </div>
                   {/* Panel resi (nomor + salin + buat resi) — komponen bersama. Tombol cetak
                       dipindah ke footer drawer lewat ref supaya berdampingan dengan "Ubah". */}
-                  <TransaksiResiPanel ref={resiPanelRef} order={order} onResiCreated={onResiCreated} hidePrintButton />
-                  {awb && lastScan ? (
-                    <div className="last" onClick={openTrackModal} role="button" tabIndex={0}>
-                      <i />
-                      <div>
-                        <b>{lastScan.status}</b>
-                        <small>{[lastScan.location, formatTrackingTime(lastScan.dateTime)].filter(Boolean).join(" · ")}</small>
-                      </div>
-                      <span>›</span>
-                    </div>
-                  ) : null}
+                  <TransaksiResiPanel
+                    ref={resiPanelRef}
+                    order={order}
+                    onResiCreated={onResiCreated}
+                    hidePrintButton
+                    latestTracking={lastScan}
+                    trackingState={track.status}
+                  />
                 </div>
 
                 {order.shipping_address ? (

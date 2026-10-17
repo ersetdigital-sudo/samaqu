@@ -187,11 +187,6 @@
 .panel-tx .kv span { color: #8a7d83; }
 .panel-tx .kv b { font-weight: 600; text-align: right; }
 .panel-tx .cp { border: 0; background: none; color: #c2255c; font: 600 12px inherit; font-family: inherit; cursor: pointer; margin-left: 4px; }
-.panel-tx .last { display: flex; gap: 10px; align-items: center; margin-top: 10px; background: #f7f9f8; border: 1px solid #e7f2eb; border-radius: 10px; padding: 10px 12px; cursor: pointer; }
-.panel-tx .last i { width: 8px; height: 8px; border-radius: 50%; background: #2f9e5b; flex-shrink: 0; }
-.panel-tx .last b { font-size: 13px; color: #2f9e5b; }
-.panel-tx .last small { display: block; color: #8a7d83; font-size: 11px; }
-.panel-tx .last span { margin-left: auto; color: #8a7d83; }
 .panel-tx .adr { font-size: 13px; line-height: 1.6; color: #6b4b5a; }
 .panel-tx .adr b { color: #2a1a22; }
 .panel-tx .adr span { color: #8a7d83; }

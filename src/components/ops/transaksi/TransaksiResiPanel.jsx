@@ -22,6 +22,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { AlertCircle, Clipboard, ClipboardCheck, Truck } from "lucide-react";
 import { base44 } from "@/lib/ops-api";
 import { formatWeightExact } from "@/lib/shipping-weight";
+import { formatTrackingTime } from "@/lib/jnt/track-status";
 
 /** Label status kirim yang dipakai layar (nilainya dari `orders.shipping_status`). */
 const SHIPPING_STATUS_LABEL = { menunggu_pickup: "Menunggu pickup", dikirim: "Dikirim", selesai: "Selesai" };
@@ -41,7 +42,10 @@ function readLabelSize() {
   }
 }
 
-const TransaksiResiPanel = forwardRef(function TransaksiResiPanel({ order, onResiCreated, hidePrintButton = false }, ref) {
+const TransaksiResiPanel = forwardRef(function TransaksiResiPanel(
+  { order, onResiCreated, hidePrintButton = false, latestTracking = null, trackingState = "idle" },
+  ref,
+) {
   const [resiCheck, setResiCheck] = useState(null);
   const [resiChecking, setResiChecking] = useState(false);
   const [resiBusy, setResiBusy] = useState(false);
@@ -60,6 +64,10 @@ const TransaksiResiPanel = forwardRef(function TransaksiResiPanel({ order, onRes
 
   const awb = createdAwb || order?.awb_no || "";
   const cancelled = order?.status === "dibatalkan";
+  /** Baris kecil di bawah status: lokasi + waktu scan terakhir dari J&T. */
+  const trackingMeta = latestTracking
+    ? [latestTracking.location, formatTrackingTime(latestTracking.dateTime)].filter(Boolean).join(" · ")
+    : "";
 
   // Panel admin menaruh tombol "Cetak Resi" di footer drawer (sebelah "Ubah"). Aksinya
   // dipanggil dari luar lewat ref, supaya dialog pilih ukuran tetap satu sumber di sini.
@@ -183,12 +191,25 @@ const TransaksiResiPanel = forwardRef(function TransaksiResiPanel({ order, onRes
               (jalur pembatalan tidak mengubah kolom itu), jadi ditampilkan "Dibatalkan". */}
           {cancelled ? (
             <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-              Status kirim: <b className="text-red-600 dark:text-red-400">Dibatalkan</b>
+              Status: <b className="text-red-600 dark:text-red-400">Dibatalkan</b>
             </p>
-          ) : shippingStatus ? (
+          ) : latestTracking ? (
+            /* Status J&T ditampilkan APA ADANYA (tanpa label karangan) + scan terakhirnya. */
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                Status terbaru:{" "}
+                <b className="text-slate-700 dark:text-slate-200">{latestTracking.status}</b>
+              </p>
+              {trackingMeta ? (
+                <p className="mt-0.5 text-[11px] font-semibold text-slate-500 dark:text-slate-400">{trackingMeta}</p>
+              ) : null}
+            </div>
+          ) : shippingStatus || trackingState === "loading" ? (
             <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
               Status kirim:{" "}
-              <b className="text-slate-700 dark:text-slate-200">{SHIPPING_STATUS_LABEL[shippingStatus] || shippingStatus}</b>
+              <b className="text-slate-700 dark:text-slate-200">
+                {trackingState === "loading" ? "memuat…" : SHIPPING_STATUS_LABEL[shippingStatus] || shippingStatus}
+              </b>
             </p>
           ) : null}
 
