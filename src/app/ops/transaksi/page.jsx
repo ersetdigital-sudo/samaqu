@@ -59,7 +59,7 @@ export default function Transaksi({ variant = "ops" }) {
   const search = useDeferredValue(searchInput).trim();
   const [sourceFilter, setSourceFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
-  // Filter TAHAP khusus tampilan panel (`order-flow`: Belum Bayar / Perlu Dikirim / …).
+  // Filter TAHAP khusus tampilan panel (`order-flow`: Belum Bayar / Belum di Packing / …).
   const [stageFilter, setStageFilter] = useState("semua");
 
   // Filter TANGGAL (satu hari, WIB) — disimpan di URL seperti halaman Leads.
@@ -242,12 +242,12 @@ export default function Transaksi({ variant = "ops" }) {
       total: orders.length,
       revenue: sold.reduce((sum, order) => sum + (order.total || 0), 0),
       unpaid: orders.filter((order) => orderStage(order) === "belum_bayar").length,
-      toSend: orders.filter((order) => orderStage(order) === "perlu_dikirim").length,
+      toProcess: orders.filter((order) => orderStage(order) === "belum_dipacking" || orderStage(order) === "sudah_dipacking").length,
     };
   }, [orders]);
 
   // Tab = TAHAP resmi aplikasi (`ORDER_STAGE_TABS` order-flow — SAMA dengan halaman Pesanan admin):
-  // Semua · Belum Bayar · Perlu Dikirim · Dikirim · Selesai · Dibatalkan.
+  // Semua · Belum Bayar · Belum di Packing · Sudah di Packing · Dikirim · Selesai · Dibatalkan.
   const stageTabs = useMemo(
     () =>
       ORDER_STAGE_TABS.map((tab) => ({
@@ -259,10 +259,7 @@ export default function Transaksi({ variant = "ops" }) {
 
   // Kelas warna TAHAP ala mockup (badge `.bd` + banner `.ban`).
   const stageColorKey = (stage) =>
-    ({ belum_bayar: "bayar", perlu_dikirim: "proses", dikirim: "kirim", selesai: "selesai", dibatalkan: "batal" }[stage] || "batal");
-
-  // Label tahap khusus tampilan panel: mockup memakai "Dikirim / Transit" untuk tahap `dikirim`.
-  const panelStageLabel = (stage) => (stage === "dikirim" ? "Dikirim / Transit" : ORDER_STAGE_LABEL[stage]);
+    ({ belum_bayar: "bayar", belum_dipacking: "packing", sudah_dipacking: "siap", dikirim: "kirim", selesai: "selesai", dibatalkan: "batal" }[stage] || "batal");
 
   // Modal/overlay dipakai bersama oleh tampilan ops & panel supaya tidak ada logika kembar.
   const overlays = (
@@ -348,7 +345,7 @@ export default function Transaksi({ variant = "ops" }) {
           </div>
           <div className="card k">
             <small>Perlu diproses</small>
-            <b style={{ color: "#2e64c9" }}>{panelKpis.toSend}</b>
+            <b style={{ color: "#2e64c9" }}>{panelKpis.toProcess}</b>
             <i>Packing + siap kirim</i>
           </div>
         </section>
@@ -362,7 +359,7 @@ export default function Transaksi({ variant = "ops" }) {
                 className={`tab${stageFilter === tab.key ? " on" : ""}`}
                 onClick={() => setStageFilter(tab.key)}
               >
-                <span>{tab.key === "semua" ? tab.label : panelStageLabel(tab.key)}</span>
+                <span>{tab.label}</span>
                 <em>{tab.count}</em>
               </button>
             ))}
@@ -488,7 +485,7 @@ export default function Transaksi({ variant = "ops" }) {
                         Rp {formatRupiah(order.total)}
                       </td>
                       <td>
-                        <span className={`bd s-${stageColorKey(orderStage(order))}`}>{panelStageLabel(orderStage(order))}</span>
+                        <span className={`bd s-${stageColorKey(orderStage(order))}`}>{ORDER_STAGE_LABEL[orderStage(order)]}</span>
                       </td>
                       <td className="chev" style={{ textAlign: "right" }}>
                         ›

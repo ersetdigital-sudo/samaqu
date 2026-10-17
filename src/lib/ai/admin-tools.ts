@@ -101,10 +101,11 @@ function orderStatusKey(value: unknown): string | null {
   }
   const stage = Object.entries(ORDER_STAGE_LABEL).find(([, label]) => label.toLowerCase() === lower);
   if (stage) {
-    // Tahap → status tersimpan. "Perlu Dikirim" & "Belum Bayar" bukan kolom status di database.
+    // Tahap → status tersimpan. Tahap packing & "Belum Bayar" bukan kolom status di database.
     const map: Record<OrderStage, string | null> = {
       belum_bayar: "pending",
-      perlu_dikirim: "diproses",
+      belum_dipacking: "diproses",
+      sudah_dipacking: "diproses",
       dikirim: "dikirim",
       selesai: "selesai",
       dibatalkan: "dibatalkan",

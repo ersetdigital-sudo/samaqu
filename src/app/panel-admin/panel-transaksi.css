@@ -92,7 +92,8 @@
 .panel-tx .bd { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px; white-space: nowrap; }
 .panel-tx .bd:before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 .panel-tx .s-bayar { background: #fff1db; color: #c76f00; }
-.panel-tx .s-proses { background: #e6effd; color: #2e64c9; }
+.panel-tx .s-packing { background: #ffe8ef; color: #d6336c; }
+.panel-tx .s-siap { background: #e6effd; color: #2e64c9; }
 .panel-tx .s-kirim { background: #efe6fd; color: #7c4ddb; }
 .panel-tx .s-selesai { background: #e3f7ea; color: #2f9e5b; }
 .panel-tx .s-batal { background: #fde4e7; color: #d63340; }
@@ -117,7 +118,8 @@
 .panel-tx .ban p { color: #6b4b5a; font-size: 13px; margin-top: 4px; line-height: 1.45; }
 .panel-tx .ban .bd { margin-left: auto; background: #fff; color: inherit; flex-shrink: 0; }
 .panel-tx .b-bayar { background: #fff6e8; color: #c76f00; }
-.panel-tx .b-proses { background: #fdeef3; color: #c2255c; }
+.panel-tx .b-packing { background: #fdeef3; color: #c2255c; }
+.panel-tx .b-siap { background: #ecf2fd; color: #2e64c9; }
 .panel-tx .b-kirim { background: #f3edfd; color: #7c4ddb; }
 .panel-tx .b-selesai { background: #eaf8ef; color: #2f9e5b; }
 .panel-tx .b-batal { background: #f5f1f3; color: #8a7d83; }
