@@ -13,6 +13,7 @@ import {
 import { shippingStatusOf, SHIPPING_STATUS_LABEL } from "@/lib/order-flow";
 import { useSafeTranslations } from "@/lib/safe-i18n";
 import { PaymentMethodValue } from "@/components/admin/PaymentMethodsManager";
+import OrderDetailPanel from "@/components/ops/transaksi/OrderDetailPanel";
 import { RINCIAN_CSS } from "@/components/akun/RincianPesanan";
 import { NEUTRAL_ITEM_PHOTO, resolveItemPhotos, type OrderPhotoLookup } from "@/lib/order-photo";
 import { itemProductIds, loadOrderPhotoLookup } from "@/lib/order-photo-data";
@@ -94,22 +95,24 @@ export interface AdminDetailOrder {
 
 const OD_CSS = `
 /* Tombol/aksi admin, ditempel di area aksi lembar struk. */
-.od-root .rp-root{min-height:0;padding-bottom:0}
+.od-root .rp-root{min-height:0;padding:0;background:transparent}
+.od-root .rp-wrap{max-width:none;padding:0;background:transparent}
+.od-root .rp-sheet{padding:0;background:transparent;border:0;border-radius:0;box-shadow:none}
 .od-root .rp-act{position:static;background:none;padding:16px}
 .od-title{font-size:11px;letter-spacing:.15em;text-transform:uppercase;font-weight:700;color:#757575;margin-bottom:10px}
 .od-chips{display:flex;flex-wrap:wrap;gap:8px}
 .od-chip{font-size:12.5px;font-weight:700;padding:8px 14px;border-radius:10px;border:1px solid #E1E3E5;background:#fff;color:#5A6067;cursor:pointer;transition:background .2s,color .2s,border-color .2s}
 .od-chip:hover{background:#F5F6F7}
-.od-chip.is-on{background:#B4552F;border-color:#B4552F;color:#fff}
+.od-chip.is-on{background:#0f172a;border-color:#0f172a;color:#fff}
 .od-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid #F2F3F4}
 .od-a{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:700;padding:10px 14px;border-radius:10px;border:1px solid #E1E3E5;background:#fff;color:#5A6067;text-decoration:none;cursor:pointer;transition:background .2s}
 .od-a:hover{background:#F5F6F7}
-.od-a.is-on{background:#FBF1EA;border-color:#E5C3B1;color:#B4552F}
+.od-a.is-on{background:#f1f5f9;border-color:#cbd5e1;color:#0f172a}
 /* Aksi utama drawer: pembuatan resi J&T ("Atur Pesanan"). */
-.od-a-primary{background:#B4552F;border-color:#B4552F;color:#fff}
-.od-a-primary:hover{background:#9E4826;border-color:#9E4826}
+.od-a-primary{background:#0f172a;border-color:#0f172a;color:#fff}
+.od-a-primary:hover{background:#1e293b;border-color:#1e293b}
 .od-a-primary:disabled{opacity:.6;cursor:default}
-.od-a-primary:disabled:hover{background:#B4552F;border-color:#B4552F}
+.od-a-primary:disabled:hover{background:#0f172a;border-color:#0f172a}
 .od-a-danger{border-color:#EBC7C0;color:#B4392A}
 .od-a-danger:hover{background:#FCF0EA}
 .od-email{display:block;font-size:12.5px;color:#8D9297;font-weight:500;margin-top:2px}
@@ -119,7 +122,7 @@ const OD_CSS = `
 .od-ups{display:flex;flex-direction:column;gap:12px}
 .od-up{display:flex;gap:10px}
 .od-up-dot{width:10px;height:10px;border-radius:50%;background:#D9DCE0;flex:none;margin-top:4px}
-.od-up.is-first .od-up-dot{background:#B4552F;box-shadow:0 0 0 3px rgba(180,85,47,.14)}
+.od-up.is-first .od-up-dot{background:#0f172a;box-shadow:0 0 0 3px rgba(15,23,42,.14)}
 .od-up b{display:block;font-size:12.5px;font-weight:700;color:#3F454B}
 .od-up i{display:block;font-size:11.5px;font-style:normal;color:#8D9297;margin-top:2px}
 /* Mobile: drawer admin bukan halaman customer — latar abu (dan ruangnya) dibuang supaya
@@ -448,6 +451,29 @@ export default function OrderDetailContent({
     </button>
   );
 
+  // Layout detail disamakan dengan panel admin. Dashboard admin memakai tema mono
+  // (hitam/slate), bukan pink.
+  const panelOrder = {
+    ...order,
+    items: itemsWithPhotos.map((item) => ({
+      ...item,
+      weight: itemWeights[`${item.product_id}|${item.color}|${item.size}`],
+    })),
+    kota: order.shipping_city,
+    notes: order.shipping_notes,
+    shipping_kecamatan: (order as any).shipping_kecamatan,
+    shipping_province: (order as any).shipping_province,
+  };
+  const panelTracking = liveTrack
+    ? liveTrack
+    : order.tracking_status_text
+      ? {
+          status: trackingRow({ status: order.tracking_status_text, status_code: order.tracking_status_code }).status,
+          location: order.tracking_city,
+          dateTime: "",
+        }
+      : null;
+
   return (
     <div className="od-root">
       <style>{RINCIAN_CSS}</style>
@@ -456,245 +482,12 @@ export default function OrderDetailContent({
       <div className="rp-root">
         <div className="rp-wrap">
           <div className="rp-sheet">
-            <section className={`rp-banner t-${sc.tone}`}>
-              <span className="rp-bico">
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7h11v9H3z" /><path d="M14 10h4l3 3v3h-7z" /><circle cx="7" cy="18" r="1.5" /><circle cx="17.5" cy="18" r="1.5" /></svg>
-              </span>
-              <div>
-                <b>{sc.label}</b>
-                <small>Dibuat {tglJamID(order.created_at)}</small>
-              </div>
-            </section>
-
-            <section className="rp-card">
-              <div className="rp-sec">
-                <span className="rp-h">Info Pengiriman</span>
-                <div className="rp-line" style={{ marginTop: 8 }}>
-                  <span className="rp-sub">{order.shipping_method || "Pengiriman"}</span>
-                </div>
-                {totalWeight.grams && totalWeight.grams > 0 ? (
-                  <div className="rp-line" style={{ marginTop: 8 }}>
-                    <span className="rp-sub">Berat</span>
-                    <span className="rp-strong rp-mono" style={{ marginLeft: "auto" }}>
-                      {formatWeightExact(totalWeight.grams)}
-                      {totalWeight.fallback ? <span style={{ color: "#b45309" }}> &middot; fallback produk</span> : null}
-                    </span>
-                  </div>
-                ) : null}
-                {totalWeight.grams && totalWeight.grams > 0 && hasAddon ? (
-                  <>
-                    <div className="rp-line" style={{ marginTop: 6 }}>
-                      <span className="rp-sub">Berat produk</span>
-                      <span className="rp-mono" style={{ marginLeft: "auto" }}>{formatWeightExact(Math.max(0, totalWeight.grams - addonWeight))}</span>
-                    </div>
-                    <div className="rp-line" style={{ marginTop: 6 }}>
-                      <span className="rp-sub">Extra Cover &amp; Hanger</span>
-                      <span className="rp-mono" style={{ marginLeft: "auto" }}>+{formatWeightExact(addonWeight)}</span>
-                    </div>
-                  </>
-                ) : null}
-                {/* Nomor resi J&T tampil sebagai baris tersendiri (dulu cuma ditempel di belakang
-                    nama kurir, jadi terlihat seperti hilang). Resi tidak lagi terbit saat
-                    checkout: admin menerbitkannya lewat tombol "Atur Pesanan" di bawah. */}
-                {resi ? (
-                  <div className="rp-line" style={{ marginTop: 8 }}>
-                    <span className="rp-sub">Nomor Resi J&amp;T</span>
-                    <span className="rp-strong rp-mono" style={{ marginLeft: "auto" }}>{resi}</span>
-                  </div>
-                ) : (
-                  <div className="rp-line rp-sub" style={{ marginTop: 8 }}>
-                    {/* Tombol "Atur Pesanan" hanya ada saat status Diproses, jadi petunjuknya ikut
-                        menyesuaikan supaya tidak menyuruh klik tombol yang belum tampil. */}
-                    <span>
-                      {canArrange
-                        ? <>Nomor resi belum dibuat. Klik &ldquo;Atur Pesanan&rdquo; untuk menerbitkan resi J&amp;T.</>
-                        : <>Nomor resi diterbitkan setelah pesanan diproses (ubah status ke Diproses).</>}
-                    </span>
-                  </div>
-                )}
-
-                {/* Status terbaru J&T — disamakan dengan panel admin. Sumbernya bisa live
-                    (read-only), snapshot tersimpan, atau status pengiriman di database. */}
-                {resi ? (() => {
-                  const latest = liveTrack
-                    ? {
-                        status: liveTrack.status,
-                        meta: [liveTrack.location, formatTrackingTime(liveTrack.dateTime)].filter(Boolean).join(" · "),
-                      }
-                    : order.tracking_status_text
-                      ? {
-                          status: trackingRow({ status: order.tracking_status_text, status_code: order.tracking_status_code }).status,
-                          meta: order.tracking_city ? String(order.tracking_city) : "",
-                        }
-                      : (() => {
-                          const ss = shippingStatusOf(order);
-                          return ss ? { status: SHIPPING_STATUS_LABEL[ss], meta: "" } : null;
-                        })();
-                  return latest ? (
-                    <div className="rp-line" style={{ marginTop: 8, alignItems: "flex-start" }}>
-                      <span className="rp-sub">Status terbaru</span>
-                      <span className="rp-strong" style={{ marginLeft: "auto", textAlign: "right", maxWidth: "68%" }}>
-                        {latest.status}
-                        {latest.meta ? (
-                          <span className="rp-sub" style={{ display: "block", marginTop: 2 }}>{latest.meta}</span>
-                        ) : null}
-                      </span>
-                    </div>
-                  ) : null;
-                })() : null}
-              </div>
-
-              {/* Metode pembayaran selalu terlihat (dulu hanya ada di dalam ringkasan "Total
-                  Pesanan" yang terlipat), supaya admin tahu pembayarannya sebelum memproses. */}
-              {order.payment_method ? (
-                <div className="rp-sec" style={{ borderTop: "1px solid #F2F3F4" }}>
-                  <span className="rp-h">Metode Pembayaran</span>
-                  <div className="rp-line" style={{ marginTop: 8 }}>
-                    <span className="rp-strong"><PaymentMethodValue value={order.payment_method} /></span>
-                  </div>
-                  {order.payment_provider === "mayar" ? (
-                    <>
-                      <div className="rp-line" style={{ marginTop: 8 }}>
-                        <span className="rp-sub">Pembayaran Online (Mayar)</span>
-                        <span
-                          className="rp-strong"
-                          style={{ marginLeft: "auto", color: order.paid_at ? "#047857" : "#b45309" }}
-                        >
-                          {order.paid_at ? "Lunas" : "Belum dibayar"}
-                        </span>
-                      </div>
-                      {order.payment_url ? (
-                        <div className="rp-line" style={{ marginTop: 6 }}>
-                          <a
-                            href={order.payment_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="rp-sub"
-                            style={{ color: "#2563eb", wordBreak: "break-all" }}
-                          >
-                            Link bayar Mayar
-                          </a>
-                        </div>
-                      ) : null}
-                    </>
-                  ) : null}
-                </div>
-              ) : null}
-
-              {alamat ? (
-                <div className="rp-sec" style={{ borderTop: "1px solid #F2F3F4" }}>
-                  <span className="rp-h">Alamat Pengiriman</span>
-                  <div className="rp-line" style={{ marginTop: 9 }}>
-                    <Pin />
-                    <span className="rp-strong">
-                      {order.customer_name || "Penerima"}
-                      {order.customer_whatsapp ? ` · ${order.customer_whatsapp}` : ""}
-                      {order.customer_email ? <span className="od-email">{order.customer_email}</span> : null}
-                    </span>
-                  </div>
-                  <div className="rp-line" style={{ marginTop: 6 }}>
-                    <span className={`rp-addr${showAlamat ? " is-open" : ""}`}>{alamat}</span>
-                    <button type="button" className="rp-lihat" onClick={() => setShowAlamat((v) => !v)}>
-                      {showAlamat ? "Tutup" : "Lihat"}
-                    </button>
-                  </div>
-                  {order.shipping_notes ? (
-                    <div className="rp-line" style={{ marginTop: 8 }}>
-                      <span className="rp-sub">
-                        Catatan: <span className="rp-strong">{order.shipping_notes}</span>
-                      </span>
-                    </div>
-                  ) : null}
-                </div>
-              ) : null}
-            </section>
-
-            <section className="rp-card">
-              {itemsWithPhotos.length > 0 ? (
-                itemsWithPhotos.map((item, i) => (
-                  <div key={`${item.product_name}-${i}`} className="rp-it">
-                    <div className="rp-thumb">
-                      <img src={item.product_image || NEUTRAL_ITEM_PHOTO} alt={item.product_name} loading="lazy" decoding="async" />
-                    </div>
-                    <div style={{ minWidth: 0, flex: 1 }}>
-                      <p className="rp-nm">{item.product_name}</p>
-                      <p className="rp-var">
-                        {[item.kain ? `Kain ${item.kain}` : null, item.series, item.color && item.color !== "default" ? item.color : null, item.size].filter(Boolean).join(" · ")} &times; {item.quantity}
-                      </p>
-                      {item.product_id && itemWeights[`${item.product_id}|${item.color}|${item.size}`] ? (() => {
-                        const w = itemWeights[`${item.product_id}|${item.color}|${item.size}`];
-                        return (
-                          <p className="rp-var">
-                            Berat: <b>{w.source === "missing" ? "-" : formatWeightExact(w.grams)}</b>
-                            {w.source !== "variant" ? (
-                              <span style={{ color: "#b45309", fontWeight: 700 }}>
-                                {" "}&middot; {w.source === "product" ? "berat memakai fallback produk" : "berat per ukuran belum diisi"}
-                              </span>
-                            ) : null}
-                          </p>
-                        );
-                      })() : null}
-                      <p className="rp-pr rp-mono">{rupiah(item.price * item.quantity)}</p>
-                      {item.customer_price && item.minimum_price ? (
-                        <p className="rp-var" style={{ color: "#B4552F", fontWeight: 600 }}>
-                          Min: {rupiah(item.minimum_price)} &middot; Dipilih: {rupiah(item.customer_price)}
-                        </p>
-                      ) : null}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="rp-it">
-                  <span className="rp-sub">Detail item tidak tersedia</span>
-                </div>
-              )}
-
-              <details>
-                <summary className="rp-sum">
-                  Total Pesanan: <b className="rp-mono">{rupiah(order.total)}</b>
-                  <Chevron />
-                </summary>
-                <div className="rp-sec rp-paysum">
-                  {order.subtotal > 0 ? <div className="rp-row"><span>Subtotal</span><span className="rp-mono">{rupiah(order.subtotal)}</span></div> : null}
-                  {order.shipping_cost > 0 ? <div className="rp-row"><span>Ongkos Kirim</span><span className="rp-mono">{rupiah(order.shipping_cost)}</span></div> : null}
-                  {order.discount > 0 ? <div className="rp-row"><span>Diskon</span><span className="rp-mono">-{rupiah(order.discount)}</span></div> : null}
-                  <div className="rp-sep" />
-                  <div className="rp-row"><span className="rp-strong">Total</span><span className="rp-strong rp-mono">{rupiah(order.total)}</span></div>
-                  {order.payment_method ? (
-                    <div className="rp-row"><span>Metode Pembayaran</span><PaymentMethodValue value={order.payment_method} /></div>
-                  ) : null}
-                  {order.shipping_method ? (
-                    <div className="rp-row"><span>Pengiriman</span><span>{order.shipping_method}</span></div>
-                  ) : null}
-                  {totalWeight.grams && totalWeight.grams > 0 ? (
-                    <div className="rp-row"><span>Berat</span><span className="rp-mono">{formatWeightExact(totalWeight.grams)}</span></div>
-                  ) : null}
-                  {resi ? <div className="rp-row"><span>Nomor Resi</span><span>{resi}</span></div> : null}
-                </div>
-              </details>
-            </section>
-
-            <details className="rp-card">
-              <summary className="rp-sum">
-                Status Pesanan <Chevron />
-              </summary>
-              <div className="rp-sec">
-                <div className="rp-steps">
-                  {steps.map((step, i) => (
-                    <div key={step.label} className={`rp-step is-${step.state}`}>
-                      <div className="rp-rail">
-                        <span className="rp-node" />
-                        {i < steps.length - 1 ? <span className="rp-rail-line" /> : null}
-                      </div>
-                      <div className="rp-txt">
-                        <b>{step.label}</b>
-                        <i>{step.sub}</i>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </details>
+            <OrderDetailPanel
+              order={panelOrder}
+              theme="mono"
+              latestTracking={panelTracking}
+              trackingState={tracking ? "loading" : "done"}
+            />
 
             {/* Kontrol admin — bagian yang tidak ada di halaman customer. */}
             <div className="rp-act">

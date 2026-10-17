@@ -1,0 +1,27 @@
+/* Tema monokrom untuk detail pesanan di dashboard ops & dashboard admin.
+ * Struktur memakai panel-transaksi.css; di sini hanya aksen pink yang dinetralkan. */
+
+.panel-mono {
+  color: #0f172a;
+}
+
+.panel-mono .b-packing {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.panel-mono .s-packing {
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.panel-mono .ban p {
+  color: #475569;
+}
+
+.panel-mono .sh a,
+.panel-mono .id,
+.panel-mono .chev,
+.panel-mono .cp {
+  color: #0f172a;
+}

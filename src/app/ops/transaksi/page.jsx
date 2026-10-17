@@ -38,9 +38,12 @@ import DateFilter, { formatTanggalID } from "@/components/ops/leads/DateFilter";
 import ConfirmDeleteModal from "@/components/ops/ConfirmDeleteModal";
 import TransaksiFormModal from "@/components/ops/transaksi/TransaksiFormModal";
 import TransaksiDetailDrawer from "@/components/ops/transaksi/TransaksiDetailDrawer";
+import OpsOrderDetailDrawer from "@/components/ops/transaksi/OpsOrderDetailDrawer";
 import GlassCard from "@/components/ops/GlassCard";
 import { MONTHS, SOURCE_STYLES, STATUS_STYLES, formatRupiah, formatTanggalSingkatID, itemVariantText, pad } from "@/components/ops/transaksi/transaksi-format";
 import { useToast } from "@/components/ops/ui/use-toast";
+import "@/app/panel-admin/panel-transaksi.css";
+import "@/app/panel-admin/panel-mono.css";
 
 const digits = (value) => String(value ?? "").replace(/\D/g, "");
 /** Bandingkan nomor HP tanpa peduli 08… / 628… / 8…. */
@@ -337,20 +340,35 @@ export default function Transaksi({ variant = "ops" }) {
         variant={isPanel ? "panel" : "ops"}
       />
 
-      <TransaksiDetailDrawer
-        open={!!detail}
-        order={detail}
-        variant={isPanel ? "panel" : "ops"}
-        onResiCreated={handleResiCreated}
-        onClose={() => setDetail(null)}
-        onEdit={(order) => {
-          setDetail(null);
-          setEditing(order);
-          setFormOpen(true);
-        }}
-        onCancel={(order) => setCancelTarget(order)}
-        onDelete={(order) => setDeleteTarget(order)}
-      />
+      {isPanel ? (
+        <TransaksiDetailDrawer
+          open={!!detail}
+          order={detail}
+          variant="panel"
+          onResiCreated={handleResiCreated}
+          onClose={() => setDetail(null)}
+          onEdit={(order) => {
+            setDetail(null);
+            setEditing(order);
+            setFormOpen(true);
+          }}
+          onCancel={(order) => setCancelTarget(order)}
+          onDelete={(order) => setDeleteTarget(order)}
+        />
+      ) : (
+        <OpsOrderDetailDrawer
+          open={!!detail}
+          order={detail}
+          onResiCreated={handleResiCreated}
+          onClose={() => setDetail(null)}
+          onEdit={(order) => {
+            setDetail(null);
+            setEditing(order);
+            setFormOpen(true);
+          }}
+          onCancel={(order) => setCancelTarget(order)}
+        />
+      )}
 
       <ConfirmDeleteModal
         isOpen={!!cancelTarget}
