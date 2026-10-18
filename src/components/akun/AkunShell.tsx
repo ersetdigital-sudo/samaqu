@@ -8,6 +8,7 @@ import { useAkunCustomer } from "./AkunContext";
 import AkunPageTransition from "./AkunPageTransition";
 import AkunBreadcrumb from "./AkunBreadcrumb";
 import { logoutCustomer } from "@/lib/customer-auth";
+import { CartBadge } from "@/components/CartBadge";
 
 interface NavItem {
   href: string;
@@ -27,12 +28,18 @@ const NAV: NavItem[] = [
   { href: "/akun/bantuan", label: "Hubungi Admin", group: "Bantuan", icon: "M21 12a8 8 0 1 1-3.2-6.4M8 11h8M8 15h5", match: ["/akun/bantuan"] },
 ];
 
-const BOTTOM = [
-  { href: "/akun", label: "Akun", icon: "M12 8a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7ZM4.5 20a7.5 7.5 0 0 1 15 0", match: ["/akun"] },
+/**
+ * Bottom nav dashboard customer — mengikuti wireframe mobile 5 tab:
+ * Dashboard, Katalog, cart FAB di tengah, Pesanan, Profil.
+ * Desktop memakai sidebar dan tidak memakai array ini.
+ */
+const BOTTOM_LEFT = [
+  { href: "/akun", label: "Dashboard", icon: "M4 11 12 4l8 7M6 10v10h12V10", match: ["/akun"] },
+  { href: "/katalog", label: "Katalog", icon: "M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z", match: ["/katalog"] },
+];
+
+const BOTTOM_RIGHT = [
   { href: "/akun/pesanan", label: "Pesanan", icon: "M3 8.5 12 4l9 4.5-9 4.5-9-4.5ZM3 8.5v7L12 20l9-4.5v-7", match: ["/akun/pesanan"] },
-  { href: "/akun/wishlist", label: "Wishlist", icon: "M12 20s-7-4.35-7-9a4 4 0 0 1 7-2.65A4 4 0 0 1 19 11c0 4.65-7 9-7 9Z", match: ["/akun/wishlist"] },
-  // Profil = pintu ke pengaturan akun (nama/WA/tanggal lahir, alamat, panduan ukuran, keluar).
-  // Bantuan tetap bisa diakses dari sini dan dari grid "Akses Cepat" di dashboard.
   { href: "/akun/profil", label: "Profil", icon: "M12 8a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7ZM4.5 20a7.5 7.5 0 0 1 15 0", match: ["/akun/profil"] },
 ];
 
@@ -197,25 +204,68 @@ export default function AkunShell({ children }: { children: ReactNode }) {
         </footer>
       </div>
 
-      {/* ── Mobile bottom nav ── */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur border-t border-[#E6E6E6] px-2 pt-2 pb-5 shadow-[0_-6px_24px_rgba(0,0,0,.06)]">
-        <div className="flex items-stretch justify-around">
-          {BOTTOM.map((item) => {
+      {/* ── Mobile bottom nav (wireframe: 5 tab, cart FAB tengah) ── */}
+      <nav
+        className="md:hidden fixed bottom-0 left-0 right-0 z-40 rounded-t-[24px] bg-white"
+        style={{
+          borderTop: "1px solid rgba(0,0,0,.06)",
+          boxShadow: "0 -10px 30px -18px rgba(0,0,0,.22)",
+          paddingBottom: "env(safe-area-inset-bottom)",
+        }}
+      >
+        <div className="mx-auto grid h-20 max-w-lg grid-cols-5 items-stretch px-3">
+          {BOTTOM_LEFT.map((item) => {
             const on = isActive(pathname, item);
             return (
               <Link
                 key={item.href}
                 href={to(item.href)}
                 prefetch={true}
-                className={`flex flex-col items-center gap-1 px-4 py-1.5 rounded-2xl transition ${on ? "bg-[#eef4f1]" : "active:bg-[#f5f1ea]"}`}
+                aria-current={on ? "page" : undefined}
+                className="flex h-20 flex-col items-center justify-center gap-1 pb-2 transition-colors"
+                style={{ color: on ? "#000000" : "#a3aeaa" }}
               >
-                <span className={on ? "text-[#000000]" : "text-[#a3aeaa]"}>
-                  <svg viewBox="0 0 24 24" className="w-[22px] h-[22px]" fill="none" stroke="currentColor" strokeWidth={on ? "2" : "1.6"} strokeLinecap="round" strokeLinejoin="round">
-                    <path d={item.icon} />
-                  </svg>
-                </span>
-                <span className={`text-[10px] font-bold ${on ? "text-[#000000]" : "text-[#a3aeaa]"}`}>{item.label}</span>
-                <span className={`w-1.5 h-1.5 rounded-full ${on ? "bg-[#000000]" : ""}`} />
+                <svg viewBox="0 0 24 24" className="h-[21px] w-[21px]" fill="none" stroke="currentColor" strokeWidth={on ? 2 : 1.6} strokeLinecap="round" strokeLinejoin="round">
+                  <path d={item.icon} />
+                </svg>
+                <span className={`text-[10px] tracking-[0.02em] ${on ? "font-bold" : "font-medium"}`}>{item.label}</span>
+              </Link>
+            );
+          })}
+
+          <div className="relative flex h-20 items-end justify-center pb-2">
+            <Link
+              href={to("/cart")}
+              aria-label="Keranjang"
+              aria-current={isActive(pathname, { href: "/cart", match: ["/cart"] }) ? "page" : undefined}
+              className={`absolute -top-6 grid h-14 w-14 place-items-center rounded-full bg-black text-white shadow-[0_8px_20px_rgba(0,0,0,.28)] transition active:scale-95 ${
+                isActive(pathname, { href: "/cart", match: ["/cart"] }) ? "ring-2 ring-black ring-offset-2" : ""
+              }`}
+            >
+              <svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="9" cy="20" r="1.4" />
+                <circle cx="18" cy="20" r="1.4" />
+                <path d="M3 4h2l2.4 10.4a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.6L21 8H7" />
+              </svg>
+              <CartBadge background="#ffffff" color="#000000" />
+            </Link>
+          </div>
+
+          {BOTTOM_RIGHT.map((item) => {
+            const on = isActive(pathname, item);
+            return (
+              <Link
+                key={item.href}
+                href={to(item.href)}
+                prefetch={true}
+                aria-current={on ? "page" : undefined}
+                className="flex h-20 flex-col items-center justify-center gap-1 pb-2 transition-colors"
+                style={{ color: on ? "#000000" : "#a3aeaa" }}
+              >
+                <svg viewBox="0 0 24 24" className="h-[21px] w-[21px]" fill="none" stroke="currentColor" strokeWidth={on ? 2 : 1.6} strokeLinecap="round" strokeLinejoin="round">
+                  <path d={item.icon} />
+                </svg>
+                <span className={`text-[10px] tracking-[0.02em] ${on ? "font-bold" : "font-medium"}`}>{item.label}</span>
               </Link>
             );
           })}
