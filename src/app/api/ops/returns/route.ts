@@ -184,6 +184,10 @@ export async function POST(req: NextRequest) {
             .eq("id", orderItem.product_id)
             .maybeSingle();
           replacementPrice = Number(variant.price_override) || Number(productRow?.price) || 0;
+          // Harga manual dari form (mis. Tukar Size untuk order CYP/custom) menang atas
+          // harga katalog. Kosong/0 = pakai katalog.
+          const manualReplacement = Math.max(0, Math.round(Number(raw?.replacement_price) || 0));
+          if (manualReplacement > 0) replacementPrice = manualReplacement;
           // Kecukupan stok dicek atomik oleh `samaqu_apply_return_stock` (menghormati stok
           // bersama ala series). Pengecekan `stock` mentah di sini bisa salah untuk series turunan.
         }
@@ -253,10 +257,15 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        const originalPrice = Number(variant.price_override) || Number(product.price) || 0;
-        const replacementPrice = replacementVariant
+        const catalogOriginal = Number(variant.price_override) || Number(product.price) || 0;
+        const catalogReplacement = replacementVariant
           ? Number(replacementVariant.price_override) || Number(product.price) || 0
           : 0;
+        // Harga manual untuk pesanan manual/CYP. Kosong/0 = pakai katalog.
+        const manualOriginal = Math.max(0, Math.round(Number(raw?.price) || 0));
+        const manualReplacement = Math.max(0, Math.round(Number(raw?.replacement_price) || 0));
+        const originalPrice = manualOriginal > 0 ? manualOriginal : catalogOriginal;
+        const replacementPrice = manualReplacement > 0 ? manualReplacement : catalogReplacement;
         rows.push({
           order_item_id: null,
           product_id: productId,
