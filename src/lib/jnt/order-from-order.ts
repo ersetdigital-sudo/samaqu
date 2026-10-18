@@ -3,7 +3,7 @@ import { isPaymentMethodId, legacyPaymentType } from "../payment-methods";
 import { createOrder } from "./order";
 import { getDestinationCode, getOriginCode, getReceiverArea, getSendSiteCode, resolveTariffCodes } from "./area-mapping";
 import { checkTariffSemua } from "./tariff";
-import { expressTypeUntuk, layananByCode } from "./layanan";
+import { expressTypeUntuk } from "./layanan";
 import type { OrderResponse } from "./types";
 import { sumWeightGramsBySize, productWeightMapFromRows, variantWeightMapFromRows } from "../shipping-weight";
 
@@ -208,7 +208,7 @@ export async function createJntOrderForOrder(order: JntOrderSource): Promise<Jnt
     itemName: items.map((item) => item.product_name).join(" ").slice(0, 50),
     goodsValue: total,
     cod: await resolveCod(order.payment_method, total),
-    ...(layananByCode(serviceCode) ? { expressType: expressTypeUntuk(serviceCode) } : {}),
+    expressType: expressTypeUntuk(serviceCode),
   });
 
   if (!result.success || !result.awbNo) {

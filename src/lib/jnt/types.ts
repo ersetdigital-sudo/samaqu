@@ -25,6 +25,10 @@ export interface TariffRequest {
 export interface TariffService {
   name: string;
   cost: string;
+  /** Kode yang dipakai Create Order (`expresstype`) — mis. EZ/ECO. */
+  productCode?: string | null;
+  /** Kode permintaan/kategori layanan dari J&T. */
+  productType?: string | null;
   /** Beberapa respons J&T menyertakan ETA; dipakai kalau ada. */
   etd?: string | null;
   estimated_delivery?: string | null;
@@ -64,7 +68,7 @@ export interface OrderRequest {
   cod: number; // IDR, 0 if not COD
   sendstarttime: string;
   sendendtime: string;
-  expresstype: string; // "1" = EZ
+  expresstype: string; // productCode J&T: "EZ", "ECO", dst.
   goodsvalue: number; // IDR
 }
 

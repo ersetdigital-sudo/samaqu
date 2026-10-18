@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { checkTariffSemua } from "@/lib/jnt/tariff";
-import { labelLayanan, layananByCode } from "@/lib/jnt/layanan";
+import { layananByCode } from "@/lib/jnt/layanan";
 import { getJntConfig } from "@/lib/jnt/config";
 import { getSendSiteCode, resolveTariffCodes } from "@/lib/jnt/area-mapping";
 
@@ -61,15 +61,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Tidak ada opsi pengiriman J&T untuk tujuan ini. Pastikan kode area sudah benar." }, { status: 404 });
     }
 
-    const shipOptions = layanan.map((option) => ({
-      courier: "J&T",
-      service: labelLayanan(option.serviceCode),
-      serviceCode: option.serviceCode,
-      description: `Layanan ${option.serviceCode} J&T`,
-      cost: option.cost,
-      // Tariff Check J&T tidak mengirim ETA per rute; pakai estimasi standar layanan.
-      etd: option.etd || layananByCode(option.serviceCode)?.estimate || "",
-    }));
+    const shipOptions = layanan.map((option) => {
+      const known = layananByCode(option.serviceCode);
+      return {
+        courier: "J&T",
+        service: known?.label || option.name || option.serviceCode,
+        serviceCode: option.serviceCode,
+        description: `Layanan ${option.name || option.serviceCode} J&T`,
+        cost: option.cost,
+        // Tariff Check J&T tidak mengirim ETA per rute; pakai estimasi standar layanan.
+        etd: option.etd || known?.estimate || "",
+      };
+    });
 
     shipOptions.sort((a, b) => a.cost - b.cost);
 

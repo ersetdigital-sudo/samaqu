@@ -29,7 +29,7 @@ export async function createOrder(params: {
   goodsDesc: string;
   itemName: string;
   goodsValue: number;
-  /** Layanan yang dipakai (`expresstype` J&T). Kosong → "1" (EZ) seperti perilaku lama. */
+  /** `productCode` J&T (mis. "EZ"/"ECO"). Kosong → "1" hanya untuk fallback legacy. */
   expressType?: string;
   cod?: number;
   insurance?: number;
