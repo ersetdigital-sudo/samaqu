@@ -29,10 +29,14 @@ function wibDateKey() {
   return d.toISOString().slice(0, 10).replace(/-/g, "");
 }
 
-function newReturnNumber(type: string) {
-  const prefix = type === "tukar_size" ? "TKR" : "RTN";
-  const suffix = Math.random().toString(36).slice(2, 6).toUpperCase();
-  return `${prefix}-${wibDateKey()}-${suffix}`;
+async function newReturnNumber(admin: Admin) {
+  const prefix = `RTS-${wibDateKey()}-`;
+  const { count } = await admin
+    .from("returns")
+    .select("id", { count: "exact", head: true })
+    .like("return_number", `${prefix}%`);
+  const next = (Number(count) || 0) + 1;
+  return `${prefix}${String(next).padStart(3, "0")}`;
 }
 
 async function itemsOf(admin: Admin, ids: string[]) {
@@ -124,7 +128,7 @@ export async function POST(req: NextRequest) {
     const manualPostal = String(body?.shipping_postal_code || "").trim();
 
     if (!TYPE.includes(type)) return bad("Jenis retur tidak valid");
-    if (!orderNumber) return bad("Nomor pesanan wajib diisi");
+    if (!orderNumber && !manual) return bad("Nomor pesanan wajib diisi");
     if (inputItems.length === 0) return bad("Pilih minimal satu produk");
     if (manual && !manualCustomerName) {
       return bad("Nama pelanggan wajib diisi");
@@ -252,14 +256,15 @@ export async function POST(req: NextRequest) {
     let record: any = null;
     let lastError: any = null;
     for (let attempt = 0; attempt < 5; attempt += 1) {
+      const generatedNumber = await newReturnNumber(admin);
       const { data, error } = await admin
         .from("returns")
         .insert({
-          return_number: newReturnNumber(type),
+          return_number: generatedNumber,
           type,
           status: "diajukan",
           order_id: order?.id || null,
-          order_number: order?.order_number || orderNumber,
+          order_number: order?.order_number || orderNumber || generatedNumber,
           customer_id: order?.customer_id || null,
           customer_name: order?.customer_name || manualCustomerName || "-",
           customer_whatsapp: order?.customer_whatsapp || manualCustomerWhatsapp || null,

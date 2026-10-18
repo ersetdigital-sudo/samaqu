@@ -525,7 +525,6 @@ function CreateReturnDrawer({ type, isPanel, accent, accentSoft, variants, onClo
 
   const manualReady =
     manual &&
-    Boolean(query.trim()) &&
     Boolean(manualCustomer.trim()) &&
     manualItems.length > 0 &&
     manualItems.every((item) => {
@@ -646,11 +645,11 @@ function CreateReturnDrawer({ type, isPanel, accent, accentSoft, variants, onClo
               <input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="mis. INV-123 / pesanan marketplace"
+                placeholder="Kosongkan untuk nomor otomatis RTS-…"
                 className={`${inputClass} mt-2`}
               />
               <p className="mt-1 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-                Boleh nomor dari marketplace/IG yang belum tercatat.
+                Boleh nomor marketplace/IG sebagai referensi. Kosong = otomatis RTS-YYYYMMDD-NNN.
               </p>
             </>
           ) : order ? (
