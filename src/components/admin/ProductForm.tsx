@@ -541,6 +541,9 @@ export default function TambahProdukPage({
   // Variants
   const [variants, setVariants] = useState<Variant[]>([]);
   const [activeColor, setActiveColor] = useState<string | null>(null);
+  /** Produk SAMAQU biasa: satu varian `default`, warna ada di nama produk. */
+  const onlyDefaultVariant =
+    variants.length === 1 && String(variants[0]?.color || "").trim().toLowerCase() === "default";
 
   // Media
   const [media, setMedia] = useState<MediaFile[]>([]);
@@ -1955,7 +1958,9 @@ export default function TambahProdukPage({
                     <p className="pf-sub">
                       {isCoverHanger
                         ? "Daftar varian produk ini (nama varian, stok, harga khusus, berat)."
-                        : "Kelola warna, ukuran, harga khusus, dan stok."}
+                        : onlyDefaultVariant
+                          ? "Kelola ukuran, harga khusus, dan stok."
+                          : "Kelola warna, ukuran, harga khusus, dan stok."}
                     </p>
                   </div>
                 </div>
@@ -1993,22 +1998,26 @@ export default function TambahProdukPage({
                   <p className="text-sm text-center py-6" style={{ color: "var(--text-muted)" }}>Pilih minimal 1 series terlebih dahulu</p>
                 ) : (
                 <>
-                  {/* Color chips */}
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {variants.map((v) => (
-                      <button key={v.color} onClick={() => { setActiveColor(v.color); setPreviewIndex(0); }} className={`pf-chip${activeColor === v.color ? " active" : ""}`}>
-                        <span className="w-3 h-3 rounded-full" style={{ background: v.hex || colorMap[v.color] || "#ccc", border: "1px solid rgba(42,33,27,.1)" }} />
-                        {v.color}
-                        {/* Hapus warna memakai span role="button" — kontrol bersarang di dalam
-                            tombol chip membuat React melaporkan hydration error. */}
-                        <span role="button" tabIndex={0} aria-label={`Hapus warna ${v.color}`} onClick={(e) => { e.stopPropagation(); removeColor(v.color); }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); removeColor(v.color); } }} className="ml-1 hover:opacity-60"><X size={12} /></span>
-                      </button>
-                    ))}
-                    <PresetColorPicker existing={variants.map((v) => v.color)} onAdd={addColor} />
-                  </div>
+                  {/* Color chips — disembunyikan untuk produk default SAMAQU. */}
+                  {!onlyDefaultVariant ? (
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {variants.map((v) => (
+                        <button key={v.color} onClick={() => { setActiveColor(v.color); setPreviewIndex(0); }} className={`pf-chip${activeColor === v.color ? " active" : ""}`}>
+                          <span className="w-3 h-3 rounded-full" style={{ background: v.hex || colorMap[v.color] || "#ccc", border: "1px solid rgba(42,33,27,.1)" }} />
+                          {v.color}
+                          {/* Hapus warna memakai span role="button" — kontrol bersarang di dalam
+                              tombol chip membuat React melaporkan hydration error. */}
+                          <span role="button" tabIndex={0} aria-label={`Hapus warna ${v.color}`} onClick={(e) => { e.stopPropagation(); removeColor(v.color); }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); removeColor(v.color); } }} className="ml-1 hover:opacity-60"><X size={12} /></span>
+                        </button>
+                      ))}
+                      <PresetColorPicker existing={variants.map((v) => v.color)} onAdd={addColor} />
+                    </div>
+                  ) : null}
                   {activeVariant && (
                     <div className="space-y-3">
-                      <p className="text-sm font-medium" style={{ color: "var(--espresso)" }}>Ukuran untuk <span style={{ color: "var(--gold)" }}>{activeColor}</span></p>
+                      <p className="text-sm font-medium" style={{ color: "var(--espresso)" }}>
+                        {onlyDefaultVariant ? "Ukuran & stok" : <>Ukuran untuk <span style={{ color: "var(--gold)" }}>{activeColor}</span></>}
+                      </p>
                       <SizeGrid
                         sizes={activeVariant.sizes}
                         onUpdate={(i, field, value) => updateSizeField(activeColor!, i, field, value)}
