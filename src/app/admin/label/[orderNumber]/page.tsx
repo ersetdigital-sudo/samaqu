@@ -23,7 +23,7 @@ interface OrderData {
   awb_no: string | null;
   status: string;
   created_at: string;
-  order_items?: { product_name: string; color: string; size: string; series?: string | null; kain?: string | null; quantity: number; price: number }[];
+  order_items?: { product_id?: string; product_name: string; color: string; size: string; series?: string | null; kain?: string | null; quantity: number; price: number }[];
 }
 
 export default function LabelPage() {
@@ -58,10 +58,77 @@ export default function LabelPage() {
         headers: { Authorization: `Bearer ${session?.access_token || ""}` },
       });
       const json = await res.json().catch(() => ({}));
-      const data = json?.order;
-      const fetchErr = res.ok ? null : json?.error || "Gagal memuat pesanan";
+      let data: any = json?.order;
+      let fetchErr: string | null = res.ok ? null : json?.error || "Gagal memuat pesanan";
+
+      // Nomor retur memakai halaman label yang sama. Kalau bukan pesanan, ambil
+      // record retur + item penggantinya, lalu bentuk data label yang sama.
+      if (!data) {
+        const returnRes = await fetch(`/api/ops/returns?return_number=${encodeURIComponent(orderNumber)}`, {
+          headers: { Authorization: `Bearer ${session?.access_token || ""}` },
+        });
+        const returnJson = await returnRes.json().catch(() => ({}));
+        const record = returnRes.ok ? returnJson?.item : null;
+
+        if (record) {
+          let recipient = record;
+          if (!record.shipping_address && record.order_number) {
+            const sourceRes = await fetch(
+              `/api/ops/orders?order_number=${encodeURIComponent(record.order_number)}`,
+              { headers: { Authorization: `Bearer ${session?.access_token || ""}` } },
+            );
+            const sourceJson = await sourceRes.json().catch(() => ({}));
+            const source = sourceRes.ok ? sourceJson?.order : null;
+            if (source) {
+              recipient = {
+                ...record,
+                shipping_address: source.shipping_address || record.shipping_address,
+                shipping_city: source.shipping_city || record.shipping_city,
+                shipping_kecamatan: source.shipping_kecamatan || record.shipping_kecamatan,
+                shipping_postal_code: source.shipping_postal_code || record.shipping_postal_code,
+              };
+            }
+          }
+
+          if (!record.shipping_out_awb) {
+            setError("Resi pengganti belum dibuat.");
+            setLoading(false);
+            return;
+          }
+
+          data = {
+            order_number: record.return_number,
+            customer_name: recipient.customer_name,
+            customer_whatsapp: recipient.customer_whatsapp,
+            shipping_address: recipient.shipping_address,
+            shipping_city: recipient.shipping_city,
+            shipping_postal_code: recipient.shipping_postal_code,
+            shipping_notes: "",
+            shipping_method: "EZ",
+            shipping_cost: Number(record.shipping_out_cost) || 0,
+            payment_method: "bank",
+            total: 0,
+            weight: null,
+            awb_no: record.shipping_out_awb,
+            status: record.status,
+            created_at: record.created_at,
+            order_items: (record.items || []).map((item: any) => ({
+              product_id: item.product_id,
+              product_name: item.product_name,
+              color: item.color || "default",
+              size: item.replacement_size || item.size,
+              series: null,
+              kain: null,
+              quantity: Number(item.qty) || 1,
+              price: Number(item.price) || 0,
+            })),
+          };
+          fetchErr = null;
+        }
+      }
+
       if (fetchErr || !data) {
-        setError(res.status === 401 ? "Login admin dulu untuk membuka label resi." : "Pesanan tidak ditemukan");
+        setError(res.status === 401 ? "Login admin dulu untuk membuka label resi." : "Label tidak ditemukan");
         setLoading(false);
         return;
       }
