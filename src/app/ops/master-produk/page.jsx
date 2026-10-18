@@ -1730,6 +1730,12 @@ export default function MasterProduk() {
                                 Nama Produk
                               </th>
                               <th className="px-4 py-3.5 text-center font-inter text-xs font-bold text-white uppercase tracking-wide">
+                                Warna
+                              </th>
+                              <th className="px-4 py-3.5 text-center font-inter text-xs font-bold text-white uppercase tracking-wide">
+                                Ukuran
+                              </th>
+                              <th className="px-4 py-3.5 text-center font-inter text-xs font-bold text-white uppercase tracking-wide">
                                 Quantity
                               </th>
                               <th className="px-4 py-3.5 text-center font-inter text-xs font-bold text-white uppercase tracking-wide">
@@ -1743,7 +1749,7 @@ export default function MasterProduk() {
                           <tbody>
                             {manualStockIns.length === 0 ? (
                               <tr>
-                                <td colSpan="6" className="px-6 py-12 text-center font-inter text-sm text-gray-400 dark:text-slate-500">
+                                <td colSpan="8" className="px-6 py-12 text-center font-inter text-sm text-gray-400 dark:text-slate-500">
                                   Belum ada data barang masuk
                                 </td>
                               </tr>
@@ -1761,6 +1767,12 @@ export default function MasterProduk() {
                                     </td>
                                     <td className="px-4 py-3.5 text-left align-middle font-inter text-sm font-medium text-gray-700 dark:text-slate-300">
                                       {si.product_name || product?.name || '-'}
+                                    </td>
+                                    <td className="px-4 py-3.5 text-center align-middle font-inter text-sm text-gray-500 dark:text-slate-400">
+                                      {si.variant_color || '-'}
+                                    </td>
+                                    <td className="px-4 py-3.5 text-center align-middle font-inter text-sm font-semibold text-gray-700 dark:text-slate-200">
+                                      {si.variant_size || '-'}
                                     </td>
                                     <td className="px-4 py-3.5 text-center align-middle">
                                       <span className="inline-flex items-center px-3 py-1 rounded-full bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400 text-sm font-bold">
