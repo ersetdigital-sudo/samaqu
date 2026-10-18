@@ -8,6 +8,7 @@ import { resolveItemPhotos } from "@/lib/order-photo";
 import { itemProductIds, loadOrderPhotoLookup } from "@/lib/order-photo-data";
 import { useAkunCustomer } from "@/components/akun/AkunContext";
 import { useSafeLocale } from "@/lib/safe-i18n";
+import CustomerOrderDrawer from "@/components/akun/CustomerOrderDrawer";
 
 import { statusInfo, rupiah, tglID } from "@/lib/akun-format";
 
@@ -42,6 +43,7 @@ export default function DashboardAkunPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [wishCount, setWishCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   useEffect(() => {
     if (!ready) return;
@@ -204,13 +206,24 @@ export default function DashboardAkunPage() {
                         {recentOrders.map((order) => {
                           const item = order.order_items?.[0];
                           const sc = statusInfo(order.status);
-                          const href = to(`/akun/pesanan/${order.order_number}`);
                           return (
-                            <tr key={order.id} className="border-b border-[#f0f0f0] last:border-0 transition-colors hover:bg-[#fafafa]">
+                            <tr
+                              key={order.id}
+                              onClick={() => setSelectedOrder(order)}
+                              className="cursor-pointer border-b border-[#f0f0f0] last:border-0 transition-colors hover:bg-[#fafafa]"
+                            >
                               <td className="px-5 py-4 align-middle whitespace-nowrap">
-                                <Link href={href} className="font-bold text-sm hover:underline" style={{ color: "#000000" }}>
+                                <button
+                                  type="button"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    setSelectedOrder(order);
+                                  }}
+                                  className="font-bold text-sm hover:underline"
+                                  style={{ color: "#000000" }}
+                                >
                                   #{order.order_number}
-                                </Link>
+                                </button>
                               </td>
                               <td className="px-5 py-4 align-middle">
                                 <div className="flex items-center gap-3">
@@ -231,10 +244,18 @@ export default function DashboardAkunPage() {
                               <td className="px-5 py-4 align-middle text-sm font-bold text-right whitespace-nowrap" style={{ color: "#000000" }}>{rupiah(order.total)}</td>
                               <td className="px-5 py-4 align-middle"><span className={sc.pill}>{sc.label}</span></td>
                               <td className="px-5 py-4 align-middle text-right whitespace-nowrap">
-                                <Link href={href} className="inline-flex items-center gap-1 text-[12px] font-bold hover:underline" style={{ color: "#000000" }}>
+                                <button
+                                  type="button"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    setSelectedOrder(order);
+                                  }}
+                                  className="inline-flex items-center gap-1 text-[12px] font-bold hover:underline"
+                                  style={{ color: "#000000" }}
+                                >
                                   Detail
                                   <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2"><path d="m9 6 6 6-6 6" /></svg>
-                                </Link>
+                                </button>
                               </td>
                             </tr>
                           );
@@ -246,10 +267,11 @@ export default function DashboardAkunPage() {
                   {/* Mobile: kartu */}
                   <div className="md:hidden divide-y divide-[#EBEBEB]">
                     {recentOrders.map((order) => (
-                      <Link
+                      <button
                         key={order.id}
-                        href={to(`/akun/pesanan/${order.order_number}`)}
-                        className="block p-4 hover:bg-[#faf8f4] transition cursor-pointer"
+                        type="button"
+                        onClick={() => setSelectedOrder(order)}
+                        className="block w-full p-4 text-left hover:bg-[#faf8f4] transition cursor-pointer"
                       >
                         <div className="flex items-center gap-3">
                           <div className="w-11 h-11 rounded-[10px] overflow-hidden shrink-0 flex items-center justify-center" style={{ background: "#e3ede9" }}>
@@ -269,7 +291,7 @@ export default function DashboardAkunPage() {
                           <span className="text-[13.5px] font-black" style={{ color: "#000000" }}>Rp{order.total.toLocaleString("id-ID")}</span>
                           <span className={statusInfo(order.status).pill}>{statusInfo(order.status).label}</span>
                         </div>
-                      </Link>
+                      </button>
                     ))}
                   </div>
                 </>
@@ -304,6 +326,8 @@ export default function DashboardAkunPage() {
           </>
         )}
       </div>
+
+      <CustomerOrderDrawer order={selectedOrder} onClose={() => setSelectedOrder(null)} />
     </>
   );
 }
