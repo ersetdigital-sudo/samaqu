@@ -1172,7 +1172,7 @@ function ReturnDetailDrawer({ record, isPanel, accent, accentSoft, onClose, onCh
         refund_amount: Number(String(refundAmount).replace(/\D/g, "")) || 0,
         refund_method: refundMethod,
         refund_status: refundStatus,
-        ...(!record.order_id
+        ...(!record.order_id && (addr || city || kec || postal)
           ? {
               shipping_address: addr,
               shipping_city: city,
