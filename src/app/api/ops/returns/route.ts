@@ -114,61 +114,138 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => ({}));
     const type = String(body?.type || "").trim();
     const orderNumber = String(body?.order_number || "").trim();
+    const manual = body?.manual === true;
     const inputItems = Array.isArray(body?.items) ? body.items : [];
+    const manualCustomerName = String(body?.customer_name || "").trim();
+    const manualCustomerWhatsapp = String(body?.customer_whatsapp || "").trim();
+    const manualAddress = String(body?.shipping_address || "").trim();
+    const manualCity = String(body?.shipping_city || "").trim();
+    const manualKecamatan = String(body?.shipping_kecamatan || "").trim();
+    const manualPostal = String(body?.shipping_postal_code || "").trim();
 
     if (!TYPE.includes(type)) return bad("Jenis retur tidak valid");
     if (!orderNumber) return bad("Nomor pesanan wajib diisi");
     if (inputItems.length === 0) return bad("Pilih minimal satu produk");
+    if (manual && !manualCustomerName) {
+      return bad("Nama pelanggan wajib diisi");
+    }
 
-    const { data: order, error: orderError } = await admin
-      .from("orders")
-      .select("id, order_number, customer_id, customer_name, customer_whatsapp, status, order_items(*)")
-      .eq("order_number", orderNumber)
-      .maybeSingle();
-    if (orderError) return bad(orderError.message, 500);
-    if (!order) return bad("Pesanan tidak ditemukan", 404);
-    if (order.status === "dibatalkan") return bad("Pesanan yang dibatalkan tidak bisa diretur");
+    let order: any = null;
+    if (!manual) {
+      const { data, error: orderError } = await admin
+        .from("orders")
+        .select("id, order_number, customer_id, customer_name, customer_whatsapp, status, order_items(*)")
+        .eq("order_number", orderNumber)
+        .maybeSingle();
+      if (orderError) return bad(orderError.message, 500);
+      if (!data) return bad("Pesanan tidak ditemukan", 404);
+      if (data.status === "dibatalkan") return bad("Pesanan yang dibatalkan tidak bisa diretur");
+      order = data;
+    }
 
-    const orderItems = new Map((order.order_items || []).map((item: any) => [item.id, item]));
     const rows: Record<string, unknown>[] = [];
 
-    for (const raw of inputItems) {
-      const orderItem = orderItems.get(String(raw?.order_item_id || "")) as any;
-      if (!orderItem) return bad("Item pesanan tidak cocok dengan pesanan ini");
+    if (order) {
+      const orderItems = new Map((order.order_items || []).map((item: any) => [item.id, item]));
 
-      const qty = Math.max(1, Math.min(Number(raw?.qty) || 1, Number(orderItem.quantity) || 1));
-      const condition = raw?.condition === "damaged" ? "damaged" : "sellable";
-      const replacementSize =
-        type === "tukar_size" ? String(raw?.replacement_size || "").trim().toUpperCase() : null;
+      for (const raw of inputItems) {
+        const orderItem = orderItems.get(String(raw?.order_item_id || "")) as any;
+        if (!orderItem) return bad("Item pesanan tidak cocok dengan pesanan ini");
 
-      if (type === "tukar_size") {
-        if (!replacementSize) return bad(`Ukuran pengganti untuk ${orderItem.product_name} wajib dipilih`);
-        if (replacementSize === String(orderItem.size || "").toUpperCase()) {
-          return bad(`Ukuran pengganti ${orderItem.product_name} harus berbeda dari ukuran asal`);
+        const qty = Math.max(1, Math.min(Number(raw?.qty) || 1, Number(orderItem.quantity) || 1));
+        const condition = raw?.condition === "damaged" ? "damaged" : "sellable";
+        const replacementSize =
+          type === "tukar_size" ? String(raw?.replacement_size || "").trim().toUpperCase() : null;
+
+        if (type === "tukar_size") {
+          if (!replacementSize) return bad(`Ukuran pengganti untuk ${orderItem.product_name} wajib dipilih`);
+          if (replacementSize === String(orderItem.size || "").toUpperCase()) {
+            return bad(`Ukuran pengganti ${orderItem.product_name} harus berbeda dari ukuran asal`);
+          }
+          const { data: variant } = await admin
+            .from("product_variants")
+            .select("stock")
+            .eq("product_id", orderItem.product_id)
+            .eq("color", orderItem.color || "default")
+            .eq("size", replacementSize)
+            .maybeSingle();
+          if (!variant) return bad(`Ukuran ${replacementSize} tidak tersedia untuk ${orderItem.product_name}`);
+          // Kecukupan stok dicek atomik oleh `samaqu_apply_return_stock` (menghormati stok
+          // bersama ala series). Pengecekan `stock` mentah di sini bisa salah untuk series turunan.
         }
-        const { data: variant } = await admin
-          .from("product_variants")
-          .select("stock")
-          .eq("product_id", orderItem.product_id)
-          .eq("color", orderItem.color || "default")
-          .eq("size", replacementSize)
-          .maybeSingle();
-        if (!variant) return bad(`Ukuran ${replacementSize} tidak tersedia untuk ${orderItem.product_name}`);
-        // Kecukupan stok dicek atomik oleh `samaqu_apply_return_stock` (menghormati stok
-        // bersama ala series). Pengecekan `stock` mentah di sini bisa salah untuk series turunan.
-      }
 
-      rows.push({
-        order_item_id: orderItem.id,
-        product_id: orderItem.product_id,
-        product_name: orderItem.product_name,
-        color: orderItem.color || "default",
-        size: String(orderItem.size || ""),
-        replacement_size: replacementSize,
-        qty,
-        price: Number(orderItem.price) || 0,
-        condition,
-      });
+        rows.push({
+          order_item_id: orderItem.id,
+          product_id: orderItem.product_id,
+          product_name: orderItem.product_name,
+          color: orderItem.color || "default",
+          size: String(orderItem.size || ""),
+          replacement_size: replacementSize,
+          qty,
+          price: Number(orderItem.price) || 0,
+          condition,
+        });
+      }
+    } else {
+      const productIds = [
+        ...new Set(inputItems.map((raw: any) => String(raw?.product_id || "").trim()).filter(Boolean)),
+      ];
+      if (productIds.length === 0) return bad("Produk wajib dipilih");
+
+      const [{ data: products, error: productError }, { data: variantRows, error: variantError }] = await Promise.all([
+        admin.from("products").select("id, name, price").in("id", productIds),
+        admin.from("product_variants").select("product_id, color, size, price_override").in("product_id", productIds),
+      ]);
+      if (productError) return bad(productError.message, 500);
+      if (variantError) return bad(variantError.message, 500);
+
+      const productMap = new Map((products || []).map((product: any) => [String(product.id), product]));
+      const variantMap = new Map(
+        (variantRows || []).map((variant: any) => [
+          `${variant.product_id}||${variant.color || "default"}||${String(variant.size || "").toUpperCase()}`,
+          variant,
+        ]),
+      );
+
+      for (const raw of inputItems) {
+        const productId = String(raw?.product_id || "").trim();
+        const product = productMap.get(productId) as any;
+        if (!product) return bad("Produk tidak ditemukan");
+
+        const color = String(raw?.color || "default").trim() || "default";
+        const size = String(raw?.size || "").trim().toUpperCase();
+        if (!size) return bad(`Ukuran asal ${product.name} wajib dipilih`);
+
+        const variant = variantMap.get(`${productId}||${color}||${size}`) as any;
+        if (!variant) return bad(`Ukuran ${size} tidak tersedia untuk ${product.name}`);
+
+        const qty = Math.max(1, Math.min(Number(raw?.qty) || 1, 999));
+        const condition = raw?.condition === "damaged" ? "damaged" : "sellable";
+        const replacementSize =
+          type === "tukar_size" ? String(raw?.replacement_size || "").trim().toUpperCase() : null;
+
+        if (type === "tukar_size") {
+          if (!replacementSize) return bad(`Ukuran pengganti untuk ${product.name} wajib dipilih`);
+          if (replacementSize === size) {
+            return bad(`Ukuran pengganti ${product.name} harus berbeda dari ukuran asal`);
+          }
+          if (!variantMap.has(`${productId}||${color}||${replacementSize}`)) {
+            return bad(`Ukuran ${replacementSize} tidak tersedia untuk ${product.name}`);
+          }
+        }
+
+        rows.push({
+          order_item_id: null,
+          product_id: productId,
+          product_name: product.name,
+          color,
+          size,
+          replacement_size: replacementSize,
+          qty,
+          price: Number(variant.price_override ?? product.price) || 0,
+          condition,
+        });
+      }
     }
 
     const createdBy = await opsActorEmail(req);
@@ -181,11 +258,19 @@ export async function POST(req: NextRequest) {
           return_number: newReturnNumber(type),
           type,
           status: "diajukan",
-          order_id: order.id,
-          order_number: order.order_number,
-          customer_id: order.customer_id || null,
-          customer_name: order.customer_name || "-",
-          customer_whatsapp: order.customer_whatsapp || null,
+          order_id: order?.id || null,
+          order_number: order?.order_number || orderNumber,
+          customer_id: order?.customer_id || null,
+          customer_name: order?.customer_name || manualCustomerName || "-",
+          customer_whatsapp: order?.customer_whatsapp || manualCustomerWhatsapp || null,
+          ...(manual && (manualAddress || manualCity || manualKecamatan || manualPostal)
+            ? {
+                shipping_address: manualAddress || null,
+                shipping_city: manualCity || null,
+                shipping_kecamatan: manualKecamatan || null,
+                shipping_postal_code: manualPostal || null,
+              }
+            : {}),
           reason: String(body?.reason || "").trim() || null,
           notes: String(body?.notes || "").trim() || null,
           shipping_in_cost: Math.max(0, Math.round(Number(body?.shipping_in_cost) || 0)),
@@ -204,7 +289,15 @@ export async function POST(req: NextRequest) {
       lastError = error;
       if (error.code !== "23505") break;
     }
-    if (!record) return bad(lastError?.message || "Gagal menyimpan retur", 500);
+    if (!record) {
+      if (lastError?.code === "42703" || /shipping_(address|city|kecamatan|postal_code)/i.test(String(lastError?.message || ""))) {
+        return bad(
+          "Kolom alamat retur manual belum ada. Jalankan supabase/migrations/20261018_returns_manual.sql dulu.",
+          500,
+        );
+      }
+      return bad(lastError?.message || "Gagal menyimpan retur", 500);
+    }
 
     const { data: insertedItems, error: itemError } = await admin
       .from("return_items")
@@ -244,6 +337,10 @@ export async function PATCH(req: NextRequest) {
       if (body?.reason !== undefined) patch.reason = String(body.reason || "").trim() || null;
       if (body?.notes !== undefined) patch.notes = String(body.notes || "").trim() || null;
       if (body?.shipping_in_awb !== undefined) patch.shipping_in_awb = String(body.shipping_in_awb || "").trim() || null;
+      if (body?.shipping_address !== undefined) patch.shipping_address = String(body.shipping_address || "").trim() || null;
+      if (body?.shipping_city !== undefined) patch.shipping_city = String(body.shipping_city || "").trim() || null;
+      if (body?.shipping_kecamatan !== undefined) patch.shipping_kecamatan = String(body.shipping_kecamatan || "").trim() || null;
+      if (body?.shipping_postal_code !== undefined) patch.shipping_postal_code = String(body.shipping_postal_code || "").trim() || null;
       if (body?.shipping_in_cost !== undefined) patch.shipping_in_cost = Math.max(0, Math.round(Number(body.shipping_in_cost) || 0));
       if (body?.shipping_out_cost !== undefined) patch.shipping_out_cost = Math.max(0, Math.round(Number(body.shipping_out_cost) || 0));
       if (body?.shipping_payment_status !== undefined) {
@@ -294,7 +391,15 @@ export async function PATCH(req: NextRequest) {
       .eq("id", record.id)
       .select("*")
       .single();
-    if (error) return bad(error.message, 500);
+    if (error) {
+      if (error.code === "42703" || /shipping_(address|city|kecamatan|postal_code)/i.test(String(error.message || ""))) {
+        return bad(
+          "Kolom alamat retur manual belum ada. Jalankan supabase/migrations/20261018_returns_manual.sql dulu.",
+          500,
+        );
+      }
+      return bad(error.message, 500);
+    }
 
     return NextResponse.json({ item: { ...updated, items: record.items } });
   } catch (error) {

@@ -61,7 +61,22 @@ export async function POST(req: NextRequest) {
       .eq("order_number", record.order_number)
       .maybeSingle();
     if (orderError) return NextResponse.json({ error: orderError.message }, { status: 500 });
-    if (!order) return NextResponse.json({ error: "Pesanan asal tidak ditemukan" }, { status: 404 });
+
+    // Retur manual tidak punya baris `orders`; alamat disimpan di record retur.
+    const recipient = order || {
+      customer_name: record.customer_name,
+      customer_whatsapp: record.customer_whatsapp,
+      shipping_address: record.shipping_address,
+      shipping_city: record.shipping_city,
+      shipping_kecamatan: record.shipping_kecamatan,
+      shipping_postal_code: record.shipping_postal_code,
+    };
+    if (!recipient.shipping_address) {
+      return NextResponse.json(
+        { error: "Alamat pengganti belum diisi. Untuk retur manual, lengkapi alamat saat mengajukan." },
+        { status: 400 },
+      );
+    }
 
     const jntItems = items.map((item: any) => ({
       product_id: item.product_id,
@@ -76,12 +91,12 @@ export async function POST(req: NextRequest) {
 
     const result = await createJntOrderForOrder({
       order_number: record.return_number,
-      customer_name: order.customer_name,
-      customer_whatsapp: order.customer_whatsapp,
-      shipping_address: order.shipping_address,
-      shipping_city: order.shipping_city,
-      shipping_kecamatan: order.shipping_kecamatan,
-      shipping_postal_code: order.shipping_postal_code,
+      customer_name: recipient.customer_name,
+      customer_whatsapp: recipient.customer_whatsapp,
+      shipping_address: recipient.shipping_address,
+      shipping_city: recipient.shipping_city,
+      shipping_kecamatan: recipient.shipping_kecamatan,
+      shipping_postal_code: recipient.shipping_postal_code,
       // Nilai barang untuk payload J&T (bukan tagihan ke customer).
       total: items.reduce((sum: number, item: any) => sum + (Number(item.price) || 0) * (Number(item.qty) || 0), 0),
       weight: null,
