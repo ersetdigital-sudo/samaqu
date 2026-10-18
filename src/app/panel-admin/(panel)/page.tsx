@@ -64,7 +64,7 @@ const STATUS_TONE: Record<string, string> = {
   diproses: "#e8890c",
   dikirim: "#2f9e5b",
   selesai: "#2f9e5b",
-  dibatalkan: "#c2255c",
+  dibatalkan: "#d63340",
 };
 
 type TxItem = { product_name?: string; series?: string | null; color?: string | null; size?: string | null };
@@ -109,7 +109,7 @@ function Hand() {
   return (
     <svg viewBox="0 0 24 24">
       <path d="M7 11V6a1.5 1.5 0 013 0v4M10 10V4.5a1.5 1.5 0 013 0V10M13 10V5.5a1.5 1.5 0 013 0V11M16 11V8a1.5 1.5 0 013 0v6a7 7 0 01-7 7h-1a6 6 0 01-5-3l-2.5-4a1.5 1.5 0 012.5-1.6L7 14" />
-      <path d="M3 4l1.5 1.5M2 8h2" stroke="#f3a7c0" />
+      <path d="M3 4l1.5 1.5M2 8h2" stroke="var(--panel-hand, #f3a7c0)" />
     </svg>
   );
 }
@@ -291,7 +291,11 @@ export default function PanelAdminHome() {
               {m.delta ? (
                 <span
                   className={styles.delta}
-                  style={m.down ? { background: "#fdecec", color: "#c2255c" } : { background: "#e3f7ea", color: "#2f9e5b" }}
+                  style={
+                    m.down
+                      ? { background: "var(--panel-down-bg, #fdecec)", color: "var(--panel-down-fg, #c2255c)" }
+                      : { background: "var(--panel-up-bg, #e3f7ea)", color: "var(--panel-up-fg, #2f9e5b)" }
+                  }
                 >
                   {m.delta}
                 </span>
@@ -305,7 +309,10 @@ export default function PanelAdminHome() {
       <section className={styles.grid2}>
         <div className={styles.card}>
           <div className={styles.ph}>
-            <div className={styles.ic} style={{ background: "#fde4ec", color: "#d6336c" }}>
+            <div
+              className={styles.ic}
+              style={{ background: "var(--panel-soon-bg, #fde4ec)", color: "var(--panel-soon-fg, #d6336c)" }}
+            >
               <StatIcon name="bag" />
             </div>
             <div>
@@ -383,7 +390,7 @@ export default function PanelAdminHome() {
                       <b>{v.product_name || v.id}</b>
                       <small>{parts || "-"}</small>
                     </div>
-                    <div className={styles.listVal} style={{ color: "#e8365d" }}>
+                    <div className={styles.listVal} style={{ color: "var(--panel-danger, #e8365d)" }}>
                       {sumStock(v.stock_efektif)} unit
                     </div>
                   </div>

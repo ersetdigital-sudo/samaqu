@@ -56,7 +56,7 @@ export default function OrderDetailPanel({
     .filter(Boolean)
     .join(", ");
   const { name: paymentName } = usePaymentMethodName(order.payment_method);
-  const accent = isMono ? "#0f172a" : "#c2255c";
+  const accent = isMono ? "#0f172a" : "var(--panel-accent, #c2255c)";
   const minAccent = isMono ? "#475569" : "#B4552F";
 
   const meta = latestTracking

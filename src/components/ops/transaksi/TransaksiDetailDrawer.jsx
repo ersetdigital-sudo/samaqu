@@ -285,7 +285,7 @@ export default function TransaksiDetailDrawer({ open, order, variant = "ops", on
                   ) : null}
                   <div className="rw t">
                     <span>Total Pesanan</span>
-                    <span style={{ color: "#c2255c" }}>Rp {formatRupiah(order.total)}</span>
+                    <span style={{ color: "var(--panel-accent, #c2255c)" }}>Rp {formatRupiah(order.total)}</span>
                   </div>
                 </div>
 

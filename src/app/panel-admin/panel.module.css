@@ -722,6 +722,15 @@ svg.heart { width: 14px; height: 14px; fill: #e46a92; stroke: none; color: #e46a
   --card-line: #f3ebcf;
   --canvas: #fffbea;
   --pink-bg: #fff1c2;
+  --panel-accent: #c98a00;
+  --panel-hand: #e8a317;
+  --panel-down-bg: #fff3c4;
+  --panel-down-fg: #a86f00;
+  --panel-up-bg: #e3f7ea;
+  --panel-up-fg: #2f9e5b;
+  --panel-soon-bg: #fff1c2;
+  --panel-soon-fg: #c98a00;
+  --panel-danger: #c98a00;
   --font: var(--font-inter), Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
 }
 .sunflower .side {
@@ -803,6 +812,25 @@ svg.heart { width: 14px; height: 14px; fill: #e46a92; stroke: none; color: #e46a
 .sunflower .aiStop { border-color: #f5d77a; color: #a86f00; }
 .sunflower .aiStop:hover { background: #fff8e1; }
 .sunflower .aiLog { scrollbar-color: rgba(201, 138, 0, 0.3) transparent; }
+.sunflower .aiChip:hover { background: #fff3c4; }
+.sunflower .aiLog::-webkit-scrollbar-thumb {
+  background: rgba(201, 138, 0, 0.22);
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+.sunflower .aiLog::-webkit-scrollbar-thumb:hover {
+  background: rgba(201, 138, 0, 0.4);
+  background-clip: content-box;
+}
+
+/* Ornamen ilustrasi bawaan Beranda masih memakai palet berry; samakan saat tema matahari. */
+.sunflower .emptyBox svg [fill="#fbe3ec"] { fill: #fff0c2; }
+.sunflower .emptyBox svg [fill="#f9c9d9"] { fill: #ffe08a; }
+.sunflower .emptyBox svg [fill="#f4a3be"] { fill: #ffd166; }
+.sunflower .emptyBox svg [fill="#f3a7c0"] { fill: #ffd54f; }
+.sunflower .emptyBox svg [fill="#fbd3e1"] { fill: #ffe28a; }
+.sunflower .emptyBox svg [fill="#fff0c2"] { fill: #fff0c2; }
+.sunflower .emptyBox svg [stroke="#f4a3be"] { stroke: #ffd166; }
 
 /* Halaman ops yang dititipkan ke panel */
 .sunflower :global(.ops-root) {
@@ -877,6 +905,25 @@ svg.heart { width: 14px; height: 14px; fill: #e46a92; stroke: none; color: #e46a
   color: #a86f00;
 }
 
+/* Aksen berry yang ditulis langsung di komponen ops (form Transaksi/Retur). */
+.sunflower :global(.ops-root.panel-ops .bg-\[\#c2255c\]) { background-color: #c98a00; }
+.sunflower :global(.ops-root.panel-ops .hover\:bg-\[\#9d174d\]:hover) { background-color: #a86f00; }
+.sunflower :global(.ops-root.panel-ops .hover\:bg-\[\#c2255c\]:hover) { background-color: #a86f00; }
+.sunflower :global(.ops-root.panel-ops .text-\[\#c2255c\]) { color: #c98a00; }
+.sunflower :global(.ops-root.panel-ops .border-\[\#c2255c\]) { border-color: #c98a00; }
+.sunflower :global(.ops-root.panel-ops .border-\[\#f3c7d6\]) { border-color: #f5d77a; }
+.sunflower :global(.ops-root.panel-ops .bg-\[\#fdf3f7\]) { background-color: #fff8e1; }
+.sunflower :global(.ops-root.panel-ops .hover\:bg-\[\#fdf3f7\]:hover) { background-color: #fff8e1; }
+.sunflower :global(.ops-root.panel-ops .bg-pink-100) { background-color: #fff3c4; }
+.sunflower :global(.ops-root.panel-ops .text-pink-600),
+.sunflower :global(.ops-root.panel-ops .text-pink-700) { color: #a86f00; }
+.sunflower :global(.ops-root.panel-ops .border-pink-200) { border-color: #f5d77a; }
+.sunflower :global(.ops-root.panel-ops .bg-pink-500) { background-color: #c98a00; }
+.sunflower :global(.ops-root.panel-ops .bg-rose-50),
+.sunflower :global(.ops-root.panel-ops .bg-rose-100) { background-color: #fff3c4; }
+.sunflower :global(.ops-root.panel-ops .text-rose-600),
+.sunflower :global(.ops-root.panel-ops .text-rose-700) { color: #a86f00; }
+
 /* Transaksi panel (panel-transaksi.css) */
 .sunflower :global(.ops-root.panel-tx) { background: #fffbea; color: #2b1f0e; }
 .sunflower :global(.ops-root.panel-tx .card) { border-color: #f3ebcf; }
@@ -933,6 +980,14 @@ svg.heart { width: 14px; height: 14px; fill: #e46a92; stroke: none; color: #e46a
 .sunflower :global(.ops-root.panel-tx .note) { background: #fff8ec; border-color: #fbe3bf; color: #7a5520; }
 .sunflower :global(.ops-root.panel-tx .trk li.d) { color: #2f9e5b; }
 .sunflower :global(.ops-root.panel-tx .trk li.d:before) { background: #2f9e5b; box-shadow: 0 0 0 4px #e3f7ea; }
+.sunflower :global(.ops-root.panel-tx .trk:before) { background: #f1e6c4; }
+.sunflower :global(.ops-root.panel-tx .trk li:before) { background: #e8dbb4; }
+.sunflower :global(.ops-root.panel-tx .sec2) { border-color: #f3ebcf; }
+.sunflower :global(.ops-root.panel-tx .df) { border-color: #f3ebcf; }
+.sunflower :global(.ops-root.panel-tx .rw.t) { border-color: #f1e6c4; }
+.sunflower :global(.ops-root.panel-tx .mc .dh) { border-color: #f1e6c4; }
+.sunflower :global(.ops-root.panel-tx .resi-void),
+.sunflower :global(.ops-root.panel-tx .resi-empty) { color: #b8a27a; }
 
 @media (max-width: 900px) {
   .sunflower .heroArtSun { width: 100%; height: 180px; }
