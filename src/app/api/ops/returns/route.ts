@@ -31,12 +31,15 @@ function wibDateKey() {
 
 async function newReturnNumber(admin: Admin) {
   const prefix = `RTS-${wibDateKey()}-`;
-  const { count } = await admin
+  const { data } = await admin
     .from("returns")
-    .select("id", { count: "exact", head: true })
-    .like("return_number", `${prefix}%`);
-  const next = (Number(count) || 0) + 1;
-  return `${prefix}${String(next).padStart(3, "0")}`;
+    .select("return_number")
+    .like("return_number", `${prefix}%`)
+    .order("return_number", { ascending: false })
+    .limit(1);
+  const last = String(data?.[0]?.return_number || "");
+  const lastSeq = Number(last.slice(prefix.length)) || 0;
+  return `${prefix}${String(lastSeq + 1).padStart(4, "0")}`;
 }
 
 async function itemsOf(admin: Admin, ids: string[]) {
