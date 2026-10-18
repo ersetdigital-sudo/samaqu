@@ -17,6 +17,7 @@ import {
   Clipboard,
   Clock,
   Plus,
+  Printer,
   RotateCcw,
   Search,
   Trash2,
@@ -1769,6 +1770,12 @@ function ReturnDetailDrawer({ record, isPanel, accent, accentSoft, onClose, onCh
     }
   };
 
+  const openLabel = () => {
+    if (!record.shipping_out_awb) return;
+    const labelBase = window.location.pathname.startsWith("/panel-admin") ? "/panel-admin/label" : "/admin/label";
+    window.open(`${labelBase}/${encodeURIComponent(record.return_number)}`, "_blank", "noopener,noreferrer");
+  };
+
   return (
     <DrawerShell
       title={`Retur ${record.return_number}`}
@@ -2002,6 +2009,15 @@ function ReturnDetailDrawer({ record, isPanel, accent, accentSoft, onClose, onCh
                     ) : null}
                   </span>
                 </div>
+              ) : null}
+              {isExchange && record.shipping_out_awb ? (
+                <button
+                  type="button"
+                  onClick={openLabel}
+                  className={`mt-2 w-full rounded-xl px-4 py-2.5 text-sm font-bold ${accent}`}
+                >
+                  <Printer size={15} className="mr-1.5 inline" /> Cetak Resi Pengganti
+                </button>
               ) : null}
               {record.type === "return" ? (
                 <>
