@@ -252,3 +252,40 @@
   .panel-tx .resi-no { font-size: 11px; }
   .panel-tx table .bd { font-size: 10.5px; padding: 4px 8px; gap: 5px; }
 }
+
+/* ── Drawer detail: teks panjang tidak boleh menarik panel melebar ──
+ * Nomor resi/status J&T/alamat bisa panjang. Tanpa min-width:0 + overflow-wrap,
+ * flex item memaksa panel lebih lebar dari viewport dan isi terpotong di kanan. */
+.panel-tx .dr,
+.panel-tx .dh,
+.panel-tx .db,
+.panel-tx .sec2,
+.panel-tx .kv,
+.panel-tx .sh,
+.panel-tx .it,
+.panel-tx .rw { min-width: 0; }
+.panel-tx .db { overflow-x: hidden; }
+.panel-tx .bt > div { min-width: 0; }
+.panel-tx .bt .bd { flex-shrink: 0; }
+.panel-tx .kv b,
+.panel-tx .sh b,
+.panel-tx .it b,
+.panel-tx .adr,
+.panel-tx .dh h3 { overflow-wrap: anywhere; word-break: break-word; }
+.panel-tx .kv span { flex: 0 0 auto; }
+.panel-tx .it b.mono,
+.panel-tx .rw span:last-child { flex: 0 0 auto; text-align: right; }
+.panel-tx .adr { max-width: 100%; }
+.panel-tx .sh { flex-wrap: wrap; }
+
+@media (max-width: 520px) {
+  .panel-tx .dr { width: 100vw; border-radius: 0; }
+  .panel-tx .dh { padding: 16px 16px 14px; }
+  .panel-tx .db { padding: 0 16px 18px; }
+  .panel-tx .df { padding: 12px 16px 16px; }
+  .panel-tx .ban { padding: 14px; }
+  .panel-tx .sec2 { padding: 14px 0; }
+  .panel-tx .kv { font-size: 12.5px; align-items: flex-start; }
+  .panel-tx .stp { gap: 4px; }
+  .panel-tx .stp span { font-size: 10px; }
+}
