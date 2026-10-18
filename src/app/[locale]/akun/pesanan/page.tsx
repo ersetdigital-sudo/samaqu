@@ -9,6 +9,7 @@ import { resolveItemPhotos } from "@/lib/order-photo";
 import { itemProductIds, loadOrderPhotoLookup } from "@/lib/order-photo-data";
 import { useSafeLocale } from "@/lib/safe-i18n";
 import { AkunHeader } from "@/components/akun/AkunShell";
+import CustomerOrderDrawer from "@/components/akun/CustomerOrderDrawer";
 import { statusInfo, tglID, rupiah } from "@/lib/akun-format";
 
 interface OrderItem {
@@ -44,6 +45,7 @@ export default function PesananPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("semua");
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const { customer, ready } = useAkunCustomer();
 
   useEffect(() => {
@@ -137,13 +139,24 @@ export default function PesananPage() {
                 {filtered.map((o) => {
                   const item = o.order_items?.[0];
                   const sc = statusInfo(o.status);
-                  const href = to(`/akun/pesanan/${o.order_number}`);
                   return (
-                    <tr key={o.id} className="border-b border-[#f0f0f0] last:border-0 transition-colors hover:bg-[#fafafa]">
+                    <tr
+                      key={o.id}
+                      onClick={() => setSelectedOrder(o)}
+                      className="cursor-pointer border-b border-[#f0f0f0] last:border-0 transition-colors hover:bg-[#fafafa]"
+                    >
                       <td className="px-5 py-4 align-middle whitespace-nowrap">
-                        <Link href={href} className="font-bold text-sm hover:underline" style={{ color: "#000000" }}>
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setSelectedOrder(o);
+                          }}
+                          className="font-bold text-sm hover:underline"
+                          style={{ color: "#000000" }}
+                        >
                           #{o.order_number}
-                        </Link>
+                        </button>
                       </td>
                       <td className="px-5 py-4 align-middle">
                         <div className="flex items-center gap-3">
@@ -164,10 +177,18 @@ export default function PesananPage() {
                       <td className="px-5 py-4 align-middle text-sm font-bold text-right whitespace-nowrap" style={{ color: "#000000" }}>{rupiah(o.total)}</td>
                       <td className="px-5 py-4 align-middle"><span className={sc.pill}>{sc.label}</span></td>
                       <td className="px-5 py-4 align-middle text-right whitespace-nowrap">
-                        <Link href={href} className="inline-flex items-center gap-1 text-[12px] font-bold hover:underline" style={{ color: "#000000" }}>
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setSelectedOrder(o);
+                          }}
+                          className="inline-flex items-center gap-1 text-[12px] font-bold hover:underline"
+                          style={{ color: "#000000" }}
+                        >
                           Detail
                           <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2"><path d="m9 6 6 6-6 6" /></svg>
-                        </Link>
+                        </button>
                       </td>
                     </tr>
                   );
@@ -182,7 +203,7 @@ export default function PesananPage() {
               const item = o.order_items?.[0];
               const sc = statusInfo(o.status);
               return (
-                <Link key={o.id} href={to(`/akun/pesanan/${o.order_number}`)} className="akun-card block p-4 transition hover:shadow-lg active:scale-[.99]">
+                <button key={o.id} type="button" onClick={() => setSelectedOrder(o)} className="akun-card block w-full p-4 text-left transition hover:shadow-lg active:scale-[.99]">
                   <div className="flex items-center justify-between text-[11px] text-[#7c8b85] font-semibold">
                     <span>#{o.order_number}</span><span>{tglID(o.created_at)}</span>
                   </div>
@@ -203,7 +224,7 @@ export default function PesananPage() {
                       </div>
                     </div>
                   </div>
-                </Link>
+                </button>
               );
             })}
           </div>
@@ -217,6 +238,8 @@ export default function PesananPage() {
           <p className="text-sm text-[#6c7a75] mt-1">Coba pilih filter lain ya.</p>
         </div>
       )}
+
+      <CustomerOrderDrawer order={selectedOrder} onClose={() => setSelectedOrder(null)} />
     </>
   );
 }
