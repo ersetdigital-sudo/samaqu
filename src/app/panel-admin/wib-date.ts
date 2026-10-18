@@ -29,6 +29,12 @@ const longFmt = new Intl.DateTimeFormat("id-ID", {
   year: "numeric",
 });
 
+const hourFmt = new Intl.DateTimeFormat("en-GB", {
+  timeZone: TZ,
+  hour: "2-digit",
+  hourCycle: "h23",
+});
+
 /** Kunci tanggal WIB `YYYY-MM-DD` (stabil, aman untuk perbandingan & indeks kutipan). */
 export function wibDateKey(d: Date = new Date()): string {
   return keyFmt.format(d);
@@ -42,6 +48,20 @@ export function wibLongDate(d: Date = new Date()): string {
 /** Kunci tanggal WIB dengan pergeseran hari (mis. -60 untuk 60 hari lalu). */
 export function wibDateOffset(offsetDays: number): string {
   return wibDateKey(new Date(Date.now() + offsetDays * DAY_MS));
+}
+
+/** Jam WIB (0–23), tidak bergantung zona waktu perangkat. */
+export function wibHour(d: Date = new Date()): number {
+  return Number(hourFmt.format(d));
+}
+
+/** Sapaan waktu WIB: pagi 04–10, siang 11–14, sore 15–17, malam 18–03. */
+export function wibGreeting(d: Date = new Date()): string {
+  const hour = wibHour(d);
+  if (hour >= 4 && hour < 11) return "Selamat Pagi";
+  if (hour >= 11 && hour < 15) return "Selamat Siang";
+  if (hour >= 15 && hour < 18) return "Selamat Sore";
+  return "Selamat Malam";
 }
 
 /** Sisa milidetik sampai tengah malam WIB berikutnya (+1 detik sebagai pengaman). */
@@ -91,4 +111,26 @@ export function useWibToday(): string {
 export function useWibLongDate(): string {
   useWibDayTick();
   return wibLongDate();
+}
+
+/**
+ * Sapaan waktu WIB yang otomatis berganti tepat saat jam WIB berubah.
+ * Timer dijadwalkan ke batas jam berikutnya (bukan polling tiap detik).
+ */
+export function useWibGreeting(): string {
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+    const schedule = () => {
+      const wibMs = Date.now() + WIB_OFFSET_MS;
+      const msToNextHour = 60 * 60 * 1000 - (wibMs % (60 * 60 * 1000)) + 1000;
+      timer = setTimeout(() => {
+        setTick((t) => t + 1);
+        schedule();
+      }, msToNextHour);
+    };
+    schedule();
+    return () => clearTimeout(timer);
+  }, []);
+  return wibGreeting();
 }
