@@ -40,6 +40,7 @@ function emptyItem() {
     displayTotal: "",
     redirected_from: "",
     follow_name: "",
+    editing: true,
   };
 }
 
@@ -203,7 +204,17 @@ export default function TambahBarangMasuk() {
   }
 
   function addItem() {
-    setFormData((prev) => ({ ...prev, items: [...prev.items, emptyItem()] }));
+    setFormData((prev) => {
+      // Jangan biarkan dua baris kosong terbuka sekaligus.
+      const blankEditing = prev.items.some(
+        (item) => item.editing && !item.product_id && !item.qty && !item.total_price
+      );
+      if (blankEditing) return prev;
+      return {
+        ...prev,
+        items: [...prev.items.map((item) => ({ ...item, editing: false })), emptyItem()],
+      };
+    });
   }
 
   function removeItem(key) {
@@ -237,29 +248,70 @@ export default function TambahBarangMasuk() {
   const totalPcs = formData.items.reduce((sum, item) => sum + (Number(item.qty) || 0), 0);
   const totalPrice = formData.items.reduce((sum, item) => sum + (Number(item.total_price) || 0), 0);
 
+  function rowMessage(item, index) {
+    const row = `Baris ${index + 1}`;
+    const groups = variantsOf(item.product_id);
+    const variant = variantOf(item);
+    if (!item.product_id) return `${row}: pilih produk.`;
+    if (groups.length === 0) return `${row}: varian produk belum tersedia.`;
+    if (!item.variant_id || !variant) return `${row}: pilih warna/varian.`;
+    if (!item.size) return `${row}: pilih ukuran.`;
+    if (!(Number(item.qty) > 0)) return `${row}: jumlah harus lebih dari 0.`;
+    if (!(Number(item.total_price) > 0)) return `${row}: total harga beli harus lebih dari 0.`;
+    if (duplicateKeys.has(effectiveKey(item, variant))) {
+      return `${row}: produk & ukuran ini sudah ada di baris lain — gabungkan.`;
+    }
+    return "";
+  }
+
+  function saveRow(item, index) {
+    const message = rowMessage(item, index);
+    if (message) {
+      setErrors((prev) => ({ ...prev, [item.key]: message }));
+      return;
+    }
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next[item.key];
+      return next;
+    });
+    setFormData((prev) => ({
+      ...prev,
+      items: prev.items.map((row) =>
+        row.key === item.key ? { ...row, editing: false } : row
+      ),
+    }));
+  }
+
+  function editItem(key) {
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+    setFormData((prev) => ({
+      ...prev,
+      items: prev.items.map((row) => ({ ...row, editing: row.key === key })),
+    }));
+  }
+
   function validate() {
     const next = {};
     formData.items.forEach((item, index) => {
-      const row = `Baris ${index + 1}`;
-      const groups = variantsOf(item.product_id);
-      const variant = variantOf(item);
-      if (!item.product_id) {
-        next[item.key] = `${row}: pilih produk.`;
-      } else if (groups.length === 0) {
-        next[item.key] = `${row}: varian produk belum tersedia.`;
-      } else if (!item.variant_id || !variant) {
-        next[item.key] = `${row}: pilih warna/varian.`;
-      } else if (!item.size) {
-        next[item.key] = `${row}: pilih ukuran.`;
-      } else if (!(Number(item.qty) > 0)) {
-        next[item.key] = `${row}: jumlah harus lebih dari 0.`;
-      } else if (!(Number(item.total_price) > 0)) {
-        next[item.key] = `${row}: total harga beli harus lebih dari 0.`;
-      } else if (duplicateKeys.has(effectiveKey(item, variant))) {
-        next[item.key] = `${row}: produk & ukuran ini sudah ada di baris lain — gabungkan.`;
-      }
+      const message = rowMessage(item, index);
+      if (message) next[item.key] = message;
     });
     setErrors(next);
+    const firstInvalid = formData.items.find((item) => next[item.key]);
+    if (firstInvalid) {
+      setFormData((prev) => ({
+        ...prev,
+        items: prev.items.map((row) => ({
+          ...row,
+          editing: row.key === firstInvalid.key ? true : row.editing,
+        })),
+      }));
+    }
     return Object.keys(next).length === 0;
   }
 
@@ -424,7 +476,7 @@ export default function TambahBarangMasuk() {
                   const duplicate = duplicateKeys.has(effectiveKey(item, variant));
                   const error = errors[item.key];
 
-                  return (
+                  return item.editing ? (
                     <div
                       key={item.key}
                       className={`rounded-2xl border-2 p-4 md:p-5 transition-colors ${error ? "border-red-300 bg-red-50/40" : "border-gray-200 bg-gray-50/50"}`}
@@ -610,6 +662,73 @@ export default function TambahBarangMasuk() {
 
                       {error ? (
                         <p className="mt-3 font-inter" style={{ fontSize: "12.5px", fontWeight: 700, color: "#B91C1C" }}>{error}</p>
+                      ) : null}
+
+                      <div className="mt-4 flex justify-end border-t border-gray-200 pt-4">
+                        <button
+                          type="button"
+                          onClick={() => saveRow(item, index)}
+                          className="inline-flex items-center gap-2 rounded-xl bg-green-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-green-700"
+                        >
+                          <Save size={16} /> Simpan produk
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      key={item.key}
+                      className={`rounded-2xl border-2 p-4 transition-colors ${error ? "border-red-300 bg-red-50/40" : "border-gray-200 bg-white"}`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-outfit truncate" style={{ fontSize: "15px", fontWeight: 800, color: "#0F172A" }}>
+                            {product?.name || "Produk belum dipilih"}
+                          </p>
+                          <p className="font-inter text-xs text-slate-500 mt-0.5 truncate">
+                            {[variant ? variantName(variant.color) : null, product?.series, item.size]
+                              .filter(Boolean)
+                              .join(" · ") || "Lengkapi produk"}
+                          </p>
+                          <p className="font-inter text-sm font-bold mt-1.5" style={{ color: "#0F172A" }}>
+                            Qty {qty} · Rp {formatRupiah(item.total_price)}
+                          </p>
+                          <p className="font-inter text-xs text-slate-500 mt-0.5">
+                            Stok {currentStock} → {afterStock} pcs
+                          </p>
+                          {item.product_id && sharedLabel(item.product_id) ? (
+                            <p className="font-inter mt-1" style={{ fontSize: "11.5px", fontWeight: 600, color: "#047857" }}>
+                              Stok bersama dengan {sharedLabel(item.product_id)}
+                            </p>
+                          ) : null}
+                        </div>
+                        <div className="flex shrink-0 items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => editItem(item.key)}
+                            className="rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-100"
+                          >
+                            Ubah
+                          </button>
+                          {formData.items.length > 1 ? (
+                            <button
+                              type="button"
+                              onClick={() => removeItem(item.key)}
+                              className="rounded-lg px-2.5 py-1.5 text-xs font-bold text-red-600 transition hover:bg-red-50"
+                            >
+                              Hapus
+                            </button>
+                          ) : null}
+                        </div>
+                      </div>
+
+                      {duplicate && !error ? (
+                        <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 font-inter" style={{ fontSize: "12.5px", fontWeight: 600, color: "#B45309" }}>
+                          Produk & ukuran ini sudah ada di baris lain — gabungkan supaya tidak dobel.
+                        </div>
+                      ) : null}
+
+                      {error ? (
+                        <p className="mt-2 font-inter" style={{ fontSize: "12.5px", fontWeight: 700, color: "#B91C1C" }}>{error}</p>
                       ) : null}
                     </div>
                   );
