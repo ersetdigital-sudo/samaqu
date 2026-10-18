@@ -25,6 +25,10 @@ export interface TariffRequest {
 export interface TariffService {
   name: string;
   cost: string;
+  /** Beberapa respons J&T menyertakan ETA; dipakai kalau ada. */
+  etd?: string | null;
+  estimated_delivery?: string | null;
+  estimate?: string | null;
 }
 
 export interface TariffResponse {

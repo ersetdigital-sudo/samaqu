@@ -15,13 +15,15 @@ export type JntLayanan = {
   code: string;
   label: string;
   note: string;
+  /** Estimasi standar layanan J&T. Tariff Check API tidak mengirim ETA per rute. */
+  estimate: string;
   /** Nilai `expresstype` bawaan untuk Create Order (bisa ditimpa env). */
   defaultExpressType: string;
 };
 
 export const JNT_LAYANAN: JntLayanan[] = [
-  { code: "EZ", label: "J&T EZ (Reguler)", note: "Cepat, 2-4 hari", defaultExpressType: "1" },
-  { code: "ECO", label: "J&T ECO (Hemat)", note: "Lebih murah, 3-7 hari", defaultExpressType: "ECO" },
+  { code: "EZ", label: "J&T EZ (Reguler)", note: "Cepat, 2-4 hari", estimate: "2-4 hari", defaultExpressType: "1" },
+  { code: "ECO", label: "J&T ECO (Hemat)", note: "Lebih murah, 3-7 hari", estimate: "3-7 hari", defaultExpressType: "ECO" },
 ];
 
 export function layananByCode(code?: string | null): JntLayanan | null {

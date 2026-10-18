@@ -2692,7 +2692,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                       {ongkir.services.map((service) => {
                         const key = `${service.service}|${service.cost}`;
                         const active = selectedService === key;
-                        const detail = [service.description, service.etd ? `Estimasi ${service.etd} hari` : ""]
+                        const detail = [service.description, service.etd ? `Estimasi ${service.etd}${/hari/i.test(service.etd) ? "" : " hari"}` : ""]
                           .filter(Boolean)
                           .join(" · ");
                         return (
