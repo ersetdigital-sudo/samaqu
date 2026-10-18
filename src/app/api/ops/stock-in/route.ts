@@ -43,7 +43,7 @@ function readItems(body: Record<string, any> | null): StockInItem[] {
     variant_color: String(item?.variant_color ?? item?.color ?? "default").trim() || "default",
     variant_size: String(item?.variant_size ?? item?.size ?? "").trim().toUpperCase(),
     qty: Number(item?.qty),
-    total_price: Number(item?.total_price),
+    total_price: Number(item?.total_price ?? 0),
   }));
 }
 
@@ -75,8 +75,8 @@ export async function POST(req: NextRequest) {
       if (!Number.isFinite(item.qty) || !Number.isInteger(item.qty) || item.qty <= 0) {
         return NextResponse.json({ error: `${row}: jumlah harus lebih dari 0` }, { status: 400 });
       }
-      if (!Number.isFinite(item.total_price) || item.total_price <= 0) {
-        return NextResponse.json({ error: `${row}: total harga harus lebih dari 0` }, { status: 400 });
+      if (!Number.isFinite(item.total_price) || item.total_price < 0) {
+        return NextResponse.json({ error: `${row}: total harga tidak valid` }, { status: 400 });
       }
     }
 
