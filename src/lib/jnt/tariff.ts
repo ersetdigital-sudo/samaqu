@@ -72,8 +72,8 @@ export async function checkTariffSemua(params: {
   weight: number;
   originCode: string;
   destAreaCode: string;
-}): Promise<{ serviceCode: string; name: string; cost: number }[]> {
-  const hasil: { serviceCode: string; name: string; cost: number }[] = [];
+}): Promise<{ serviceCode: string; name: string; cost: number; etd: string }[]> {
+  const hasil: { serviceCode: string; name: string; cost: number; etd: string }[] = [];
   for (const layanan of JNT_LAYANAN) {
     const jawaban = await checkTariff({ ...params, productType: layanan.code });
     if (!jawaban.success) continue;
@@ -82,6 +82,8 @@ export async function checkTariffSemua(params: {
         serviceCode: layanan.code,
         name: String(service?.name || layanan.code),
         cost: parseInt(String(service?.cost ?? "0")) || 0,
+        // Kalau J&T mengirim ETA, pakai itu; route memakai estimate layanan sebagai fallback.
+        etd: String(service?.etd || service?.estimated_delivery || service?.estimate || "").trim(),
       });
     }
   }

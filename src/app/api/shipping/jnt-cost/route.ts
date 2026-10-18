@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { checkTariffSemua } from "@/lib/jnt/tariff";
-import { labelLayanan } from "@/lib/jnt/layanan";
+import { labelLayanan, layananByCode } from "@/lib/jnt/layanan";
 import { getJntConfig } from "@/lib/jnt/config";
 import { getSendSiteCode, resolveTariffCodes } from "@/lib/jnt/area-mapping";
 
@@ -67,7 +67,8 @@ export async function POST(req: Request) {
       serviceCode: option.serviceCode,
       description: `Layanan ${option.serviceCode} J&T`,
       cost: option.cost,
-      etd: "",
+      // Tariff Check J&T tidak mengirim ETA per rute; pakai estimasi standar layanan.
+      etd: option.etd || layananByCode(option.serviceCode)?.estimate || "",
     }));
 
     shipOptions.sort((a, b) => a.cost - b.cost);

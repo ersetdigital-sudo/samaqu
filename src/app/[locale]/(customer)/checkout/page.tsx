@@ -1032,7 +1032,7 @@ function CheckoutContent() {
                           </span>
                         </span>
                         <span className="block text-[11px] sm:text-xs font-ui mt-0.5" style={{ color: "var(--text-muted)" }}>
-                          {opt.description} · Estimasi {opt.etd} hari
+                          {opt.description}{opt.etd ? ` · Estimasi ${opt.etd}${/hari/i.test(opt.etd) ? "" : " hari"}` : ""}
                         </span>
                       </span>
                     </label>
