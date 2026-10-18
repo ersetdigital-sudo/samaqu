@@ -133,11 +133,16 @@ const ODR_CSS = `
 .odr-x{margin-left:auto;flex:none;padding:6px;border-radius:8px;border:1px solid transparent;background:transparent;color:var(--text-muted,#9a9a98);cursor:pointer}
 .odr-x:hover{background:rgba(42,33,27,.06);color:var(--espresso,#1c1c1c)}
 .odr-body{flex:1;min-height:0;min-width:0;overflow-y:auto;overflow-x:hidden}
+/* Isi drawer admin sebelumnya menempel ke tepi kanan (tanpa padding horizontal).
+   Samakan dengan padding header supaya resi/status/alamat tidak flush ke edge. */
+.odr-body .od-root{box-sizing:border-box;max-width:100%;padding:0 20px 20px}
+.odr-body .panel-tx .ban{padding-left:0;padding-right:0}
 
 /* Mobile: drawer memakai lebar penuh dan header lebih rapat. */
 @media (max-width:767.98px){
  .odr-panel{width:100vw;max-width:100vw;border-radius:0;background:#fff}
  .odr-head{padding:14px 16px}
  .odr-body{overflow-x:hidden}
+ .odr-body .od-root{padding:0 16px 18px}
 }
 `;
