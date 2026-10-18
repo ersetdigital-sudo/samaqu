@@ -73,19 +73,33 @@ export async function checkTariffSemua(params: {
   originCode: string;
   destAreaCode: string;
 }): Promise<{ serviceCode: string; name: string; cost: number; etd: string }[]> {
-  const hasil: { serviceCode: string; name: string; cost: number; etd: string }[] = [];
-  for (const layanan of JNT_LAYANAN) {
-    const jawaban = await checkTariff({ ...params, productType: layanan.code });
+  // Seed EZ/ECO tetap ada untuk kompatibilitas; layanan baru bisa ditambah lewat
+  // env JNT_PRODUCT_TYPES tanpa mengubah kode. productCode dari respons J&T
+  // yang dipakai saat Create Order, bukan kode request.
+  const extra = String(process.env.JNT_PRODUCT_TYPES || "")
+    .split(",")
+    .map((code) => code.trim().toUpperCase())
+    .filter(Boolean);
+  const seeds = [...new Set([...JNT_LAYANAN.map((layanan) => layanan.code), ...extra])];
+
+  const byCode = new Map<string, { serviceCode: string; name: string; cost: number; etd: string }>();
+  for (const requestCode of seeds) {
+    const jawaban = await checkTariff({ ...params, productType: requestCode });
     if (!jawaban.success) continue;
     for (const service of jawaban.services) {
-      hasil.push({
-        serviceCode: layanan.code,
-        name: String(service?.name || layanan.code),
+      const serviceCode = String(service?.productCode || service?.productType || requestCode)
+        .trim()
+        .toUpperCase() || requestCode;
+      const row = {
+        serviceCode,
+        name: String(service?.name || serviceCode),
         cost: parseInt(String(service?.cost ?? "0")) || 0,
         // Kalau J&T mengirim ETA, pakai itu; route memakai estimate layanan sebagai fallback.
         etd: String(service?.etd || service?.estimated_delivery || service?.estimate || "").trim(),
-      });
+      };
+      const previous = byCode.get(serviceCode);
+      if (!previous || row.cost < previous.cost) byCode.set(serviceCode, row);
     }
   }
-  return hasil;
+  return [...byCode.values()];
 }
