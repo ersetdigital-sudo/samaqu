@@ -480,11 +480,19 @@ function CreateReturnDrawer({ type, isPanel, accent, accentSoft, variants, onClo
       variant_id: only?.id || "",
       size: "",
       replacement_size: "",
+      price: "",
+      replacement_price: "",
     });
   };
 
   const chooseColor = (itemKey, variantId) => {
-    updateManualItem(itemKey, { variant_id: variantId, size: "", replacement_size: "" });
+    updateManualItem(itemKey, {
+      variant_id: variantId,
+      size: "",
+      replacement_size: "",
+      price: "",
+      replacement_price: "",
+    });
   };
 
   const blankManualItem = () => ({
@@ -496,6 +504,8 @@ function CreateReturnDrawer({ type, isPanel, accent, accentSoft, variants, onClo
     qty: 1,
     condition: "sellable",
     replacement_size: "",
+    price: "",
+    replacement_price: "",
   });
 
   const updateManualItem = (key, patch) => {
@@ -567,6 +577,7 @@ function CreateReturnDrawer({ type, isPanel, accent, accentSoft, variants, onClo
         checked: autoSelect,
         qty: Number(item.quantity) || 1,
         replacement_size: "",
+        replacement_price: "",
         condition: "sellable",
       };
     }
@@ -642,15 +653,21 @@ function CreateReturnDrawer({ type, isPanel, accent, accentSoft, variants, onClo
     const value = selected[item.id];
     if (!value?.replacement_size) return sum;
     const original = Number(item.price) || 0;
-    const replacement = priceOf(item.product_id, item.color, value.replacement_size);
+    const catalogReplacement = priceOf(item.product_id, item.color, value.replacement_size);
+    const manualReplacement = Number(String(value.replacement_price || "").replace(/\D/g, "")) || 0;
+    const replacement = manualReplacement > 0 ? manualReplacement : catalogReplacement;
     return sum + (replacement - original) * (Number(value.qty) || 1);
   }, 0);
 
   const manualDifference = manualItems.reduce((sum, item) => {
     const variant = variantOf(item.variant_id);
     if (!variant || !item.size || !item.replacement_size) return sum;
-    const original = Number(variant.prices?.[item.size]) || Number(variant.price) || 0;
-    const replacement = Number(variant.prices?.[item.replacement_size]) || Number(variant.price) || 0;
+    const manualOriginal = Number(String(item.price || "").replace(/\D/g, "")) || 0;
+    const manualReplacement = Number(String(item.replacement_price || "").replace(/\D/g, "")) || 0;
+    const catalogOriginal = Number(variant.prices?.[item.size]) || Number(variant.price) || 0;
+    const catalogReplacement = Number(variant.prices?.[item.replacement_size]) || Number(variant.price) || 0;
+    const original = manualOriginal > 0 ? manualOriginal : catalogOriginal;
+    const replacement = manualReplacement > 0 ? manualReplacement : catalogReplacement;
     return sum + (replacement - original) * (Number(item.qty) || 1);
   }, 0);
 
@@ -689,6 +706,8 @@ function CreateReturnDrawer({ type, isPanel, accent, accentSoft, variants, onClo
                   qty: Number(item.qty) || 1,
                   condition: item.condition === "damaged" ? "damaged" : "sellable",
                   replacement_size: isExchange ? item.replacement_size : null,
+                  price: Number(String(item.price || "").replace(/\D/g, "")) || 0,
+                  replacement_price: Number(String(item.replacement_price || "").replace(/\D/g, "")) || 0,
                 };
               }),
             }
@@ -707,6 +726,9 @@ function CreateReturnDrawer({ type, isPanel, accent, accentSoft, variants, onClo
                 qty: Number(selected[item.id]?.qty) || 1,
                 condition: selected[item.id]?.condition === "damaged" ? "damaged" : "sellable",
                 replacement_size: isExchange ? selected[item.id]?.replacement_size : null,
+                replacement_price: isExchange
+                  ? Number(String(selected[item.id]?.replacement_price || "").replace(/\D/g, "")) || 0
+                  : 0,
               })),
             },
       );
@@ -1095,7 +1117,14 @@ function CreateReturnDrawer({ type, isPanel, accent, accentSoft, variants, onClo
                                     <button
                                       key={size}
                                       type="button"
-                                      onClick={() => updateManualItem(item.key, { size, replacement_size: "" })}
+                                      onClick={() =>
+                                        updateManualItem(item.key, {
+                                          size,
+                                          price: "",
+                                          replacement_size: "",
+                                          replacement_price: "",
+                                        })
+                                      }
                                       className={`rounded-xl border-2 px-2 py-2 text-center transition-colors ${
                                         active
                                           ? "border-slate-900 bg-slate-900 dark:border-white dark:bg-white"
@@ -1206,7 +1235,12 @@ function CreateReturnDrawer({ type, isPanel, accent, accentSoft, variants, onClo
                                             key={size}
                                             type="button"
                                             disabled={insufficient}
-                                            onClick={() => updateManualItem(item.key, { replacement_size: size })}
+                                            onClick={() =>
+                                              updateManualItem(item.key, {
+                                                replacement_size: size,
+                                                replacement_price: "",
+                                              })
+                                            }
                                             className={`rounded-xl border-2 px-2 py-2 text-center transition-colors ${
                                               active
                                                 ? "border-slate-900 bg-slate-900 dark:border-white dark:bg-white"
@@ -1246,29 +1280,69 @@ function CreateReturnDrawer({ type, isPanel, accent, accentSoft, variants, onClo
                             ) : null}
 
                             {isExchange && item.size && item.replacement_size ? (() => {
-                              const original = Number(variant.prices?.[item.size]) || Number(variant.price) || 0;
-                              const replacement =
+                              const catalogOriginal = Number(variant.prices?.[item.size]) || Number(variant.price) || 0;
+                              const catalogReplacement =
                                 Number(variant.prices?.[item.replacement_size]) || Number(variant.price) || 0;
+                              const manualOriginal = Number(String(item.price || "").replace(/\D/g, "")) || 0;
+                              const manualReplacement =
+                                Number(String(item.replacement_price || "").replace(/\D/g, "")) || 0;
+                              const original = manualOriginal > 0 ? manualOriginal : catalogOriginal;
+                              const replacement = manualReplacement > 0 ? manualReplacement : catalogReplacement;
                               const diff = (replacement - original) * (Number(item.qty) || 1);
                               return (
-                                <p
-                                  className={`text-[11px] font-bold ${
-                                    diff > 0
-                                      ? "text-amber-600 dark:text-amber-400"
-                                      : diff < 0
-                                        ? "text-blue-600 dark:text-blue-400"
-                                        : "text-slate-500 dark:text-slate-400"
-                                  }`}
-                                >
-                                  Harga {item.size} Rp {formatRupiah(original)} → {item.replacement_size} Rp{" "}
-                                  {formatRupiah(replacement)}
-                                  {" · "}
-                                  {diff === 0
-                                    ? "harga sama"
-                                    : diff > 0
-                                      ? `customer bayar +Rp ${formatRupiah(diff)}`
-                                      : `refund -Rp ${formatRupiah(Math.abs(diff))}`}
-                                </p>
+                                <div className="space-y-2">
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <div>
+                                      <label className={labelClass}>Harga asal</label>
+                                      <input
+                                        value={item.price}
+                                        onChange={(event) =>
+                                          updateManualItem(item.key, {
+                                            price: String(event.target.value).replace(/\D/g, ""),
+                                          })
+                                        }
+                                        inputMode="numeric"
+                                        placeholder={`Katalog: Rp ${formatRupiah(catalogOriginal)}`}
+                                        className={inputClass}
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className={labelClass}>Harga pengganti</label>
+                                      <input
+                                        value={item.replacement_price}
+                                        onChange={(event) =>
+                                          updateManualItem(item.key, {
+                                            replacement_price: String(event.target.value).replace(/\D/g, ""),
+                                          })
+                                        }
+                                        inputMode="numeric"
+                                        placeholder={`Katalog: Rp ${formatRupiah(catalogReplacement)}`}
+                                        className={inputClass}
+                                      />
+                                    </div>
+                                  </div>
+                                  <p className="text-[10.5px] font-semibold text-slate-500 dark:text-slate-400">
+                                    Kosongkan untuk harga katalog. Isi manual kalau harga CYP/custom berbeda.
+                                  </p>
+                                  <p
+                                    className={`text-[11px] font-bold ${
+                                      diff > 0
+                                        ? "text-amber-600 dark:text-amber-400"
+                                        : diff < 0
+                                          ? "text-blue-600 dark:text-blue-400"
+                                          : "text-slate-500 dark:text-slate-400"
+                                    }`}
+                                  >
+                                    Harga {item.size} Rp {formatRupiah(original)} → {item.replacement_size} Rp{" "}
+                                    {formatRupiah(replacement)}
+                                    {" · "}
+                                    {diff === 0
+                                      ? "harga sama"
+                                      : diff > 0
+                                        ? `customer bayar +Rp ${formatRupiah(diff)}`
+                                        : `refund -Rp ${formatRupiah(Math.abs(diff))}`}
+                                  </p>
+                                </div>
                               );
                             })() : null}
 
@@ -1371,7 +1445,9 @@ function CreateReturnDrawer({ type, isPanel, accent, accentSoft, variants, onClo
                             <label className={labelClass}>Ukuran pengganti</label>
                             <select
                               value={value.replacement_size}
-                              onChange={(event) => updateItem(item.id, { replacement_size: event.target.value })}
+                              onChange={(event) =>
+                                updateItem(item.id, { replacement_size: event.target.value, replacement_price: "" })
+                              }
                               className={inputClass}
                             >
                               <option value="">Pilih ukuran…</option>
@@ -1389,27 +1465,47 @@ function CreateReturnDrawer({ type, isPanel, accent, accentSoft, variants, onClo
                             </p>
                             {value.replacement_size ? (() => {
                               const original = Number(item.price) || 0;
-                              const replacement = priceOf(item.product_id, item.color, value.replacement_size);
+                              const catalogReplacement = priceOf(item.product_id, item.color, value.replacement_size);
+                              const manualReplacement =
+                                Number(String(value.replacement_price || "").replace(/\D/g, "")) || 0;
+                              const replacement = manualReplacement > 0 ? manualReplacement : catalogReplacement;
                               const diff = (replacement - original) * (Number(value.qty) || 1);
                               return (
-                                <p
-                                  className={`mt-1 text-[11px] font-bold ${
-                                    diff > 0
-                                      ? "text-amber-600 dark:text-amber-400"
-                                      : diff < 0
-                                        ? "text-blue-600 dark:text-blue-400"
-                                        : "text-slate-500 dark:text-slate-400"
-                                  }`}
-                                >
-                                  Harga {item.size} Rp {formatRupiah(original)} → {value.replacement_size} Rp{" "}
-                                  {formatRupiah(replacement)}
-                                  {" · "}
-                                  {diff === 0
-                                    ? "harga sama"
-                                    : diff > 0
-                                      ? `customer bayar +Rp ${formatRupiah(diff)}`
-                                      : `refund -Rp ${formatRupiah(Math.abs(diff))}`}
-                                </p>
+                                <div className="mt-2 space-y-1">
+                                  <label className={labelClass}>Harga pengganti</label>
+                                  <input
+                                    value={value.replacement_price}
+                                    onChange={(event) =>
+                                      updateItem(item.id, {
+                                        replacement_price: String(event.target.value).replace(/\D/g, ""),
+                                      })
+                                    }
+                                    inputMode="numeric"
+                                    placeholder={`Katalog: Rp ${formatRupiah(catalogReplacement)}`}
+                                    className={inputClass}
+                                  />
+                                  <p className="text-[10.5px] font-semibold text-slate-500 dark:text-slate-400">
+                                    Kosongkan untuk harga katalog. Isi manual kalau harga CYP/custom berbeda.
+                                  </p>
+                                  <p
+                                    className={`text-[11px] font-bold ${
+                                      diff > 0
+                                        ? "text-amber-600 dark:text-amber-400"
+                                        : diff < 0
+                                          ? "text-blue-600 dark:text-blue-400"
+                                          : "text-slate-500 dark:text-slate-400"
+                                    }`}
+                                  >
+                                    Harga {item.size} Rp {formatRupiah(original)} → {value.replacement_size} Rp{" "}
+                                    {formatRupiah(replacement)}
+                                    {" · "}
+                                    {diff === 0
+                                      ? "harga sama"
+                                      : diff > 0
+                                        ? `customer bayar +Rp ${formatRupiah(diff)}`
+                                        : `refund -Rp ${formatRupiah(Math.abs(diff))}`}
+                                  </p>
+                                </div>
                               );
                             })() : null}
                           </div>
