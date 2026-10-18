@@ -701,15 +701,6 @@ svg.heart { width: 14px; height: 14px; fill: #e46a92; stroke: none; color: #e46a
   .themeBtn { padding: 0 10px; }
 }
 
-/* Gambar hero kedua khusus tema Bunga Matahari. */
-.heroArtSun {
-  display: none;
-  width: 100%;
-  height: 200px;
-  object-fit: contain;
-  object-position: center bottom;
-}
-
 /* ---------- tema Bunga Matahari ---------- */
 .sunflower {
   --pink: #c98a00;
@@ -775,9 +766,17 @@ svg.heart { width: 14px; height: 14px; fill: #e46a92; stroke: none; color: #e46a
 .sunflower .themeOptionOn { background: #fff8e1; }
 .sunflower .themeOptionText small { color: var(--mut); }
 .sunflower .themeCheck { color: #c98a00; }
-.sunflower .hero { background: linear-gradient(100deg, #fff4cc, #ffe28a 55%, #fff7d6); }
+.sunflower .hero {
+  background-color: #fff4cc;
+  background-image:
+    linear-gradient(90deg, rgba(255, 251, 234, 0.18), rgba(255, 251, 234, 0) 58%),
+    url("https://res.cloudinary.com/dqjh7utdb/image/upload/v1792312164/dt5rl7p62g9n8seudc54.png");
+  background-position: center right;
+  background-size: cover;
+  background-repeat: no-repeat;
+  grid-template-columns: minmax(0, 1fr) minmax(230px, 300px);
+}
 .sunflower .heroArt { display: none; }
-.sunflower .heroArtSun { display: block; }
 .sunflower .heroSub { color: #6b5326; }
 .sunflower .heroTitle svg { color: #e8890c; }
 .sunflower .heroTitle svg path { stroke: #e8a317; }
@@ -990,5 +989,5 @@ svg.heart { width: 14px; height: 14px; fill: #e46a92; stroke: none; color: #e46a
 .sunflower :global(.ops-root.panel-tx .resi-empty) { color: #b8a27a; }
 
 @media (max-width: 900px) {
-  .sunflower .heroArtSun { width: 100%; height: 180px; }
+  .sunflower .hero { background-position: 68% center; }
 }
