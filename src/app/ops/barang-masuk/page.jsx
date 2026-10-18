@@ -80,6 +80,36 @@ export default function TambahBarangMasuk() {
   const productOf = (item) => products.find((p) => p.id === item.product_id) || null;
   const variantOf = (item) => allVariants.find((v) => v.id === item.variant_id) || null;
 
+  // Produk turunan (Bayati/Imron/Imalah/Karim) tidak boleh muncul di picker:
+  // stoknya hidup di produk induk. Fallback ke data varian kalau field API belum ada.
+  const derivedIds = useMemo(
+    () => new Set(allVariants.filter((v) => v.base_product_id).map((v) => v.product_id)),
+    [allVariants]
+  );
+  const pickerProducts = useMemo(
+    () => products.filter((p) => !p.base_product_id && !derivedIds.has(p.id)),
+    [products, derivedIds]
+  );
+
+  // Nama turunan per induk — keterangan "Stok bersama dengan ..." di bawah field produk.
+  const sharedWith = useMemo(() => {
+    const map = new Map();
+    for (const p of products) {
+      if (!p.base_product_id) continue;
+      if (!map.has(p.base_product_id)) map.set(p.base_product_id, []);
+      const label = String(p.series || p.name || "").trim();
+      if (label) map.get(p.base_product_id).push(label);
+    }
+    return map;
+  }, [products]);
+
+  function sharedLabel(productId) {
+    const names = Array.from(new Set(sharedWith.get(productId) || []));
+    if (names.length === 0) return "";
+    if (names.length === 1) return names[0];
+    return `${names.slice(0, -1).join(", ")} dan ${names[names.length - 1]}`;
+  }
+
   const createMutation = useMutation({
     mutationFn: (payload) => base44.entities.StockIn.createBatch(payload),
     onSuccess: () => {
@@ -429,14 +459,18 @@ export default function TambahBarangMasuk() {
                               style={{ fontSize: "15px", fontWeight: 600 }}
                             >
                               <option value="">Pilih produk...</option>
-                              {products.map((p) => (
+                              {pickerProducts.map((p) => (
                                 <option key={p.id} value={p.id}>
                                   {p.name} ({p.sku})
-                                  {p.stok_bersama ? ` — ikut ${p.stok_bersama.mengikuti}` : ""}
                                 </option>
                               ))}
                             </select>
                           </div>
+                          {item.product_id && sharedLabel(item.product_id) ? (
+                            <p className="font-inter" style={{ fontSize: "12.5px", fontWeight: 600, color: "#047857", marginTop: 2 }}>
+                              Stok bersama dengan {sharedLabel(item.product_id)}
+                            </p>
+                          ) : null}
                         </div>
 
                         {needsVariant ? (
