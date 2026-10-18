@@ -55,7 +55,7 @@ const MENU_GROUPS: { label: string; items: MenuItem[] }[] = [
     items: [
       { title: "Pengeluaran", href: "/ops/pengeluaran", icon: WalletIcon, soon: true },
       { title: "Target Profit", href: "/ops/target-penjualan", icon: Target, soon: true },
-      { title: "Laporan", href: "/ops/laporan", icon: BarChart3, soon: true },
+      { title: "Laporan", href: "/ops/laporan", icon: BarChart3 },
     ],
   },
 ];
