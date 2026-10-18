@@ -78,6 +78,7 @@ export interface AdminDetailOrder {
   weight?: number | null;
   /** Status pengiriman terpisah dari status pesanan (menunggu_pickup | dikirim | selesai). */
   shipping_status?: string | null;
+  source?: string | null;
   tracking_status_text?: string | null;
   /** Kode pemindaian terakhir — dipakai mendeteksi status tertunda (badge "Tertunda"). */
   tracking_status_code?: number | null;
@@ -479,18 +480,16 @@ export default function OrderDetailContent({
       <style>{RINCIAN_CSS}</style>
       <style>{OD_CSS}</style>
 
-      <div className="rp-root">
-        <div className="rp-wrap">
-          <div className="rp-sheet">
-            <OrderDetailPanel
-              order={panelOrder}
-              theme="mono"
-              latestTracking={panelTracking}
-              trackingState={tracking ? "loading" : "done"}
-            />
+      {/* Sama seperti drawer ops: panel langsung di body, tanpa wrapper struk customer. */}
+      <OrderDetailPanel
+        order={panelOrder}
+        theme="mono"
+        latestTracking={panelTracking}
+        trackingState={tracking ? "loading" : "done"}
+      />
 
-            {/* Kontrol admin — bagian yang tidak ada di halaman customer. */}
-            <div className="rp-act">
+      {/* Kontrol admin — bagian yang tidak ada di halaman customer. */}
+      <div className="rp-act">
               {/* Pesanan yang paketnya sudah dikirim ("Dikirim") tidak lagi menampilkan kontrol
                   ubah status manual: pada tahap itu status pesanan dikabarkan otomatis oleh
                   sinkronisasi tracking J&T, jadi chip manual bisa bertentangan dengannya. */}
@@ -649,9 +648,6 @@ export default function OrderDetailContent({
                   ) : null}
                 </div>
               ) : null}
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );
