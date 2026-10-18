@@ -390,20 +390,56 @@ function CreateReturnDrawer({ type, isPanel, accent, accentSoft, variants, onClo
     return entry?.stock_efektif || entry?.stock || {};
   };
 
-  const variantOptions = useMemo(
-    () =>
-      [...(variants || [])].sort((a, b) =>
-        `${a.product_name || ""} ${a.color || ""}`.localeCompare(`${b.product_name || ""} ${b.color || ""}`),
-      ),
-    [variants],
-  );
-
   const variantOf = (variantId) => (variants || []).find((variant) => variant.id === variantId) || null;
 
   const sizesOf = (variant) => Object.keys(variant?.stock_efektif || variant?.stock || {}).sort();
 
+  const productGroups = useMemo(() => {
+    const groups = new Map();
+    for (const variant of variants || []) {
+      const productId = String(variant.product_id || "");
+      if (!productId) continue;
+      if (!groups.has(productId)) {
+        groups.set(productId, {
+          product_id: productId,
+          name: variant.product_name || productId,
+          category: variant.category || "",
+          kain: variant.jenis_kain_name || "",
+          series: variant.series_name || "",
+          colors: [],
+          stockTotal: 0,
+        });
+      }
+      const group = groups.get(productId);
+      group.colors.push(variant);
+      const stockMap = variant.stock_efektif || variant.stock || {};
+      group.stockTotal += Object.values(stockMap).reduce((sum, value) => sum + (Number(value) || 0), 0);
+    }
+    for (const group of groups.values()) {
+      group.colors.sort((a, b) => String(a.color || "").localeCompare(String(b.color || "")));
+    }
+    return [...groups.values()].sort((a, b) => a.name.localeCompare(b.name));
+  }, [variants]);
+
+  const chooseProduct = (itemKey, group) => {
+    const only = group.colors.length === 1 ? group.colors[0] : null;
+    updateManualItem(itemKey, {
+      product_id: group.product_id,
+      product_search: "",
+      variant_id: only?.id || "",
+      size: "",
+      replacement_size: "",
+    });
+  };
+
+  const chooseColor = (itemKey, variantId) => {
+    updateManualItem(itemKey, { variant_id: variantId, size: "", replacement_size: "" });
+  };
+
   const blankManualItem = () => ({
     key: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    product_id: "",
+    product_search: "",
     variant_id: "",
     size: "",
     qty: 1,
@@ -821,104 +857,334 @@ function CreateReturnDrawer({ type, isPanel, accent, accentSoft, variants, onClo
                 </button>
               </div>
               {manualItems.map((item) => {
+                const group = item.product_id
+                  ? productGroups.find((option) => option.product_id === item.product_id)
+                  : null;
                 const variant = variantOf(item.variant_id);
                 const sizes = variant ? sizesOf(variant) : [];
                 const stock = variant?.stock_efektif || variant?.stock || {};
+                const needle = String(item.product_search || "").trim().toLowerCase();
+                const visibleGroups = productGroups
+                  .filter(
+                    (option) =>
+                      !needle ||
+                      [option.name, option.kain, option.category, option.series, ...option.colors.map((color) => color.color)]
+                        .filter(Boolean)
+                        .some((value) => String(value).toLowerCase().includes(needle)),
+                  )
+                  .slice(0, 6);
                 return (
                   <div key={item.key} className="space-y-2 rounded-2xl border border-slate-200 p-3.5 dark:border-slate-800">
-                    <div className="flex items-start gap-2">
-                      <select
-                        value={item.variant_id}
-                        onChange={(event) => updateManualItem(item.key, { variant_id: event.target.value, size: "", replacement_size: "" })}
-                        className={inputClass}
-                      >
-                        <option value="">Pilih produk / warna…</option>
-                        {variantOptions.map((option) => (
-                          <option key={option.id} value={option.id}>
-                            {option.product_name} · {option.color && option.color !== "default" ? option.color : "Default"}
-                          </option>
-                        ))}
-                      </select>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                        Produk
+                      </span>
                       {manualItems.length > 1 ? (
                         <button
                           type="button"
                           onClick={() => removeManualItem(item.key)}
-                          className="shrink-0 rounded-xl border border-slate-200 p-2.5 text-slate-500 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800"
+                          className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30"
                           aria-label="Hapus produk"
                         >
-                          <X size={14} />
+                          <X size={15} />
                         </button>
                       ) : null}
                     </div>
 
-                    {variant ? (
-                      <>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <label className={labelClass}>Ukuran asal</label>
-                            <select
-                              value={item.size}
-                              onChange={(event) => updateManualItem(item.key, { size: event.target.value, replacement_size: "" })}
-                              className={inputClass}
-                            >
-                              <option value="">Pilih ukuran…</option>
-                              {sizes.map((size) => (
-                                <option key={size} value={size}>
-                                  {size} — stok {Number(stock[size]) || 0}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                          <div>
-                            <label className={labelClass}>Qty</label>
-                            <input
-                              type="text"
-                              inputMode="numeric"
-                              value={item.qty}
-                              onChange={(event) =>
-                                updateManualItem(item.key, {
-                                  qty: Math.max(1, Math.min(999, Number(String(event.target.value).replace(/\D/g, "")) || 1)),
-                                })
-                              }
-                              className={inputClass}
-                            />
-                          </div>
-                          <div>
-                            <label className={labelClass}>Kondisi</label>
-                            <select
-                              value={item.condition}
-                              onChange={(event) => updateManualItem(item.key, { condition: event.target.value })}
-                              className={inputClass}
-                            >
-                              <option value="sellable">Layak jual</option>
-                              <option value="damaged">Rusak / tidak layak</option>
-                            </select>
-                          </div>
-                          {isExchange ? (
-                            <div>
-                              <label className={labelClass}>Ukuran pengganti</label>
-                              <select
-                                value={item.replacement_size}
-                                onChange={(event) => updateManualItem(item.key, { replacement_size: event.target.value })}
-                                className={inputClass}
+                    {/* 1 · Cari produk — pola sama dengan form transaksi */}
+                    {!group ? (
+                      <div className="space-y-1.5">
+                        <input
+                          value={item.product_search || ""}
+                          onChange={(event) => updateManualItem(item.key, { product_search: event.target.value })}
+                          placeholder="Cari produk… (mis. super, grey, b-01)"
+                          aria-label="Cari produk"
+                          className={inputClass}
+                        />
+                        <div className="max-h-[214px] divide-y divide-slate-100 overflow-y-auto rounded-lg border border-slate-200 dark:divide-slate-800 dark:border-slate-800">
+                          {productGroups.length === 0 ? (
+                            <p className="px-3 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                              Memuat daftar produk…
+                            </p>
+                          ) : visibleGroups.length === 0 ? (
+                            <p className="px-3 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                              Produk tidak ditemukan. Coba kata lain (mis. “super”, “grey”, “b-01”).
+                            </p>
+                          ) : (
+                            visibleGroups.map((option) => (
+                              <button
+                                key={option.product_id}
+                                type="button"
+                                onClick={() => chooseProduct(item.key, option)}
+                                className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-800"
                               >
-                                <option value="">Pilih ukuran…</option>
-                                {sizes
-                                  .filter((size) => size !== item.size)
-                                  .map((size) => (
-                                    <option key={size} value={size} disabled={(Number(stock[size]) || 0) < Number(item.qty)}>
-                                      {size} — sisa {Number(stock[size]) || 0}
-                                    </option>
-                                  ))}
-                              </select>
-                            </div>
-                          ) : null}
+                                <span className="min-w-0">
+                                  <span className="block truncate text-sm font-bold text-slate-900 dark:text-white">
+                                    {option.name}
+                                  </span>
+                                  <span className="block truncate text-[11px] text-slate-500 dark:text-slate-400">
+                                    {[
+                                      option.kain ? `Kain ${option.kain}` : "",
+                                      option.category,
+                                      option.series,
+                                      option.colors.length > 1 ? `${option.colors.length} warna` : "",
+                                    ]
+                                      .filter(Boolean)
+                                      .join(" · ")}
+                                  </span>
+                                </span>
+                                <span
+                                  className={`shrink-0 text-[11px] font-bold ${
+                                    option.stockTotal > 0
+                                      ? "text-emerald-600 dark:text-emerald-400"
+                                      : "text-slate-400 dark:text-slate-500"
+                                  }`}
+                                >
+                                  {option.stockTotal > 0 ? `sisa ${option.stockTotal}` : "habis"}
+                                </span>
+                              </button>
+                            ))
+                          )}
                         </div>
-                        <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-                          Harga katalog: Rp {formatRupiah(variant.price || 0)}
-                        </p>
-                      </>
-                    ) : null}
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-900">
+                          <span className="min-w-0 truncate text-sm font-bold text-slate-900 dark:text-white">
+                            {group.name}
+                            {group.kain ? (
+                              <span className="font-semibold text-slate-500 dark:text-slate-400"> · Kain {group.kain}</span>
+                            ) : null}
+                            {group.series ? (
+                              <span className="font-semibold text-slate-500 dark:text-slate-400"> · {group.series}</span>
+                            ) : null}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              updateManualItem(item.key, {
+                                product_id: "",
+                                product_search: "",
+                                variant_id: "",
+                                size: "",
+                                replacement_size: "",
+                              })
+                            }
+                            className="shrink-0 rounded-lg px-2 py-1 text-[11px] font-bold text-slate-500 hover:bg-white hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
+                          >
+                            Ganti
+                          </button>
+                        </div>
+
+                        {/* 2 · Warna */}
+                        {group.colors.length > 1 ? (
+                          <div className="space-y-1">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                              Warna
+                            </p>
+                            <div className="grid grid-cols-3 gap-2">
+                              {group.colors.map((colorVariant) => {
+                                const active = item.variant_id === colorVariant.id;
+                                return (
+                                  <button
+                                    key={colorVariant.id}
+                                    type="button"
+                                    onClick={() => chooseColor(item.key, colorVariant.id)}
+                                    className={`rounded-xl border-2 px-2 py-2 text-sm font-bold transition-colors ${
+                                      active
+                                        ? "border-slate-900 bg-slate-900 text-white dark:border-white dark:bg-white dark:text-slate-900"
+                                        : "border-slate-200 text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                                    }`}
+                                  >
+                                    {colorVariant.color && colorVariant.color !== "default" ? colorVariant.color : "Default"}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ) : null}
+
+                        {variant ? (
+                          <>
+                            {/* 3 · Ukuran asal — stok 0 tetap bisa dipilih (barang sudah terjual) */}
+                            <div className="space-y-1">
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                  Ukuran asal
+                                </p>
+                                <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">
+                                  stok 0 tetap bisa dipilih
+                                </span>
+                              </div>
+                              <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+                                {sizes.map((size) => {
+                                  const active = item.size === size;
+                                  const soldOut = (Number(stock[size]) || 0) <= 0;
+                                  return (
+                                    <button
+                                      key={size}
+                                      type="button"
+                                      onClick={() => updateManualItem(item.key, { size, replacement_size: "" })}
+                                      className={`rounded-xl border-2 px-2 py-2 text-center transition-colors ${
+                                        active
+                                          ? "border-slate-900 bg-slate-900 dark:border-white dark:bg-white"
+                                          : "border-slate-200 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800"
+                                      }`}
+                                    >
+                                      <span
+                                        className={`block text-sm font-bold ${
+                                          active ? "text-white dark:text-slate-900" : "text-slate-900 dark:text-white"
+                                        }`}
+                                      >
+                                        {size}
+                                      </span>
+                                      <span
+                                        className={`block text-[10px] font-bold ${
+                                          active
+                                            ? "text-white/80 dark:text-slate-700"
+                                            : soldOut
+                                              ? "text-slate-400 dark:text-slate-500"
+                                              : "text-slate-500 dark:text-slate-400"
+                                        }`}
+                                      >
+                                        {soldOut ? "habis" : `sisa ${Number(stock[size]) || 0}`}
+                                      </span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+
+                            {/* 4 · Qty + kondisi */}
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <label className={labelClass}>Qty</label>
+                                <div className="flex items-center gap-1.5">
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      updateManualItem(item.key, { qty: Math.max(1, Number(item.qty) - 1) })
+                                    }
+                                    disabled={Number(item.qty) <= 1}
+                                    className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border-2 border-slate-200 text-lg font-black text-slate-700 hover:bg-slate-50 disabled:opacity-40 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                                    aria-label="Kurangi jumlah"
+                                  >
+                                    −
+                                  </button>
+                                  <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    value={item.qty}
+                                    onChange={(event) =>
+                                      updateManualItem(item.key, {
+                                        qty: Math.max(1, Math.min(999, Number(String(event.target.value).replace(/\D/g, "")) || 1)),
+                                      })
+                                    }
+                                    aria-label="Jumlah"
+                                    className={`${inputClass} w-16 text-center`}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      updateManualItem(item.key, { qty: Math.min(999, Number(item.qty) + 1) })
+                                    }
+                                    disabled={Number(item.qty) >= 999}
+                                    className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border-2 border-slate-200 text-lg font-black text-slate-700 hover:bg-slate-50 disabled:opacity-40 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                                    aria-label="Tambah jumlah"
+                                  >
+                                    +
+                                  </button>
+                                </div>
+                              </div>
+                              <div>
+                                <label className={labelClass}>Kondisi</label>
+                                <select
+                                  value={item.condition}
+                                  onChange={(event) => updateManualItem(item.key, { condition: event.target.value })}
+                                  className={inputClass}
+                                >
+                                  <option value="sellable">Layak jual</option>
+                                  <option value="damaged">Rusak / tidak layak</option>
+                                </select>
+                              </div>
+                            </div>
+
+                            {/* 5 · Ukuran pengganti */}
+                            {isExchange ? (
+                              <div className="space-y-1">
+                                <div className="flex items-center justify-between gap-2">
+                                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                    Ukuran pengganti
+                                  </p>
+                                  {!item.size ? (
+                                    <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">
+                                      pilih ukuran asal dulu
+                                    </span>
+                                  ) : null}
+                                </div>
+                                {item.size ? (
+                                  <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+                                    {sizes
+                                      .filter((size) => size !== item.size)
+                                      .map((size) => {
+                                        const active = item.replacement_size === size;
+                                        const sisa = Number(stock[size]) || 0;
+                                        const insufficient = sisa < Number(item.qty);
+                                        return (
+                                          <button
+                                            key={size}
+                                            type="button"
+                                            disabled={insufficient}
+                                            onClick={() => updateManualItem(item.key, { replacement_size: size })}
+                                            className={`rounded-xl border-2 px-2 py-2 text-center transition-colors ${
+                                              active
+                                                ? "border-slate-900 bg-slate-900 dark:border-white dark:bg-white"
+                                                : insufficient
+                                                  ? "cursor-not-allowed border-slate-200 bg-slate-50 opacity-60 dark:border-slate-700 dark:bg-slate-900"
+                                                  : "border-slate-200 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800"
+                                            }`}
+                                          >
+                                            <span
+                                              className={`block text-sm font-bold ${
+                                                active
+                                                  ? "text-white dark:text-slate-900"
+                                                  : insufficient
+                                                    ? "text-slate-400 dark:text-slate-500"
+                                                    : "text-slate-900 dark:text-white"
+                                              }`}
+                                            >
+                                              {size}
+                                            </span>
+                                            <span
+                                              className={`block text-[10px] font-bold ${
+                                                active
+                                                  ? "text-white/80 dark:text-slate-700"
+                                                  : insufficient
+                                                    ? "text-slate-400 dark:text-slate-500"
+                                                    : "text-slate-500 dark:text-slate-400"
+                                              }`}
+                                            >
+                                              {insufficient ? "stok kurang" : `sisa ${sisa}`}
+                                            </span>
+                                          </button>
+                                        );
+                                      })}
+                                  </div>
+                                ) : null}
+                              </div>
+                            ) : null}
+
+                            <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                              Harga katalog: Rp {formatRupiah(variant.price || 0)}
+                            </p>
+                          </>
+                        ) : (
+                          <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                            Pilih warna dulu untuk melihat ukuran.
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })}
