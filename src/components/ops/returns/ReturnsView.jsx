@@ -649,7 +649,7 @@ function CreateReturnDrawer({ type, isPanel, accent, accentSoft, variants, onClo
                 className={`${inputClass} mt-2`}
               />
               <p className="mt-1 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-                Boleh nomor marketplace/IG sebagai referensi. Kosong = otomatis RTS-YYYYMMDD-NNN.
+                Boleh nomor marketplace/IG sebagai referensi. Kosong = otomatis RTS-YYYYMMDD-NNNN.
               </p>
             </>
           ) : order ? (
