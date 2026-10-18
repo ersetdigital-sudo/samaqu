@@ -81,12 +81,6 @@ alter table public.returns enable row level security;
 alter table public.return_items enable row level security;
 alter table public.stock_movements enable row level security;
 
--- Fungsi stok hanya boleh dipanggil server (service role), bukan anon/authenticated.
-revoke all on function public.samaqu_apply_return_stock(uuid) from public;
-revoke all on function public.samaqu_reverse_return_stock(uuid) from public;
-grant execute on function public.samaqu_apply_return_stock(uuid) to service_role;
-grant execute on function public.samaqu_reverse_return_stock(uuid) to service_role;
-
 -- Terapkan stok retur secara atomik:
 --   * barang balik (sellable) → size asal +qty + baris Barang Masuk
 --   * tukar size → size pengganti -qty
@@ -214,3 +208,10 @@ begin
   return jsonb_build_object('ok', true);
 end;
 $$;
+
+-- Grant HARUS setelah kedua fungsi dibuat (kalau tidak, migration gagal di DB baru).
+-- Fungsi stok hanya boleh dipanggil server (service role), bukan anon/authenticated.
+revoke all on function public.samaqu_apply_return_stock(uuid) from public;
+revoke all on function public.samaqu_reverse_return_stock(uuid) from public;
+grant execute on function public.samaqu_apply_return_stock(uuid) to service_role;
+grant execute on function public.samaqu_reverse_return_stock(uuid) to service_role;
