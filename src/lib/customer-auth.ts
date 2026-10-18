@@ -64,11 +64,21 @@ export async function getCurrentCustomer() {
   return { ...data, email: user.email || "" };
 }
 
-export async function getCustomerOrders(customerId: string) {
-  const { data } = await supabase
-    .from("orders")
-    .select("*, order_items(product_id, product_name, color, size, quantity, price, product_image, kain, series)")
-    .eq("customer_id", customerId)
-    .order("created_at", { ascending: false });
-  return data || [];
+/**
+ * Pesanan milik customer yang login.
+ *
+ * Dibaca lewat route server karena pesanan manual sering tidak punya
+ * `customer_id`; route mencocokkan juga lewat email/WhatsApp akun.
+ * Parameter `customerId` dipertahankan agar pemanggil lama tidak berubah.
+ */
+export async function getCustomerOrders(_customerId?: string) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) return [];
+  const res = await fetch("/api/customer/orders", {
+    cache: "no-store",
+    headers: { Authorization: `Bearer ${session.access_token}` },
+  });
+  if (!res.ok) return [];
+  const json = await res.json().catch(() => null);
+  return json?.orders || [];
 }

@@ -8,33 +8,37 @@ import { getProducts } from "@/lib/db";
 import { resolveItemPhotos } from "@/lib/order-photo";
 import { itemProductIds, loadOrderPhotoLookup } from "@/lib/order-photo-data";
 import { useSafeLocale } from "@/lib/safe-i18n";
-import RincianPesanan, {
-  RincianHeader,
-  RINCIAN_CSS,
-  type RincianOrder,
-  type RincianOrderItem,
-} from "@/components/akun/RincianPesanan";
+import { sourceLabel } from "@/lib/transaksi";
+import OrderDetailPanel from "@/components/ops/transaksi/OrderDetailPanel";
+import "@/app/panel-admin/panel-transaksi.css";
+import "@/app/panel-admin/panel-mono.css";
+
+/**
+ * Detail pesanan customer — layout sama dengan detail di dashboard admin:
+ * OrderDetailPanel (tema mono) di body, header sumber + nomor, footer aksi.
+ */
+
+type CustomerOrder = Record<string, any>;
 
 export default function DetailPesananPage() {
   const params = useParams();
   const orderNo = decodeURIComponent(String(params.orderNo));
   const locale = useSafeLocale();
   const to = (href: string) => `/${locale}${href}`;
-  const [order, setOrder] = useState<RincianOrder | null>(null);
+  const [order, setOrder] = useState<CustomerOrder | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
     async function init() {
       const customer = await getCurrentCustomer();
-      if (!customer) return;
+      if (!customer) {
+        setLoading(false);
+        return;
+      }
 
-      // Katalog + foto produk diambil bersamaan dengan pesanan: dipakai untuk mengisi item
-      // yang `product_image`-nya kosong, memakai fungsi pusat yang sama dengan dashboard admin
-      // (lihat src/lib/order-photo.ts + src/lib/order-photo-data.ts).
       const [orders, catalog] = await Promise.all([getCustomerOrders(customer.id), getProducts()]);
-      const found = (orders as RincianOrder[]).find((o) => o.order_number === orderNo);
-
+      const found = (orders as CustomerOrder[]).find((row) => row.order_number === orderNo);
       if (!found) {
         setNotFound(true);
         setLoading(false);
@@ -43,11 +47,7 @@ export default function DetailPesananPage() {
 
       const items = found.order_items || [];
       const lookup = await loadOrderPhotoLookup(itemProductIds(items), catalog);
-
-      setOrder({
-        ...found,
-        order_items: resolveItemPhotos<RincianOrderItem>(items, lookup),
-      });
+      setOrder({ ...found, order_items: resolveItemPhotos(items, lookup) });
       setLoading(false);
     }
     init();
@@ -55,11 +55,9 @@ export default function DetailPesananPage() {
 
   if (loading) {
     return (
-      <div className="rp-root -mx-4 -mt-4 md:mx-0 md:mt-0">
-        <style>{RINCIAN_CSS}</style>
-        <RincianHeader title="Detail Pesanan" back="/akun/pesanan" />
-        <div className="rp-wrap">
-          <div className="rp-card animate-pulse" style={{ height: 208 }} />
+      <div className="-mx-4 -mt-4 min-h-screen bg-[#F7F5F0] px-4 py-6 md:mx-0 md:mt-0 md:px-0">
+        <div className="mx-auto w-full max-w-[520px]">
+          <div className="h-72 animate-pulse rounded-2xl border border-slate-200 bg-white" />
         </div>
       </div>
     );
@@ -67,16 +65,17 @@ export default function DetailPesananPage() {
 
   if (notFound || !order) {
     return (
-      <div className="rp-root -mx-4 -mt-4 md:mx-0 md:mt-0">
-        <style>{RINCIAN_CSS}</style>
-        <RincianHeader title="Detail Pesanan" back="/akun/pesanan" />
-        <div className="rp-wrap">
-          <div className="rp-card" style={{ padding: 32, textAlign: "center" }}>
-            <p style={{ fontWeight: 800 }}>Pesanan tidak ditemukan</p>
-            <p style={{ fontSize: 13, color: "#757575", marginTop: 6 }}>
-              Pesanan ini tidak ada di akun Anda.
+      <div className="-mx-4 -mt-4 min-h-screen bg-[#F7F5F0] px-4 py-6 md:mx-0 md:mt-0 md:px-0">
+        <div className="mx-auto w-full max-w-[520px]">
+          <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+            <p className="text-base font-extrabold text-slate-900">Pesanan tidak ditemukan</p>
+            <p className="mt-1 text-sm text-slate-500">
+              Pastikan akun email/WhatsApp yang dipakai sama dengan pesanan ini.
             </p>
-            <Link href={to("/akun/pesanan")} className="rp-btn" style={{ marginTop: 16 }}>
+            <Link
+              href={to("/akun/pesanan")}
+              className="mt-4 inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-slate-800"
+            >
               Kembali ke Pesanan Saya
             </Link>
           </div>
@@ -85,5 +84,69 @@ export default function DetailPesananPage() {
     );
   }
 
-  return <RincianPesanan order={order} />;
+  const panelOrder = {
+    ...order,
+    items: order.order_items || [],
+    kota: order.shipping_city,
+    notes: order.shipping_notes,
+    shipping_kecamatan: order.shipping_kecamatan,
+    shipping_province: order.shipping_province,
+  };
+
+  const latestTracking = order.tracking_status_text
+    ? {
+        status: order.tracking_status_text,
+        location: order.tracking_city,
+        dateTime: order.tracking_updated_at || "",
+      }
+    : null;
+
+  return (
+    <div className="-mx-4 -mt-4 min-h-screen bg-[#F7F5F0] px-4 py-6 md:mx-0 md:mt-0 md:px-0">
+      <div className="mx-auto w-full max-w-[520px]">
+        <Link
+          href={to("/akun/pesanan")}
+          className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#6B6257] hover:text-[#1F1B16]"
+        >
+          ← Pesanan Saya
+        </Link>
+
+        <div className="mt-3 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <header className="flex items-start justify-between gap-3 border-b border-slate-200 px-5 py-4">
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
+                {sourceLabel(order.source)}
+              </p>
+              <h1 className="mt-0.5 text-lg font-extrabold text-slate-900">Detail Pesanan</h1>
+              <p className="mt-0.5 font-mono text-xs font-semibold text-slate-500">{order.order_number}</p>
+            </div>
+          </header>
+
+          <div className="px-5 py-4">
+            <OrderDetailPanel
+              order={panelOrder}
+              theme="mono"
+              latestTracking={latestTracking}
+              trackingState="done"
+            />
+          </div>
+
+          <footer className="flex flex-wrap gap-2 border-t border-slate-200 px-5 py-4">
+            <Link
+              href={to(`/akun/pesanan/${orderNo}/lacak`)}
+              className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-slate-800"
+            >
+              Lacak Resi
+            </Link>
+            <Link
+              href={to("/akun/pesanan")}
+              className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border-2 border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50"
+            >
+              Kembali
+            </Link>
+          </footer>
+        </div>
+      </div>
+    </div>
+  );
 }
