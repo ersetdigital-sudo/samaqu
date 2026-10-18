@@ -56,7 +56,9 @@ function wibKeyOf(value?: string | null) {
 
 function validDateKey(value: unknown) {
   const key = String(value || "").trim();
-  return /^\d{4}-\d{2}-\d{2}$/.test(key) ? key : null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(key)) return null;
+  const date = new Date(`${key}T00:00:00+07:00`);
+  return Number.isNaN(date.getTime()) ? null : key;
 }
 
 function fmtDay(key: string) {
