@@ -45,16 +45,24 @@ export function AkunProvider({ children }: { children: ReactNode }) {
     // Sudah punya customer (mis. pindah halaman di dalam /akun) — jangan fetch ulang.
     if (isAuthRoute || customer) { setReady(true); return; }
     async function init() {
-      // getCurrentCustomer() sudah mengembalikan email dari session, jadi cukup satu
-      // alur: session (lokal) + satu query `customers`.
-      const c = await getCurrentCustomer();
-      if (!alive) return;
-      if (!c) {
-        router.replace(to("/akun/login"));
-        return;
+      try {
+        // getCurrentCustomer() sudah mengembalikan email dari session, jadi cukup satu
+        // alur: session (lokal) + satu query `customers`.
+        const c = await getCurrentCustomer();
+        if (!alive) return;
+        if (!c) {
+          // Jangan biarkan shell berputar selamanya kalau sesi tidak valid.
+          setReady(true);
+          router.replace(to("/akun/login"));
+          return;
+        }
+        setCustomer(c as AkunCustomer);
+        setReady(true);
+      } catch (error) {
+        // Error jaringan/RLS tidak boleh membuat dashboard stuck di spinner.
+        console.error("[AkunProvider] gagal memuat customer:", error);
+        if (alive) setReady(true);
       }
-      setCustomer(c as AkunCustomer);
-      setReady(true);
     }
     init();
     return () => { alive = false; };

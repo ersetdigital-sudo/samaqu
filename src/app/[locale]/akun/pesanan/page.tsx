@@ -45,20 +45,28 @@ export default function PesananPage() {
   const [tab, setTab] = useState("semua");
 
   useEffect(() => {
+    let alive = true;
     async function init() {
-      const c = await getCurrentCustomer();
-      if (!c) return;
-      const o = await getCustomerOrders(c.id);
-      const list = (o as Order[]) || [];
-      // Foto item: snapshot di baris pesanan dipakai lebih dulu; kalau kosong (mis. item Open Order
-      // lama) diambil dari katalog lewat fungsi pusat yang sama dengan dashboard admin.
-      const lookup = await loadOrderPhotoLookup(
-        itemProductIds(list.flatMap((order) => order.order_items || []))
-      );
-      setOrders(list.map((order) => ({ ...order, order_items: resolveItemPhotos(order.order_items || [], lookup) })));
-      setLoading(false);
+      try {
+        const c = await getCurrentCustomer();
+        if (!c || !alive) return;
+        const o = await getCustomerOrders(c.id);
+        const list = (o as Order[]) || [];
+        // Foto item: snapshot di baris pesanan dipakai lebih dulu; kalau kosong (mis. item Open Order
+        // lama) diambil dari katalog lewat fungsi pusat yang sama dengan dashboard admin.
+        const lookup = await loadOrderPhotoLookup(
+          itemProductIds(list.flatMap((order) => order.order_items || []))
+        );
+        if (!alive) return;
+        setOrders(list.map((order) => ({ ...order, order_items: resolveItemPhotos(order.order_items || [], lookup) })));
+      } catch (error) {
+        console.error("[akun/pesanan] gagal memuat pesanan:", error);
+      } finally {
+        if (alive) setLoading(false);
+      }
     }
     init();
+    return () => { alive = false; };
   }, []);
 
   const filtered = useMemo(() => {

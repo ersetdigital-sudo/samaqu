@@ -30,27 +30,31 @@ export default function DetailPesananPage() {
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
+    let alive = true;
     async function init() {
-      const customer = await getCurrentCustomer();
-      if (!customer) {
-        setLoading(false);
-        return;
-      }
+      try {
+        const customer = await getCurrentCustomer();
+        if (!customer || !alive) return;
 
-      const [orders, catalog] = await Promise.all([getCustomerOrders(customer.id), getProducts()]);
-      const found = (orders as CustomerOrder[]).find((row) => row.order_number === orderNo);
-      if (!found) {
-        setNotFound(true);
-        setLoading(false);
-        return;
-      }
+        const [orders, catalog] = await Promise.all([getCustomerOrders(customer.id), getProducts()]);
+        const found = (orders as CustomerOrder[]).find((row) => row.order_number === orderNo);
+        if (!found) {
+          if (alive) setNotFound(true);
+          return;
+        }
 
-      const items = found.order_items || [];
-      const lookup = await loadOrderPhotoLookup(itemProductIds(items), catalog);
-      setOrder({ ...found, order_items: resolveItemPhotos(items, lookup) });
-      setLoading(false);
+        const items = found.order_items || [];
+        const lookup = await loadOrderPhotoLookup(itemProductIds(items), catalog);
+        if (!alive) return;
+        setOrder({ ...found, order_items: resolveItemPhotos(items, lookup) });
+      } catch (error) {
+        console.error("[akun/detail-pesanan] gagal memuat pesanan:", error);
+      } finally {
+        if (alive) setLoading(false);
+      }
     }
     init();
+    return () => { alive = false; };
   }, [orderNo]);
 
   if (loading) {
