@@ -21,6 +21,7 @@ import ProfileDropdown from "@/components/ProfileDropdown";
 import { CartBadge } from "@/components/CartBadge";
 import CartDrawer from "@/components/CartDrawer";
 import { getWhatsAppLink } from "@/lib/store-settings";
+import { useIsCustomerLoggedIn } from "@/lib/use-customer-login";
 import { locales, type Locale } from "@/i18n/config";
 
 /* ── Language flag icons ── */
@@ -94,6 +95,9 @@ export default function Navbar() {
   const locale = useSafeLocale() as Locale;
   const t = useSafeTranslations();
   const isHome = pathname === `/${locale}` || pathname === "/";
+  const customerLoggedIn = useIsCustomerLoggedIn();
+  // Customer yang sudah login: Beranda/logo mengarah ke dashboard akun.
+  const homeHref = customerLoggedIn ? `/${locale}/akun` : `/${locale}`;
   const [openDropdown, setOpenDropdown] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -176,9 +180,9 @@ export default function Navbar() {
             >
               {/* Logo */}
               <a
-                href={`/${locale}`}
+                href={homeHref}
                 className="inline-flex items-center leading-none shrink-0 cursor-pointer"
-                aria-label="SAMAQU — kembali ke beranda"
+                aria-label={customerLoggedIn ? "SAMAQU — ke dashboard akun" : "SAMAQU — kembali ke beranda"}
               >
                 <img
                   src="/logo.svg"
@@ -190,7 +194,11 @@ export default function Navbar() {
               {/* Desktop nav */}
               <nav className="hidden lg:flex items-center gap-1" style={{ color: linkColor }}>
                 {navItems.map((item) => {
-                  const href = item.hasDropdown ? "#" : `/${locale}${item.href === "/" ? "" : item.href}`;
+                  const href = item.hasDropdown
+                    ? "#"
+                    : item.href === "/"
+                      ? homeHref
+                      : `/${locale}${item.href}`;
                   if (!item.hasDropdown) {
                     const isActive = pathname === href || pathname === `${href}/`;
                     return (
@@ -333,6 +341,7 @@ export default function Navbar() {
         <DrawerNavContent
           onClose={() => setMenuOpen(false)}
           isHome={isHome}
+          homeHref={homeHref}
           locale={locale}
           t={t}
           bantuanOpen={mobileBantuanOpen}
@@ -351,6 +360,7 @@ export default function Navbar() {
 function DrawerNavContent({
   onClose,
   isHome,
+  homeHref,
   locale,
   t,
   bantuanOpen,
@@ -359,6 +369,7 @@ function DrawerNavContent({
 }: {
   onClose: () => void;
   isHome: boolean;
+  homeHref: string;
   locale: Locale;
   t: (key: string) => string;
   bantuanOpen: boolean;
@@ -376,7 +387,11 @@ function DrawerNavContent({
     <nav className="flex flex-col h-full" role="navigation" aria-label="Menu mobile">
       <ul className="flex flex-col" role="list">
         {navItems.map((item) => {
-          const href = item.hasDropdown ? "#" : `/${locale}${item.href === "/" ? "" : item.href}`;
+          const href = item.hasDropdown
+            ? "#"
+            : item.href === "/"
+              ? homeHref
+              : `/${locale}${item.href}`;
           if (!item.hasDropdown) {
             return (
               <li key={item.label}>

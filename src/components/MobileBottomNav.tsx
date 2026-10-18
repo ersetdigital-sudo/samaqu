@@ -16,6 +16,7 @@ import type { ComponentType } from "react";
 import { SquaresFour, Package, TShirt, User } from "@phosphor-icons/react";
 import HouseIcon from "@/components/icons/HouseIcon";
 import { useSafeLocale } from "@/lib/safe-i18n";
+import { useIsCustomerLoggedIn } from "@/lib/use-customer-login";
 
 type NavItem = {
   href: string;
@@ -46,6 +47,7 @@ const ITEMS: NavItem[] = [
 export default function MobileBottomNav() {
   const pathname = usePathname();
   const locale = useSafeLocale();
+  const customerLoggedIn = useIsCustomerLoggedIn();
   const bare = barePath(pathname);
 
   return (
@@ -67,7 +69,13 @@ export default function MobileBottomNav() {
           return (
             <Link
               key={href}
-              href={href === "/" ? `/${locale}` : `/${locale}${href}`}
+              href={
+                href === "/"
+                  ? customerLoggedIn
+                    ? `/${locale}/akun`
+                    : `/${locale}`
+                  : `/${locale}${href}`
+              }
               aria-current={active ? "page" : undefined}
               className="flex flex-1 flex-col items-center justify-center gap-0.5 rounded-xl transition-colors duration-200"
               style={{ color: active ? "#000" : "var(--text-muted)" }}
