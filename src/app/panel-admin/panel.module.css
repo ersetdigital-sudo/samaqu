@@ -722,6 +722,7 @@ svg.heart { width: 14px; height: 14px; fill: #e46a92; stroke: none; color: #e46a
   --panel-soon-bg: #fff1c2;
   --panel-soon-fg: #c98a00;
   --panel-danger: #c98a00;
+  --sunflower-hero: url("https://res.cloudinary.com/dqjh7utdb/image/upload/v1792312164/dt5rl7p62g9n8seudc54.png");
   --font: var(--font-inter), Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
 }
 .sunflower .side {
@@ -767,21 +768,48 @@ svg.heart { width: 14px; height: 14px; fill: #e46a92; stroke: none; color: #e46a
 .sunflower .themeOptionText small { color: var(--mut); }
 .sunflower .themeCheck { color: #c98a00; }
 .sunflower .hero {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 12px;
+  min-height: 210px;
+  padding: 24px 32px;
+  /* Sisi kanan sengaja dikosongkan supaya bunga di background tetap terlihat. */
+  padding-right: clamp(180px, 38%, 420px);
   background-color: #fff4cc;
   background-image:
-    linear-gradient(90deg, rgba(255, 251, 234, 0.18), rgba(255, 251, 234, 0) 58%),
-    url("https://res.cloudinary.com/dqjh7utdb/image/upload/v1792312164/dt5rl7p62g9n8seudc54.png");
+    linear-gradient(90deg, rgba(255, 251, 234, 0.22), rgba(255, 251, 234, 0) 58%),
+    var(--sunflower-hero);
   background-position: center right;
   background-size: cover;
   background-repeat: no-repeat;
-  grid-template-columns: minmax(0, 1fr) minmax(230px, 300px);
 }
 .sunflower .heroArt { display: none; }
+.sunflower .heroText { padding: 0; }
 .sunflower .heroSub { color: #6b5326; }
 .sunflower .heroTitle svg { color: #e8890c; }
 .sunflower .heroTitle svg path { stroke: #e8a317; }
-.sunflower .quote { color: #4a3612; background: rgba(255, 255, 255, 0.55); }
-.sunflower .quote::before { color: #e8a317; }
+.sunflower .quote {
+  display: block;
+  position: static;
+  width: auto;
+  max-width: 360px;
+  padding: 10px 16px 10px 40px;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.74);
+  color: #4a3612;
+  font-size: 13px;
+  line-height: 1.45;
+  backdrop-filter: blur(5px);
+}
+.sunflower .quote::before {
+  left: 14px;
+  top: 0;
+  font-size: 36px;
+  color: #e8a317;
+}
 .sunflower svg.heart { fill: #e8a317; color: #e8a317; }
 .sunflower .card { background: #fff; border-color: var(--card-line); }
 .sunflower .stValue { color: var(--plum); }
@@ -1000,5 +1028,14 @@ svg.heart { width: 14px; height: 14px; fill: #e46a92; stroke: none; color: #e46a
 .sunflower :global(.ops-root.panel-tx .resi-empty) { color: #b8a27a; }
 
 @media (max-width: 900px) {
-  .sunflower .hero { background-position: 68% center; }
+  .sunflower .hero {
+    min-height: 0;
+    padding: 22px;
+    gap: 10px;
+    background-image:
+      linear-gradient(180deg, rgba(255, 251, 234, 0.86), rgba(255, 251, 234, 0.58)),
+      var(--sunflower-hero);
+    background-position: 72% center;
+  }
+  .sunflower .quote { max-width: 100%; font-size: 12.5px; }
 }
