@@ -124,19 +124,20 @@ const ODR_CSS = `
 /* Panel = kertasnya sendiri (krem terang yang sama dengan lembar struk), jadi isi struk duduk
    langsung di atasnya tanpa kartu krem kedua di dalamnya. 520px: cukup untuk baris produk &
    linimasa, tapi tidak lagi menutupi hampir seluruh layar tablet seperti versi 640px. */
-.odr-panel{width:520px;max-width:100%;height:100%;display:flex;flex-direction:column;background:#fff;box-shadow:-24px 0 60px -24px rgba(42,33,27,.35)}
-.odr-head{flex:none;display:flex;align-items:flex-start;gap:12px;padding:18px 20px;border-bottom:1px solid rgba(42,33,27,.09)}
+.odr-panel{width:min(520px,100vw);max-width:100%;height:100%;display:flex;flex-direction:column;background:#fff;box-shadow:-24px 0 60px -24px rgba(42,33,27,.35)}
+.odr-head{flex:none;display:flex;align-items:flex-start;gap:12px;padding:18px 20px;border-bottom:1px solid rgba(42,33,27,.09);min-width:0}
 .odr-head-txt{min-width:0}
 /* Nomor pesanan memakai font UI admin yang sama dengan isi struk (dulu serif Cormorant) supaya seragam. */
 .odr-title{margin:0;font-size:1.05rem;font-weight:800;letter-spacing:-.01em;color:var(--espresso,#1c1c1c);font-family:var(--font-inter),system-ui,sans-serif;overflow-wrap:anywhere}
-.odr-date{margin:4px 0 0;font-size:.75rem;font-weight:500;color:var(--text-muted,#9a9a98)}
+.odr-date{margin:4px 0 0;font-size:.75rem;font-weight:500;color:var(--text-muted,#9a9a98);overflow-wrap:anywhere}
 .odr-x{margin-left:auto;flex:none;padding:6px;border-radius:8px;border:1px solid transparent;background:transparent;color:var(--text-muted,#9a9a98);cursor:pointer}
 .odr-x:hover{background:rgba(42,33,27,.06);color:var(--espresso,#1c1c1c)}
-.odr-body{flex:1;min-height:0;overflow-y:auto}
+.odr-body{flex:1;min-height:0;min-width:0;overflow-y:auto;overflow-x:hidden}
 
 /* Mobile: drawer memakai lebar penuh dan header lebih rapat. */
 @media (max-width:767.98px){
- .odr-panel{width:100%;background:#fff}
+ .odr-panel{width:100vw;max-width:100vw;border-radius:0;background:#fff}
  .odr-head{padding:14px 16px}
+ .odr-body{overflow-x:hidden}
 }
 `;
