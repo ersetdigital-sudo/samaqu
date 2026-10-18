@@ -163,6 +163,7 @@ export async function POST(req: NextRequest) {
         const condition = raw?.condition === "damaged" ? "damaged" : "sellable";
         const replacementSize =
           type === "tukar_size" ? String(raw?.replacement_size || "").trim().toUpperCase() : null;
+        let replacementPrice = 0;
 
         if (type === "tukar_size") {
           if (!replacementSize) return bad(`Ukuran pengganti untuk ${orderItem.product_name} wajib dipilih`);
@@ -171,16 +172,23 @@ export async function POST(req: NextRequest) {
           }
           const { data: variant } = await admin
             .from("product_variants")
-            .select("stock")
+            .select("stock, price_override")
             .eq("product_id", orderItem.product_id)
             .eq("color", orderItem.color || "default")
             .eq("size", replacementSize)
             .maybeSingle();
           if (!variant) return bad(`Ukuran ${replacementSize} tidak tersedia untuk ${orderItem.product_name}`);
+          const { data: productRow } = await admin
+            .from("products")
+            .select("price")
+            .eq("id", orderItem.product_id)
+            .maybeSingle();
+          replacementPrice = Number(variant.price_override) || Number(productRow?.price) || 0;
           // Kecukupan stok dicek atomik oleh `samaqu_apply_return_stock` (menghormati stok
           // bersama ala series). Pengecekan `stock` mentah di sini bisa salah untuk series turunan.
         }
 
+        const originalPrice = Number(orderItem.price) || 0;
         rows.push({
           order_item_id: orderItem.id,
           product_id: orderItem.product_id,
@@ -188,8 +196,10 @@ export async function POST(req: NextRequest) {
           color: orderItem.color || "default",
           size: String(orderItem.size || ""),
           replacement_size: replacementSize,
+          replacement_price: type === "tukar_size" ? replacementPrice : 0,
+          price_difference: type === "tukar_size" ? (replacementPrice - originalPrice) * qty : 0,
           qty,
-          price: Number(orderItem.price) || 0,
+          price: originalPrice,
           condition,
         });
       }
@@ -230,17 +240,23 @@ export async function POST(req: NextRequest) {
         const condition = raw?.condition === "damaged" ? "damaged" : "sellable";
         const replacementSize =
           type === "tukar_size" ? String(raw?.replacement_size || "").trim().toUpperCase() : null;
+        let replacementVariant: any = null;
 
         if (type === "tukar_size") {
           if (!replacementSize) return bad(`Ukuran pengganti untuk ${product.name} wajib dipilih`);
           if (replacementSize === size) {
             return bad(`Ukuran pengganti ${product.name} harus berbeda dari ukuran asal`);
           }
-          if (!variantMap.has(`${productId}||${color}||${replacementSize}`)) {
+          replacementVariant = variantMap.get(`${productId}||${color}||${replacementSize}`);
+          if (!replacementVariant) {
             return bad(`Ukuran ${replacementSize} tidak tersedia untuk ${product.name}`);
           }
         }
 
+        const originalPrice = Number(variant.price_override) || Number(product.price) || 0;
+        const replacementPrice = replacementVariant
+          ? Number(replacementVariant.price_override) || Number(product.price) || 0
+          : 0;
         rows.push({
           order_item_id: null,
           product_id: productId,
@@ -248,12 +264,19 @@ export async function POST(req: NextRequest) {
           color,
           size,
           replacement_size: replacementSize,
+          replacement_price: type === "tukar_size" ? replacementPrice : 0,
+          price_difference: type === "tukar_size" ? (replacementPrice - originalPrice) * qty : 0,
           qty,
-          price: Number(variant.price_override ?? product.price) || 0,
+          price: originalPrice,
           condition,
         });
       }
     }
+
+    const priceDifferenceTotal = rows.reduce(
+      (sum, row) => sum + (Number(row.price_difference) || 0),
+      0,
+    );
 
     const createdBy = await opsActorEmail(req);
     let record: any = null;
@@ -286,6 +309,8 @@ export async function POST(req: NextRequest) {
           shipping_payment_status: body?.shipping_payment_status === "paid" ? "paid" : "unpaid",
           refund_amount: Math.max(0, Math.round(Number(body?.refund_amount) || 0)),
           refund_method: String(body?.refund_method || "").trim() || null,
+          price_difference_total: priceDifferenceTotal,
+          price_difference_status: "unpaid",
           created_by: createdBy,
         })
         .select("*")
@@ -389,6 +414,13 @@ export async function PATCH(req: NextRequest) {
       }
       patch.status = "dibatalkan";
       patch.cancelled_at = now;
+    } else if (action === "settle_difference") {
+      if (record.type !== "tukar_size") return bad("Selisih harga hanya untuk Tukar Size");
+      if (record.status === "dibatalkan") return bad("Retur yang dibatalkan tidak punya selisih");
+      if (!Number(record.price_difference_total)) return bad("Tidak ada selisih harga");
+      patch.price_difference_status = "settled";
+      patch.price_difference_settled_at = now;
+      patch.price_difference_method = String(body?.method || "").trim() || null;
     } else {
       return bad("Aksi retur tidak dikenal");
     }

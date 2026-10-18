@@ -20,6 +20,7 @@ import {
   RotateCcw,
   Search,
   Truck,
+  Wallet,
   X,
 } from "lucide-react";
 import { base44 } from "@/lib/ops-api";
@@ -122,6 +123,15 @@ export default function ReturnsView({ variant = "ops" }) {
     };
   }, [returns]);
 
+  const differenceSummary = useMemo(() => {
+    const rows = returns.filter((row) => Number(row.price_difference_total || 0) !== 0);
+    const open = rows.filter((row) => row.price_difference_status !== "settled");
+    return {
+      openCount: open.length,
+      openTotal: open.reduce((sum, row) => sum + Number(row.price_difference_total || 0), 0),
+    };
+  }, [returns]);
+
   const rows = useMemo(() => {
     const query = q.trim().toLowerCase();
     return returns
@@ -167,7 +177,7 @@ export default function ReturnsView({ variant = "ops" }) {
       </div>
 
       {/* Kartu informasi: ringkasan retur tanpa harus membaca tabel. */}
-      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <section className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         <SummaryCard
           icon={ArrowRightLeft}
           label="Tukar Size"
@@ -199,6 +209,21 @@ export default function ReturnsView({ variant = "ops" }) {
           value={summary.done}
           caption="Total retur selesai"
           soft="bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-300"
+        />
+        <SummaryCard
+          icon={Wallet}
+          label="Selisih Tukar Size"
+          value={
+            differenceSummary.openCount === 0
+              ? "Rp 0"
+              : `${differenceSummary.openTotal > 0 ? "+" : "−"}Rp ${formatRupiah(Math.abs(differenceSummary.openTotal))}`
+          }
+          caption={
+            differenceSummary.openCount === 0
+              ? "Tidak ada yang belum selesai"
+              : `${differenceSummary.openTotal > 0 ? "Customer bayar" : "Refund"} · ${differenceSummary.openCount} belum selesai`
+          }
+          soft="bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-300"
         />
       </section>
 
@@ -295,6 +320,20 @@ export default function ReturnsView({ variant = "ops" }) {
                       <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
                         {formatTanggalSingkatID(row.created_at)}
                       </span>
+                      {Number(row.price_difference_total || 0) !== 0 ? (
+                        <span
+                          className={`mt-1 inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
+                            row.price_difference_status === "settled"
+                              ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300"
+                              : "bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300"
+                          }`}
+                        >
+                          {Number(row.price_difference_total) > 0
+                            ? `+Rp ${formatRupiah(row.price_difference_total)}`
+                            : `-Rp ${formatRupiah(Math.abs(Number(row.price_difference_total)))}`}
+                          {row.price_difference_status === "settled" ? " · selesai" : " · belum"}
+                        </span>
+                      ) : null}
                     </td>
                     <td className="px-3 py-3">
                       <span className="block font-bold text-slate-900 dark:text-white">{row.customer_name}</span>
@@ -388,6 +427,13 @@ function CreateReturnDrawer({ type, isPanel, accent, accentSoft, variants, onClo
       (variant) => variant.product_id === productId && (variant.color || "default") === (color || "default"),
     );
     return entry?.stock_efektif || entry?.stock || {};
+  };
+
+  const priceOf = (productId, color, size) => {
+    const entry = (variants || []).find(
+      (variant) => variant.product_id === productId && (variant.color || "default") === (color || "default"),
+    );
+    return Number(entry?.prices?.[size]) || Number(entry?.price) || 0;
   };
 
   const variantOf = (variantId) => (variants || []).find((variant) => variant.id === variantId) || null;
@@ -584,6 +630,24 @@ function CreateReturnDrawer({ type, isPanel, accent, accentSoft, variants, onClo
         }
         return true;
       });
+
+  const orderDifference = selectedItems.reduce((sum, item) => {
+    const value = selected[item.id];
+    if (!value?.replacement_size) return sum;
+    const original = Number(item.price) || 0;
+    const replacement = priceOf(item.product_id, item.color, value.replacement_size);
+    return sum + (replacement - original) * (Number(value.qty) || 1);
+  }, 0);
+
+  const manualDifference = manualItems.reduce((sum, item) => {
+    const variant = variantOf(item.variant_id);
+    if (!variant || !item.size || !item.replacement_size) return sum;
+    const original = Number(variant.prices?.[item.size]) || Number(variant.price) || 0;
+    const replacement = Number(variant.prices?.[item.replacement_size]) || Number(variant.price) || 0;
+    return sum + (replacement - original) * (Number(item.qty) || 1);
+  }, 0);
+
+  const differenceTotal = manual ? manualDifference : orderDifference;
 
   const submit = async () => {
     if (!canSubmit || saving) return;
@@ -1174,6 +1238,33 @@ function CreateReturnDrawer({ type, isPanel, accent, accentSoft, variants, onClo
                               </div>
                             ) : null}
 
+                            {isExchange && item.size && item.replacement_size ? (() => {
+                              const original = Number(variant.prices?.[item.size]) || Number(variant.price) || 0;
+                              const replacement =
+                                Number(variant.prices?.[item.replacement_size]) || Number(variant.price) || 0;
+                              const diff = (replacement - original) * (Number(item.qty) || 1);
+                              return (
+                                <p
+                                  className={`text-[11px] font-bold ${
+                                    diff > 0
+                                      ? "text-amber-600 dark:text-amber-400"
+                                      : diff < 0
+                                        ? "text-blue-600 dark:text-blue-400"
+                                        : "text-slate-500 dark:text-slate-400"
+                                  }`}
+                                >
+                                  Harga {item.size} Rp {formatRupiah(original)} → {item.replacement_size} Rp{" "}
+                                  {formatRupiah(replacement)}
+                                  {" · "}
+                                  {diff === 0
+                                    ? "harga sama"
+                                    : diff > 0
+                                      ? `customer bayar +Rp ${formatRupiah(diff)}`
+                                      : `refund -Rp ${formatRupiah(Math.abs(diff))}`}
+                                </p>
+                              );
+                            })() : null}
+
                             <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
                               Harga katalog: Rp {formatRupiah(variant.price || 0)}
                             </p>
@@ -1280,6 +1371,31 @@ function CreateReturnDrawer({ type, isPanel, accent, accentSoft, variants, onClo
                                 ? ` → ${value.replacement_size}: ${Number(stock[value.replacement_size] || 0)}`
                                 : ""}
                             </p>
+                            {value.replacement_size ? (() => {
+                              const original = Number(item.price) || 0;
+                              const replacement = priceOf(item.product_id, item.color, value.replacement_size);
+                              const diff = (replacement - original) * (Number(value.qty) || 1);
+                              return (
+                                <p
+                                  className={`mt-1 text-[11px] font-bold ${
+                                    diff > 0
+                                      ? "text-amber-600 dark:text-amber-400"
+                                      : diff < 0
+                                        ? "text-blue-600 dark:text-blue-400"
+                                        : "text-slate-500 dark:text-slate-400"
+                                  }`}
+                                >
+                                  Harga {item.size} Rp {formatRupiah(original)} → {value.replacement_size} Rp{" "}
+                                  {formatRupiah(replacement)}
+                                  {" · "}
+                                  {diff === 0
+                                    ? "harga sama"
+                                    : diff > 0
+                                      ? `customer bayar +Rp ${formatRupiah(diff)}`
+                                      : `refund -Rp ${formatRupiah(Math.abs(diff))}`}
+                                </p>
+                              );
+                            })() : null}
                           </div>
                         ) : null}
                       </div>
@@ -1370,6 +1486,22 @@ function CreateReturnDrawer({ type, isPanel, accent, accentSoft, variants, onClo
                   })}
                 </div>
               ) : null}
+              {isExchange && differenceTotal !== 0 ? (
+                <p
+                  className={`mt-2 border-t pt-2 text-xs font-black ${
+                    isPanel
+                      ? "border-[#f3c7d6] text-[#c2255c]"
+                      : differenceTotal > 0
+                        ? "border-slate-200 text-amber-700 dark:border-slate-700 dark:text-amber-300"
+                        : "border-slate-200 text-blue-700 dark:border-slate-700 dark:text-blue-300"
+                  }`}
+                >
+                  Selisih harga:{" "}
+                  {differenceTotal > 0
+                    ? `+Rp ${formatRupiah(differenceTotal)} (customer bayar)`
+                    : `-Rp ${formatRupiah(Math.abs(differenceTotal))} (refund ke customer)`}
+                </p>
+              ) : null}
             </div>
           </>
         ) : null}
@@ -1422,6 +1554,21 @@ function ReturnDetailDrawer({ record, isPanel, accent, accentSoft, onClose, onCh
       onChanged(updated);
     } catch (err) {
       setError(err instanceof Error ? err.message : `Gagal ${label}`);
+    } finally {
+      setBusy("");
+    }
+  };
+
+  const settleDifference = async () => {
+    setBusy("settle");
+    setError("");
+    try {
+      const updated = await base44.entities.Return.update(record.return_number, "settle_difference", {
+        method: "manual",
+      });
+      onChanged(updated);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal menyimpan selisih harga");
     } finally {
       setBusy("");
     }
@@ -1545,6 +1692,79 @@ function ReturnDetailDrawer({ record, isPanel, accent, accentSoft, onClose, onCh
             </div>
           ))}
         </section>
+
+        {isExchange && Number(record.price_difference_total || 0) !== 0 ? (
+          <section className="rounded-2xl border border-slate-200 p-3.5 dark:border-slate-800">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                Selisih Harga
+              </p>
+              <span
+                className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${
+                  record.price_difference_status === "settled"
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-900/20 dark:text-emerald-300"
+                    : "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-900/20 dark:text-amber-300"
+                }`}
+              >
+                {record.price_difference_status === "settled" ? "Selesai" : "Belum selesai"}
+              </span>
+            </div>
+
+            <p
+              className={`mt-1 text-lg font-black ${
+                Number(record.price_difference_total) > 0
+                  ? "text-amber-700 dark:text-amber-300"
+                  : "text-blue-700 dark:text-blue-300"
+              }`}
+            >
+              {Number(record.price_difference_total) > 0
+                ? `+Rp ${formatRupiah(record.price_difference_total)}`
+                : `-Rp ${formatRupiah(Math.abs(Number(record.price_difference_total)))}`}
+            </p>
+            <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+              {Number(record.price_difference_total) > 0 ? "Customer bayar tambahan" : "Refund ke customer"}
+              {record.price_difference_method ? ` · ${record.price_difference_method}` : ""}
+            </p>
+
+            <div className="mt-2 space-y-1">
+              {(record.items || [])
+                .filter((item) => Number(item.price_difference) !== 0)
+                .map((item) => (
+                  <p key={item.id} className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+                    {item.product_name} · {item.size} → {item.replacement_size}: Rp {formatRupiah(item.price)} → Rp{" "}
+                    {formatRupiah(item.replacement_price)} ·{" "}
+                    <span className={Number(item.price_difference) > 0 ? "text-amber-700 dark:text-amber-300" : "text-blue-700 dark:text-blue-300"}>
+                      {Number(item.price_difference) > 0
+                        ? `+Rp ${formatRupiah(item.price_difference)}`
+                        : `-Rp ${formatRupiah(Math.abs(Number(item.price_difference)))}`}
+                    </span>
+                  </p>
+                ))}
+            </div>
+
+            {record.price_difference_status !== "settled" &&
+            record.status !== "dibatalkan" &&
+            record.status !== "ditolak" ? (
+              <button
+                type="button"
+                onClick={settleDifference}
+                disabled={Boolean(busy)}
+                className={`mt-3 w-full rounded-xl px-4 py-2.5 text-sm font-bold disabled:opacity-50 ${accent}`}
+              >
+                {busy === "settle"
+                  ? "Menyimpan…"
+                  : Number(record.price_difference_total) > 0
+                    ? "Tandai Sudah Dibayar"
+                    : "Tandai Sudah Direfund"}
+              </button>
+            ) : null}
+            {record.price_difference_status === "settled" && record.price_difference_settled_at ? (
+              <p className="mt-2 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                Diselesaikan {formatTanggalJamID(record.price_difference_settled_at)}
+              </p>
+            ) : null}
+          </section>
+        ) : null}
 
         <section className="rounded-2xl border border-slate-200 p-3.5 dark:border-slate-800">
           <div className="flex items-center justify-between gap-2">
