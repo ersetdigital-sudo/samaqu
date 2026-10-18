@@ -9,6 +9,7 @@ import { itemProductIds, loadOrderPhotoLookup } from "@/lib/order-photo-data";
 import { useAkunCustomer } from "@/components/akun/AkunContext";
 import { useSafeLocale } from "@/lib/safe-i18n";
 import CustomerOrderDrawer from "@/components/akun/CustomerOrderDrawer";
+import DashboardProductSection from "@/components/akun/DashboardProductSection";
 
 import { statusInfo, rupiah, tglID } from "@/lib/akun-format";
 
@@ -297,6 +298,8 @@ export default function DashboardAkunPage() {
                 </>
               )}
             </div>
+
+            <DashboardProductSection />
 
             {/* ═══ Akses Cepat (mobile grid) ═══ */}
             <div className="md:hidden mt-8">
