@@ -405,7 +405,16 @@ export async function PATCH(req: NextRequest) {
       }
       patch.status = "selesai";
       patch.completed_at = now;
-      if (record.type === "return") patch.refund_status = "selesai";
+      // Refund TIDAK otomatis dianggap selesai saat retur selesai.
+      // Admin menandai lewat aksi `settle_refund` setelah uang benar-benar keluar.
+    } else if (action === "settle_refund") {
+      if (record.type !== "return") return bad("Aksi refund hanya untuk retur Return");
+      if (record.status === "dibatalkan" || record.status === "ditolak") {
+        return bad("Retur yang sudah final tidak bisa direfund");
+      }
+      if (!Number(record.refund_amount)) return bad("Nominal refund belum diisi");
+      patch.refund_status = "selesai";
+      patch.refund_settled_at = now;
     } else if (action === "cancel") {
       if (record.status === "selesai") return bad("Retur yang sudah selesai tidak bisa dibatalkan");
       if (record.stock_applied_at) {

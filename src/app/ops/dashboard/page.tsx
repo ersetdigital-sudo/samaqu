@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import Link from "next/link";
 // Catatan: sebagian ikon lucide-react ada di runtime tapi belum masuk definisi
 // tipe versi ini — jadi semuanya diambil lewat namespace (pola yang sama seperti
 // OpsShell.tsx). Nilainya `any`, jadi tidak bisa gagal type-check.
@@ -365,11 +366,18 @@ export default function OpsDashboardPage() {
                 <IconRefresh size={16} className={isFetching ? "animate-spin" : ""} />
                 Muat ulang
               </button>
+
+              <Link
+                href="/ops/laporan"
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-50"
+              >
+                Lihat laporan →
+              </Link>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <GlassCard icon={IconWallet} label="Total Omset" value={rp(r.omset)} caption="Pendapatan kotor" />
+            <GlassCard icon={IconWallet} label="Omzet Bruto" value={rp(r.omset)} caption="Pendapatan kotor" />
             <GlassCard icon={IconPackage} label="Total HPP" value={rp(r.hpp)} caption="Modal produk terjual" />
             <GlassCard icon={IconReceipt} label="Total Biaya" value={rp(r.biaya)} caption="Operasional & packing" />
 

@@ -1585,6 +1585,19 @@ function ReturnDetailDrawer({ record, isPanel, accent, accentSoft, onClose, onCh
     }
   };
 
+  const settleRefund = async () => {
+    setBusy("refund");
+    setError("");
+    try {
+      const updated = await base44.entities.Return.update(record.return_number, "settle_refund");
+      onChanged(updated);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal menandai refund");
+    } finally {
+      setBusy("");
+    }
+  };
+
   const saveSettings = async () => {
     setBusy("update");
     setError("");
@@ -1876,7 +1889,28 @@ function ReturnDetailDrawer({ record, isPanel, accent, accentSoft, onClose, onCh
                 <>
                   <Row label="Refund" value={`Rp ${formatRupiah(record.refund_amount || 0)}`} />
                   <Row label="Metode refund" value={record.refund_method || "-"} />
-                  <Row label="Status refund" value={record.refund_status || "-"} />
+                  <Row
+                    label="Status refund"
+                    value={record.refund_settled_at ? "Sudah dibayar" : "Belum ditandai selesai"}
+                  />
+                  {record.refund_settled_at ? (
+                    <p className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                      Refund selesai {formatTanggalJamID(record.refund_settled_at)}
+                    </p>
+                  ) : null}
+                  {!record.refund_settled_at &&
+                  Number(record.refund_amount) > 0 &&
+                  record.status !== "dibatalkan" &&
+                  record.status !== "ditolak" ? (
+                    <button
+                      type="button"
+                      onClick={settleRefund}
+                      disabled={Boolean(busy)}
+                      className={`mt-2 w-full rounded-xl px-4 py-2.5 text-sm font-bold disabled:opacity-50 ${accent}`}
+                    >
+                      {busy === "refund" ? "Menyimpan…" : "Tandai Refund Selesai"}
+                    </button>
+                  ) : null}
                 </>
               ) : null}
               {!record.order_id && isExchange && !record.shipping_address ? (
