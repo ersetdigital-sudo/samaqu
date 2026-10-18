@@ -38,35 +38,44 @@ export default function DashboardAkunPage() {
   const locale = useSafeLocale();
   const to = (href: string) => `/${locale}${href}`;
   // Customer sudah dimuat oleh AkunProvider (layout) — pakai itu daripada query ulang.
-  const cust = useAkunCustomer().customer as Cust | null;
+  const { customer: cust, ready } = useAkunCustomer() as { customer: Cust | null; ready: boolean };
   const [orders, setOrders] = useState<Order[]>([]);
   const [wishCount, setWishCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!cust) return;
+    if (!ready) return;
+    if (!cust) {
+      setLoading(false);
+      return;
+    }
     const id = cust.id;
     let alive = true;
     async function init() {
-      const [o, w] = await Promise.all([
-        getCustomerOrders(id),
-        supabase.from("wishlists").select("product_id", { count: "exact", head: true }).eq("customer_id", id),
-      ]);
-      if (!alive) return;
-      const list = (o as Order[]) || [];
-      // Foto item: snapshot dulu, kalau kosong diambil dari katalog (fungsi pusat yang sama
-      // dengan dashboard admin & detail pesanan customer).
-      const lookup = await loadOrderPhotoLookup(
-        itemProductIds(list.flatMap((order) => order.order_items || []))
-      );
-      if (!alive) return;
-      setOrders(list.map((order) => ({ ...order, order_items: resolveItemPhotos(order.order_items || [], lookup) })));
-      setWishCount(w.count || 0);
-      setLoading(false);
+      try {
+        const [o, w] = await Promise.all([
+          getCustomerOrders(id),
+          supabase.from("wishlists").select("product_id", { count: "exact", head: true }).eq("customer_id", id),
+        ]);
+        if (!alive) return;
+        const list = (o as Order[]) || [];
+        // Foto item: snapshot dulu, kalau kosong diambil dari katalog (fungsi pusat yang sama
+        // dengan dashboard admin & detail pesanan customer).
+        const lookup = await loadOrderPhotoLookup(
+          itemProductIds(list.flatMap((order) => order.order_items || []))
+        );
+        if (!alive) return;
+        setOrders(list.map((order) => ({ ...order, order_items: resolveItemPhotos(order.order_items || [], lookup) })));
+        setWishCount(w.count || 0);
+      } catch (error) {
+        console.error("[dashboard-akun] gagal memuat data:", error);
+      } finally {
+        if (alive) setLoading(false);
+      }
     }
     init();
     return () => { alive = false; };
-  }, [cust]);
+  }, [cust, ready]);
 
   const firstName = (cust?.name || "Pelanggan").split(" ")[0];
   const initials = (cust?.name || "U").split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
@@ -170,40 +179,93 @@ export default function DashboardAkunPage() {
                   </Link>
                 </div>
               ) : (
-                <div className="divide-y divide-[#EBEBEB]">
-                  {recentOrders.map((order) => (
-                    <Link
-                      key={order.id}
-                      href={to(`/akun/pesanan/${order.order_number}`)}
-                      className="block p-4 hover:bg-[#faf8f4] transition cursor-pointer"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-11 h-11 sm:w-10 sm:h-10 rounded-[10px] overflow-hidden shrink-0 flex items-center justify-center" style={{ background: "#e3ede9" }}>
-                          {order.order_items?.[0]?.product_image ? (
-                            <img src={order.order_items[0].product_image} alt={order.order_items[0].product_name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
-                          ) : (
-                            <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="#000000" strokeWidth="1.5"><path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z" /><path d="M3 8.5v7L12 20l9-4.5v-7" /></svg>
-                          )}
+                <>
+                  {/* Desktop: tabel transaksi */}
+                  <div className="hidden md:block overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-[#e6dfd2] text-[11px] uppercase tracking-[0.12em] text-[#8a8a8a]">
+                          <th className="px-5 py-3.5 font-bold">No. Pesanan</th>
+                          <th className="px-5 py-3.5 font-bold">Produk</th>
+                          <th className="px-5 py-3.5 font-bold">Tanggal</th>
+                          <th className="px-5 py-3.5 font-bold text-right">Total</th>
+                          <th className="px-5 py-3.5 font-bold">Status</th>
+                          <th className="px-5 py-3.5" />
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {recentOrders.map((order) => {
+                          const item = order.order_items?.[0];
+                          const sc = statusInfo(order.status);
+                          const href = to(`/akun/pesanan/${order.order_number}`);
+                          return (
+                            <tr key={order.id} className="border-b border-[#f0f0f0] last:border-0 transition-colors hover:bg-[#fafafa]">
+                              <td className="px-5 py-4 align-middle whitespace-nowrap">
+                                <Link href={href} className="font-bold text-sm hover:underline" style={{ color: "#000000" }}>
+                                  #{order.order_number}
+                                </Link>
+                              </td>
+                              <td className="px-5 py-4 align-middle">
+                                <div className="flex items-center gap-3">
+                                  <div className="akun-thumb w-11 h-11 shrink-0 overflow-hidden">
+                                    {item?.product_image ? (
+                                      <img src={item.product_image} alt={item.product_name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                                    ) : (
+                                      <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="#000000" strokeWidth="1.2"><path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z" /><path d="M3 8.5v7L12 20l9-4.5v-7" /></svg>
+                                    )}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="font-semibold text-sm truncate" style={{ color: "#000000" }}>{item?.product_name || "Produk"}</p>
+                                    <p className="text-xs text-[#6c7a75] mt-0.5">{order.order_items?.length || 0} item</p>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-5 py-4 align-middle text-sm text-[#6c7a75] whitespace-nowrap">{tglID(order.created_at)}</td>
+                              <td className="px-5 py-4 align-middle text-sm font-bold text-right whitespace-nowrap" style={{ color: "#000000" }}>{rupiah(order.total)}</td>
+                              <td className="px-5 py-4 align-middle"><span className={sc.pill}>{sc.label}</span></td>
+                              <td className="px-5 py-4 align-middle text-right whitespace-nowrap">
+                                <Link href={href} className="inline-flex items-center gap-1 text-[12px] font-bold hover:underline" style={{ color: "#000000" }}>
+                                  Detail
+                                  <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2"><path d="m9 6 6 6-6 6" /></svg>
+                                </Link>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Mobile: kartu */}
+                  <div className="md:hidden divide-y divide-[#EBEBEB]">
+                    {recentOrders.map((order) => (
+                      <Link
+                        key={order.id}
+                        href={to(`/akun/pesanan/${order.order_number}`)}
+                        className="block p-4 hover:bg-[#faf8f4] transition cursor-pointer"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-11 h-11 rounded-[10px] overflow-hidden shrink-0 flex items-center justify-center" style={{ background: "#e3ede9" }}>
+                            {order.order_items?.[0]?.product_image ? (
+                              <img src={order.order_items[0].product_image} alt={order.order_items[0].product_name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                            ) : (
+                              <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="#000000" strokeWidth="1.5"><path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z" /><path d="M3 8.5v7L12 20l9-4.5v-7" /></svg>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[13.5px] font-bold truncate" style={{ color: "#000000" }}>{order.order_items?.[0]?.product_name || "Produk"}</p>
+                            <p className="text-[11.5px] text-[#8b9793] font-mono mt-0.5 truncate">#{order.order_number} &middot; {tglID(order.created_at)}</p>
+                          </div>
+                          <svg viewBox="0 0 24 24" className="w-4 h-4 shrink-0" fill="none" stroke="#CCCCCC" strokeWidth="2"><path d="m9 6 6 6-6 6" /></svg>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[13.5px] sm:text-sm font-bold truncate" style={{ color: "#000000" }}>{order.order_items?.[0]?.product_name || "Produk"}</p>
-                          <p className="text-[11.5px] sm:text-xs text-[#8b9793] font-mono mt-0.5 truncate">#{order.order_number} &middot; {tglID(order.created_at)}</p>
-                        </div>
-                        {/* Desktop: harga + status di kolom kanan (tidak berubah). */}
-                        <div className="hidden sm:block text-right shrink-0">
-                          <p className="text-sm font-black" style={{ color: "#000000" }}>Rp{order.total.toLocaleString("id-ID")}</p>
+                        <div className="mt-3 flex items-center justify-between gap-3">
+                          <span className="text-[13.5px] font-black" style={{ color: "#000000" }}>Rp{order.total.toLocaleString("id-ID")}</span>
                           <span className={statusInfo(order.status).pill}>{statusInfo(order.status).label}</span>
                         </div>
-                        <svg viewBox="0 0 24 24" className="w-4 h-4 shrink-0" fill="none" stroke="#CCCCCC" strokeWidth="2"><path d="m9 6 6 6-6 6" /></svg>
-                      </div>
-                      {/* Mobile: harga + status satu baris penuh supaya rata dengan tepi kartu. */}
-                      <div className="sm:hidden mt-3 flex items-center justify-between gap-3">
-                        <span className="text-[13.5px] font-black" style={{ color: "#000000" }}>Rp{order.total.toLocaleString("id-ID")}</span>
-                        <span className={statusInfo(order.status).pill}>{statusInfo(order.status).label}</span>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
+                      </Link>
+                    ))}
+                  </div>
+                </>
               )}
             </div>
 

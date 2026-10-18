@@ -67,17 +67,22 @@ export default function LacakPage() {
   }, [resi, t]);
 
   useEffect(() => {
+    let alive = true;
     async function init() {
-      const customer = await getCurrentCustomer();
-      if (!customer) {
-        setLoading(false);
-        return;
+      try {
+        const customer = await getCurrentCustomer();
+        if (!customer || !alive) return;
+        const orders = (await getCustomerOrders(customer.id)) as Order[];
+        if (!alive) return;
+        setOrder(orders.find((o) => o.order_number === orderNo) || null);
+      } catch (error) {
+        console.error("[akun/lacak] gagal memuat pesanan:", error);
+      } finally {
+        if (alive) setLoading(false);
       }
-      const orders = (await getCustomerOrders(customer.id)) as Order[];
-      setOrder(orders.find((o) => o.order_number === orderNo) || null);
-      setLoading(false);
     }
     init();
+    return () => { alive = false; };
   }, [orderNo]);
 
   useEffect(() => {

@@ -72,13 +72,24 @@ export async function getCurrentCustomer() {
  * Parameter `customerId` dipertahankan agar pemanggil lama tidak berubah.
  */
 export async function getCustomerOrders(_customerId?: string) {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.access_token) return [];
-  const res = await fetch("/api/customer/orders", {
-    cache: "no-store",
-    headers: { Authorization: `Bearer ${session.access_token}` },
-  });
-  if (!res.ok) return [];
-  const json = await res.json().catch(() => null);
-  return json?.orders || [];
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15000);
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) return [];
+    const res = await fetch("/api/customer/orders", {
+      cache: "no-store",
+      signal: controller.signal,
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+    if (!res.ok) return [];
+    const json = await res.json().catch(() => null);
+    return json?.orders || [];
+  } catch (error) {
+    // Jangan biarkan halaman akun loading selamanya karena jaringan/route gagal.
+    console.error("[customer-auth] getCustomerOrders:", error);
+    return [];
+  } finally {
+    clearTimeout(timer);
+  }
 }
