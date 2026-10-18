@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import OrderDetailPanel from "@/components/ops/transaksi/OrderDetailPanel";
 import { useSafeLocale } from "@/lib/safe-i18n";
@@ -20,6 +21,11 @@ export default function CustomerOrderDrawer({
   onClose: () => void;
 }) {
   const locale = useSafeLocale();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!order) return;
@@ -35,7 +41,10 @@ export default function CustomerOrderDrawer({
     };
   }, [order, onClose]);
 
-  if (!order) return null;
+  // Portal ke body: halaman /akun dibungkus AkunPageTransition yang memakai
+  // transform/filter, sehingga `fixed` di dalamnya terkurung di area konten
+  // (drawer jadi pendek dan bergeser). Portal mengembalikannya ke viewport.
+  if (!order || !mounted) return null;
 
   const panelOrder = {
     ...order,
@@ -54,7 +63,7 @@ export default function CustomerOrderDrawer({
       }
     : null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[100]" role="dialog" aria-modal="true" aria-label="Detail pesanan">
       <button
         type="button"
@@ -102,6 +111,7 @@ export default function CustomerOrderDrawer({
           </Link>
         </footer>
       </aside>
-    </div>
+    </div>,
+    document.body
   );
 }
