@@ -10,7 +10,7 @@
 import { useEffect, useState } from "react";
 import { statusLabel, SALE_STATUSES } from "@/lib/transaksi";
 import { opsGet } from "../panel-api";
-import { useWibToday, wibDateOffset, dailyIndexForDate } from "../wib-date";
+import { useWibGreeting, useWibToday, wibDateOffset, dailyIndexForDate } from "../wib-date";
 import styles from "../panel.module.css";
 
 const HERO_ART =
@@ -181,6 +181,7 @@ export default function PanelAdminHome() {
   const [variants, setVariants] = useState<VariantRow[]>([]);
   // Kunci tanggal WIB hari ini — ikut berubah otomatis saat lewat tengah malam WIB.
   const today = useWibToday();
+  const greeting = useWibGreeting();
 
   useEffect(() => {
     let cancelled = false;
@@ -265,7 +266,7 @@ export default function PanelAdminHome() {
       <section className={styles.hero}>
         <div className={styles.heroText}>
           <h2 className={styles.heroTitle}>
-            Selamat bekerja, Lea <Hand />
+            {greeting}, Lea <Hand />
           </h2>
           <p className={styles.heroSub}>
             {quote} <Heart />
