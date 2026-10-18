@@ -61,6 +61,8 @@ export default function LacakPage() {
       else setTrackError(json?.error || t("empty"));
     } catch {
       setTrackError(t("error"));
+    } finally {
+      setTracking(false);
     }
   }, [resi, t]);
 
