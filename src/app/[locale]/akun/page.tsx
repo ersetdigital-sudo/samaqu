@@ -59,13 +59,20 @@ export default function DashboardAkunPage() {
         ]);
         if (!alive) return;
         const list = (o as Order[]) || [];
-        // Foto item: snapshot dulu, kalau kosong diambil dari katalog (fungsi pusat yang sama
-        // dengan dashboard admin & detail pesanan customer).
-        const lookup = await loadOrderPhotoLookup(
-          itemProductIds(list.flatMap((order) => order.order_items || []))
+        // Dashboard cuma menampilkan 5 pesanan terakhir — jangan resolve foto semua order.
+        const recent = list.slice(0, 5);
+        const missing = recent.flatMap((order) =>
+          (order.order_items || []).filter((item) => !item.product_image)
         );
+        const lookup = missing.length ? await loadOrderPhotoLookup(itemProductIds(missing)) : null;
         if (!alive) return;
-        setOrders(list.map((order) => ({ ...order, order_items: resolveItemPhotos(order.order_items || [], lookup) })));
+        setOrders(
+          list.map((order, index) =>
+            index < 5
+              ? { ...order, order_items: resolveItemPhotos(order.order_items || [], lookup) }
+              : order
+          )
+        );
         setWishCount(w.count || 0);
       } catch (error) {
         console.error("[dashboard-akun] gagal memuat data:", error);

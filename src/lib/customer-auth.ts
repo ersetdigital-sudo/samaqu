@@ -71,20 +71,32 @@ export async function getCurrentCustomer() {
  * `customer_id`; route mencocokkan juga lewat email/WhatsApp akun.
  * Parameter `customerId` dipertahankan agar pemanggil lama tidak berubah.
  */
-export async function getCustomerOrders(_customerId?: string) {
+const ordersCache = new Map<string, { at: number; orders: any[] }>();
+const ORDERS_CACHE_MS = 20_000;
+
+export async function getCustomerOrders(_customerId?: string, limit?: number) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 15000);
   try {
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.access_token) return [];
-    const res = await fetch("/api/customer/orders", {
+    if (!session?.access_token || !session.user?.id) return [];
+
+    const key = `${session.user.id}:${limit ?? "all"}`;
+    const cached = ordersCache.get(key);
+    if (cached && Date.now() - cached.at < ORDERS_CACHE_MS) return cached.orders;
+
+    const query = limit ? `?limit=${Math.min(limit, 500)}` : "";
+    const res = await fetch(`/api/customer/orders${query}`, {
       cache: "no-store",
       signal: controller.signal,
       headers: { Authorization: `Bearer ${session.access_token}` },
     });
     if (!res.ok) return [];
     const json = await res.json().catch(() => null);
-    return json?.orders || [];
+    const orders = json?.orders || [];
+    // Cache pendek: pindah dashboard ↔ pesanan tidak perlu round-trip ulang.
+    ordersCache.set(key, { at: Date.now(), orders });
+    return orders;
   } catch (error) {
     // Jangan biarkan halaman akun loading selamanya karena jaringan/route gagal.
     console.error("[customer-auth] getCustomerOrders:", error);
