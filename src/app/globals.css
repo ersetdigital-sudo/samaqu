@@ -606,7 +606,7 @@ a { text-decoration: none; }
    aksi bawah milik halaman (keranjang, checkout, detail produk). 0 px di desktop. */
 :root { --mobile-nav-h: 0px; --action-bar-h: 0px; --checkout-bar-h: 0px; }
 @media (max-width: 1023px) {
-  :root { --mobile-nav-h: 62px; --checkout-bar-h: calc(80px + env(safe-area-inset-bottom)); }
+  :root { --mobile-nav-h: 80px; --checkout-bar-h: calc(80px + env(safe-area-inset-bottom)); }
 }
 /* Tinggi bar aksi bawah halaman detail produk (mobile, < md). Dipakai untuk padding bawah
    konten dan mengangkat tombol chat agar tepat di atas bar. Bar itu sendiri tidak muncul ≥ md. */

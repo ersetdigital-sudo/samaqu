@@ -1,20 +1,23 @@
 "use client";
 
 /**
- * Nav bawah ala aplikasi (mobile) untuk halaman toko: Beranda · Kategori · Open Order ·
- * Pesanan · Akun. Muncul di bawah breakpoint `lg` — sama dengan navbar atas yang beralih ke
- * drawer di sana — dan hanya dipasang di route group `(customer)`.
+ * Nav bawah ala aplikasi (mobile) untuk halaman toko.
  *
- * Bar aksi bawah milik halaman (keranjang, checkout, detail produk) digeser naik setinggi
- * `--mobile-nav-h` supaya tidak bertumpuk dengan bar ini, dan layout memberi padding bawah
- * sebesar variabel yang sama (lihat globals.css).
+ * Layout mengikuti wireframe `hot-pot-restaurant-home`: 5 slot — Beranda,
+ * Katalog, cart FAB bulat di tengah, Pesanan, Akun. Hanya tampil di bawah
+ * breakpoint `lg`; header/desktop tidak disentuh.
+ *
+ * Bar aksi bawah milik halaman (keranjang, checkout, detail produk) digeser
+ * naik setinggi `--mobile-nav-h` supaya tidak bertumpuk dengan bar ini.
  */
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ComponentType } from "react";
-import { SquaresFour, Package, TShirt, User } from "@phosphor-icons/react";
+import { SquaresFour, Package, User } from "@phosphor-icons/react";
+import { ShoppingCart } from "lucide-react";
 import HouseIcon from "@/components/icons/HouseIcon";
+import { CartBadge } from "@/components/CartBadge";
 import { useSafeLocale } from "@/lib/safe-i18n";
 
 type NavItem = {
@@ -30,10 +33,12 @@ function barePath(pathname: string | null): string {
   return (pathname ?? "/").replace(/^\/(id|en)(?=\/|$)/, "") || "/";
 }
 
-const ITEMS: NavItem[] = [
+const LEFT_ITEMS: NavItem[] = [
   { href: "/", label: "Beranda", Icon: HouseIcon, match: (p) => p === "/" },
   { href: "/katalog", label: "Katalog", Icon: SquaresFour, match: (p) => p.startsWith("/katalog") },
-  { href: "/open-order", label: "Open Order", Icon: TShirt, match: (p) => p.startsWith("/open-order") },
+];
+
+const RIGHT_ITEMS: NavItem[] = [
   { href: "/akun/pesanan", label: "Pesanan", Icon: Package, match: (p) => p.startsWith("/akun/pesanan") },
   {
     href: "/akun",
@@ -43,44 +48,69 @@ const ITEMS: NavItem[] = [
   },
 ];
 
+function NavLink({
+  item,
+  active,
+  locale,
+}: {
+  item: NavItem;
+  active: boolean;
+  locale: string;
+}) {
+  const { href, label, Icon } = item;
+  return (
+    <Link
+      href={href === "/" ? `/${locale}` : `/${locale}${href}`}
+      aria-current={active ? "page" : undefined}
+      className="flex h-20 flex-col items-center justify-center gap-1 pb-2 transition-colors duration-200"
+      style={{ color: active ? "#000000" : "#8a8a85" }}
+    >
+      <Icon size={21} weight={active ? "bold" : "regular"} />
+      <span className={`text-[10px] tracking-[0.02em] ${active ? "font-bold" : "font-medium"}`}>
+        {label}
+      </span>
+    </Link>
+  );
+}
+
 export default function MobileBottomNav() {
   const pathname = usePathname();
   const locale = useSafeLocale();
   const bare = barePath(pathname);
+  const cartActive = bare === "/cart" || bare.startsWith("/cart/");
 
   return (
     <nav
       aria-label="Navigasi bawah"
-      className="lg:hidden fixed bottom-0 inset-x-0 z-40"
+      className="lg:hidden fixed bottom-0 inset-x-0 z-40 rounded-t-[24px] bg-white"
       style={{
-        background: "rgba(248,245,241,.97)",
-        backdropFilter: "blur(12px)",
-        WebkitBackdropFilter: "blur(12px)",
-        borderTop: "1px solid rgba(0,0,0,.35)",
-        boxShadow: "0 -6px 24px -14px rgba(0,0,0,.18)",
+        borderTop: "1px solid rgba(0,0,0,.06)",
+        boxShadow: "0 -10px 30px -18px rgba(0,0,0,.22)",
         paddingBottom: "env(safe-area-inset-bottom)",
       }}
     >
-      <div className="mx-auto flex h-[62px] max-w-lg items-stretch justify-around px-2">
-        {ITEMS.map(({ href, label, Icon, match }) => {
-          const active = match(bare);
-          return (
-            <Link
-              key={href}
-              href={href === "/" ? `/${locale}` : `/${locale}${href}`}
-              aria-current={active ? "page" : undefined}
-              className="flex flex-1 flex-col items-center justify-center gap-0.5 rounded-xl transition-colors duration-200"
-              style={{ color: active ? "#000" : "var(--text-muted)" }}
-            >
-              <Icon size={21} weight={active ? "bold" : "regular"} style={{ color: active ? "#000" : undefined }} />
-              <span className="text-[10px] font-medium tracking-[0.02em]">{label}</span>
-              <span
-                className="h-1 w-1 rounded-full"
-                style={{ background: active ? "#000" : "transparent" }}
-              />
-            </Link>
-          );
-        })}
+      <div className="mx-auto grid h-20 max-w-lg grid-cols-5 items-stretch px-3">
+        {LEFT_ITEMS.map((item) => (
+          <NavLink key={item.href} item={item} active={item.match(bare)} locale={locale} />
+        ))}
+
+        <div className="relative flex h-20 items-end justify-center pb-2">
+          <Link
+            href={`/${locale}/cart`}
+            aria-label="Keranjang"
+            aria-current={cartActive ? "page" : undefined}
+            className={`absolute -top-6 grid h-14 w-14 place-items-center rounded-full bg-black text-white shadow-[0_8px_20px_rgba(0,0,0,.28)] transition active:scale-95 ${
+              cartActive ? "ring-2 ring-black ring-offset-2" : ""
+            }`}
+          >
+            <ShoppingCart size={23} strokeWidth={2} />
+            <CartBadge background="#ffffff" color="#000000" />
+          </Link>
+        </div>
+
+        {RIGHT_ITEMS.map((item) => (
+          <NavLink key={item.href} item={item} active={item.match(bare)} locale={locale} />
+        ))}
       </div>
     </nav>
   );
