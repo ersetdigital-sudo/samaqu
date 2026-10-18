@@ -348,6 +348,58 @@ export async function POST(req: NextRequest) {
   }
 }
 
+/**
+ * Hapus permanen retur (khusus koreksi/reset data uji).
+ * Stok yang sudah diterapkan dibalik dulu lewat RPC yang sama, lalu baris ledger
+ * (`stock_movements`, `stock_in`) dan record retur dihapus. `return_items` ikut cascade.
+ */
+export async function DELETE(req: NextRequest) {
+  if (!(await isOpsAdmin(req))) return unauthorized();
+  const admin = getSupabaseAdmin();
+
+  try {
+    const sp = new URL(req.url).searchParams;
+    const returnNumber = String(sp.get("return_number") || "").trim();
+    if (!returnNumber) return bad("Nomor retur wajib diisi");
+
+    const { data: record, error } = await admin
+      .from("returns")
+      .select("id, return_number, stock_applied_at, stock_reversed_at")
+      .eq("return_number", returnNumber)
+      .maybeSingle();
+    if (error) return bad(error.message, 500);
+    if (!record) return bad("Retur tidak ditemukan", 404);
+
+    if (record.stock_applied_at && !record.stock_reversed_at) {
+      const { error: reverseError } = await admin.rpc("samaqu_reverse_return_stock", {
+        p_return_id: String(record.id),
+      });
+      if (reverseError) {
+        return bad(reverseError.message || "Gagal membalik stok retur; data belum dihapus", 400);
+      }
+    }
+
+    const refId = String(record.id);
+    const { error: movementError } = await admin
+      .from("stock_movements")
+      .delete()
+      .eq("ref_type", "return")
+      .eq("ref_id", refId);
+    if (movementError) return bad(movementError.message, 500);
+
+    const { error: stockInError } = await admin.from("stock_in").delete().eq("ref_return_id", refId);
+    if (stockInError) return bad(stockInError.message, 500);
+
+    const { error: deleteError } = await admin.from("returns").delete().eq("id", refId);
+    if (deleteError) return bad(deleteError.message, 500);
+
+    return NextResponse.json({ deleted: true });
+  } catch (error) {
+    console.error("[OPS] returns DELETE:", error);
+    return bad("Gagal menghapus retur", 500);
+  }
+}
+
 export async function PATCH(req: NextRequest) {
   if (!(await isOpsAdmin(req))) return unauthorized();
   const admin = getSupabaseAdmin();
