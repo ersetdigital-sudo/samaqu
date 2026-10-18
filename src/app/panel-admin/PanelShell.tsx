@@ -22,6 +22,13 @@ import styles from "./panel.module.css";
 const AVATAR =
   "https://res.cloudinary.com/j4ka1ty6/image/upload/w_96,h_96,c_fill,f_auto,q_auto/v1792158930/Avatar_Hijab_Merah_Muda_dalam_Lencana.png";
 
+type PanelTheme = "berry" | "sunflower";
+const THEME_KEY = "samaqu:panel-theme";
+const THEMES: { id: PanelTheme; label: string; hint: string }[] = [
+  { id: "berry", label: "Berry", hint: "Tema default SAMAQU" },
+  { id: "sunflower", label: "Bunga Matahari", hint: "Krem hangat + aksen emas" },
+];
+
 type IconName = "home" | "card" | "box" | "users" | "spark" | "return";
 
 function NavIcon({ name }: { name: IconName }) {
@@ -116,6 +123,8 @@ export default function PanelShell({ children }: { children: ReactNode }) {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [theme, setTheme] = useState<PanelTheme>("berry");
+  const [themeOpen, setThemeOpen] = useState(false);
 
   // Halaman Transaksi memakai halaman ops yang sama → butuh React Query + Toaster (keduanya di
   // OpsShell). Client dibuat per-instance supaya tidak dibagi antar-request saat SSR.
@@ -135,6 +144,25 @@ export default function PanelShell({ children }: { children: ReactNode }) {
         },
       })
   );
+
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(THEME_KEY);
+      if (saved === "berry" || saved === "sunflower") setTheme(saved);
+    } catch {
+      /* localStorage bisa diblokir — tetap pakai tema default */
+    }
+  }, []);
+
+  function selectTheme(next: PanelTheme) {
+    setTheme(next);
+    setThemeOpen(false);
+    try {
+      window.localStorage.setItem(THEME_KEY, next);
+    } catch {
+      /* abaikan */
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -182,9 +210,11 @@ export default function PanelShell({ children }: { children: ReactNode }) {
     setBusy(false);
   }
 
+  const appClass = `${styles.app}${theme === "sunflower" ? ` ${styles.sunflower}` : ""}`;
+
   if (!ready) {
     return (
-      <div className={styles.app}>
+      <div className={appClass}>
         <div className={styles.gate}>
           <div className={styles.gateCard}>
             <div className={styles.gateBrand}>
@@ -203,7 +233,7 @@ export default function PanelShell({ children }: { children: ReactNode }) {
 
   if (!authorized) {
     return (
-      <div className={styles.app}>
+      <div className={appClass}>
         <div className={styles.gate}>
           <form className={styles.gateCard} onSubmit={handleLogin}>
             <div className={styles.gateBrand}>
@@ -253,7 +283,7 @@ export default function PanelShell({ children }: { children: ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <div className={styles.app}>
+      <div className={appClass}>
       <aside className={styles.side}>
         <div className={styles.brand}>
           <div className={styles.logo}>S</div>
@@ -308,6 +338,64 @@ export default function PanelShell({ children }: { children: ReactNode }) {
               <path d="M3 10h18M8 3v4M16 3v4" />
             </svg>
             {tanggal}
+          </div>
+          <div className={styles.themeWrap}>
+            <button
+              type="button"
+              className={styles.themeBtn}
+              onClick={() => setThemeOpen((open) => !open)}
+              aria-haspopup="menu"
+              aria-expanded={themeOpen}
+              aria-label="Ganti tema panel admin"
+              title="Ganti tema"
+            >
+              <span className={`${styles.themeSwatch} ${theme === "sunflower" ? styles.themeSwatchSun : ""}`} />
+              <span className={styles.themeLabel}>{theme === "sunflower" ? "Bunga Matahari" : "Berry"}</span>
+              <svg viewBox="0 0 24 24" className={styles.themeChevron}>
+                <path d="M6 9l6 6 6-6" />
+              </svg>
+            </button>
+
+            {themeOpen ? (
+              <>
+                <button
+                  type="button"
+                  className={styles.themeScrim}
+                  onClick={() => setThemeOpen(false)}
+                  aria-label="Tutup pilihan tema"
+                />
+                <div className={styles.themeMenu} role="menu">
+                  {THEMES.map((option) => {
+                    const active = theme === option.id;
+                    return (
+                      <button
+                        key={option.id}
+                        type="button"
+                        role="menuitemradio"
+                        aria-checked={active}
+                        className={`${styles.themeOption}${active ? ` ${styles.themeOptionOn}` : ""}`}
+                        onClick={() => selectTheme(option.id)}
+                      >
+                        <span
+                          className={`${styles.themeSwatch} ${
+                            option.id === "sunflower" ? styles.themeSwatchSun : ""
+                          }`}
+                        />
+                        <span className={styles.themeOptionText}>
+                          <b>{option.label}</b>
+                          <small>{option.hint}</small>
+                        </span>
+                        {active ? (
+                          <svg viewBox="0 0 24 24" className={styles.themeCheck}>
+                            <path d="M5 12l4 4L19 6" />
+                          </svg>
+                        ) : null}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            ) : null}
           </div>
           <div className={styles.bell}>
             <svg viewBox="0 0 24 24">

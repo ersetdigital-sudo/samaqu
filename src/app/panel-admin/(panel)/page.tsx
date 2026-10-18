@@ -15,6 +15,7 @@ import styles from "../panel.module.css";
 
 const HERO_ART =
   "https://res.cloudinary.com/j4ka1ty6/image/upload/w_440,h_200,c_fill,f_auto,q_auto/v1792159516/1640fd4d-496e-470d-b933-af298a247885.png";
+const SUNFLOWER_HERO = "/panel-admin/sunflower-hero.png";
 
 /**
  * Kutipan harian di banner sambutan. Dipilih secara deterministik dari tanggal WIB
@@ -272,6 +273,7 @@ export default function PanelAdminHome() {
           </p>
         </div>
         <img className={styles.heroArt} src={HERO_ART} alt="" />
+        <img className={styles.heroArtSun} src={SUNFLOWER_HERO} alt="" />
         <div className={styles.quote}>Terima kasih sudah menjadi bagian dari SAMAQU.</div>
       </section>
 

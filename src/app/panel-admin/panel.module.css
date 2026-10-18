@@ -627,3 +627,313 @@ svg.heart { width: 14px; height: 14px; fill: #e46a92; stroke: none; color: #e46a
 .aiNotice { flex: none; color: #9d174d; font-size: 12.5px; margin: 0 2px; }
 .aiError { flex: none; color: #c2255c; font-size: 12.5px; margin: 0 2px; }
 .aiNote { flex: none; color: var(--mut); font-size: 11px; margin: 0 2px; }
+
+/* ---------- pemilih tema ---------- */
+.themeWrap { position: relative; flex: none; }
+.themeBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--plum);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.themeBtn:hover { background: #fdf3f7; }
+.themeBtn > svg { width: 14px; height: 14px; color: var(--mut); flex: none; }
+.themeSwatch {
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #d6336c, #7a1f3e);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.55);
+  flex: none;
+}
+.themeSwatchSun { background: linear-gradient(135deg, #ffd54f, #c98a00); }
+.themeScrim {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: default;
+}
+.themeMenu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 41;
+  width: 236px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 18px 40px -20px rgba(42, 26, 34, 0.4);
+}
+.themeOption {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--plum);
+  text-align: left;
+  cursor: pointer;
+}
+.themeOption:hover { background: #fdf3f7; }
+.themeOptionOn { background: #fdf3f7; }
+.themeOptionText { min-width: 0; }
+.themeOptionText b { display: block; font-size: 12.5px; font-weight: 700; }
+.themeOptionText small { display: block; margin-top: 1px; font-size: 11px; color: var(--mut); }
+.themeCheck { width: 15px; height: 15px; margin-left: auto; color: var(--pink-d); flex: none; }
+@media (max-width: 700px) {
+  .themeLabel { display: none; }
+  .themeBtn { padding: 0 10px; }
+}
+
+/* Gambar hero kedua khusus tema Bunga Matahari. */
+.heroArtSun {
+  display: none;
+  width: 100%;
+  height: 200px;
+  object-fit: contain;
+  object-position: center bottom;
+}
+
+/* ---------- tema Bunga Matahari ---------- */
+.sunflower {
+  --pink: #c98a00;
+  --pink-d: #b57a00;
+  --plum: #2b1f0e;
+  --side: #fff8d6;
+  --side-on: #ffc93c;
+  --mut: #8a7a5a;
+  --line: #f1e6c4;
+  --card-line: #f3ebcf;
+  --canvas: #fffbea;
+  --pink-bg: #fff1c2;
+  --font: var(--font-inter), Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+}
+.sunflower .side {
+  background: linear-gradient(180deg, #fff8d6, #ffefb0);
+  color: #5a4214;
+  border-right: 1px solid #f3e2a6;
+}
+.sunflower .brand b,
+.sunflower .footText b { color: #3a2a0c; }
+.sunflower .brand small,
+.sunflower .foot { color: #8a6d2a; }
+.sunflower .sec { color: #b08a2e; }
+.sunflower .navItem,
+.sunflower .nav a { color: #5a4214; }
+.sunflower .navItem svg,
+.sunflower .nav a svg { color: #8a6d2a; }
+.sunflower .navItem:hover,
+.sunflower .nav a:hover { background: #fff3c4; color: #3a2a0c; }
+.sunflower .navItem:hover svg,
+.sunflower .nav a:hover svg { color: #3a2a0c; }
+.sunflower .nav a.on {
+  background: #ffc93c;
+  border-color: #f2c14e;
+  color: #3a2a0c;
+  box-shadow: 0 4px 12px rgba(242, 169, 0, 0.3);
+}
+.sunflower .nav a.on svg { color: #3a2a0c; }
+.sunflower .navItemSoon:hover { background: transparent; color: #5a4214; }
+.sunflower .navItemSoon:hover svg { color: #8a6d2a; }
+.sunflower .soon { background: #fff; color: #c98a00; border-color: #f3d98a; }
+.sunflower .logo { background: #ffc93c; color: #3a2a0c; box-shadow: 0 0 0 3px rgba(255, 213, 79, 0.35); }
+.sunflower .date,
+.sunflower .bell { background: #fff; border-color: var(--line); }
+.sunflower .date svg { color: #f2a900; }
+.sunflower .bell::after { background: #e0702a; }
+.sunflower .av { background: #fff1c2; border-color: #ffe08a; color: #f2a900; }
+.sunflower .user small { color: var(--mut); }
+.sunflower .themeBtn,
+.sunflower .themeMenu { background: #fff; border-color: var(--line); }
+.sunflower .themeBtn:hover,
+.sunflower .themeOption:hover,
+.sunflower .themeOptionOn { background: #fff8e1; }
+.sunflower .themeOptionText small { color: var(--mut); }
+.sunflower .themeCheck { color: #c98a00; }
+.sunflower .hero { background: linear-gradient(100deg, #fff4cc, #ffe28a 55%, #fff7d6); }
+.sunflower .heroArt { display: none; }
+.sunflower .heroArtSun { display: block; }
+.sunflower .heroSub { color: #6b5326; }
+.sunflower .heroTitle svg { color: #e8890c; }
+.sunflower .heroTitle svg path { stroke: #e8a317; }
+.sunflower .quote { color: #4a3612; background: rgba(255, 255, 255, 0.55); }
+.sunflower .quote::before { color: #e8a317; }
+.sunflower svg.heart { fill: #e8a317; color: #e8a317; }
+.sunflower .card { background: #fff; border-color: var(--card-line); }
+.sunflower .stValue { color: var(--plum); }
+.sunflower .all { border-color: #f5d77a; color: #c98a00; background: #fff; }
+.sunflower .btn { background: #c98a00; }
+.sunflower .btn:hover { background: #b57a00; }
+.sunflower .alert { background: #fff8ec; border-color: #fbe3bf; color: #7a5520; }
+.sunflower .gateCard { border-color: var(--card-line); }
+.sunflower .gateInput { border-color: var(--line); background: #fff; color: var(--plum); }
+.sunflower .gateInput:focus { border-color: #c98a00; box-shadow: 0 0 0 3px rgba(201, 138, 0, 0.14); }
+.sunflower .gateBtn { background: #c98a00; }
+.sunflower .gateBtn:hover { background: #b57a00; }
+.sunflower .gateError { color: #a86f00; }
+
+/* Asisten AI */
+.sunflower .aiNew,
+.sunflower .aiChip,
+.sunflower .aiTag { border-color: #f5d77a; background: #fff8e1; color: #a86f00; }
+.sunflower .aiNew:hover { background: #fff3c4; }
+.sunflower .aiBot { background: #fff8e1; border-color: #f5d77a; color: #2b1f0e; }
+.sunflower .aiUser { background: #c98a00; }
+.sunflower .aiBullet::before,
+.sunflower .aiNotice,
+.sunflower .aiError { color: #a86f00; }
+.sunflower .aiSend { background: #c98a00; }
+.sunflower .aiSend:hover { background: #b57a00; }
+.sunflower .aiStop { border-color: #f5d77a; color: #a86f00; }
+.sunflower .aiStop:hover { background: #fff8e1; }
+.sunflower .aiLog { scrollbar-color: rgba(201, 138, 0, 0.3) transparent; }
+
+/* Halaman ops yang dititipkan ke panel */
+.sunflower :global(.ops-root) {
+  --background: 48 100% 96%;
+  --foreground: 30 50% 10%;
+  --muted-foreground: 40 25% 45%;
+  background: #fffbea;
+  color: #2b1f0e;
+}
+.sunflower :global(.ops-root.panel-ops) {
+  --color-blue-50: #fffbea;
+  --color-blue-100: #fff3c4;
+  --color-blue-200: #ffe89a;
+  --color-blue-300: #ffd54f;
+  --color-blue-400: #f2c14e;
+  --color-blue-500: #e8a317;
+  --color-blue-600: #c98a00;
+  --color-blue-700: #a86f00;
+  --color-blue-800: #855800;
+  --color-blue-900: #644200;
+  --color-blue-950: #422b00;
+}
+.sunflower :global(.ops-root.panel-ops .bg-slate-900) { background-color: #c98a00; }
+.sunflower :global(.ops-root.panel-ops .hover\:bg-slate-800:hover) { background-color: #a86f00; }
+.sunflower :global(.ops-root.panel-ops .bg-slate-900\/60) { background-color: rgba(201, 138, 0, 0.6); }
+.sunflower :global(.ops-root.panel-ops .hover\:bg-slate-900\/50:hover) { background-color: rgba(168, 111, 0, 0.5); }
+.sunflower :global(.ops-root.panel-ops .bg-slate-50) { background-color: #fff8e1; }
+.sunflower :global(.ops-root.panel-ops .bg-slate-100) { background-color: #fff3c4; }
+.sunflower :global(.ops-root.panel-ops .border-slate-200) { border-color: #f1e6c4; }
+.sunflower :global(.ops-root.panel-ops .text-slate-900) { color: #2b1f0e; }
+.sunflower :global(.ops-root.panel-ops .text-slate-600) { color: #6b5326; }
+.sunflower :global(.ops-root.panel-ops .from-\[\#18181b\]) {
+  background-image: none;
+  background-color: #fff;
+  border: 1px solid #f3ebcf;
+  box-shadow: 0 1px 2px rgba(120, 80, 0, 0.04);
+}
+.sunflower :global(.ops-root.panel-ops .from-\[\#18181b\] .bg-white\/5) { display: none; }
+.sunflower :global(.ops-root.panel-ops .from-\[\#18181b\] h1) { color: #2b1f0e; }
+.sunflower :global(.ops-root.panel-ops .from-\[\#18181b\] .text-blue-100) { color: #8a7a5a; }
+.sunflower :global(.ops-root.panel-ops .from-\[\#18181b\] .w-14.bg-white\/10) {
+  background-color: #fff1c2;
+  border-color: #ffe08a;
+}
+.sunflower :global(.ops-root.panel-ops .from-\[\#18181b\] .w-14.bg-white\/10 svg) { color: #c98a00; }
+.sunflower :global(.ops-root.panel-ops .from-\[\#18181b\] .bg-white\/10.rounded-xl) {
+  background-color: #fff8e1;
+  border-color: #f5d77a;
+  color: #a86f00;
+}
+.sunflower :global(.ops-root.panel-ops .from-\[\#18181b\] .bg-white\/10.rounded-xl:hover) { background-color: #fff3c4; }
+.sunflower :global(.ops-root.panel-ops .from-\[\#18181b\] .bg-white\/10.rounded-2xl:not(.w-14)) {
+  background-color: #fff;
+  border-color: #f3ebcf;
+}
+.sunflower :global(.ops-root.panel-ops .from-\[\#18181b\] .bg-white\/10.rounded-2xl:not(.w-14):hover) { background-color: #fffbea; }
+.sunflower :global(.ops-root.panel-ops .from-\[\#18181b\] .bg-white\/10.rounded-2xl:not(.w-14) .text-white) { color: #8a7a5a; }
+.sunflower :global(.ops-root.panel-ops .from-\[\#18181b\] .bg-white\/10.rounded-2xl:not(.w-14) p.text-white) { color: #2b1f0e; }
+.sunflower :global(.ops-root.panel-ops .from-\[\#18181b\] .bg-white\/10.rounded-2xl:not(.w-14) .text-white\/85) { color: #8a7a5a; }
+.sunflower :global(.ops-root.panel-ops .bg-\[\#1e3a5f\]) { background-color: #c98a00; }
+.sunflower :global(.ops-root.panel-ops .border-\[\#2d4a6f\]) { border-color: rgba(255, 255, 255, 0.25); }
+.sunflower :global(.ops-root.panel-ops .hover\:bg-\[\#2d4a6f\]:hover) { background-color: #a86f00; }
+.sunflower :global(.ops-root.panel-ops .bg-green-500) { background-color: #c98a00; }
+.sunflower :global(.ops-root.panel-ops .hover\:bg-green-600:hover) { background-color: #a86f00; }
+.sunflower :global(.ops-root.panel-ops .bg-\[\#18181b\]) { background-color: #c98a00; }
+.sunflower :global(.ops-root.panel-ops .focus-visible\:ring-\[\#18181b\]\/40:focus-visible) {
+  --tw-ring-color: rgba(201, 138, 0, 0.4);
+}
+.sunflower :global(.ops-root.panel-ops .bg-white\/80.p-1 > div > button:not(.bg-\[\#18181b\])) { color: #8a7a5a; }
+.sunflower :global(.ops-root.panel-ops .bg-white\/80.p-1 > div > button:not(.bg-\[\#18181b\]):hover) {
+  background-color: #fff8e1;
+  color: #a86f00;
+}
+
+/* Transaksi panel (panel-transaksi.css) */
+.sunflower :global(.ops-root.panel-tx) { background: #fffbea; color: #2b1f0e; }
+.sunflower :global(.ops-root.panel-tx .card) { border-color: #f3ebcf; }
+.sunflower :global(.ops-root.panel-tx .k small),
+.sunflower :global(.ops-root.panel-tx .k i),
+.sunflower :global(.ops-root.panel-tx td small),
+.sunflower :global(.ops-root.panel-tx th),
+.sunflower :global(.ops-root.panel-tx .dh small),
+.sunflower :global(.ops-root.panel-tx .kv span),
+.sunflower :global(.ops-root.panel-tx .it small),
+.sunflower :global(.ops-root.panel-tx .sh svg),
+.sunflower :global(.ops-root.panel-tx .trk li),
+.sunflower :global(.ops-root.panel-tx .trk small) { color: #8a7a5a; }
+.sunflower :global(.ops-root.panel-tx .tabs) { background: #fff; border-color: #f1e6c4; }
+.sunflower :global(.ops-root.panel-tx .tab) { color: #6b5326; }
+.sunflower :global(.ops-root.panel-tx .tab:hover) { background: #fff8e1; color: #2b1f0e; }
+.sunflower :global(.ops-root.panel-tx .tab em) { background: #fff3c4; color: #6b5326; }
+.sunflower :global(.ops-root.panel-tx .tab.on) {
+  background: #c98a00;
+  color: #fff;
+  box-shadow: 0 6px 14px -8px rgba(168, 111, 0, 0.9);
+}
+.sunflower :global(.ops-root.panel-tx .tab.on em) { background: rgba(255, 255, 255, 0.26); color: #fff; }
+.sunflower :global(.ops-root.panel-tx .f input),
+.sunflower :global(.ops-root.panel-tx .f select) { border-color: #f1e6c4; background: #fff; color: #2b1f0e; }
+.sunflower :global(.ops-root.panel-tx .packf) { border-color: #f1e6c4; background: #fff; color: #6b5326; }
+.sunflower :global(.ops-root.panel-tx .packf:hover) { background: #fff8e1; color: #2b1f0e; }
+.sunflower :global(.ops-root.panel-tx .packf em) { background: #fff3c4; color: #6b5326; }
+.sunflower :global(.ops-root.panel-tx .packf.on) { background: #c98a00; border-color: #c98a00; color: #fff; }
+.sunflower :global(.ops-root.panel-tx .btn) { background: #c98a00; }
+.sunflower :global(.ops-root.panel-tx .btn:hover) { background: #b57a00; }
+.sunflower :global(.ops-root.panel-tx .ptx-month) { border-color: #f1e6c4; background: #fff; }
+.sunflower :global(.ops-root.panel-tx .ptx-month button) { color: #8a7a5a; }
+.sunflower :global(.ops-root.panel-tx .ptx-month button:hover) { color: #2b1f0e; }
+.sunflower :global(.ops-root.panel-tx th) { background: #fffcf0; border-color: #f3ebcf; color: #8a7a5a; }
+.sunflower :global(.ops-root.panel-tx td) { border-color: #fbf3dc; }
+.sunflower :global(.ops-root.panel-tx tbody tr:hover) { background: #fffaea; }
+.sunflower :global(.ops-root.panel-tx .id),
+.sunflower :global(.ops-root.panel-tx .chev),
+.sunflower :global(.ops-root.panel-tx .cp),
+.sunflower :global(.ops-root.panel-tx .sh a) { color: #c98a00; }
+.sunflower :global(.ops-root.panel-tx .s-packing) { background: #fff3c4; color: #c98a00; }
+.sunflower :global(.ops-root.panel-tx .s-batal) { background: #fde4e7; color: #d63340; }
+.sunflower :global(.ops-root.panel-tx .ov) { background: rgba(42, 29, 12, 0.38); }
+.sunflower :global(.ops-root.panel-tx .dr) { background: #fff; }
+.sunflower :global(.ops-root.panel-tx .x) { border-color: #f1e6c4; background: #fff; color: #8a7a5a; }
+.sunflower :global(.ops-root.panel-tx .ban p),
+.sunflower :global(.ops-root.panel-tx .adr) { color: #6b5326; }
+.sunflower :global(.ops-root.panel-tx .adr b) { color: #2b1f0e; }
+.sunflower :global(.ops-root.panel-tx .adr span) { color: #8a7a5a; }
+.sunflower :global(.ops-root.panel-tx .b-packing) { background: #fff3c4; color: #c98a00; }
+.sunflower :global(.ops-root.panel-tx .b1) { background: #c98a00; }
+.sunflower :global(.ops-root.panel-tx .b2) { color: #c98a00; border-color: #f5d77a; }
+.sunflower :global(.ops-root.panel-tx .note) { background: #fff8ec; border-color: #fbe3bf; color: #7a5520; }
+.sunflower :global(.ops-root.panel-tx .trk li.d) { color: #2f9e5b; }
+.sunflower :global(.ops-root.panel-tx .trk li.d:before) { background: #2f9e5b; box-shadow: 0 0 0 4px #e3f7ea; }
+
+@media (max-width: 900px) {
+  .sunflower .heroArtSun { width: 100%; height: 180px; }
+}
