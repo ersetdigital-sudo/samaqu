@@ -370,6 +370,18 @@ function CreateReturnDrawer({ type, isPanel, accent, accentSoft, variants, onClo
   const [refundAmount, setRefundAmount] = useState("");
   const [refundMethod, setRefundMethod] = useState("");
   const [saving, setSaving] = useState(false);
+  const [orders, setOrders] = useState([]);
+  const [ordersBusy, setOrdersBusy] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [notFound, setNotFound] = useState("");
+  const [manual, setManual] = useState(false);
+  const [manualCustomer, setManualCustomer] = useState("");
+  const [manualWhatsapp, setManualWhatsapp] = useState("");
+  const [manualAddress, setManualAddress] = useState("");
+  const [manualCity, setManualCity] = useState("");
+  const [manualKecamatan, setManualKecamatan] = useState("");
+  const [manualPostal, setManualPostal] = useState("");
+  const [manualItems, setManualItems] = useState([]);
 
   const stockMapOf = (productId, color) => {
     const entry = (variants || []).find(
@@ -378,27 +390,128 @@ function CreateReturnDrawer({ type, isPanel, accent, accentSoft, variants, onClo
     return entry?.stock_efektif || entry?.stock || {};
   };
 
+  const variantOptions = useMemo(
+    () =>
+      [...(variants || [])].sort((a, b) =>
+        `${a.product_name || ""} ${a.color || ""}`.localeCompare(`${b.product_name || ""} ${b.color || ""}`),
+      ),
+    [variants],
+  );
+
+  const variantOf = (variantId) => (variants || []).find((variant) => variant.id === variantId) || null;
+
+  const sizesOf = (variant) => Object.keys(variant?.stock_efektif || variant?.stock || {}).sort();
+
+  const blankManualItem = () => ({
+    key: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    variant_id: "",
+    size: "",
+    qty: 1,
+    condition: "sellable",
+    replacement_size: "",
+  });
+
+  const updateManualItem = (key, patch) => {
+    setManualItems((items) => items.map((item) => (item.key === key ? { ...item, ...patch } : item)));
+  };
+
+  const removeManualItem = (key) => {
+    setManualItems((items) => items.filter((item) => item.key !== key));
+  };
+
+  const addManualItem = () => {
+    setManualItems((items) => [...items, blankManualItem()]);
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    setOrdersBusy(true);
+    base44.entities.Transaction.recentOrders(60)
+      .then((rows) => {
+        if (!cancelled) setOrders(Array.isArray(rows) ? rows : []);
+      })
+      .catch(() => {
+        if (!cancelled) setOrders([]);
+      })
+      .finally(() => {
+        if (!cancelled) setOrdersBusy(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const filteredOrders = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    const list = orders.filter((row) => row.status !== "dibatalkan");
+    const matched = needle
+      ? list.filter((row) =>
+          [row.order_number, row.customer_name, row.customer_whatsapp]
+            .filter(Boolean)
+            .some((value) => String(value).toLowerCase().includes(needle)),
+        )
+      : list;
+    return matched.slice(0, 8);
+  }, [orders, query]);
+
+  const startManual = (orderNo = "") => {
+    setManual(true);
+    setOrder(null);
+    setSelected({});
+    setPickerOpen(false);
+    setNotFound("");
+    setError("");
+    if (orderNo) setQuery(orderNo);
+    setManualItems((items) => (items.length > 0 ? items : [blankManualItem()]));
+  };
+
+  const selectOrder = (found) => {
+    setManual(false);
+    setOrder(found);
+    setQuery(found.order_number || "");
+    setPickerOpen(false);
+    setNotFound("");
+    setError("");
+    const next = {};
+    for (const item of found.order_items || []) {
+      next[item.id] = {
+        checked: false,
+        qty: Number(item.quantity) || 1,
+        replacement_size: "",
+        condition: "sellable",
+      };
+    }
+    setSelected(next);
+  };
+
   const loadOrder = async () => {
     const value = query.trim();
     if (!value) return;
+
+    const local = orders.find(
+      (row) => String(row.order_number || "").toLowerCase() === value.toLowerCase() && row.status !== "dibatalkan",
+    );
+    if (local) {
+      selectOrder(local);
+      return;
+    }
+
     setOrderBusy(true);
     setError("");
+    setNotFound("");
     try {
       const found = await base44.entities.Transaction.getOrder(value);
-      if (!found) {
+      if (found) {
+        selectOrder(found);
+      } else {
         setOrder(null);
-        setError("Pesanan tidak ditemukan");
-        return;
+        setPickerOpen(false);
+        setNotFound(value);
       }
-      setOrder(found);
-      const next = {};
-      for (const item of found.order_items || []) {
-        next[item.id] = { checked: false, qty: Number(item.quantity) || 1, replacement_size: "", condition: "sellable" };
-      }
-      setSelected(next);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Gagal mengambil pesanan");
+    } catch {
       setOrder(null);
+      setPickerOpen(false);
+      setNotFound(value);
     } finally {
       setOrderBusy(false);
     }
@@ -409,41 +522,88 @@ function CreateReturnDrawer({ type, isPanel, accent, accentSoft, variants, onClo
   };
 
   const selectedItems = (order?.order_items || []).filter((item) => selected[item.id]?.checked);
-  const canSubmit =
-    Boolean(order) &&
-    selectedItems.length > 0 &&
-    selectedItems.every((item) => {
-      const value = selected[item.id];
-      if (!value) return false;
-      if (isExchange) {
-        const stock = Number(stockMapOf(item.product_id, item.color)[value.replacement_size]) || 0;
-        return Boolean(value.replacement_size) && stock >= Number(value.qty);
-      }
-      return true;
+
+  const manualReady =
+    manual &&
+    Boolean(query.trim()) &&
+    Boolean(manualCustomer.trim()) &&
+    manualItems.length > 0 &&
+    manualItems.every((item) => {
+      const variant = variantOf(item.variant_id);
+      if (!variant || !item.size) return false;
+      if (!isExchange) return true;
+      const stock = Number((variant.stock_efektif || {})[item.replacement_size]) || 0;
+      return Boolean(item.replacement_size) && item.replacement_size !== item.size && stock >= Number(item.qty);
     });
+
+  const canSubmit = manual
+    ? manualReady
+    : Boolean(order) &&
+      selectedItems.length > 0 &&
+      selectedItems.every((item) => {
+        const value = selected[item.id];
+        if (!value) return false;
+        if (isExchange) {
+          const stock = Number(stockMapOf(item.product_id, item.color)[value.replacement_size]) || 0;
+          return Boolean(value.replacement_size) && stock >= Number(value.qty);
+        }
+        return true;
+      });
 
   const submit = async () => {
     if (!canSubmit || saving) return;
     setSaving(true);
     setError("");
     try {
-      const created = await base44.entities.Return.create({
-        type,
-        order_number: order.order_number,
-        reason: reason.trim(),
-        notes: notes.trim(),
-        shipping_in_cost: Number(String(shippingIn).replace(/\D/g, "")) || 0,
-        shipping_out_cost: Number(String(shippingOut).replace(/\D/g, "")) || 0,
-        shipping_payment_status: shippingPaid,
-        refund_amount: type === "return" ? Number(String(refundAmount).replace(/\D/g, "")) || 0 : 0,
-        refund_method: type === "return" ? refundMethod.trim() : null,
-        items: selectedItems.map((item) => ({
-          order_item_id: item.id,
-          qty: Number(selected[item.id]?.qty) || 1,
-          condition: selected[item.id]?.condition === "damaged" ? "damaged" : "sellable",
-          replacement_size: isExchange ? selected[item.id]?.replacement_size : null,
-        })),
-      });
+      const created = await base44.entities.Return.create(
+        manual
+          ? {
+              type,
+              manual: true,
+              order_number: query.trim(),
+              customer_name: manualCustomer.trim(),
+              customer_whatsapp: manualWhatsapp.trim(),
+              shipping_address: manualAddress.trim(),
+              shipping_city: manualCity.trim(),
+              shipping_kecamatan: manualKecamatan.trim(),
+              shipping_postal_code: manualPostal.trim(),
+              reason: reason.trim(),
+              notes: notes.trim(),
+              shipping_in_cost: Number(String(shippingIn).replace(/\D/g, "")) || 0,
+              shipping_out_cost: Number(String(shippingOut).replace(/\D/g, "")) || 0,
+              shipping_payment_status: shippingPaid,
+              refund_amount: type === "return" ? Number(String(refundAmount).replace(/\D/g, "")) || 0 : 0,
+              refund_method: type === "return" ? refundMethod.trim() : null,
+              items: manualItems.map((item) => {
+                const [productId, color] = String(item.variant_id).split("||");
+                return {
+                  product_id: productId,
+                  color: color || "default",
+                  size: item.size,
+                  qty: Number(item.qty) || 1,
+                  condition: item.condition === "damaged" ? "damaged" : "sellable",
+                  replacement_size: isExchange ? item.replacement_size : null,
+                };
+              }),
+            }
+          : {
+              type,
+              order_number: order.order_number,
+              reason: reason.trim(),
+              notes: notes.trim(),
+              shipping_in_cost: Number(String(shippingIn).replace(/\D/g, "")) || 0,
+              shipping_out_cost: Number(String(shippingOut).replace(/\D/g, "")) || 0,
+              shipping_payment_status: shippingPaid,
+              refund_amount: type === "return" ? Number(String(refundAmount).replace(/\D/g, "")) || 0 : 0,
+              refund_method: type === "return" ? refundMethod.trim() : null,
+              items: selectedItems.map((item) => ({
+                order_item_id: item.id,
+                qty: Number(selected[item.id]?.qty) || 1,
+                condition: selected[item.id]?.condition === "damaged" ? "damaged" : "sellable",
+                replacement_size: isExchange ? selected[item.id]?.replacement_size : null,
+              })),
+            },
+      );
       onCreated(created);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal membuat retur");
@@ -462,29 +622,308 @@ function CreateReturnDrawer({ type, isPanel, accent, accentSoft, variants, onClo
       <div className="space-y-4">
         <section className="rounded-2xl border border-slate-200 p-3.5 dark:border-slate-800">
           <label className={labelClass}>No. Pesanan</label>
-          <div className="flex gap-2">
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") loadOrder();
-              }}
-              placeholder="mis. OPS-20261017-839"
-              className={inputClass}
-            />
-            <button
-              type="button"
-              onClick={loadOrder}
-              disabled={orderBusy}
-              className={`shrink-0 rounded-xl px-4 py-2 text-sm font-bold disabled:opacity-60 ${accent}`}
-            >
-              {orderBusy ? "Mencari…" : "Cari"}
-            </button>
-          </div>
+
+          {manual ? (
+            <>
+              <div className="flex items-center justify-between gap-2">
+                <span className="inline-flex items-center rounded-full border border-slate-200 px-2.5 py-0.5 text-[10px] font-bold text-slate-600 dark:border-slate-700 dark:text-slate-300">
+                  Pesanan manual
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setManual(false);
+                    setOrder(null);
+                    setQuery("");
+                    setNotFound("");
+                  }}
+                  className={`text-[11px] font-bold ${isPanel ? "text-[#c2255c]" : "text-slate-700 underline dark:text-slate-200"}`}
+                >
+                  Cari pesanan
+                </button>
+              </div>
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="mis. INV-123 / pesanan marketplace"
+                className={`${inputClass} mt-2`}
+              />
+              <p className="mt-1 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                Boleh nomor dari marketplace/IG yang belum tercatat.
+              </p>
+            </>
+          ) : order ? (
+            <div className="flex items-center justify-between gap-2 rounded-xl border border-slate-200 px-3 py-2 dark:border-slate-700">
+              <div className="min-w-0">
+                <p className="truncate font-mono text-xs font-bold text-slate-800 dark:text-slate-100">{order.order_number}</p>
+                <p className="truncate text-xs font-semibold text-slate-500 dark:text-slate-400">
+                  {order.customer_name} · {order.customer_whatsapp || "-"}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setOrder(null);
+                  setSelected({});
+                  setQuery("");
+                  setPickerOpen(true);
+                }}
+                className={`shrink-0 text-[11px] font-bold ${isPanel ? "text-[#c2255c]" : "text-slate-700 underline dark:text-slate-200"}`}
+              >
+                Ganti
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="relative">
+                <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  value={query}
+                  onChange={(event) => {
+                    setQuery(event.target.value);
+                    setPickerOpen(true);
+                    setNotFound("");
+                  }}
+                  onFocus={() => setPickerOpen(true)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      loadOrder();
+                    }
+                    if (event.key === "Escape") setPickerOpen(false);
+                  }}
+                  placeholder="Cari no. pesanan / nama / no. HP"
+                  className={`${inputClass} pl-9`}
+                />
+                {orderBusy ? (
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-slate-400">Mencari…</span>
+                ) : null}
+              </div>
+
+              {pickerOpen ? (
+                <div className="mt-2 max-h-80 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                  <div className="flex items-center justify-between px-3 py-2">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                      {query.trim() ? "Hasil pencarian" : "Pesanan terbaru"}
+                    </p>
+                    <button type="button" onClick={() => setPickerOpen(false)} className="text-[10px] font-bold text-slate-400 hover:text-slate-600">
+                      Tutup
+                    </button>
+                  </div>
+
+                  {ordersBusy ? <p className="px-3 pb-2 text-xs font-semibold text-slate-500">Memuat pesanan…</p> : null}
+
+                  {!ordersBusy && filteredOrders.length === 0 ? (
+                    <div className="border-t border-slate-100 px-3 py-3 dark:border-slate-800">
+                      <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Pesanan tidak ditemukan.</p>
+                      <button type="button" onClick={() => startManual(query.trim())} className={`mt-2 rounded-lg px-3 py-1.5 text-xs font-bold ${accent}`}>
+                        + Input pesanan manual
+                      </button>
+                    </div>
+                  ) : null}
+
+                  {filteredOrders.map((row) => (
+                    <button
+                      key={row.order_number}
+                      type="button"
+                      onClick={() => selectOrder(row)}
+                      className="flex w-full items-start justify-between gap-2 border-t border-slate-100 px-3 py-2.5 text-left hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800"
+                    >
+                      <span className="min-w-0">
+                        <span className="block truncate font-mono text-xs font-bold text-slate-800 dark:text-slate-100">{row.order_number}</span>
+                        <span className="block truncate text-xs font-semibold text-slate-500 dark:text-slate-400">
+                          {row.customer_name} · {row.customer_whatsapp || "-"}
+                        </span>
+                      </span>
+                      <span className="shrink-0 text-[10px] font-semibold text-slate-400">{formatTanggalSingkatID(row.created_at)}</span>
+                    </button>
+                  ))}
+
+                  <button
+                    type="button"
+                    onClick={() => startManual(query.trim())}
+                    className={`flex w-full items-center gap-1.5 border-t border-slate-100 px-3 py-2.5 text-left text-xs font-bold dark:border-slate-800 ${
+                      isPanel ? "text-[#c2255c]" : "text-slate-700 dark:text-slate-200"
+                    }`}
+                  >
+                    <Plus size={13} /> Pesanan belum tercatat — input manual
+                  </button>
+                </div>
+              ) : null}
+
+              {notFound ? (
+                <div className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 dark:border-amber-900 dark:bg-amber-900/20">
+                  <p className="text-xs font-semibold text-amber-800 dark:text-amber-300">
+                    Pesanan <span className="font-mono">{notFound}</span> tidak ditemukan.
+                  </p>
+                  <button type="button" onClick={() => startManual(notFound)} className="mt-2 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-amber-700">
+                    Input manual
+                  </button>
+                </div>
+              ) : null}
+            </>
+          )}
+
           {error ? <p className="mt-2 text-xs font-bold text-red-600 dark:text-red-400">{error}</p> : null}
         </section>
 
-        {order ? (
+        {manual ? (
+          <>
+            <section className="space-y-2 rounded-2xl border border-slate-200 p-3.5 dark:border-slate-800">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  Pelanggan (pesanan manual)
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setManual(false);
+                    setOrder(null);
+                    setQuery("");
+                    setNotFound("");
+                  }}
+                  className={`text-[11px] font-bold ${isPanel ? "text-[#c2255c]" : "text-slate-700 underline dark:text-slate-200"}`}
+                >
+                  Cari pesanan
+                </button>
+              </div>
+              <input value={manualCustomer} onChange={(event) => setManualCustomer(event.target.value)} placeholder="Nama penerima *" className={inputClass} />
+              <input value={manualWhatsapp} onChange={(event) => setManualWhatsapp(event.target.value)} placeholder="No. WhatsApp" className={inputClass} />
+              <input value={manualAddress} onChange={(event) => setManualAddress(event.target.value)} placeholder="Alamat lengkap (opsional)" className={inputClass} />
+              <div className="grid grid-cols-3 gap-2">
+                <input value={manualCity} onChange={(event) => setManualCity(event.target.value)} placeholder="Kota" className={inputClass} />
+                <input value={manualKecamatan} onChange={(event) => setManualKecamatan(event.target.value)} placeholder="Kecamatan" className={inputClass} />
+                <input
+                  value={manualPostal}
+                  onChange={(event) => setManualPostal(event.target.value.replace(/\D/g, "").slice(0, 5))}
+                  inputMode="numeric"
+                  placeholder="Kode pos"
+                  className={inputClass}
+                />
+              </div>
+              {isExchange && (!manualAddress.trim() || !manualCity.trim() || !manualKecamatan.trim() || !manualPostal.trim()) ? (
+                <p className="text-[11px] font-semibold text-amber-600 dark:text-amber-400">
+                  Alamat lengkap dianjurkan agar resi pengganti bisa dibuat nanti.
+                </p>
+              ) : null}
+            </section>
+
+            <section className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Pilih produk</p>
+                <button
+                  type="button"
+                  onClick={addManualItem}
+                  className={`inline-flex items-center gap-1 text-[11px] font-bold ${isPanel ? "text-[#c2255c]" : "text-slate-700 dark:text-slate-200"}`}
+                >
+                  <Plus size={13} /> Tambah produk
+                </button>
+              </div>
+              {manualItems.map((item) => {
+                const variant = variantOf(item.variant_id);
+                const sizes = variant ? sizesOf(variant) : [];
+                const stock = variant?.stock_efektif || variant?.stock || {};
+                return (
+                  <div key={item.key} className="space-y-2 rounded-2xl border border-slate-200 p-3.5 dark:border-slate-800">
+                    <div className="flex items-start gap-2">
+                      <select
+                        value={item.variant_id}
+                        onChange={(event) => updateManualItem(item.key, { variant_id: event.target.value, size: "", replacement_size: "" })}
+                        className={inputClass}
+                      >
+                        <option value="">Pilih produk / warna…</option>
+                        {variantOptions.map((option) => (
+                          <option key={option.id} value={option.id}>
+                            {option.product_name} · {option.color && option.color !== "default" ? option.color : "Default"}
+                          </option>
+                        ))}
+                      </select>
+                      {manualItems.length > 1 ? (
+                        <button
+                          type="button"
+                          onClick={() => removeManualItem(item.key)}
+                          className="shrink-0 rounded-xl border border-slate-200 p-2.5 text-slate-500 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800"
+                          aria-label="Hapus produk"
+                        >
+                          <X size={14} />
+                        </button>
+                      ) : null}
+                    </div>
+
+                    {variant ? (
+                      <>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className={labelClass}>Ukuran asal</label>
+                            <select
+                              value={item.size}
+                              onChange={(event) => updateManualItem(item.key, { size: event.target.value, replacement_size: "" })}
+                              className={inputClass}
+                            >
+                              <option value="">Pilih ukuran…</option>
+                              {sizes.map((size) => (
+                                <option key={size} value={size}>
+                                  {size} — stok {Number(stock[size]) || 0}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label className={labelClass}>Qty</label>
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              value={item.qty}
+                              onChange={(event) =>
+                                updateManualItem(item.key, {
+                                  qty: Math.max(1, Math.min(999, Number(String(event.target.value).replace(/\D/g, "")) || 1)),
+                                })
+                              }
+                              className={inputClass}
+                            />
+                          </div>
+                          <div>
+                            <label className={labelClass}>Kondisi</label>
+                            <select
+                              value={item.condition}
+                              onChange={(event) => updateManualItem(item.key, { condition: event.target.value })}
+                              className={inputClass}
+                            >
+                              <option value="sellable">Layak jual</option>
+                              <option value="damaged">Rusak / tidak layak</option>
+                            </select>
+                          </div>
+                          {isExchange ? (
+                            <div>
+                              <label className={labelClass}>Ukuran pengganti</label>
+                              <select
+                                value={item.replacement_size}
+                                onChange={(event) => updateManualItem(item.key, { replacement_size: event.target.value })}
+                                className={inputClass}
+                              >
+                                <option value="">Pilih ukuran…</option>
+                                {sizes
+                                  .filter((size) => size !== item.size)
+                                  .map((size) => (
+                                    <option key={size} value={size} disabled={(Number(stock[size]) || 0) < Number(item.qty)}>
+                                      {size} — sisa {Number(stock[size]) || 0}
+                                    </option>
+                                  ))}
+                              </select>
+                            </div>
+                          ) : null}
+                        </div>
+                        <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                          Harga katalog: Rp {formatRupiah(variant.price || 0)}
+                        </p>
+                      </>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </section>
+          </>
+        ) : order ? (
           <>
             <section className="rounded-2xl border border-slate-200 p-3.5 dark:border-slate-800">
               <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Pelanggan</p>
@@ -582,7 +1021,11 @@ function CreateReturnDrawer({ type, isPanel, accent, accentSoft, variants, onClo
                 );
               })}
             </section>
+          </>
+        ) : null}
 
+        {order || manual ? (
+          <>
             <section className="rounded-2xl border border-slate-200 p-3.5 dark:border-slate-800">
               <div className="grid grid-cols-2 gap-2">
                 <div>
@@ -645,6 +1088,21 @@ function CreateReturnDrawer({ type, isPanel, accent, accentSoft, variants, onClo
                   })}
                 </div>
               ) : null}
+              {isExchange && manual ? (
+                <div className="mt-2 space-y-1">
+                  {manualItems.map((item) => {
+                    const variant = variantOf(item.variant_id);
+                    if (!variant || !item.size || !item.replacement_size) return null;
+                    const stock = variant.stock_efektif || variant.stock || {};
+                    return (
+                      <p key={item.key} className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+                        {item.size} +{item.qty} (jadi {Number(stock[item.size] || 0) + Number(item.qty)}) ·{" "}
+                        {item.replacement_size} −{item.qty} (jadi {Number(stock[item.replacement_size] || 0) - Number(item.qty)})
+                      </p>
+                    );
+                  })}
+                </div>
+              ) : null}
             </div>
           </>
         ) : null}
@@ -681,6 +1139,10 @@ function ReturnDetailDrawer({ record, isPanel, accent, accentSoft, onClose, onCh
   const [refundAmount, setRefundAmount] = useState(String(record.refund_amount || ""));
   const [refundMethod, setRefundMethod] = useState(record.refund_method || "");
   const [refundStatus, setRefundStatus] = useState(record.refund_status || "");
+  const [addr, setAddr] = useState(record.shipping_address || "");
+  const [city, setCity] = useState(record.shipping_city || "");
+  const [kec, setKec] = useState(record.shipping_kecamatan || "");
+  const [postal, setPostal] = useState(record.shipping_postal_code || "");
 
   const isExchange = record.type === "tukar_size";
   const final = ["selesai", "ditolak", "dibatalkan"].includes(record.status);
@@ -710,6 +1172,14 @@ function ReturnDetailDrawer({ record, isPanel, accent, accentSoft, onClose, onCh
         refund_amount: Number(String(refundAmount).replace(/\D/g, "")) || 0,
         refund_method: refundMethod,
         refund_status: refundStatus,
+        ...(!record.order_id
+          ? {
+              shipping_address: addr,
+              shipping_city: city,
+              shipping_kecamatan: kec,
+              shipping_postal_code: postal,
+            }
+          : {}),
       });
       onChanged(updated);
       setEditing(false);
@@ -754,6 +1224,11 @@ function ReturnDetailDrawer({ record, isPanel, accent, accentSoft, onClose, onCh
         <div className="flex flex-wrap items-center gap-2">
           <Badge status={record.status} />
           <span className="font-mono text-xs font-bold text-slate-600 dark:text-slate-300">{record.order_number}</span>
+          {!record.order_id ? (
+            <span className="rounded-full border border-slate-200 px-2 py-0.5 text-[10px] font-bold text-slate-500 dark:border-slate-700 dark:text-slate-400">
+              Manual
+            </span>
+          ) : null}
         </div>
 
         {error ? (
@@ -766,6 +1241,14 @@ function ReturnDetailDrawer({ record, isPanel, accent, accentSoft, onClose, onCh
           <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Pelanggan</p>
           <p className="mt-1 text-sm font-bold text-slate-900 dark:text-white">{record.customer_name}</p>
           <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">{record.customer_whatsapp || "-"}</p>
+          {record.shipping_address ? (
+            <p className="mt-1 text-xs font-semibold text-slate-600 dark:text-slate-300">
+              {record.shipping_address}
+              {record.shipping_city ? `, ${record.shipping_city}` : ""}
+              {record.shipping_kecamatan ? `, ${record.shipping_kecamatan}` : ""}
+              {record.shipping_postal_code ? ` ${record.shipping_postal_code}` : ""}
+            </p>
+          ) : null}
           {record.reason ? <p className="mt-2 text-xs font-semibold text-slate-600 dark:text-slate-300">Alasan: {record.reason}</p> : null}
           {record.notes ? <p className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400">{record.notes}</p> : null}
         </section>
@@ -827,6 +1310,26 @@ function ReturnDetailDrawer({ record, isPanel, accent, accentSoft, onClose, onCh
                 <label className={labelClass}>AWB barang balik (dari customer)</label>
                 <input value={inAwb} onChange={(event) => setInAwb(event.target.value)} className={inputClass} />
               </div>
+              {!record.order_id ? (
+                <>
+                  <div className="col-span-2">
+                    <label className={labelClass}>Alamat pengganti</label>
+                    <input value={addr} onChange={(event) => setAddr(event.target.value)} className={inputClass} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Kota</label>
+                    <input value={city} onChange={(event) => setCity(event.target.value)} className={inputClass} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Kecamatan</label>
+                    <input value={kec} onChange={(event) => setKec(event.target.value)} className={inputClass} />
+                  </div>
+                  <div className="col-span-2">
+                    <label className={labelClass}>Kode pos</label>
+                    <input value={postal} onChange={(event) => setPostal(event.target.value.replace(/\D/g, "").slice(0, 5))} inputMode="numeric" className={inputClass} />
+                  </div>
+                </>
+              ) : null}
               {record.type === "return" ? (
                 <>
                   <div>
@@ -877,6 +1380,11 @@ function ReturnDetailDrawer({ record, isPanel, accent, accentSoft, onClose, onCh
                   <Row label="Metode refund" value={record.refund_method || "-"} />
                   <Row label="Status refund" value={record.refund_status || "-"} />
                 </>
+              ) : null}
+              {!record.order_id && isExchange && !record.shipping_address ? (
+                <p className="text-[11px] font-semibold text-amber-600 dark:text-amber-400">
+                  Isi alamat lewat tombol Ubah agar resi pengganti bisa dibuat.
+                </p>
               ) : null}
             </div>
           )}

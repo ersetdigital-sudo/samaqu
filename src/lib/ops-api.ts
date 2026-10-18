@@ -256,6 +256,13 @@ export const base44 = {
         const json = await call<{ order: any }>("GET", `/api/ops/orders?${params.toString()}`);
         return json.order ?? null;
       },
+
+      /** Daftar pesanan terbaru untuk dropdown pengajuan retur. */
+      async recentOrders(limit = 60) {
+        const params = new URLSearchParams({ limit: String(limit) });
+        const json = await call<{ orders: any[] }>("GET", `/api/ops/orders?${params.toString()}`);
+        return json.orders ?? [];
+      },
     },
 
     /** Retur & Tukar Size. */
