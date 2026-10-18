@@ -372,7 +372,7 @@ function CreateReturnDrawer({ type, isPanel, accent, accentSoft, variants, onClo
   const [saving, setSaving] = useState(false);
   const [orders, setOrders] = useState([]);
   const [ordersBusy, setOrdersBusy] = useState(false);
-  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(true);
   const [notFound, setNotFound] = useState("");
   const [manual, setManual] = useState(false);
   const [manualCustomer, setManualCustomer] = useState("");
@@ -636,6 +636,7 @@ function CreateReturnDrawer({ type, isPanel, accent, accentSoft, variants, onClo
                     setOrder(null);
                     setQuery("");
                     setNotFound("");
+                    setPickerOpen(true);
                   }}
                   className={`text-[11px] font-bold ${isPanel ? "text-[#c2255c]" : "text-slate-700 underline dark:text-slate-200"}`}
                 >
@@ -781,6 +782,7 @@ function CreateReturnDrawer({ type, isPanel, accent, accentSoft, variants, onClo
                     setOrder(null);
                     setQuery("");
                     setNotFound("");
+                    setPickerOpen(true);
                   }}
                   className={`text-[11px] font-bold ${isPanel ? "text-[#c2255c]" : "text-slate-700 underline dark:text-slate-200"}`}
                 >
