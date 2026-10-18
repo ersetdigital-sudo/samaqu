@@ -236,7 +236,7 @@ export default function TambahBarangMasuk() {
     const variant = variantOf(item);
     if (!item.product_id) return `${row}: pilih produk.`;
     if (groups.length === 0) return `${row}: varian produk belum tersedia.`;
-    if (!item.variant_id || !variant) return `${row}: pilih warna/varian.`;
+    if (!item.variant_id || !variant) return `${row}: pilih varian.`;
     if (!item.size) return `${row}: pilih ukuran.`;
     if (!(Number(item.qty) > 0)) return `${row}: jumlah harus lebih dari 0.`;
     if (duplicateKeys.has(effectiveKey(item, variant))) {

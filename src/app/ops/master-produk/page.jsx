@@ -49,6 +49,7 @@ import { useToast } from "@/components/ops/ui/use-toast";
 import { usePageUrl } from "@/lib/ops-router";
 import { MetricCardSkeleton } from "@/components/ops/ui/skeleton";
 import { SIZES, normalizeStock, stockStatus } from "@/lib/ops-variants";
+import { isPaketKategori } from "@/lib/item-label";
 import { IconBoxes, IconLayers, IconCalendarClock, IconPackageX, IconArrowDownToLine, IconAlertTriangle } from "@/components/ops/icons";
 
 /**
@@ -74,6 +75,11 @@ const stokVarianTotal = (v) => {
 const varianKategori = (v) => String(v.category || "").trim();
 const varianKain = (v) => String(v.jenis_kain_name || "").trim();
 const varianSeries = (v) => String(v.series_name || "").trim();
+/** Warna asli saja; `default` adalah sisa struktur lama dan tidak ditampilkan. */
+const varianWarna = (v) => {
+  const color = String(v.color || "").trim();
+  return color && color.toLowerCase() !== "default" ? color : "";
+};
 /** Status varian = aturan kartu ringkasan: 0 habis, 1..5 menipis, sisa aman. */
 const varianStatus = (v) => { const t = stokVarianTotal(v); return t === 0 ? "habis" : t <= 5 ? "menipis" : "aman"; };
 const varianSearchText = (v) =>
@@ -235,6 +241,37 @@ function ProductDetailModal({ isOpen, onClose, product, stockIns = [], transacti
     aman: "bg-emerald-100 text-emerald-700 border-emerald-200",
   }[status];
   const statusLabel = { habis: "Habis", menipis: "Menipis", aman: "Aman" }[status];
+  const paket = isPaketKategori(product.category);
+  // SAMAQU menyimpan warna asli di NAMA produk; `color: "default"` hanyalah sisa
+  // struktur varian lama. Yang benar-benar multi-warna tetap ditampilkan.
+  const realColorRows = pv.filter((v) => {
+    const color = String(v.color || "").trim().toLowerCase();
+    return color !== "" && color !== "default";
+  });
+  const hasRealColors = realColorRows.length > 0;
+  const isDerived = Boolean(product.base_product_id || product.stok_bersama);
+  const baseLabel = String(product.stok_bersama?.mengikuti || "").trim();
+
+  // Turunan stok bersama: label diambil dari relasi `base_product_id`, bukan hardcode.
+  const childNames = new Map();
+  for (const v of variants || []) {
+    if (String(v.base_product_id || "") !== String(product.id)) continue;
+    if (childNames.has(v.product_id)) continue;
+    const label = String(v.series_name || v.product_name || "").trim();
+    if (label) childNames.set(v.product_id, label);
+  }
+  const sharedNames = [...new Set(childNames.values())];
+  const sharedText =
+    sharedNames.length <= 1
+      ? sharedNames[0] || ""
+      : `${sharedNames.slice(0, -1).join(", ")} dan ${sharedNames[sharedNames.length - 1]}`;
+
+  // Satu baris ukuran untuk produk default; baris per warna hanya kalau warna asli.
+  const displayRows = hasRealColors ? realColorRows : pv.slice(0, 1);
+  const singleStock = displayRows[0] ? stokVarianMap(displayRows[0]) : normalizeStock(null);
+  const footerVariant = hasRealColors
+    ? `${displayRows.length} ${paket ? "varian" : "warna"}`
+    : `${SIZES.length} ukuran`;
 
   const productStockIns = (stockIns || []).filter((si) => si.product_id === product.id);
   const productTransactions = (transactions || []).filter((t) => t.product_id === product.id);
@@ -337,26 +374,36 @@ function ProductDetailModal({ isOpen, onClose, product, stockIns = [], transacti
                 </div>
               </section>
 
-              {/* Stok per varian */}
+              {/* Stok per ukuran / warna asli */}
               <section>
                 <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">
-                  Stok per Warna ({pv.length})
+                  {hasRealColors ? (paket ? "Stok per Varian" : "Stok per Warna & Ukuran") : "Stok per Ukuran"}
                 </p>
-                {product.stok_bersama ? (
+                {!isDerived && sharedText ? (
                   <p className="text-[12px] text-slate-500 dark:text-slate-400 mb-2">
-                    Baris di bawah tidak memegang stok sendiri — stoknya mengikuti{" "}
-                    <span className="font-semibold text-slate-700 dark:text-slate-200">{product.stok_bersama.mengikuti}</span>.
+                    Stok bersama dengan{" "}
+                    <span className="font-semibold text-slate-700 dark:text-slate-200">{sharedText}</span>.
                   </p>
                 ) : null}
-                {pv.length === 0 ? (
-                  <p className="text-sm text-slate-500">Belum ada stok warna untuk produk ini.</p>
+                {isDerived && baseLabel ? (
+                  <p className="text-[12px] text-slate-500 dark:text-slate-400 mb-2">
+                    Stok efektif dari induk ·{" "}
+                    <span className="font-semibold text-slate-700 dark:text-slate-200">ikut {baseLabel}</span>.
+                  </p>
+                ) : null}
+                {displayRows.length === 0 ? (
+                  <p className="text-sm text-slate-500">Belum ada stok ukuran untuk produk ini.</p>
                 ) : (
                   <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
                     <div className="overflow-x-auto">
                       <table className="w-full border-collapse">
                         <thead>
                           <tr className="bg-slate-50 dark:bg-slate-900/60">
-                            <th className="px-3 py-2 text-left text-[10px] font-bold uppercase text-slate-500">Warna</th>
+                            {hasRealColors ? (
+                              <th className="px-3 py-2 text-left text-[10px] font-bold uppercase text-slate-500">
+                                {paket ? "Varian" : "Warna"}
+                              </th>
+                            ) : null}
                             {SIZES.map((s) => (
                               <th key={s} className="px-2 py-2 text-center text-[10px] font-bold uppercase text-slate-500">{s}</th>
                             ))}
@@ -364,17 +411,19 @@ function ProductDetailModal({ isOpen, onClose, product, stockIns = [], transacti
                           </tr>
                         </thead>
                         <tbody>
-                          {pv.map((v) => {
-                            const st = stokVarianMap(v);
+                          {displayRows.map((v, index) => {
+                            const st = hasRealColors ? stokVarianMap(v) : singleStock;
                             // Total memakai `stokVarianTotal` supaya ukuran di luar XS–XXL
                             // (mis. "ALL SIZE" milik Cover & Hanger) tetap ikut terhitung.
-                            const total = stokVarianTotal(v);
+                            const total = hasRealColors ? stokVarianTotal(v) : SIZES.reduce((sum, sz) => sum + st[sz], 0);
                             return (
-                              <tr key={v.id} className="border-t border-slate-100 dark:border-slate-800">
-                                <td className="px-3 py-2 text-[13px] font-semibold text-slate-900 dark:text-white whitespace-nowrap">
-                                  {v.color && String(v.color).toLowerCase() !== "default" ? v.color : <span className="italic text-slate-400">Belum diatur</span>}
-                                  {v.series_name ? <span className="block text-[10px] text-slate-400 font-medium">{v.series_name}</span> : null}
-                                </td>
+                              <tr key={v.id || index} className="border-t border-slate-100 dark:border-slate-800">
+                                {hasRealColors ? (
+                                  <td className="px-3 py-2 text-[13px] font-semibold text-slate-900 dark:text-white whitespace-nowrap">
+                                    {String(v.color || "").trim()}
+                                    {v.series_name ? <span className="block text-[10px] text-slate-400 font-medium">{v.series_name}</span> : null}
+                                  </td>
+                                ) : null}
                                 {SIZES.map((sz) => (
                                   <td key={sz} className={`px-2 py-2 text-center text-[13px] font-semibold ${st[sz] === 0 ? "text-red-400" : "text-slate-700 dark:text-slate-200"}`}>{st[sz]}</td>
                                 ))}
@@ -458,7 +507,7 @@ function ProductDetailModal({ isOpen, onClose, product, stockIns = [], transacti
             {/* ── Footer ── */}
             <div className="px-5 py-3.5 border-t border-slate-200 dark:border-slate-800 shrink-0 flex items-center justify-between gap-2">
               <p className="text-[11px] text-slate-400">
-                {pv.length} warna · {statusLabel}
+                {footerVariant} · {statusLabel}
               </p>
               <button
                 onClick={onClose}
@@ -1082,7 +1131,7 @@ export default function MasterProduk() {
                     <p className="text-2xl md:text-3xl font-black text-white font-inter tracking-tight leading-none mt-2">
                       {stockInMonthVariantCount.toLocaleString('id-ID')}<span className="text-xs md:text-sm font-bold"> SKU</span>
                     </p>
-                    <p className="mt-1.5 text-[10px] md:text-[11px] text-white/85 leading-tight">Warna &amp; ukuran unik bulan ini</p>
+                    <p className="mt-1.5 text-[10px] md:text-[11px] text-white/85 leading-tight">Ukuran unik bulan ini</p>
                   </div>
 
                   <div className="col-span-2 lg:col-span-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-3.5 py-3 md:px-4 md:py-3.5 hover:bg-white/15 transition-all duration-300">
@@ -1557,7 +1606,7 @@ export default function MasterProduk() {
                         <tr>
                           <td colSpan={4 + SIZES.length + 1} className="px-6 py-12 text-center font-inter text-sm text-gray-400 dark:text-slate-500">
                             <div className="flex flex-col items-center gap-3">
-                              <span>{hasReportFilter ? 'Tidak ada baris yang cocok dengan pencarian/filter.' : 'Belum ada baris — tambahkan produk dengan warna & ukuran dulu'}</span>
+                              <span>{hasReportFilter ? 'Tidak ada baris yang cocok dengan pencarian/filter.' : 'Belum ada baris — tambahkan produk dengan ukuran dulu'}</span>
                               {hasReportFilter && (
                                 <button
                                   type="button"
@@ -1580,6 +1629,11 @@ export default function MasterProduk() {
                             <tr key={v.id} className={`${rowBg} hover:bg-blue-100/50 dark:hover:bg-slate-800 transition-colors border-b border-gray-100 dark:border-slate-800/50 ${v.base_product_id ? 'opacity-60' : ''}`}>
                               <td className="px-3 py-3.5 text-left align-middle font-inter text-sm font-semibold text-gray-900 dark:text-white border-r border-gray-100 dark:border-slate-800/50">
                                 {product?.name || v.product_name || '-'}
+                                {varianWarna(v) ? (
+                                  <span className="block text-[10px] font-medium text-slate-500 dark:text-slate-400">
+                                    {varianWarna(v)}
+                                  </span>
+                                ) : null}
                                 {(v.base_series_name || v.base_product_name) ? (
                                   <span className="block text-[10px] font-medium text-amber-600 dark:text-amber-400">
                                     ikut {v.base_series_name || v.base_product_name}
@@ -1649,6 +1703,9 @@ export default function MasterProduk() {
                         <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-200/60">
                           <div>
                             <p className="font-inter text-sm font-semibold text-gray-900">{product?.name || v.product_name || '-'}</p>
+                            {varianWarna(v) ? (
+                              <p className="text-[10px] font-medium text-gray-500">{varianWarna(v)}</p>
+                            ) : null}
                             {(v.base_series_name || v.base_product_name) ? (
                               <p className="text-[10px] font-medium text-amber-600">
                                 ikut {v.base_series_name || v.base_product_name}
@@ -1696,6 +1753,12 @@ export default function MasterProduk() {
             >
               {(() => {
                 const manualStockIns = stockIns.filter(si => !si.source || si.source === 'manual' || si.source === 'batal' || si.source === 'tukar_size' || si.source === 'return');
+                // Kolom Warna hanya bermakna kalau ada varian warna asli. Produk SAMAQU
+                // menyimpan `default` (warna ada di nama produk), jadi kolomnya disembunyikan.
+                const hasStockInColors = manualStockIns.some((si) => {
+                  const color = String(si.variant_color || '').trim().toLowerCase();
+                  return color !== '' && color !== 'default';
+                });
                 return (
                   <>
                     {/* Action Button */}
@@ -1729,9 +1792,11 @@ export default function MasterProduk() {
                               <th className="px-4 py-3.5 text-left font-inter text-xs font-bold text-white uppercase tracking-wide">
                                 Nama Produk
                               </th>
-                              <th className="px-4 py-3.5 text-center font-inter text-xs font-bold text-white uppercase tracking-wide">
-                                Warna
-                              </th>
+                              {hasStockInColors ? (
+                                <th className="px-4 py-3.5 text-center font-inter text-xs font-bold text-white uppercase tracking-wide">
+                                  Warna
+                                </th>
+                              ) : null}
                               <th className="px-4 py-3.5 text-center font-inter text-xs font-bold text-white uppercase tracking-wide">
                                 Ukuran
                               </th>
@@ -1749,7 +1814,7 @@ export default function MasterProduk() {
                           <tbody>
                             {manualStockIns.length === 0 ? (
                               <tr>
-                                <td colSpan="8" className="px-6 py-12 text-center font-inter text-sm text-gray-400 dark:text-slate-500">
+                                <td colSpan={hasStockInColors ? 8 : 7} className="px-6 py-12 text-center font-inter text-sm text-gray-400 dark:text-slate-500">
                                   Belum ada data barang masuk
                                 </td>
                               </tr>
@@ -1768,9 +1833,11 @@ export default function MasterProduk() {
                                     <td className="px-4 py-3.5 text-left align-middle font-inter text-sm font-medium text-gray-700 dark:text-slate-300">
                                       {si.product_name || product?.name || '-'}
                                     </td>
-                                    <td className="px-4 py-3.5 text-center align-middle font-inter text-sm text-gray-500 dark:text-slate-400">
-                                      {si.variant_color || '-'}
-                                    </td>
+                                    {hasStockInColors ? (
+                                      <td className="px-4 py-3.5 text-center align-middle font-inter text-sm text-gray-500 dark:text-slate-400">
+                                        {si.variant_color || '-'}
+                                      </td>
+                                    ) : null}
                                     <td className="px-4 py-3.5 text-center align-middle font-inter text-sm font-semibold text-gray-700 dark:text-slate-200">
                                       {si.variant_size || '-'}
                                     </td>
