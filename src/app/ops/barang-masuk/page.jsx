@@ -4,7 +4,7 @@ import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "@/lib/ops-router";
 import { base44 } from "@/lib/ops-api";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, TrendingUp, Package, Calendar as CalendarIcon, Hash, FileText, X, RotateCcw, Save, DollarSign, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, TrendingUp, Package, Calendar as CalendarIcon, Hash, FileText, X, RotateCcw, Save, Plus, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { usePageUrl } from "@/lib/ops-router";
 import { useToast } from "@/components/ops/ui/use-toast";
@@ -18,17 +18,6 @@ function uid() {
   return `req-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-function formatRupiah(value) {
-  if (value === null || value === undefined || value === "") return "";
-  const number = Math.round(Number(value));
-  if (!Number.isFinite(number)) return "";
-  return number.toLocaleString("id-ID");
-}
-
-function parseRupiah(value) {
-  return parseInt(String(value ?? "").replace(/\D/g, ""), 10) || 0;
-}
-
 function emptyItem() {
   return {
     key: uid(),
@@ -36,8 +25,6 @@ function emptyItem() {
     variant_id: "",
     size: "",
     qty: "",
-    total_price: 0,
-    displayTotal: "",
     redirected_from: "",
     follow_name: "",
     editing: true,
@@ -198,16 +185,11 @@ export default function TambahBarangMasuk() {
     updateItem(item.key, { qty: value === "" ? "" : Math.max(0, parseInt(value, 10) || 0) });
   }
 
-  function handleTotalChange(item, value) {
-    const numeric = parseRupiah(value);
-    updateItem(item.key, { total_price: numeric, displayTotal: formatRupiah(numeric) });
-  }
-
   function addItem() {
     setFormData((prev) => {
       // Jangan biarkan dua baris kosong terbuka sekaligus.
       const blankEditing = prev.items.some(
-        (item) => item.editing && !item.product_id && !item.qty && !item.total_price
+        (item) => item.editing && !item.product_id && !item.qty
       );
       if (blankEditing) return prev;
       return {
@@ -246,7 +228,6 @@ export default function TambahBarangMasuk() {
   }, [formData.items, allVariants]);
 
   const totalPcs = formData.items.reduce((sum, item) => sum + (Number(item.qty) || 0), 0);
-  const totalPrice = formData.items.reduce((sum, item) => sum + (Number(item.total_price) || 0), 0);
 
   function rowMessage(item, index) {
     const row = `Baris ${index + 1}`;
@@ -257,7 +238,6 @@ export default function TambahBarangMasuk() {
     if (!item.variant_id || !variant) return `${row}: pilih warna/varian.`;
     if (!item.size) return `${row}: pilih ukuran.`;
     if (!(Number(item.qty) > 0)) return `${row}: jumlah harus lebih dari 0.`;
-    if (!(Number(item.total_price) > 0)) return `${row}: total harga beli harus lebih dari 0.`;
     if (duplicateKeys.has(effectiveKey(item, variant))) {
       return `${row}: produk & ukuran ini sudah ada di baris lain — gabungkan.`;
     }
@@ -339,7 +319,7 @@ export default function TambahBarangMasuk() {
         variant_color: variant?.color || "default",
         variant_size: item.size,
         qty: Number(item.qty),
-        total_price: Number(item.total_price),
+        total_price: 0,
       };
     });
 
@@ -472,7 +452,6 @@ export default function TambahBarangMasuk() {
                     ? stockAt(variant, item.size)
                     : product?.stock_efektif ?? product?.stock ?? 0;
                   const afterStock = currentStock + qty;
-                  const costPerUnit = qty > 0 ? Math.round((Number(item.total_price) || 0) / qty) : 0;
                   const duplicate = duplicateKeys.has(effectiveKey(item, variant));
                   const error = errors[item.key];
 
@@ -597,41 +576,6 @@ export default function TambahBarangMasuk() {
                           </div>
                         </div>
 
-                        <div className="space-y-2">
-                          <label className="block font-inter tracking-label" style={{ fontSize: "12px", fontWeight: 700, color: "#334155", textTransform: "uppercase", letterSpacing: "0.03em" }}>
-                            Total Harga Beli <span className="text-red-500">*</span>
-                          </label>
-                          <div className="relative">
-                            <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={19} />
-                            <span className="absolute left-11 top-1/2 -translate-y-1/2 font-outfit" style={{ fontSize: "15px", fontWeight: 700, color: "#475569" }}>Rp</span>
-                            <input
-                              type="text"
-                              required
-                              value={item.displayTotal}
-                              onFocus={() => updateItem(item.key, { displayTotal: item.total_price ? String(item.total_price) : "" })}
-                              onBlur={() => updateItem(item.key, { displayTotal: formatRupiah(item.total_price) })}
-                              onChange={(e) => handleTotalChange(item, e.target.value)}
-                              placeholder="0"
-                              className="w-full pl-[4.2rem] pr-4 py-3.5 bg-white border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all font-outfit font-tabular"
-                              style={{ fontSize: "17px", fontWeight: 800 }}
-                            />
-                          </div>
-                        </div>
-
-                        <div className="md:col-span-2 rounded-xl border-2 border-blue-200 bg-blue-50 px-4 py-3">
-                          <p className="font-inter tracking-caps" style={{ fontSize: "10px", fontWeight: 800, color: "#1E40AF", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                            Harga Beli per Unit (Otomatis)
-                          </p>
-                          <p className="font-outfit font-tabular" style={{ fontSize: "24px", fontWeight: 900, color: "#1E40AF", marginTop: 2 }}>
-                            {qty > 0 && Number(item.total_price) > 0 ? `Rp ${formatRupiah(costPerUnit)}` : "Rp 0"}
-                          </p>
-                          <p className="font-inter" style={{ fontSize: "12px", fontWeight: 600, color: "#1E40AF", marginTop: 2 }}>
-                            {qty > 0 && Number(item.total_price) > 0
-                              ? `Rp ${formatRupiah(item.total_price)} ÷ ${qty} unit`
-                              : "Isi jumlah & total harga"}
-                          </p>
-                        </div>
-
                         <div className="md:col-span-2 grid grid-cols-2 gap-3">
                           <div className="rounded-xl border-2 border-green-200 bg-green-50 px-4 py-3">
                             <p className="font-inter tracking-caps" style={{ fontSize: "10px", fontWeight: 800, color: "#059669", textTransform: "uppercase", letterSpacing: "0.05em" }}>
@@ -690,7 +634,7 @@ export default function TambahBarangMasuk() {
                               .join(" · ") || "Lengkapi produk"}
                           </p>
                           <p className="font-inter text-sm font-bold mt-1.5" style={{ color: "#0F172A" }}>
-                            Qty {qty} · Rp {formatRupiah(item.total_price)}
+                            Qty {qty}
                           </p>
                           <p className="font-inter text-xs text-slate-500 mt-0.5">
                             Stok {currentStock} → {afterStock} pcs
@@ -735,15 +679,9 @@ export default function TambahBarangMasuk() {
                 })}
               </div>
 
-              <div className="grid grid-cols-2 gap-3 rounded-2xl border-2 border-gray-200 bg-white p-4 md:p-5">
-                <div>
-                  <p className="font-inter tracking-caps" style={{ fontSize: "10px", fontWeight: 800, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.05em" }}>Total pcs</p>
-                  <p className="font-outfit font-tabular" style={{ fontSize: "28px", fontWeight: 900, color: "#0F172A" }}>{totalPcs}</p>
-                </div>
-                <div>
-                  <p className="font-inter tracking-caps" style={{ fontSize: "10px", fontWeight: 800, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.05em" }}>Total harga beli</p>
-                  <p className="font-outfit font-tabular" style={{ fontSize: "28px", fontWeight: 900, color: "#0F172A" }}>Rp {formatRupiah(totalPrice)}</p>
-                </div>
+              <div className="rounded-2xl border-2 border-gray-200 bg-white p-4 md:p-5">
+                <p className="font-inter tracking-caps" style={{ fontSize: "10px", fontWeight: 800, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.05em" }}>Total pcs</p>
+                <p className="font-outfit font-tabular" style={{ fontSize: "28px", fontWeight: 900, color: "#0F172A" }}>{totalPcs}</p>
               </div>
             </div>
           </div>
