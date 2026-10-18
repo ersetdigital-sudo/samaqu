@@ -53,6 +53,21 @@
 /* Judul & subjudul. */
 .ops-root.panel-ops .from-\[\#18181b\] h1 { color: #2a1a22; }
 .ops-root.panel-ops .from-\[\#18181b\] .text-blue-100 { color: #8a7d83; }
+
+/* Modal Detail Produk memakai gradient yang sama tapi judulnya h2 dan teksnya
+ * `text-white`. Karena header di panel sudah dipaksa putih, teks putih itu tidak
+ * terbaca. Samakan semua teks header ke warna gelap panel + badge blush. */
+.ops-root.panel-ops .from-\[\#18181b\] h2,
+.ops-root.panel-ops .from-\[\#18181b\] h3,
+.ops-root.panel-ops .from-\[\#18181b\] .text-white { color: #2a1a22; }
+.ops-root.panel-ops .from-\[\#18181b\] .text-white\/80,
+.ops-root.panel-ops .from-\[\#18181b\] .text-white\/85 { color: #8a7d83; }
+.ops-root.panel-ops .from-\[\#18181b\] .bg-white\/15 {
+  background-color: #fdf3f7;
+  border-color: #f7d3e4;
+}
+.ops-root.panel-ops .from-\[\#18181b\] .bg-white\/15.text-white { color: #c2255c; }
+.ops-root.panel-ops .from-\[\#18181b\] .border-white\/20 { border-color: #f7d3e4; }
 /* Kotak ikon di judul: kaca putih → blush, ikon berry. */
 .ops-root.panel-ops .from-\[\#18181b\] .w-14.bg-white\/10 { background-color: #fdeaf3; border-color: #f7d3e4; }
 .ops-root.panel-ops .from-\[\#18181b\] .w-14.bg-white\/10 svg { color: #c2255c; }
