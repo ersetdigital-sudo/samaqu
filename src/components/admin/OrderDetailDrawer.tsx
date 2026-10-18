@@ -24,6 +24,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import OrderDetailContent, { AdminDetailOrder } from "@/components/admin/OrderDetailContent";
 import { useBodyScrollLock } from "@/lib/use-scroll-lock";
+import { sourceLabel } from "@/lib/transaksi";
 
 export default function OrderDetailDrawer({
   order,
@@ -79,16 +80,8 @@ export default function OrderDetailDrawer({
           >
             <header className="odr-head">
               <div className="odr-head-txt">
+                <p className="odr-source">{sourceLabel(order.source)}</p>
                 <h2 className="odr-title">Detail Pesanan</h2>
-                <p className="odr-date">
-                  {order.order_number} ·{" "}
-                  {new Date(order.created_at).toLocaleDateString("id-ID", {
-                    weekday: "long",
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                  })}
-                </p>
               </div>
               <button onClick={onClose} className="odr-x" aria-label="Tutup">
                 <X size={18} />
@@ -124,25 +117,25 @@ const ODR_CSS = `
 /* Panel = kertasnya sendiri (krem terang yang sama dengan lembar struk), jadi isi struk duduk
    langsung di atasnya tanpa kartu krem kedua di dalamnya. 520px: cukup untuk baris produk &
    linimasa, tapi tidak lagi menutupi hampir seluruh layar tablet seperti versi 640px. */
-.odr-panel{width:min(520px,100vw);max-width:100%;height:100%;display:flex;flex-direction:column;background:#fff;box-shadow:-24px 0 60px -24px rgba(42,33,27,.35)}
-.odr-head{flex:none;display:flex;align-items:flex-start;gap:12px;padding:18px 20px;border-bottom:1px solid rgba(42,33,27,.09);min-width:0}
+.odr-panel{width:min(448px,100vw);max-width:100%;height:100%;display:flex;flex-direction:column;background:#fff;box-shadow:-24px 0 60px -24px rgba(42,33,27,.35)}
+.odr-head{flex:none;display:flex;align-items:flex-start;gap:12px;padding:16px 20px;border-bottom:1px solid rgba(42,33,27,.09);min-width:0}
 .odr-head-txt{min-width:0}
+.odr-source{margin:0;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted,#9a9a98)}
 /* Nomor pesanan memakai font UI admin yang sama dengan isi struk (dulu serif Cormorant) supaya seragam. */
 .odr-title{margin:0;font-size:1.05rem;font-weight:800;letter-spacing:-.01em;color:var(--espresso,#1c1c1c);font-family:var(--font-inter),system-ui,sans-serif;overflow-wrap:anywhere}
 .odr-date{margin:4px 0 0;font-size:.75rem;font-weight:500;color:var(--text-muted,#9a9a98);overflow-wrap:anywhere}
 .odr-x{margin-left:auto;flex:none;padding:6px;border-radius:8px;border:1px solid transparent;background:transparent;color:var(--text-muted,#9a9a98);cursor:pointer}
 .odr-x:hover{background:rgba(42,33,27,.06);color:var(--espresso,#1c1c1c)}
-.odr-body{flex:1;min-height:0;min-width:0;overflow-y:auto;overflow-x:hidden}
-/* Isi drawer admin sebelumnya menempel ke tepi kanan (tanpa padding horizontal).
-   Samakan dengan padding header supaya resi/status/alamat tidak flush ke edge. */
-.odr-body .od-root{box-sizing:border-box;max-width:100%;padding:0 20px 20px}
-.odr-body .panel-tx .ban{padding-left:0;padding-right:0}
+.odr-body{flex:1;min-height:0;min-width:0;overflow-y:auto;overflow-x:hidden;padding:16px 20px}
+/* Layout ini disamakan dengan drawer ops: panel langsung di body. */
+.odr-body .od-root{box-sizing:border-box;max-width:100%;padding:0}
+.odr-body .panel-tx .ban{padding-left:18px;padding-right:18px}
 
 /* Mobile: drawer memakai lebar penuh dan header lebih rapat. */
 @media (max-width:767.98px){
  .odr-panel{width:100vw;max-width:100vw;border-radius:0;background:#fff}
  .odr-head{padding:14px 16px}
- .odr-body{overflow-x:hidden}
- .odr-body .od-root{padding:0 16px 18px}
+ .odr-body{overflow-x:hidden;padding:14px 16px}
+ .odr-body .od-root{padding:0}
 }
 `;
