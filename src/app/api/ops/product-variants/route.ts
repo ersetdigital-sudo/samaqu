@@ -130,6 +130,8 @@ export async function GET(req: NextRequest) {
         price: prod.price ?? 0,
         hpp: prod.hpp ?? 0,
         stock: {},
+        /** Harga per ukuran (price_override → fallback harga produk). */
+        prices: {},
         /** Berat per ukuran (gram) — dipakai ringkasan transaksi supaya angkanya sama
          *  dengan perhitungan ongkir/resi (varian → produk). */
         weights: {},
@@ -143,7 +145,11 @@ export async function GET(req: NextRequest) {
       };
     }
     const size = (r.size || "").toUpperCase();
-    if (size) grouped[key].stock[size] = Number(r.stock) || 0;
+    if (size) {
+      grouped[key].stock[size] = Number(r.stock) || 0;
+      const override = Number(r.price_override);
+      grouped[key].prices[size] = override > 0 ? override : Number(grouped[key].price) || 0;
+    }
     const weight = Number(r.weight) || 0;
     if (size && weight > 0) grouped[key].weights[size] = weight;
   }
