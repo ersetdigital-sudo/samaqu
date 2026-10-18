@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
-import { getCurrentCustomer, getCustomerOrders } from "@/lib/customer-auth";
+import { getCustomerOrders } from "@/lib/customer-auth";
+import { useAkunCustomer } from "@/components/akun/AkunContext";
 import { useSafeLocale, useSafeTranslations } from "@/lib/safe-i18n";
 import { strukStatus } from "@/lib/akun-format";
 import type { TrackHistoryItem } from "@/lib/jnt/types";
@@ -40,6 +41,7 @@ export default function LacakPage() {
   const orderNo = decodeURIComponent(String(params.orderNo));
   const locale = useSafeLocale();
   const t = useSafeTranslations("tracking");
+  const { customer, ready } = useAkunCustomer();
   const [order, setOrder] = useState<Order | null>(null);
   const [payload, setPayload] = useState<TrackPayload | null>(null);
   const [loading, setLoading] = useState(true);
@@ -67,12 +69,17 @@ export default function LacakPage() {
   }, [resi, t]);
 
   useEffect(() => {
+    if (!ready) return;
+    if (!customer) {
+      setLoading(false);
+      return;
+    }
+    const customerId = customer.id;
     let alive = true;
     async function init() {
       try {
-        const customer = await getCurrentCustomer();
-        if (!customer || !alive) return;
-        const orders = (await getCustomerOrders(customer.id)) as Order[];
+        if (!alive) return;
+        const orders = (await getCustomerOrders(customerId)) as Order[];
         if (!alive) return;
         setOrder(orders.find((o) => o.order_number === orderNo) || null);
       } catch (error) {
@@ -83,7 +90,7 @@ export default function LacakPage() {
     }
     init();
     return () => { alive = false; };
-  }, [orderNo]);
+  }, [orderNo, customer, ready]);
 
   useEffect(() => {
     if (resi) loadTrack(false);

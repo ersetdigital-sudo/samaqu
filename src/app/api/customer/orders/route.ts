@@ -37,14 +37,29 @@ export async function GET(req: NextRequest) {
 
     const emailKey = String(user.email || "").trim().toLowerCase();
     const phoneKey = normalizeKontak(customer.whatsapp);
+    const whatsapp = String(customer.whatsapp || "").trim();
+    const digits = whatsapp.replace(/\D/g, "").replace(/^0+/, "");
+    const phoneVariants = Array.from(
+      new Set([whatsapp, digits, digits ? `0${digits}` : "", digits ? `62${digits}` : ""].filter(Boolean))
+    );
+
+    // Query hanya pesanan yang relevan — jangan ambil seluruh tabel `orders`.
+    const filters = [`customer_id.eq.${user.id}`];
+    if (emailKey) filters.push(`customer_email.eq.${emailKey}`);
+    for (const value of phoneVariants) filters.push(`customer_whatsapp.eq.${value}`);
+
+    const rawLimit = Number(new URL(req.url).searchParams.get("limit"));
+    const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(Math.floor(rawLimit), 500) : 500;
 
     const { data, error } = await admin
       .from("orders")
       .select("*, order_items(*)")
+      .or(filters.join(","))
       .order("created_at", { ascending: false })
-      .limit(1000);
+      .limit(limit);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+    // Pengaman kalau PostgREST mengembalikan baris di luar filter.
     const orders = (data || []).filter((order: any) => {
       if (String(order.customer_id || "") === String(user.id)) return true;
       if (emailKey && String(order.customer_email || "").trim().toLowerCase() === emailKey) return true;

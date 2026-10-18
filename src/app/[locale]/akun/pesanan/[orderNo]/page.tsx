@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { getCurrentCustomer, getCustomerOrders } from "@/lib/customer-auth";
+import { getCustomerOrders } from "@/lib/customer-auth";
+import { useAkunCustomer } from "@/components/akun/AkunContext";
 import { getProducts } from "@/lib/db";
-import { resolveItemPhotos } from "@/lib/order-photo";
+import { resolveItemPhotos, type OrderPhotoLookup } from "@/lib/order-photo";
 import { itemProductIds, loadOrderPhotoLookup } from "@/lib/order-photo-data";
 import { useSafeLocale } from "@/lib/safe-i18n";
 import { sourceLabel } from "@/lib/transaksi";
@@ -28,15 +29,21 @@ export default function DetailPesananPage() {
   const [order, setOrder] = useState<CustomerOrder | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const { customer, ready } = useAkunCustomer();
 
   useEffect(() => {
+    if (!ready) return;
+    if (!customer) {
+      setLoading(false);
+      return;
+    }
+    const customerId = customer.id;
     let alive = true;
     async function init() {
       try {
-        const customer = await getCurrentCustomer();
-        if (!customer || !alive) return;
+        if (!alive) return;
 
-        const [orders, catalog] = await Promise.all([getCustomerOrders(customer.id), getProducts()]);
+        const orders = await getCustomerOrders(customerId);
         const found = (orders as CustomerOrder[]).find((row) => row.order_number === orderNo);
         if (!found) {
           if (alive) setNotFound(true);
@@ -44,7 +51,13 @@ export default function DetailPesananPage() {
         }
 
         const items = found.order_items || [];
-        const lookup = await loadOrderPhotoLookup(itemProductIds(items), catalog);
+        // Katalog + foto hanya diambil kalau ada item yang belum punya snapshot.
+        const missing = items.filter((item: any) => !item.product_image);
+        let lookup: OrderPhotoLookup | null = null;
+        if (missing.length > 0) {
+          const catalog = await getProducts();
+          lookup = await loadOrderPhotoLookup(itemProductIds(missing), catalog);
+        }
         if (!alive) return;
         setOrder({ ...found, order_items: resolveItemPhotos(items, lookup) });
       } catch (error) {
@@ -55,7 +68,7 @@ export default function DetailPesananPage() {
     }
     init();
     return () => { alive = false; };
-  }, [orderNo]);
+  }, [orderNo, customer, ready]);
 
   if (loading) {
     return (

@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import { getCurrentCustomer, getCustomerOrders } from "@/lib/customer-auth";
+import { getCustomerOrders } from "@/lib/customer-auth";
+import { useAkunCustomer } from "@/components/akun/AkunContext";
 import { resolveItemPhotos } from "@/lib/order-photo";
 import { itemProductIds, loadOrderPhotoLookup } from "@/lib/order-photo-data";
 import { useSafeLocale } from "@/lib/safe-i18n";
@@ -43,20 +44,27 @@ export default function PesananPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("semua");
+  const { customer, ready } = useAkunCustomer();
 
   useEffect(() => {
+    if (!ready) return;
+    if (!customer) {
+      setLoading(false);
+      return;
+    }
+    const customerId = customer.id;
     let alive = true;
     async function init() {
       try {
-        const c = await getCurrentCustomer();
-        if (!c || !alive) return;
-        const o = await getCustomerOrders(c.id);
+        if (!alive) return;
+        const o = await getCustomerOrders(customerId);
         const list = (o as Order[]) || [];
-        // Foto item: snapshot di baris pesanan dipakai lebih dulu; kalau kosong (mis. item Open Order
-        // lama) diambil dari katalog lewat fungsi pusat yang sama dengan dashboard admin.
-        const lookup = await loadOrderPhotoLookup(
-          itemProductIds(list.flatMap((order) => order.order_items || []))
+        // Foto item: snapshot di baris pesanan dipakai lebih dulu; query katalog hanya untuk
+        // item yang fotonya memang kosong.
+        const missing = list.flatMap((order) =>
+          (order.order_items || []).filter((item) => !item.product_image)
         );
+        const lookup = missing.length ? await loadOrderPhotoLookup(itemProductIds(missing)) : null;
         if (!alive) return;
         setOrders(list.map((order) => ({ ...order, order_items: resolveItemPhotos(order.order_items || [], lookup) })));
       } catch (error) {
@@ -67,7 +75,7 @@ export default function PesananPage() {
     }
     init();
     return () => { alive = false; };
-  }, []);
+  }, [customer, ready]);
 
   const filtered = useMemo(() => {
     if (tab === "semua") return orders;
