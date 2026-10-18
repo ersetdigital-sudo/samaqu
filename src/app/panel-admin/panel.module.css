@@ -870,6 +870,17 @@ svg.heart { width: 14px; height: 14px; fill: #e46a92; stroke: none; color: #e46a
 .sunflower :global(.ops-root.panel-ops .from-\[\#18181b\] .bg-white\/5) { display: none; }
 .sunflower :global(.ops-root.panel-ops .from-\[\#18181b\] h1) { color: #2b1f0e; }
 .sunflower :global(.ops-root.panel-ops .from-\[\#18181b\] .text-blue-100) { color: #8a7a5a; }
+.sunflower :global(.ops-root.panel-ops .from-\[\#18181b\] h2),
+.sunflower :global(.ops-root.panel-ops .from-\[\#18181b\] h3),
+.sunflower :global(.ops-root.panel-ops .from-\[\#18181b\] .text-white) { color: #2b1f0e; }
+.sunflower :global(.ops-root.panel-ops .from-\[\#18181b\] .text-white\/80),
+.sunflower :global(.ops-root.panel-ops .from-\[\#18181b\] .text-white\/85) { color: #8a7a5a; }
+.sunflower :global(.ops-root.panel-ops .from-\[\#18181b\] .bg-white\/15) {
+  background-color: #fff3c4;
+  border-color: #f5d77a;
+}
+.sunflower :global(.ops-root.panel-ops .from-\[\#18181b\] .bg-white\/15.text-white) { color: #a86f00; }
+.sunflower :global(.ops-root.panel-ops .from-\[\#18181b\] .border-white\/20) { border-color: #f5d77a; }
 .sunflower :global(.ops-root.panel-ops .from-\[\#18181b\] .w-14.bg-white\/10) {
   background-color: #fff1c2;
   border-color: #ffe08a;
