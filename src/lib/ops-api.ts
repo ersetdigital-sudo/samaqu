@@ -171,6 +171,10 @@ export const base44 = {
         const json = await call<{ item: any }>("POST", STOCK_IN, data);
         return json.item ?? null;
       },
+      /** Satu paket barang masuk (banyak produk) — atomik & idempoten lewat request_id. */
+      async createBatch(data: any) {
+        return call<Record<string, any>>("POST", STOCK_IN, data);
+      },
       async delete(id: string) {
         return call<{ deleted: number }>("DELETE", STOCK_IN, { id });
       },

@@ -1,15 +1,54 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "@/lib/ops-router";
 import { base44 } from "@/lib/ops-api";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, TrendingUp, Package, Calendar as CalendarIcon, Hash, FileText, X, RotateCcw, Save, DollarSign } from "lucide-react";
+import { ArrowLeft, TrendingUp, Package, Calendar as CalendarIcon, Hash, FileText, X, RotateCcw, Save, DollarSign, Plus, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { usePageUrl } from "@/lib/ops-router";
 import { useToast } from "@/components/ops/ui/use-toast";
-import { SIZES, normalizeStock } from "@/lib/ops-variants";
+import { SIZES } from "@/lib/ops-variants";
 import { isPaketKategori, PAKET_SIZE, variantName } from "@/lib/item-label";
+
+const today = () => format(new Date(), "yyyy-MM-dd");
+
+function uid() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") return crypto.randomUUID();
+  return `req-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function formatRupiah(value) {
+  if (value === null || value === undefined || value === "") return "";
+  const number = Math.round(Number(value));
+  if (!Number.isFinite(number)) return "";
+  return number.toLocaleString("id-ID");
+}
+
+function parseRupiah(value) {
+  return parseInt(String(value ?? "").replace(/\D/g, ""), 10) || 0;
+}
+
+function emptyItem() {
+  return {
+    key: uid(),
+    product_id: "",
+    variant_id: "",
+    size: "",
+    qty: "",
+    total_price: 0,
+    displayTotal: "",
+    redirected_from: "",
+    follow_name: "",
+  };
+}
+
+function stockAt(variant, size) {
+  if (!variant || !size) return 0;
+  const src = variant.stock_efektif ?? variant.stock ?? {};
+  const key = Object.keys(src).find((k) => String(k).toUpperCase() === String(size).toUpperCase());
+  return Number(src[key] ?? 0) || 0;
+}
 
 export default function TambahBarangMasuk() {
   const navigate = useNavigate();
@@ -18,125 +57,42 @@ export default function TambahBarangMasuk() {
   const queryClient = useQueryClient();
 
   const [formData, setFormData] = useState({
-    date: format(new Date(), 'yyyy-MM-dd'),
-    product_id: '',
-    variant_id: '',
-    size: '',
-    qty: 0,
-    total_price: 0,
-    notes: ''
+    date: today(),
+    notes: "",
+    items: [emptyItem()],
   });
-
-  const [selectedProduct, setSelectedProduct] = useState(null);
-  const [displayTotalPrice, setDisplayTotalPrice] = useState('');
+  const [errors, setErrors] = useState({});
+  const requestIdRef = useRef(null);
 
   const { data: products = [] } = useQuery({
-    queryKey: ['products'],
+    queryKey: ["products"],
     queryFn: () => base44.entities.Product.list(),
     initialData: [],
   });
 
-  // ✅ VARIANT: stok per warna + ukuran
   const { data: allVariants = [] } = useQuery({
-    queryKey: ['productVariants'],
+    queryKey: ["productVariants"],
     queryFn: () => base44.entities.ProductVariant.list(),
     initialData: [],
   });
 
-  const variantsOf = (productId) => allVariants.filter(v => v.product_id === productId);
-  const selectedVariant = allVariants.find(v => v.id === formData.variant_id);
-
-  // Model varian SAMAQU: satu baris `product_variants` = satu (produk, warna) dengan stok per
-  // ukuran. Thobe berseri tidak punya warna asli — tiap seri adalah baris produk sendiri dan
-  // `color`-nya cuma penanda "default". Kategori **Cover & Hanger** bukan pakaian: `color` = NAMA
-  // paket (mis. "Set Hanger + Cover") dan ukurannya selalu "ALL SIZE" (lihat `lib/item-label.ts`),
-  // jadi tidak ada langkah Ukuran. Kalau produknya cuma punya satu varian, varian itu dipilih
-  // otomatis (konsisten dengan form Tambah/Edit Produk).
-  const productVariants = variantsOf(formData.product_id);
-  const needsVariant = productVariants.length > 1;
-  const isPaket = isPaketKategori(selectedProduct?.category);
-
-  const formatRupiah = (value) => {
-    if (value === null || value === undefined) return '';
-    const number = parseInt(value.toString().replace(/\D/g, ''));
-    if (isNaN(number)) return '';
-    return number.toLocaleString('id-ID');
-  };
-
-  const parseRupiah = (value) => {
-    return parseInt(value.replace(/\D/g, '')) || 0;
-  };
-
-  const handleTotalPriceChange = (e) => {
-    const value = e.target.value;
-    const numericValue = parseRupiah(value);
-    setFormData({ ...formData, total_price: numericValue });
-    setDisplayTotalPrice(formatRupiah(numericValue));
-  };
+  const variantsOf = (productId) => allVariants.filter((v) => v.product_id === productId);
+  const productOf = (item) => products.find((p) => p.id === item.product_id) || null;
+  const variantOf = (item) => allVariants.find((v) => v.id === item.variant_id) || null;
 
   const createMutation = useMutation({
-    mutationFn: async (data) => {
-      const product = products.find(p => p.id === data.product_id);
-      if (!product) throw new Error("Produk tidak ditemukan");
-
-      // Hitung cost_per_unit dari total_price / qty
-      const cost_per_unit = data.qty > 0 ? data.total_price / data.qty : 0;
-
-      // Hitung HPP baru dengan Weighted Average Cost
-      const oldStock = product.stock || 0;
-      const oldHPP = product.hpp || 0;
-      const incomingQty = data.qty;
-      const incomingCostPerUnit = cost_per_unit;
-
-      const newTotalStock = oldStock + incomingQty;
-      let newHPP = 0;
-      if (newTotalStock > 0) {
-        const oldTotalCost = oldStock * oldHPP;
-        const incomingTotalCost = incomingQty * incomingCostPerUnit;
-        newHPP = (oldTotalCost + incomingTotalCost) / newTotalStock;
-      }
-
-      // Buat StockIn record dengan cost_per_unit
-      await base44.entities.StockIn.create({
-        date: data.date,
-        product_id: data.product_id,
-        product_name: product.name,
-        sku: product.sku,
-        variant_id: data.variant_id,
-        variant_color: allVariants.find(v => v.id === data.variant_id)?.color || '',
-        variant_size: data.size,
-        qty: data.qty,
-        cost_per_unit: cost_per_unit,
-        notes: data.notes,
-        source: "manual"
-      });
-
-      // Stok varian TIDAK ditulis dari sini: POST /api/ops/stock-in sudah
-      // menaikkannya di server lewat RPC samaqu_increment_stock (termasuk untuk
-      // produk series yang stoknya menumpang produk basisnya). Sebelumnya klien
-      // ikut menulis lewat ProductVariant.update — method itu tidak ada di shim
-      // /ops, jadi simpan selalu berakhir "Gagal" padahal stok sudah tersimpan.
-
-      // Update Product dengan stok dan HPP baru.
-      // HPP dibulatkan ke rupiah bulat: kolom `products.hpp` bertipe integer,
-      // sedangkan weighted-average di atas menghasilkan pecahan (mis.
-      // 1836.734…) yang ditolak Postgres ("invalid input syntax for type integer").
-      await base44.entities.Product.update(data.product_id, {
-        stock: newTotalStock,
-        hpp: Math.round(newHPP),
-        status: newTotalStock === 0 ? 'habis' : newTotalStock <= 5 ? 'menipis' : 'aman'
-      });
-    },
+    mutationFn: (payload) => base44.entities.StockIn.createBatch(payload),
     onSuccess: () => {
-      queryClient.invalidateQueries(['stockIns']);
-      queryClient.invalidateQueries(['products']);
-      queryClient.invalidateQueries(['productVariants']);
+      requestIdRef.current = null;
+      queryClient.invalidateQueries(["stockIns"]);
+      queryClient.invalidateQueries(["products"]);
+      queryClient.invalidateQueries(["productVariants"]);
       toast({
         title: "✅ Barang masuk berhasil ditambahkan",
-        description: "Stok produk dan HPP telah diperbarui",
+        description: "Stok dan HPP sudah diperbarui di server",
         variant: "success",
       });
-      navigate(pageUrl('MasterProduk'));
+      navigate(pageUrl("MasterProduk"));
     },
     onError: (error) => {
       toast({
@@ -144,106 +100,185 @@ export default function TambahBarangMasuk() {
         description: error.message || "Terjadi kesalahan saat menyimpan data.",
         variant: "destructive",
       });
-    }
+    },
   });
 
-  const handleProductChange = (productId) => {
-    const product = products.find(p => p.id === productId);
-    const groups = allVariants.filter(v => v.product_id === productId);
-    setSelectedProduct(product);
-    // Produk dengan satu varian saja langsung dipilih. Cover & Hanger ukurannya tetap
-    // "ALL SIZE", jadi tidak ada yang perlu dipilih di sana.
-    const pick = groups.length === 1 ? groups[0] : null;
-    setFormData({
-      ...formData,
-      product_id: productId,
-      variant_id: pick ? pick.id : '',
-      size: pick && isPaketKategori(product?.category) ? PAKET_SIZE : '',
+  function updateItem(key, patch) {
+    setFormData((prev) => ({
+      ...prev,
+      items: prev.items.map((item) => (item.key === key ? { ...item, ...patch } : item)),
+    }));
+    setErrors((prev) => {
+      if (!prev[key]) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
     });
-  };
+  }
 
-  const handleQtyChange = (e) => {
-    const value = e.target.value;
-    if (value === '') {
-      setFormData({ ...formData, qty: '' });
-    } else {
-      const numericValue = parseInt(value);
-      if (!isNaN(numericValue) && numericValue >= 0) {
-        setFormData({ ...formData, qty: numericValue });
+  function handleProductChange(item, productId) {
+    if (!productId) {
+      updateItem(item.key, {
+        product_id: "",
+        variant_id: "",
+        size: "",
+        redirected_from: "",
+        follow_name: "",
+      });
+      return;
+    }
+
+    const product = products.find((p) => p.id === productId) || null;
+    const linkedVariant = allVariants.find((v) => v.product_id === productId && v.base_product_id);
+    const baseId = product?.base_product_id || linkedVariant?.base_product_id || null;
+    const effectiveId = baseId || productId;
+    const effectiveProduct = products.find((p) => p.id === effectiveId) || product;
+    const groups = allVariants.filter((v) => v.product_id === effectiveId);
+    const originalColor = String(
+      allVariants.find((v) => v.product_id === productId)?.color || "default"
+    ).toLowerCase();
+    const pick =
+      groups.length === 1
+        ? groups[0]
+        : groups.find((v) => String(v.color || "default").toLowerCase() === originalColor) || null;
+    const paket = isPaketKategori(effectiveProduct?.category);
+
+    updateItem(item.key, {
+      product_id: effectiveId,
+      variant_id: pick?.id || "",
+      size: paket ? PAKET_SIZE : "",
+      redirected_from: baseId ? productId : "",
+      follow_name: baseId
+        ? product?.stok_bersama?.mengikuti || effectiveProduct?.series || effectiveProduct?.name || baseId
+        : "",
+    });
+  }
+
+  function handleVariantChange(item, variantId) {
+    const product = productOf(item);
+    const paket = isPaketKategori(product?.category);
+    updateItem(item.key, {
+      variant_id: variantId,
+      size: paket ? PAKET_SIZE : "",
+    });
+  }
+
+  function handleQtyChange(item, value) {
+    updateItem(item.key, { qty: value === "" ? "" : Math.max(0, parseInt(value, 10) || 0) });
+  }
+
+  function handleTotalChange(item, value) {
+    const numeric = parseRupiah(value);
+    updateItem(item.key, { total_price: numeric, displayTotal: formatRupiah(numeric) });
+  }
+
+  function addItem() {
+    setFormData((prev) => ({ ...prev, items: [...prev.items, emptyItem()] }));
+  }
+
+  function removeItem(key) {
+    setFormData((prev) => {
+      if (prev.items.length <= 1) return prev;
+      return { ...prev, items: prev.items.filter((item) => item.key !== key) };
+    });
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  }
+
+  function effectiveKey(item, variant) {
+    if (!item.product_id || !item.size) return "";
+    const color = String(variant?.color || "default").toLowerCase();
+    return `${item.product_id}|${color}|${String(item.size).toUpperCase()}`;
+  }
+
+  const duplicateKeys = useMemo(() => {
+    const counts = new Map();
+    for (const item of formData.items) {
+      const key = effectiveKey(item, variantOf(item));
+      if (!key) continue;
+      counts.set(key, (counts.get(key) || 0) + 1);
+    }
+    return new Set([...counts.entries()].filter(([, count]) => count > 1).map(([key]) => key));
+  }, [formData.items, allVariants]);
+
+  const totalPcs = formData.items.reduce((sum, item) => sum + (Number(item.qty) || 0), 0);
+  const totalPrice = formData.items.reduce((sum, item) => sum + (Number(item.total_price) || 0), 0);
+
+  function validate() {
+    const next = {};
+    formData.items.forEach((item, index) => {
+      const row = `Baris ${index + 1}`;
+      const groups = variantsOf(item.product_id);
+      const variant = variantOf(item);
+      if (!item.product_id) {
+        next[item.key] = `${row}: pilih produk.`;
+      } else if (groups.length === 0) {
+        next[item.key] = `${row}: varian produk belum tersedia.`;
+      } else if (!item.variant_id || !variant) {
+        next[item.key] = `${row}: pilih warna/varian.`;
+      } else if (!item.size) {
+        next[item.key] = `${row}: pilih ukuran.`;
+      } else if (!(Number(item.qty) > 0)) {
+        next[item.key] = `${row}: jumlah harus lebih dari 0.`;
+      } else if (!(Number(item.total_price) > 0)) {
+        next[item.key] = `${row}: total harga beli harus lebih dari 0.`;
+      } else if (duplicateKeys.has(effectiveKey(item, variant))) {
+        next[item.key] = `${row}: produk & ukuran ini sudah ada di baris lain — gabungkan.`;
       }
-    }
-  };
+    });
+    setErrors(next);
+    return Object.keys(next).length === 0;
+  }
 
-  const handleSubmit = (e) => {
+  function handleSubmit(e) {
     e.preventDefault();
-    
-    if (!formData.product_id) {
+    if (createMutation.isPending) return;
+    if (!formData.date) {
+      toast({ title: "⚠️ Tanggal wajib diisi", variant: "destructive" });
+      return;
+    }
+    if (!validate()) {
       toast({
-        title: "⚠️ Form tidak lengkap",
-        description: "Pilih produk terlebih dahulu",
+        title: "⚠️ Periksa baris yang merah",
+        description: "Lengkapi produk, ukuran, jumlah, dan total harga tiap baris.",
         variant: "destructive",
       });
       return;
     }
 
-    if (!formData.variant_id || !formData.size) {
-      toast({
-        title: "⚠️ Form tidak lengkap",
-        description: isPaket ? "Pilih varian" : needsVariant ? "Pilih warna dan ukuran" : "Pilih ukuran",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const qty = typeof formData.qty === 'string' ? parseInt(formData.qty) : formData.qty;
-    
-    if (!qty || qty <= 0) {
-      toast({
-        title: "⚠️ Jumlah tidak valid",
-        description: "Jumlah harus lebih dari 0",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (formData.total_price <= 0) {
-      toast({
-        title: "⚠️ Harga tidak valid",
-        description: "Total harga beli harus lebih dari 0",
-        variant: "destructive",
-      });
-      return;
-    }
+    const requestId = requestIdRef.current || (requestIdRef.current = uid());
+    const items = formData.items.map((item) => {
+      const variant = variantOf(item);
+      return {
+        product_id: item.product_id,
+        variant_color: variant?.color || "default",
+        variant_size: item.size,
+        qty: Number(item.qty),
+        total_price: Number(item.total_price),
+      };
+    });
 
     createMutation.mutate({
-      ...formData,
-      qty: qty
+      date: formData.date,
+      notes: formData.notes.trim() || null,
+      request_id: requestId,
+      items,
     });
-  };
+  }
 
-  const handleReset = () => {
-    setFormData({
-      date: format(new Date(), 'yyyy-MM-dd'),
-      product_id: '',
-      variant_id: '',
-      size: '',
-      qty: 0,
-      total_price: 0,
-      notes: ''
-    });
-    setSelectedProduct(null);
-    setDisplayTotalPrice('');
-  };
-
-  const qtyForCalculation = typeof formData.qty === 'string' ? (parseInt(formData.qty) || 1) : (formData.qty || 1);
-  const costPerUnit = qtyForCalculation > 0 ? formData.total_price / qtyForCalculation : 0;
-  const newStock = (selectedProduct?.stock || 0) + (typeof formData.qty === 'string' ? (parseInt(formData.qty) || 0) : (formData.qty || 0));
+  function handleReset() {
+    requestIdRef.current = null;
+    setFormData({ date: today(), notes: "", items: [emptyItem()] });
+    setErrors({});
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pb-20" style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@600;700;800;900&display=swap');
-        
         .font-inter { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
         .font-outfit { font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
         .font-tabular { font-variant-numeric: tabular-nums; }
@@ -257,26 +292,24 @@ export default function TambahBarangMasuk() {
       `}</style>
 
       <div className="max-w-5xl mx-auto p-6 md:p-8">
-        {/* Header */}
         <div className="mb-8">
           <button
-            onClick={() => navigate(pageUrl('MasterProduk'))}
+            onClick={() => navigate(pageUrl("MasterProduk"))}
             className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-5 transition-colors"
-            style={{ fontSize: '15px', fontWeight: 600, letterSpacing: '0.01em' }}
+            style={{ fontSize: "15px", fontWeight: 600, letterSpacing: "0.01em" }}
           >
             <ArrowLeft size={18} />
             <span className="font-inter">Kembali</span>
           </button>
-          <h1 className="font-outfit tracking-heading leading-heading" style={{ fontSize: '32px', fontWeight: 800, color: '#0F172A', marginBottom: '8px' }}>
+          <h1 className="font-outfit tracking-heading leading-heading" style={{ fontSize: "32px", fontWeight: 800, color: "#0F172A", marginBottom: "8px" }}>
             Tambah Barang Masuk
           </h1>
-          <p className="font-inter tracking-body" style={{ fontSize: '15px', fontWeight: 500, color: '#64748B', lineHeight: '1.6' }}>
-            Catat barang yang masuk ke inventory
+          <p className="font-inter tracking-body" style={{ fontSize: "15px", fontWeight: 500, color: "#64748B", lineHeight: "1.6" }}>
+            Catat beberapa produk sekaligus — stok langsung masuk ke gudang
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Informasi Barang Masuk */}
+        <form onSubmit={handleSubmit} noValidate className="space-y-6">
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
             <div className="bg-gradient-to-r from-green-500 to-emerald-600 px-6 py-5">
               <div className="flex items-center gap-3">
@@ -284,21 +317,20 @@ export default function TambahBarangMasuk() {
                   <TrendingUp size={24} className="text-white" />
                 </div>
                 <div>
-                  <h3 className="font-outfit tracking-heading" style={{ fontSize: '18px', fontWeight: 700, color: '#FFFFFF', lineHeight: '1.3' }}>
+                  <h3 className="font-outfit tracking-heading" style={{ fontSize: "18px", fontWeight: 700, color: "#FFFFFF", lineHeight: "1.3" }}>
                     Informasi Barang Masuk
                   </h3>
-                  <p className="font-inter" style={{ fontSize: '13px', fontWeight: 500, color: 'rgba(255,255,255,0.9)', marginTop: '2px', letterSpacing: '0.01em' }}>
-                    Data transaksi barang masuk
+                  <p className="font-inter" style={{ fontSize: "13px", fontWeight: 500, color: "rgba(255,255,255,0.9)", marginTop: "2px", letterSpacing: "0.01em" }}>
+                    Tanggal dan keterangan dipakai untuk semua baris
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="p-8 space-y-6">
+            <div className="p-6 md:p-8 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Tanggal */}
                 <div className="space-y-2">
-                  <label className="block font-inter tracking-label" style={{ fontSize: '13px', fontWeight: 700, color: '#1E293B', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                  <label className="block font-inter tracking-label" style={{ fontSize: "13px", fontWeight: 700, color: "#1E293B", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.03em" }}>
                     Tanggal <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
@@ -309,259 +341,285 @@ export default function TambahBarangMasuk() {
                       value={formData.date}
                       onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                       className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:bg-white focus:ring-2 focus:ring-green-100 transition-all duration-200 font-inter font-tabular"
-                      style={{ fontSize: '15px', fontWeight: 600, letterSpacing: '0.01em' }}
+                      style={{ fontSize: "15px", fontWeight: 600, letterSpacing: "0.01em" }}
                     />
                   </div>
                 </div>
 
-                {/* Jumlah */}
-                <div className="space-y-2">
-                  <label className="block font-inter tracking-label" style={{ fontSize: '13px', fontWeight: 700, color: '#1E293B', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-                    Jumlah <span className="text-red-500">*</span>
+                <div className="space-y-2 md:col-span-2">
+                  <label className="block font-inter tracking-label" style={{ fontSize: "13px", fontWeight: 700, color: "#1E293B", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.03em" }}>
+                    Keterangan (Optional)
                   </label>
                   <div className="relative">
-                    <Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                    <input
-                      type="number"
-                      required
-                      min="1"
-                      value={formData.qty}
-                      onChange={handleQtyChange}
-                      placeholder="0"
-                      className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:bg-white focus:ring-2 focus:ring-green-100 transition-all duration-200 font-inter font-tabular"
-                      style={{ fontSize: '18px', fontWeight: 800, letterSpacing: '0.01em' }}
+                    <FileText className="absolute left-4 top-4 text-gray-400" size={20} />
+                    <textarea
+                      value={formData.notes}
+                      onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                      rows="2"
+                      placeholder="Contoh: restock produksi Oktober"
+                      className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:bg-white focus:ring-2 focus:ring-green-100 transition-all duration-200 resize-none font-inter leading-body"
+                      style={{ fontSize: "15px", fontWeight: 500, letterSpacing: "0.01em", lineHeight: "1.6" }}
                     />
                   </div>
                 </div>
               </div>
 
-              {/* Pilih Produk */}
-              <div className="space-y-2">
-                <label className="block font-inter tracking-label" style={{ fontSize: '13px', fontWeight: 700, color: '#1E293B', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-                  Pilih Produk <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <Package className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10" size={20} />
-                  <select
-                    required
-                    value={formData.product_id}
-                    onChange={(e) => handleProductChange(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:bg-white focus:ring-2 focus:ring-green-100 transition-all duration-200 appearance-none cursor-pointer font-inter"
-                    style={{ fontSize: '15px', fontWeight: 600, letterSpacing: '0.01em' }}
-                  >
-                    <option value="">Pilih produk...</option>
-                    {products.map(product => (
-                      <option key={product.id} value={product.id}>
-                        {product.name} ({product.sku})
-                      </option>
-                    ))}
-                  </select>
+              <div className="flex items-center justify-between gap-3 pt-1">
+                <div>
+                  <h4 className="font-outfit" style={{ fontSize: "17px", fontWeight: 800, color: "#0F172A" }}>Daftar Barang</h4>
+                  <p className="font-inter" style={{ fontSize: "12.5px", color: "#64748B", marginTop: 2 }}>Satu baris = satu produk + ukuran.</p>
                 </div>
+                <button
+                  type="button"
+                  onClick={addItem}
+                  className="inline-flex items-center gap-2 rounded-xl border-2 border-green-500 bg-white px-4 py-2.5 text-sm font-bold text-green-700 transition hover:bg-green-50"
+                >
+                  <Plus size={17} /> Tambah Produk
+                </button>
               </div>
 
-              {/* ✅ Varian: nama paket (Cover & Hanger) atau warna — hanya kalau produknya punya
-                  >1 varian — plus Ukuran untuk pakaian (Cover & Hanger selalu "ALL SIZE"). */}
-              <div className={`grid grid-cols-1 gap-6 ${needsVariant && !isPaket ? 'md:grid-cols-2' : ''}`}>
-                {needsVariant && (
-                  <div className="space-y-2">
-                    <label className="block font-inter tracking-label" style={{ fontSize: '13px', fontWeight: 700, color: '#1E293B', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-                      {isPaket ? 'Varian' : 'Warna'} <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      required
-                      value={formData.variant_id}
-                      onChange={(e) => setFormData({ ...formData, variant_id: e.target.value, size: isPaket ? PAKET_SIZE : '' })}
-                      disabled={!formData.product_id}
-                      className="w-full px-4 py-3.5 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:bg-white focus:ring-2 focus:ring-green-100 transition-all duration-200 appearance-none cursor-pointer font-inter disabled:bg-gray-100 disabled:cursor-not-allowed"
-                      style={{ fontSize: '15px', fontWeight: 600, letterSpacing: '0.01em' }}
+              <div className="space-y-4">
+                {formData.items.map((item, index) => {
+                  const product = productOf(item);
+                  const variant = variantOf(item);
+                  const groups = variantsOf(item.product_id);
+                  const needsVariant = groups.length > 1;
+                  const paket = isPaketKategori(product?.category);
+                  const qty = Number(item.qty) || 0;
+                  const currentStock = item.size
+                    ? stockAt(variant, item.size)
+                    : product?.stock_efektif ?? product?.stock ?? 0;
+                  const afterStock = currentStock + qty;
+                  const costPerUnit = qty > 0 ? Math.round((Number(item.total_price) || 0) / qty) : 0;
+                  const duplicate = duplicateKeys.has(effectiveKey(item, variant));
+                  const error = errors[item.key];
+
+                  return (
+                    <div
+                      key={item.key}
+                      className={`rounded-2xl border-2 p-4 md:p-5 transition-colors ${error ? "border-red-300 bg-red-50/40" : "border-gray-200 bg-gray-50/50"}`}
                     >
-                      <option value="">
-                        {formData.product_id ? (isPaket ? 'Pilih varian...' : 'Pilih warna...') : 'Pilih produk dulu'}
-                      </option>
-                      {productVariants.map(v => {
-                        // Total stok dihitung dari map apa adanya: Cover & Hanger memakai ukuran
-                        // "ALL SIZE" yang tidak ada di daftar SIZES pakaian.
-                        const total = Object.values(v.stock || {}).reduce((a, b) => a + (Number(b) || 0), 0);
-                        return (
-                          <option key={v.id} value={v.id}>
-                            {[variantName(v.color), v.series_name].filter(Boolean).join(' · ') || 'Varian'} (stok {total} pcs)
-                          </option>
-                        );
-                      })}
-                    </select>
-                  </div>
-                )}
-                {!isPaket && (
-                  <div className="space-y-2">
-                    <label className="block font-inter tracking-label" style={{ fontSize: '13px', fontWeight: 700, color: '#1E293B', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-                      Ukuran <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      required
-                      value={formData.size}
-                      onChange={(e) => setFormData({ ...formData, size: e.target.value })}
-                      disabled={!formData.variant_id}
-                      className="w-full px-4 py-3.5 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:bg-white focus:ring-2 focus:ring-green-100 transition-all duration-200 appearance-none cursor-pointer font-inter disabled:bg-gray-100 disabled:cursor-not-allowed"
-                      style={{ fontSize: '15px', fontWeight: 600, letterSpacing: '0.01em' }}
-                    >
-                      <option value="">
-                        {formData.variant_id ? 'Pilih ukuran...' : needsVariant ? 'Pilih warna dulu' : 'Pilih produk dulu'}
-                      </option>
-                      {SIZES.map(size => {
-                        const available = normalizeStock(selectedVariant?.stock)[size] || 0;
-                        return (
-                          <option key={size} value={size}>
-                            {size} — stok {available} pcs
-                          </option>
-                        );
-                      })}
-                    </select>
-                  </div>
-                )}
-              </div>
+                      <div className="mb-4 flex items-center justify-between gap-3">
+                        <p className="font-outfit" style={{ fontSize: "15px", fontWeight: 800, color: "#0F172A" }}>
+                          Produk {index + 1}
+                        </p>
+                        {formData.items.length > 1 ? (
+                          <button
+                            type="button"
+                            onClick={() => removeItem(item.key)}
+                            className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-bold text-red-600 transition hover:bg-red-50"
+                          >
+                            <Trash2 size={14} /> Hapus
+                          </button>
+                        ) : null}
+                      </div>
 
-              {/* Total Harga Beli */}
-              <div className="space-y-2">
-                <label className="block font-inter tracking-label" style={{ fontSize: '13px', fontWeight: 700, color: '#1E293B', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-                  Total Harga Beli <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                  <span className="absolute left-12 top-1/2 -translate-y-1/2 font-outfit" style={{ fontSize: '16px', fontWeight: 700, color: '#475569' }}>
-                    Rp
-                  </span>
-                  <input
-                    type="text"
-                    required
-                    value={displayTotalPrice}
-                    onFocus={() => {
-                      if (formData.total_price === 0) {
-                        setDisplayTotalPrice('');
-                      } else {
-                        setDisplayTotalPrice(formData.total_price.toString());
-                      }
-                    }}
-                    onBlur={() => {
-                      setDisplayTotalPrice(formatRupiah(formData.total_price));
-                    }}
-                    onChange={handleTotalPriceChange}
-                    placeholder="0"
-                    className="w-full pl-20 pr-4 py-3.5 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:bg-white focus:ring-2 focus:ring-green-100 transition-all duration-200 font-outfit font-tabular tracking-tight"
-                    style={{ fontSize: '18px', fontWeight: 800, letterSpacing: '-0.01em' }}
-                  />
-                </div>
-              </div>
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <div className="space-y-2 md:col-span-2">
+                          <label className="block font-inter tracking-label" style={{ fontSize: "12px", fontWeight: 700, color: "#334155", textTransform: "uppercase", letterSpacing: "0.03em" }}>
+                            Pilih Produk <span className="text-red-500">*</span>
+                          </label>
+                          <div className="relative">
+                            <Package className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10" size={19} />
+                            <select
+                              required
+                              value={item.product_id}
+                              onChange={(e) => handleProductChange(item, e.target.value)}
+                              className="w-full pl-12 pr-4 py-3.5 bg-white border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all appearance-none cursor-pointer font-inter"
+                              style={{ fontSize: "15px", fontWeight: 600 }}
+                            >
+                              <option value="">Pilih produk...</option>
+                              {products.map((p) => (
+                                <option key={p.id} value={p.id}>
+                                  {p.name} ({p.sku})
+                                  {p.stok_bersama ? ` — ikut ${p.stok_bersama.mengikuti}` : ""}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
 
-              {/* Harga Beli per Unit (Otomatis) */}
-              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border-2 border-blue-200">
-                <p className="font-inter tracking-caps" style={{ fontSize: '11px', fontWeight: 800, color: '#1E40AF', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
-                  Harga Beli per Unit (Otomatis)
-                </p>
-                <div className="flex items-baseline gap-2">
-                  <span className="font-outfit font-tabular tracking-tight" style={{ fontSize: '36px', fontWeight: 900, color: '#1E40AF', letterSpacing: '-0.02em' }}>
-                    Rp {formatRupiah(costPerUnit)}
-                  </span>
-                </div>
-                <p className="font-inter" style={{ fontSize: '13px', fontWeight: 600, color: '#1E40AF', marginTop: '8px', letterSpacing: '0.01em' }}>
-                  {qtyForCalculation > 0 && formData.total_price > 0 
-                    ? `Rp ${formatRupiah(formData.total_price)} ÷ ${qtyForCalculation} unit`
-                    : 'Hitung otomatis dari total harga ÷ jumlah'}
-                </p>
-              </div>
+                        {needsVariant ? (
+                          <div className="space-y-2">
+                            <label className="block font-inter tracking-label" style={{ fontSize: "12px", fontWeight: 700, color: "#334155", textTransform: "uppercase", letterSpacing: "0.03em" }}>
+                              {paket ? "Varian" : "Warna"} <span className="text-red-500">*</span>
+                            </label>
+                            <select
+                              required
+                              value={item.variant_id}
+                              onChange={(e) => handleVariantChange(item, e.target.value)}
+                              disabled={!item.product_id}
+                              className="w-full px-4 py-3.5 bg-white border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all appearance-none cursor-pointer font-inter disabled:bg-gray-100"
+                              style={{ fontSize: "15px", fontWeight: 600 }}
+                            >
+                              <option value="">{item.product_id ? (paket ? "Pilih varian..." : "Pilih warna...") : "Pilih produk dulu"}</option>
+                              {groups.map((v) => (
+                                <option key={v.id} value={v.id}>
+                                  {[variantName(v.color), v.series_name].filter(Boolean).join(" · ") || "Varian"}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        ) : null}
 
-              {/* Preview Stok Baru */}
-              {selectedProduct && (
-                <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-6 border-2 border-green-200">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="font-inter tracking-caps" style={{ fontSize: '11px', fontWeight: 800, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>
-                        {selectedVariant && formData.size ? `Stok ${selectedVariant.color} ${formData.size}` : 'Stok Produk Saat Ini'}
-                      </p>
-                      <p className="font-outfit font-tabular" style={{ fontSize: '28px', fontWeight: 900, color: '#059669', letterSpacing: '-0.01em' }}>
-                        {selectedVariant && formData.size
-                          ? (normalizeStock(selectedVariant.stock)[formData.size] || 0)
-                          : selectedProduct.stock}
-                      </p>
+                        {!paket ? (
+                          <div className="space-y-2">
+                            <label className="block font-inter tracking-label" style={{ fontSize: "12px", fontWeight: 700, color: "#334155", textTransform: "uppercase", letterSpacing: "0.03em" }}>
+                              Ukuran <span className="text-red-500">*</span>
+                            </label>
+                            <select
+                              required
+                              value={item.size}
+                              onChange={(e) => updateItem(item.key, { size: e.target.value })}
+                              disabled={!item.variant_id}
+                              className="w-full px-4 py-3.5 bg-white border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all appearance-none cursor-pointer font-inter disabled:bg-gray-100"
+                              style={{ fontSize: "15px", fontWeight: 600 }}
+                            >
+                              <option value="">{item.variant_id ? "Pilih ukuran..." : needsVariant ? "Pilih warna dulu" : "Pilih produk dulu"}</option>
+                              {SIZES.map((size) => (
+                                <option key={size} value={size}>
+                                  {size} — stok {stockAt(variant, size)} pcs
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            <label className="block font-inter tracking-label" style={{ fontSize: "12px", fontWeight: 700, color: "#334155", textTransform: "uppercase", letterSpacing: "0.03em" }}>Ukuran</label>
+                            <div className="rounded-xl border-2 border-gray-200 bg-white px-4 py-3.5 font-inter" style={{ fontSize: "15px", fontWeight: 600, color: "#475569" }}>
+                              {PAKET_SIZE}
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="space-y-2">
+                          <label className="block font-inter tracking-label" style={{ fontSize: "12px", fontWeight: 700, color: "#334155", textTransform: "uppercase", letterSpacing: "0.03em" }}>
+                            Jumlah <span className="text-red-500">*</span>
+                          </label>
+                          <div className="relative">
+                            <Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={19} />
+                            <input
+                              type="number"
+                              required
+                              min="1"
+                              value={item.qty}
+                              onChange={(e) => handleQtyChange(item, e.target.value)}
+                              placeholder="0"
+                              className="w-full pl-12 pr-4 py-3.5 bg-white border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all font-inter font-tabular"
+                              style={{ fontSize: "17px", fontWeight: 800 }}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="block font-inter tracking-label" style={{ fontSize: "12px", fontWeight: 700, color: "#334155", textTransform: "uppercase", letterSpacing: "0.03em" }}>
+                            Total Harga Beli <span className="text-red-500">*</span>
+                          </label>
+                          <div className="relative">
+                            <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={19} />
+                            <span className="absolute left-11 top-1/2 -translate-y-1/2 font-outfit" style={{ fontSize: "15px", fontWeight: 700, color: "#475569" }}>Rp</span>
+                            <input
+                              type="text"
+                              required
+                              value={item.displayTotal}
+                              onFocus={() => updateItem(item.key, { displayTotal: item.total_price ? String(item.total_price) : "" })}
+                              onBlur={() => updateItem(item.key, { displayTotal: formatRupiah(item.total_price) })}
+                              onChange={(e) => handleTotalChange(item, e.target.value)}
+                              placeholder="0"
+                              className="w-full pl-[4.2rem] pr-4 py-3.5 bg-white border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all font-outfit font-tabular"
+                              style={{ fontSize: "17px", fontWeight: 800 }}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="md:col-span-2 rounded-xl border-2 border-blue-200 bg-blue-50 px-4 py-3">
+                          <p className="font-inter tracking-caps" style={{ fontSize: "10px", fontWeight: 800, color: "#1E40AF", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                            Harga Beli per Unit (Otomatis)
+                          </p>
+                          <p className="font-outfit font-tabular" style={{ fontSize: "24px", fontWeight: 900, color: "#1E40AF", marginTop: 2 }}>
+                            {qty > 0 && Number(item.total_price) > 0 ? `Rp ${formatRupiah(costPerUnit)}` : "Rp 0"}
+                          </p>
+                          <p className="font-inter" style={{ fontSize: "12px", fontWeight: 600, color: "#1E40AF", marginTop: 2 }}>
+                            {qty > 0 && Number(item.total_price) > 0
+                              ? `Rp ${formatRupiah(item.total_price)} ÷ ${qty} unit`
+                              : "Isi jumlah & total harga"}
+                          </p>
+                        </div>
+
+                        <div className="md:col-span-2 grid grid-cols-2 gap-3">
+                          <div className="rounded-xl border-2 border-green-200 bg-green-50 px-4 py-3">
+                            <p className="font-inter tracking-caps" style={{ fontSize: "10px", fontWeight: 800, color: "#059669", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                              Stok Sekarang
+                            </p>
+                            <p className="font-outfit font-tabular" style={{ fontSize: "26px", fontWeight: 900, color: "#059669" }}>{currentStock}</p>
+                          </div>
+                          <div className="rounded-xl border-2 border-green-200 bg-green-50 px-4 py-3">
+                            <p className="font-inter tracking-caps" style={{ fontSize: "10px", fontWeight: 800, color: "#059669", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                              Setelah Barang Masuk
+                            </p>
+                            <p className="font-outfit font-tabular" style={{ fontSize: "26px", fontWeight: 900, color: "#059669" }}>{afterStock}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {item.redirected_from && item.follow_name ? (
+                        <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 font-inter" style={{ fontSize: "12.5px", fontWeight: 600, color: "#047857" }}>
+                          Stok masuk ke <b>{item.follow_name}</b> (ikut stok bersama).
+                        </div>
+                      ) : null}
+
+                      {duplicate && !error ? (
+                        <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 font-inter" style={{ fontSize: "12.5px", fontWeight: 600, color: "#B45309" }}>
+                          Produk & ukuran ini sudah ada di baris lain — gabungkan supaya tidak dobel.
+                        </div>
+                      ) : null}
+
+                      {error ? (
+                        <p className="mt-3 font-inter" style={{ fontSize: "12.5px", fontWeight: 700, color: "#B91C1C" }}>{error}</p>
+                      ) : null}
                     </div>
-                    <div>
-                      <p className="font-inter tracking-caps" style={{ fontSize: '11px', fontWeight: 800, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>
-                        Setelah Barang Masuk
-                      </p>
-                      <p className="font-outfit font-tabular" style={{ fontSize: '28px', fontWeight: 900, color: '#059669', letterSpacing: '-0.01em' }}>
-                        {(selectedVariant && formData.size
-                          ? (normalizeStock(selectedVariant.stock)[formData.size] || 0)
-                          : selectedProduct.stock) + (parseInt(formData.qty) || 0)}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
+                  );
+                })}
+              </div>
 
-          {/* Catatan Tambahan */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="bg-gradient-to-r from-purple-500 to-purple-600 px-6 py-5">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
-                  <FileText size={24} className="text-white" />
+              <div className="grid grid-cols-2 gap-3 rounded-2xl border-2 border-gray-200 bg-white p-4 md:p-5">
+                <div>
+                  <p className="font-inter tracking-caps" style={{ fontSize: "10px", fontWeight: 800, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.05em" }}>Total pcs</p>
+                  <p className="font-outfit font-tabular" style={{ fontSize: "28px", fontWeight: 900, color: "#0F172A" }}>{totalPcs}</p>
                 </div>
                 <div>
-                  <h3 className="font-outfit tracking-heading" style={{ fontSize: '18px', fontWeight: 700, color: '#FFFFFF', lineHeight: '1.3' }}>
-                    Catatan Tambahan
-                  </h3>
-                  <p className="font-inter" style={{ fontSize: '13px', fontWeight: 500, color: 'rgba(255,255,255,0.9)', marginTop: '2px', letterSpacing: '0.01em' }}>
-                    Informasi tambahan (optional)
-                  </p>
+                  <p className="font-inter tracking-caps" style={{ fontSize: "10px", fontWeight: 800, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.05em" }}>Total harga beli</p>
+                  <p className="font-outfit font-tabular" style={{ fontSize: "28px", fontWeight: 900, color: "#0F172A" }}>Rp {formatRupiah(totalPrice)}</p>
                 </div>
-              </div>
-            </div>
-
-            <div className="p-8">
-              <div className="space-y-2">
-                <label className="block font-inter tracking-label" style={{ fontSize: '13px', fontWeight: 700, color: '#1E293B', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-                  Keterangan (Optional)
-                </label>
-                <textarea
-                  value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  rows="4"
-                  placeholder="Tambahkan catatan atau keterangan..."
-                  className="w-full px-4 py-3.5 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:bg-white focus:ring-2 focus:ring-purple-100 transition-all duration-200 resize-none font-inter leading-body"
-                  style={{ fontSize: '15px', fontWeight: 500, letterSpacing: '0.01em', lineHeight: '1.6' }}
-                />
               </div>
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex gap-4 justify-end pt-4">
+          <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
             <button
               type="button"
-              onClick={() => navigate(pageUrl('MasterProduk'))}
+              onClick={() => navigate(pageUrl("MasterProduk"))}
               className="flex items-center justify-center gap-2 px-8 py-3.5 bg-white border-2 border-gray-300 text-gray-700 rounded-2xl hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 shadow-sm hover:shadow-md font-outfit"
-              style={{ fontSize: '15px', fontWeight: 700, letterSpacing: '0.01em' }}
+              style={{ fontSize: "15px", fontWeight: 700, letterSpacing: "0.01em" }}
             >
-              <X size={20} />
-              Batal
+              <X size={20} /> Batal
             </button>
             <button
               type="button"
               onClick={handleReset}
               className="flex items-center justify-center gap-2 px-8 py-3.5 bg-gray-100 border-2 border-gray-200 text-gray-700 rounded-2xl hover:bg-gray-200 hover:border-gray-300 transition-all duration-200 shadow-sm hover:shadow-md font-outfit"
-              style={{ fontSize: '15px', fontWeight: 700, letterSpacing: '0.01em' }}
+              style={{ fontSize: "15px", fontWeight: 700, letterSpacing: "0.01em" }}
             >
-              <RotateCcw size={20} />
-              Reset
+              <RotateCcw size={20} /> Reset
             </button>
             <button
               type="submit"
               disabled={createMutation.isPending}
               className="flex items-center justify-center gap-2 px-8 py-3.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-2xl hover:from-green-600 hover:to-emerald-700 hover:shadow-lg hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-md font-outfit"
-              style={{ fontSize: '15px', fontWeight: 700, letterSpacing: '0.01em' }}
+              style={{ fontSize: "15px", fontWeight: 700, letterSpacing: "0.01em" }}
             >
               <Save size={20} />
-              {createMutation.isPending ? 'Menyimpan...' : 'Simpan'}
+              {createMutation.isPending ? "Menyimpan..." : "Simpan"}
             </button>
           </div>
         </form>

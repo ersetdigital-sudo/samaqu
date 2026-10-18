@@ -63,6 +63,8 @@ async function withTotals(admin: ReturnType<typeof getSupabaseAdmin>, products: 
       //    supaya halaman lain (mis. Barang Masuk) tidak ikut berubah perilakunya. ──
       stock_efektif: efektif,
       status_efektif: stockStatus(efektif),
+      /** Produk basis kalau produk ini menumpang stok (dipakai form Barang Masuk). */
+      base_product_id: baseId ?? null,
       /** Terisi hanya kalau stok produk ini menumpang produk lain (series turunan).
        *  `mengikuti` memakai nama SERIES produk basis supaya sama dengan panel admin
        *  ("Bayati mengikuti Jiharkah"). Nama produk tidak dipakai karena satu nama
