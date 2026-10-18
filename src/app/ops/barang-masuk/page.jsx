@@ -228,6 +228,7 @@ export default function TambahBarangMasuk() {
   }, [formData.items, allVariants]);
 
   const totalPcs = formData.items.reduce((sum, item) => sum + (Number(item.qty) || 0), 0);
+  const savedItems = formData.items.filter((item) => !item.editing);
 
   function rowMessage(item, index) {
     const row = `Baris ${index + 1}`;
@@ -455,7 +456,8 @@ export default function TambahBarangMasuk() {
                   const duplicate = duplicateKeys.has(effectiveKey(item, variant));
                   const error = errors[item.key];
 
-                  return item.editing ? (
+                  if (!item.editing) return null;
+                  return (
                     <div
                       key={item.key}
                       className={`rounded-2xl border-2 p-4 md:p-5 transition-colors ${error ? "border-red-300 bg-red-50/40" : "border-gray-200 bg-gray-50/50"}`}
@@ -618,66 +620,82 @@ export default function TambahBarangMasuk() {
                         </button>
                       </div>
                     </div>
-                  ) : (
-                    <div
-                      key={item.key}
-                      className={`rounded-2xl border-2 p-4 transition-colors ${error ? "border-red-300 bg-red-50/40" : "border-gray-200 bg-white"}`}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="font-outfit truncate" style={{ fontSize: "15px", fontWeight: 800, color: "#0F172A" }}>
-                            {product?.name || "Produk belum dipilih"}
-                          </p>
-                          <p className="font-inter text-xs text-slate-500 mt-0.5 truncate">
-                            {[variant ? variantName(variant.color) : null, product?.series, item.size]
-                              .filter(Boolean)
-                              .join(" · ") || "Lengkapi produk"}
-                          </p>
-                          <p className="font-inter text-sm font-bold mt-1.5" style={{ color: "#0F172A" }}>
-                            Qty {qty}
-                          </p>
-                          <p className="font-inter text-xs text-slate-500 mt-0.5">
-                            Stok {currentStock} → {afterStock} pcs
-                          </p>
-                          {item.product_id && sharedLabel(item.product_id) ? (
-                            <p className="font-inter mt-1" style={{ fontSize: "11.5px", fontWeight: 600, color: "#047857" }}>
-                              Stok bersama dengan {sharedLabel(item.product_id)}
-                            </p>
-                          ) : null}
-                        </div>
-                        <div className="flex shrink-0 items-center gap-1">
-                          <button
-                            type="button"
-                            onClick={() => editItem(item.key)}
-                            className="rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-100"
-                          >
-                            Ubah
-                          </button>
-                          {formData.items.length > 1 ? (
-                            <button
-                              type="button"
-                              onClick={() => removeItem(item.key)}
-                              className="rounded-lg px-2.5 py-1.5 text-xs font-bold text-red-600 transition hover:bg-red-50"
-                            >
-                              Hapus
-                            </button>
-                          ) : null}
-                        </div>
-                      </div>
-
-                      {duplicate && !error ? (
-                        <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 font-inter" style={{ fontSize: "12.5px", fontWeight: 600, color: "#B45309" }}>
-                          Produk & ukuran ini sudah ada di baris lain — gabungkan supaya tidak dobel.
-                        </div>
-                      ) : null}
-
-                      {error ? (
-                        <p className="mt-2 font-inter" style={{ fontSize: "12.5px", fontWeight: 700, color: "#B91C1C" }}>{error}</p>
-                      ) : null}
-                    </div>
                   );
                 })}
               </div>
+
+              {savedItems.length > 0 ? (
+                <div className="overflow-x-auto rounded-2xl border border-gray-200 bg-white">
+                  <table className="w-full min-w-[640px] border-collapse text-left">
+                    <thead>
+                      <tr className="border-b border-gray-200 bg-gray-50 text-[10px] font-bold uppercase tracking-[0.08em] text-gray-500">
+                        <th className="px-4 py-3">Produk</th>
+                        <th className="px-4 py-3">Ukuran</th>
+                        <th className="px-4 py-3 text-center">Qty</th>
+                        <th className="px-4 py-3 text-center">Stok</th>
+                        <th className="px-4 py-3 text-right">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {savedItems.map((item) => {
+                        const product = productOf(item);
+                        const variant = variantOf(item);
+                        const qty = Number(item.qty) || 0;
+                        const current = item.size
+                          ? stockAt(variant, item.size)
+                          : product?.stock_efektif ?? product?.stock ?? 0;
+                        const after = current + qty;
+                        const error = errors[item.key];
+                        const duplicate = duplicateKeys.has(effectiveKey(item, variant));
+                        const variantText = [variant ? variantName(variant.color) : null, product?.series]
+                          .filter(Boolean)
+                          .join(" · ");
+
+                        return (
+                          <tr key={item.key} className={`border-b border-gray-100 last:border-0 align-top ${error ? "bg-red-50/60" : ""}`}>
+                            <td className="px-4 py-3">
+                              <p className="font-inter text-[13.5px] font-bold text-black">{product?.name || "Produk"}</p>
+                              {variantText ? <p className="font-inter mt-0.5 text-[11.5px] text-slate-500">{variantText}</p> : null}
+                              {item.product_id && sharedLabel(item.product_id) ? (
+                                <p className="font-inter mt-0.5 text-[11px] font-semibold text-emerald-700">
+                                  Stok bersama {sharedLabel(item.product_id)}
+                                </p>
+                              ) : null}
+                              {duplicate && !error ? (
+                                <p className="font-inter mt-0.5 text-[11px] font-semibold text-amber-700">
+                                  Produk & ukuran sudah ada di baris lain.
+                                </p>
+                              ) : null}
+                              {error ? <p className="font-inter mt-0.5 text-[11px] font-bold text-red-600">{error}</p> : null}
+                            </td>
+                            <td className="px-4 py-3 font-inter text-[13px] font-semibold text-slate-700">{item.size || "-"}</td>
+                            <td className="px-4 py-3 text-center font-inter text-[13px] font-bold text-black">{qty}</td>
+                            <td className="px-4 py-3 text-center font-inter text-[12px] text-slate-600">{current} → {after}</td>
+                            <td className="px-4 py-3 text-right whitespace-nowrap">
+                              <button
+                                type="button"
+                                onClick={() => editItem(item.key)}
+                                className="rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-100"
+                              >
+                                Ubah
+                              </button>
+                              {formData.items.length > 1 ? (
+                                <button
+                                  type="button"
+                                  onClick={() => removeItem(item.key)}
+                                  className="rounded-lg px-2.5 py-1.5 text-xs font-bold text-red-600 transition hover:bg-red-50"
+                                >
+                                  Hapus
+                                </button>
+                              ) : null}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              ) : null}
 
               <div className="rounded-2xl border-2 border-gray-200 bg-white p-4 md:p-5">
                 <p className="font-inter tracking-caps" style={{ fontSize: "10px", fontWeight: 800, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.05em" }}>Total pcs</p>
