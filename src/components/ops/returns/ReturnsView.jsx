@@ -554,10 +554,12 @@ function CreateReturnDrawer({ type, isPanel, accent, accentSoft, variants, onClo
     setPickerOpen(false);
     setNotFound("");
     setError("");
+    const items = found.order_items || [];
+    const autoSelect = items.length === 1;
     const next = {};
-    for (const item of found.order_items || []) {
+    for (const item of items) {
       next[item.id] = {
-        checked: false,
+        checked: autoSelect,
         qty: Number(item.quantity) || 1,
         replacement_size: "",
         condition: "sellable",
@@ -1295,6 +1297,9 @@ function CreateReturnDrawer({ type, isPanel, accent, accentSoft, variants, onClo
 
             <section className="space-y-2">
               <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Pilih produk</p>
+              <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                Centang produk yang mau ditukar. Setelah dicentang, isi qty, kondisi, dan ukuran pengganti.
+              </p>
               {(order.order_items || []).map((item) => {
                 const value = selected[item.id];
                 if (!value) return null;
@@ -1304,7 +1309,7 @@ function CreateReturnDrawer({ type, isPanel, accent, accentSoft, variants, onClo
                   .sort(([a], [b]) => String(a).localeCompare(String(b)));
                 return (
                   <div key={item.id} className={`rounded-2xl border p-3.5 ${value.checked ? "border-slate-900 dark:border-white" : "border-slate-200 dark:border-slate-800"}`}>
-                    <div className="flex items-start gap-3">
+                    <label className="flex cursor-pointer items-start gap-3">
                       <input
                         type="checkbox"
                         checked={value.checked}
@@ -1322,7 +1327,13 @@ function CreateReturnDrawer({ type, isPanel, accent, accentSoft, variants, onClo
                       <span className="shrink-0 font-mono text-xs font-bold text-slate-700 dark:text-slate-200">
                         Rp {formatRupiah(item.price)}
                       </span>
-                    </div>
+                    </label>
+
+                    {!value.checked ? (
+                      <p className="mt-2 text-[11px] font-semibold text-slate-400 dark:text-slate-500">
+                        Centang produk ini untuk mengisi qty dan ukuran pengganti.
+                      </p>
+                    ) : null}
 
                     {value.checked ? (
                       <div className="mt-3 grid grid-cols-2 gap-2">
