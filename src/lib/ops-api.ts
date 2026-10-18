@@ -294,6 +294,11 @@ export const base44 = {
         return json.item ?? null;
       },
 
+      /** Hapus permanen (koreksi/reset data uji). Stok dibalik dulu di server. */
+      async remove(returnNumber: string) {
+        return call<{ deleted: boolean }>("DELETE", `${RETURNS}?return_number=${encodeURIComponent(returnNumber)}`);
+      },
+
       async createResi(returnNumber: string) {
         return call<{ item: any; awbNo: string; weightGrams?: number }>("POST", `${RETURNS}/resi`, {
           return_number: returnNumber,

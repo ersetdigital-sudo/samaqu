@@ -19,6 +19,7 @@ import {
   Plus,
   RotateCcw,
   Search,
+  Trash2,
   Truck,
   Wallet,
   X,
@@ -384,6 +385,10 @@ export default function ReturnsView({ variant = "ops" }) {
           onClose={() => setDetail(null)}
           onChanged={(updated) => {
             setDetail(updated);
+            refresh();
+          }}
+          onDeleted={() => {
+            setDetail(null);
             refresh();
           }}
         />
@@ -1537,7 +1542,7 @@ function CreateReturnDrawer({ type, isPanel, accent, accentSoft, variants, onClo
 
 /* ───────────────────────── Detail drawer ───────────────────────── */
 
-function ReturnDetailDrawer({ record, isPanel, accent, accentSoft, onClose, onChanged }) {
+function ReturnDetailDrawer({ record, isPanel, accent, accentSoft, onClose, onChanged, onDeleted }) {
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const [copied, setCopied] = useState("");
@@ -1580,6 +1585,23 @@ function ReturnDetailDrawer({ record, isPanel, accent, accentSoft, onClose, onCh
       onChanged(updated);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal menyimpan selisih harga");
+    } finally {
+      setBusy("");
+    }
+  };
+
+  const deleteReturn = async () => {
+    const ok = window.confirm(
+      "Hapus permanen retur ini?\n\nStok yang sudah diterapkan akan dibalik dulu. Tindakan ini tidak bisa dibatalkan.",
+    );
+    if (!ok) return;
+    setBusy("delete");
+    setError("");
+    try {
+      await base44.entities.Return.remove(record.return_number);
+      onDeleted?.();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal menghapus retur");
     } finally {
       setBusy("");
     }
@@ -1970,6 +1992,20 @@ function ReturnDetailDrawer({ record, isPanel, accent, accentSoft, onClose, onCh
             </button>
           </div>
         ) : null}
+
+        <div className="border-t border-slate-200 pt-3 dark:border-slate-800">
+          <button
+            type="button"
+            onClick={deleteReturn}
+            disabled={Boolean(busy)}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border-2 border-red-200 px-4 py-2.5 text-sm font-bold text-red-600 hover:bg-red-50 disabled:opacity-50 dark:border-red-900/50 dark:text-red-300 dark:hover:bg-red-900/20"
+          >
+            <Trash2 size={15} /> {busy === "delete" ? "Menghapus…" : "Hapus Data Retur"}
+          </button>
+          <p className="mt-1 text-center text-[10px] font-semibold text-slate-400">
+            Khusus koreksi/data uji — stok dibalik otomatis.
+          </p>
+        </div>
       </div>
     </DrawerShell>
   );
