@@ -17,11 +17,13 @@ const MUTED = "rgba(0,0,0,.6)";
 const MUTED_SOFT = "rgba(0,0,0,.35)";
 const LINE = "rgba(0,0,0,.1)";
 const CARD_BG = "#ffffff";
+/** Isi kartu link — abu terang, bukan putih, supaya ada kontras lembut. */
+const CARD_FILL = "#f2f2f2";
 const CARD_BORDER = "rgba(0,0,0,.08)";
 const CARD_SHADOW = "0 14px 34px -20px rgba(0,0,0,.18)";
 const CARD_SHADOW_HOVER = "0 20px 44px -22px rgba(0,0,0,.26)";
-/** Permukaan kaca di atas foto (tombol carousel) — idiom tombol hero beranda. */
-const GLASS = "rgba(255,255,255,.75)";
+/** Permukaan tombol carousel di atas foto — abu terang solid, tanpa backdrop blur. */
+const GLASS = "rgba(242,242,242,.94)";
 const FONT_UI = "var(--font-inter), system-ui, sans-serif";
 const FONT_DISPLAY = "var(--font-cormorant), Georgia, serif";
 
@@ -138,11 +140,11 @@ export default function BioLinkPage() {
               ))}
             </div>
 
-            {/* Pagination — titik di dalam pilihan kaca putih supaya tetap terbaca di atas foto */}
+            {/* Pagination — titik di dalam pilihan abu terang supaya tetap terbaca di atas foto */}
             <div className="absolute bottom-3 left-0 right-0 flex justify-center z-10">
               <div
                 className="flex items-center rounded-full"
-                style={{ background: GLASS, backdropFilter: "blur(12px)", border: `1px solid ${CARD_BORDER}`, padding: 4 }}
+                style={{ background: GLASS, border: `1px solid ${CARD_BORDER}`, padding: 4 }}
               >
                 {slides.map((_, i) => (
                   <button
@@ -170,7 +172,7 @@ export default function BioLinkPage() {
             <button
               onClick={prev}
               className="nav-btn absolute left-3 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center rounded-full"
-              style={{ width: 30, height: 30, background: GLASS, backdropFilter: "blur(12px)", border: `1px solid ${CARD_BORDER}` }}
+              style={{ width: 30, height: 30, background: GLASS, border: `1px solid ${CARD_BORDER}` }}
               aria-label="Sebelumnya"
             >
               <svg style={{ width: 18, height: 18, stroke: INK, fill: "none", strokeWidth: 1.6, strokeLinecap: "round", strokeLinejoin: "round" }} viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6" /></svg>
@@ -178,14 +180,11 @@ export default function BioLinkPage() {
             <button
               onClick={next}
               className="nav-btn absolute right-3 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center rounded-full"
-              style={{ width: 30, height: 30, background: GLASS, backdropFilter: "blur(12px)", border: `1px solid ${CARD_BORDER}` }}
+              style={{ width: 30, height: 30, background: GLASS, border: `1px solid ${CARD_BORDER}` }}
               aria-label="Berikutnya"
             >
               <svg style={{ width: 18, height: 18, stroke: INK, fill: "none", strokeWidth: 1.6, strokeLinecap: "round", strokeLinejoin: "round" }} viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" /></svg>
             </button>
-
-            {/* Fade bottom — menyatu ke latar putih halaman */}
-            <div className="absolute inset-x-0 bottom-0 h-[110px] pointer-events-none" style={{ background: `linear-gradient(to top, ${CARD_BG}, transparent)` }} />
           </div>
         </section>
 
@@ -255,14 +254,14 @@ export default function BioLinkPage() {
         {/* Footer */}
         <footer className="py-6 text-center" style={{ borderTop: `1px solid ${LINE}` }}>
           <div className="tracking-[0.42em] text-sm" style={{ fontFamily: FONT_DISPLAY, color: INK, paddingLeft: "0.42em" }}>SAMAQU</div>
-          <p className="text-[11px] mt-2" style={{ color: MUTED }}>© 2024 Samaqu. All rights reserved.</p>
+          <p className="text-[11px] mt-2" style={{ color: MUTED }}>© 2026 Samaqu. All rights reserved.</p>
         </footer>
       </div>
 
       <style>{`
         .icon { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
-        /* Kartu putih + garis rambut, sama seperti kartu beranda (CaraPemesanan: CARD_BG/CARD_BORDER). */
-        .card { background: ${CARD_BG}; color: ${INK}; border: 1px solid ${CARD_BORDER}; border-radius: 14px; transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; box-shadow: ${CARD_SHADOW}; text-decoration: none; }
+        /* Kartu abu terang + garis rambut, senada dengan kartu beranda (CARD_FILL/CARD_BORDER). */
+        .card { background: ${CARD_FILL}; color: ${INK}; border: 1px solid ${CARD_BORDER}; border-radius: 14px; transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; box-shadow: ${CARD_SHADOW}; text-decoration: none; }
         .card:hover { transform: translateY(-2px); box-shadow: ${CARD_SHADOW_HOVER}; border-color: rgba(0,0,0,.14); }
         .sec-label { letter-spacing: .28em; font-size: 11px; color: ${MUTED}; text-transform: uppercase; }
         .dot { display: grid; place-items: center; width: 14px; height: 14px; padding: 0; border: 0; background: none; border-radius: 999px; cursor: pointer; }
