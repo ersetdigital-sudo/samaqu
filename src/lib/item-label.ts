@@ -265,3 +265,11 @@ export function formatWhatsAppProductLine(item?: WhatsAppProductItem | null): st
 
   return `${waClean(text) || "Produk"} x${qty}`;
 }
+
+/**
+ * Label produk TANPA akhiran jumlah — untuk invoice Mayar yang menambahkan `xQty` sendiri.
+ * Contoh: "Thobe Jiharkah Series Soft Grey Kain A-02 size L".
+ */
+export function formatProductLabel(item?: WhatsAppProductItem | null): string {
+  return formatWhatsAppProductLine(item).replace(/\s+x\d+$/, "");
+}

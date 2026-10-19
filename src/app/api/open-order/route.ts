@@ -21,6 +21,7 @@ import { sendOnce } from "@/lib/order-notify";
 import { orderItemPhoto } from "@/lib/order-photo";
 import { loadOrderPhotoLookup } from "@/lib/order-photo-data";
 import { createOrderPaymentLink } from "@/lib/mayar";
+import { formatProductLabel } from "@/lib/item-label";
 
 /**
  * Pesanan dari alur Open Order Samaqu (halaman /open-order, 6 langkah).
@@ -495,7 +496,15 @@ export async function POST(request: NextRequest) {
     const paymentInstruction = paymentRow ? paymentInstructionFrom(paymentRow) : null;
     const invoiceItemLines = [
       ...validatedItems.map((item) => ({
-        label: `${item.productName}${item.size ? ` (Uk. ${item.size})` : ""}`,
+        // Format sama dengan notifikasi WA: nama · series · warna · kain · size.
+        label: formatProductLabel({
+          name: item.productName,
+          series: item.series,
+          kain: item.kain,
+          color: item.color,
+          size: item.size,
+          quantity: item.quantity,
+        }),
         quantity: item.quantity || 1,
       })),
       ...(extraCover ? [{ label: OPEN_ORDER_ADDON.name, quantity: 1 }] : []),

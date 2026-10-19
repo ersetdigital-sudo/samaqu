@@ -14,7 +14,7 @@ import { createOrderPaymentLink } from "@/lib/mayar";
 import { markLeadBoughtForOrder } from "@/lib/ops-lead-sync";
 import { sumWeightGramsBySize, productWeightMapFromRows, variantWeightMapFromRows } from "@/lib/shipping-weight";
 import { orderLookupToken } from "@/lib/order-token";
-import { isPaketItem, itemDisplayName } from "@/lib/item-label";
+import { formatProductLabel } from "@/lib/item-label";
 
 /**
  * Semua baca/tulis pesanan di route ini memakai service role (server-side), supaya policy RLS
@@ -395,8 +395,8 @@ export async function POST(request: NextRequest) {
         customerWhatsapp: customer.whatsapp,
         total,
         items: validatedItems.map((item) => ({
-          // Cover & Hanger: "Cover Hanger - Hanger saja"; produk lain tetap format lama.
-          label: isPaketItem(item) ? itemDisplayName(item) : `${item.name}${item.size ? ` (Uk. ${item.size})` : ""}`,
+          // Format sama dengan notifikasi WA: nama · series · warna · kain · size.
+          label: formatProductLabel(item),
           quantity: item.quantity || 1,
         })),
       });
