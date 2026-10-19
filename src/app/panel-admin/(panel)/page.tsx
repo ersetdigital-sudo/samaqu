@@ -102,6 +102,14 @@ type MetricCard = {
   hint?: string;
 };
 
+function Heart() {
+  return (
+    <svg className={styles.heart} viewBox="0 0 24 24">
+      <path d="M12 21s-8-5-8-11a4.5 4.5 0 018-3 4.5 4.5 0 018 3c0 6-8 11-8 11z" />
+    </svg>
+  );
+}
+
 function Hand() {
   return (
     <svg viewBox="0 0 24 24">
@@ -277,7 +285,9 @@ export default function PanelAdminHome() {
             </span>
             <Hand />
           </h2>
-          <p className={styles.heroSub}>{quote}</p>
+          <p className={styles.heroSub}>
+            {quote} <Heart />
+          </p>
         </div>
         <img className={styles.heroArt} src={HERO_ART} alt="" />
         <div className={styles.quote}>Terima kasih sudah menjadi bagian dari SAMAQU.</div>

@@ -258,6 +258,9 @@
   font-family: Georgia, serif;
 }
 
+/* ikon hati kecil di teks hero/quote */
+svg.heart { width: 14px; height: 14px; fill: #e46a92; stroke: none; color: #e46a92; vertical-align: -2px; }
+
 /* ---------- kartu ---------- */
 .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 18px; }
 .card {
@@ -809,6 +812,7 @@
   font-size: 36px;
   color: #e8a317;
 }
+.sunflower svg.heart { fill: #e8a317; color: #e8a317; }
 .sunflower .card { background: #fff; border-color: var(--card-line); }
 .sunflower .stValue { color: var(--plum); }
 .sunflower .all { border-color: #f5d77a; color: #c98a00; background: #fff; }
@@ -1199,6 +1203,7 @@
   backdrop-filter: blur(5px);
 }
 .tropical .quote::before { left: 14px; top: 0; font-size: 36px; color: #48cae4; }
+.tropical svg.heart { fill: var(--tropical-coral); color: var(--tropical-coral); }
 .tropical .card { background: #ffffff; border-color: var(--card-line); }
 .tropical .stValue {
   color: var(--plum);
