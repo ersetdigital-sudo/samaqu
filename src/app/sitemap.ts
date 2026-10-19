@@ -13,6 +13,7 @@ const STATIC_PAGES: { path: string; priority: number; changeFrequency: Freq }[] 
   { path: "/katalog", priority: 0.9, changeFrequency: "weekly" },
   { path: "/testimoni", priority: 0.7, changeFrequency: "weekly" },
   { path: "/tentang-kami", priority: 0.6, changeFrequency: "monthly" },
+  { path: "/cek-resi", priority: 0.5, changeFrequency: "monthly" },
   { path: "/faq", priority: 0.6, changeFrequency: "monthly" },
   { path: "/panduan-ukuran", priority: 0.6, changeFrequency: "monthly" },
   { path: "/create-your-price", priority: 0.6, changeFrequency: "weekly" },
