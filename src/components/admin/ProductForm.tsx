@@ -1491,16 +1491,10 @@ export default function TambahProdukPage({
             <p className="hidden sm:block text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: "var(--text-muted)" }}>Produk</p>
             <h1 className={`text-2xl leading-none truncate${isOps ? "" : " italic"}`} style={isOps ? { fontFamily: "var(--font-inter), system-ui, sans-serif", fontWeight: 800, color: "#0f172a" } : { fontFamily: "var(--font-cormorant), Georgia, serif", color: "var(--espresso)" }}>{isOpenOrderPrice ? "Harga Open Order" : isEdit ? "Edit Produk" : "Tambah Produk"}</h1>
           </div>
-          <div className="ml-auto flex items-center gap-2.5">
-            <button onClick={() => router.push(backHref)} className="pf-btn pf-btn-ghost">Batal</button>
-            <button onClick={handleSubmit} disabled={saving} className="pf-btn pf-btn-primary">
-              {saving ? <><Loader2 size={14} className="animate-spin" /> Menyimpan...</> : <><Check size={14} /> {isEdit ? "Simpan Perubahan" : "Simpan Produk"}</>}
-            </button>
-          </div>
         </div>
       </div>
 
-      <main className="max-w-6xl mx-auto px-5 lg:px-8 py-6 lg:py-8 pb-28 lg:pb-10">
+      <main className="max-w-6xl mx-auto px-5 lg:px-8 py-6 lg:py-8 pb-28">
         {/* Kolom kiri `minmax(0,1fr)` supaya tabel ukuran boleh menyusut dan tidak pernah
             mendorong kolom preview keluar layar. Preview tampil mulai 1440px — di bawah itu
             form pakai lebar penuh supaya isinya tidak terpotong. */}
@@ -2265,11 +2259,21 @@ export default function TambahProdukPage({
         </div>
       </main>
 
-      {/* Mobile sticky save button */}
-      <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 px-4 pb-4 pt-3" style={{ background: "linear-gradient(to top, var(--cream) 70%, transparent)" }}>
-        <button onClick={handleSubmit} disabled={saving} className="pf-btn pf-btn-primary w-full" style={{ paddingTop: ".85rem", paddingBottom: ".85rem", fontSize: ".9rem" }}>
-          {saving ? <><Loader2 size={14} className="animate-spin" /> Menyimpan...</> : <><Check size={14} /> {isEdit ? "Simpan Perubahan" : "Simpan Produk"}</>}
-        </button>
+      {/* Bar aksi bawah — tampil di SEMUA lebar layar, bukan cuma mobile.
+          Form produk sangat panjang (Info Dasar → Media), jadi admin yang sudah di
+          bagian bawah tidak perlu scroll balik ke atas lagi untuk menyimpan.
+          Lebarnya mengikuti konten form (max-w-6xl) supaya rapi di desktop. */}
+      <div className="pf-savebar fixed bottom-0 inset-x-0 z-40">
+        <div className="max-w-6xl mx-auto px-5 lg:px-8 pt-3 pb-4 flex items-center gap-3">
+          {/* Batal disembunyikan di layar sempit supaya tombol Simpan tetap selebar
+              layar (tampilan mobile lama tidak berubah). */}
+          <div className="hidden sm:block">
+            <button onClick={() => router.push(backHref)} className="pf-btn pf-btn-ghost">Batal</button>
+          </div>
+          <button onClick={handleSubmit} disabled={saving} className="pf-btn pf-btn-primary w-full sm:w-auto sm:ml-auto sm:min-w-[170px]" style={{ paddingTop: ".85rem", paddingBottom: ".85rem", fontSize: ".9rem" }}>
+            {saving ? <><Loader2 size={14} className="animate-spin" /> Menyimpan...</> : <><Check size={14} /> {isEdit ? "Simpan Perubahan" : "Simpan Produk"}</>}
+          </button>
+        </div>
       </div>
 
       <style jsx global>{`
@@ -2350,6 +2354,15 @@ export default function TambahProdukPage({
         .pf-btn-outline:hover { background: #f4f4f5; }
         .pf-btn-danger { background: transparent; border-color: rgba(231,76,60,.3); color: #dc2626; }
         .pf-btn-danger:hover { background: rgba(231,76,60,.07); }
+        /* Bar aksi tetap di bawah (Simpan). Latar semi-transparan + blur supaya isi
+           form yang lewat di belakangnya masih terbaca samar, bukan garis keras. */
+        .pf-savebar {
+          background: rgba(255,255,255,.9);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+          border-top: 1px solid rgba(0,0,0,.07);
+          box-shadow: 0 -18px 34px -30px rgba(45,33,27,.65);
+        }
         .pf-toggle {
           position: relative; width: 2.6rem; height: 1.45rem; border-radius: 999px;
           flex: none; transition: background .2s ease;
@@ -2569,6 +2582,7 @@ export default function TambahProdukPage({
         .pf--ops .pf-panel { border-color: #e2e8f0; background: #f8fafc; }
         .pf--ops .pf-btn-primary { background: linear-gradient(135deg, #3b82f6, #2563eb); box-shadow: 0 10px 22px -12px rgba(37,99,235,.7); }
         .pf--ops .pf-btn-ghost { border-color: #cbd5e1; color: #334155; background: #fff; }
+        .pf--ops .pf-savebar { background: rgba(255,255,255,.95); border-top-color: #e2e8f0; box-shadow: 0 -18px 34px -30px rgba(15,23,42,.4); }
         .pf--ops .pf-btn-outline { border-color: #cbd5e1; color: #1d4ed8; }
         .pf--ops .pf-chip { border-color: #cbd5e1; color: #334155; }
         .pf--ops .pf-chip.active { background: #2563eb; border-color: #2563eb; color: #fff; }
