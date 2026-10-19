@@ -68,7 +68,10 @@ export default function AnimatedNumber({
   }, [target, duration]);
 
   return (
-    <span className={className} style={{ fontVariantNumeric: "tabular-nums" }}>
+    <span
+      className={className}
+      style={{ fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}
+    >
       {format(display)}
     </span>
   );
