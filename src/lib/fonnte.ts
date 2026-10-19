@@ -222,10 +222,13 @@ export async function sendFonnteMessage(
  * - Nama yang sudah diawali "Ka"/"Kak"/"Kakak" (tanpa memperhatikan huruf besar/kecil) dipakai
  *   apa adanya, supaya tidak muncul "Ka Kak Lea".
  * - Nama kosong → "Ka" (jadi pesannya "Halo Ka,").
+ * - Penanda template ({nama}) dikembalikan apa adanya: nilai aslinya SUDAH berisi "Ka <nama>",
+ *   jadi template tidak boleh menambah "Ka" lagi.
  */
 export function greetingName(name?: string | null): string {
   const full = String(name ?? "").trim();
   if (!full) return "Ka";
+  if (/^\{[a-zA-Z0-9_]+\}$/.test(full)) return full;
   const firstName = full.split(/\s+/)[0];
   if (/^ka(kak)?$/i.test(firstName)) return full;
   return `Ka ${firstName}`;
@@ -851,7 +854,7 @@ export function buildInvoiceMessage(invoice: InvoiceNotification, banks: Payment
     "🧾 *INVOICE SAMAQU*",
     `No. ${invoice.orderNumber}`,
     "",
-    `Halo Ka ${ka},`,
+    `Halo ${ka},`,
     "",
     "Berikut rincian pesanan Ka di SAMAQU:",
     "",
@@ -1076,7 +1079,7 @@ export function templateBawaanNotifikasi(): Record<string, string> {
   hasil["nota-transaksi-lunas"] = [
     "USULAN FORMAT (belum jalan):",
     "",
-    "Halo Ka {nama},",
+    "Halo {nama},",
     "",
     "Pesanan {nomor} sudah kami catat dan berstatus LUNAS.",
     "",
