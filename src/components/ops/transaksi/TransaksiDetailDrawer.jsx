@@ -19,6 +19,7 @@ import { supabase } from "@/lib/supabase";
 import { formatWeightExact } from "@/lib/shipping-weight";
 import { formatTrackingTime, sortHistoryDesc, trackingRow, trackingSummary } from "@/lib/jnt/track-status";
 import { jntServiceTag } from "@/lib/jnt/layanan";
+import JntBadge from "@/components/JntBadge";
 import { SOURCE_STYLES, STATUS_STYLES, formatRupiah, formatTanggalJamID } from "@/components/ops/transaksi/transaksi-format";
 import TransaksiResiPanel from "@/components/ops/transaksi/TransaksiResiPanel";
 
@@ -213,7 +214,10 @@ export default function TransaksiDetailDrawer({ open, order, variant = "ops", on
                   </div>
                   <div className="kv">
                     <span>Kurir</span>
-                    <b>J&amp;T Express</b>
+                    <b style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8 }}>
+                      <JntBadge />
+                      <span>J&amp;T Express</span>
+                    </b>
                   </div>
                   <div className="kv">
                     <span>Layanan</span>

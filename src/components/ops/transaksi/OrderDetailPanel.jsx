@@ -16,6 +16,7 @@ import { usePaymentMethodName } from "@/lib/use-payment-methods";
 import { formatWeightExact } from "@/lib/shipping-weight";
 import { formatTrackingTime } from "@/lib/jnt/track-status";
 import { jntServiceTag } from "@/lib/jnt/layanan";
+import JntBadge from "@/components/JntBadge";
 import { formatRupiah, formatTanggalJamID } from "@/components/ops/transaksi/transaksi-format";
 
 const STAGE_KEY = {
@@ -102,7 +103,10 @@ export default function OrderDetailPanel({
         </div>
         <div className="kv">
           <span>Kurir</span>
-          <b>J&amp;T Express</b>
+          <b style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8 }}>
+            <JntBadge />
+            <span>J&amp;T Express</span>
+          </b>
         </div>
         <div className="kv">
           <span>Layanan</span>

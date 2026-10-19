@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Check, Copy, Loader2, RefreshCw, Search, Truck } from "lucide-react";
 import { STRUK_CSS } from "@/components/akun/StrukShell";
+import JntBadge from "@/components/JntBadge";
 import { formatTrackingTime, sortHistoryDesc, trackingRow, trackingSummary } from "@/lib/jnt/track-status";
 import type { TrackHistoryItem } from "@/lib/jnt/types";
 
@@ -180,12 +181,7 @@ export default function CekResiClient() {
           <>
             <div className="sk-card" style={{ margin: "24px 0 0" }}>
               <div className="flex items-center gap-3">
-                <span
-                  className="inline-flex shrink-0 items-center justify-center rounded-xl px-2.5 py-1.5 text-[12px] font-extrabold text-white"
-                  style={{ background: "#ED1C24", letterSpacing: ".02em" }}
-                >
-                  J&amp;T
-                </span>
+                <JntBadge />
                 <div className="min-w-0">
                   <p className="sk-eyebrow">Kurir</p>
                   <p className="mt-1 text-[13.5px] font-bold" style={{ color: "var(--espresso)" }}>
