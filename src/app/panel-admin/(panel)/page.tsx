@@ -94,15 +94,13 @@ type MetricCard = {
   delta?: string;
   down?: boolean;
   icon: StatIconName;
+  /** Warna ikon per kategori (tetap dalam palet tema). */
+  iconColor: string;
+  /** Warna angka bila memang perlu peringatan. */
+  valueColor?: string;
+  /** Tooltip untuk memperjelas arti angka. */
+  hint?: string;
 };
-
-function Heart() {
-  return (
-    <svg className={styles.heart} viewBox="0 0 24 24">
-      <path d="M12 21s-8-5-8-11a4.5 4.5 0 018-3 4.5 4.5 0 018 3c0 6-8 11-8 11z" />
-    </svg>
-  );
-}
 
 function Hand() {
   return (
@@ -238,6 +236,7 @@ export default function PanelAdminHome() {
       delta: `${deltaOmset >= 0 ? "↗" : "↘"} ${Math.abs(deltaOmset)}%`,
       down: deltaOmset < 0,
       icon: "bag",
+      iconColor: "var(--panel-metric-revenue, currentColor)",
     },
     {
       label: "Pesanan masuk",
@@ -246,18 +245,25 @@ export default function PanelAdminHome() {
       delta: `${deltaMasuk >= 0 ? "↗" : "↘"} ${Math.abs(deltaMasuk)}%`,
       down: deltaMasuk < 0,
       icon: "basket",
+      iconColor: "var(--panel-metric-orders, currentColor)",
     },
     {
       label: "Perlu dikirim",
       value: String(perluDikirim),
       caption: "Menunggu resi",
       icon: "truck",
+      iconColor: "var(--panel-metric-shipping, currentColor)",
     },
     {
-      label: "Stok menipis",
+      label: "Varian menipis",
       value: String(lowStock.length),
-      caption: "Ambang ≤ 5 unit",
+      caption: "Sisa stok 1–5 unit",
       icon: "box",
+      iconColor: lowStock.length > 0
+        ? "var(--panel-metric-stock, currentColor)"
+        : "var(--panel-metric-stock-idle, currentColor)",
+      valueColor: lowStock.length > 0 ? "var(--panel-metric-stock, inherit)" : undefined,
+      hint: `${lowStock.length} varian dengan sisa stok 1–5 unit (bukan jumlah unit fisik)`,
     },
   ];
 
@@ -268,9 +274,7 @@ export default function PanelAdminHome() {
           <h2 className={styles.heroTitle}>
             {greeting}, Lea <Hand />
           </h2>
-          <p className={styles.heroSub}>
-            {quote} <Heart />
-          </p>
+          <p className={styles.heroSub}>{quote}</p>
         </div>
         <img className={styles.heroArt} src={HERO_ART} alt="" />
         <div className={styles.quote}>Terima kasih sudah menjadi bagian dari SAMAQU.</div>
@@ -280,12 +284,16 @@ export default function PanelAdminHome() {
 
       <section className={styles.stats}>
         {metrics.map((m) => (
-          <div key={m.label} className={styles.card}>
+          <div key={m.label} className={styles.card} title={m.hint}>
             <div className={styles.stHead}>
-              <StatIcon name={m.icon} />
+              <span className={styles.stIcon} style={{ color: m.iconColor }}>
+                <StatIcon name={m.icon} />
+              </span>
               <span className={styles.stLabel}>{m.label}</span>
             </div>
-            <div className={styles.stValue}>{loading ? "—" : m.value}</div>
+            <div className={styles.stValue} style={m.valueColor ? { color: m.valueColor } : undefined}>
+              {loading ? "—" : m.value}
+            </div>
             <div className={styles.stFoot}>
               {m.delta ? (
                 <span
