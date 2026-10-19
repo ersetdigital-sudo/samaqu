@@ -105,11 +105,11 @@
 /* ── Tabel ── */
 /* `table-layout: fixed` + lebar kolom persen (`<colgroup>` di komponen) supaya SEMUA tab
  * memakai lebar kolom yang sama dan tabel menyusut proporsional mengikuti lebar konten.
- * `min-width` 980px: di bawah itu tabel menggulir mendatar (`.tw` overflow-x) — bukan
- * memotong isi. Padding/font dirapatkan lagi lewat media query di bawah. */
-.panel-tx .tw { padding: 0; overflow-x: auto; }
-.panel-tx table { width: 100%; border-collapse: collapse; min-width: 980px; table-layout: fixed; }
-.panel-tx th { text-align: left; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: #8a7d83; padding: 14px; background: #fdf8fa; border-bottom: 1px solid #f1e6ea; white-space: nowrap; }
+ * Tanpa scroll mendatar: kolom menyusut mengikuti lebar konten, dan di layar sempit
+ * tabel berubah menjadi kartu per transaksi (lihat media query di bawah). */
+.panel-tx .tw { padding: 0; overflow-x: visible; }
+.panel-tx table { width: 100%; border-collapse: collapse; min-width: 0; table-layout: fixed; }
+.panel-tx th { text-align: left; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: #8a7d83; padding: 14px; background: #fdf8fa; border-bottom: 1px solid #f1e6ea; white-space: normal; overflow-wrap: anywhere; }
 /* Nama pelanggan & produk boleh membungkus — teks panjang tidak dipotong ellipsis. */
 .panel-tx td { padding: 12px 14px; border-bottom: 1px solid #f6eef1; vertical-align: middle; white-space: normal; overflow-wrap: anywhere; font-size: 13px; }
 .panel-tx tbody tr { cursor: pointer; transition: background .15s; }
@@ -306,4 +306,38 @@
   .panel-tx .kv { font-size: 12.5px; align-items: flex-start; }
   .panel-tx .stp { gap: 4px; }
   .panel-tx .stp span { font-size: 10px; }
+}
+
+/* Layar sempit: tabel jadi kartu per transaksi — tidak ada scroll mendatar. */
+@media (max-width: 720px) {
+  .panel-tx .tw { overflow: visible; }
+  .panel-tx table,
+  .panel-tx thead,
+  .panel-tx tbody,
+  .panel-tx tr,
+  .panel-tx td { display: block; width: 100%; }
+  .panel-tx colgroup,
+  .panel-tx thead { display: none; }
+  .panel-tx tbody tr {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 10px 14px; padding: 14px;
+    border-bottom: 1px solid #f1e6ea;
+  }
+  .panel-tx tbody tr:last-child { border-bottom: 0; }
+  .panel-tx td { padding: 0; border: 0; }
+  .panel-tx td,
+  .panel-tx td small { white-space: normal !important; }
+  .panel-tx .id { white-space: normal; overflow-wrap: anywhere; }
+  .panel-tx td:before {
+    content: attr(data-label); display: block; margin-bottom: 2px;
+    font-size: 10px; font-weight: 700; letter-spacing: .06em;
+    text-transform: uppercase; color: #8a7d83;
+  }
+  .panel-tx td:nth-child(1),
+  .panel-tx td:nth-child(2),
+  .panel-tx td:nth-child(3) { grid-column: 1 / -1; }
+  .panel-tx td.chev { display: none; }
+  .panel-tx td.mono { text-align: left !important; }
+  .panel-tx td.mono small { text-align: left !important; }
+  .panel-tx .resi-no { overflow: visible; text-overflow: clip; }
 }

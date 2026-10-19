@@ -502,30 +502,30 @@ export default function Transaksi({ variant = "ops" }) {
                   const variantText = itemVariantText(firstItem);
                   return (
                     <tr key={order.id} onClick={() => setDetail(order)}>
-                      <td>
+                      <td data-label="No. Pesanan">
                         <span className="id">{order.order_number}</span>
                         <small>
                           {formatTanggalSingkatID(order.date_wib)} · {order.time_wib}
                         </small>
                       </td>
-                      <td>
+                      <td data-label="Pelanggan">
                         <b>{order.customer_name}</b>
                         <small>{order.customer_whatsapp || "-"}</small>
                       </td>
-                      <td>
+                      <td data-label="Produk">
                         <span style={{ fontWeight: 600 }}>{firstItem ? firstItem.product_name : order.item_summary}</span>
                         <small>
                           {variantText ? `${variantText} × ${firstItem?.quantity}` : `× ${order.qty_total}`}
                           {extraItems > 0 ? ` · +${extraItems} lainnya` : ""}
                         </small>
                       </td>
-                      <td className="mono" style={{ textAlign: "right" }}>
+                      <td className="mono" style={{ textAlign: "right" }} data-label="Total">
                         Rp {formatRupiah(order.total)}
                         <small style={{ textAlign: "right" }}>
                           {SOURCE_STYLES[order.source]?.label || order.source_label}
                         </small>
                       </td>
-                      <td>
+                      <td data-label="No. Resi">
                         {order.awb_no ? (
                           <span
                             className={`resi-no${order.status === "dibatalkan" ? " resi-void" : ""}`}
@@ -548,7 +548,7 @@ export default function Transaksi({ variant = "ops" }) {
                           </small>
                         ) : null}
                       </td>
-                      <td>
+                      <td data-label="Status">
                         <span className={`bd s-${PANEL_STATUS_COLOR[order.status] || "batal"}`}>{order.status_label}</span>
                       </td>
                       <td className="chev" style={{ textAlign: "right" }}>
