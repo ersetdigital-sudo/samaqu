@@ -2,9 +2,10 @@
  * Label varian/item untuk pembeli — SATU sumber supaya keranjang, checkout, ringkasan
  * pesanan, dan pesan WhatsApp tidak merangkai sendiri-sendiri.
  *
- * Kategori **Cover & Hanger** bukan pakaian: variannya berupa NAMA paket (mis. "Hanger saja"),
- * bukan warna × ukuran. Di database variannya tetap satu baris `product_variants` dengan
- * `color` = nama paket dan `size` = "ALL SIZE" (lihat `ProductForm.tsx`).
+ * Kategori **paket** (Cover & Hanger dan Kabak) bukan pakaian: variannya berupa NAMA
+ * (mis. "Hanger saja", "Kabak 01"), bukan warna × ukuran. Di database variannya tetap satu
+ * baris `product_variants` dengan `color` = nama varian dan `size` = "ALL SIZE"
+ * (lihat `ProductForm.tsx`).
  *
  * Karena `order_items` tidak menyimpan kategori produk, item dikenali sebagai paket dari
  * ukuran penandanya (`ALL SIZE`) — satu-satunya ukuran yang dipakai kategori ini. Untuk data
@@ -13,25 +14,39 @@
  */
 
 export const PAKET_CATEGORY = "Cover & Hanger";
+export const KABAK_CATEGORY = "Kabak";
 export const PAKET_SIZE = "ALL SIZE";
 
-/** Ukuran penanda kategori Cover & Hanger. */
+function kategoriWords(category?: string | null): string[] {
+  const teks = String(category ?? "").toLowerCase().replace(/[^a-z]+/g, " ").trim();
+  return teks ? teks.split(" ") : [];
+}
+
+/** Ukuran penanda kategori paket. */
 export function isPaketSize(size?: string | null): boolean {
   return String(size ?? "").trim().toUpperCase() === PAKET_SIZE;
 }
 
-/**
- * Kategori Cover & Hanger ditulis beda-beda di data lama ("Cover Hanger", "COVER & HANGER",
- * "Cover&Hanger", "Hanger"). Dipakai SEMUA tempat supaya kategori ini tidak pernah lagi
- * jatuh ke alur pakaian hanya karena ejaannya berbeda.
- */
-export function isPaketKategori(category?: string | null): boolean {
-  const teks = String(category ?? "").toLowerCase().replace(/[^a-z]+/g, " ").trim();
-  if (!teks) return false;
-  return teks.split(" ").includes("hanger") || teks === "cover";
+/** Kategori Cover & Hanger (ejaan lama: "Cover Hanger", "Hanger", "Cover"). */
+export function isCoverHangerKategori(category?: string | null): boolean {
+  const words = kategoriWords(category);
+  return words.includes("hanger") || words.join(" ") === "cover";
 }
 
-/** Item ini varian "paket" (Cover & Hanger)? */
+/** Kategori Kabak (termasuk ejaan "Kabak 01", "Kabak Box", dst). */
+export function isKabakKategori(category?: string | null): boolean {
+  return kategoriWords(category).includes("kabak");
+}
+
+/**
+ * Kategori paket: Cover & Hanger + Kabak. Dipakai SEMUA tempat supaya kategori ini tidak
+ * pernah lagi jatuh ke alur pakaian hanya karena ejaannya berbeda.
+ */
+export function isPaketKategori(category?: string | null): boolean {
+  return isCoverHangerKategori(category) || isKabakKategori(category);
+}
+
+/** Item ini varian "paket" (Cover & Hanger / Kabak)? */
 export function isPaketItem(item?: { size?: string | null; category?: string | null } | null): boolean {
   if (!item) return false;
   if (isPaketKategori(item.category)) return true;

@@ -12,7 +12,7 @@ import AdminShell from "@/components/AdminShell";
 import JenisKainForm from "@/components/JenisKainForm";
 import PresetColorPicker from "@/components/PresetColorPicker";
 import { colorMap } from "@/lib/katalog-data";
-import { isPaketKategori, isPaketSize, variantName } from "@/lib/item-label";
+import { PAKET_SIZE, isCoverHangerKategori, isKabakKategori, isPaketKategori, isPaketSize, variantName } from "@/lib/item-label";
 import { uploadToCloudinary, validateMediaFile } from "@/lib/cloudinary";
 import { useStoreSettings } from "@/lib/store-settings";
 import { usePageUrl } from "@/lib/ops-router";
@@ -21,8 +21,8 @@ const CATEGORIES = ["Thobe", "Kandora", "Koko", "Vest", "Kabak", "Cover & Hanger
 const SIZES = ["S", "M", "L", "XL", "XXL"] as const;
 
 /**
- * Cover & Hanger = kategori non-pakaian: variannya berupa NAMA (mis. "Hanger saja"),
- * bukan kombinasi warna × ukuran.
+ * Kategori paket (Cover & Hanger dan Kabak) = non-pakaian: variannya berupa NAMA
+ * (mis. "Hanger saja", "Kabak 01"), bukan kombinasi warna × ukuran.
  *
  * Penyimpanannya TETAP satu baris `product_variants` per varian (struktur sama seperti varian
  * biasa) dengan `color` = nama varian dan `size` = "ALL SIZE":
@@ -36,8 +36,12 @@ const SIZES = ["S", "M", "L", "XL", "XXL"] as const;
  * Nama varian inilah yang tampil di semua layar (Daftar Produk, Laporan Stok, drawer Transaksi).
  */
 const COVER_HANGER = "Cover & Hanger";
-const COVER_HANGER_SIZE = "ALL SIZE";
 const COVER_HANGER_TEMPLATE = ["Hanger saja", "Cover saja", "Set Hanger + Cover"];
+const KABAK_TEMPLATE = Array.from({ length: 15 }, (_, i) => `Kabak ${String(i + 1).padStart(2, "0")}`);
+
+const paketTemplateFor = (category: string) =>
+  isKabakKategori(category) ? KABAK_TEMPLATE : COVER_HANGER_TEMPLATE;
+const paketPlaceholderFor = (category: string) => (isKabakKategori(category) ? "mis. Kabak 01" : "mis. Hanger saja");
 
 function formatRupiah(val: string): string {
   const digits = val.replace(/\D/g, "");
@@ -56,14 +60,14 @@ interface Variant {
 
 /**
  * Satu varian Cover & Hanger: `color` diisi NAMA varian, dan selalu punya tepat satu
- * baris "ukuran" tetap (`COVER_HANGER_SIZE`) supaya bentuk datanya sama dengan varian biasa.
+ * baris "ukuran" tetap (`PAKET_SIZE`) supaya bentuk datanya sama dengan varian biasa.
  */
-function emptyCoverHangerVariant(name = ""): Variant {
-  return { color: name, hex: "", sizes: [{ size: COVER_HANGER_SIZE, stock: 0, priceOverride: "", sku: "", weight: "" }] };
+function emptyPaketVariant(name = ""): Variant {
+  return { color: name, hex: "", sizes: [{ size: PAKET_SIZE, stock: 0, priceOverride: "", sku: "", weight: "" }] };
 }
 
 /** Nama varian Cover & Hanger yang isinya dobel (case-insensitive, spasi diabaikan). */
-function duplicateCoverHangerNames(variants: Variant[]): Set<string> {
+function duplicatePaketNames(variants: Variant[]): Set<string> {
   const seen = new Map<string, number>();
   for (const v of variants) {
     const key = String(v.color ?? "").trim().toLowerCase();
@@ -318,12 +322,14 @@ function SizeGrid({
 }
 
 /**
- * Daftar varian untuk kategori Cover & Hanger: satu baris = satu varian dengan NAMA bebas
- * (tidak ada warna & ukuran). Struktur & gaya barisnya sama dengan `SizeGrid` (kelas `pf-*`),
- * hanya kolom pertama yang berubah dari "Ukuran" jadi "Nama varian".
+ * Daftar varian untuk kategori paket (Cover & Hanger dan Kabak): satu baris = satu varian
+ * dengan NAMA bebas (tidak ada warna & ukuran). Struktur & gaya barisnya sama dengan
+ * `SizeGrid` (kelas `pf-*`), hanya kolom pertama yang berubah dari "Ukuran" jadi "Nama varian".
  */
-function CoverHangerVariantList({
+function PaketVariantList({
   variants,
+  template,
+  placeholder,
   skuFallback,
   onUpdateName,
   onUpdateField,
@@ -332,6 +338,9 @@ function CoverHangerVariantList({
   onRemove,
 }: {
   variants: Variant[];
+  /** Nama varian siap pakai sesuai kategori (Hanger/Cover atau Kabak 01–15). */
+  template: string[];
+  placeholder: string;
   skuFallback?: string;
   onUpdateName: (idx: number, value: string) => void;
   onUpdateField: (idx: number, field: keyof SizeRow, value: string | number) => void;
@@ -339,16 +348,18 @@ function CoverHangerVariantList({
   onAddTemplate: () => void;
   onRemove: (idx: number) => void;
 }) {
-  const duplicates = duplicateCoverHangerNames(variants);
+  const duplicates = duplicatePaketNames(variants);
   const missingWeight = variants.filter((v) => String(v.sizes[0]?.weight ?? "").trim() === "").length;
+  // Daftar panjang (Kabak 01–15) diringkas jadi rentang supaya bar hint tidak memanjang.
+  const templateLabel = template.length > 5 ? `${template[0]}–${template[template.length - 1]}` : template.join(" · ");
 
   return (
     <div className="pf-sizes">
-      {/* Aksi cepat: isi 3 nama varian siap pakai — nama tetap bisa diubah & baris tetap bisa dihapus */}
+      {/* Aksi cepat: isi nama varian siap pakai — nama tetap bisa diubah & baris tetap bisa dihapus */}
       <div className="pf-bulkbar">
         <div className="pf-bulkbar-text">
           <span className="pf-bulkbar-title">Tambah dari template</span>
-          <span className="pf-bulkbar-hint">Mengisi 3 varian: {COVER_HANGER_TEMPLATE.join(" · ")} (nama masih bisa diubah)</span>
+          <span className="pf-bulkbar-hint">Mengisi {template.length} varian: {templateLabel} (nama masih bisa diubah)</span>
         </div>
         <div className="pf-bulkbar-actions">
           <button type="button" className="pf-btn pf-btn-ghost" onClick={onAddTemplate}>Tambah dari template</button>
@@ -371,7 +382,7 @@ function CoverHangerVariantList({
 
       <div className="pf-sizes-list">
         {variants.map((v, i) => {
-          const s = v.sizes[0] ?? { size: COVER_HANGER_SIZE, stock: 0, priceOverride: "", sku: "", weight: "" };
+          const s = v.sizes[0] ?? { size: PAKET_SIZE, stock: 0, priceOverride: "", sku: "", weight: "" };
           const weightEmpty = String(s.weight ?? "").trim() === "";
           const isDuplicate = duplicates.has(String(v.color ?? "").trim().toLowerCase());
           return (
@@ -382,8 +393,8 @@ function CoverHangerVariantList({
                   <input
                     value={v.color}
                     onChange={(e) => onUpdateName(i, e.target.value)}
-                    placeholder="mis. Hanger saja"
-                    list="cover-hanger-suggestions"
+                    placeholder={placeholder}
+                    list="paket-suggestions"
                     aria-invalid={isDuplicate || undefined}
                     title={isDuplicate ? "Nama varian ini dipakai lebih dari satu baris" : undefined}
                     className={`pf-cell${isDuplicate ? " invalid" : ""}`}
@@ -458,8 +469,8 @@ function CoverHangerVariantList({
         })}
       </div>
 
-      <datalist id="cover-hanger-suggestions">
-        {COVER_HANGER_TEMPLATE.map((n) => <option key={n} value={n} />)}
+      <datalist id="paket-suggestions">
+        {template.map((n) => <option key={n} value={n} />)}
       </datalist>
 
       <div className="pf-sizes-foot">
@@ -558,18 +569,20 @@ export default function TambahProdukPage({
   const [originalName, setOriginalName] = useState("");
   const [originalSelectedSeries, setOriginalSelectedSeries] = useState<string[]>([]);
 
-  // ── Cover & Hanger: kategori non-pakaian → varian berupa NAMA, bukan warna × ukuran ──
-  const isCoverHanger = isPaketKategori(category);
+  // ── Kategori paket (Cover & Hanger / Kabak): varian berupa NAMA, bukan warna × ukuran ──
+  const isPaket = isPaketKategori(category);
+  const paketTemplate = paketTemplateFor(category);
+  const paketPlaceholder = paketPlaceholderFor(category);
   /** Ada isian varian yang bakal hilang kalau mode varian ikut ganti kategori (untuk konfirmasi). */
-  const variantDataFilled = isCoverHanger
+  const variantDataFilled = isPaket
     ? variants.some((v) => String(v.color).trim() !== "" || v.sizes.some((s) => s.stock > 0))
     : variants.length > 0;
   /**
-   * Warna pemilik media. Cover & Hanger tidak punya warna, jadi medianya disimpan dengan
+   * Warna pemilik media. Kategori paket tidak punya warna, jadi medianya disimpan dengan
    * `color` KOSONG: website menampilkan media ber-`color` kosong untuk varian apa pun
    * (lihat filter di halaman katalog: `!m.color || m.color === selectedColor`).
    */
-  const mediaColor = isCoverHanger ? "" : category === "Thobe" ? "default" : activeColor || "default";
+  const mediaColor = isPaket ? "" : category === "Thobe" ? "default" : activeColor || "default";
 
   // Fetch jenis_kain list + daftar series dari tabel product_series
   useEffect(() => {
@@ -597,7 +610,8 @@ export default function TambahProdukPage({
         setName(product.name);
         setOriginalName(product.name);
         setSlug(product.id);
-        setCategory(isPaketKategori(product.category) ? COVER_HANGER : product.category);
+        // Hanya ejaan lama Cover/Hanger yang dinormalkan. Kabak tetap "Kabak".
+        setCategory(isCoverHangerKategori(product.category) ? COVER_HANGER : product.category);
         setDescription(product.description || "");
         // Harga: mode Open Order membaca kolom `open_order_*` (fallback ke harga katalog bila
         // belum pernah diatur) supaya form tidak kosong; mode biasa membaca kolom katalog.
@@ -695,7 +709,7 @@ export default function TambahProdukPage({
             hex: "",
             sizes: [{
               id: v.id,
-              size: COVER_HANGER_SIZE,
+              size: PAKET_SIZE,
               stock: Number(v.stock) || 0,
               priceOverride: v.price_override ? String(v.price_override) : "",
               sku: v.sku || "",
@@ -703,7 +717,7 @@ export default function TambahProdukPage({
             }],
           }));
           paketIdsLamaRef.current = rowsPaket.map((row) => row.sizes[0].id).filter((id): id is string => Boolean(id));
-          setVariants(rowsPaket.length > 0 ? rowsPaket : [emptyCoverHangerVariant()]);
+          setVariants(rowsPaket.length > 0 ? rowsPaket : [emptyPaketVariant()]);
         } else if (dbVariants && dbVariants.length > 0) {
           const colorGroups: Record<string, Variant> = {};
           dbVariants.forEach((v: { color: string; hex: string | null; size: string; stock: number; weight: number | null; price_override: number | null; sku: string | null }) => {
@@ -1167,14 +1181,14 @@ export default function TambahProdukPage({
       if (cypEnabled && (!minimumPrice || parseInt(minimumPrice) <= 0)) e.minimumPrice = "Harga Minimum wajib diisi jika Create Your Price aktif";
       if (cypEnabled && minimumPrice && basePrice && parseInt(minimumPrice) > parseInt(basePrice)) e.minimumPrice = "Harga Minimum tidak boleh lebih besar dari Harga Dasar";
       if (cypEnabled && recommendedPrice && minimumPrice && parseInt(recommendedPrice) < parseInt(minimumPrice)) e.recommendedPrice = "Harga Rekomendasi tidak boleh kurang dari Harga Minimum";
-      if (isCoverHanger) {
+      if (isPaket) {
         // Cover & Hanger: varian dinilai dari NAMAnya (tidak ada warna & ukuran).
         if (variants.length === 0) {
           e.variants = "Minimal 1 varian";
         } else {
           const names = variants.map((v) => String(v.color ?? "").trim());
           if (names.some((n) => n === "")) e.variants = "Nama varian wajib diisi";
-          else if (duplicateCoverHangerNames(variants).size > 0) e.variants = "Nama varian tidak boleh kembar";
+          else if (duplicatePaketNames(variants).size > 0) e.variants = "Nama varian tidak boleh kembar";
         }
         if (!variants.some((v) => v.sizes.some((s) => s.stock > 0))) e.variants = "Minimal 1 varian dengan stok > 0";
       } else {
@@ -1189,7 +1203,7 @@ export default function TambahProdukPage({
           if (raw === "") continue;
           const w = Number(raw);
           if (!Number.isInteger(w) || w < 100 || w > 5000) {
-            e.variants = isCoverHanger ? "Berat varian harus bilangan bulat 100–5000 gram" : "Berat per ukuran harus bilangan bulat 100–5000 gram";
+            e.variants = isPaket ? "Berat varian harus bilangan bulat 100–5000 gram" : "Berat per ukuran harus bilangan bulat 100–5000 gram";
           }
         }
       }
@@ -1385,7 +1399,7 @@ export default function TambahProdukPage({
           }))
         );
         if (isEdit) {
-          if (isCoverHanger) {
+          if (isPaket) {
             // Cover & Hanger: hapus HANYA baris yang memang dibuang di form; baris yang masih ada
             // diperbarui in-place (ID tetap). Aturan varian biasa tidak diubah.
             const idDisimpan = new Set(variantRows.map((row) => row.id).filter((id): id is string => Boolean(id)));
@@ -1397,7 +1411,7 @@ export default function TambahProdukPage({
           await supabase.from("product_images").delete().eq("product_id", slug);
         }
         if (variantRows.length > 0) {
-          if (isCoverHanger) {
+          if (isPaket) {
             for (const row of variantRows) {
               if (!row.id) continue;
               const { id, ...patch } = row;
@@ -1494,16 +1508,17 @@ export default function TambahProdukPage({
                     <div className="pf-selectwrap">
                       <select value={category} onChange={(e) => {
                         const val = e.target.value;
-                        const toCoverHanger = val === COVER_HANGER;
-                        // Ganti mode varian (masuk/keluar Cover & Hanger) hanya setelah dikonfirmasi
-                        // kalau sudah ada isian — supaya varian yang sudah diisi tidak hilang diam-diam.
-                        if (toCoverHanger !== isCoverHanger && variantDataFilled) {
-                          const pesan = toCoverHanger
-                            ? "Varian warna & ukuran yang sudah diisi akan diganti dengan daftar varian nama (Cover & Hanger). Lanjut?"
-                            : "Daftar varian Cover & Hanger yang sudah diisi akan dikosongkan. Lanjut ganti kategori?";
+                        const toPaket = isPaketKategori(val);
+                        // Ganti mode varian (pakaian ↔ paket, atau antar kategori paket) hanya
+                        // setelah dikonfirmasi kalau sudah ada isian — supaya varian yang sudah
+                        // diisi tidak hilang diam-diam.
+                        const paketCategoryChanged = toPaket && isPaket && val !== category;
+                        const variantModeChanged = toPaket !== isPaket || paketCategoryChanged;
+                        if (variantModeChanged && variantDataFilled) {
+                          const pesan = "Varian yang sudah diisi akan diganti mengikuti kategori baru. Lanjut?";
                           if (!window.confirm(pesan)) return;
                         }
-                        if (toCoverHanger !== isCoverHanger) setVariants(toCoverHanger ? [emptyCoverHangerVariant()] : []);
+                        if (variantModeChanged) setVariants(toPaket ? [emptyPaketVariant()] : []);
                         setCategory(val);
                         if (val !== "Thobe") setSeries("");
                         if (val !== "Thobe" && val !== "Kandora") setSelectedJenisKainId("");
@@ -1956,7 +1971,7 @@ export default function TambahProdukPage({
                   <div>
                     <h2 className="pf-title">Varian &amp; Stok</h2>
                     <p className="pf-sub">
-                      {isCoverHanger
+                      {isPaket
                         ? "Daftar varian produk ini (nama varian, stok, harga khusus, berat)."
                         : onlyDefaultVariant
                           ? "Kelola ukuran, harga khusus, dan stok."
@@ -1965,28 +1980,30 @@ export default function TambahProdukPage({
                   </div>
                 </div>
                 {errors.variants && <p className="pf-error mb-3">{errors.variants}</p>}
-                {isCoverHanger ? (
-                  <CoverHangerVariantList
+                {isPaket ? (
+                  <PaketVariantList
                     variants={variants}
+                    template={paketTemplate}
+                    placeholder={paketPlaceholder}
                     skuFallback={sku}
                     onUpdateName={(i, value) => setVariants((prev) => prev.map((v, idx) => (idx === i ? { ...v, color: value } : v)))}
                     onUpdateField={(i, field, value) =>
                       setVariants((prev) =>
                         prev.map((v, idx) => {
                           if (idx !== i) return v;
-                          const sizes = v.sizes.length > 0 ? [...v.sizes] : [{ size: COVER_HANGER_SIZE, stock: 0, priceOverride: "", sku: "", weight: "" }];
+                          const sizes = v.sizes.length > 0 ? [...v.sizes] : [{ size: PAKET_SIZE, stock: 0, priceOverride: "", sku: "", weight: "" }];
                           sizes[0] = { ...sizes[0], [field]: value };
                           return { ...v, sizes };
                         })
                       )
                     }
-                    onAdd={() => setVariants((prev) => [...prev, emptyCoverHangerVariant()])}
+                    onAdd={() => setVariants((prev) => [...prev, emptyPaketVariant()])}
                     /* Template: baris kosong yang belum diisi ikut terpakai, nama yang sudah ada dilewati —
                        semuanya dalam SATU update state. */
                     onAddTemplate={() =>
                       setVariants((prev) => {
                         const adaNama = new Set(prev.map((v) => String(v.color ?? "").trim().toLowerCase()).filter(Boolean));
-                        const baru = COVER_HANGER_TEMPLATE.filter((n) => !adaNama.has(n.toLowerCase())).map((n) => emptyCoverHangerVariant(n));
+                        const baru = paketTemplate.filter((n) => !adaNama.has(n.toLowerCase())).map((n) => emptyPaketVariant(n));
                         if (baru.length === 0) return prev;
                         const kosong = prev.length === 1 && String(prev[0].color ?? "").trim() === "" && prev[0].sizes.every((s) => !s.stock);
                         return kosong ? baru : [...prev, ...baru];
@@ -2042,15 +2059,15 @@ export default function TambahProdukPage({
                   <div className="pf-num">3</div>
                   <div>
                     <h2 className="pf-title">Media</h2>
-                    <p className="pf-sub">{isCoverHanger ? "Foto & video produk (berlaku untuk semua varian)." : "Foto & video produk per warna."}</p>
+                    <p className="pf-sub">{isPaket ? "Foto & video produk (berlaku untuk semua varian)." : "Foto & video produk per warna."}</p>
                   </div>
                 </div>
                 {errors.media && <p className="pf-error mb-3">{errors.media}</p>}
-                {!activeColor && !isCoverHanger ? (
+                {!activeColor && !isPaket ? (
                   <p className="text-sm text-center py-6" style={{ color: "var(--text-muted)" }}>Pilih warna terlebih dahulu untuk upload media</p>
                 ) : (
                   <div>
-                    {isCoverHanger ? (
+                    {isPaket ? (
                       <p className="text-sm mb-3" style={{ color: "var(--text-secondary)" }}>Media berlaku untuk <span className="font-medium" style={{ color: "var(--gold)" }}>semua varian</span></p>
                     ) : (
                       <p className="text-sm mb-3" style={{ color: "var(--text-secondary)" }}>Upload untuk warna: <span className="font-medium" style={{ color: "var(--gold)" }}>{activeColor}</span></p>
