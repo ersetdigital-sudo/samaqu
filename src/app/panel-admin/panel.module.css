@@ -1081,8 +1081,12 @@ svg.heart { width: 14px; height: 14px; fill: #e46a92; stroke: none; color: #e46a
 }
 .tropical .brand b,
 .tropical .footText b { color: #34566b; }
-.tropical .brand small,
-.tropical .foot { color: #6f8c99; }
+.tropical .brand small { color: #6f8c99; }
+.tropical .foot {
+  color: #6f8c99;
+  /* Jarak dari menu terakhir supaya footer tidak terasa sesak. */
+  padding-top: 18px;
+}
 .tropical .sec { color: #6f8c99; }
 .tropical .navItem,
 .tropical .nav a { color: #456779; }
@@ -1093,10 +1097,12 @@ svg.heart { width: 14px; height: 14px; fill: #e46a92; stroke: none; color: #e46a
 .tropical .navItem:hover svg,
 .tropical .nav a:hover svg { color: #168aad; }
 .tropical .nav a.on {
-  background: #c5e8f6;
+  /* Gradasi tipis + aksen kiri: area aktif tidak menyatu dengan sidebar. */
+  background: linear-gradient(100deg, #c5e8f6 0%, #d4eff9 100%);
   border-color: #c5e8f6;
   color: #34566b;
-  box-shadow: none;
+  font-weight: 600;
+  box-shadow: inset 3px 0 0 #168aad;
 }
 .tropical .nav a.on svg { color: #168aad; }
 .tropical .navItemSoon { color: #6f8c99; }
