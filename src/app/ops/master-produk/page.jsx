@@ -48,7 +48,7 @@ import ImportProductModal from "@/components/ops/ImportProductModal"; // Import 
 import { useToast } from "@/components/ops/ui/use-toast";
 import { usePageUrl } from "@/lib/ops-router";
 import { MetricCardSkeleton } from "@/components/ops/ui/skeleton";
-import { SIZES, normalizeStock, stockStatus } from "@/lib/ops-variants";
+import { SIZES, stockStatus } from "@/lib/ops-variants";
 import { isPaketKategori } from "@/lib/item-label";
 import { IconBoxes, IconLayers, IconCalendarClock, IconPackageX, IconArrowDownToLine, IconAlertTriangle } from "@/components/ops/icons";
 
@@ -56,9 +56,7 @@ import { IconBoxes, IconLayers, IconCalendarClock, IconPackageX, IconArrowDownTo
  * Stok yang ditampilkan di Laporan Stok & detail produk memakai stok EFEKTIF
  * (`stock_efektif` dari API) — sama seperti Daftar Produk. Varian produk series
  * menumpang stok produk basisnya, jadi tidak lagi dihitung "habis".
- */
-const stokVarianMap = (v) => normalizeStock(v.stock_efektif ?? v.stock);
-/**
+ *
  * Total stok varian = jumlah SEMUA ukuran yang benar-benar ada di data, bukan cuma XS–XXL.
  * Kategori Cover & Hanger memakai satu "ukuran" tetap `ALL SIZE` (variannya dibedakan lewat
  * nama/warna), dan `normalizeStock` — daftar ukuran standar — membuang kunci di luar itu.
@@ -70,6 +68,28 @@ const stokVarianTotal = (v) => {
   if (!src || typeof src !== "object") return 0;
   return Object.values(src).reduce((sum, n) => sum + (Number(n) || 0), 0);
 };
+
+/**
+ * Stok MENTAH semua ukuran (termasuk `ALL SIZE` / nama varian non-standar).
+ * `stokVarianMap` sengaja hanya berisi XS–XXL; peta ini dipakai untuk membedakan
+ * "ukuran tidak ada" (tampil "-") dari "ukuran ada tapi stok 0" (tampil 0 merah).
+ */
+const stokMentahMap = (v) => {
+  const src = v?.stock_efektif ?? v?.stock;
+  if (!src || typeof src !== "object") return {};
+  const out = {};
+  for (const [size, n] of Object.entries(src)) {
+    const key = String(size || "").trim().toUpperCase();
+    if (key) out[key] = Number(n) || 0;
+  }
+  return out;
+};
+const punyaUkuranStandar = (v) => Object.keys(stokMentahMap(v)).some((size) => SIZES.includes(size));
+const punyaUkuranNonStandar = (v) => Object.keys(stokMentahMap(v)).some((size) => !SIZES.includes(size));
+const stokNonStandar = (v) =>
+  Object.entries(stokMentahMap(v))
+    .filter(([size]) => !SIZES.includes(size))
+    .reduce((sum, [, n]) => sum + (Number(n) || 0), 0);
 
 /* ── Bantu pencarian & filter Laporan Stok (semua dari data yang ada) ── */
 const varianKategori = (v) => String(v.category || "").trim();
@@ -268,10 +288,14 @@ function ProductDetailModal({ isOpen, onClose, product, stockIns = [], transacti
 
   // Satu baris ukuran untuk produk default; baris per warna hanya kalau warna asli.
   const displayRows = hasRealColors ? realColorRows : pv.slice(0, 1);
-  const singleStock = displayRows[0] ? stokVarianMap(displayRows[0]) : normalizeStock(null);
+  const detailSizeLayout = {
+    showSizes: displayRows.some(punyaUkuranStandar),
+    showExtra: displayRows.some(punyaUkuranNonStandar),
+  };
+  const detailSizeCount = new Set(displayRows.flatMap((v) => Object.keys(stokMentahMap(v)))).size;
   const footerVariant = hasRealColors
     ? `${displayRows.length} ${paket ? "varian" : "warna"}`
-    : `${SIZES.length} ukuran`;
+    : `${detailSizeCount} ukuran`;
 
   const productStockIns = (stockIns || []).filter((si) => si.product_id === product.id);
   const productTransactions = (transactions || []).filter((t) => t.product_id === product.id);
@@ -404,18 +428,29 @@ function ProductDetailModal({ isOpen, onClose, product, stockIns = [], transacti
                                 {paket ? "Varian" : "Warna"}
                               </th>
                             ) : null}
-                            {SIZES.map((s) => (
-                              <th key={s} className="px-2 py-2 text-center text-[10px] font-bold uppercase text-slate-500">{s}</th>
-                            ))}
+                            {detailSizeLayout.showSizes &&
+                              SIZES.map((s) => (
+                                <th key={s} className="px-2 py-2 text-center text-[10px] font-bold uppercase text-slate-500">{s}</th>
+                              ))}
+                            {detailSizeLayout.showExtra && (
+                              <th className="px-2 py-2 text-center text-[10px] font-bold uppercase text-slate-500" title="Stok ukuran non-standar (mis. ALL SIZE)">
+                                Stok
+                              </th>
+                            )}
                             <th className="px-3 py-2 text-center text-[10px] font-bold uppercase text-slate-500">Total</th>
                           </tr>
                         </thead>
                         <tbody>
                           {displayRows.map((v, index) => {
-                            const st = hasRealColors ? stokVarianMap(v) : singleStock;
-                            // Total memakai `stokVarianTotal` supaya ukuran di luar XS–XXL
-                            // (mis. "ALL SIZE" milik Cover & Hanger) tetap ikut terhitung.
-                            const total = hasRealColors ? stokVarianTotal(v) : SIZES.reduce((sum, sz) => sum + st[sz], 0);
+                            const raw = stokMentahMap(v);
+                            // Total = SEMUA ukuran (termasuk ALL SIZE/nama varian non-standar).
+                            const total = stokVarianTotal(v);
+                            const extra = stokNonStandar(v);
+                            const hasExtra = punyaUkuranNonStandar(v);
+                            const extraTitle = Object.entries(raw)
+                              .filter(([size]) => !SIZES.includes(size))
+                              .map(([size, n]) => `${size}: ${n}`)
+                              .join(", ");
                             return (
                               <tr key={v.id || index} className="border-t border-slate-100 dark:border-slate-800">
                                 {hasRealColors ? (
@@ -424,9 +459,34 @@ function ProductDetailModal({ isOpen, onClose, product, stockIns = [], transacti
                                     {v.series_name ? <span className="block text-[10px] text-slate-400 font-medium">{v.series_name}</span> : null}
                                   </td>
                                 ) : null}
-                                {SIZES.map((sz) => (
-                                  <td key={sz} className={`px-2 py-2 text-center text-[13px] font-semibold ${st[sz] === 0 ? "text-red-400" : "text-slate-700 dark:text-slate-200"}`}>{st[sz]}</td>
-                                ))}
+                                {detailSizeLayout.showSizes && SIZES.map((sz) => {
+                                  const has = Object.prototype.hasOwnProperty.call(raw, sz);
+                                  const val = has ? raw[sz] : null;
+                                  const cls = !has
+                                    ? "text-gray-400 dark:text-slate-500"
+                                    : val === 0
+                                      ? "text-red-400"
+                                      : "text-slate-700 dark:text-slate-200";
+                                  return (
+                                    <td key={sz} className={`px-2 py-2 text-center text-[13px] font-semibold ${cls}`}>
+                                      {has ? val : "-"}
+                                    </td>
+                                  );
+                                })}
+                                {detailSizeLayout.showExtra && (
+                                  <td
+                                    className={`px-2 py-2 text-center text-[13px] font-semibold ${
+                                      !hasExtra
+                                        ? "text-gray-400 dark:text-slate-500"
+                                        : extra === 0
+                                          ? "text-red-400"
+                                          : "text-slate-700 dark:text-slate-200"
+                                    }`}
+                                    title={extraTitle || undefined}
+                                  >
+                                    {hasExtra ? extra : "-"}
+                                  </td>
+                                )}
                                 <td className="px-3 py-2 text-center text-[13px] font-black text-blue-600 dark:text-blue-400">{total}</td>
                               </tr>
                             );
@@ -693,6 +753,19 @@ export default function MasterProduk() {
   // Total unit hasil filter — HANYA baris induk (tanpa `base_product_id`) supaya tidak dobel.
   const reportUnits = useMemo(
     () => reportRows.filter((v) => !v.base_product_id).reduce((s, v) => s + stokVarianTotal(v), 0),
+    [reportRows],
+  );
+  /**
+   * Layout kolom adaptif: kolom XS–XXL hanya berguna kalau ada baris berukuran standar.
+   * Kolom "Stok" muncul kalau ada ukuran non-standar (mis. ALL SIZE milik Kabak).
+   * Kalau filter hanya menampilkan Kabak, tabel otomatis jadi Produk/Kategori/Kain/
+   * Series/Stok/Total tanpa kolom ukuran yang selalu 0.
+   */
+  const reportSizeLayout = useMemo(
+    () => ({
+      showSizes: reportRows.some(punyaUkuranStandar),
+      showExtra: reportRows.some(punyaUkuranNonStandar),
+    }),
     [reportRows],
   );
   const hasReportFilter =
@@ -1595,16 +1668,22 @@ export default function MasterProduk() {
                         <th className="px-3 py-3.5 text-left font-inter text-xs font-bold text-white uppercase tracking-wide border-r border-[#2d4a6f] whitespace-nowrap">Kategori</th>
                         <th className="px-3 py-3.5 text-left font-inter text-xs font-bold text-white uppercase tracking-wide border-r border-[#2d4a6f] whitespace-nowrap">Jenis Kain</th>
                         <th className="px-3 py-3.5 text-left font-inter text-xs font-bold text-white uppercase tracking-wide border-r border-[#2d4a6f]">Series</th>
-                        {SIZES.map((size) => (
-                          <th key={size} className="w-11 px-2 py-3.5 text-center font-inter text-xs font-bold text-white uppercase tracking-wide border-r border-[#2d4a6f]">{size}</th>
-                        ))}
+                        {reportSizeLayout.showSizes &&
+                          SIZES.map((size) => (
+                            <th key={size} className="w-11 px-2 py-3.5 text-center font-inter text-xs font-bold text-white uppercase tracking-wide border-r border-[#2d4a6f]">{size}</th>
+                          ))}
+                        {reportSizeLayout.showExtra && (
+                          <th className="w-16 px-3 py-3.5 text-center font-inter text-xs font-bold text-white uppercase tracking-wide border-r border-[#2d4a6f]" title="Stok ukuran non-standar (mis. ALL SIZE)">
+                            Stok
+                          </th>
+                        )}
                         <th className="w-16 px-3 py-3.5 text-center font-inter text-xs font-bold text-white uppercase tracking-wide">Total</th>
                       </tr>
                     </thead>
                     <tbody>
                       {reportRows.length === 0 ? (
                         <tr>
-                          <td colSpan={4 + SIZES.length + 1} className="px-6 py-12 text-center font-inter text-sm text-gray-400 dark:text-slate-500">
+                          <td colSpan={4 + (reportSizeLayout.showSizes ? SIZES.length : 0) + (reportSizeLayout.showExtra ? 1 : 0) + 1} className="px-6 py-12 text-center font-inter text-sm text-gray-400 dark:text-slate-500">
                             <div className="flex flex-col items-center gap-3">
                               <span>{hasReportFilter ? 'Tidak ada baris yang cocok dengan pencarian/filter.' : 'Belum ada baris — tambahkan produk dengan ukuran dulu'}</span>
                               {hasReportFilter && (
@@ -1622,8 +1701,14 @@ export default function MasterProduk() {
                       ) : (
                         reportRows.map((v, index) => {
                           const product = products.find(p => p.id === v.product_id);
-                          const st = stokVarianMap(v);
-                          const total = SIZES.reduce((s, sz) => s + st[sz], 0);
+                          const raw = stokMentahMap(v);
+                          const total = stokVarianTotal(v);
+                          const extra = stokNonStandar(v);
+                          const hasExtra = punyaUkuranNonStandar(v);
+                          const extraTitle = Object.entries(raw)
+                            .filter(([size]) => !SIZES.includes(size))
+                            .map(([size, n]) => `${size}: ${n}`)
+                            .join(", ");
                           const rowBg = index % 2 === 0 ? 'bg-white dark:bg-[#16171d]' : 'bg-blue-50/30 dark:bg-[#1a1d28]';
                           return (
                             <tr key={v.id} className={`${rowBg} hover:bg-blue-100/50 dark:hover:bg-slate-800 transition-colors border-b border-gray-100 dark:border-slate-800/50 ${v.base_product_id ? 'opacity-60' : ''}`}>
@@ -1655,15 +1740,38 @@ export default function MasterProduk() {
                               <td className="px-3 py-3.5 text-left align-middle font-inter text-sm text-gray-600 dark:text-slate-300 border-r border-gray-100 dark:border-slate-800/50">
                                 {varianSeries(v) || '-'}
                               </td>
-                              {SIZES.map((sz) => {
-                                const val = st[sz];
-                                const cls = val === 0 ? 'text-red-500 dark:text-red-400' : (val <= 5 ? 'text-amber-500 dark:text-amber-400' : 'text-gray-800 dark:text-slate-200');
+                              {reportSizeLayout.showSizes && SIZES.map((sz) => {
+                                const has = Object.prototype.hasOwnProperty.call(raw, sz);
+                                const val = has ? raw[sz] : null;
+                                const cls = !has
+                                  ? 'text-gray-400 dark:text-slate-500'
+                                  : val === 0
+                                    ? 'text-red-500 dark:text-red-400'
+                                    : val <= 5
+                                      ? 'text-amber-500 dark:text-amber-400'
+                                      : 'text-gray-800 dark:text-slate-200';
                                 return (
                                   <td key={sz} className={`px-2 py-3.5 text-center align-middle font-inter text-sm font-semibold border-r border-gray-100 dark:border-slate-800/50 ${cls}`}>
-                                    {val}
+                                    {has ? val : '-'}
                                   </td>
                                 );
                               })}
+                              {reportSizeLayout.showExtra && (
+                                <td
+                                  className={`px-2 py-3.5 text-center align-middle font-inter text-sm font-bold border-r border-gray-100 dark:border-slate-800/50 ${
+                                    !hasExtra
+                                      ? 'text-gray-400 dark:text-slate-500'
+                                      : extra === 0
+                                        ? 'text-red-500 dark:text-red-400'
+                                        : extra <= 5
+                                          ? 'text-amber-500 dark:text-amber-400'
+                                          : 'text-gray-800 dark:text-slate-200'
+                                  }`}
+                                  title={extraTitle || undefined}
+                                >
+                                  {hasExtra ? extra : '-'}
+                                </td>
+                              )}
                               <td className="px-3 py-3.5 text-center align-middle font-inter text-sm font-black text-blue-600 dark:text-blue-400">
                                 {total}
                               </td>
@@ -1696,8 +1804,13 @@ export default function MasterProduk() {
                 ) : (
                   reportRows.map((v) => {
                     const product = products.find(p => p.id === v.product_id);
-                    const st = stokVarianMap(v);
-                    const total = SIZES.reduce((s, sz) => s + st[sz], 0);
+                    const raw = stokMentahMap(v);
+                    const total = stokVarianTotal(v);
+                    const standardEntries = SIZES.map((sz) => [
+                      sz,
+                      Object.prototype.hasOwnProperty.call(raw, sz) ? raw[sz] : null,
+                    ]);
+                    const extraEntries = Object.entries(raw).filter(([size]) => !SIZES.includes(size));
                     return (
                       <div key={v.id} className={`bg-white rounded-2xl shadow-md border border-gray-200/80 p-4 ${v.base_product_id ? 'opacity-60' : ''}`}>
                         <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-200/60">
@@ -1721,19 +1834,53 @@ export default function MasterProduk() {
                           </div>
                           <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-black">{total} pcs</span>
                         </div>
-                        <div className="grid grid-cols-3 gap-2">
-                          {SIZES.map((sz) => {
-                            const val = st[sz];
-                            const box = val === 0 ? 'bg-red-50/60 border-red-100' : (val <= 5 ? 'bg-amber-50/60 border-amber-100' : 'bg-gray-50/60 border-gray-200/60');
-                            const txt = val === 0 ? 'text-red-500' : (val <= 5 ? 'text-amber-600' : 'text-gray-700');
-                            return (
-                              <div key={sz} className={`rounded-xl p-2 border text-center ${box}`}>
-                                <p className="text-[10px] font-bold text-gray-500 uppercase">{sz}</p>
-                                <p className={`text-base font-black ${txt}`}>{val}</p>
-                              </div>
-                            );
-                          })}
-                        </div>
+                        {standardEntries.some(([, val]) => val !== null) && (
+                          <div className="grid grid-cols-3 gap-2">
+                            {standardEntries.map(([sz, val]) => {
+                              const box = val === null
+                                ? 'bg-gray-50/60 border-gray-200/60'
+                                : val === 0
+                                  ? 'bg-red-50/60 border-red-100'
+                                  : val <= 5
+                                    ? 'bg-amber-50/60 border-amber-100'
+                                    : 'bg-gray-50/60 border-gray-200/60';
+                              const txt = val === null
+                                ? 'text-gray-400'
+                                : val === 0
+                                  ? 'text-red-500'
+                                  : val <= 5
+                                    ? 'text-amber-600'
+                                    : 'text-gray-700';
+                              return (
+                                <div key={sz} className={`rounded-xl p-2 border text-center ${box}`}>
+                                  <p className="text-[10px] font-bold text-gray-500 uppercase">{sz}</p>
+                                  <p className={`text-base font-black ${txt}`}>{val === null ? '-' : val}</p>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                        {extraEntries.length > 0 && (
+                          <div className={`grid gap-2 ${extraEntries.length === 1 ? 'grid-cols-1' : 'grid-cols-3'} ${standardEntries.some(([, val]) => val !== null) ? 'mt-2' : ''}`}>
+                            {extraEntries.map(([size, val]) => {
+                              const box = val === 0
+                                ? 'bg-red-50/60 border-red-100'
+                                : val <= 5
+                                  ? 'bg-amber-50/60 border-amber-100'
+                                  : 'bg-gray-50/60 border-gray-200/60';
+                              const txt = val === 0 ? 'text-red-500' : val <= 5 ? 'text-amber-600' : 'text-gray-700';
+                              return (
+                                <div key={size} className={`rounded-xl p-2 border text-center ${box}`}>
+                                  <p className="text-[9px] font-bold text-gray-500 uppercase leading-tight break-words">{size}</p>
+                                  <p className={`text-base font-black ${txt}`}>{val}</p>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                        {standardEntries.every(([, val]) => val === null) && extraEntries.length === 0 && (
+                          <p className="text-xs font-semibold text-gray-400">Belum ada ukuran.</p>
+                        )}
                       </div>
                     );
                   })
