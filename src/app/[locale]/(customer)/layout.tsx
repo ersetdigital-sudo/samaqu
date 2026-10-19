@@ -33,6 +33,9 @@ export default function CustomerLayout({ children }: { children: ReactNode }) {
   // locale) supaya tidak bertumpuk dengan bar "Buat Pesanan". Tinggi nav di-nol-kan lewat class
   // `checkout-mobile` (lihat globals.css). Desktop ≥1024 tidak berubah.
   const isCheckout = bare === "/checkout";
+  // Halaman Cek Resi: fokus ke form & hasil lacak. Nav bawah + chatbot disembunyikan
+  // HANYA di mobile/tablet (< lg); desktop tetap seperti biasa.
+  const isCekResi = bare === "/cek-resi";
   // Detail produk & Open Order: nav bawah disembunyikan di mobile (halaman fokus, punya
   // navigasi sendiri) — lihat class `pd-mobile` di globals.css. Desktop tidak terpengaruh.
   const focusMobile = isProductDetail || bare === "/open-order";
@@ -48,15 +51,17 @@ export default function CustomerLayout({ children }: { children: ReactNode }) {
           <Navbar />
         </div>
       )}
-      {/* Ruang bawah untuk nav mobile (0 di desktop, lihat --mobile-nav-h). */}
-      <div style={{ paddingBottom: "var(--mobile-nav-h)" }}>{children}</div>
-      {/* Nav bawah mobile: dirender di semua halaman toko KECUALI checkout (route-gated → tak
-          bisa bocor ke halaman lain). Di checkout, bar "Buat Pesanan" mengambil alih dasar layar. */}
-      {!isCheckout && <MobileBottomNav />}
+      {/* Ruang bawah untuk nav mobile (0 di desktop, lihat --mobile-nav-h).
+          Cek Resi tidak merender nav bawah, jadi padding-nya juga 0. */}
+      <div style={{ paddingBottom: isCekResi ? 0 : "var(--mobile-nav-h)" }}>{children}</div>
+      {/* Nav bawah mobile: dirender di semua halaman toko KECUALI checkout dan Cek Resi
+          (route-gated → tak bisa bocor ke halaman lain). Di checkout, bar "Buat Pesanan"
+          mengambil alih dasar layar. */}
+      {!isCheckout && !isCekResi && <MobileBottomNav />}
       {!hideNavbar && (
-        // Checkout (mobile/tablet < lg): tombol chat melayang disembunyikan supaya tidak menutupi
-        // bar "Buat Pesanan" maupun field form. Desktop ≥1024 tetap seperti semula.
-        isCheckout ? (
+        // Checkout & Cek Resi (mobile/tablet < lg): tombol chat melayang disembunyikan supaya
+        // tidak menutupi form/bar aksi. Desktop ≥1024 tetap seperti semula.
+        isCheckout || isCekResi ? (
           <div className="hidden lg:block">
             <ChatWidget />
           </div>
