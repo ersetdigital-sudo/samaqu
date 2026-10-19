@@ -3149,7 +3149,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
               ) : null}
 
               {/* Mode Ubah: ringkasan perubahan singkat sebelum menyimpan (hanya tampilan). */}
-              {changeSummary ? (
+              {!savedOrder && changeSummary ? (
                 <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-2">
                   {changeSummary}
                 </p>
