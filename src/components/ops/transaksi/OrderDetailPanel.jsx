@@ -103,9 +103,8 @@ export default function OrderDetailPanel({
         </div>
         <div className="kv">
           <span>Kurir</span>
-          <b style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8 }}>
-            <JntBadge />
-            <span>J&amp;T Express</span>
+          <b style={{ display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
+            <JntBadge label="J&T Express" />
           </b>
         </div>
         <div className="kv">
