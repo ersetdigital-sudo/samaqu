@@ -41,7 +41,7 @@
   color: #475569; font: 600 13px inherit; font-family: inherit; cursor: pointer; white-space: nowrap;
   transition: background .18s ease, color .18s ease;
 }
-.ops-tx .tab:hover { background: #eff6ff; color: #0f172a; }
+.ops-tx .tab:hover { background: #f1f5f9; color: #0f172a; }
 .ops-tx .tab .ti { display: grid; place-items: center; flex: none; }
 .ops-tx .tab .ti svg {
   width: 15px; height: 15px; stroke: currentColor; fill: none;
@@ -52,8 +52,8 @@
   border-radius: 11px; display: grid; place-items: center; background: #e2e8f0; color: #475569; padding: 0 6px;
 }
 .ops-tx .tab.on {
-  background: #2563eb; color: #fff;
-  box-shadow: 0 6px 14px -8px rgba(37, 99, 235, .45);
+  background: #18181b; color: #fff;
+  box-shadow: 0 6px 14px -8px rgba(15, 23, 42, .55);
 }
 .ops-tx .tab.on em { background: rgba(255, 255, 255, .26); color: #fff; }
 
@@ -72,13 +72,13 @@
   cursor: pointer; white-space: nowrap;
   transition: background .18s ease, color .18s ease, border-color .18s ease;
 }
-.ops-tx .packf:hover { background: #eff6ff; color: #0f172a; }
+.ops-tx .packf:hover { background: #f1f5f9; color: #0f172a; }
 .ops-tx .packf em {
   font-style: normal; font-weight: 800; font-size: 11px; min-width: 20px; height: 20px;
   border-radius: 10px; display: grid; place-items: center;
   background: #e2e8f0; color: #475569; padding: 0 6px;
 }
-.ops-tx .packf.on { background: #2563eb; border-color: #2563eb; color: #fff; }
+.ops-tx .packf.on { background: #18181b; border-color: #18181b; color: #fff; }
 .ops-tx .packf.on em { background: rgba(255, 255, 255, .26); color: #fff; }
 .ops-tx .btn { background: #2563eb; color: #fff; border: 0; border-radius: 20px; padding: 11px 22px; font-weight: 600; font-family: inherit; font-size: 13px; cursor: pointer; }
 .ops-tx .btn:hover { background: #1d4ed8; }

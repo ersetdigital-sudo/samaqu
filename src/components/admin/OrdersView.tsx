@@ -19,6 +19,7 @@ import {
   type OrderStageFilter,
 } from "@/lib/order-flow";
 import { SALE_STATUSES } from "@/lib/transaksi";
+import StageIcon from "@/components/ops/transaksi/StageIcon";
 import "@/app/ops/ops-transaksi.css";
 
 /** Field yang dipakai daftar; `Order` di halaman admin memenuhinya. */
@@ -218,6 +219,9 @@ export default function OrdersView({
                 className={`tab${orderFilter === tab.key ? " on" : ""}`}
                 onClick={() => setOrderFilter(tab.key)}
               >
+                <span className="ti">
+                  <StageIcon stage={tab.key} />
+                </span>
                 <span className="tl2">{tab.label}</span>
                 <em>{tab.count}</em>
               </button>
