@@ -622,6 +622,16 @@ export function buildOrderPaidMessage(order: OrderPaidNotification): string {
   ].join("\n");
 }
 
+/**
+ * Link publik Cek Resi untuk pesan WA. Fonnte tidak menyediakan tombol interaktif yang
+ * reliable (fitur button-nya deprecated), jadi link ini yang bisa langsung diketuk pembeli.
+ * Placeholder `{resi}` dibiarkan utuh supaya editor template di panel admin tetap valid.
+ */
+function trackingUrl(awb: string): string {
+  const safe = encodeURIComponent(String(awb ?? "")).replace(/%7B/gi, "{").replace(/%7D/gi, "}");
+  return `${SITE_URL}/cek-resi?awb=${safe}`;
+}
+
 /** Pesan "pesanan sudah dikirim lewat J&T Express" + nomor resi. */
 export function buildOrderShippedMessage(order: ShippedNotification): string {
   const ka = greetingName(order.customerName);
@@ -634,6 +644,8 @@ export function buildOrderShippedMessage(order: ShippedNotification): string {
     `Nomor Resi: ${order.awbNo}`,
     "",
     `Silakan gunakan nomor resi tersebut untuk memantau perjalanan paket ${ka}.`,
+    "",
+    `Lacak resi: ${trackingUrl(order.awbNo)}`,
     "",
     `Terima kasih telah mempercayakan kebutuhan ${ka} kepada SAMAQU.`,
   ].join("\n");
@@ -746,14 +758,16 @@ export async function notifyCustomerOrderPaid(order: OrderPaidNotification): Pro
 }
 
 export async function notifyCustomerOrderShipped(order: ShippedNotification): Promise<boolean> {
-  return sendToCustomer(
-    order.customerWhatsapp,
-    await buildNotifikasi("pesanan-dikirim", buildOrderShippedMessage(order), {
-      nama: greetingName(order.customerName),
-      nomor: order.orderNumber,
-      resi: order.awbNo,
-    }),
-  );
+  const link = trackingUrl(order.awbNo);
+  const message = await buildNotifikasi("pesanan-dikirim", buildOrderShippedMessage(order), {
+    nama: greetingName(order.customerName),
+    nomor: order.orderNumber,
+    resi: order.awbNo,
+  });
+  // Template custom dari admin mungkin belum memuat link. Pastikan pembeli selalu punya
+  // jalan untuk membuka Cek Resi, tanpa menggandakan link kalau template sudah memuatnya.
+  const finalMessage = message.includes(link) ? message : `${message}\n\nLacak resi: ${link}`;
+  return sendToCustomer(order.customerWhatsapp, finalMessage);
 }
 
 export async function notifyCustomerOrderDelivered(order: DeliveredNotification): Promise<boolean> {
