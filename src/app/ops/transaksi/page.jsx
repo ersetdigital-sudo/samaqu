@@ -23,6 +23,7 @@ import ConfirmDeleteModal from "@/components/ops/ConfirmDeleteModal";
 import TransaksiFormModal from "@/components/ops/transaksi/TransaksiFormModal";
 import TransaksiDetailDrawer from "@/components/ops/transaksi/TransaksiDetailDrawer";
 import StageIcon from "@/components/ops/transaksi/StageIcon";
+import AnimatedNumber from "@/components/AnimatedNumber";
 import { MONTHS, SOURCE_STYLES, formatRupiah, formatTanggalSingkatID, itemVariantText, pad } from "@/components/ops/transaksi/transaksi-format";
 import { useToast } from "@/components/ops/ui/use-toast";
 import "@/app/panel-admin/panel-transaksi.css";
@@ -303,22 +304,22 @@ export default function Transaksi({ variant = "ops" }) {
         <section className="ks">
           <div className="card k">
             <small>Total transaksi</small>
-            <b>{panelKpis.total}</b>
+            <b><AnimatedNumber value={isLoading ? 0 : panelKpis.total} /></b>
             <i>{coverageLabel}</i>
           </div>
           <div className="card k">
             <small>Omset bulan ini</small>
-            <b>Rp {formatRupiah(panelKpis.revenue)}</b>
+            <b><AnimatedNumber value={isLoading ? 0 : panelKpis.revenue} format={(n) => `Rp ${formatRupiah(n)}`} /></b>
             <i>Tidak termasuk dibatalkan</i>
           </div>
           <div className="card k">
             <small>Belum bayar</small>
-            <b style={{ color: "#c76f00" }}>{panelKpis.unpaid}</b>
+            <b style={{ color: "#c76f00" }}><AnimatedNumber value={isLoading ? 0 : panelKpis.unpaid} /></b>
             <i>Perlu follow-up</i>
           </div>
           <div className="card k">
             <small>Perlu diproses</small>
-            <b style={{ color: "#2e64c9" }}>{panelKpis.toProcess}</b>
+            <b style={{ color: "#2e64c9" }}><AnimatedNumber value={isLoading ? 0 : panelKpis.toProcess} /></b>
             <i>Packing + siap kirim</i>
           </div>
         </section>

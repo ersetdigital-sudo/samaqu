@@ -20,6 +20,7 @@ import {
 } from "@/lib/order-flow";
 import { SALE_STATUSES } from "@/lib/transaksi";
 import StageIcon from "@/components/ops/transaksi/StageIcon";
+import AnimatedNumber from "@/components/AnimatedNumber";
 import "@/app/ops/ops-transaksi.css";
 
 /** Field yang dipakai daftar; `Order` di halaman admin memenuhinya. */
@@ -188,22 +189,22 @@ export default function OrdersView({
       <section className="ks">
         <div className="card k">
           <small>Total transaksi</small>
-          <b>{loading ? "—" : kpis.total}</b>
+          <b><AnimatedNumber value={loading ? 0 : kpis.total} /></b>
           <i>{periodLabel || sourceLabelText}</i>
         </div>
         <div className="card k">
           <small>Omset bulan ini</small>
-          <b>{loading ? "—" : rupiah(kpis.revenue)}</b>
+          <b><AnimatedNumber value={loading ? 0 : kpis.revenue} format={(n) => rupiah(n)} /></b>
           <i>Tidak termasuk dibatalkan</i>
         </div>
         <div className="card k">
           <small>Belum bayar</small>
-          <b style={{ color: "#c76f00" }}>{loading ? "—" : kpis.unpaid}</b>
+          <b style={{ color: "#c76f00" }}><AnimatedNumber value={loading ? 0 : kpis.unpaid} /></b>
           <i>Perlu follow-up</i>
         </div>
         <div className="card k">
           <small>Perlu diproses</small>
-          <b style={{ color: "#2e64c9" }}>{loading ? "—" : kpis.toProcess}</b>
+          <b style={{ color: "#2e64c9" }}><AnimatedNumber value={loading ? 0 : kpis.toProcess} /></b>
           <i>Packing + siap kirim</i>
         </div>
       </section>
