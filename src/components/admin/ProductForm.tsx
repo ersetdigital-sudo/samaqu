@@ -558,6 +558,12 @@ export default function TambahProdukPage({
 
   // Media
   const [media, setMedia] = useState<MediaFile[]>([]);
+  /**
+   * Varian paket yang sedang dipilih untuk upload media. Kosong = media fallback
+   * untuk semua varian. Nilainya disimpan sebagai `color` di `product_images`
+   * supaya katalog bisa menampilkan foto per varian (Kabak 01, Kabak 12, dst).
+   */
+  const [paketMediaColor, setPaketMediaColor] = useState("");
   const [previewIndex, setPreviewIndex] = useState(0);
 
   // Thobe multi-series
@@ -578,11 +584,20 @@ export default function TambahProdukPage({
     ? variants.some((v) => String(v.color).trim() !== "" || v.sizes.some((s) => s.stock > 0))
     : variants.length > 0;
   /**
-   * Warna pemilik media. Kategori paket tidak punya warna, jadi medianya disimpan dengan
-   * `color` KOSONG: website menampilkan media ber-`color` kosong untuk varian apa pun
-   * (lihat filter di halaman katalog: `!m.color || m.color === selectedColor`).
+   * Pemilik media. Untuk kategori paket, `color` diisi nama varian (mis. "Kabak 01")
+   * supaya katalog bisa menampilkan foto per varian; kosong = fallback untuk semua varian.
+   * Katalog memfilter `!m.color || m.color === selectedColor`.
    */
-  const mediaColor = isPaket ? "" : category === "Thobe" ? "default" : activeColor || "default";
+  const mediaColor = isPaket ? paketMediaColor : category === "Thobe" ? "default" : activeColor || "default";
+
+  /** Kalau varian yang dipilih untuk media dihapus/di-rename, jatuh ke varian pertama. */
+  useEffect(() => {
+    if (!isPaket) return;
+    const names = variants.map((v) => String(v.color || "").trim()).filter(Boolean);
+    if (paketMediaColor && !names.includes(paketMediaColor)) {
+      setPaketMediaColor(names[0] || "");
+    }
+  }, [isPaket, variants, paketMediaColor]);
 
   // Fetch jenis_kain list + daftar series dari tabel product_series
   useEffect(() => {
@@ -718,6 +733,7 @@ export default function TambahProdukPage({
           }));
           paketIdsLamaRef.current = rowsPaket.map((row) => row.sizes[0].id).filter((id): id is string => Boolean(id));
           setVariants(rowsPaket.length > 0 ? rowsPaket : [emptyPaketVariant()]);
+          setPaketMediaColor(rowsPaket[0]?.color || "");
         } else if (dbVariants && dbVariants.length > 0) {
           const colorGroups: Record<string, Variant> = {};
           dbVariants.forEach((v: { color: string; hex: string | null; size: string; stock: number; weight: number | null; price_override: number | null; sku: string | null }) => {
@@ -1449,7 +1465,13 @@ export default function TambahProdukPage({
   const activeVariant = variants.find((v) => v.color === activeColor);
   const activeMedia = category === "Thobe" && activeSeriesTab && seriesBlocks[activeSeriesTab]
     ? seriesBlocks[activeSeriesTab].media
-    : category === "Thobe" ? media : media.filter((m) => m.color === mediaColor);
+    : category === "Thobe"
+      ? media
+      : isPaket
+        ? (mediaColor
+            ? [...media.filter((m) => m.color === mediaColor), ...media.filter((m) => !m.color)]
+            : media)
+        : media.filter((m) => m.color === mediaColor);
 
   if (loading) {
     return isOps
@@ -1986,7 +2008,15 @@ export default function TambahProdukPage({
                     template={paketTemplate}
                     placeholder={paketPlaceholder}
                     skuFallback={sku}
-                    onUpdateName={(i, value) => setVariants((prev) => prev.map((v, idx) => (idx === i ? { ...v, color: value } : v)))}
+                    onUpdateName={(i, value) => {
+                      const oldName = String(variants[i]?.color || "").trim();
+                      const nextName = String(value || "").trim();
+                      setVariants((prev) => prev.map((v, idx) => (idx === i ? { ...v, color: value } : v)));
+                      if (oldName && oldName !== nextName) {
+                        setMedia((prev) => prev.map((m) => (m.color === oldName ? { ...m, color: nextName } : m)));
+                        setPaketMediaColor((current) => (current === oldName ? nextName : current));
+                      }
+                    }}
                     onUpdateField={(i, field, value) =>
                       setVariants((prev) =>
                         prev.map((v, idx) => {
@@ -2009,7 +2039,15 @@ export default function TambahProdukPage({
                         return kosong ? baru : [...prev, ...baru];
                       })
                     }
-                    onRemove={(i) => setVariants((prev) => (prev.length > 1 ? prev.filter((_, idx) => idx !== i) : prev))}
+                    onRemove={(i) => {
+                      const name = String(variants[i]?.color || "").trim();
+                      setVariants((prev) => (prev.length > 1 ? prev.filter((_, idx) => idx !== i) : prev));
+                      // Foto milik varian yang dihapus ikut dibuang supaya tidak jadi media yatim.
+                      if (name) {
+                        setMedia((prev) => prev.filter((m) => m.color !== name));
+                        setPaketMediaColor((current) => (current === name ? "" : current));
+                      }
+                    }}
                   />
                 ) : category === "Thobe" && selectedSeries.length === 0 ? (
                   <p className="text-sm text-center py-6" style={{ color: "var(--text-muted)" }}>Pilih minimal 1 series terlebih dahulu</p>
@@ -2059,7 +2097,7 @@ export default function TambahProdukPage({
                   <div className="pf-num">3</div>
                   <div>
                     <h2 className="pf-title">Media</h2>
-                    <p className="pf-sub">{isPaket ? "Foto & video produk (berlaku untuk semua varian)." : "Foto & video produk per warna."}</p>
+                    <p className="pf-sub">{isPaket ? "Foto & video produk per varian (fallback ke semua varian)." : "Foto & video produk per warna."}</p>
                   </div>
                 </div>
                 {errors.media && <p className="pf-error mb-3">{errors.media}</p>}
@@ -2068,10 +2106,35 @@ export default function TambahProdukPage({
                 ) : (
                   <div>
                     {isPaket ? (
-                      <p className="text-sm mb-3" style={{ color: "var(--text-secondary)" }}>Media berlaku untuk <span className="font-medium" style={{ color: "var(--gold)" }}>semua varian</span></p>
-                    ) : (
-                      <p className="text-sm mb-3" style={{ color: "var(--text-secondary)" }}>Upload untuk warna: <span className="font-medium" style={{ color: "var(--gold)" }}>{activeColor}</span></p>
-                    )}
+                      <div className="mb-3">
+                        <label className="pf-label">Foto untuk varian</label>
+                        <div className="pf-selectwrap">
+                          <select
+                            value={paketMediaColor}
+                            onChange={(e) => setPaketMediaColor(e.target.value)}
+                            className="pf-select"
+                          >
+                            <option value="">Semua varian (fallback)</option>
+                            {variants.map((v, i) => {
+                              const name = String(v.color || "").trim();
+                              return (
+                                <option key={i} value={name} disabled={!name}>
+                                  {name || "(nama varian belum diisi)"}
+                                </option>
+                              );
+                            })}
+                          </select>
+                          <ChevronDown size={14} className="pf-selectico" />
+                        </div>
+                      </div>
+                    ) : null}
+                    <p className="text-sm mb-3" style={{ color: "var(--text-secondary)" }}>
+                      {isPaket ? (
+                        <>Media untuk <span className="font-medium" style={{ color: "var(--gold)" }}>{paketMediaColor || "semua varian"}</span></>
+                      ) : (
+                        <>Upload untuk warna: <span className="font-medium" style={{ color: "var(--gold)" }}>{activeColor}</span></>
+                      )}
+                    </p>
                     <label className="pf-drop">
                       <span className="pf-drop-ico"><Upload size={20} /></span>
                       <p className="text-sm font-medium" style={{ color: "var(--espresso)" }}>Klik atau seret file ke sini</p>

@@ -625,14 +625,29 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       ? supabaseMedia
       : (product.media.length > 0 ? product.media : [{ src: product.image, type: "image" as const }])
   );
+  // Foto khusus varian tampil lebih dulu; foto tanpa warna jadi fallback.
   const mediaPerVarian = selectedColor
-    ? baseMedia.filter((m) => !m.color || m.color === selectedColor)
+    ? [...baseMedia.filter((m) => m.color === selectedColor), ...baseMedia.filter((m) => !m.color)]
     : baseMedia;
   // Cover & Hanger: kalau foto untuk paket itu belum ada, pakai semua foto produk
   // supaya galeri tidak kosong saat pembeli memilih paket.
   const media = isPaket && mediaPerVarian.length === 0 ? baseMedia : mediaPerVarian;
   // Berat yang ditampilkan: berat PAKET yang dipilih untuk Cover & Hanger, selain itu berat produk.
   const beratTampil = isPaket && variantWeight ? variantWeight : product.weight;
+  // Jangan tampilkan label kategori kalau sama dengan nama produk (mis. Kabak).
+  // Dulu judul "Kabak" dan baris meta "Kabak · 100 g" tampil dua kali.
+  const showCategory = Boolean(product.category) && product.category.trim().toLowerCase() !== product.name.trim().toLowerCase();
+  const metaParts = [
+    product.category !== "Koko" && (product.jenis_kain?.name || product.kain)
+      ? `Jenis kain ${product.jenis_kain?.name || product.kain}`
+      : "",
+    showCategory ? product.category : "",
+    beratTampil
+      ? beratTampil >= 1000
+        ? `${(beratTampil / 1000).toFixed(1)} kg`
+        : `${beratTampil} g`
+      : "ready stock",
+  ].filter(Boolean);
   // Setiap video diberi poster foto yang BEDA (hindari foto utama muncul 3×:
   // poster utama + thumbnail video 1 + thumbnail video 2 semuanya foto pertama)
   const usedPosters = new Set<string>();
@@ -734,11 +749,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               {product.name}{isPaket ? null : product.category === "Koko" ? (selectedColor && selectedColor !== "default" ? <span style={{ color: "#000000" }}> - {selectedColor}</span> : null) : product.jenis_kain?.name ? <span style={{ color: "#000000" }}> — Kain {product.jenis_kain.name}</span> : product.kain ? <span style={{ color: "#000000" }}> — Kain {product.kain}</span> : product.series ? <span style={{ color: "#000000" }}> — {product.series}</span> : selectedColor && selectedColor !== "default" ? <span style={{ color: "#000000" }}> — {selectedColor}</span> : null}
           </h1>
           <p className="text-[13px] font-ui mb-5" style={{ color: "rgba(0,0,0,.55)" }}>
-            {product.category !== "Koko" && product.jenis_kain?.name && <span>Jenis kain <span style={{ color: "#000000" }}>{product.jenis_kain.name}</span></span>}
-            {product.category !== "Koko" && !product.jenis_kain?.name && product.kain && <span>Jenis kain <span style={{ color: "#000000" }}>{product.kain}</span></span>}
-            {product.category !== "Koko" && (product.jenis_kain?.name || product.kain) && " · "}
-            <span style={{ color: "#000000" }}>{product.category}</span>
-            {beratTampil ? <span>{` · ${beratTampil >= 1000 ? (beratTampil / 1000).toFixed(1) + " kg" : beratTampil + " g"}`}</span> : " · ready stock"}
+            {metaParts.join(" · ")}
           </p>
 
           {/* Series Selector — selalu tampilkan untuk Thobe */}
@@ -1029,11 +1040,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             {product.name}{isPaket ? null : product.category === "Koko" ? (selectedColor && selectedColor !== "default" ? <span style={{ color: "#000000" }}> - {selectedColor}</span> : null) : product.jenis_kain?.name ? <span style={{ color: "#000000" }}> — Kain {product.jenis_kain.name}</span> : product.kain ? <span style={{ color: "#000000" }}> — Kain {product.kain}</span> : product.series ? <span style={{ color: "#000000" }}> — {product.series}</span> : selectedColor && selectedColor !== "default" ? <span style={{ color: "#000000" }}> — {selectedColor}</span> : null}
             </h1>
             <p className="text-[13px] font-ui mb-6" style={{ color: "rgba(0,0,0,.55)" }}>
-              {product.category !== "Koko" && product.jenis_kain?.name && <span>Jenis kain <span style={{ color: "#000000" }}>{product.jenis_kain.name}</span></span>}
-              {product.category !== "Koko" && !product.jenis_kain?.name && product.kain && <span>Jenis kain <span style={{ color: "#000000" }}>{product.kain}</span></span>}
-              {product.category !== "Koko" && (product.jenis_kain?.name || product.kain) && " · "}
-              <span style={{ color: "#000000" }}>{product.category}</span>
-              {beratTampil ? <span>{` · ${beratTampil >= 1000 ? (beratTampil / 1000).toFixed(1) + " kg" : beratTampil + " g"}`}</span> : " · ready stock"}
+              {metaParts.join(" · ")}
             </p>
             {/* Series Selector — desktop */}
             {(availableSeries.length > 1 || isThobe) && (
