@@ -1175,9 +1175,6 @@ svg.heart { width: 14px; height: 14px; fill: #e46a92; stroke: none; color: #e46a
 }
 .tropical .heroName {
   color: #a8e6cf;
-  background: linear-gradient(180deg, transparent 62%, rgba(72, 202, 228, 0.45) 62%);
-  border-radius: 4px;
-  padding: 0 2px;
 }
 .tropical .heroSub {
   color: #eaf7fc;
