@@ -656,6 +656,7 @@ svg.heart { width: 14px; height: 14px; fill: #e46a92; stroke: none; color: #e46a
   flex: none;
 }
 .themeSwatchSun { background: linear-gradient(135deg, #ffd54f, #c98a00); }
+.themeSwatchTropical { background: linear-gradient(135deg, #5aa9d6, #a8e6cf); }
 .themeScrim {
   position: fixed;
   inset: 0;
@@ -1038,4 +1039,341 @@ svg.heart { width: 14px; height: 14px; fill: #e46a92; stroke: none; color: #e46a
     background-position: 72% center;
   }
   .sunflower .quote { max-width: 100%; font-size: 12.5px; }
+}
+
+/* ---------- tema Tropical Beach ---------- */
+/* Palet: Baby Blue #BDE0FE, Ocean Blue #5AA9D6, Aqua Mint #A8E6CF,
+   Seashell Cream #FFF8F0, Sandy Beige #F3D9B1, Coral Peach #FFB5A7,
+   Deep Ocean #34566B. Semua rule di-scope `.tropical` supaya Berry &
+   Bunga Matahari tidak berubah. */
+.tropical {
+  --pink: #5aa9d6;
+  --pink-d: #3d8fbf;
+  --plum: #34566b;
+  --side: #2e5a70;
+  --side-on: #a8e6cf;
+  --mut: #5f7c89;
+  --line: #d9edf5;
+  --card-line: #d9edf5;
+  --canvas: #fff8f0;
+  --pink-bg: #bde0fe;
+  --panel-accent: #5aa9d6;
+  --panel-hand: #ffb5a7;
+  --panel-down-bg: #ffe3dd;
+  --panel-down-fg: #c25e4a;
+  --panel-up-bg: #ddf6ec;
+  --panel-up-fg: #2f7f63;
+  --panel-soon-bg: #bde0fe;
+  --panel-soon-fg: #34566b;
+  --panel-danger: #d96b5a;
+  --tropical-hero: url("https://res.cloudinary.com/dqjh7utdb/image/upload/v1792395462/ikxyu9b7bd5mbkumjzdn.png");
+  --tropical-sand: #f3d9b1;
+  --tropical-coral: #ffb5a7;
+  --tropical-mint: #a8e6cf;
+  --tropical-baby: #bde0fe;
+}
+
+/* Shell */
+.tropical .side {
+  background: linear-gradient(180deg, #34566b 0%, #2a4a5c 100%);
+  color: #eaf6fb;
+  border-right: 1px solid rgba(255, 255, 255, 0.14);
+}
+.tropical .brand b,
+.tropical .footText b { color: #fff8f0; }
+.tropical .brand small,
+.tropical .foot { color: #a8c7d4; }
+.tropical .sec { color: #8fb8c9; }
+.tropical .navItem,
+.tropical .nav a { color: #d7eaf3; }
+.tropical .navItem svg,
+.tropical .nav a svg { color: #9dc4d4; }
+.tropical .navItem:hover,
+.tropical .nav a:hover { background: rgba(168, 230, 207, 0.14); color: #fff8f0; }
+.tropical .navItem:hover svg,
+.tropical .nav a:hover svg { color: #fff8f0; }
+.tropical .nav a.on {
+  background: var(--tropical-mint);
+  border-color: var(--tropical-mint);
+  color: #234b5c;
+  box-shadow: 0 6px 16px rgba(90, 169, 214, 0.28);
+}
+.tropical .nav a.on svg { color: #234b5c; }
+.tropical .navItemSoon:hover { background: transparent; color: #d7eaf3; }
+.tropical .navItemSoon:hover svg { color: #9dc4d4; }
+.tropical .soon { background: rgba(255, 255, 255, 0.1); color: #fff8f0; border-color: rgba(255, 255, 255, 0.22); }
+.tropical .logo { background: var(--tropical-mint); color: #234b5c; box-shadow: 0 0 0 3px rgba(168, 230, 207, 0.3); }
+.tropical .date,
+.tropical .bell,
+.tropical .themeBtn,
+.tropical .themeMenu { background: #fff8f0; border-color: var(--line); }
+.tropical .date svg { color: var(--pink); }
+.tropical .bell::after { background: var(--tropical-coral); }
+.tropical .av { background: var(--tropical-baby); border-color: #9dd3f5; color: var(--plum); }
+.tropical .user small { color: var(--mut); }
+.tropical .themeBtn:hover,
+.tropical .themeOption:hover,
+.tropical .themeOptionOn { background: #eaf6fb; }
+.tropical .themeOptionText small { color: var(--mut); }
+.tropical .themeCheck { color: var(--pink-d); }
+
+/* Beranda */
+.tropical .hero {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 12px;
+  min-height: 230px;
+  padding: 24px 32px;
+  /* Sisi kanan dikosongkan supaya pantai di background tetap terlihat. */
+  padding-right: clamp(180px, 38%, 420px);
+  background-color: var(--tropical-baby);
+  background-image:
+    linear-gradient(90deg, rgba(255, 248, 240, 0.94) 0%, rgba(255, 248, 240, 0.72) 42%, rgba(255, 248, 240, 0.12) 72%, rgba(255, 248, 240, 0) 100%),
+    var(--tropical-hero);
+  background-position: center right;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+.tropical .heroArt { display: none; }
+.tropical .heroText { padding: 0; }
+.tropical .heroSub { color: #2f5d73; }
+.tropical .heroTitle svg { color: var(--tropical-coral); }
+.tropical .heroTitle svg path { stroke: var(--tropical-coral); }
+.tropical .quote {
+  display: block;
+  position: static;
+  width: auto;
+  max-width: 360px;
+  padding: 10px 16px 10px 40px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 14px;
+  background: rgba(255, 248, 240, 0.82);
+  color: #2f5d73;
+  font-size: 13px;
+  line-height: 1.45;
+  backdrop-filter: blur(5px);
+}
+.tropical .quote::before { left: 14px; top: 0; font-size: 36px; color: var(--pink); }
+.tropical svg.heart { fill: var(--tropical-coral); color: var(--tropical-coral); }
+.tropical .card { background: #fffdf9; border-color: var(--card-line); }
+.tropical .stValue { color: var(--plum); }
+.tropical .all { border-color: var(--tropical-baby); color: var(--pink-d); background: #fffdf9; }
+.tropical .btn { background: var(--pink-d); }
+.tropical .btn:hover { background: #2f7f9f; }
+.tropical .alert { background: #fff1ec; border-color: #ffcdbf; color: #8a4a3a; }
+.tropical .gateCard { border-color: var(--card-line); }
+.tropical .gateInput { border-color: var(--line); background: #fffdf9; color: var(--plum); }
+.tropical .gateInput:focus { border-color: var(--pink); box-shadow: 0 0 0 3px rgba(90, 169, 214, 0.18); }
+.tropical .gateBtn { background: var(--pink-d); }
+.tropical .gateBtn:hover { background: #2f7f9f; }
+.tropical .gateError { color: #c25e4a; }
+
+/* Asisten AI */
+.tropical .aiNew,
+.tropical .aiChip,
+.tropical .aiTag { border-color: var(--tropical-baby); background: #f2faff; color: #2f6e8a; }
+.tropical .aiNew:hover { background: #e3f4fc; }
+.tropical .aiBot { background: #f2faff; border-color: var(--tropical-baby); color: var(--plum); }
+.tropical .aiUser { background: var(--pink); }
+.tropical .aiBullet::before,
+.tropical .aiNotice,
+.tropical .aiError { color: #2f6e8a; }
+.tropical .aiSend { background: var(--pink); }
+.tropical .aiSend:hover { background: #3d8fbf; }
+.tropical .aiStop { border-color: var(--tropical-baby); color: #2f6e8a; }
+.tropical .aiStop:hover { background: #f2faff; }
+.tropical .aiLog { scrollbar-color: rgba(90, 169, 214, 0.3) transparent; }
+.tropical .aiChip:hover { background: #e3f4fc; }
+.tropical .aiLog::-webkit-scrollbar-thumb {
+  background: rgba(90, 169, 214, 0.22);
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+.tropical .aiLog::-webkit-scrollbar-thumb:hover {
+  background: rgba(90, 169, 214, 0.4);
+  background-clip: content-box;
+}
+
+/* Ornamen ilustrasi Beranda */
+.tropical .emptyBox svg [fill="#fbe3ec"] { fill: #e3f4fc; }
+.tropical .emptyBox svg [fill="#f9c9d9"] { fill: #bde0fe; }
+.tropical .emptyBox svg [fill="#f4a3be"] { fill: #a8e6cf; }
+.tropical .emptyBox svg [fill="#f3a7c0"] { fill: #f3d9b1; }
+.tropical .emptyBox svg [fill="#fbd3e1"] { fill: #ffb5a7; }
+.tropical .emptyBox svg [stroke="#f4a3be"] { stroke: #5aa9d6; }
+
+/* Halaman ops yang dititipkan ke panel */
+.tropical :global(.ops-root) {
+  --background: 200 100% 98%;
+  --foreground: 200 35% 20%;
+  --muted-foreground: 200 20% 45%;
+  background: #fff8f0;
+  color: #34566b;
+}
+.tropical :global(.ops-root.panel-ops) {
+  --color-blue-50: #f2faff;
+  --color-blue-100: #e3f4fc;
+  --color-blue-200: #c7e9f9;
+  --color-blue-300: #9dd3f5;
+  --color-blue-400: #7bc1ea;
+  --color-blue-500: #5aa9d6;
+  --color-blue-600: #4a96c2;
+  --color-blue-700: #3d7fa6;
+  --color-blue-800: #2f6685;
+  --color-blue-900: #234b5c;
+  --color-blue-950: #173540;
+}
+.tropical :global(.ops-root.panel-ops .bg-slate-900) { background-color: #5aa9d6; }
+.tropical :global(.ops-root.panel-ops .hover\:bg-slate-800:hover) { background-color: #4a96c2; }
+.tropical :global(.ops-root.panel-ops .bg-slate-900\/60) { background-color: rgba(90, 169, 214, 0.6); }
+.tropical :global(.ops-root.panel-ops .hover\:bg-slate-900\/50:hover) { background-color: rgba(74, 150, 194, 0.5); }
+.tropical :global(.ops-root.panel-ops .bg-slate-50) { background-color: #fff8f0; }
+.tropical :global(.ops-root.panel-ops .bg-slate-100) { background-color: #f2faff; }
+.tropical :global(.ops-root.panel-ops .border-slate-200) { border-color: #d9edf5; }
+.tropical :global(.ops-root.panel-ops .text-slate-900) { color: #34566b; }
+.tropical :global(.ops-root.panel-ops .text-slate-600) { color: #5f7c89; }
+.tropical :global(.ops-root.panel-ops .from-\[\#18181b\]) {
+  background-image: none;
+  background-color: #fffdf9;
+  border: 1px solid #d9edf5;
+  box-shadow: 0 1px 2px rgba(52, 86, 107, 0.04);
+}
+.tropical :global(.ops-root.panel-ops .from-\[\#18181b\] .bg-white\/5) { display: none; }
+.tropical :global(.ops-root.panel-ops .from-\[\#18181b\] h1) { color: #34566b; }
+.tropical :global(.ops-root.panel-ops .from-\[\#18181b\] .text-blue-100) { color: #5f7c89; }
+.tropical :global(.ops-root.panel-ops .from-\[\#18181b\] h2),
+.tropical :global(.ops-root.panel-ops .from-\[\#18181b\] h3),
+.tropical :global(.ops-root.panel-ops .from-\[\#18181b\] .text-white) { color: #34566b; }
+.tropical :global(.ops-root.panel-ops .from-\[\#18181b\] .text-white\/80),
+.tropical :global(.ops-root.panel-ops .from-\[\#18181b\] .text-white\/85) { color: #5f7c89; }
+.tropical :global(.ops-root.panel-ops .from-\[\#18181b\] .bg-white\/15) {
+  background-color: #e3f4fc;
+  border-color: #bde0fe;
+}
+.tropical :global(.ops-root.panel-ops .from-\[\#18181b\] .bg-white\/15.text-white) { color: #3d7fa6; }
+.tropical :global(.ops-root.panel-ops .from-\[\#18181b\] .border-white\/20) { border-color: #bde0fe; }
+.tropical :global(.ops-root.panel-ops .from-\[\#18181b\] .w-14.bg-white\/10) {
+  background-color: #e3f4fc;
+  border-color: #bde0fe;
+}
+.tropical :global(.ops-root.panel-ops .from-\[\#18181b\] .w-14.bg-white\/10 svg) { color: #3d7fa6; }
+.tropical :global(.ops-root.panel-ops .from-\[\#18181b\] .bg-white\/10.rounded-xl) {
+  background-color: #f2faff;
+  border-color: #bde0fe;
+  color: #3d7fa6;
+}
+.tropical :global(.ops-root.panel-ops .from-\[\#18181b\] .bg-white\/10.rounded-xl:hover) { background-color: #e3f4fc; }
+.tropical :global(.ops-root.panel-ops .from-\[\#18181b\] .bg-white\/10.rounded-2xl:not(.w-14)) {
+  background-color: rgba(255, 255, 255, 0.72);
+  border-color: #d9edf5;
+}
+.tropical :global(.ops-root.panel-ops .from-\[\#18181b\] .bg-white\/10.rounded-2xl:not(.w-14):hover) { background-color: #fffdf9; }
+.tropical :global(.ops-root.panel-ops .from-\[\#18181b\] .bg-white\/10.rounded-2xl:not(.w-14) .text-white) { color: #5f7c89; }
+.tropical :global(.ops-root.panel-ops .from-\[\#18181b\] .bg-white\/10.rounded-2xl:not(.w-14) p.text-white) { color: #34566b; }
+.tropical :global(.ops-root.panel-ops .from-\[\#18181b\] .bg-white\/10.rounded-2xl:not(.w-14) .text-white\/85) { color: #5f7c89; }
+.tropical :global(.ops-root.panel-ops .bg-\[\#1e3a5f\]) { background-color: #5aa9d6; }
+.tropical :global(.ops-root.panel-ops .border-\[\#2d4a6f\]) { border-color: rgba(255, 255, 255, 0.25); }
+.tropical :global(.ops-root.panel-ops .hover\:bg-\[\#2d4a6f\]:hover) { background-color: #4a96c2; }
+.tropical :global(.ops-root.panel-ops .bg-green-500) { background-color: #5aa9d6; }
+.tropical :global(.ops-root.panel-ops .hover\:bg-green-600:hover) { background-color: #4a96c2; }
+.tropical :global(.ops-root.panel-ops .bg-\[\#18181b\]) { background-color: #5aa9d6; }
+.tropical :global(.ops-root.panel-ops .focus-visible\:ring-\[\#18181b\]\/40:focus-visible) { --tw-ring-color: rgba(90, 169, 214, 0.4); }
+.tropical :global(.ops-root.panel-ops .bg-white\/80.p-1 > div > button:not(.bg-\[\#18181b\])) { color: #5f7c89; }
+.tropical :global(.ops-root.panel-ops .bg-white\/80.p-1 > div > button:not(.bg-\[\#18181b\]):hover) { background: #e3f4fc; }
+.tropical :global(.ops-root.panel-ops .bg-\[\#c2255c\]) { background-color: #5aa9d6; }
+.tropical :global(.ops-root.panel-ops .hover\:bg-\[\#9d174d\]:hover) { background-color: #4a96c2; }
+.tropical :global(.ops-root.panel-ops .hover\:bg-\[\#c2255c\]:hover) { background-color: #4a96c2; }
+.tropical :global(.ops-root.panel-ops .text-\[\#c2255c\]) { color: #3d7fa6; }
+.tropical :global(.ops-root.panel-ops .border-\[\#c2255c\]) { border-color: #5aa9d6; }
+.tropical :global(.ops-root.panel-ops .border-\[\#f3c7d6\]) { border-color: #bde0fe; }
+.tropical :global(.ops-root.panel-ops .bg-\[\#fdf3f7\]) { background-color: #f2faff; }
+.tropical :global(.ops-root.panel-ops .hover\:bg-\[\#fdf3f7\]:hover) { background-color: #f2faff; }
+.tropical :global(.ops-root.panel-ops .bg-pink-100) { background-color: #e3f4fc; }
+.tropical :global(.ops-root.panel-ops .text-pink-600),
+.tropical :global(.ops-root.panel-ops .text-pink-700) { color: #3d7fa6; }
+.tropical :global(.ops-root.panel-ops .border-pink-200) { border-color: #bde0fe; }
+.tropical :global(.ops-root.panel-ops .bg-pink-500) { background-color: #5aa9d6; }
+.tropical :global(.ops-root.panel-ops .bg-rose-50),
+.tropical :global(.ops-root.panel-ops .bg-rose-100) { background-color: #e3f4fc; }
+.tropical :global(.ops-root.panel-ops .text-rose-600),
+.tropical :global(.ops-root.panel-ops .text-rose-700) { color: #3d7fa6; }
+
+/* Transaksi panel (panel-transaksi.css) */
+.tropical :global(.ops-root.panel-tx) { background: #fff8f0; color: #34566b; }
+.tropical :global(.ops-root.panel-tx .card) { border-color: #d9edf5; }
+.tropical :global(.ops-root.panel-tx .k small),
+.tropical :global(.ops-root.panel-tx .k i),
+.tropical :global(.ops-root.panel-tx td small),
+.tropical :global(.ops-root.panel-tx th),
+.tropical :global(.ops-root.panel-tx .dh small),
+.tropical :global(.ops-root.panel-tx .kv span),
+.tropical :global(.ops-root.panel-tx .it small),
+.tropical :global(.ops-root.panel-tx .sh svg),
+.tropical :global(.ops-root.panel-tx .trk li),
+.tropical :global(.ops-root.panel-tx .trk small) { color: #5f7c89; }
+.tropical :global(.ops-root.panel-tx .tabs) { background: #fff; border-color: #d9edf5; }
+.tropical :global(.ops-root.panel-tx .tab) { color: #4a6b7a; }
+.tropical :global(.ops-root.panel-tx .tab:hover) { background: #f2faff; color: #34566b; }
+.tropical :global(.ops-root.panel-tx .tab em) { background: #e3f4fc; color: #4a6b7a; }
+.tropical :global(.ops-root.panel-tx .tab.on) {
+  background: #5aa9d6;
+  color: #fff;
+  box-shadow: 0 6px 14px -8px rgba(61, 127, 166, 0.9);
+}
+.tropical :global(.ops-root.panel-tx .tab.on em) { background: rgba(255, 255, 255, 0.26); color: #fff; }
+.tropical :global(.ops-root.panel-tx .f input),
+.tropical :global(.ops-root.panel-tx .f select) { border-color: #d9edf5; background: #fff; color: #34566b; }
+.tropical :global(.ops-root.panel-tx .packf) { border-color: #d9edf5; background: #fff; color: #4a6b7a; }
+.tropical :global(.ops-root.panel-tx .packf:hover) { background: #f2faff; color: #34566b; }
+.tropical :global(.ops-root.panel-tx .packf em) { background: #e3f4fc; color: #4a6b7a; }
+.tropical :global(.ops-root.panel-tx .packf.on) { background: #5aa9d6; border-color: #5aa9d6; color: #fff; }
+.tropical :global(.ops-root.panel-tx .btn) { background: #5aa9d6; }
+.tropical :global(.ops-root.panel-tx .btn:hover) { background: #4a96c2; }
+.tropical :global(.ops-root.panel-tx .ptx-month) { border-color: #d9edf5; background: #fff; }
+.tropical :global(.ops-root.panel-tx .ptx-month button) { color: #5f7c89; }
+.tropical :global(.ops-root.panel-tx .ptx-month button:hover) { color: #34566b; }
+.tropical :global(.ops-root.panel-tx th) { background: #fffdf9; border-color: #d9edf5; color: #5f7c89; }
+.tropical :global(.ops-root.panel-tx td) { border-color: #f2faff; }
+.tropical :global(.ops-root.panel-tx tbody tr:hover) { background: #f7fcff; }
+.tropical :global(.ops-root.panel-tx .id),
+.tropical :global(.ops-root.panel-tx .chev),
+.tropical :global(.ops-root.panel-tx .cp),
+.tropical :global(.ops-root.panel-tx .sh a) { color: #5aa9d6; }
+.tropical :global(.ops-root.panel-tx .s-packing) { background: #e3f4fc; color: #3d7fa6; }
+.tropical :global(.ops-root.panel-tx .s-batal) { background: #ffe3dd; color: #d96b5a; }
+.tropical :global(.ops-root.panel-tx .ov) { background: rgba(52, 86, 107, 0.38); }
+.tropical :global(.ops-root.panel-tx .dr) { background: #fff; }
+.tropical :global(.ops-root.panel-tx .x) { border-color: #d9edf5; background: #fff; color: #5f7c89; }
+.tropical :global(.ops-root.panel-tx .ban p),
+.tropical :global(.ops-root.panel-tx .adr) { color: #4a6b7a; }
+.tropical :global(.ops-root.panel-tx .adr b) { color: #34566b; }
+.tropical :global(.ops-root.panel-tx .adr span) { color: #5f7c89; }
+.tropical :global(.ops-root.panel-tx .b-packing) { background: #e3f4fc; color: #3d7fa6; }
+.tropical :global(.ops-root.panel-tx .b1) { background: #5aa9d6; }
+.tropical :global(.ops-root.panel-tx .b2) { color: #5aa9d6; border-color: #bde0fe; }
+.tropical :global(.ops-root.panel-tx .note) { background: #fff1ec; border-color: #ffcdbf; color: #8a4a3a; }
+.tropical :global(.ops-root.panel-tx .trk li.d) { color: #2f7f63; }
+.tropical :global(.ops-root.panel-tx .trk li.d:before) { background: #2f7f63; box-shadow: 0 0 0 4px #ddf6ec; }
+.tropical :global(.ops-root.panel-tx .trk:before) { background: #d9edf5; }
+.tropical :global(.ops-root.panel-tx .trk li:before) { background: #c7e9f9; }
+.tropical :global(.ops-root.panel-tx .sec2) { border-color: #d9edf5; }
+.tropical :global(.ops-root.panel-tx .df) { border-color: #d9edf5; }
+.tropical :global(.ops-root.panel-tx .rw.t) { border-color: #d9edf5; }
+.tropical :global(.ops-root.panel-tx .mc .dh) { border-color: #d9edf5; }
+.tropical :global(.ops-root.panel-tx .resi-void),
+.tropical :global(.ops-root.panel-tx .resi-empty) { color: #8fb8c9; }
+
+@media (max-width: 900px) {
+  .tropical .hero {
+    min-height: 0;
+    padding: 22px;
+    gap: 10px;
+    background-image:
+      linear-gradient(180deg, rgba(255, 248, 240, 0.9), rgba(255, 248, 240, 0.62)),
+      var(--tropical-hero);
+    background-position: 72% center;
+  }
+  .tropical .quote { max-width: 100%; font-size: 12.5px; }
 }
