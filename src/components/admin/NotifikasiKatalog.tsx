@@ -29,6 +29,31 @@ type Item = {
   aktif: boolean;
 };
 
+/**
+ * Arti setiap penanda template. Dipakai panel supaya admin tidak menebak-nebak —
+ * terutama `{nama}` yang SUDAH berisi sapaan "Ka <nama>".
+ */
+const PENANDA_INFO: Record<string, { label: string; contoh: string }> = {
+  nama: { label: "Sapaan + nama depan", contoh: "Ka Agus" },
+  nomor: { label: "Nomor pesanan", contoh: "SMQ-20261019-928" },
+  resi: { label: "Nomor resi J&T", contoh: "JO0330121411" },
+  wa: { label: "Nomor WhatsApp pelanggan", contoh: "08123456789" },
+  pembayaran: { label: "Metode pembayaran", contoh: "Transfer Bank (BSI)" },
+  total: { label: "Total pembayaran", contoh: "Rp379.000" },
+  subtotal: { label: "Subtotal produk", contoh: "Rp354.000" },
+  ongkir: { label: "Ongkos kirim", contoh: "Rp25.000" },
+  diskon: { label: "Diskon", contoh: "Rp0" },
+  status: { label: "Status pembayaran", contoh: "Belum Lunas" },
+  daftar_produk: { label: "Daftar produk (satu baris per item)", contoh: "- Thobe Soft Grey ... — Rp354.000" },
+  blok_rekening: { label: "Daftar rekening aktif", contoh: "*Pembayaran BANK BSI*\n7153280058\na.n. Ardo Babus Abdullah" },
+  instruksi_pembayaran: { label: "Instruksi pembayaran", contoh: "Transfer ke rekening ..." },
+  info_tambahan: { label: "Info tambahan pesanan", contoh: "Tujuan: ...\nSumber: Website" },
+  tautan_admin: { label: "Link panel admin", contoh: "https://www.samaqu.id/admin?panel=orders" },
+  alasan: { label: "Alasan pembatalan", contoh: "Stok habis" },
+  info_refund: { label: "Info refund", contoh: "Refund diproses 1–3 hari kerja" },
+  nama_rekening: { label: "Nama pemilik rekening", contoh: "Ardo Babus Abdullah" },
+};
+
 async function authHeaders() {
   const { data: { session } } = await supabase.auth.getSession();
   return { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token || ""}` };
@@ -219,25 +244,60 @@ export default function NotifikasiKatalog() {
                       style={{ borderColor: "rgba(0,0,0,.15)", color: "var(--espresso)" }}
                     />
 
-                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                      <span className="text-[11px] font-semibold" style={{ color: "var(--text-muted)" }}>
-                        Penanda tersedia:
-                      </span>
-                      {daftarPenanda.length === 0 ? (
-                        <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-                          tidak ada (pesan ini teks tetap)
-                        </span>
-                      ) : (
-                        daftarPenanda.map((nama) => (
-                          <code
-                            key={nama}
-                            className="rounded-md border px-1.5 py-0.5 text-[10px] font-semibold"
-                            style={{ borderColor: "rgba(0,0,0,.12)", color: "var(--text-secondary)" }}
-                          >
-                            {`{${nama}}`}
-                          </code>
-                        ))
-                      )}
+                    <div
+                      className="mt-3 rounded-xl border px-3 py-2.5"
+                      style={{ borderColor: "rgba(0,0,0,.08)", background: "rgba(0,0,0,.015)" }}
+                    >
+                      <p className="text-[11px] font-bold" style={{ color: "var(--espresso)" }}>
+                        Arti penanda
+                      </p>
+                      <p className="mt-0.5 text-[11px]" style={{ color: "var(--text-muted)" }}>
+                        Diisi otomatis oleh sistem. <b>{"{nama}"}</b> sudah berisi sapaan{" "}
+                        <b>Ka &lt;nama&gt;</b>, jadi tulis <b>Halo {"{nama}"}</b> — bukan{" "}
+                        <b>Halo Ka {"{nama}"}</b>.
+                      </p>
+
+                      <div className="mt-2 space-y-1.5">
+                        {daftarPenanda.length === 0 ? (
+                          <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>
+                            tidak ada (pesan ini teks tetap)
+                          </span>
+                        ) : (
+                          daftarPenanda.map((nama) => {
+                            const info = PENANDA_INFO[nama];
+                            return (
+                              <div
+                                key={nama}
+                                className="rounded-lg border bg-white px-2.5 py-2"
+                                style={{ borderColor: "rgba(0,0,0,.07)" }}
+                              >
+                                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                                  <code
+                                    className="rounded-md border px-1.5 py-0.5 text-[10px] font-semibold"
+                                    style={{ borderColor: "rgba(0,0,0,.12)", color: "var(--text-secondary)" }}
+                                  >
+                                    {`{${nama}}`}
+                                  </code>
+                                  <span className="text-[11px] font-semibold" style={{ color: "var(--espresso)" }}>
+                                    {info?.label || "Penanda sistem"}
+                                  </span>
+                                </div>
+                                <p
+                                  className="mt-1 text-[11px]"
+                                  style={{ color: "var(--text-muted)", whiteSpace: "pre-line" }}
+                                >
+                                  Contoh: {info?.contoh || "—"}
+                                </p>
+                                {nama === "nama" ? (
+                                  <p className="mt-1 text-[11px] font-semibold text-amber-700">
+                                    Sudah termasuk "Ka". Jangan tulis "Ka {"{nama}"}" lagi.
+                                  </p>
+                                ) : null}
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
                     </div>
                     <p className="mt-1 text-[11px]" style={{ color: "var(--text-muted)" }}>
                       {penandaDiDraf.length > 0 ? `Dipakai di editor ini: ${penandaDiDraf.map((n) => `{${n}}`).join(", ")}.` : ""}{" "}
