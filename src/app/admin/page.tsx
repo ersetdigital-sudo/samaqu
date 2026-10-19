@@ -573,7 +573,7 @@ function AdminPageInner() {
   async function arrangeOrder(order: { order_number: string }) {
     showConfirm(
       "Atur Pesanan?",
-      `Buat nomor resi J&T untuk pesanan ${order.order_number}? Pengiriman dibuat & paket menunggu pickup kurir (status pesanan tetap "diproses", tahapnya jadi "Sudah di Packing").`,
+      `Buat nomor resi J&T untuk pesanan ${order.order_number}? Pengiriman dibuat & paket menunggu pickup kurir (status pesanan tetap "diproses", tahapnya jadi "Menunggu Pickup").`,
       async () => {
         try {
           const res = await fetch("/api/admin/orders", {

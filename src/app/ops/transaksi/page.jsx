@@ -273,7 +273,8 @@ export default function Transaksi({ variant = "ops" }) {
   }, [orders]);
 
   // Tab = TAHAP resmi aplikasi (`ORDER_STAGE_TABS` order-flow — SAMA dengan halaman Pesanan admin):
-  // Semua · Belum Bayar · Belum di Packing · Sudah di Packing · Dikirim · Selesai · Dibatalkan.
+  // Semua · Belum Bayar · Menunggu Pickup · Dikirim · Selesai · Dibatalkan.
+  // "Belum di Packing" tetap jadi filter cepat di bar bawah (sub-status pesanan `diproses`).
   const stageTabs = useMemo(
     () =>
       ORDER_STAGE_TABS.map((tab) => ({
@@ -376,7 +377,7 @@ export default function Transaksi({ variant = "ops" }) {
 
         <div className="bar">
           <div className="tabs">
-            {stageTabs.filter((tab) => tab.key !== "belum_dipacking" && tab.key !== "sudah_dipacking").map((tab) => (
+            {stageTabs.filter((tab) => tab.key !== "belum_dipacking").map((tab) => (
               <button
                 key={tab.key}
                 type="button"
@@ -541,10 +542,10 @@ export default function Transaksi({ variant = "ops" }) {
                           <span className="resi-empty">–</span>
                         )}
                         {/* Penanda packing khusus pesanan lunas yang belum dikirim:
-                            "Sudah di packing" = resi J&T sudah dibuat. */}
+                            resi sudah dibuat = menunggu dijemput kurir J&T. */}
                         {order.status === "diproses" ? (
                           <small className={order.awb_no ? "pack-done" : "pack-todo"}>
-                            {order.awb_no ? "Sudah di packing" : "Belum di packing"}
+                            {order.awb_no ? "Menunggu pickup" : "Belum di packing"}
                           </small>
                         ) : null}
                       </td>

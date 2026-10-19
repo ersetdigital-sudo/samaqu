@@ -195,7 +195,7 @@ export default function OrdersView({
       <div className="bar">
         <div className="tabs">
           {stageTabs
-            .filter((tab) => tab.key !== "belum_dipacking" && tab.key !== "sudah_dipacking")
+            .filter((tab) => tab.key !== "belum_dipacking")
             .map((tab) => (
               <button
                 key={tab.key}
@@ -312,7 +312,7 @@ export default function OrdersView({
                         <span className="resi-empty">–</span>
                       )}
                       {stage === "belum_dipacking" ? <small className="pack-todo">Belum di packing</small> : null}
-                      {stage === "sudah_dipacking" ? <small className="pack-done">Sudah di packing</small> : null}
+                      {stage === "sudah_dipacking" ? <small className="pack-done">Menunggu pickup</small> : null}
                     </td>
                     <td data-label="Status">
                       <StageBadge order={o} />

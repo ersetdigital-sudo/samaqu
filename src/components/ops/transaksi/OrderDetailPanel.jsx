@@ -29,7 +29,7 @@ const STAGE_KEY = {
 const BANNER = {
   belum_bayar: ["Menunggu pembayaran", "Pesanan akan dibatalkan otomatis jika belum dibayar dalam 24 jam."],
   belum_dipacking: ["Pesanan perlu dipacking", "Kemas pesanan, lalu buat resi supaya paket siap diserahkan ke kurir."],
-  sudah_dipacking: ["Pesanan siap dikirim", "Paket sudah dipacking dan resinya sudah dibuat — serahkan ke kurir."],
+  sudah_dipacking: ["Menunggu pickup", "Resi sudah dibuat — paket menunggu dijemput kurir J&T."],
   dikirim: ["Pesanan dalam perjalanan", "Paket sedang diantar oleh kurir ke alamat pembeli."],
   selesai: ["Pesanan selesai", "Pesanan telah diterima oleh pembeli."],
   dibatalkan: ["Pesanan dibatalkan", ""],
