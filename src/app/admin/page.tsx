@@ -591,7 +591,12 @@ function AdminPageInner() {
           const awbNo = data.awbNo as string;
           // Resi terbit ≠ paket dikirim: status pesanan tetap "diproses", status pengiriman
           // jadi "menunggu_pickup". Baru naik ke "dikirim" setelah J&T melaporkan pemindaian.
-          const patch = { awb_no: awbNo, status: "diproses", shipping_status: "menunggu_pickup" };
+          const patch = {
+            awb_no: awbNo,
+            status: "diproses",
+            shipping_status: "menunggu_pickup",
+            ...(data.serviceCode ? { shipping_method: `J&T ${data.serviceCode}` } : {}),
+          };
           setOrders((prev) => prev.map((o) => o.order_number === order.order_number ? { ...o, ...patch } : o));
           setDashOrders((prev) => prev.map((o) => o.order_number === order.order_number ? { ...o, ...patch } : o));
           setSelectedOrder((prev) => prev && prev.order_number === order.order_number ? { ...prev, ...patch } : prev);

@@ -46,3 +46,19 @@ export function labelLayanan(code?: string | null): string {
 export function expressTypeUntuk(code?: string | null): string {
   return String(code ?? "").trim();
 }
+
+/**
+ * Kode layanan J&T (EZ/ECO) dari teks yang tersimpan di `orders.shipping_method`.
+ * Nilai lama bisa berupa "reguler", "J&T - EZ", atau "J&T - J&T ECO (Hemat)".
+ */
+export function jntServiceCodeFromShippingMethod(value?: string | null): string | null {
+  const text = String(value ?? "").toUpperCase();
+  if (text.includes("ECO")) return "ECO";
+  if (text.includes("EZ")) return "EZ";
+  return null;
+}
+
+/** Tag pendek untuk detail pesanan & label: "Service EZ" / "Service ECO". */
+export function jntServiceTag(value?: string | null, fallback = "EZ"): string {
+  return `Service ${jntServiceCodeFromShippingMethod(value) || fallback}`;
+}

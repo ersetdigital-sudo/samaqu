@@ -60,6 +60,8 @@ export interface JntOrderResult {
   awbNo: string | null;
   /** Berat (gram) yang dipakai pada resi ini — pemanggil boleh menyimpannya ke pesanan. */
   weightGrams?: number;
+  /** Kode layanan J&T yang benar-benar dipakai resi (EZ/ECO) — disimpan ke pesanan. */
+  serviceCode?: string;
   raw?: OrderResponse | null;
   error?: string;
 }
@@ -221,5 +223,5 @@ export async function createJntOrderForOrder(order: JntOrderSource): Promise<Jnt
     };
   }
 
-  return { success: true, awbNo: result.awbNo, weightGrams, raw: result.raw };
+  return { success: true, awbNo: result.awbNo, weightGrams, serviceCode, raw: result.raw };
 }

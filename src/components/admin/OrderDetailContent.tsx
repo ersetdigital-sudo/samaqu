@@ -236,7 +236,7 @@ export default function OrderDetailContent({
   const t = useSafeTranslations("tracking");
 
   /** Status terbaru J&T (read-only) — diambil otomatis saat drawer dibuka. */
-  const [liveTrack, setLiveTrack] = useState<{ status: string; location?: string; dateTime?: string } | null>(null);
+  const [liveTrack, setLiveTrack] = useState<{ status: string; location?: string; dateTime?: string; serviceCode?: string } | null>(null);
   useEffect(() => {
     if (!resi) {
       setLiveTrack(null);
@@ -256,7 +256,12 @@ export default function OrderDetailContent({
         const latest = sortHistoryDesc(history)[0];
         if (!latest || cancelled) return;
         const row = trackingRow(latest);
-        setLiveTrack({ status: row.status, location: row.location, dateTime: row.dateTime });
+        setLiveTrack({
+          status: row.status,
+          location: row.location,
+          dateTime: row.dateTime,
+          serviceCode: String(json.data?.detail?.services_code || "").toUpperCase(),
+        });
       } catch {
         // Diam saja — snapshot tersimpan tetap dipakai sebagai cadangan.
       }
@@ -486,6 +491,7 @@ export default function OrderDetailContent({
         theme="mono"
         latestTracking={panelTracking}
         trackingState={tracking ? "loading" : "done"}
+        serviceCode={liveTrack?.serviceCode}
       />
 
       {/* Kontrol admin — bagian yang tidak ada di halaman customer. */}

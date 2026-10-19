@@ -15,6 +15,7 @@ import { ORDER_STAGE_LABEL, SHIPPING_STATUS_LABEL, orderStage } from "@/lib/orde
 import { usePaymentMethodName } from "@/lib/use-payment-methods";
 import { formatWeightExact } from "@/lib/shipping-weight";
 import { formatTrackingTime } from "@/lib/jnt/track-status";
+import { jntServiceTag } from "@/lib/jnt/layanan";
 import { formatRupiah, formatTanggalJamID } from "@/components/ops/transaksi/transaksi-format";
 
 const STAGE_KEY = {
@@ -44,6 +45,7 @@ export default function OrderDetailPanel({
   trackingState = "idle",
   shippingContent = null,
   onOpenTrack,
+  serviceCode = "",
 }) {
   const isMono = theme === "mono";
   const stage = orderStage(order);
@@ -56,6 +58,7 @@ export default function OrderDetailPanel({
     .filter(Boolean)
     .join(", ");
   const { name: paymentName } = usePaymentMethodName(order.payment_method);
+  const serviceTag = jntServiceTag(serviceCode || order.shipping_method);
   const accent = isMono ? "#0f172a" : "var(--panel-accent, #c2255c)";
   const minAccent = isMono ? "#475569" : "#B4552F";
 
@@ -100,6 +103,12 @@ export default function OrderDetailPanel({
         <div className="kv">
           <span>Kurir</span>
           <b>J&amp;T Express</b>
+        </div>
+        <div className="kv">
+          <span>Layanan</span>
+          <b>
+            <span className="bd s-siap">{serviceTag}</span>
+          </b>
         </div>
 
         {shippingContent ? (
