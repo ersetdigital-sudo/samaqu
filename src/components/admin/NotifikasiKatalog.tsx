@@ -7,10 +7,11 @@ import { supabase } from "@/lib/supabase";
 /**
  * Pratinjau + editor SEMUA notifikasi WhatsApp sistem — panel Pengaturan dashboard admin.
  *
- * - Kartu menampilkan pesan bawaan hasil render template yang benar-benar dipakai mengirim.
- * - Tombol "Ubah pesan" membuka editor yang ISI AWALNYA template mentah: kalau admin sudah
- *   pernah mengubah, isinya versi tersimpan; kalau belum, isinya teks bawaan sistem. Penanda
- *   variabel tetap tampil sebagai penanda ({nama}, {nomor}, {alasan}, …) — bukan data contoh.
+ * - Kartu dan editor memakai teks yang SAMA: template mentah dengan penanda
+ *   ({nama}, {nomor}, {resi}, …), bukan data contoh. Jadi saat mengedit, isinya tidak berbeda
+ *   dari yang terlihat di kartu.
+ * - Kalau admin sudah pernah mengubah, yang tampil adalah versi tersimpan; kalau belum,
+ *   teks bawaan sistem.
  * - "Kembalikan ke default" mengembalikan isi ke teks bawaan sistem (dengan konfirmasi).
  * - Kosongkan kotak = kembali ke teks bawaan saat disimpan.
  */
@@ -121,8 +122,8 @@ export default function NotifikasiKatalog() {
             Notifikasi WhatsApp (semua pesan sistem)
           </h3>
           <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
-            Yang tampil di kartu = pesan yang benar-benar dikirim. Tombol <b>Ubah pesan</b> membuka editor berisi
-            template mentah (dengan penanda), jadi tinggal ubah bagian yang perlu.
+            Kartu dan editor memakai template yang sama, dengan penanda seperti <b>{"{nama}"}</b>,{" "}
+            <b>{"{nomor}"}</b>, dan <b>{"{resi}"}</b>. Penanda itu diisi otomatis saat pesan dikirim.
           </p>
         </div>
         <button
@@ -262,7 +263,7 @@ export default function NotifikasiKatalog() {
                         <RotateCcw size={12} /> Kembalikan ke default
                       </button>
                       <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-                        Contoh kirim tetap ditampilkan di bawah sebagai pembanding.
+                        Pratinjau di bawah memakai template yang sama dengan editor.
                       </span>
                     </div>
                   </div>
@@ -272,7 +273,7 @@ export default function NotifikasiKatalog() {
                   className="whitespace-pre-wrap rounded-b-xl border-t px-4 py-3 text-xs leading-relaxed"
                   style={{ borderColor: "rgba(0,0,0,.08)", background: "rgba(0,0,0,.02)", color: "var(--espresso)" }}
                 >
-                  {item.override || item.isi}
+                  {item.override || item.template}
                 </pre>
               </div>
             );
