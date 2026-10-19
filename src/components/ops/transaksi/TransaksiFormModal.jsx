@@ -196,6 +196,14 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
   const [customerSearch, setCustomerSearch] = useState("");
   const customerSearchRef = useRef(null);
   /**
+   * Mode Ubah: data pelanggan tampil sebagai kartu ringkasan dulu. Field pelanggan baru
+   * dibuka setelah admin menekan "Ubah data pelanggan", supaya tidak terkesan disuruh
+   * mengisi ulang pesanan yang sudah ada.
+   */
+  const [customerEditing, setCustomerEditing] = useState(false);
+  /** Mode Ubah: kotak "Tempel alamat lengkap" dilipat dulu, bisa dibuka kalau perlu. */
+  const [pasteExpanded, setPasteExpanded] = useState(false);
+  /**
    * "Tempel alamat lengkap, isi otomatis" (mode Pelanggan baru): teks tempelan, status pesan,
    * dan daftar kolom yang terakhir diisi otomatis (dipakai tombol Reset supaya isian manual
    * yang lain tidak ikut terhapus).
@@ -332,13 +340,16 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
     setSelectedService("");
     setAddressPrefilledFrom("");
     setCustomerSearch("");
+    setCustomerEditing(false);
+    setPasteExpanded(false);
     // Drawer dibuka ulang → isian "tempel alamat" tidak boleh menempel dari sesi sebelumnya.
     setPasteText("");
     setPasteStatus({ state: "idle", message: "" });
     setPasteFilled([]);
     setPastePostal([]);
     setPasting(false);
-    setStep(0);
+    // Mode Ubah langsung membuka langkah Produk — bagian yang paling sering diubah.
+    setStep(initialData ? 1 : 0);
     if (initialData) {
       const parts = isoToWibInput(initialData.created_at);
       const kecamatan = String(initialData.shipping_kecamatan || "").trim()
@@ -758,6 +769,23 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
 
   const payloadItems = () => items.map(rowPayload).filter((item) => item.product_id && item.size);
 
+  /**
+   * Mode Ubah: ringkasan perubahan untuk footer sebelum menyimpan. Hanya tampilan —
+   * angkanya memakai perhitungan total yang sama dengan yang dikirim ke server.
+   */
+  const originalItemCount = initialData?.items?.length || 0;
+  const currentItemCount = payloadItems().length;
+  const itemCountDelta = currentItemCount - originalItemCount;
+  const originalTotal = Number(initialData?.total) || 0;
+  const changeParts = [];
+  if (dataset.length > 0 && itemCountDelta !== 0) {
+    changeParts.push(`Produk ${itemCountDelta > 0 ? "+" : ""}${itemCountDelta}`);
+  }
+  if (dataset.length > 0 && Math.round(total) !== Math.round(originalTotal)) {
+    changeParts.push(`Total Rp ${formatRupiah(originalTotal)} jadi Rp ${formatRupiah(total)}`);
+  }
+  const changeSummary = isEdit ? changeParts.join(" · ") : "";
+
   /** Penanda "Ongkir mungkin berubah, cek ulang" — nilai ongkir yang sudah diisi tidak diubah. */
   const ongkirStale =
     ongkir.status === "done" && Boolean(ongkir.key) && ongkir.key !== ongkirKey([form?.city, form?.kecamatan], payloadItems());
@@ -904,8 +932,20 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
     if (form?.customer_mode !== "new") return null;
     const key = phoneKey(form?.customer_whatsapp || "");
     if (key.length < 8) return null;
-    return semuaPelanggan.find((customer) => phoneKey(customer.whatsapp) === key) || null;
-  }, [form?.customer_mode, form?.customer_whatsapp, semuaPelanggan]);
+    const found = semuaPelanggan.find((customer) => phoneKey(customer.whatsapp) === key) || null;
+    if (!found) return null;
+    // Mode Ubah: nomor milik pelanggan yang SAMA dengan pesanan ini bukan duplikat — jangan
+    // menyuruh admin "Pakai pelanggan ini" untuk data yang memang sedang diedit.
+    if (isEdit) {
+      const originalId = String(initialData?.customer_id || "");
+      const originalPhone = phoneKey(initialData?.customer_whatsapp || "");
+      const sameCustomer =
+        (originalId && String(found.id || "") === originalId) ||
+        (originalPhone && phoneKey(found.whatsapp) === originalPhone);
+      if (sameCustomer) return null;
+    }
+    return found;
+  }, [form?.customer_mode, form?.customer_whatsapp, semuaPelanggan, isEdit, initialData?.customer_id, initialData?.customer_whatsapp]);
 
   /**
    * Alamat dari buku alamat dipakai → alamatnya diisi SEKALIGUS nama penerima & nomor HP-nya,
@@ -1309,19 +1349,23 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
     setSaveAttempted(true);
     setSaveError("");
     if (incomplete) {
+      if (isEdit) setStep(1);
       setSaveError("Lengkapi dulu produknya (dan periksa baris yang stoknya tidak cukup).");
       setScrollKick((count) => count + 1);
       return;
     }
     if (!form.customer_name.trim()) {
+      if (isEdit) setStep(0);
       setScrollKick((count) => count + 1);
       return setSaveError("Nama pelanggan wajib diisi.");
     }
     if (!form.customer_whatsapp.trim()) {
+      if (isEdit) setStep(0);
       setScrollKick((count) => count + 1);
       return setSaveError("Nomor HP pelanggan wajib diisi.");
     }
     if (addressIncomplete) {
+      if (isEdit) setStep(0);
       setScrollKick((count) => count + 1);
       return setSaveError("Alamat pengiriman wajib diisi lengkap.");
     }
@@ -1442,19 +1486,21 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                 </button>
               </div>
 
-              {/* Stepper: langkah selesai boleh diklik untuk kembali (disembunyikan saat sudah tersimpan) */}
+              {/* Stepper: di mode Ubah semua langkah boleh diklik bebas (data sudah terisi);
+                  di mode Tambah hanya langkah yang sudah selesai. Disembunyikan saat tersimpan. */}
               <ol className={`flex items-center gap-1.5 mt-3 ${savedOrder ? "hidden" : ""}`}>
                 {stepLabels.map((label, index) => {
                   const done = index < step;
                   const active = index === step;
+                  const canJump = isEdit || done;
                   return (
                     <li key={label} className="flex items-center gap-1.5 min-w-0">
                       <button
                         type="button"
-                        disabled={!done}
-                        onClick={() => done && setStep(index)}
+                        disabled={!canJump}
+                        onClick={() => canJump && setStep(index)}
                         aria-current={active ? "step" : undefined}
-                        className={`flex items-center gap-1.5 min-w-0 ${done ? "cursor-pointer" : "cursor-default"}`}
+                        className={`flex items-center gap-1.5 min-w-0 ${canJump ? "cursor-pointer" : "cursor-default"}`}
                       >
                         <span
                           className={`w-5 h-5 shrink-0 rounded-full grid place-items-center text-[10px] font-black ${
@@ -1484,8 +1530,9 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
             <form
               onSubmit={(event) => {
                 event.preventDefault();
-                if (step < 2) goNext();
-                else save();
+                // Mode Ubah: Enter menyimpan dari langkah mana pun (data sudah terisi).
+                if (isEdit || step === 2) save();
+                else goNext();
               }}
               ref={bodyRef}
               className="transaksi-body no-scrollbar flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 sm:px-6 py-3 space-y-3.5"
@@ -1525,6 +1572,37 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                 <>
               <section className="space-y-2">
                 <h4 className={sectionClass}>Pelanggan</h4>
+
+                {/* Mode Ubah: data pesanan sudah ada → tampilkan ringkasan dulu, bukan form kosong. */}
+                {isEdit && !customerEditing && (
+                  <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 px-3.5 py-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-slate-900 dark:text-white truncate">
+                          {form.customer_name || "Tanpa nama"}
+                        </p>
+                        <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 truncate">
+                          {form.customer_whatsapp || "nomor belum ada"}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setCustomerEditing(true)}
+                        className="shrink-0 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-[11px] font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                      >
+                        Ubah data pelanggan
+                      </button>
+                    </div>
+                    <p className="text-sm text-slate-700 dark:text-slate-200 mt-2 leading-relaxed">
+                      {addressText(form) || "Alamat belum diisi"}
+                    </p>
+                  </div>
+                )}
+
+                {/* Field pelanggan & alamat: selalu di mode Tambah, dan di mode Ubah hanya
+                    setelah admin menekan "Ubah data pelanggan". */}
+                {(!isEdit || customerEditing) && (
+                  <>
                 <div className="flex gap-2">
                   <button
                     type="button"
@@ -1670,7 +1748,18 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                 ) : (
                   <>
                     {/* "Tempel alamat lengkap, isi otomatis" — hanya di mode Pelanggan baru.
+                        Di mode Ubah kotaknya dilipat dulu supaya tidak terkesan menyuruh
+                        mengisi ulang; admin bisa membukanya kalau memang perlu.
                         Cara kerja & aturan deteksinya ada di src/lib/alamat-deteksi.ts. */}
+                    {isEdit && !pasteExpanded ? (
+                      <button
+                        type="button"
+                        onClick={() => setPasteExpanded(true)}
+                        className="inline-flex items-center gap-1.5 text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline"
+                      >
+                        <Wand2 size={13} /> Tempel alamat lengkap, isi otomatis
+                      </button>
+                    ) : (
                     <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 p-3 space-y-2">
                       <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                         Tempel alamat lengkap, isi otomatis
@@ -1734,6 +1823,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                         ))}
                       </div>
                     </div>
+                    )}
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <input
@@ -1997,6 +2087,8 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                     </div>
                   )}
                 </div>
+                  </>
+                )}
               </section>
 
               {/* Sumber & waktu */}
@@ -2067,54 +2159,150 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                       });
                       const summary = summaryParts.join(" · ");
                       const weightMissing = info.unitWeight.source === "missing";
+                      const quantity = Number(row.quantity) || 1;
+                      const maxStock = info.chosen.stock;
                       return (
                         <div
                           key={index}
-                          className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 dark:border-slate-800 px-3.5 py-3"
+                          className="rounded-xl border border-slate-200 dark:border-slate-800 px-3.5 py-3 space-y-2"
                         >
-                          <div className="min-w-0">
-                            <p className="text-sm font-bold text-slate-900 dark:text-white truncate" title={summary}>
-                              {summaryParts[0]}
-                              {summaryParts.length > 1 ? (
-                                <span className="font-semibold text-slate-500 dark:text-slate-400"> · {summaryParts.slice(1).join(" · ")}</span>
-                              ) : null}
-                            </p>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                              Rp {formatRupiah(info.subtotal)}
-                              {row.priceManual ? ` · harga manual Rp ${formatRupiah(info.unitPrice)}/pcs` : ""}
-                              {` · stok ${info.chosen.stock}`}
-                              {info.chosen.linkedTo ? ` · stok mengikuti ${info.chosen.linkedTo}` : ""}
-                              {" · "}
-                              {/* Berat per produk — ditampilkan di list supaya admin tahu tanpa buka detail. */}
-                              <span
-                                className={
-                                  weightMissing || info.unitWeight.source === "product"
-                                    ? "font-bold text-amber-600 dark:text-amber-400"
-                                    : "font-semibold text-slate-600 dark:text-slate-300"
-                                }
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="text-sm font-bold text-slate-900 dark:text-white truncate" title={summary}>
+                                {summaryParts[0]}
+                                {summaryParts.length > 1 ? (
+                                  <span className="font-semibold text-slate-500 dark:text-slate-400"> · {summaryParts.slice(1).join(" · ")}</span>
+                                ) : null}
+                              </p>
+                              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                Rp {formatRupiah(info.subtotal)}
+                                {row.priceManual ? ` · harga manual Rp ${formatRupiah(info.unitPrice)}/pcs` : ""}
+                                {` · stok ${info.chosen.stock}`}
+                                {info.chosen.linkedTo ? ` · stok mengikuti ${info.chosen.linkedTo}` : ""}
+                                {" · "}
+                                {/* Berat per produk — ditampilkan di list supaya admin tahu tanpa buka detail. */}
+                                <span
+                                  className={
+                                    weightMissing || info.unitWeight.source === "product"
+                                      ? "font-bold text-amber-600 dark:text-amber-400"
+                                      : "font-semibold text-slate-600 dark:text-slate-300"
+                                  }
+                                >
+                                  Berat {weightMissing ? "belum diisi" : formatWeightExact(info.unitWeight.grams)}
+                                  {info.unitWeight.source === "product" ? " (fallback)" : ""}
+                                </span>
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => openRow(index)}
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
                               >
-                                Berat {weightMissing ? "belum diisi" : formatWeightExact(info.unitWeight.grams)}
-                                {info.unitWeight.source === "product" ? " (fallback)" : ""}
-                              </span>
-                            </p>
+                                <Pencil size={13} /> Ubah
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => removeRow(index)}
+                                className="p-2 rounded-lg text-slate-400 hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-600 transition-colors"
+                                aria-label="Hapus produk"
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-1 shrink-0">
-                            <button
-                              type="button"
-                              onClick={() => openRow(index)}
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
-                            >
-                              <Pencil size={13} /> Ubah
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => removeRow(index)}
-                              className="p-2 rounded-lg text-slate-400 hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-600 transition-colors"
-                              aria-label="Hapus produk"
-                            >
-                              <Trash2 size={15} />
-                            </button>
-                          </div>
+
+                          {/* Mode Ubah: qty, ukuran, dan harga bisa langsung diubah dari daftar
+                              tanpa membuka ulang pemilih produk. "Ubah" tetap untuk ganti produk. */}
+                          {isEdit && (
+                            <div className="flex flex-wrap items-end gap-x-3 gap-y-2 border-t border-slate-100 dark:border-slate-800 pt-2">
+                              <div>
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Ukuran</span>
+                                {info.paket ? (
+                                  <span className="mt-0.5 block text-sm font-bold text-slate-900 dark:text-white">
+                                    {paketNameOf(info.chosen) || row.warna || "-"}
+                                  </span>
+                                ) : (
+                                  <select
+                                    value={row.variant}
+                                    onChange={(event) => updateRow(index, { variant: event.target.value, price: "", priceManual: false })}
+                                    className="mt-0.5 block w-auto min-w-[110px] px-2 py-1.5 bg-gray-50 dark:bg-slate-900 border-2 border-gray-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-900 dark:text-white"
+                                    aria-label="Ukuran"
+                                  >
+                                    {info.options.map((option) => (
+                                      <option key={option.value} value={option.value} disabled={option.stock <= 0 && option.value !== row.variant}>
+                                        {option.showColor ? `${option.size} · ${option.color}` : option.size}
+                                        {option.stock <= 0 ? " (habis)" : ""}
+                                      </option>
+                                    ))}
+                                  </select>
+                                )}
+                              </div>
+
+                              <div>
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Jumlah</span>
+                                <div className="mt-0.5 flex items-center gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => updateRow(index, { quantity: Math.max(1, quantity - 1) })}
+                                    disabled={quantity <= 1}
+                                    className="w-7 h-7 grid place-items-center rounded-lg border-2 border-slate-200 dark:border-slate-700 text-sm font-black text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:hover:bg-transparent"
+                                    aria-label="Kurangi jumlah"
+                                  >
+                                    −
+                                  </button>
+                                  <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    value={row.quantity}
+                                    onChange={(event) => updateRow(index, { quantity: clampQty(digits(event.target.value), maxStock) })}
+                                    aria-label="Jumlah"
+                                    className="w-11 px-1 py-1.5 bg-gray-50 dark:bg-slate-900 border-2 border-gray-200 dark:border-slate-700 rounded-lg text-center text-sm font-bold text-slate-900 dark:text-white"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => updateRow(index, { quantity: Math.min(maxStock, quantity + 1) })}
+                                    disabled={quantity >= maxStock}
+                                    className="w-7 h-7 grid place-items-center rounded-lg border-2 border-slate-200 dark:border-slate-700 text-sm font-black text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:hover:bg-transparent"
+                                    aria-label="Tambah jumlah"
+                                  >
+                                    +
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div>
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Harga</span>
+                                <div className="mt-0.5 flex items-center gap-1.5">
+                                  <div className="relative">
+                                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-500 dark:text-slate-400">Rp</span>
+                                    <input
+                                      type="text"
+                                      inputMode="numeric"
+                                      value={row.price}
+                                      onChange={(event) => updateRow(index, { price: digits(event.target.value), priceManual: true })}
+                                      placeholder={String(info.chosen.price)}
+                                      aria-label="Harga satuan"
+                                      className="w-28 pl-7 pr-2 py-1.5 bg-gray-50 dark:bg-slate-900 border-2 border-gray-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-900 dark:text-white"
+                                    />
+                                  </div>
+                                  {row.priceManual ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => updateRow(index, { price: "", priceManual: false })}
+                                      className="text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:underline"
+                                    >
+                                      Katalog
+                                    </button>
+                                  ) : (
+                                    <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">
+                                      Rp {formatRupiah(info.chosen.price)}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       );
                     }
@@ -2579,7 +2767,11 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                   <button
                     type="button"
                     onClick={addRow}
-                    className="inline-flex items-center gap-2 px-3.5 py-2 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-sm font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
+                    className={`inline-flex items-center gap-2 px-3.5 py-2 text-sm font-bold rounded-xl transition-all ${
+                      isEdit
+                        ? "border-2 border-slate-900 dark:border-slate-100 text-slate-900 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-800"
+                        : "border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+                    }`}
                   >
                     <Plus size={15} /> Tambah produk
                   </button>
@@ -2787,7 +2979,28 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                       : "Transaksi langsung dianggap lunas dan masuk ke omset."}
                   </p>
                 </section>
-              ) : null}
+              ) : (
+                /* Mode Ubah: status pembayaran hanya ditampilkan (tidak diminta ulang).
+                   Perubahannya tetap lewat tombol "Tandai Lunas" di detail transaksi. */
+                <section className="space-y-2">
+                  <h4 className={sectionClass}>Status Pembayaran</h4>
+                  <div className="flex items-start gap-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 px-3.5 py-3">
+                    {form.payment_status === "unpaid" ? (
+                      <Clock size={15} className="mt-0.5 shrink-0 text-amber-600 dark:text-amber-400" />
+                    ) : (
+                      <Check size={15} className="mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-slate-900 dark:text-white">
+                        {form.payment_status === "unpaid" ? "Belum Lunas" : "Lunas"}
+                      </p>
+                      <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                        Status ini sudah tercatat di pesanan. Kalau berubah, ubah lewat tombol “Tandai Lunas” di detail transaksi.
+                      </p>
+                    </div>
+                  </div>
+                </section>
+              )}
 
               {/* Catatan */}
               <section className="space-y-2">
@@ -2935,6 +3148,13 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                 </p>
               ) : null}
 
+              {/* Mode Ubah: ringkasan perubahan singkat sebelum menyimpan (hanya tampilan). */}
+              {changeSummary ? (
+                <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-2">
+                  {changeSummary}
+                </p>
+              ) : null}
+
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Total</p>
@@ -2982,7 +3202,19 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                     </button>
                   )}
 
-                  {step < 2 ? (
+                  {isEdit ? (
+                    /* Mode Ubah: simpan bisa ditekan dari langkah mana pun — data pesanan
+                       sudah terisi, validasi tetap sama seperti simpan biasa. */
+                    <button
+                      type="button"
+                      onClick={save}
+                      disabled={mutation.isPending}
+                      className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold rounded-xl hover:bg-slate-800 dark:hover:bg-slate-100 disabled:opacity-50 transition-all"
+                    >
+                      <Save size={16} />
+                      {mutation.isPending ? "Menyimpan..." : "Simpan Perubahan"}
+                    </button>
+                  ) : step < 2 ? (
                     <button
                       type="button"
                       onClick={goNext}
@@ -3001,7 +3233,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                       className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold rounded-xl hover:bg-slate-800 dark:hover:bg-slate-100 disabled:opacity-50 transition-all"
                     >
                       <Save size={16} />
-                      {mutation.isPending ? "Menyimpan..." : isEdit ? "Simpan Perubahan" : "Simpan Transaksi"}
+                      {mutation.isPending ? "Menyimpan..." : "Simpan Transaksi"}
                     </button>
                   )}
                     </>

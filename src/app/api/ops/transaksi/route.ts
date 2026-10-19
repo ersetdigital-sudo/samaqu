@@ -268,7 +268,7 @@ export async function GET(req: NextRequest) {
   let query = admin
     .from("orders")
     .select(
-      "id, order_number, created_at, customer_id, customer_name, customer_whatsapp, status, source, subtotal, discount, shipping_cost, total, shipping_notes, awb_no, jnt_order_id, shipping_status, shipping_address, shipping_city, shipping_province, shipping_kecamatan, shipping_postal_code, payment_method, paid_at",
+      "id, order_number, created_at, customer_id, customer_name, customer_whatsapp, status, source, subtotal, discount, shipping_cost, total, shipping_notes, awb_no, jnt_order_id, shipping_status, shipping_address, shipping_city, shipping_province, shipping_kecamatan, shipping_postal_code, payment_method, payment_status, paid_at",
     )
     .order("created_at", { ascending: false })
     .limit(limit);
@@ -350,6 +350,9 @@ export async function GET(req: NextRequest) {
       total: Number(order.total) || 0,
       // Metode & waktu pembayaran — dipakai drawer Detail Transaksi (panel admin).
       payment_method: order.payment_method || "",
+      // Status bayar asli dipakai form Ubah Transaksi supaya langkah Pembayaran terisi
+      // otomatis. Data lama tanpa kolom ini mengikuti status pesanan (pending = belum lunas).
+      payment_status: order.payment_status || (status === "pending" ? "unpaid" : "paid"),
       paid_at: order.paid_at || null,
       notes: order.shipping_notes || "",
       shipping_address: order.shipping_address || "",
