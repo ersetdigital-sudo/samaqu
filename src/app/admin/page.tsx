@@ -17,6 +17,7 @@ import { useToast } from "@/components/AdminToast";
 import OrderDetailDrawer from "@/components/admin/OrderDetailDrawer";
 import CustomersView from "@/components/admin/CustomersView";
 import SettingsPanel from "@/components/admin/SettingsSections";
+import NotifikasiKatalog from "@/components/admin/NotifikasiKatalog";
 import OrdersView from "@/components/admin/OrdersView";
 import DashboardView from "@/components/admin/DashboardView";
 import { rankTopProducts } from "@/lib/top-products";
@@ -26,7 +27,7 @@ import ProductDetailDrawer from "@/components/admin/ProductDetailDrawer";
 import LiveChatView from "@/components/admin/LiveChatView";
 import { ADMIN_WF_VARS } from "@/components/admin/admin-theme";
 
-type Panel = "dashboard" | "orders" | "products" | "customers" | "chats" | "content" | "settings";
+type Panel = "dashboard" | "orders" | "products" | "customers" | "chats" | "content" | "notif-template" | "settings";
 
 // Route /api/admin/* digerbangi isOpsAdmin (sesi admin terdaftar di tabel `admins`),
 // jadi setiap request admin wajib membawa Bearer token.
@@ -132,6 +133,7 @@ const navGroups: { title: string; items: NavItem[] }[] = [
     title: "Lainnya",
     items: [
       { label: "Voucher", icon: Ticket, href: "/admin/voucher" },
+      { label: "Template Notif", icon: Bell, panel: "notif-template" },
       { label: "Pengaturan", icon: Settings, panel: "settings" },
     ],
   },
@@ -144,6 +146,7 @@ const panelTitles: Record<Panel, { title: string; sub: string }> = {
   customers: { title: "Pelanggan", sub: "Data dan riwayat belanja pelanggan." },
   chats: { title: "Live Chat", sub: "Percakapan asisten AI di website — cari pertanyaan yang belum terjawab." },
   content: { title: "Konten Website", sub: "Atur tampilan halaman publik SAMAQU." },
+  "notif-template": { title: "Template Notif", sub: "Atur isi pesan WhatsApp otomatis untuk pelanggan dan admin." },
   settings: { title: "Pengaturan", sub: "Konfigurasi informasi toko." },
 };
 
@@ -977,6 +980,9 @@ function AdminPageInner() {
                   </Link>
                 </div>
               )}
+
+              {/* TEMPLATE NOTIF — dipisah dari Pengaturan; logic simpan tetap sama. */}
+              {activePanel === "notif-template" && <NotifikasiKatalog />}
 
               {/* SETTINGS */}
               {activePanel === "settings" && <SettingsPanel />}
