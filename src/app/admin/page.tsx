@@ -483,6 +483,7 @@ function AdminPageInner() {
     setUser(null);
     setRole(null);
     setOrders([]);
+    setDashOrders([]);
     setProducts([]);
     setActivePanel("dashboard");
   }
@@ -558,6 +559,7 @@ function AdminPageInner() {
         ? { status: newStatus, cancelled_at: changedAt, updated_at: changedAt }
         : { status: newStatus, updated_at: changedAt };
       setOrders((prev) => prev.map((o) => o.order_number === orderNumber ? { ...o, ...patch } : o));
+      setDashOrders((prev) => prev.map((o) => o.order_number === orderNumber ? { ...o, ...patch } : o));
       setSelectedOrder((prev) => prev && prev.order_number === orderNumber ? { ...prev, ...patch } : prev);
       toast.showToast("success", "Status pesanan berhasil diperbarui");
     } catch (err) {
@@ -591,6 +593,7 @@ function AdminPageInner() {
           // jadi "menunggu_pickup". Baru naik ke "dikirim" setelah J&T melaporkan pemindaian.
           const patch = { awb_no: awbNo, status: "diproses", shipping_status: "menunggu_pickup" };
           setOrders((prev) => prev.map((o) => o.order_number === order.order_number ? { ...o, ...patch } : o));
+          setDashOrders((prev) => prev.map((o) => o.order_number === order.order_number ? { ...o, ...patch } : o));
           setSelectedOrder((prev) => prev && prev.order_number === order.order_number ? { ...prev, ...patch } : prev);
           toast.showToast("success", `Resi J&T terbit: ${awbNo} — pengiriman dibuat, menunggu pickup kurir`);
         } catch (err) {
@@ -616,6 +619,7 @@ function AdminPageInner() {
           return;
         }
         setOrders((prev) => prev.filter((o) => o.order_number !== orderNumber));
+        setDashOrders((prev) => prev.filter((o) => o.order_number !== orderNumber));
         setSelectedOrder(null);
         setDeleteConfirmOrder(null);
         toast.showToast("success", "Pesanan berhasil dihapus");
@@ -641,6 +645,7 @@ function AdminPageInner() {
         }
         const cancelledAt = new Date().toISOString();
         setOrders((prev) => prev.map((o) => o.order_number === order.order_number ? { ...o, status: "dibatalkan", cancelled_at: cancelledAt, updated_at: cancelledAt } : o));
+        setDashOrders((prev) => prev.map((o) => o.order_number === order.order_number ? { ...o, status: "dibatalkan", cancelled_at: cancelledAt, updated_at: cancelledAt } : o));
         setSelectedOrder((prev) => prev && prev.order_number === order.order_number ? { ...prev, status: "dibatalkan", cancelled_at: cancelledAt, updated_at: cancelledAt } : prev);
         toast.showToast("success", "Berhasil membatalkan pesanan di J&T");
       } catch (err) {
@@ -924,8 +929,12 @@ function AdminPageInner() {
                   drawer detail, jadi halaman ini tidak mengoper `arrangeOrder` ke daftarnya. */}
               {activePanel === "orders" && (
                 <OrdersView
-                  orders={orders}
-                  onSelect={(row) => setSelectedOrder(orders.find((o) => o.id === row.id) || null)}
+                  orders={dashOrders}
+                  loading={dashLoading}
+                  periodLabel={periodLabel}
+                  onPrevMonth={() => shiftDashMonth(-1)}
+                  onNextMonth={() => shiftDashMonth(1)}
+                  onSelect={(row) => setSelectedOrder(dashOrders.find((o) => o.id === row.id) || null)}
                 />
               )}
 
@@ -987,6 +996,7 @@ function AdminPageInner() {
           // Tracking J&T (server) menaikkan status → segarkan baris daftar & drawer.
           if (!selectedOrder) return;
           setOrders((prev) => prev.map((o) => o.order_number === selectedOrder.order_number ? { ...o, ...patch } : o));
+          setDashOrders((prev) => prev.map((o) => o.order_number === selectedOrder.order_number ? { ...o, ...patch } : o));
           setSelectedOrder((prev) => (prev ? { ...prev, ...patch } : prev));
         }}
       />

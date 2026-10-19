@@ -93,20 +93,32 @@ function StageBadge({ order }: { order: AdminOrderRow }) {
 export default function OrdersView({
   orders,
   onSelect,
+  loading = false,
+  periodLabel,
+  onPrevMonth,
+  onNextMonth,
 }: {
   orders: AdminOrderRow[];
   onSelect: (order: AdminOrderRow) => void;
+  loading?: boolean;
+  /** Label periode (mis. "Oktober 2026") — caption KPI, sama seperti menu Transaksi ops. */
+  periodLabel?: string;
+  onPrevMonth?: () => void;
+  onNextMonth?: () => void;
 }) {
-  const [orderSource, setOrderSource] = useState<"website" | "open">("website");
+  const [orderSource, setOrderSource] = useState<"all" | "website" | "open">("all");
   const [orderFilter, setOrderFilter] = useState<OrderStageFilter>("semua");
   const [orderSearch, setOrderSearch] = useState("");
 
-  // Pesanan Open Order (Create Your Price) bernomor `CYO-`; sisanya checkout website.
+  // Tabel boleh disaring per sumber; KPI & hitungan tab selalu memakai SELURUH pesanan
+  // periode itu — aturan yang sama dengan menu Transaksi ops.
   const sourceOrders = useMemo(
     () =>
-      orders.filter((o) =>
-        orderSource === "open" ? o.order_number.startsWith("CYO-") : !o.order_number.startsWith("CYO-")
-      ),
+      orders.filter((o) => {
+        if (orderSource === "all") return true;
+        const open = o.order_number.startsWith("CYO-");
+        return orderSource === "open" ? open : !open;
+      }),
     [orders, orderSource],
   );
 
@@ -130,17 +142,17 @@ export default function OrdersView({
   );
 
   const kpis = useMemo(() => {
-    const sold = sourceOrders.filter((o) => (SALE_STATUSES as readonly string[]).includes(o.status));
+    const sold = orders.filter((o) => (SALE_STATUSES as readonly string[]).includes(o.status));
     return {
-      total: sourceOrders.length,
+      total: orders.length,
       revenue: sold.reduce((sum, o) => sum + (Number(o.total) || 0), 0),
-      unpaid: sourceOrders.filter((o) => orderStage(o) === "belum_bayar").length,
-      toProcess: sourceOrders.filter((o) => {
+      unpaid: orders.filter((o) => orderStage(o) === "belum_bayar").length,
+      toProcess: orders.filter((o) => {
         const stage = orderStage(o);
         return stage === "belum_dipacking" || stage === "sudah_dipacking";
       }).length,
     };
-  }, [sourceOrders]);
+  }, [orders]);
 
   const stageTabs = useMemo(
     () =>
@@ -148,46 +160,49 @@ export default function OrdersView({
         ...tab,
         count:
           tab.key === "semua"
-            ? sourceOrders.length
-            : sourceOrders.filter((o) => orderStage(o) === tab.key).length,
+            ? orders.length
+            : orders.filter((o) => orderStage(o) === tab.key).length,
       })),
-    [sourceOrders],
+    [orders],
   );
 
-  const listTitle = orderSource === "open" ? "Open Order" : "Pesanan Website";
-  const filtersActive = Boolean(orderQuery) || orderFilter !== "semua" || orderSource !== "website";
+  const sourceLabelText =
+    orderSource === "open" ? "Open Order" : orderSource === "website" ? "Pesanan Website" : "Semua sumber";
+  const filtersActive = Boolean(orderQuery) || orderFilter !== "semua" || orderSource !== "all";
   const resetFilters = () => {
     setOrderSearch("");
     setOrderFilter("semua");
-    setOrderSource("website");
+    setOrderSource("all");
   };
   const ordersEmptyText = orderQuery
     ? "Tidak ada pesanan yang cocok dengan pencarian"
     : orderSource === "open"
       ? "Belum ada pesanan Open Order"
-      : "Tidak ada pesanan";
+      : orderSource === "website"
+        ? "Tidak ada pesanan Website"
+        : "Tidak ada pesanan";
 
   return (
     <div className="ops-tx">
       <section className="ks">
         <div className="card k">
           <small>Total transaksi</small>
-          <b>{kpis.total}</b>
-          <i>{listTitle}</i>
+          <b>{loading ? "—" : kpis.total}</b>
+          <i>{periodLabel || sourceLabelText}</i>
         </div>
         <div className="card k">
-          <small>Omset</small>
-          <b>{rupiah(kpis.revenue)}</b>
+          <small>Omset bulan ini</small>
+          <b>{loading ? "—" : rupiah(kpis.revenue)}</b>
           <i>Tidak termasuk dibatalkan</i>
         </div>
         <div className="card k">
           <small>Belum bayar</small>
-          <b style={{ color: "#c76f00" }}>{kpis.unpaid}</b>
+          <b style={{ color: "#c76f00" }}>{loading ? "—" : kpis.unpaid}</b>
           <i>Perlu follow-up</i>
         </div>
         <div className="card k">
           <small>Perlu diproses</small>
-          <b style={{ color: "#2e64c9" }}>{kpis.toProcess}</b>
+          <b style={{ color: "#2e64c9" }}>{loading ? "—" : kpis.toProcess}</b>
           <i>Packing + siap kirim</i>
         </div>
       </section>
@@ -227,11 +242,23 @@ export default function OrdersView({
             Belum di packing
             <em>{stageTabs.find((tab) => tab.key === "belum_dipacking")?.count ?? 0}</em>
           </button>
+          {onPrevMonth || onNextMonth ? (
+            <div className="ptx-month">
+              <button type="button" onClick={onPrevMonth} aria-label="Bulan sebelumnya">
+                ‹
+              </button>
+              <b>{periodLabel || "Bulan ini"}</b>
+              <button type="button" onClick={onNextMonth} aria-label="Bulan berikutnya">
+                ›
+              </button>
+            </div>
+          ) : null}
           <select
             value={orderSource}
-            onChange={(event) => setOrderSource(event.target.value as "website" | "open")}
+            onChange={(event) => setOrderSource(event.target.value as "all" | "website" | "open")}
             aria-label="Sumber pesanan"
           >
+            <option value="all">Semua sumber</option>
             <option value="website">Pesanan Website</option>
             <option value="open">Open Order</option>
           </select>
@@ -244,7 +271,9 @@ export default function OrdersView({
       </div>
 
       <div className="card tw">
-        {visibleOrders.length === 0 ? (
+        {loading ? (
+          <div style={{ padding: 48, textAlign: "center", color: "#64748b" }}>Memuat…</div>
+        ) : visibleOrders.length === 0 ? (
           <div style={{ padding: 48, textAlign: "center", color: "#64748b" }}>
             <b style={{ color: "#0f172a" }}>{ordersEmptyText}</b>
             <p style={{ fontSize: 13, marginTop: 4 }}>
