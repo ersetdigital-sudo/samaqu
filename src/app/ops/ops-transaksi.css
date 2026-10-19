@@ -94,15 +94,25 @@
 /* ── Tabel ── */
 /* `table-layout: fixed` + lebar kolom persen (`<colgroup>` di komponen) supaya SEMUA tab
  * memakai lebar kolom yang sama dan tabel menyusut proporsional mengikuti lebar konten.
- * `min-width` 900px: di bawah itu tabel menggulir mendatar (`.tw` overflow-x) — bukan
+ * `min-width` 980px: di bawah itu tabel menggulir mendatar (`.tw` overflow-x) — bukan
  * memotong isi. Padding/font dirapatkan lagi lewat media query di bawah. */
 .ops-tx .tw { padding: 0; overflow-x: auto; }
-.ops-tx table { width: 100%; border-collapse: collapse; min-width: 900px; table-layout: fixed; }
+.ops-tx table { width: 100%; border-collapse: collapse; min-width: 980px; table-layout: fixed; }
 .ops-tx th { text-align: left; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: #64748b; padding: 14px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; white-space: nowrap; }
-.ops-tx td { padding: 14px; border-bottom: 1px solid #e2e8f0; vertical-align: middle; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13px; }
+/* Nama pelanggan & produk boleh membungkus — teks panjang tidak dipotong ellipsis. */
+.ops-tx td { padding: 12px 14px; border-bottom: 1px solid #e2e8f0; vertical-align: middle; white-space: normal; overflow-wrap: anywhere; font-size: 13px; }
 .ops-tx tbody tr { cursor: pointer; transition: background .15s; }
 .ops-tx tbody tr:hover { background: #eff6ff; }
-.ops-tx td small { display: block; color: #64748b; font-size: 11px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ops-tx td small { display: block; color: #64748b; font-size: 11px; margin-top: 2px; white-space: normal; overflow-wrap: anywhere; }
+/* Kolom nomor, total, resi, status, dan panah tetap satu baris supaya rapi. */
+.ops-tx td:nth-child(1),
+.ops-tx td:nth-child(4),
+.ops-tx td:nth-child(5),
+.ops-tx td:nth-child(6),
+.ops-tx td:nth-child(7) { white-space: nowrap; overflow-wrap: normal; }
+.ops-tx td:nth-child(1) small,
+.ops-tx td:nth-child(4) small,
+.ops-tx td:nth-child(5) small { white-space: nowrap; }
 .ops-tx .id { font-weight: 700; color: #2563eb; white-space: nowrap; font-size: 13px; }
 /* Sumber pesanan kini jadi baris kecil di bawah nominal Total — bukan kolom sendiri. */
 .ops-tx .mono small { font-weight: 400; font-variant-numeric: normal; color: #64748b; }
