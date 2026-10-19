@@ -413,6 +413,8 @@ export async function POST(request: NextRequest) {
           customerWhatsapp: customer.whatsapp,
           items: validatedItems.map((item) => ({
             name: item.name,
+            series: item.series || null,
+            kain: item.kain || null,
             color: item.color,
             size: item.size,
             quantity: item.quantity,
@@ -431,6 +433,8 @@ export async function POST(request: NextRequest) {
         paymentType: paymentInstruction?.label || paymentType,
         items: validatedItems.map((item) => ({
           name: item.name,
+          series: item.series || null,
+          kain: item.kain || null,
           color: item.color,
           size: item.size,
           quantity: item.quantity,
