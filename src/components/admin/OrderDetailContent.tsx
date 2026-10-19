@@ -101,12 +101,12 @@ const OD_CSS = `
 .od-root .rp-sheet{padding:0;background:transparent;border:0;border-radius:0;box-shadow:none}
 .od-root .rp-act{position:static;background:none;padding:16px}
 .od-title{font-size:11px;letter-spacing:.15em;text-transform:uppercase;font-weight:700;color:#757575;margin-bottom:10px}
-.od-chips{display:flex;flex-wrap:wrap;gap:8px}
-.od-chip{font-size:12.5px;font-weight:700;padding:8px 14px;border-radius:10px;border:1px solid #E1E3E5;background:#fff;color:#5A6067;cursor:pointer;transition:background .2s,color .2s,border-color .2s}
+.od-chips{display:flex;flex-wrap:wrap;gap:10px}
+.od-chip{flex:1 1 0;min-width:0;font-size:13px;font-weight:700;padding:10px 12px;border-radius:12px;border:1px solid #E1E3E5;background:#fff;color:#5A6067;text-align:center;cursor:pointer;transition:background .2s,color .2s,border-color .2s}
 .od-chip:hover{background:#F5F6F7}
 .od-chip.is-on{background:#0f172a;border-color:#0f172a;color:#fff}
-.od-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid #F2F3F4}
-.od-a{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:700;padding:10px 14px;border-radius:10px;border:1px solid #E1E3E5;background:#fff;color:#5A6067;text-decoration:none;cursor:pointer;transition:background .2s}
+.od-acts{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid #F2F3F4}
+.od-a{display:inline-flex;align-items:center;justify-content:center;gap:7px;flex:1 1 calc(50% - 5px);min-width:0;min-height:44px;font-size:14px;font-weight:600;padding:13px 14px;border-radius:12px;border:1px solid #E1E3E5;background:#fff;color:#5A6067;text-align:center;line-height:1.2;white-space:normal;text-decoration:none;cursor:pointer;transition:background .2s}
 .od-a:hover{background:#F5F6F7}
 .od-a.is-on{background:#f1f5f9;border-color:#cbd5e1;color:#0f172a}
 /* Aksi utama drawer: pembuatan resi J&T ("Atur Pesanan"). */
@@ -114,8 +114,8 @@ const OD_CSS = `
 .od-a-primary:hover{background:#1e293b;border-color:#1e293b}
 .od-a-primary:disabled{opacity:.6;cursor:default}
 .od-a-primary:disabled:hover{background:#0f172a;border-color:#0f172a}
-.od-a-danger{border-color:#EBC7C0;color:#B4392A}
-.od-a-danger:hover{background:#FCF0EA}
+.od-a-danger{border-color:#f6c9ce;color:#d63340}
+.od-a-danger:hover{background:#fff5f5}
 .od-email{display:block;font-size:12.5px;color:#8D9297;font-weight:500;margin-top:2px}
 /* Pelacakan J&T di dalam drawer (tombol "Lacak Paket"). */
 .od-track{margin-top:14px;padding-top:14px;border-top:1px solid #F2F3F4}
@@ -133,12 +133,12 @@ const OD_CSS = `
 @media (max-width:767.98px){
  .od-root .rp-root{background:transparent;padding-bottom:0}
  .od-root .rp-banner{margin-top:0;border-radius:0;padding:15px 16px}
- /* Panel aksi: chip status rata 2×2 dan tombol selebar kartu — di layar sempit
-    baris tombol ala flex-wrap jadi pincang (3 chip + 1, tombol lebarnya beda-beda). */
- .od-chips{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+ /* Panel aksi: chip status rata 2×2 dan tombol aksi 2 kolom — sama seperti footer
+    drawer panel admin di layar sempit. */
+ .od-chips{display:grid;grid-template-columns:1fr 1fr;gap:10px}
  .od-chip{padding:11px 10px}
- .od-acts{flex-direction:column;align-items:stretch;gap:8px}
- .od-a{justify-content:center;padding:12px 14px}
+ .od-acts{flex-wrap:wrap;gap:10px}
+ .od-a{flex:1 1 calc(50% - 5px);justify-content:center;padding:12px 10px}
 }
 @media (min-width:768px){
  .od-root .rp-root{background:transparent}
