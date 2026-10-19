@@ -476,6 +476,8 @@ export async function POST(request: NextRequest) {
     //   perlu membalas satu-satu.
     const notificationItems: NewOrderNotificationItem[] = validatedItems.map((item) => ({
       name: item.productName,
+      series: item.series,
+      kain: item.kain,
       color: item.color,
       size: item.size,
       quantity: item.quantity,

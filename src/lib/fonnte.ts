@@ -21,7 +21,7 @@
 
 import { getSupabaseAdmin } from "./supabase-admin";
 import { SITE_URL } from "./site-config";
-import { isPaketItem, itemNameSuffix, variantName } from "./item-label";
+import { formatWhatsAppProductLine } from "./item-label";
 import { buildNotifikasi } from "./notifikasi-template";
 
 const FONNTE_ENDPOINT = "https://api.fonnte.com/send";
@@ -239,16 +239,53 @@ function safeName(name?: string | null): string {
   return String(name ?? "").trim() || "Pelanggan";
 }
 
+/** Baris produk WA tanpa harga — satu baris per item, diawali "- ". */
+function whatsAppItemLines(items: NewOrderNotificationItem[]): string {
+  return (items || [])
+    .map((item) => formatWhatsAppProductLine(item))
+    .filter(Boolean)
+    .map((line) => `- ${line}`)
+    .join("\n");
+}
+
+/** Baris produk WA dengan total per baris (admin & invoice). */
+function whatsAppItemLinesWithPrice(items: NewOrderNotificationItem[]): string {
+  return (items || [])
+    .map((item) => {
+      const line = formatWhatsAppProductLine(item);
+      if (!line) return "";
+      return `- ${line} — ${rupiah((Number(item.price) || 0) * (Number(item.quantity) || 1))}`;
+    })
+    .filter(Boolean)
+    .join("\n");
+}
+
+/**
+ * Blok "Produk:" untuk pesan customer. Satu item tetap satu baris ("Produk: … x1");
+ * beberapa item jadi daftar "- …" di bawah label.
+ */
+function productSection(items: NewOrderNotificationItem[]): string[] {
+  const lines = (items || []).map((item) => formatWhatsAppProductLine(item)).filter(Boolean);
+  if (lines.length === 0) return ["Produk: -"];
+  if (lines.length === 1) return [`Produk: ${lines[0]}`];
+  return ["Produk:", ...lines.map((line) => `- ${line}`)];
+}
+
 /* ══════════════════════════════════════════
    Notifikasi ke ADMIN (token device admin)
    ══════════════════════════════════════════ */
 
 export interface NewOrderNotificationItem {
   name: string;
+  /** Series dari `order_items.series` (mis. "Jiharkah"). */
+  series?: string | null;
+  /** Kode kain dari `order_items.kain` (mis. "A-02"). */
+  kain?: string | null;
   color?: string | null;
   size?: string | null;
   quantity: number;
   price: number;
+  category?: string | null;
 }
 
 export interface NewOrderNotification {
@@ -266,12 +303,7 @@ export interface NewOrderNotification {
 
 /** Ringkasan pesanan untuk admin — nomor pesanan, pemesan, item, dan tautan kelola. */
 export function buildNewOrderMessage(order: NewOrderNotification): string {
-  const itemLines = order.items
-    .map((item) => {
-      // Cover & Hanger: " - Hanger saja" (nama paket, tanpa ukuran); lainnya " (warna / ukuran)".
-      return `- ${item.quantity}x ${item.name}${itemNameSuffix(item)} — ${rupiah(item.price * item.quantity)}`;
-    })
-    .join("\n");
+  const itemLines = whatsAppItemLinesWithPrice(order.items);
 
   const lines = [
     "\u{1F514} *PESANAN BARU \u2014 SAMAQU*",
@@ -338,9 +370,7 @@ export async function notifyAdminNewOrder(order: NewOrderNotification): Promise<
       wa: order.customerWhatsapp,
       pembayaran: order.paymentType,
       total: rupiah(order.total),
-      daftar_produk: order.items
-        .map((item) => `- ${item.quantity}x ${item.name}${itemNameSuffix(item)} — ${rupiah(item.price * item.quantity)}`)
-        .join("\n"),
+      daftar_produk: whatsAppItemLinesWithPrice(order.items),
       info_tambahan: [
         order.shippingCity ? `Tujuan: ${order.shippingCity}` : "",
         order.source ? `Sumber: ${order.source}` : "",
@@ -477,24 +507,6 @@ export function paymentInstructionFrom(row: {
   };
 }
 
-/** Ringkasan produk satu baris: "Thobe Navy (Uk. M) x1, Cover Hanger - Hanger saja x1". */
-function productSummary(items: NewOrderNotificationItem[]): string {
-  const list = (items || [])
-    .map((item) => {
-      const qty = item.quantity || 1;
-      // Cover & Hanger: paketnya bukan warna/ukuran — tampil sebagai " - Hanger saja".
-      if (isPaketItem(item)) return `${item.name}${itemNameSuffix(item)} x${qty}`;
-      const rawColor = item.color && item.color !== "default" && item.color !== "-" ? item.color : null;
-      // Nama produk sering sudah memuat warnanya ("Thobe Superblack" + "Superblack") — jangan diulang.
-      const color =
-        rawColor && !item.name.toLowerCase().includes(rawColor.toLowerCase()) ? rawColor : null;
-      const variant = [color, item.size ? `Uk. ${item.size}` : null].filter(Boolean).join(" · ");
-      return `${item.name}${variant ? ` (${variant})` : ""} x${qty}`;
-    })
-    .filter(Boolean);
-  return list.length ? list.join(", ") : "-";
-}
-
 /** Link http(s) yang benar-benar bisa dipakai (bukan string kosong/palsu). */
 function usablePaymentUrl(url?: string | null): string | null {
   const value = String(url ?? "").trim();
@@ -575,7 +587,7 @@ export function buildCustomerOrderMessage(order: CustomerOrderNotification): str
     `Pesanan ${ka} sudah berhasil kami terima.`,
     "",
     `Nomor Pesanan: ${order.orderNumber}`,
-    `Produk: ${productSummary(order.items)}`,
+    ...productSection(order.items),
     `Total Pembayaran: ${rupiah(order.total)}`,
     "",
     ...paymentInstructionBlock(order.paymentMethod, order.paymentUrl),
@@ -716,9 +728,7 @@ export async function notifyCustomerOrderCreated(
       nomor: order.orderNumber,
       wa: order.customerWhatsapp,
       total: rupiah(order.total),
-      daftar_produk: order.items
-        .map((item) => `- ${item.quantity}x ${item.name}${itemNameSuffix(item)} — ${rupiah(item.price * item.quantity)}`)
-        .join("\n"),
+      daftar_produk: whatsAppItemLines(order.items),
       instruksi_pembayaran: paymentInstructionBlock(order.paymentMethod, order.paymentUrl).join("\n"),
     }),
   );
@@ -789,10 +799,8 @@ export async function notifyCustomerOrderCancelled(
 /** Batas waktu pembayaran yang disebut di invoice. */
 export const INVOICE_DUE_HOURS = 3;
 
-/** Item invoice: sama seperti item notifikasi order, plus `series` untuk nama paket data lama. */
-export interface InvoiceItem extends NewOrderNotificationItem {
-  series?: string | null;
-}
+/** Item invoice = item notifikasi order (`series`/`kain` sudah ada di tipe dasar). */
+export type InvoiceItem = NewOrderNotificationItem;
 
 export interface InvoiceNotification {
   orderNumber: string;
@@ -813,19 +821,10 @@ function rupiahRapat(value: number): string {
   return `Rp${Math.round(Number(value) || 0).toLocaleString("id-ID")}`;
 }
 
-/** Satu baris item invoice: "Thobe Superblack (L) × 1 — Rp389.000". */
+/** Satu baris item invoice: "Thobe … size L x1 — Rp389.000". */
 function invoiceItemLine(item: InvoiceItem): string {
-  const qty = item.quantity || 1;
-  const paket = isPaketItem(item);
-  const rawColor = item.color && item.color !== "default" && item.color !== "-" ? item.color : null;
-  // Nama produk sering sudah memuat warnanya ("Thobe Superblack" + "Superblack") — jangan diulang.
-  const color = rawColor && !item.name.toLowerCase().includes(rawColor.toLowerCase()) ? rawColor : null;
-  const size = String(item.size ?? "").trim();
-  const variant = paket
-    ? variantName(item.color) || variantName(item.series)
-    : [color, size].filter(Boolean).join(" / ");
-  const lineTotal = (Number(item.price) || 0) * qty;
-  return `${item.name}${variant ? ` (${variant})` : ""} × ${qty} — ${rupiahRapat(lineTotal)}`;
+  const lineTotal = (Number(item.price) || 0) * (Number(item.quantity) || 1);
+  return `- ${formatWhatsAppProductLine(item)} — ${rupiahRapat(lineTotal)}`;
 }
 
 /**
@@ -842,7 +841,7 @@ export function buildInvoiceMessage(invoice: InvoiceNotification, banks: Payment
     "",
     "Berikut rincian pesanan Ka di SAMAQU:",
     "",
-    ...invoice.items.map(invoiceItemLine),
+    ...invoice.items.map((item) => invoiceItemLine(item)),
     "",
     `Subtotal: ${rupiahRapat(invoice.subtotal)}`,
   ];
@@ -937,11 +936,6 @@ function gantiDenganPenanda(teks: string, peta: Record<string, string>): string 
   return hasil;
 }
 
-const itemBarisPesanan = (items: NewOrderNotificationItem[]): string =>
-  items
-    .map((item) => `- ${item.quantity}x ${item.name}${itemNameSuffix(item)} — ${rupiah(item.price * item.quantity)}`)
-    .join("\n");
-
 const blokRekening = (bank: PaymentInstruction): string =>
   [
     `*Pembayaran ${(bank.bankName || bank.label || "Transfer Bank").toUpperCase()}*`,
@@ -972,7 +966,7 @@ export function templateBawaanNotifikasi(): Record<string, string> {
     source: "Website",
   });
   hasil["pesanan-baru-admin"] = gantiDenganPenanda(pesananAdmin, {
-    [itemBarisPesanan(SAMPEL_ITEM)]: p("daftar_produk"),
+    [whatsAppItemLinesWithPrice(SAMPEL_ITEM)]: p("daftar_produk"),
     ["Tujuan: MANGGALA, KOTA MAKASSAR\nSumber: Website"]: p("info_tambahan"),
     [`${SITE_URL}/admin?panel=orders`]: p("tautan_admin"),
     [rupiah(567000)]: p("total"),
@@ -987,7 +981,7 @@ export function templateBawaanNotifikasi(): Record<string, string> {
     paymentMethod: SAMPEL_BANK,
   });
   hasil["pesanan-diterima"] = gantiDenganPenanda(diterima, {
-    [itemBarisPesanan(SAMPEL_ITEM)]: p("daftar_produk"),
+    [whatsAppItemLines(SAMPEL_ITEM)]: p("daftar_produk"),
     [paymentInstructionBlock(SAMPEL_BANK, null).join("\n")]: p("instruksi_pembayaran"),
     [rupiah(567000)]: p("total"),
   });
@@ -1134,7 +1128,7 @@ const SAMPEL_BANK: PaymentInstruction = {
 };
 
 const SAMPEL_ITEM: NewOrderNotificationItem[] = [
-  { name: "Thobe Superblack", color: "Superblack", size: "L", quantity: 1, price: 389000 },
+  { name: "Thobe Soft Grey", series: "Jiharkah", kain: "A-02", color: "default", size: "L", quantity: 1, price: 389000 },
   { name: "Cover Hanger", color: "Hanger saja", size: "ALL SIZE", quantity: 2, price: 89000 },
 ];
 
@@ -1202,7 +1196,7 @@ export function katalogNotifikasi(): NotifikasiInfo[] {
         "",
         "Pesanan {nomor pesanan} sudah kami catat dan berstatus LUNAS.",
         "",
-        "{nama produk} ({ukuran atau nama paket}) x {qty} — Rp{total baris}",
+        "{nama produk} {series} {warna} {kain} size {ukuran} x{qty} — Rp{total baris}",
         "Subtotal: Rp{subtotal}",
         "Ongkir: Rp{ongkir}",
         "*TOTAL: Rp{total}*",

@@ -520,9 +520,10 @@ export async function POST(req: NextRequest) {
         customerWhatsapp,
         items: items.map((item) => ({
           name: item.product_name,
+          series: item.series,
+          kain: item.kain,
           color: item.color,
           size: item.size,
-          series: item.series,
           quantity: item.quantity,
           price: item.price,
         })),
