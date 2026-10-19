@@ -435,7 +435,7 @@ export default function Transaksi({ variant = "ops" }) {
               </colgroup>
               <thead>
                 <tr>
-                  <th>Item</th>
+                  <th>No. Pesanan</th>
                   <th>Pelanggan</th>
                   <th>Produk</th>
                   <th style={{ textAlign: "right" }}>Total</th>
@@ -451,7 +451,7 @@ export default function Transaksi({ variant = "ops" }) {
                   const variantText = itemVariantText(firstItem);
                   return (
                     <tr key={order.id} onClick={() => setDetail(order)}>
-                      <td data-label="Item">
+                      <td data-label="No. Pesanan">
                         <span className="id">{order.order_number}</span>
                         <small>
                           {formatTanggalSingkatID(order.date_wib)} · {order.time_wib}

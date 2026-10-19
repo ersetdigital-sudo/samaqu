@@ -297,7 +297,7 @@ export default function OrdersView({
             </colgroup>
             <thead>
               <tr>
-                <th>Item</th>
+                <th>No. Pesanan</th>
                 <th>Pelanggan</th>
                 <th>Produk</th>
                 <th style={{ textAlign: "right" }}>Total</th>
@@ -315,7 +315,7 @@ export default function OrdersView({
                 const sourceLabel = o.order_number.startsWith("CYO-") ? "Open Order" : "Website";
                 return (
                   <tr key={o.id} onClick={() => onSelect(o)}>
-                    <td data-label="Item">
+                    <td data-label="No. Pesanan">
                       <span className="id">{o.order_number}</span>
                       <small>
                         {tanggal(o.created_at)} · {jam(o.created_at)}

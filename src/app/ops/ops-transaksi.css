@@ -113,7 +113,7 @@
 .ops-tx td:nth-child(1) small,
 .ops-tx td:nth-child(4) small,
 .ops-tx td:nth-child(5) small { white-space: nowrap; }
-.ops-tx .id { font-weight: 700; color: #2563eb; white-space: nowrap; font-size: 13px; }
+.ops-tx .id { font-weight: 700; color: #18181b; white-space: nowrap; font-size: 13px; }
 /* Sumber pesanan kini jadi baris kecil di bawah nominal Total — bukan kolom sendiri. */
 .ops-tx .mono small { font-weight: 400; font-variant-numeric: normal; color: #64748b; }
 .ops-tx .mono { font-variant-numeric: tabular-nums; font-weight: 700; white-space: nowrap; font-size: 13px; }
