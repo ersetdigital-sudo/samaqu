@@ -22,12 +22,26 @@ import styles from "./panel.module.css";
 const AVATAR =
   "https://res.cloudinary.com/j4ka1ty6/image/upload/w_96,h_96,c_fill,f_auto,q_auto/v1792158930/Avatar_Hijab_Merah_Muda_dalam_Lencana.png";
 
-type PanelTheme = "berry" | "sunflower";
+type PanelTheme = "berry" | "sunflower" | "tropical";
 const THEME_KEY = "samaqu:panel-theme";
 const THEMES: { id: PanelTheme; label: string; hint: string }[] = [
   { id: "berry", label: "Berry", hint: "Tema default SAMAQU" },
   { id: "sunflower", label: "Bunga Matahari", hint: "Krem hangat + aksen emas" },
+  { id: "tropical", label: "Tropical Beach", hint: "Biru laut + krem pantai" },
 ];
+/** Kelas CSS module per tema. Berry = tema dasar (tanpa kelas tambahan). */
+const THEME_APP_CLASS: Record<PanelTheme, string> = {
+  berry: "",
+  sunflower: styles.sunflower,
+  tropical: styles.tropical,
+};
+/** Swatch kecil di tombol & menu pemilih tema. */
+const THEME_SWATCH_CLASS: Record<PanelTheme, string> = {
+  berry: "",
+  sunflower: styles.themeSwatchSun,
+  tropical: styles.themeSwatchTropical,
+};
+const themeLabel = (id: PanelTheme) => THEMES.find((option) => option.id === id)?.label ?? "Berry";
 
 type IconName = "home" | "card" | "box" | "users" | "spark" | "return";
 
@@ -148,7 +162,7 @@ export default function PanelShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
       const saved = window.localStorage.getItem(THEME_KEY);
-      if (saved === "berry" || saved === "sunflower") setTheme(saved);
+      if (saved && THEMES.some((option) => option.id === saved)) setTheme(saved as PanelTheme);
     } catch {
       /* localStorage bisa diblokir — tetap pakai tema default */
     }
@@ -210,7 +224,7 @@ export default function PanelShell({ children }: { children: ReactNode }) {
     setBusy(false);
   }
 
-  const appClass = `${styles.app}${theme === "sunflower" ? ` ${styles.sunflower}` : ""}`;
+  const appClass = `${styles.app}${THEME_APP_CLASS[theme] ? ` ${THEME_APP_CLASS[theme]}` : ""}`;
 
   if (!ready) {
     return (
@@ -349,8 +363,8 @@ export default function PanelShell({ children }: { children: ReactNode }) {
               aria-label="Ganti tema panel admin"
               title="Ganti tema"
             >
-              <span className={`${styles.themeSwatch} ${theme === "sunflower" ? styles.themeSwatchSun : ""}`} />
-              <span className={styles.themeLabel}>{theme === "sunflower" ? "Bunga Matahari" : "Berry"}</span>
+              <span className={`${styles.themeSwatch} ${THEME_SWATCH_CLASS[theme]}`} />
+              <span className={styles.themeLabel}>{themeLabel(theme)}</span>
               <svg viewBox="0 0 24 24" className={styles.themeChevron}>
                 <path d="M6 9l6 6 6-6" />
               </svg>
@@ -376,11 +390,7 @@ export default function PanelShell({ children }: { children: ReactNode }) {
                         className={`${styles.themeOption}${active ? ` ${styles.themeOptionOn}` : ""}`}
                         onClick={() => selectTheme(option.id)}
                       >
-                        <span
-                          className={`${styles.themeSwatch} ${
-                            option.id === "sunflower" ? styles.themeSwatchSun : ""
-                          }`}
-                        />
+                        <span className={`${styles.themeSwatch} ${THEME_SWATCH_CLASS[option.id]}`} />
                         <span className={styles.themeOptionText}>
                           <b>{option.label}</b>
                           <small>{option.hint}</small>
