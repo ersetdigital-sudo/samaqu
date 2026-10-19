@@ -1155,8 +1155,16 @@
   color: #34566b;
   text-shadow: 0 1px 2px rgba(255, 248, 240, 0.55);
 }
+.tropical .heroName {
+  color: #168aad;
+  background: linear-gradient(180deg, transparent 62%, rgba(72, 202, 228, 0.32) 62%);
+  border-radius: 4px;
+  padding: 0 2px;
+}
 .tropical .heroSub {
   color: #2f5d73;
+  padding-left: 10px;
+  border-left: 2px solid #48cae4;
   text-shadow: 0 1px 2px rgba(255, 248, 240, 0.5);
 }
 .tropical .heroTitle svg { color: var(--tropical-coral); }
@@ -1167,15 +1175,16 @@
   width: auto;
   max-width: 360px;
   padding: 10px 16px 10px 40px;
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(72, 202, 228, 0.35);
   border-radius: 14px;
-  background: rgba(255, 248, 240, 0.82);
-  color: #2f5d73;
+  background: rgba(234, 247, 252, 0.55);
+  color: #34566b;
   font-size: 13px;
   line-height: 1.45;
+  box-shadow: 0 8px 22px -16px rgba(22, 138, 173, 0.55);
   backdrop-filter: blur(5px);
 }
-.tropical .quote::before { left: 14px; top: 0; font-size: 36px; color: var(--pink); }
+.tropical .quote::before { left: 14px; top: 0; font-size: 36px; color: #48cae4; }
 .tropical .card { background: #ffffff; border-color: var(--card-line); }
 .tropical .stValue {
   color: var(--plum);

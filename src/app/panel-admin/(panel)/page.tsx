@@ -272,7 +272,10 @@ export default function PanelAdminHome() {
       <section className={styles.hero}>
         <div className={styles.heroText}>
           <h2 className={styles.heroTitle}>
-            {greeting}, Lea <Hand />
+            <span>
+              {greeting}, <span className={styles.heroName}>Lea</span>
+            </span>
+            <Hand />
           </h2>
           <p className={styles.heroSub}>{quote}</p>
         </div>
