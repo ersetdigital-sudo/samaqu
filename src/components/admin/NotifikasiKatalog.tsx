@@ -146,6 +146,24 @@ export default function NotifikasiKatalog() {
   const preview = useMemo(() => renderPreview(draft), [draft]);
   const infoHover = hoverPenanda ? PENANDA_INFO[hoverPenanda] : null;
 
+  // Daftar pilihan template: dikelompokkan per penerima, tanpa scroll samping.
+  const templateGroups = useMemo(() => {
+    const map = new Map<string, Item[]>();
+    for (const item of items) {
+      const key = item.ke === "Admin" ? "Admin" : item.ke === "Pembeli" ? "Pembeli" : "Lainnya";
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(item);
+    }
+    const labels: Record<string, string> = {
+      Pembeli: "Untuk Pelanggan",
+      Admin: "Untuk Admin",
+      Lainnya: "Template",
+    };
+    return ["Pembeli", "Admin", "Lainnya"]
+      .filter((key) => map.has(key))
+      .map((key) => ({ key, label: labels[key], items: map.get(key)! }));
+  }, [items]);
+
   function updateDraft(value: string) {
     if (!activeItem) return;
     setDrafts((prev) => ({ ...prev, [activeItem.key]: value }));
@@ -259,38 +277,60 @@ export default function NotifikasiKatalog() {
         </p>
       ) : (
         <>
-          {/* Tab per template */}
-          <div className="flex gap-1.5 overflow-x-auto pb-1">
-            {items.map((item) => {
-              const active = item.key === activeKey;
-              return (
-                <button
-                  key={item.key}
-                  type="button"
-                  onClick={() => {
-                    setActiveKey(item.key);
-                    setHoverPenanda("");
-                    setPesan("");
-                  }}
-                  title={item.label}
-                  className={`flex shrink-0 items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors ${
-                    active
-                      ? "border-slate-900 bg-slate-900 text-white"
-                      : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                  }`}
-                >
-                  <span className="max-w-[220px] truncate">{item.label}</span>
-                  {item.override ? (
-                    <span
-                      className={`h-1.5 w-1.5 shrink-0 rounded-full ${
-                        active ? "bg-amber-300" : "bg-amber-500"
-                      }`}
-                      title="Template sudah diubah"
-                    />
-                  ) : null}
-                </button>
-              );
-            })}
+          {/* Tab per template — wrap per kelompok, tanpa scroll samping */}
+          <div className="space-y-3">
+            {templateGroups.map((group) => (
+              <div key={group.key}>
+                <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  {group.label}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {group.items.map((item) => {
+                    const active = item.key === activeKey;
+                    const recipient = item.ke === "Admin" ? "Admin" : "Pelanggan";
+                    return (
+                      <button
+                        key={item.key}
+                        type="button"
+                        onClick={() => {
+                          setActiveKey(item.key);
+                          setHoverPenanda("");
+                          setPesan("");
+                        }}
+                        title={item.label}
+                        style={{ flex: "1 1 180px" }}
+                        className={`flex min-h-[52px] min-w-0 max-w-full items-center gap-2 rounded-lg border px-3 py-2 text-left text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-1 ${
+                          active
+                            ? "border-slate-900 bg-slate-900 text-white"
+                            : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                        }`}
+                      >
+                        <span className="min-w-0 flex-1 whitespace-normal break-words leading-snug">
+                          {item.label}
+                        </span>
+                        <span className="flex shrink-0 items-center gap-1.5">
+                          <span
+                            className={`rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide ${
+                              active ? "bg-white/15 text-white" : "bg-slate-100 text-slate-500"
+                            }`}
+                          >
+                            {recipient}
+                          </span>
+                          {item.override ? (
+                            <span
+                              className={`h-2 w-2 shrink-0 rounded-full ${
+                                active ? "bg-amber-300" : "bg-amber-500"
+                              }`}
+                              title="Template sudah diubah"
+                            />
+                          ) : null}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
 
           {activeItem ? (
