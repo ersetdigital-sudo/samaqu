@@ -5,6 +5,9 @@
  * Contoh: THB-B01-SBL-JHR-L
  * SKU dasar (tanpa ukuran): KATEGORI-KAIN-WARNA[-SERIES]
  *
+ * Segmen mengikuti kategori: Kandora tanpa series (KND-B01-SBL-L), Koko/Vest
+ * warna+ukuran, Kabak/Cover & Hanger paket (tidak dibuat SKU otomatis).
+ *
  * Semua mapping sengaja dikumpulkan di sini supaya menambah warna/kategori/series
  * tidak perlu menyebar ke komponen. SKU yang sudah diisi manual tidak ditimpa:
  * form hanya memakai hasil generator saat kolom SKU kosong.
@@ -21,13 +24,38 @@ const compact = (value: unknown) => clean(value).replace(/\s+/g, "");
 
 const CATEGORY_CODES: Record<string, string> = {
   THOBE: "THB",
-  KANDORA: "KDR",
-  KOKO: "KKO",
+  KANDORA: "KND",
+  KOKO: "KOK",
   VEST: "VST",
   KABAK: "KBK",
   "COVER HANGER": "CVH",
   COVER: "CVH",
 };
+
+type SkuSegment = "kain" | "warna" | "series" | "ukuran";
+
+/**
+ * Segmen yang relevan per kategori. Segmen yang tidak ada dilewati sepenuhnya
+ * (tanpa placeholder / strip ganda), urutan tetap KATEGORI-KAIN-WARNA-SERIES-UKURAN.
+ *  - Thobe: kain + warna + series + ukuran
+ *  - Kandora: kain + warna + ukuran (tanpa series)
+ *  - Koko/Vest: warna + ukuran (form tidak meminta kain/series)
+ *  - Kabak / Cover & Hanger: paket (ALL SIZE) → tidak dibuat SKU varian otomatis
+ */
+const CATEGORY_SEGMENTS: Record<string, SkuSegment[]> = {
+  THOBE: ["kain", "warna", "series", "ukuran"],
+  KANDORA: ["kain", "warna", "ukuran"],
+  KOKO: ["warna", "ukuran"],
+  VEST: ["warna", "ukuran"],
+  KABAK: [],
+  "COVER HANGER": [],
+};
+
+const DEFAULT_SEGMENTS: SkuSegment[] = ["kain", "warna", "series", "ukuran"];
+
+function segmentsFor(category: unknown): SkuSegment[] {
+  return CATEGORY_SEGMENTS[clean(category)] ?? DEFAULT_SEGMENTS;
+}
 
 const SERIES_CODES: Record<string, string> = {
   JIHARKAH: "JHR",
@@ -134,10 +162,21 @@ export function generateBaseSku(input: {
   color?: unknown;
   series?: unknown;
 }): string {
+  const segments = segmentsFor(input.category);
   const category = categoryCode(input.category);
   const color = colorCode(input.color);
-  if (!category || !color) return "";
-  return [category, kainCode(input.kain), color, seriesCode(input.series)].filter(Boolean).join("-");
+  // Kategori paket (Kabak/Cover) tidak punya SKU dasar otomatis.
+  if (!segments.length || !segments.includes("warna") || !category || !color) return "";
+
+  const values: Record<SkuSegment, string> = {
+    kain: kainCode(input.kain),
+    warna: color,
+    series: seriesCode(input.series),
+    ukuran: "",
+  };
+  return [category, ...segments.filter((segment) => segment !== "ukuran").map((segment) => values[segment])]
+    .filter(Boolean)
+    .join("-");
 }
 
 export function generateVariantSku(input: {
@@ -147,18 +186,20 @@ export function generateVariantSku(input: {
   series?: unknown;
   size?: unknown;
 }): string {
+  const segments = segmentsFor(input.category);
   const category = categoryCode(input.category);
   const color = colorCode(input.color);
-  if (!category || !color || !isRealSize(input.size)) return "";
-  return [
-    category,
-    kainCode(input.kain),
-    color,
-    seriesCode(input.series),
-    compact(input.size),
-  ]
-    .filter(Boolean)
-    .join("-");
+  if (!segments.length || !segments.includes("ukuran") || !category || !color || !isRealSize(input.size)) {
+    return "";
+  }
+
+  const values: Record<SkuSegment, string> = {
+    kain: kainCode(input.kain),
+    warna: color,
+    series: seriesCode(input.series),
+    ukuran: compact(input.size),
+  };
+  return [category, ...segments.map((segment) => values[segment])].filter(Boolean).join("-");
 }
 
 /** SKU yang dobel (case-insensitive). Dipakai form untuk menandai bentrok. */
