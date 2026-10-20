@@ -40,9 +40,6 @@ function money(n: number) {
   return "Rp " + (n || 0).toLocaleString("id-ID");
 }
 
-const initialsOf = (name: string) =>
-  name.trim().split(/\s+/).slice(0, 2).map((w) => w.charAt(0).toUpperCase()).join("") || "?";
-
 /** Badge status pelanggan — dipakai versi kartu (mobile) & tabel (desktop). */
 function CustomerBadges({ c }: { c: DirectoryCustomer }) {
   return (
@@ -95,19 +92,13 @@ function exportCsv(rows: DirectoryCustomer[]) {
 }
 
 function CustomerCard({ c, currentMonth, onDetail }: { c: DirectoryCustomer; currentMonth: number; onDetail: () => void }) {
-  const initials = initialsOf(c.name);
   const b = c.birthDate ? parseBirth(c.birthDate) : null;
   const isBirthdayMonth = !!b && b.m === currentMonth;
   const isBirthdayToday = !!b && b.m === currentMonth && b.d === new Date().getDate();
 
   return (
     <article className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-[#1a1d28] lg:p-5">
-      <div className="flex items-start gap-3.5">
-        <div className="w-11 h-11 lg:w-12 lg:h-12 shrink-0 rounded-full flex items-center justify-center text-sm font-extrabold text-white bg-slate-900 dark:bg-slate-700">
-          {initials}
-        </div>
-
-        <div className="flex-1 min-w-0">
+      <div className="min-w-0">
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
@@ -153,7 +144,6 @@ function CustomerCard({ c, currentMonth, onDetail }: { c: DirectoryCustomer; cur
             Riwayat Belanja &amp; Alamat ({c.orders.length})
             <ChevronRight size={14} strokeWidth={2} className="text-blue-600" />
           </button>
-        </div>
       </div>
     </article>
   );
@@ -360,16 +350,11 @@ export default function CustomerDirectoryView({
                       className="cursor-pointer hover:bg-slate-50 focus:bg-slate-50 focus:outline-none dark:hover:bg-slate-800/60 dark:focus:bg-slate-800/60"
                     >
                       <td className="px-4 py-2.5">
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <span className="w-8 h-8 shrink-0 rounded-full grid place-items-center text-[11px] font-extrabold text-white bg-slate-900 dark:bg-slate-700">
-                            {initialsOf(c.name)}
-                          </span>
-                          <div className="min-w-0">
-                            <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{c.name}</p>
-                            <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">{c.whatsapp || "Tanpa nomor"}</p>
-                            <div className="mt-1 flex flex-wrap items-center gap-1">
-                              <CustomerBadges c={c} />
-                            </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{c.name}</p>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">{c.whatsapp || "Tanpa nomor"}</p>
+                          <div className="mt-1 flex flex-wrap items-center gap-1">
+                            <CustomerBadges c={c} />
                           </div>
                         </div>
                       </td>
