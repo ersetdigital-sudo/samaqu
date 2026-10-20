@@ -1453,7 +1453,10 @@ export default function TambahProdukPage({
         }
       }
 
-      router.push(backHref);
+      // Hard navigation: daftar produk di /admin memuat stok lewat useEffect di client.
+      // `router.push` bisa memulihkan cache route lama sehingga stok hasil simpan baru
+      // terlihat setelah refresh manual — paksa muat ulang supaya data langsung segar.
+      window.location.assign(backHref);
     } catch (err) {
       console.error("Save error:", err);
       alert("Gagal menyimpan produk");
