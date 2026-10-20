@@ -186,10 +186,27 @@ export async function createMayarInvoice(input: {
 /** Detail invoice — dipakai untuk MEMVERIFIKASI status sebelum menandai pesanan lunas. */
 export async function getMayarInvoice(
   id: string
-): Promise<MayarResult<{ id: string; status?: string; amount?: number; link?: string; expiredAt?: number }>> {
-  return mayarFetch<{ id: string; status?: string; amount?: number; link?: string; expiredAt?: number }>(
-    `/invoices/${encodeURIComponent(id)}`
-  );
+): Promise<
+  MayarResult<{
+    id: string;
+    status?: string;
+    amount?: number;
+    link?: string;
+    expiredAt?: number;
+    /** id transaksi yang dipakai untuk membaca channel pembayaran. */
+    transactionId?: string;
+    transactions?: { id?: string }[];
+  }>
+> {
+  return mayarFetch<{
+    id: string;
+    status?: string;
+    amount?: number;
+    link?: string;
+    expiredAt?: number;
+    transactionId?: string;
+    transactions?: { id?: string }[];
+  }>(`/invoices/${encodeURIComponent(id)}`);
 }
 
 /**
@@ -223,10 +240,23 @@ export async function validMayarPaymentUrl(
 /** Detail transaksi — jalur verifikasi cadangan kalau webhook hanya membawa transactionId. */
 export async function getMayarTransaction(
   id: string
-): Promise<MayarResult<{ id: string; status?: string; amount?: number; extraData?: { orderNumber?: string } | null }>> {
-  return mayarFetch<{ id: string; status?: string; amount?: number; extraData?: { orderNumber?: string } | null }>(
-    `/transactions/${encodeURIComponent(id)}`
-  );
+): Promise<
+  MayarResult<{
+    id: string;
+    status?: string;
+    amount?: number;
+    extraData?: { orderNumber?: string } | null;
+    /** Channel yang dipilih customer, mis. "qris", "va/bni", "ewallet/gopay". */
+    paymentMethod?: string | null;
+  }>
+> {
+  return mayarFetch<{
+    id: string;
+    status?: string;
+    amount?: number;
+    extraData?: { orderNumber?: string } | null;
+    paymentMethod?: string | null;
+  }>(`/transactions/${encodeURIComponent(id)}`);
 }
 
 /**

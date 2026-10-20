@@ -15,6 +15,7 @@ import { NEUTRAL_ITEM_PHOTO } from "@/lib/order-photo";
 import { isPaketItem, variantName } from "@/lib/item-label";
 import { ORDER_STAGE_LABEL, orderStage } from "@/lib/order-flow";
 import { usePaymentMethodName } from "@/lib/use-payment-methods";
+import { paymentChannelLabel } from "@/lib/payment-channel";
 import { supabase } from "@/lib/supabase";
 import { formatWeightExact } from "@/lib/shipping-weight";
 import { formatTrackingTime, sortHistoryDesc, trackingRow, trackingSummary } from "@/lib/jnt/track-status";
@@ -31,6 +32,11 @@ export default function TransaksiDetailDrawer({ open, order, variant = "ops", on
   // Nama metode pembayaran: `orders.payment_method` bisa berupa id ke tabel `payment_methods`
   // (pesanan baru) atau string lama ('bank'/'qris'/'cod'/'cash'). Hook ini yang menerjemahkannya.
   const { name: paymentName } = usePaymentMethodName(order?.payment_method);
+  // Rincian channel gateway (mis. Mayar → "QRIS" / "BNI Virtual Account"), kalau sudah tercatat.
+  const channelLabel = paymentChannelLabel(order?.payment_channel);
+  const paymentDetail = paymentName
+    ? `${paymentName}${channelLabel ? ` · ${channelLabel}` : ""}`
+    : channelLabel || "-";
 
   const awb = order?.awb_no || "";
   // Akses ke dialog "Cetak Resi" milik TransaksiResiPanel (panel admin: tombolnya di footer).
@@ -307,7 +313,7 @@ export default function TransaksiDetailDrawer({ open, order, variant = "ops", on
                   <div className="sh">
                     <CreditCard />
                     <b>Metode Pembayaran</b>
-                    <span style={{ marginLeft: "auto", color: "#6b4b5a", fontWeight: 600 }}>{paymentName || "-"}</span>
+                    <span style={{ marginLeft: "auto", color: "#6b4b5a", fontWeight: 600 }}>{paymentDetail}</span>
                   </div>
                 </div>
 
@@ -458,7 +464,7 @@ export default function TransaksiDetailDrawer({ open, order, variant = "ops", on
                 <Row label="Nomor HP" value={order.customer_whatsapp || "-"} />
                 <Row label="Waktu dicatat" value={formatTanggalJamID(order.created_at)} />
                 <Row label="No. Order" value={order.order_number} mono />
-                <Row label="Metode pembayaran" value={paymentName || "-"} />
+                <Row label="Metode pembayaran" value={paymentDetail} />
                 <Row
                   label="Waktu pembayaran"
                   value={order.paid_at ? formatTanggalJamID(order.paid_at) : "-"}

@@ -232,7 +232,10 @@ export default function DatabaseKota() {
                 </span>
               </div>
               <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{card.label}</p>
-              <p className="text-2xl font-black font-heading text-slate-900 dark:text-white mt-0.5 tracking-tight truncate" title={card.value}>
+              <p
+                className="text-[clamp(0.95rem,1.3vw,1.5rem)] leading-tight font-black font-heading text-slate-900 dark:text-white mt-0.5 tracking-tight whitespace-nowrap tabular-nums"
+                title={card.value}
+              >
                 {card.value}
               </p>
               {card.hint ? <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">{card.hint}</p> : null}
