@@ -1141,6 +1141,17 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
     setForm((current) => ({ ...current, address_mode: "new" }));
   };
 
+  /**
+   * Pintasan "Ubah alamat" dari luar langkah Pelanggan (ringkasan mode Ubah & bar di langkah
+   * Produk). Langsung pindah ke langkah Pelanggan sekaligus membuka kolom isian alamat, jadi
+   * admin tidak perlu tahu bahwa alamat ada di balik "Ubah data pelanggan".
+   */
+  const openAddressEditor = () => {
+    setCustomerEditing(true);
+    setStep(0);
+    startEditingAddress();
+  };
+
   /** "Batal" di isian alamat: balik ke kartu teks dan kembalikan alamat sebelum diubah. */
   const cancelAddressEdit = () => {
     setTouched(true);
@@ -1585,13 +1596,22 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                           {form.customer_whatsapp || "nomor belum ada"}
                         </p>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => setCustomerEditing(true)}
-                        className="shrink-0 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-[11px] font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-                      >
-                        Ubah data pelanggan
-                      </button>
+                      <div className="shrink-0 flex flex-wrap justify-end gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setCustomerEditing(true)}
+                          className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-[11px] font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                        >
+                          Ubah pelanggan
+                        </button>
+                        <button
+                          type="button"
+                          onClick={openAddressEditor}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-900 dark:bg-white text-[11px] font-bold text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors"
+                        >
+                          <Pencil size={12} /> Ubah alamat
+                        </button>
+                      </div>
                     </div>
                     <p className="text-sm text-slate-700 dark:text-slate-200 mt-2 leading-relaxed">
                       {addressText(form) || "Alamat belum diisi"}
@@ -2125,6 +2145,27 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
               {/* ── Langkah 2: Produk ── */}
               {step === 1 && (
                 <>
+              {/* Mode Ubah: alamat tetap terlihat & bisa diubah dari langkah yang pertama
+                  terbuka, tanpa harus tahu bahwa kolomnya ada di langkah Pelanggan. */}
+              {isEdit && (
+                <button
+                  type="button"
+                  onClick={openAddressEditor}
+                  className="w-full flex items-center justify-between gap-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/40 px-3.5 py-2.5 text-left hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-colors"
+                >
+                  <span className="min-w-0">
+                    <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                      Alamat pengiriman · bisa diubah
+                    </span>
+                    <span className="block text-xs font-semibold text-slate-700 dark:text-slate-200 truncate">
+                      {addressText(form) || "Alamat belum diisi"}
+                    </span>
+                  </span>
+                  <span className="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200">
+                    <Pencil size={13} /> Ubah alamat
+                  </span>
+                </button>
+              )}
               {/* Pemilih produk cepat: cari produk → series → ukuran → qty */}
               <section className="space-y-2.5">
                 <div className="flex items-center justify-between gap-2">
