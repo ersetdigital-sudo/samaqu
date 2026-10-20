@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
+import * as LucideIcons from "lucide-react";
 import {
   AlertTriangle,
   ArrowUpRight,
@@ -27,6 +28,18 @@ import {
   YAxis,
 } from "recharts";
 import { statusLabel, sourceLabel } from "@/lib/transaksi";
+import GlassCard from "@/components/ops/GlassCard";
+
+/**
+ * Sebagian ikon lucide ada di runtime tapi belum masuk definisi tipe versi ini —
+ * pola namespace yang sama dengan Dashboard ops (`src/app/ops/dashboard/page.tsx`).
+ */
+const IconReport: any = (LucideIcons as any).BarChart3 ?? (LucideIcons as any).ChartColumn ?? (LucideIcons as any).ChartLine;
+const IconWallet: any =
+  (LucideIcons as any).Wallet ?? (LucideIcons as any).WalletMinimal ?? (LucideIcons as any).Banknote;
+const IconPackage: any = (LucideIcons as any).Package;
+const IconReceipt: any = (LucideIcons as any).Receipt ?? (LucideIcons as any).FileText;
+const IconProfit: any = (LucideIcons as any).TrendingUp ?? (LucideIcons as any).LineChart;
 
 /* ───────────────────────── types ───────────────────────── */
 
@@ -222,58 +235,6 @@ async function fetchReport(from: string, to: string): Promise<ReportData> {
   return json as ReportData;
 }
 
-/* ───────────────────────── count-up ───────────────────────── */
-
-function useCountUp(value: number, duration = 780) {
-  const [display, setDisplay] = useState(0);
-  const current = useRef(0);
-
-  useEffect(() => {
-    const reduce =
-      typeof window !== "undefined" &&
-      window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
-    if (reduce) {
-      current.current = value;
-      setDisplay(value);
-      return;
-    }
-    const from = current.current;
-    const to = Number(value) || 0;
-    if (from === to) {
-      setDisplay(to);
-      return;
-    }
-    let raf = 0;
-    const start = performance.now();
-    const tick = (now: number) => {
-      const t = Math.min(1, (now - start) / duration);
-      const eased = 1 - Math.pow(1 - t, 3);
-      const next = from + (to - from) * eased;
-      current.current = next;
-      setDisplay(next);
-      if (t < 1) raf = requestAnimationFrame(tick);
-      else {
-        current.current = to;
-        setDisplay(to);
-      }
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [value, duration]);
-
-  return display;
-}
-
-function CountUpMoney({ value, className = "" }: { value: number; className?: string }) {
-  const shown = useCountUp(value);
-  return (
-    <span className={className}>
-      <span aria-hidden="true">{rp(shown)}</span>
-      <span className="sr-only">{rp(value)}</span>
-    </span>
-  );
-}
-
 /* ───────────────────────── page ───────────────────────── */
 
 export default function LaporanKeuanganPage() {
@@ -354,60 +315,39 @@ export default function LaporanKeuanganPage() {
   const topRows = topProducts.rows || [];
   const profitPositive = s.profit >= 0;
   const pendingEmpty = s.refundsPendingCount === 0 && s.exchangePendingCount === 0;
-  const kpiCards: {
-    key: string;
-    label: string;
-    value?: string;
-    numeric?: number;
-    caption: string;
-    tone?: "up" | "down";
-  }[] = [
-    { key: "gross", label: "Total Omset", numeric: s.gross, caption: "Pendapatan kotor" },
-    { key: "hpp", label: "Total HPP", numeric: s.hpp, caption: "Modal produk terjual" },
-    { key: "biaya", label: "Total Biaya", numeric: s.biaya, caption: s.biayaNote },
-    {
-      key: "profit",
-      label: "Laba Bersih",
-      value: rpSigned(s.profit),
-      caption: "Omzet neto − HPP − biaya",
-      tone: profitPositive ? "up" : "down",
-    },
-  ];
 
   return (
     <div className="space-y-5 bg-[#F9FAFB]">
-      {/* HERO + KPI */}
-      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#18181b] to-[#27272a] p-5 text-white shadow-sm md:p-7">
-        <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/5 blur-3xl" />
-        <div className="relative flex flex-wrap items-start justify-between gap-4">
-          <div className="flex items-start gap-3.5">
-            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-white/10 bg-white/10">
-              <ArrowUpRight size={22} className="text-white" />
-            </span>
+      {/* HEADER + KPI */}
+      <section className="bg-white border border-slate-200 rounded-3xl p-6 md:p-8">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex items-start gap-4">
+            <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center border border-slate-200 shrink-0">
+              <IconReport size={26} className="text-slate-900" />
+            </div>
             <div>
-              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-white/50">Keuangan</p>
-              <h1 className="mt-1 text-2xl font-black tracking-tight md:text-3xl">Laporan Keuangan</h1>
-              <p className="mt-1 text-sm font-medium text-white/60">
+              <h1 className="text-3xl font-bold tracking-tight text-slate-900">Laporan Keuangan</h1>
+              <p className="text-slate-500 font-medium mt-1">
                 Pantau omzet, retur, biaya, dan profit SAMAQU.
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {isFetching ? (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-[11px] font-bold text-white/70">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-50 border border-slate-200 px-3 py-1.5 text-[11px] font-bold text-slate-500">
                 <RefreshCw size={12} className="animate-spin" /> Memperbarui…
               </span>
             ) : null}
             <Link
               href="/ops"
-              className="inline-flex items-center gap-1.5 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs font-bold text-white/80 hover:bg-white/10"
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-50"
             >
-              <ChevronLeft size={14} /> Dashboard
+              <ChevronLeft size={16} /> Dashboard
             </Link>
           </div>
         </div>
 
-        <div className="relative mt-5 flex flex-wrap items-center gap-2">
+        <div className="mt-6 flex flex-wrap items-center gap-2">
           {[
             { key: "today", label: "Hari ini" },
             { key: "7d", label: "7 hari" },
@@ -422,8 +362,8 @@ export default function LaporanKeuanganPage() {
               onClick={() => applyPreset(item.key as Preset)}
               className={`rounded-full border px-3 py-1.5 text-xs font-bold transition-colors ${
                 preset === item.key
-                  ? "border-white bg-white text-slate-900"
-                  : "border-white/15 bg-white/5 text-white/70 hover:bg-white/10"
+                  ? "border-slate-900 bg-slate-900 text-white"
+                  : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
               }`}
             >
               {item.label}
@@ -431,8 +371,8 @@ export default function LaporanKeuanganPage() {
           ))}
         </div>
 
-        <div className="relative mt-3 flex flex-wrap items-center gap-2 text-xs font-semibold text-white/60">
-          <span className="rounded-lg bg-white/10 px-2.5 py-1.5 text-white/90">{data.period.label}</span>
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500">
+          <span className="rounded-lg bg-slate-50 border border-slate-200 px-2.5 py-1.5 text-slate-700">{data.period.label}</span>
           <span>·</span>
           <span>{data.period.days} hari</span>
           <span>·</span>
@@ -447,8 +387,7 @@ export default function LaporanKeuanganPage() {
                   setPreset("custom");
                   setFrom(event.target.value);
                 }}
-                className="rounded-lg border border-white/15 bg-white/10 px-2 py-1.5 text-xs font-semibold text-white"
-                style={{ colorScheme: "dark" }}
+                className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-semibold text-slate-700"
               />
               <span>–</span>
               <input
@@ -460,45 +399,57 @@ export default function LaporanKeuanganPage() {
                   setPreset("custom");
                   setTo(event.target.value);
                 }}
-                className="rounded-lg border border-white/15 bg-white/10 px-2 py-1.5 text-xs font-semibold text-white"
-                style={{ colorScheme: "dark" }}
+                className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-semibold text-slate-700"
               />
             </span>
           ) : null}
         </div>
 
-        <div className="relative mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {kpiCards.map((card) => (
-            <div key={card.key} className="rounded-2xl border border-white/10 bg-white/[0.06] p-4">
-              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/50">{card.label}</p>
-              <p
-                className={`mt-1.5 whitespace-nowrap text-[clamp(0.9rem,1.6vw,1.5rem)] font-black tracking-tight tabular-nums ${
-                  card.tone === "down" ? "text-rose-300" : card.tone === "up" ? "text-emerald-300" : "text-white"
-                }`}
-              >
-                {typeof card.numeric === "number" ? <CountUpMoney value={card.numeric} /> : card.value}
-              </p>
-              <p className="mt-1 text-[11px] font-semibold text-white/40">{card.caption}</p>
+        <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <GlassCard icon={IconWallet} label="Total Omset" value={rp(s.gross)} caption="Pendapatan kotor" />
+          <GlassCard icon={IconPackage} label="Total HPP" value={rp(s.hpp)} caption="Modal produk terjual" />
+          <GlassCard icon={IconReceipt} label="Total Biaya" value={rp(s.biaya)} caption={s.biayaNote} />
+          <div className="relative bg-white border border-slate-200 rounded-2xl p-5 flex flex-col">
+            <span
+              className={`absolute top-3 right-3 px-2 py-0.5 rounded-md text-[10px] font-black tracking-wider ${
+                profitPositive
+                  ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
+                  : "bg-red-50 text-red-700 border border-red-100"
+              }`}
+            >
+              {profitPositive ? "PROFIT" : "RUGI"}
+            </span>
+            <div className="flex items-center gap-2 text-slate-500 min-h-[20px] pr-16">
+              <IconProfit size={16} className="shrink-0" />
+              <span className="text-[11px] font-bold uppercase tracking-wider truncate">Laba Bersih</span>
             </div>
-          ))}
+            <p
+              className={`font-black mt-3 whitespace-nowrap leading-tight text-[clamp(1.05rem,1.5vw,1.75rem)] ${
+                profitPositive ? "text-emerald-600" : "text-red-600"
+              }`}
+            >
+              {rp(s.profit)}
+            </p>
+            <p className="text-slate-500 text-xs mt-auto pt-1.5">Omzet neto − HPP − biaya</p>
+          </div>
         </div>
 
-        <div className="relative mt-3 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px] font-semibold text-white/50">
+        <p className="mt-4 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px] font-semibold text-slate-400">
           <span>
-            Omzet Neto <b className="text-white/90">{rp(s.net)}</b>
+            Omzet Neto <b className="text-slate-700">{rp(s.net)}</b>
           </span>
           <span className="inline-flex items-center gap-1">
-            <span className={data.deltas.net !== null && data.deltas.net < 0 ? "text-rose-300" : "text-emerald-300"}>
+            <span className={data.deltas.net !== null && data.deltas.net < 0 ? "text-red-600" : "text-emerald-600"}>
               {data.deltas.net === null
                 ? "Baru"
                 : `${data.deltas.net >= 0 ? "+" : "−"}${Math.abs(data.deltas.net).toLocaleString("id-ID", { maximumFractionDigits: 1 })}%`}
             </span>
-            <span className="text-white/40">vs periode sebelumnya</span>
+            <span className="text-slate-400">vs periode sebelumnya</span>
           </span>
           <span>· {s.transactions} transaksi</span>
           <span>· rata-rata {rp(s.aov)}/transaksi</span>
           <span>· margin {s.margin}%</span>
-        </div>
+        </p>
       </section>
 
       {/* ALUR LABA */}
