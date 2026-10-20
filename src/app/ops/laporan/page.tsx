@@ -5,7 +5,6 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import {
   AlertTriangle,
-  ArrowDown,
   ArrowUpRight,
   CheckCircle,
   ChevronLeft,
@@ -275,22 +274,6 @@ function CountUpMoney({ value, className = "" }: { value: number; className?: st
   );
 }
 
-function DeltaBadge({ value, label = "vs periode sebelumnya" }: { value: number | null; label?: string }) {
-  if (value === null) {
-    return <span className="text-[11px] font-semibold text-slate-400">Baru · {label}</span>;
-  }
-  const up = value >= 0;
-  return (
-    <span className="inline-flex items-center gap-1 text-[11px] font-bold">
-      <span className={`inline-flex items-center gap-0.5 ${up ? "text-emerald-600" : "text-red-600"}`}>
-        {up ? <ArrowUpRight size={13} /> : <ArrowDown size={13} />}
-        {Math.abs(value).toLocaleString("id-ID", { maximumFractionDigits: 1 })}%
-      </span>
-      <span className="font-semibold text-slate-400">{label}</span>
-    </span>
-  );
-}
-
 /* ───────────────────────── page ───────────────────────── */
 
 export default function LaporanKeuanganPage() {
@@ -371,35 +354,60 @@ export default function LaporanKeuanganPage() {
   const topRows = topProducts.rows || [];
   const profitPositive = s.profit >= 0;
   const pendingEmpty = s.refundsPendingCount === 0 && s.exchangePendingCount === 0;
+  const kpiCards: {
+    key: string;
+    label: string;
+    value?: string;
+    numeric?: number;
+    caption: string;
+    tone?: "up" | "down";
+  }[] = [
+    { key: "gross", label: "Total Omset", numeric: s.gross, caption: "Pendapatan kotor" },
+    { key: "hpp", label: "Total HPP", numeric: s.hpp, caption: "Modal produk terjual" },
+    { key: "biaya", label: "Total Biaya", numeric: s.biaya, caption: s.biayaNote },
+    {
+      key: "profit",
+      label: "Laba Bersih",
+      value: rpSigned(s.profit),
+      caption: "Omzet neto − HPP − biaya",
+      tone: profitPositive ? "up" : "down",
+    },
+  ];
 
   return (
     <div className="space-y-5 bg-[#F9FAFB]">
-      {/* HEADER */}
-      <section className="rounded-3xl border border-[#E5E7EB] bg-white p-5 shadow-sm md:p-7">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">Keuangan</p>
-            <h1 className="mt-1 text-2xl font-black tracking-tight text-[#374151] md:text-3xl">Laporan Keuangan</h1>
-            <p className="mt-1 text-sm font-medium text-slate-500">
-              Pantau omzet, retur, biaya, dan profit SAMAQU.
-            </p>
+      {/* HERO + KPI */}
+      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#18181b] to-[#27272a] p-5 text-white shadow-sm md:p-7">
+        <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/5 blur-3xl" />
+        <div className="relative flex flex-wrap items-start justify-between gap-4">
+          <div className="flex items-start gap-3.5">
+            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-white/10 bg-white/10">
+              <ArrowUpRight size={22} className="text-white" />
+            </span>
+            <div>
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-white/50">Keuangan</p>
+              <h1 className="mt-1 text-2xl font-black tracking-tight md:text-3xl">Laporan Keuangan</h1>
+              <p className="mt-1 text-sm font-medium text-white/60">
+                Pantau omzet, retur, biaya, dan profit SAMAQU.
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             {isFetching ? (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-[11px] font-bold text-slate-500">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-[11px] font-bold text-white/70">
                 <RefreshCw size={12} className="animate-spin" /> Memperbarui…
               </span>
             ) : null}
             <Link
               href="/ops"
-              className="inline-flex items-center gap-1.5 rounded-xl border border-[#E5E7EB] bg-white px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs font-bold text-white/80 hover:bg-white/10"
             >
               <ChevronLeft size={14} /> Dashboard
             </Link>
           </div>
         </div>
 
-        <div className="mt-5 flex flex-wrap items-center gap-2">
+        <div className="relative mt-5 flex flex-wrap items-center gap-2">
           {[
             { key: "today", label: "Hari ini" },
             { key: "7d", label: "7 hari" },
@@ -414,8 +422,8 @@ export default function LaporanKeuanganPage() {
               onClick={() => applyPreset(item.key as Preset)}
               className={`rounded-full border px-3 py-1.5 text-xs font-bold transition-colors ${
                 preset === item.key
-                  ? "border-slate-900 bg-slate-900 text-white"
-                  : "border-[#E5E7EB] bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+                  ? "border-white bg-white text-slate-900"
+                  : "border-white/15 bg-white/5 text-white/70 hover:bg-white/10"
               }`}
             >
               {item.label}
@@ -423,8 +431,8 @@ export default function LaporanKeuanganPage() {
           ))}
         </div>
 
-        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500">
-          <span className="rounded-lg bg-[#F9FAFB] px-2.5 py-1.5 text-slate-700">{data.period.label}</span>
+        <div className="relative mt-3 flex flex-wrap items-center gap-2 text-xs font-semibold text-white/60">
+          <span className="rounded-lg bg-white/10 px-2.5 py-1.5 text-white/90">{data.period.label}</span>
           <span>·</span>
           <span>{data.period.days} hari</span>
           <span>·</span>
@@ -439,7 +447,8 @@ export default function LaporanKeuanganPage() {
                   setPreset("custom");
                   setFrom(event.target.value);
                 }}
-                className="rounded-lg border border-[#E5E7EB] bg-white px-2 py-1.5 text-xs font-semibold text-slate-700"
+                className="rounded-lg border border-white/15 bg-white/10 px-2 py-1.5 text-xs font-semibold text-white"
+                style={{ colorScheme: "dark" }}
               />
               <span>–</span>
               <input
@@ -451,65 +460,49 @@ export default function LaporanKeuanganPage() {
                   setPreset("custom");
                   setTo(event.target.value);
                 }}
-                className="rounded-lg border border-[#E5E7EB] bg-white px-2 py-1.5 text-xs font-semibold text-slate-700"
+                className="rounded-lg border border-white/15 bg-white/10 px-2 py-1.5 text-xs font-semibold text-white"
+                style={{ colorScheme: "dark" }}
               />
             </span>
           ) : null}
         </div>
-      </section>
 
-      {/* RINGKASAN / WATERFALL */}
-      <section className="grid gap-4 lg:grid-cols-[1.15fr_1fr]">
-        <div className="rounded-3xl border border-[#E5E7EB] bg-white p-5 shadow-sm md:p-6">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-400">Omzet Neto</p>
-              <CountUpMoney
-                value={s.net}
-                className="mt-1 block whitespace-nowrap text-3xl font-black tracking-tight text-[#374151] tabular-nums md:text-5xl"
-              />
-              <div className="mt-2">
-                <DeltaBadge value={data.deltas.net} />
-              </div>
-            </div>
-            <span className={`rounded-full px-2.5 py-1 text-[10px] font-black ${profitPositive ? TONE.green : TONE.red}`}>
-              {profitPositive ? "PROFIT" : "RUGI"}
-            </span>
-          </div>
-
-          <div className="mt-5 grid grid-cols-2 gap-3 border-t border-[#E5E7EB] pt-4 text-sm">
-            <div>
-              <p className="text-[11px] font-semibold text-slate-400">Omzet Bruto</p>
-              <p className="font-black text-slate-800 tabular-nums">{rp(s.gross)}</p>
-            </div>
-            <div>
-              <p className="text-[11px] font-semibold text-slate-400">Retur Selesai</p>
-              <p className="font-black text-red-600 tabular-nums">− {rp(s.refunds)}</p>
-            </div>
-            <div>
-              <p className="text-[11px] font-semibold text-slate-400">Penyesuaian Tukar Size</p>
-              <p className={`font-black tabular-nums ${s.exchange >= 0 ? "text-emerald-600" : "text-blue-600"}`}>
-                {rpSigned(s.exchange)}
-              </p>
-            </div>
-            <div>
-              <p className="text-[11px] font-semibold text-slate-400" title="Laba estimasi ÷ Omzet Neto">
-                Margin
-              </p>
+        <div className="relative mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {kpiCards.map((card) => (
+            <div key={card.key} className="rounded-2xl border border-white/10 bg-white/[0.06] p-4">
+              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/50">{card.label}</p>
               <p
-                className={`font-black tabular-nums ${profitPositive ? "text-slate-800" : "text-red-600"}`}
-                title="Laba estimasi ÷ Omzet Neto"
+                className={`mt-1.5 whitespace-nowrap text-[clamp(0.9rem,1.6vw,1.5rem)] font-black tracking-tight tabular-nums ${
+                  card.tone === "down" ? "text-rose-300" : card.tone === "up" ? "text-emerald-300" : "text-white"
+                }`}
               >
-                {s.margin}%
+                {typeof card.numeric === "number" ? <CountUpMoney value={card.numeric} /> : card.value}
               </p>
+              <p className="mt-1 text-[11px] font-semibold text-white/40">{card.caption}</p>
             </div>
-          </div>
-          <p className="mt-3 text-[11px] font-semibold text-slate-400">
-            {s.transactions} transaksi · rata-rata {rp(s.aov)} / transaksi
-          </p>
+          ))}
         </div>
 
-        <div className="rounded-3xl border border-[#E5E7EB] bg-white p-5 shadow-sm md:p-6">
+        <div className="relative mt-3 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px] font-semibold text-white/50">
+          <span>
+            Omzet Neto <b className="text-white/90">{rp(s.net)}</b>
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <span className={data.deltas.net !== null && data.deltas.net < 0 ? "text-rose-300" : "text-emerald-300"}>
+              {data.deltas.net === null
+                ? "Baru"
+                : `${data.deltas.net >= 0 ? "+" : "−"}${Math.abs(data.deltas.net).toLocaleString("id-ID", { maximumFractionDigits: 1 })}%`}
+            </span>
+            <span className="text-white/40">vs periode sebelumnya</span>
+          </span>
+          <span>· {s.transactions} transaksi</span>
+          <span>· rata-rata {rp(s.aov)}/transaksi</span>
+          <span>· margin {s.margin}%</span>
+        </div>
+      </section>
+
+      {/* ALUR LABA */}
+      <section className="rounded-3xl border border-[#E5E7EB] bg-white p-5 shadow-sm md:p-6">
           <p className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-400">Alur Laba</p>
           <div className="mt-3 divide-y divide-[#E5E7EB]">
             <BreakdownRow
@@ -562,7 +555,6 @@ export default function LaporanKeuanganPage() {
             <AlertTriangle size={13} className="mt-px shrink-0" />
             Laba masih estimasi: HPP barang retur belum dibalik dan biaya operasional belum tersedia.
           </p>
-        </div>
       </section>
 
       {/* PENDING */}
