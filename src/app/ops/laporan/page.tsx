@@ -17,8 +17,11 @@ import {
 } from "lucide-react";
 import {
   CartesianGrid,
+  Cell,
   Line,
   LineChart,
+  Pie,
+  PieChart,
   ResponsiveContainer,
   Tooltip as ChartTooltip,
   XAxis,
@@ -73,6 +76,16 @@ type PaymentBreakdownRow = {
   share: number;
 };
 
+/** Produk terlaris (unit terjual) pada periode laporan. */
+type TopProductRow = {
+  key: string;
+  name: string;
+  units: number;
+  revenue: number;
+  /** Porsi unit terhadap total top 5 (0–100). */
+  share: number;
+};
+
 type ReportData = {
   period: Period;
   summary: Summary;
@@ -87,6 +100,7 @@ type ReportData = {
   deltas: { gross: number | null; net: number | null; profit: number | null };
   trend: { type: "day" | "week" | "month"; points: TrendPoint[] };
   payments: PaymentBreakdownRow[];
+  topProducts: { totalUnits: number; rows: TopProductRow[] };
   tables: {
     sales: any[];
     returns: any[];
@@ -107,6 +121,9 @@ const nfmt = (v: number | null | undefined) =>
 
 /** Urutan warna bar metode pembayaran — semakin gelap, semakin besar porsinya. */
 const PAYMENT_BAR = ["bg-slate-900", "bg-slate-700", "bg-slate-500", "bg-slate-400", "bg-slate-300"];
+
+/** Warna donut produk terlaris — senada dengan aksen laporan (slate/blue). */
+const PRODUCT_COLORS = ["#0F172A", "#334155", "#64748B", "#94A3B8", "#CBD5E1"];
 
 const rp = (v: number | null | undefined) => `Rp ${nfmt(v)}`;
 
@@ -350,6 +367,8 @@ export default function LaporanKeuanganPage() {
 
   const s = data.summary;
   const payments = data.payments || [];
+  const topProducts = data.topProducts || { totalUnits: 0, rows: [] };
+  const topRows = topProducts.rows || [];
   const profitPositive = s.profit >= 0;
   const pendingEmpty = s.refundsPendingCount === 0 && s.exchangePendingCount === 0;
 
@@ -660,53 +679,126 @@ export default function LaporanKeuanganPage() {
         ) : null}
       </section>
 
-      {/* METODE PEMBAYARAN */}
-      <section className="rounded-3xl border border-[#E5E7EB] bg-white p-5 shadow-sm md:p-6">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="flex items-start gap-3">
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-[#F3F4F6] text-slate-700">
-              <CreditCard size={18} strokeWidth={1.9} />
-            </span>
-            <div>
-              <h2 className="text-lg font-black tracking-tight text-[#374151]">Metode Pembayaran</h2>
-              <p className="text-xs font-medium text-slate-500">
-                Porsi nominal omzet per metode pada periode ini.
-              </p>
+      {/* PRODUK TERLARIS + METODE PEMBAYARAN */}
+      <section className="grid gap-4 lg:grid-cols-2">
+        <div className="rounded-3xl border border-[#E5E7EB] bg-white p-5 shadow-sm md:p-6">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-[#F3F4F6] text-slate-700">
+                <ArrowUpRight size={18} strokeWidth={1.9} />
+              </span>
+              <div>
+                <h2 className="text-lg font-black tracking-tight text-[#374151]">Produk Terlaris</h2>
+                <p className="text-xs font-medium text-slate-500">
+                  5 produk dengan unit terjual terbanyak.
+                </p>
+              </div>
             </div>
+            <span className="rounded-full bg-[#F9FAFB] px-3 py-1.5 text-[11px] font-bold text-slate-500">
+              {nfmt(topProducts.totalUnits)} unit
+            </span>
           </div>
-          <span className="rounded-full bg-[#F9FAFB] px-3 py-1.5 text-[11px] font-bold text-slate-500">
-            {s.transactions} transaksi
-          </span>
+
+          {topRows.length === 0 ? (
+            <div className="mt-5 grid place-items-center rounded-2xl bg-[#F9FAFB] px-4 py-8 text-center">
+              <p className="text-sm font-bold text-slate-700">Belum ada penjualan di periode ini</p>
+              <p className="mt-1 text-xs text-slate-500">Coba rentang tanggal lain.</p>
+            </div>
+          ) : (
+            <div className="mt-4 grid gap-5 sm:grid-cols-[170px_1fr] sm:items-center">
+              <div className="relative mx-auto h-[170px] w-[170px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={topRows}
+                      dataKey="units"
+                      nameKey="name"
+                      innerRadius={58}
+                      outerRadius={80}
+                      paddingAngle={2}
+                      stroke="none"
+                      isAnimationActive={false}
+                    >
+                      {topRows.map((row, index) => (
+                        <Cell key={row.key} fill={PRODUCT_COLORS[index % PRODUCT_COLORS.length]} />
+                      ))}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="pointer-events-none absolute inset-0 grid place-items-center">
+                  <div className="text-center">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Terjual</p>
+                    <p className="text-2xl font-black tabular-nums text-[#374151]">{nfmt(topProducts.totalUnits)}</p>
+                    <p className="text-[10px] font-semibold text-slate-400">unit</p>
+                  </div>
+                </div>
+              </div>
+
+              <ul className="space-y-2.5">
+                {topRows.map((row, index) => (
+                  <li key={row.key} className="flex items-center gap-2.5">
+                    <span
+                      className="h-2 w-2 shrink-0 rounded-full"
+                      style={{ backgroundColor: PRODUCT_COLORS[index % PRODUCT_COLORS.length] }}
+                    />
+                    <span className="min-w-0 flex-1 truncate text-sm font-semibold text-[#374151]" title={row.name}>
+                      {row.name}
+                    </span>
+                    <span className="shrink-0 whitespace-nowrap text-[11px] font-bold text-slate-500 tabular-nums">
+                      {nfmt(row.units)} unit · {row.share.toLocaleString("id-ID", { maximumFractionDigits: 1 })}%
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
 
-        {payments.length === 0 ? (
-          <div className="mt-5 grid place-items-center rounded-2xl bg-[#F9FAFB] px-4 py-8 text-center">
-            <p className="text-sm font-bold text-slate-700">Belum ada transaksi di periode ini</p>
-            <p className="mt-1 text-xs text-slate-500">Coba rentang tanggal lain.</p>
-          </div>
-        ) : (
-          <div className="mt-5 grid gap-x-10 gap-y-5 lg:grid-cols-2">
-            {payments.map((row, index) => (
-              <div key={row.key}>
-                <div className="flex items-baseline justify-between gap-3">
-                  <p className="min-w-0 truncate text-sm font-bold text-[#374151]" title={row.label}>
-                    {row.label}
-                  </p>
-                  <p className="shrink-0 whitespace-nowrap text-[11px] font-bold text-slate-500 tabular-nums">
-                    {row.count} trx · {row.share.toLocaleString("id-ID", { maximumFractionDigits: 1 })}%
-                  </p>
-                </div>
-                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#F3F4F6]">
-                  <div
-                    className={`h-full rounded-full ${PAYMENT_BAR[index] || "bg-slate-300"}`}
-                    style={{ width: `${Math.max(2, row.share)}%` }}
-                  />
-                </div>
-                <p className="mt-1.5 whitespace-nowrap text-xs font-black text-slate-700 tabular-nums">{rp(row.amount)}</p>
+        <div className="rounded-3xl border border-[#E5E7EB] bg-white p-5 shadow-sm md:p-6">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-[#F3F4F6] text-slate-700">
+                <CreditCard size={18} strokeWidth={1.9} />
+              </span>
+              <div>
+                <h2 className="text-lg font-black tracking-tight text-[#374151]">Metode Pembayaran</h2>
+                <p className="text-xs font-medium text-slate-500">Metode pembayaran paling sering digunakan.</p>
               </div>
-            ))}
+            </div>
+            <span className="rounded-full bg-[#F9FAFB] px-3 py-1.5 text-[11px] font-bold text-slate-500">
+              {s.transactions} transaksi
+            </span>
           </div>
-        )}
+
+          {payments.length === 0 ? (
+            <div className="mt-5 grid place-items-center rounded-2xl bg-[#F9FAFB] px-4 py-8 text-center">
+              <p className="text-sm font-bold text-slate-700">Belum ada transaksi di periode ini</p>
+              <p className="mt-1 text-xs text-slate-500">Coba rentang tanggal lain.</p>
+            </div>
+          ) : (
+            <div className="mt-5 space-y-4">
+              {payments.map((row, index) => (
+                <div key={row.key}>
+                  <div className="flex items-baseline justify-between gap-3">
+                    <p className="min-w-0 truncate text-sm font-bold text-[#374151]" title={row.label}>
+                      {row.label}
+                    </p>
+                    <p className="shrink-0 whitespace-nowrap text-[11px] font-bold text-slate-500 tabular-nums">
+                      {row.count} trx · {row.share.toLocaleString("id-ID", { maximumFractionDigits: 1 })}%
+                    </p>
+                  </div>
+                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#F3F4F6]">
+                    <div
+                      className={`h-full rounded-full ${PAYMENT_BAR[index] || "bg-slate-300"}`}
+                      style={{ width: `${Math.max(2, row.share)}%` }}
+                    />
+                  </div>
+                  <p className="mt-1.5 whitespace-nowrap text-xs font-black text-slate-700 tabular-nums">{rp(row.amount)}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </section>
 
       {/* TABLES */}
