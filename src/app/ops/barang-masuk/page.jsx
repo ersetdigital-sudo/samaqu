@@ -10,6 +10,7 @@ import { usePageUrl } from "@/lib/ops-router";
 import { useToast } from "@/components/ops/ui/use-toast";
 import { SIZES } from "@/lib/ops-variants";
 import { isPaketKategori, PAKET_SIZE, variantName } from "@/lib/item-label";
+import { generateVariantSku, resolveColorName } from "@/lib/sku";
 import ProductCombobox from "@/components/ops/barang-masuk/ProductCombobox";
 
 const today = () => format(new Date(), "yyyy-MM-dd");
@@ -24,8 +25,8 @@ function emptyItem() {
     key: uid(),
     product_id: "",
     variant_id: "",
-    size: "",
-    qty: "",
+    /** Jumlah masuk per ukuran: { S: "2", M: "3" }. Paket memakai satu kunci PAKET_SIZE. */
+    quantities: {},
     redirected_from: "",
     follow_name: "",
     editing: true,
@@ -39,12 +40,18 @@ function stockAt(variant, size) {
   return Number(src[key] ?? 0) || 0;
 }
 
+/** Ukuran yang benar-benar dimiliki varian (bukan daftar tetap), urut standar lalu A-Z. */
 function sizesFor(variant) {
-  const src = variant?.stock_efektif ?? variant?.stock ?? {};
-  const extras = Object.keys(src).filter(
-    (key) => !SIZES.some((size) => String(size).toUpperCase() === String(key).toUpperCase())
-  );
-  return [...SIZES, ...extras].sort((a, b) => {
+  const own = variant?.stock && typeof variant.stock === "object" ? variant.stock : {};
+  const efektif =
+    variant?.stock_efektif && typeof variant.stock_efektif === "object" ? variant.stock_efektif : {};
+  const unique = new Map();
+  for (const key of [...Object.keys(own), ...Object.keys(efektif)]) {
+    const label = String(key ?? "").trim();
+    if (!label || label.toUpperCase() === "ALL SIZE") continue;
+    if (!unique.has(label.toUpperCase())) unique.set(label.toUpperCase(), label);
+  }
+  return [...unique.values()].sort((a, b) => {
     const indexA = SIZES.indexOf(String(a).toUpperCase());
     const indexB = SIZES.indexOf(String(b).toUpperCase());
     if (indexA !== -1 && indexB !== -1) return indexA - indexB;
@@ -52,6 +59,36 @@ function sizesFor(variant) {
     if (indexB !== -1) return 1;
     return String(a).localeCompare(String(b));
   });
+}
+
+/**
+ * SKU per ukuran: pakai SKU yang tersimpan di baris varian; kalau kosong, hasilkan
+ * dari aturan SKU yang sama dengan form produk. SKU produk tidak pernah dipakai
+ * sebagai pengganti SKU ukuran (itu yang membuat semua ukuran tampak KOK-GGR).
+ */
+function variantSkuFor(product, variant, size) {
+  const key = String(size ?? "").toUpperCase();
+  const stored = variant?.skus?.[key];
+  if (stored && String(stored).trim()) return String(stored).trim();
+  const color = resolveColorName({
+    color: variant?.color,
+    productName: product?.name,
+    category: product?.category,
+    series: product?.series,
+  });
+  return (
+    generateVariantSku({
+      category: product?.category,
+      kain: product?.jenis_kain?.name,
+      color,
+      series: product?.series,
+      size,
+    }) || ""
+  );
+}
+
+function totalQty(item) {
+  return Object.values(item?.quantities || {}).reduce((sum, value) => sum + (Number(value) || 0), 0);
 }
 
 function focusStep(itemKey, step) {
@@ -80,6 +117,7 @@ export default function TambahBarangMasuk() {
   });
   const [errors, setErrors] = useState({});
   const requestIdRef = useRef(null);
+  const submittingRef = useRef(false);
   const addButtonRef = useRef(null);
 
   const { data: products = [] } = useQuery({
@@ -131,6 +169,7 @@ export default function TambahBarangMasuk() {
   const createMutation = useMutation({
     mutationFn: (payload) => base44.entities.StockIn.createBatch(payload),
     onSuccess: () => {
+      submittingRef.current = false;
       requestIdRef.current = null;
       queryClient.invalidateQueries(["stockIns"]);
       queryClient.invalidateQueries(["products"]);
@@ -143,6 +182,7 @@ export default function TambahBarangMasuk() {
       navigate(pageUrl("MasterProduk"));
     },
     onError: (error) => {
+      submittingRef.current = false;
       toast({
         title: "❌ Gagal menambahkan barang masuk",
         description: error.message || "Terjadi kesalahan saat menyimpan data.",
@@ -164,12 +204,27 @@ export default function TambahBarangMasuk() {
     });
   }
 
+  /** Buang jumlah ukuran yang tidak ada di varian baru (mis. setelah ganti warna). */
+  function pruneQuantities(quantities, nextVariant, paket) {
+    if (paket) {
+      const value = quantities?.[PAKET_SIZE] ?? "";
+      return value === "" ? {} : { [PAKET_SIZE]: value };
+    }
+    const allowed = sizesFor(nextVariant);
+    const next = {};
+    for (const [size, value] of Object.entries(quantities || {})) {
+      const match = allowed.find((item) => String(item).toUpperCase() === String(size).toUpperCase());
+      if (match) next[match] = value;
+    }
+    return next;
+  }
+
   function handleProductChange(item, productId) {
     if (!productId) {
       updateItem(item.key, {
         product_id: "",
         variant_id: "",
-        size: "",
+        quantities: {},
         redirected_from: "",
         follow_name: "",
       });
@@ -194,39 +249,53 @@ export default function TambahBarangMasuk() {
     updateItem(item.key, {
       product_id: effectiveId,
       variant_id: pick?.id || "",
-      size: paket ? PAKET_SIZE : "",
+      quantities: {},
       redirected_from: baseId ? productId : "",
       follow_name: baseId
         ? product?.stok_bersama?.mengikuti || effectiveProduct?.series || effectiveProduct?.name || baseId
         : "",
     });
-    focusStep(item.key, groups.length > 1 ? "color" : pick ? (paket ? "qty" : "size") : "color");
+    focusStep(item.key, pick ? "qty" : "color");
   }
 
   function handleVariantChange(item, variantId) {
     const product = productOf(item);
     const paket = isPaketKategori(product?.category);
+    const nextVariant = allVariants.find((v) => v.id === variantId) || null;
     updateItem(item.key, {
       variant_id: variantId,
-      size: paket ? PAKET_SIZE : "",
+      quantities: pruneQuantities(item.quantities, nextVariant, paket),
     });
-    focusStep(item.key, paket ? "qty" : "size");
-  }
-
-  function handleSizeChange(item, size) {
-    updateItem(item.key, { size });
     focusStep(item.key, "qty");
   }
 
-  function handleQtyChange(item, value) {
-    updateItem(item.key, { qty: value === "" ? "" : Math.max(0, parseInt(value, 10) || 0) });
+  function handleQtyChange(item, size, value) {
+    const digits = String(value ?? "").replace(/[^\d]/g, "");
+    updateItem(item.key, {
+      quantities: { ...(item.quantities || {}), [size]: digits },
+    });
+  }
+
+  /** Enter pindah ke input ukuran berikutnya; di input terakhir pindah ke Simpan produk. */
+  function handleQtyKeyDown(event, itemKey) {
+    if (["e", "E", "+", "-", ".", ","].includes(event.key)) {
+      event.preventDefault();
+      return;
+    }
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    const inputs = Array.from(document.querySelectorAll(`[data-stockin-input^="${itemKey}|"]`));
+    const index = inputs.indexOf(event.currentTarget);
+    const next = inputs[index + 1];
+    if (next) next.focus();
+    else document.querySelector(`[data-stockin-save="${itemKey}"]`)?.focus();
   }
 
   function addItem() {
     setFormData((prev) => {
       // Jangan biarkan dua baris kosong terbuka sekaligus.
       const blankEditing = prev.items.some(
-        (item) => item.editing && !item.product_id && !item.qty
+        (item) => item.editing && !item.product_id && totalQty(item) === 0
       );
       if (blankEditing) return prev;
       return {
@@ -248,41 +317,77 @@ export default function TambahBarangMasuk() {
     });
   }
 
-  function effectiveKey(item, variant) {
-    if (!item.product_id || !item.size) return "";
+  function effectiveKeyFor(item, variant, size) {
+    if (!item.product_id || !size) return "";
     const color = String(variant?.color || "default").toLowerCase();
-    return `${item.product_id}|${color}|${String(item.size).toUpperCase()}`;
+    return `${item.product_id}|${color}|${String(size).toUpperCase()}`;
+  }
+
+  function filledEntries(item) {
+    return Object.entries(item.quantities || {})
+      .map(([size, raw]) => ({ size, qty: Number(raw) || 0 }))
+      .filter((entry) => entry.qty > 0);
+  }
+
+  function hasDuplicate(item, variant) {
+    return filledEntries(item).some((entry) =>
+      duplicateKeys.has(effectiveKeyFor(item, variant, entry.size))
+    );
   }
 
   const duplicateKeys = useMemo(() => {
     const counts = new Map();
     for (const item of formData.items) {
-      const key = effectiveKey(item, variantOf(item));
-      if (!key) continue;
-      counts.set(key, (counts.get(key) || 0) + 1);
+      const variant = variantOf(item);
+      const seen = new Set();
+      for (const entry of filledEntries(item)) {
+        const key = effectiveKeyFor(item, variant, entry.size);
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        counts.set(key, (counts.get(key) || 0) + 1);
+      }
     }
     return new Set([...counts.entries()].filter(([, count]) => count > 1).map(([key]) => key));
   }, [formData.items, allVariants]);
 
-  const totalPcs = formData.items.reduce((sum, item) => sum + (Number(item.qty) || 0), 0);
+  const totalPcs = formData.items.reduce((sum, item) => sum + totalQty(item), 0);
   const savedItems = formData.items.filter((item) => !item.editing);
 
   function rowMessage(item, index) {
-    const row = `Baris ${index + 1}`;
+    const row = `Produk ${index + 1}`;
+    const product = productOf(item);
     const groups = variantsOf(item.product_id);
     const variant = variantOf(item);
+    const paket = isPaketKategori(product?.category);
     if (!item.product_id) return `${row}: pilih produk.`;
     if (groups.length === 0) return `${row}: varian produk belum tersedia.`;
-    if (!item.variant_id || !variant) return `${row}: pilih varian.`;
-    if (!item.size) return `${row}: pilih ukuran.`;
-    if (Number.isNaN(Number(item.qty)) || Number(item.qty) < 0) return `${row}: jumlah tidak boleh negatif.`;
-    if (duplicateKeys.has(effectiveKey(item, variant))) {
-      return `${row}: produk & ukuran ini sudah ada di baris lain — gabungkan.`;
+    if (!item.variant_id || !variant) return `${row}: pilih ${paket ? "varian" : "warna"}.`;
+    const sizes = paket ? [PAKET_SIZE] : sizesFor(variant);
+    if (sizes.length === 0) return `${row}: ukuran produk belum tersedia.`;
+    const allowed = new Set(sizes.map((size) => String(size).toUpperCase()));
+    for (const [, raw] of Object.entries(item.quantities || {})) {
+      const value = Number(raw);
+      if (!Number.isFinite(value) || value < 0 || !Number.isInteger(value)) {
+        return `${row}: jumlah harus bilangan bulat 0 atau lebih.`;
+      }
+    }
+    const filled = filledEntries(item);
+    if (filled.length === 0) {
+      return `${row}: isi jumlah minimal 1 di salah satu ukuran.`;
+    }
+    for (const entry of filled) {
+      if (!allowed.has(String(entry.size).toUpperCase())) {
+        return `${row}: ukuran ${entry.size} tidak tersedia untuk varian ini.`;
+      }
+      if (duplicateKeys.has(effectiveKeyFor(item, variant, entry.size))) {
+        return `${row}: produk & ukuran ini sudah ada di produk lain — gabungkan.`;
+      }
     }
     return "";
   }
 
   function saveRow(item, index) {
+    if (createMutation.isPending || submittingRef.current) return;
     const message = rowMessage(item, index);
     if (message) {
       setErrors((prev) => ({ ...prev, [item.key]: message }));
@@ -336,45 +441,46 @@ export default function TambahBarangMasuk() {
 
   function handleSubmit(e) {
     e.preventDefault();
-    if (createMutation.isPending) return;
+    if (createMutation.isPending || submittingRef.current) return;
     if (!formData.date) {
       toast({ title: "⚠️ Tanggal wajib diisi", variant: "destructive" });
       return;
     }
     if (!validate()) {
       toast({
-        title: "⚠️ Periksa baris yang merah",
-        description: "Lengkapi produk, ukuran, jumlah, dan total harga tiap baris.",
+        title: "⚠️ Periksa produk yang merah",
+        description: "Lengkapi produk, warna, dan isi jumlah minimal 1 di salah satu ukuran.",
         variant: "destructive",
       });
       return;
     }
 
     const requestId = requestIdRef.current || (requestIdRef.current = uid());
-    // Baris dengan qty 0 dilewati: admin boleh mengisi 0 untuk ukuran yang belum
-    // ada barangnya tanpa membuat riwayat stok kosong.
-    const items = formData.items
-      .map((item) => {
-        const variant = variantOf(item);
-        return {
-          product_id: item.product_id,
-          variant_color: variant?.color || "default",
-          variant_size: item.size,
-          qty: Number(item.qty),
-          total_price: 0,
-        };
-      })
-      .filter((item) => item.qty > 0);
+    // Satu produk = banyak ukuran. Ukuran dengan qty 0 dilewati; semua baris yang
+    // tersisa dikirim dalam SATU batch supaya RPC menyimpannya sebagai satu transaksi.
+    const items = formData.items.flatMap((item) => {
+      const product = productOf(item);
+      const variant = variantOf(item);
+      const paket = isPaketKategori(product?.category);
+      return filledEntries(item).map((entry) => ({
+        product_id: item.product_id,
+        variant_color: variant?.color || "default",
+        variant_size: paket ? PAKET_SIZE : entry.size,
+        qty: entry.qty,
+        total_price: 0,
+      }));
+    });
 
     if (items.length === 0) {
       toast({
         title: "⚠️ Minimal satu barang dengan jumlah lebih dari 0",
-        description: "Isi qty minimal 1 di salah satu baris.",
+        description: "Isi qty minimal 1 di salah satu ukuran.",
         variant: "destructive",
       });
       return;
     }
 
+    submittingRef.current = true;
     createMutation.mutate({
       date: formData.date,
       notes: formData.notes.trim() || null,
@@ -384,6 +490,7 @@ export default function TambahBarangMasuk() {
   }
 
   function handleReset() {
+    submittingRef.current = false;
     requestIdRef.current = null;
     setFormData({ date: today(), notes: "", items: [emptyItem()] });
     setErrors({});
@@ -481,7 +588,7 @@ export default function TambahBarangMasuk() {
               <div className="flex items-center justify-between gap-3 pt-1">
                 <div>
                   <h4 className="font-outfit" style={{ fontSize: "17px", fontWeight: 800, color: "#0F172A" }}>Daftar Barang</h4>
-                  <p className="font-inter" style={{ fontSize: "12.5px", color: "#64748B", marginTop: 2 }}>Satu baris = satu produk + ukuran.</p>
+                  <p className="font-inter" style={{ fontSize: "12.5px", color: "#64748B", marginTop: 2 }}>Satu kartu = satu produk, isi jumlah per ukuran.</p>
                 </div>
                 <button
                   ref={addButtonRef}
@@ -501,15 +608,17 @@ export default function TambahBarangMasuk() {
                   const groups = variantsOf(item.product_id);
                   const needsVariant = groups.length > 1;
                   const paket = isPaketKategori(product?.category);
-                  const qty = Number(item.qty) || 0;
-                  const currentStock = item.size
-                    ? stockAt(variant, item.size)
-                    : product?.stock_efektif ?? product?.stock ?? 0;
-                  const afterStock = currentStock + qty;
-                  const variantSku = item.size
-                    ? variant?.skus?.[String(item.size).toUpperCase()] || variant?.sku || product?.sku || ""
-                    : "";
-                  const duplicate = duplicateKeys.has(effectiveKey(item, variant));
+                  const sizeList = !paket && variant ? sizesFor(variant) : [];
+                  const quantities = item.quantities || {};
+                  const incomingQty = totalQty(item);
+                  const currentStock = variant
+                    ? paket
+                      ? stockAt(variant, PAKET_SIZE)
+                      : sizeList.reduce((sum, size) => sum + stockAt(variant, size), 0)
+                    : Number(product?.stock_efektif ?? product?.stock ?? 0) || 0;
+                  const afterStock = currentStock + incomingQty;
+                  const paketSku = paket && variant ? variantSkuFor(product, variant, PAKET_SIZE) : "";
+                  const duplicate = hasDuplicate(item, variant);
                   const error = errors[item.key];
 
                   if (!item.editing) return null;
@@ -601,110 +710,147 @@ export default function TambahBarangMasuk() {
                         ) : null}
 
                         {!paket ? (
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between gap-2">
+                          <div className="space-y-2 md:col-span-2">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
                               <label className="block font-inter tracking-label" style={{ fontSize: "12px", fontWeight: 700, color: "#334155", textTransform: "uppercase", letterSpacing: "0.03em" }}>
-                                Ukuran <span className="text-red-500">*</span>
+                                Jumlah per Ukuran <span className="text-red-500">*</span>
                               </label>
-                              {item.variant_id ? (
-                                <span className="font-inter text-[9.5px] font-semibold text-slate-400">
-                                  Stok 0 tetap bisa dipilih
-                                </span>
-                              ) : null}
+                              <span className="font-inter text-[10px] font-semibold text-slate-400">
+                                Kosong / 0 dilewati · Enter pindah ke ukuran berikutnya
+                              </span>
                             </div>
-                            {item.variant_id ? (
-                              <div className="flex flex-wrap gap-2">
-                                {sizesFor(variant).map((size, sizeIndex) => {
-                                  const stock = stockAt(variant, size);
-                                  const active = String(item.size || "").toUpperCase() === String(size).toUpperCase();
-                                  return (
-                                    <button
-                                      key={size}
-                                      type="button"
-                                      data-stockin-size={sizeIndex === 0 ? item.key : undefined}
-                                      onClick={() => handleSizeChange(item, size)}
-                                      aria-pressed={active}
-                                      className={`min-w-[58px] rounded-xl border-2 px-3 py-2 text-center transition ${
-                                        active
-                                          ? "border-green-600 bg-green-600 text-white shadow-sm"
-                                          : "border-gray-200 bg-white text-slate-700 hover:border-green-300 hover:bg-green-50"
-                                      }`}
-                                    >
-                                      <span className="block font-inter text-[13px] font-extrabold">{size}</span>
-                                      <span
-                                        className={`block font-inter text-[10px] font-semibold ${
-                                          active ? "text-green-100" : stock === 0 ? "text-rose-400" : "text-slate-400"
+                            {variant ? (
+                              sizeList.length > 0 ? (
+                                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+                                  {sizeList.map((size, sizeIndex) => {
+                                    const stock = stockAt(variant, size);
+                                    const raw = quantities[size] ?? "";
+                                    const qty = Number(raw) || 0;
+                                    const sku = variantSkuFor(product, variant, size);
+                                    return (
+                                      <div
+                                        key={size}
+                                        className={`min-w-0 rounded-xl border-2 p-2.5 transition ${
+                                          qty > 0
+                                            ? "border-green-500 bg-green-50/70"
+                                            : "border-gray-200 bg-white"
                                         }`}
                                       >
-                                        stok {stock}
-                                      </span>
-                                    </button>
-                                  );
-                                })}
-                              </div>
+                                        <div className="flex items-baseline justify-between gap-1">
+                                          <span className="font-inter text-[12.5px] font-extrabold text-slate-800">
+                                            {size}
+                                          </span>
+                                          <span className="font-inter text-[9.5px] font-semibold text-slate-400">
+                                            stok {stock}
+                                          </span>
+                                        </div>
+                                        <input
+                                          type="number"
+                                          min="0"
+                                          step="1"
+                                          inputMode="numeric"
+                                          pattern="[0-9]*"
+                                          data-stockin-input={`${item.key}|${size}`}
+                                          data-stockin-qty={sizeIndex === 0 ? item.key : undefined}
+                                          value={raw}
+                                          onFocus={(e) => e.target.select()}
+                                          onChange={(e) => handleQtyChange(item, size, e.target.value)}
+                                          onKeyDown={(e) => handleQtyKeyDown(e, item.key)}
+                                          onWheel={(e) => e.currentTarget.blur()}
+                                          placeholder="0"
+                                          aria-label={`Jumlah masuk ukuran ${size}`}
+                                          className="mt-1.5 w-full min-w-0 rounded-lg border-2 border-gray-200 bg-white px-2 py-1.5 text-center font-inter font-tabular transition focus:border-green-500 focus:ring-2 focus:ring-green-100"
+                                          style={{ fontSize: "16px", fontWeight: 800 }}
+                                        />
+                                        {qty > 0 ? (
+                                          <p className="mt-1 text-center font-inter text-[9.5px] font-bold text-emerald-700">
+                                            stok {stock} → {stock + qty}
+                                          </p>
+                                        ) : null}
+                                        {sku ? (
+                                          <p className="mt-1 break-all text-center font-mono text-[9.5px] leading-tight text-slate-400">
+                                            {sku}
+                                          </p>
+                                        ) : null}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              ) : (
+                                <div className="rounded-xl border-2 border-dashed border-gray-200 bg-white px-4 py-3 font-inter text-[12.5px] font-semibold text-slate-400">
+                                  Ukuran produk belum tersedia.
+                                </div>
+                              )
                             ) : (
                               <div className="rounded-xl border-2 border-dashed border-gray-200 bg-white px-4 py-3 font-inter text-[12.5px] font-semibold text-slate-400">
                                 Pilih {needsVariant ? "warna" : "produk"} dulu.
                               </div>
                             )}
-                            {variantSku ? (
-                              <div className="rounded-xl border border-green-200 bg-green-50 px-3 py-2">
-                                <p className="font-inter text-[9.5px] font-extrabold uppercase tracking-[0.06em] text-green-700">
-                                  SKU varian
-                                </p>
-                                <p className="font-mono text-[12px] font-bold text-green-900 break-all">{variantSku}</p>
-                              </div>
-                            ) : null}
                           </div>
                         ) : (
-                          <div className="space-y-2">
-                            <label className="block font-inter tracking-label" style={{ fontSize: "12px", fontWeight: 700, color: "#334155", textTransform: "uppercase", letterSpacing: "0.03em" }}>Ukuran</label>
-                            <div className="rounded-xl border-2 border-gray-200 bg-white px-4 py-3.5 font-inter" style={{ fontSize: "15px", fontWeight: 600, color: "#475569" }}>
-                              {PAKET_SIZE}
-                            </div>
-                            {variantSku ? (
-                              <div className="rounded-xl border border-green-200 bg-green-50 px-3 py-2">
-                                <p className="font-inter text-[9.5px] font-extrabold uppercase tracking-[0.06em] text-green-700">
-                                  SKU varian
-                                </p>
-                                <p className="font-mono text-[12px] font-bold text-green-900 break-all">{variantSku}</p>
+                          <>
+                            <div className="space-y-2">
+                              <label className="block font-inter tracking-label" style={{ fontSize: "12px", fontWeight: 700, color: "#334155", textTransform: "uppercase", letterSpacing: "0.03em" }}>Ukuran</label>
+                              <div className="rounded-xl border-2 border-gray-200 bg-white px-4 py-3.5 font-inter" style={{ fontSize: "15px", fontWeight: 600, color: "#475569" }}>
+                                {PAKET_SIZE}
                               </div>
-                            ) : null}
-                          </div>
+                              {paketSku ? (
+                                <div className="rounded-xl border border-green-200 bg-green-50 px-3 py-2">
+                                  <p className="font-inter text-[9.5px] font-extrabold uppercase tracking-[0.06em] text-green-700">
+                                    SKU varian
+                                  </p>
+                                  <p className="font-mono text-[12px] font-bold text-green-900 break-all">{paketSku}</p>
+                                </div>
+                              ) : null}
+                            </div>
+
+                            <div className="space-y-2">
+                              <label className="block font-inter tracking-label" style={{ fontSize: "12px", fontWeight: 700, color: "#334155", textTransform: "uppercase", letterSpacing: "0.03em" }}>
+                                Jumlah <span className="text-red-500">*</span>
+                              </label>
+                              <div className="relative">
+                                <Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={19} />
+                                <input
+                                  type="number"
+                                  required
+                                  min="0"
+                                  step="1"
+                                  inputMode="numeric"
+                                  pattern="[0-9]*"
+                                  data-stockin-qty={item.key}
+                                  data-stockin-input={`${item.key}|${PAKET_SIZE}`}
+                                  value={quantities[PAKET_SIZE] ?? ""}
+                                  onFocus={(e) => e.target.select()}
+                                  onChange={(e) => handleQtyChange(item, PAKET_SIZE, e.target.value)}
+                                  onKeyDown={(e) => handleQtyKeyDown(e, item.key)}
+                                  onWheel={(e) => e.currentTarget.blur()}
+                                  placeholder="0"
+                                  className="w-full pl-12 pr-4 py-3.5 bg-white border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all font-inter font-tabular"
+                                  style={{ fontSize: "17px", fontWeight: 800 }}
+                                />
+                              </div>
+                            </div>
+                          </>
                         )}
 
-                        <div className="space-y-2">
-                          <label className="block font-inter tracking-label" style={{ fontSize: "12px", fontWeight: 700, color: "#334155", textTransform: "uppercase", letterSpacing: "0.03em" }}>
-                            Jumlah <span className="text-red-500">*</span>
-                          </label>
-                          <div className="relative">
-                            <Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={19} />
-                            <input
-                              type="number"
-                              required
-                              min="0"
-                              data-stockin-qty={item.key}
-                              value={item.qty}
-                              onChange={(e) => handleQtyChange(item, e.target.value)}
-                              placeholder="0"
-                              className="w-full pl-12 pr-4 py-3.5 bg-white border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all font-inter font-tabular"
-                              style={{ fontSize: "17px", fontWeight: 800 }}
-                            />
-                          </div>
-                        </div>
-
-                        <div className="md:col-span-2 grid grid-cols-2 gap-3">
-                          <div className="rounded-xl border-2 border-green-200 bg-green-50 px-4 py-3">
-                            <p className="font-inter tracking-caps" style={{ fontSize: "10px", fontWeight: 800, color: "#059669", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                              Stok Sekarang
+                        <div className="md:col-span-2 grid grid-cols-3 gap-2 sm:gap-3">
+                          <div className="min-w-0 rounded-xl border-2 border-green-200 bg-green-50 px-2.5 py-2.5 text-center sm:px-4 sm:py-3">
+                            <p className="font-inter tracking-caps" style={{ fontSize: "9px", fontWeight: 800, color: "#059669", textTransform: "uppercase", letterSpacing: "0.04em", lineHeight: 1.25 }}>
+                              Stok Total Sekarang
                             </p>
-                            <p className="font-outfit font-tabular" style={{ fontSize: "26px", fontWeight: 900, color: "#059669" }}>{currentStock}</p>
+                            <p className="font-outfit font-tabular" style={{ fontSize: "22px", fontWeight: 900, color: "#059669", lineHeight: 1.15 }}>{currentStock}</p>
                           </div>
-                          <div className="rounded-xl border-2 border-green-200 bg-green-50 px-4 py-3">
-                            <p className="font-inter tracking-caps" style={{ fontSize: "10px", fontWeight: 800, color: "#059669", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                              Setelah Barang Masuk
+                          <div className="min-w-0 rounded-xl border-2 border-emerald-300 bg-emerald-50 px-2.5 py-2.5 text-center sm:px-4 sm:py-3">
+                            <p className="font-inter tracking-caps" style={{ fontSize: "9px", fontWeight: 800, color: "#047857", textTransform: "uppercase", letterSpacing: "0.04em", lineHeight: 1.25 }}>
+                              Total Masuk
                             </p>
-                            <p className="font-outfit font-tabular" style={{ fontSize: "26px", fontWeight: 900, color: "#059669" }}>{afterStock}</p>
+                            <p className="font-outfit font-tabular" style={{ fontSize: "22px", fontWeight: 900, color: "#047857", lineHeight: 1.15 }}>{incomingQty}</p>
+                          </div>
+                          <div className="min-w-0 rounded-xl border-2 border-green-200 bg-green-50 px-2.5 py-2.5 text-center sm:px-4 sm:py-3">
+                            <p className="font-inter tracking-caps" style={{ fontSize: "9px", fontWeight: 800, color: "#059669", textTransform: "uppercase", letterSpacing: "0.04em", lineHeight: 1.25 }}>
+                              Stok Total Setelah
+                            </p>
+                            <p className="font-outfit font-tabular" style={{ fontSize: "22px", fontWeight: 900, color: "#059669", lineHeight: 1.15 }}>{afterStock}</p>
                           </div>
                         </div>
                       </div>
@@ -717,7 +863,7 @@ export default function TambahBarangMasuk() {
 
                       {duplicate && !error ? (
                         <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 font-inter" style={{ fontSize: "12.5px", fontWeight: 600, color: "#B45309" }}>
-                          Produk & ukuran ini sudah ada di baris lain — gabungkan supaya tidak dobel.
+                          Produk & ukuran ini sudah ada di produk lain — gabungkan supaya tidak dobel.
                         </div>
                       ) : null}
 
@@ -728,8 +874,10 @@ export default function TambahBarangMasuk() {
                       <div className="mt-4 flex justify-end border-t border-gray-200 pt-4">
                         <button
                           type="button"
+                          data-stockin-save={item.key}
+                          disabled={createMutation.isPending || submittingRef.current}
                           onClick={() => saveRow(item, index)}
-                          className="inline-flex items-center gap-2 rounded-xl bg-green-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-green-700"
+                          className="inline-flex items-center gap-2 rounded-xl bg-green-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           <Save size={16} /> Simpan produk
                         </button>
@@ -755,26 +903,33 @@ export default function TambahBarangMasuk() {
                       {savedItems.map((item) => {
                         const product = productOf(item);
                         const variant = variantOf(item);
-                        const qty = Number(item.qty) || 0;
-                        const current = item.size
-                          ? stockAt(variant, item.size)
-                          : product?.stock_efektif ?? product?.stock ?? 0;
+                        const paket = isPaketKategori(product?.category);
+                        const entries = filledEntries(item);
+                        const qty = totalQty(item);
+                        const sizeList = paket ? [PAKET_SIZE] : sizesFor(variant);
+                        const current = variant
+                          ? paket
+                            ? stockAt(variant, PAKET_SIZE)
+                            : sizeList.reduce((sum, size) => sum + stockAt(variant, size), 0)
+                          : Number(product?.stock_efektif ?? product?.stock ?? 0) || 0;
                         const after = current + qty;
                         const error = errors[item.key];
-                        const duplicate = duplicateKeys.has(effectiveKey(item, variant));
+                        const duplicate = hasDuplicate(item, variant);
                         const variantText = [variant ? variantName(variant.color) : null, product?.series]
                           .filter(Boolean)
                           .join(" · ");
-                        const variantSku = item.size
-                          ? variant?.skus?.[String(item.size).toUpperCase()] || variant?.sku || product?.sku || ""
-                          : "";
+                        const skuText = entries
+                          .map((entry) => variantSkuFor(product, variant, paket ? PAKET_SIZE : entry.size))
+                          .filter(Boolean)
+                          .join(" · ");
+                        const sizeText = entries.map((entry) => `${entry.size} ×${entry.qty}`).join(" · ");
 
                         return (
                           <tr key={item.key} className={`border-b border-gray-100 last:border-0 align-top ${error ? "bg-red-50/60" : ""}`}>
                             <td className="px-4 py-3">
                               <p className="font-inter text-[13.5px] font-bold text-black">{product?.name || "Produk"}</p>
                               {variantText ? <p className="font-inter mt-0.5 text-[11.5px] text-slate-500">{variantText}</p> : null}
-                              {variantSku ? <p className="mt-0.5 font-mono text-[10.5px] text-slate-400">{variantSku}</p> : null}
+                              {skuText ? <p className="mt-0.5 font-mono text-[10.5px] text-slate-400 break-all">{skuText}</p> : null}
                               {item.product_id && sharedLabel(item.product_id) ? (
                                 <p className="font-inter mt-0.5 text-[11px] font-semibold text-emerald-700">
                                   Stok bersama {sharedLabel(item.product_id)}
@@ -782,12 +937,12 @@ export default function TambahBarangMasuk() {
                               ) : null}
                               {duplicate && !error ? (
                                 <p className="font-inter mt-0.5 text-[11px] font-semibold text-amber-700">
-                                  Produk & ukuran sudah ada di baris lain.
+                                  Produk & ukuran sudah ada di produk lain.
                                 </p>
                               ) : null}
                               {error ? <p className="font-inter mt-0.5 text-[11px] font-bold text-red-600">{error}</p> : null}
                             </td>
-                            <td className="px-4 py-3 font-inter text-[13px] font-semibold text-slate-700">{item.size || "-"}</td>
+                            <td className="px-4 py-3 font-inter text-[13px] font-semibold text-slate-700">{sizeText || "-"}</td>
                             <td className="px-4 py-3 text-center font-inter text-[13px] font-bold text-black">{qty}</td>
                             <td className="px-4 py-3 text-center font-inter text-[12px] text-slate-600">{current} → {after}</td>
                             <td className="px-4 py-3 text-right whitespace-nowrap">
