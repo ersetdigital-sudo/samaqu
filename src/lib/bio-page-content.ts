@@ -85,7 +85,7 @@ const VIDEO =
 export const DEFAULT_BIO_CONTENT: BioPageContent = {
   logo_url: "/bio/samaqu-logo.png",
   eyebrow: "Premium Muslim Menswear",
-  description: "Thobe untuk pria yang ingin tampil rapi, nyaman, dan berkelas.",
+  description: "Untuk Orang Biasa yang Sedang Bertumbuh",
   hero: {
     image_url: "/bio/thobe.png",
     video_url: VIDEO,
@@ -93,7 +93,7 @@ export const DEFAULT_BIO_CONTENT: BioPageContent = {
     title: "Thobe",
     title_accent: "Samaqu.",
     price_label: "Mulai dari",
-    price: "Rp249.000",
+    price: "Rp300.000",
     cta: "Shop now",
     href: SITE,
   },
@@ -136,7 +136,7 @@ export const DEFAULT_BIO_CONTENT: BioPageContent = {
   footer: "© 2026 SAMAQU",
   marquee: [
     "CREATE YOUR PRICE",
-    "✦ THOBE MULAI RP249RB",
+    "✦ THOBE MULAI RP300RB",
     "✦ GARANSI TUKAR UKURAN",
     "✦ UANG KEMBALI",
   ],

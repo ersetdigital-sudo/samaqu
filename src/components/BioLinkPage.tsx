@@ -85,6 +85,19 @@ function videoPosterUrl(videoUrl: string, fallback: string): string {
   return fallback;
 }
 
+/**
+ * Varian 720p untuk layar kecil (hemat bandwidth di HP). Hanya untuk URL
+ * Cloudinary; URL lain dikembalikan apa adanya.
+ */
+function videoMobileUrl(videoUrl: string): string {
+  const url = String(videoUrl || "").trim();
+  if (!url) return "";
+  if (url.includes("res.cloudinary.com") && url.includes("/video/upload/")) {
+    return url.replace("/video/upload/", "/video/upload/w_720,q_auto:eco/");
+  }
+  return url;
+}
+
 function ArrowUpRight({ size = 16 }: { size?: number }) {
   return (
     <svg viewBox="0 0 24 24" style={{ width: size, height: size }}>
@@ -97,6 +110,8 @@ export default function BioLinkPage({ content }: { content: BioPageContent }) {
   const { logo_url, eyebrow, description, hero, categories, belanja, rows, guarantee, socials, footer, marquee } = content;
   const hasVideo = Boolean(hero.video_url?.trim());
   const videoPoster = videoPosterUrl(hero.video_url, hero.image_url);
+  const mobileVideo = hasVideo ? videoMobileUrl(hero.video_url) : "";
+  const waItem = belanja.items.find((item) => item.icon === "whatsapp");
 
   return (
     <>
@@ -111,7 +126,7 @@ export default function BioLinkPage({ content }: { content: BioPageContent }) {
       >
         <div className="bio-dots pointer-events-none absolute inset-x-0 top-0 h-[420px]" />
 
-        <div className="relative mx-auto max-w-md px-5 pt-6 pb-12">
+        <div className="relative mx-auto max-w-md px-5 pt-6 pb-[110px]">
           <header className="bio-up text-center">
             <img
               src={logo_url}
@@ -125,54 +140,97 @@ export default function BioLinkPage({ content }: { content: BioPageContent }) {
           </header>
 
           {/* Hero — Best seller */}
-          <a
-            href={hero.href}
-            className="rv tilt group relative mt-5 block aspect-[4/5] overflow-hidden rounded-[28px] bg-[#0B0B0B] text-white shadow-[0_24px_50px_-24px_rgba(0,0,0,.6)]"
-          >
-            {hasVideo ? (
-              <video
-                className="h-full w-full object-cover object-top"
-                src={hero.video_url}
-                poster={videoPoster || undefined}
-                autoPlay
-                muted
-                loop
-                playsInline
-                preload="auto"
-                aria-hidden="true"
+          <div id="bio-hero" className="rv relative mt-5">
+            <a
+              href={hero.href}
+              className="tilt group relative block aspect-[4/5] overflow-hidden rounded-[28px] bg-[#0B0B0B] text-white shadow-[0_24px_50px_-24px_rgba(0,0,0,.6)]"
+            >
+              {hasVideo ? (
+                <video
+                  id="bio-reel"
+                  className="bio-kb h-full w-full object-cover"
+                  style={{ objectPosition: "50% 12%" }}
+                  poster={videoPoster || undefined}
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  preload="auto"
+                  aria-hidden="true"
+                >
+                  {mobileVideo && mobileVideo !== hero.video_url ? (
+                    <>
+                      <source src={mobileVideo} media="(max-width: 640px)" type="video/mp4" />
+                      <source src={hero.video_url} type="video/mp4" />
+                    </>
+                  ) : (
+                    <source src={hero.video_url} type="video/mp4" />
+                  )}
+                </video>
+              ) : (
+                <img
+                  src={hero.image_url}
+                  alt={hero.title}
+                  className="bio-kb h-full w-full object-cover object-top transition duration-700 group-hover:scale-105"
+                />
+              )}
+              <div
+                className="absolute inset-0 z-20"
+                style={{
+                  background:
+                    "linear-gradient(to top, #000 0%, rgba(0,0,0,.3) 50%, transparent 100%)",
+                }}
               />
-            ) : (
-              <img
-                src={hero.image_url}
-                alt={hero.title}
-                className="bio-kb h-full w-full object-cover object-top transition duration-700 group-hover:scale-105"
-              />
-            )}
-            <div className="absolute inset-0 z-20 bg-gradient-to-t from-black via-black/30 to-transparent" />
-            {hero.badge && (
-              <span className="absolute left-5 top-5 z-20 rounded-full bg-white/90 px-3 py-1 text-[11px] font-bold tracking-[.2em] text-black backdrop-blur">
-                {hero.badge}
-              </span>
-            )}
-            <div className="absolute inset-x-0 bottom-0 z-20 p-6">
-              <p className="text-[40px] font-extrabold leading-[.95] tracking-[-.04em]">
-                {hero.title}
-                <br />
-                <span className="text-white/55">{hero.title_accent}</span>
-              </p>
-              <div className="mt-5 flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-[11px] uppercase tracking-[.2em] text-white/50">
-                    {hero.price_label}
-                  </p>
-                  <p className="text-xl font-bold">{hero.price}</p>
-                </div>
-                <span className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-bold text-black">
-                  {hero.cta} <ArrowUpRight />
+              {hero.badge && (
+                <span className="absolute left-5 top-5 z-20 rounded-full bg-white/90 px-3 py-1 text-[11px] font-bold tracking-[.2em] text-black backdrop-blur">
+                  <span className="bio-live-dot" />
+                  {hero.badge}
                 </span>
+              )}
+              <div className="absolute inset-x-0 bottom-0 z-20 p-6">
+                <p className="text-[40px] font-extrabold leading-[.95] tracking-[-.04em]">
+                  {hero.title}
+                  <br />
+                  <span className="text-white/55">{hero.title_accent}</span>
+                </p>
+                <div className="mt-5 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[11px] uppercase tracking-[.2em] text-white/50">
+                      {hero.price_label}
+                    </p>
+                    <p className="text-xl font-bold">{hero.price}</p>
+                  </div>
+                  <span className="bio-shop inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-bold text-black">
+                    {hero.cta} <ArrowUpRight />
+                  </span>
+                </div>
               </div>
-            </div>
-          </a>
+            </a>
+
+            {hasVideo && (
+              <>
+                <button
+                  type="button"
+                  id="bio-sound"
+                  className="bio-vidbtn"
+                  aria-label="Aktifkan suara video"
+                  aria-pressed="false"
+                >
+                  <svg viewBox="0 0 24 24" className="bio-ico-muted">
+                    <path d="M11 5 6.5 8.8H3v6.4h3.5L11 19z" />
+                    <path d="M16 9.5l4.5 5M20.5 9.5l-4.5 5" />
+                  </svg>
+                  <svg viewBox="0 0 24 24" className="bio-ico-sound" style={{ display: "none" }}>
+                    <path d="M11 5 6.5 8.8H3v6.4h3.5L11 19z" />
+                    <path d="M15.5 8.8a4.5 4.5 0 0 1 0 6.4M18.4 6a8.5 8.5 0 0 1 0 12" />
+                  </svg>
+                </button>
+                <div className="bio-pbar" aria-hidden="true">
+                  <i id="bio-pfill" />
+                </div>
+              </>
+            )}
+          </div>
 
           {/* Kategori */}
           <section className="rv mt-8">
@@ -321,11 +379,32 @@ export default function BioLinkPage({ content }: { content: BioPageContent }) {
             {footer}
           </p>
         </div>
+
+        {/* CTA mengambang — muncul setelah hero ter-scroll (dikontrol di BioLinkEffects) */}
+        {waItem && (
+          <div className="bio-cta" id="bio-cta">
+            <a href={waItem.href}>
+              <span className="bio-cta-wa">
+                <Icon name="whatsapp" filled size={19} />
+              </span>
+              <span className="bio-cta-label">
+                {waItem.label}
+                {waItem.subtitle && <span className="bio-cta-sub">{waItem.subtitle}</span>}
+              </span>
+              <span className="bio-cta-chev">
+                <ArrowUpRight size={15} />
+              </span>
+            </a>
+          </div>
+        )}
       </main>
 
       {/* Marquee */}
       {marquee.length > 0 && (
-        <div className="overflow-hidden bg-[#0B0B0B] py-2.5 text-[11px] font-bold tracking-[.25em] text-white">
+        <div
+          data-bio-end
+          className="overflow-hidden bg-[#0B0B0B] py-2.5 text-[11px] font-bold tracking-[.25em] text-white"
+        >
           <div className="bio-mq flex w-max gap-10 whitespace-nowrap">
             {[0, 1, 2, 3].map((copy) => (
               <span key={copy} className="flex gap-10">
@@ -353,6 +432,28 @@ export default function BioLinkPage({ content }: { content: BioPageContent }) {
         @keyframes bio-fl { 50% { transform: translateY(-6px); } }
         .bio-kb { animation: bio-kb 14s ease-in-out infinite alternate; }
         @keyframes bio-kb { to { transform: scale(1.08) translateY(-2%); } }
+        .bio-live-dot { display: inline-block; width: 6px; height: 6px; margin-right: 7px; border-radius: 999px; background: #0B0B0B; vertical-align: middle; animation: bio-blink 1.6s ease-in-out infinite; }
+        @keyframes bio-blink { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .25; transform: scale(.7); } }
+        .bio-vidbtn { position: absolute; right: 14px; top: 14px; z-index: 30; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 999px; background: rgba(0,0,0,.42); color: #fff; border: 1px solid rgba(255,255,255,.22); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); cursor: pointer; transition: transform .25s cubic-bezier(.2,.8,.2,1), background .25s; }
+        .bio-vidbtn:hover { transform: scale(1.08); background: rgba(0,0,0,.66); }
+        .bio-vidbtn:active { transform: scale(.94); }
+        .bio-vidbtn svg { width: 18px; height: 18px; stroke-width: 2; }
+        .bio-pbar { position: absolute; left: 0; right: 0; bottom: 0; z-index: 30; height: 3px; background: rgba(255,255,255,.28); pointer-events: none; }
+        .bio-pbar i { display: block; height: 100%; width: 0%; background: #fff; transition: width .25s linear; }
+        .bio-shop { transition: background .25s, color .25s; }
+        .bio-shop:hover { background: #0B0B0B; color: #fff; }
+        .bio-shop svg { transition: transform .25s; }
+        .bio-shop:hover svg { transform: translate(2px, -2px); }
+        .bio-cta { position: fixed; z-index: 60; left: 16px; right: 16px; bottom: 14px; margin: 0 auto; max-width: 416px; transform: translateY(160%); opacity: 0; pointer-events: none; transition: transform .5s cubic-bezier(.2,.8,.2,1), opacity .35s ease; }
+        .bio-cta.on { transform: translateY(0); opacity: 1; pointer-events: auto; }
+        .bio-cta a { display: flex; align-items: center; gap: 8px; border-radius: 999px; background: #0B0B0B; color: #fff; padding: 10px 12px 10px 10px; box-shadow: 0 20px 44px -16px rgba(0,0,0,.6); transition: transform .25s cubic-bezier(.2,.8,.2,1); }
+        .bio-cta a:hover { transform: translateY(-2px); }
+        .bio-cta-wa { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 999px; background: #25D366; color: #fff; flex: none; }
+        .bio-cta-wa svg { width: 19px; height: 19px; }
+        .bio-cta-label { flex: 1; padding-left: 2px; font-size: 14px; font-weight: 700; line-height: 1.15; }
+        .bio-cta-sub { display: block; font-size: 11px; font-weight: 500; opacity: .55; }
+        .bio-cta-chev { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 999px; background: #fff; color: #0B0B0B; flex: none; }
+        .bio-cta-chev svg { width: 15px; height: 15px; }
         .bio-pulse-wa { animation: bio-pw 2.4s infinite; }
         @keyframes bio-pw { 0% { box-shadow: 0 0 0 0 rgba(37,211,102,.5); } 70% { box-shadow: 0 0 0 14px rgba(37,211,102,0); } 100% { box-shadow: 0 0 0 0 rgba(37,211,102,0); } }
         .bio-row { transition: transform .25s cubic-bezier(.2,.8,.2,1), box-shadow .25s, background .25s, color .25s; }
@@ -365,7 +466,7 @@ export default function BioLinkPage({ content }: { content: BioPageContent }) {
         .tilt { transition: transform .3s; }
         .bio-mq { animation: bio-mq 24s linear infinite; }
         @keyframes bio-mq { to { transform: translateX(-50%); } }
-        @media (prefers-reduced-motion: reduce) { .bio-root *, .bio-mq { animation: none !important; transition: none !important; } .bio-up, .rv { opacity: 1; transform: none; } }
+        @media (prefers-reduced-motion: reduce) { .bio-root *, .bio-mq { animation: none !important; transition: none !important; } .bio-up, .rv { opacity: 1; transform: none; } .bio-cta { transition: none; } }
       `}</style>
     </>
   );
