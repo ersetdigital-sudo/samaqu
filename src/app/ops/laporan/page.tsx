@@ -679,9 +679,8 @@ export default function LaporanKeuanganPage() {
         ) : null}
       </section>
 
-      {/* PRODUK TERLARIS + METODE PEMBAYARAN */}
-      <section className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-3xl border border-[#E5E7EB] bg-white p-5 shadow-sm md:p-6">
+      {/* PRODUK TERLARIS */}
+      <section className="rounded-3xl border border-[#E5E7EB] bg-white p-5 shadow-sm md:p-6">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="flex items-start gap-3">
               <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-[#F3F4F6] text-slate-700">
@@ -741,7 +740,7 @@ export default function LaporanKeuanganPage() {
                       className="h-2 w-2 shrink-0 rounded-full"
                       style={{ backgroundColor: PRODUCT_COLORS[index % PRODUCT_COLORS.length] }}
                     />
-                    <span className="min-w-0 flex-1 truncate text-sm font-semibold text-[#374151]" title={row.name}>
+                    <span className="min-w-0 flex-1 text-sm font-semibold leading-snug text-[#374151]" title={row.name}>
                       {row.name}
                     </span>
                     <span className="shrink-0 whitespace-nowrap text-[11px] font-bold text-slate-500 tabular-nums">
@@ -752,9 +751,10 @@ export default function LaporanKeuanganPage() {
               </ul>
             </div>
           )}
-        </div>
+      </section>
 
-        <div className="rounded-3xl border border-[#E5E7EB] bg-white p-5 shadow-sm md:p-6">
+      {/* METODE PEMBAYARAN */}
+      <section className="rounded-3xl border border-[#E5E7EB] bg-white p-5 shadow-sm md:p-6">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="flex items-start gap-3">
               <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-[#F3F4F6] text-slate-700">
@@ -798,7 +798,6 @@ export default function LaporanKeuanganPage() {
               ))}
             </div>
           )}
-        </div>
       </section>
 
       {/* TABLES */}
