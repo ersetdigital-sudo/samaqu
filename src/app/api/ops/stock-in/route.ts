@@ -72,18 +72,25 @@ export async function POST(req: NextRequest) {
       if (!item.variant_size) {
         return NextResponse.json({ error: `${row}: pilih ukuran` }, { status: 400 });
       }
-      if (!Number.isFinite(item.qty) || !Number.isInteger(item.qty) || item.qty <= 0) {
-        return NextResponse.json({ error: `${row}: jumlah harus lebih dari 0` }, { status: 400 });
+      if (!Number.isFinite(item.qty) || !Number.isInteger(item.qty) || item.qty < 0) {
+        return NextResponse.json({ error: `${row}: jumlah tidak boleh negatif` }, { status: 400 });
       }
       if (!Number.isFinite(item.total_price) || item.total_price < 0) {
         return NextResponse.json({ error: `${row}: total harga tidak valid` }, { status: 400 });
       }
     }
 
+    // Qty 0 = baris dilewati (tidak membuat riwayat stok kosong), tapi batch tetap
+    // harus punya minimal satu baris dengan qty > 0.
+    const positiveItems = items.filter((item) => item.qty > 0);
+    if (positiveItems.length === 0) {
+      return NextResponse.json({ error: "Minimal satu barang dengan jumlah lebih dari 0" }, { status: 400 });
+    }
+
     const admin = getSupabaseAdmin();
     const { data, error } = await admin.rpc("samaqu_stock_in_batch", {
       p_date: date,
-      p_items: items,
+      p_items: positiveItems,
       p_notes: notes,
       p_request_id: requestId,
     });

@@ -238,7 +238,7 @@ export default function TambahBarangMasuk() {
     if (groups.length === 0) return `${row}: varian produk belum tersedia.`;
     if (!item.variant_id || !variant) return `${row}: pilih varian.`;
     if (!item.size) return `${row}: pilih ukuran.`;
-    if (!(Number(item.qty) > 0)) return `${row}: jumlah harus lebih dari 0.`;
+    if (Number.isNaN(Number(item.qty)) || Number(item.qty) < 0) return `${row}: jumlah tidak boleh negatif.`;
     if (duplicateKeys.has(effectiveKey(item, variant))) {
       return `${row}: produk & ukuran ini sudah ada di baris lain — gabungkan.`;
     }
@@ -313,16 +313,29 @@ export default function TambahBarangMasuk() {
     }
 
     const requestId = requestIdRef.current || (requestIdRef.current = uid());
-    const items = formData.items.map((item) => {
-      const variant = variantOf(item);
-      return {
-        product_id: item.product_id,
-        variant_color: variant?.color || "default",
-        variant_size: item.size,
-        qty: Number(item.qty),
-        total_price: 0,
-      };
-    });
+    // Baris dengan qty 0 dilewati: admin boleh mengisi 0 untuk ukuran yang belum
+    // ada barangnya tanpa membuat riwayat stok kosong.
+    const items = formData.items
+      .map((item) => {
+        const variant = variantOf(item);
+        return {
+          product_id: item.product_id,
+          variant_color: variant?.color || "default",
+          variant_size: item.size,
+          qty: Number(item.qty),
+          total_price: 0,
+        };
+      })
+      .filter((item) => item.qty > 0);
+
+    if (items.length === 0) {
+      toast({
+        title: "⚠️ Minimal satu barang dengan jumlah lebih dari 0",
+        description: "Isi qty minimal 1 di salah satu baris.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     createMutation.mutate({
       date: formData.date,
@@ -568,7 +581,7 @@ export default function TambahBarangMasuk() {
                             <input
                               type="number"
                               required
-                              min="1"
+                              min="0"
                               value={item.qty}
                               onChange={(e) => handleQtyChange(item, e.target.value)}
                               placeholder="0"
