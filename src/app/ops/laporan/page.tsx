@@ -10,6 +10,7 @@ import {
   CheckCircle,
   ChevronLeft,
   ChevronRight,
+  CreditCard,
   RefreshCw,
   Search,
   X,
@@ -62,6 +63,16 @@ type TrendPoint = {
   profit: number;
 };
 
+/** Sebaran omzet per metode pembayaran (dihitung di server). */
+type PaymentBreakdownRow = {
+  key: string;
+  label: string;
+  count: number;
+  amount: number;
+  /** Porsi nominal omzet (0–100), bukan porsi jumlah transaksi. */
+  share: number;
+};
+
 type ReportData = {
   period: Period;
   summary: Summary;
@@ -75,6 +86,7 @@ type ReportData = {
   };
   deltas: { gross: number | null; net: number | null; profit: number | null };
   trend: { type: "day" | "week" | "month"; points: TrendPoint[] };
+  payments: PaymentBreakdownRow[];
   tables: {
     sales: any[];
     returns: any[];
@@ -92,6 +104,9 @@ const DAY_MS = 86_400_000;
 
 const nfmt = (v: number | null | undefined) =>
   (Number(v) || 0).toLocaleString("id-ID", { maximumFractionDigits: 0 });
+
+/** Urutan warna bar metode pembayaran — semakin gelap, semakin besar porsinya. */
+const PAYMENT_BAR = ["bg-slate-900", "bg-slate-700", "bg-slate-500", "bg-slate-400", "bg-slate-300"];
 
 const rp = (v: number | null | undefined) => `Rp ${nfmt(v)}`;
 
@@ -334,6 +349,7 @@ export default function LaporanKeuanganPage() {
   }
 
   const s = data.summary;
+  const payments = data.payments || [];
   const profitPositive = s.profit >= 0;
   const pendingEmpty = s.refundsPendingCount === 0 && s.exchangePendingCount === 0;
 
@@ -642,6 +658,55 @@ export default function LaporanKeuanganPage() {
         {series.profit ? (
           <p className="mt-2 text-[11px] font-semibold text-amber-600">Garis laba masih estimasi; HPP retur belum dibalik.</p>
         ) : null}
+      </section>
+
+      {/* METODE PEMBAYARAN */}
+      <section className="rounded-3xl border border-[#E5E7EB] bg-white p-5 shadow-sm md:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex items-start gap-3">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-[#F3F4F6] text-slate-700">
+              <CreditCard size={18} strokeWidth={1.9} />
+            </span>
+            <div>
+              <h2 className="text-lg font-black tracking-tight text-[#374151]">Metode Pembayaran</h2>
+              <p className="text-xs font-medium text-slate-500">
+                Porsi nominal omzet per metode pada periode ini.
+              </p>
+            </div>
+          </div>
+          <span className="rounded-full bg-[#F9FAFB] px-3 py-1.5 text-[11px] font-bold text-slate-500">
+            {s.transactions} transaksi
+          </span>
+        </div>
+
+        {payments.length === 0 ? (
+          <div className="mt-5 grid place-items-center rounded-2xl bg-[#F9FAFB] px-4 py-8 text-center">
+            <p className="text-sm font-bold text-slate-700">Belum ada transaksi di periode ini</p>
+            <p className="mt-1 text-xs text-slate-500">Coba rentang tanggal lain.</p>
+          </div>
+        ) : (
+          <div className="mt-5 grid gap-x-10 gap-y-5 lg:grid-cols-2">
+            {payments.map((row, index) => (
+              <div key={row.key}>
+                <div className="flex items-baseline justify-between gap-3">
+                  <p className="min-w-0 truncate text-sm font-bold text-[#374151]" title={row.label}>
+                    {row.label}
+                  </p>
+                  <p className="shrink-0 whitespace-nowrap text-[11px] font-bold text-slate-500 tabular-nums">
+                    {row.count} trx · {row.share.toLocaleString("id-ID", { maximumFractionDigits: 1 })}%
+                  </p>
+                </div>
+                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#F3F4F6]">
+                  <div
+                    className={`h-full rounded-full ${PAYMENT_BAR[index] || "bg-slate-300"}`}
+                    style={{ width: `${Math.max(2, row.share)}%` }}
+                  />
+                </div>
+                <p className="mt-1.5 whitespace-nowrap text-xs font-black text-slate-700 tabular-nums">{rp(row.amount)}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* TABLES */}
