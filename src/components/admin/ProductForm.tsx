@@ -16,9 +16,27 @@ import { PAKET_SIZE, isCoverHangerKategori, isKabakKategori, isPaketKategori, is
 import { uploadToCloudinary, validateMediaFile } from "@/lib/cloudinary";
 import { useStoreSettings } from "@/lib/store-settings";
 import { usePageUrl } from "@/lib/ops-router";
+import { duplicateSkus, generateBaseSku, generateVariantSku, resolveColorName, seriesCode } from "@/lib/sku";
 
 const CATEGORIES = ["Thobe", "Kandora", "Koko", "Vest", "Kabak", "Cover & Hanger"] as const;
 const SIZES = ["S", "M", "L", "XL", "XXL"] as const;
+
+/**
+ * SKU produk Thobe disimpan per series (…-JHR, …-IMR, dst). Saat form edit memuat
+ * salah satu baris series, suffix itu dibuang dulu supaya tidak dobel saat disimpan
+ * untuk series lain. SKU varian tidak memakai ini.
+ */
+const SERIES_SUFFIXES = ["JHR", "IMR", "BYT", "NHW", "KRM", "IML"];
+function stripSeriesSuffix(value: string): string {
+  let base = String(value || "").trim();
+  for (const code of SERIES_SUFFIXES) {
+    if (base.toUpperCase().endsWith(`-${code}`)) {
+      base = base.slice(0, -(code.length + 1));
+      break;
+    }
+  }
+  return base;
+}
 
 /**
  * Kategori paket (Cover & Hanger dan Kabak) = non-pakaian: variannya berupa NAMA
@@ -119,6 +137,7 @@ function SizeGrid({
   onRemove,
   onAdd,
   skuFallback,
+  skuContext,
   stockLocked,
   stockLockedLabel,
 }: {
@@ -129,6 +148,8 @@ function SizeGrid({
   onRemove: (idx: number) => void;
   onAdd: () => void;
   skuFallback?: string;
+  /** Konteks atribut produk untuk SKU otomatis: KATEGORI-KAIN-WARNA-SERIES-UKURAN. */
+  skuContext?: { category: string; kain?: string | null; color?: string | null; series?: string | null };
   /** Baris turunan (stok menumpang series induk): kolom STOK dikunci, kolom BERAT tetap bisa diisi. */
   stockLocked?: boolean;
   stockLockedLabel?: string;
@@ -250,7 +271,8 @@ function SizeGrid({
                       ref={(el) => { stockRefs.current[i] = el; }}
                       type="number"
                       inputMode="numeric"
-                      value={s.stock || ""}
+                      value={s.stock ?? 0}
+                      onFocus={(e) => e.currentTarget.select()}
                       onChange={(e) => onUpdate(i, "stock", parseInt(e.target.value) || 0)}
                       placeholder="0"
                       className="pf-cell pf-cell-num"
@@ -295,8 +317,13 @@ function SizeGrid({
 
               <label className="pf-size-field pf-f-sku">
                 <span className="pf-size-label">SKU</span>
-                <input value={s.sku} onChange={(e) => onUpdate(i, "sku", e.target.value)}
-                  placeholder={skuFallback?.trim() || "—"} className="pf-cell" />
+                <input
+                  value={s.sku || (skuContext ? generateVariantSku({ ...skuContext, size: s.size }) : "")}
+                  onChange={(e) => onUpdate(i, "sku", e.target.value)}
+                  placeholder={skuFallback?.trim() || "—"}
+                  title="Otomatis dari kategori-kain-warna-series-ukuran. Bisa diedit."
+                  className="pf-cell"
+                />
               </label>
             </div>
           </div>
@@ -416,7 +443,8 @@ function PaketVariantList({
                     <input
                       type="number"
                       inputMode="numeric"
-                      value={s.stock || ""}
+                      value={s.stock ?? 0}
+                      onFocus={(e) => e.currentTarget.select()}
                       onChange={(e) => onUpdateField(i, "stock", parseInt(e.target.value) || 0)}
                       placeholder="0"
                       className="pf-cell pf-cell-num"
@@ -460,8 +488,12 @@ function PaketVariantList({
 
                 <label className="pf-size-field pf-f-sku">
                   <span className="pf-size-label">SKU</span>
-                  <input value={s.sku} onChange={(e) => onUpdateField(i, "sku", e.target.value)}
-                    placeholder={skuFallback?.trim() || "—"} className="pf-cell" />
+                  <input
+                    value={s.sku}
+                    onChange={(e) => onUpdateField(i, "sku", e.target.value)}
+                    placeholder={skuFallback?.trim() || "—"}
+                    className="pf-cell"
+                  />
                 </label>
               </div>
             </div>
@@ -511,8 +543,8 @@ export default function TambahProdukPage({
   // Basic fields
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
-  // SKU produk — dipakai ukuran yang kolom SKU-nya dibiarkan kosong, dan itulah
-  // nilai yang tampil sebagai "SKU" di panel detail produk.
+  // SKU dasar produk (tanpa ukuran). Kosong = otomatis dari kategori-kain-warna-series.
+  // SKU tiap varian dihitung per ukuran di SizeGrid.
   const [sku, setSku] = useState("");
   const [category, setCategory] = useState("");
   /** ID baris `product_variants` Cover & Hanger yang dimuat saat Edit (supaya ID-nya tidak putus). */
@@ -590,6 +622,34 @@ export default function TambahProdukPage({
    */
   const mediaColor = isPaket ? paketMediaColor : category === "Thobe" ? "default" : activeColor || "default";
 
+  // ── SKU otomatis ──
+  // SKU produk = dasar tanpa ukuran (KATEGORI-KAIN-WARNA[-SERIES]); SKU varian
+  // menambahkan ukuran. Series Thobe ditambahkan per baris series saat simpan.
+  const kainName = jenisKainList.find((j) => j.id === selectedJenisKainId)?.name || "";
+  const skuColor =
+    category === "Thobe"
+      ? resolveColorName({
+          color: "",
+          productName: name,
+          category,
+          series: activeSeriesTab || selectedSeries[0] || "",
+        })
+      : resolveColorName({
+          color: activeColor || variants[0]?.color || "",
+          productName: name,
+          category,
+          series,
+        });
+  const autoBaseSku =
+    isPaket || !category || !skuColor
+      ? ""
+      : generateBaseSku({
+          category,
+          kain: kainName,
+          color: skuColor,
+          series: category === "Thobe" ? "" : series,
+        });
+
   /** Kalau varian yang dipilih untuk media dihapus/di-rename, jatuh ke varian pertama. */
   useEffect(() => {
     if (!isPaket) return;
@@ -648,7 +708,13 @@ export default function TambahProdukPage({
         setRecommendedPrice(recommendedValue ? String(recommendedValue) : "");
         setCypMicrocopyOverride(microcopyValue || "");
         setUseCustomCypMicrocopy(!!microcopyValue);
-        setSku(product.sku || "");
+        const loadedSku = product.sku || "";
+        const loadedSeriesSuffix = product.category === "Thobe" ? seriesCode(product.series || "") : "";
+        setSku(
+          loadedSeriesSuffix && loadedSku.toUpperCase().endsWith(`-${loadedSeriesSuffix}`)
+            ? loadedSku.slice(0, -(loadedSeriesSuffix.length + 1))
+            : loadedSku,
+        );
         setHpp(product.hpp ? String(product.hpp) : "");
         setProductType(product.product_type === "free_gift" ? "free_gift" : "normal");
 
@@ -1162,7 +1228,7 @@ export default function TambahProdukPage({
     if ((category === "Thobe" || category === "Kandora") && !selectedJenisKainId) e.jenisKain = "Jenis Kain wajib dipilih";
     // Ops: SKU wajib (ditulis ke products.sku). Harga mengikuti aturan admin (tidak
     // dilonggarkan) supaya produk yang dibuat dari ops tetap siap terbit.
-    if (isOps && !sku.trim()) e.sku = "SKU wajib diisi";
+    if (isOps && !sku.trim() && !autoBaseSku) e.sku = "SKU wajib diisi";
 
     if (category === "Thobe") {
       // Multi-series validation
@@ -1223,6 +1289,60 @@ export default function TambahProdukPage({
         if (uploadedMedia.length === 0) e.media = "Minimal 1 media (gambar/video)";
       }
     }
+
+    // SKU per varian harus unik. Kalau bentrok, tampilkan daftarnya di kolom SKU
+    // (jangan menimpa SKU yang sudah diisi manual).
+    if (category) {
+      const variantSkus: string[] = [];
+      const productSkus: string[] = [];
+      if (category === "Thobe") {
+        for (const sn of selectedSeries) {
+          const block = seriesBlocks[sn];
+          if (!block) continue;
+          const seriesColor = resolveColorName({
+            color: block.variants[0]?.color,
+            productName: name,
+            category,
+            series: sn,
+          });
+          const suffix = seriesCode(sn);
+          const typed = stripSeriesSuffix(sku.trim());
+          const productSku = typed
+            ? suffix
+              ? `${typed}-${suffix}`
+              : typed
+            : generateBaseSku({ category, kain: kainName, color: seriesColor, series: sn });
+          if (productSku) productSkus.push(productSku);
+
+          for (const v of block.variants) {
+            const color = resolveColorName({ color: v.color, productName: name, category, series: sn });
+            for (const s of v.sizes) {
+              const value =
+                s.sku.trim() ||
+                generateVariantSku({ category, kain: kainName, color, series: sn, size: s.size });
+              if (value) variantSkus.push(value);
+            }
+          }
+        }
+      } else if (!isPaket) {
+        const base = sku.trim() || autoBaseSku;
+        if (base) productSkus.push(base);
+        for (const v of variants) {
+          const color = resolveColorName({ color: v.color, productName: name, category, series });
+          for (const s of v.sizes) {
+            const value =
+              s.sku.trim() ||
+              generateVariantSku({ category, kain: kainName, color, series, size: s.size });
+            if (value) variantSkus.push(value);
+          }
+        }
+      }
+      const duplicates = [...new Set([...duplicateSkus(productSkus), ...duplicateSkus(variantSkus)])];
+      if (duplicates.length > 0) {
+        e.sku = `SKU dobel: ${duplicates.join(", ")}. Ubah salah satu SKU.`;
+      }
+    }
+
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -1233,10 +1353,10 @@ export default function TambahProdukPage({
     setSaving(true);
 
     try {
-      // Field khusus ops (dipakai laporan internal): tipe produk, HPP, SKU produk, dan
+      // Field khusus ops (dipakai laporan internal): tipe produk, HPP, dan
       // penanda "belum tampil" — produk baru dari ops tidak langsung masuk katalog.
       const opsProductFields = isOps
-        ? { product_type: productType, hpp: parseInt(hpp) || 0, sku: sku.trim() || null, ...(isEdit ? {} : { is_published: false }) }
+        ? { product_type: productType, hpp: parseInt(hpp) || 0, ...(isEdit ? {} : { is_published: false }) }
         : {};
       // Kolom harga: katalog biasa ATAU harga khusus Open Order (lihat `priceTarget`). Dipisah
       // supaya menyimpan dari menu Open Order TIDAK mengubah harga di menu Produk.
@@ -1272,6 +1392,22 @@ export default function TambahProdukPage({
           // yang diisi → kolom TIDAK ditulis supaya nilai lama (mis. 1.200 g) tidak berubah.
           const rowWeight = maxSizeWeight(block.variants.flatMap((v) => v.sizes));
 
+          // SKU dasar produk per series: series ditambahkan otomatis ke SKU dasar.
+          const seriesColor = resolveColorName({
+            color: block.variants[0]?.color,
+            productName: name,
+            category,
+            series: seriesName,
+          });
+          const autoSeriesSku = generateBaseSku({ category, kain: kainName, color: seriesColor, series: seriesName });
+          const seriesSuffix = seriesCode(seriesName);
+          const typedBaseSku = stripSeriesSuffix(sku.trim());
+          const productSku = typedBaseSku
+            ? seriesSuffix
+              ? `${typedBaseSku}-${seriesSuffix}`
+              : typedBaseSku
+            : autoSeriesSku;
+
           const productRow = {
             id: seriesSlug,
             name,
@@ -1295,6 +1431,7 @@ export default function TambahProdukPage({
             badge_type: badgeType || null,
             open_order_enabled: openOrderEnabled,
             ...opsProductFields,
+            sku: productSku || null,
           };
           // Mode harga Open Order: baris produk SUDAH ada → pakai `update`, bukan `upsert`.
           // `upsert` menyiapkan baris INSERT, dan `products.price` NOT NULL membuatnya ditolak
@@ -1315,7 +1452,17 @@ export default function TambahProdukPage({
               stock: isDerived ? 0 : s.stock,  // Derived series: stock lives in base product
               weight: s.weight !== undefined && String(s.weight).trim() !== "" ? parseInt(String(s.weight)) : null,
               price_override: s.priceOverride ? parseInt(s.priceOverride) : null,
-              sku: s.sku.trim() || sku.trim() || null,
+              sku:
+                s.sku.trim() ||
+                generateVariantSku({
+                  category,
+                  kain: kainName,
+                  color: resolveColorName({ color: v.color, productName: name, category, series: seriesName }),
+                  series: seriesName,
+                  size: s.size,
+                }) ||
+                productSku ||
+                null,
               display_order: vi * 100 + si,
               base_product_id: isDerived ? block.baseProductId : null,
               base_size: isDerived ? s.size : null,  // 1:1 mapping: each size maps to same size in base
@@ -1361,6 +1508,7 @@ export default function TambahProdukPage({
         // products.weight = berat ukuran terbesar yang terisi (lihat catatan di cabang Thobe).
         const rowWeight = maxSizeWeight(variants.flatMap((v) => v.sizes));
         const nonThobePrice = cypEnabled ? (parseInt(basePrice) || parseInt(minimumPrice) || 0) : (parseInt(basePrice) || 0);
+        const productSku = sku.trim() || autoBaseSku;
         const productRow = {
           id: slug,
           name,
@@ -1384,6 +1532,7 @@ export default function TambahProdukPage({
           badge_type: badgeType || null,
           open_order_enabled: openOrderEnabled,
           ...opsProductFields,
+          sku: productSku || null,
         };
         // Mode harga Open Order: baris produk sudah ada → `update`, bukan `upsert` (lihat catatan
         // di cabang Thobe: `products.price` NOT NULL menolak baris INSERT dari upsert).
@@ -1405,7 +1554,19 @@ export default function TambahProdukPage({
             stock: s.stock,
             weight: s.weight !== undefined && String(s.weight).trim() !== "" ? parseInt(String(s.weight)) : null,
             price_override: s.priceOverride ? parseInt(s.priceOverride) : null,
-            sku: s.sku.trim() || sku.trim() || null,
+            sku:
+              s.sku.trim() ||
+              (isPaket
+                ? ""
+                : generateVariantSku({
+                    category,
+                    kain: kainName,
+                    color: resolveColorName({ color: v.color, productName: name, category, series }),
+                    series,
+                    size: s.size,
+                  })) ||
+              productSku ||
+              null,
             display_order: vi * 100 + si,
           }))
         );
@@ -1554,9 +1715,21 @@ export default function TambahProdukPage({
                   </div>
                   <div>
                     <label className="pf-label">SKU Produk {isOps && <span className="pf-req">*</span>}</label>
-                    <input value={sku} onChange={(e) => setSku(e.target.value)} className={`pf-input${errors.sku ? " invalid" : ""}`} placeholder="SMQ-THB-JHK" />
+                    <input
+                      value={sku || autoBaseSku}
+                      onChange={(e) => setSku(e.target.value)}
+                      onFocus={(e) => e.currentTarget.select()}
+                      className={`pf-input${errors.sku ? " invalid" : ""}`}
+                      placeholder={autoBaseSku || "SMQ-THB-JHK"}
+                    />
                     {errors.sku && <p className="pf-error">{errors.sku}</p>}
-                    <p className="pf-hint">Tampil di detail produk. Dipakai ukuran yang SKU-nya dikosongkan.</p>
+                    <p className="pf-hint">
+                      SKU dasar tanpa ukuran.{" "}
+                      {category === "Thobe"
+                        ? "Kode series ditambahkan otomatis di SKU tiap series."
+                        : "Ukuran ditambahkan otomatis di SKU varian."}{" "}
+                      Kosongkan untuk memakai otomatis.
+                    </p>
                   </div>
                 </div>
                 {isOps && (() => {
@@ -1951,6 +2124,7 @@ export default function TambahProdukPage({
                               onRemove={(i) => removeSizeFromSeriesBlock(sn, i)}
                               onAdd={() => addSizeToSeriesBlock(sn)}
                               skuFallback={sku}
+                              skuContext={{ category, kain: kainName, series: sn, color: resolveColorName({ color: v0?.color, productName: name, category, series: sn }) }}
                               stockLocked
                               stockLockedLabel={`ikut ${parentSeriesName(block.baseProductId) || "produk dasar"}`}
                             />
@@ -1964,6 +2138,7 @@ export default function TambahProdukPage({
                             onRemove={(i) => removeSizeFromSeriesBlock(sn, i)}
                             onAdd={() => addSizeToSeriesBlock(sn)}
                             skuFallback={sku}
+                            skuContext={{ category, kain: kainName, series: sn, color: resolveColorName({ color: v0?.color, productName: name, category, series: sn }) }}
                           />
                         </div>
                         )}
@@ -2072,6 +2247,12 @@ export default function TambahProdukPage({
                         onRemove={(i) => removeSize(activeColor!, i)}
                         onAdd={() => addSize(activeColor!)}
                         skuFallback={sku}
+                        skuContext={{
+                          category,
+                          kain: kainName,
+                          series,
+                          color: resolveColorName({ color: activeVariant.color, productName: name, category, series }),
+                        }}
                       />
                     </div>
                   )}

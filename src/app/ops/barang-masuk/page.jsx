@@ -4,7 +4,7 @@ import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "@/lib/ops-router";
 import { base44 } from "@/lib/ops-api";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, TrendingUp, Package, Calendar as CalendarIcon, Hash, FileText, X, RotateCcw, Save, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, TrendingUp, Package, Search, Calendar as CalendarIcon, Hash, FileText, X, RotateCcw, Save, Plus, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { usePageUrl } from "@/lib/ops-router";
 import { useToast } from "@/components/ops/ui/use-toast";
@@ -50,6 +50,7 @@ export default function TambahBarangMasuk() {
     items: [emptyItem()],
   });
   const [errors, setErrors] = useState({});
+  const [productSearch, setProductSearch] = useState("");
   const requestIdRef = useRef(null);
 
   const { data: products = [] } = useQuery({
@@ -135,6 +136,7 @@ export default function TambahBarangMasuk() {
   }
 
   function handleProductChange(item, productId) {
+    setProductSearch("");
     if (!productId) {
       updateItem(item.key, {
         product_id: "",
@@ -186,6 +188,7 @@ export default function TambahBarangMasuk() {
   }
 
   function addItem() {
+    setProductSearch("");
     setFormData((prev) => {
       // Jangan biarkan dua baris kosong terbuka sekaligus.
       const blankEditing = prev.items.some(
@@ -265,6 +268,7 @@ export default function TambahBarangMasuk() {
   }
 
   function editItem(key) {
+    setProductSearch("");
     setErrors((prev) => {
       const next = { ...prev };
       delete next[key];
@@ -346,6 +350,7 @@ export default function TambahBarangMasuk() {
   }
 
   function handleReset() {
+    setProductSearch("");
     requestIdRef.current = null;
     setFormData({ date: today(), notes: "", items: [emptyItem()] });
     setErrors({});
@@ -457,6 +462,15 @@ export default function TambahBarangMasuk() {
               <div className="space-y-4">
                 {formData.items.map((item, index) => {
                   const product = productOf(item);
+                  const searchQuery = productSearch.trim().toLowerCase();
+                  const matchedProducts = searchQuery
+                    ? pickerProducts.filter((p) => `${p.name} ${p.sku ?? ""}`.toLowerCase().includes(searchQuery))
+                    : pickerProducts;
+                  const selectedProduct = pickerProducts.find((p) => p.id === item.product_id);
+                  const productOptions =
+                    selectedProduct && !matchedProducts.some((p) => p.id === selectedProduct.id)
+                      ? [selectedProduct, ...matchedProducts]
+                      : matchedProducts;
                   const variant = variantOf(item);
                   const groups = variantsOf(item.product_id);
                   const needsVariant = groups.length > 1;
@@ -496,6 +510,18 @@ export default function TambahBarangMasuk() {
                             Pilih Produk <span className="text-red-500">*</span>
                           </label>
                           <div className="relative">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10" size={17} />
+                            <input
+                              type="text"
+                              value={productSearch}
+                              onChange={(e) => setProductSearch(e.target.value)}
+                              onKeyDown={(e) => { if (e.key === "Enter") e.preventDefault(); }}
+                              placeholder="Cari produk (nama atau SKU)…"
+                              className="w-full pl-11 pr-4 py-2.5 bg-white border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all font-inter"
+                              style={{ fontSize: "14px", fontWeight: 600 }}
+                            />
+                          </div>
+                          <div className="relative">
                             <Package className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10" size={19} />
                             <select
                               required
@@ -505,7 +531,12 @@ export default function TambahBarangMasuk() {
                               style={{ fontSize: "15px", fontWeight: 600 }}
                             >
                               <option value="">Pilih produk...</option>
-                              {pickerProducts.map((p) => (
+                              {productOptions.length === 0 ? (
+                                <option value="" disabled>
+                                  Tidak ada produk yang cocok
+                                </option>
+                              ) : null}
+                              {productOptions.map((p) => (
                                 <option key={p.id} value={p.id}>
                                   {p.name} ({p.sku})
                                 </option>
