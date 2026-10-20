@@ -6,7 +6,7 @@
  * SKU dasar (tanpa ukuran): KATEGORI-KAIN-WARNA[-SERIES]
  *
  * Segmen mengikuti kategori: Kandora tanpa series (KND-B01-SBL-L), Koko/Vest
- * warna+ukuran, Kabak/Cover & Hanger paket (tidak dibuat SKU otomatis).
+ * warna+ukuran, Kabak/Cover & Hanger warna saja (KBK-K01 / CVH-SHC).
  *
  * Semua mapping sengaja dikumpulkan di sini supaya menambah warna/kategori/series
  * tidak perlu menyebar ke komponen. SKU yang sudah diisi manual tidak ditimpa:
@@ -40,15 +40,16 @@ type SkuSegment = "kain" | "warna" | "series" | "ukuran";
  *  - Thobe: kain + warna + series + ukuran
  *  - Kandora: kain + warna + ukuran (tanpa series)
  *  - Koko/Vest: warna + ukuran (form tidak meminta kain/series)
- *  - Kabak / Cover & Hanger: paket (ALL SIZE) → tidak dibuat SKU varian otomatis
+ *  - Kabak / Cover & Hanger: warna saja (nama varian, tanpa ukuran)
  */
 const CATEGORY_SEGMENTS: Record<string, SkuSegment[]> = {
   THOBE: ["kain", "warna", "series", "ukuran"],
   KANDORA: ["kain", "warna", "ukuran"],
   KOKO: ["warna", "ukuran"],
   VEST: ["warna", "ukuran"],
-  KABAK: [],
-  "COVER HANGER": [],
+  // Paket: tidak punya kain/series/ukuran — hanya nama varian (warna).
+  KABAK: ["warna"],
+  "COVER HANGER": ["warna"],
 };
 
 const DEFAULT_SEGMENTS: SkuSegment[] = ["kain", "warna", "series", "ukuran"];
@@ -86,6 +87,19 @@ const COLOR_CODES: Record<string, string> = {
   GREEN: "GRN",
   PURPLE: "PRP",
   PINK: "PNK",
+  LATTE: "LAT",
+  // Warna gabungan / nama varian khusus — selalu 3 karakter, unik antar warna.
+  "GREY INDIGO": "GIN",
+  "CHARCOAL GREY": "CHR",
+  "SOFT GREY": "SGY",
+  "BROKEN WHITE": "BWH",
+  "COFFEE BROWN": "CFB",
+  "DEEP MAROON": "DMR",
+  "SET HANGER COVER": "SHC",
+  "KABAK 01": "K01",
+  "KABAK 02": "K02",
+  "KABAK 04": "K04",
+  "KABAK 12": "K12",
 };
 
 /** Ukuran yang dianggap varian nyata (bukan ALL SIZE / nama paket). */
@@ -112,8 +126,9 @@ export function kainCode(kain: unknown): string {
 }
 
 /**
- * Warna 3 huruf. Warna gabungan digabung tanpa strip:
- * "Grey Indigo" → GRY + IND = GRYIND.
+ * Warna 3 karakter. Warna gabungan memakai mapping eksplisit (mis.
+ * "Grey Indigo" → GIN, "Charcoal Grey" → CHR); warna gabungan baru yang belum
+ * dipetakan tetap dipotong 3 karakter (inisial kata + huruf berikutnya).
  */
 export function colorCode(color: unknown): string {
   const key = clean(color);
@@ -122,7 +137,11 @@ export function colorCode(color: unknown): string {
 
   const words = key.split(" ");
   if (words.length > 1) {
-    return words.map((word) => COLOR_CODES[word] || compact(word).slice(0, 3)).join("");
+    // Warna gabungan yang belum dipetakan tetap 3 karakter: inisial tiap kata
+    // lalu dilengkapi huruf dari kata-kata berikutnya.
+    const initials = words.map((word) => word[0]).join("");
+    const rest = words.map((word) => word.slice(1)).join("");
+    return (initials + rest).slice(0, 3);
   }
   return compact(key).slice(0, 3);
 }
@@ -189,9 +208,9 @@ export function generateVariantSku(input: {
   const segments = segmentsFor(input.category);
   const category = categoryCode(input.category);
   const color = colorCode(input.color);
-  if (!segments.length || !segments.includes("ukuran") || !category || !color || !isRealSize(input.size)) {
-    return "";
-  }
+  if (!segments.length || !segments.includes("warna") || !category || !color) return "";
+  const includesSize = segments.includes("ukuran");
+  if (includesSize && !isRealSize(input.size)) return "";
 
   const values: Record<SkuSegment, string> = {
     kain: kainCode(input.kain),

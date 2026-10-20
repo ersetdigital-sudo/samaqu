@@ -358,6 +358,7 @@ function PaketVariantList({
   template,
   placeholder,
   skuFallback,
+  skuContext,
   onUpdateName,
   onUpdateField,
   onAdd,
@@ -369,6 +370,8 @@ function PaketVariantList({
   template: string[];
   placeholder: string;
   skuFallback?: string;
+  /** Konteks kategori untuk SKU otomatis paket: KATEGORI-WARNA (tanpa ukuran). */
+  skuContext?: { category: string };
   onUpdateName: (idx: number, value: string) => void;
   onUpdateField: (idx: number, field: keyof SizeRow, value: string | number) => void;
   onAdd: () => void;
@@ -489,9 +492,10 @@ function PaketVariantList({
                 <label className="pf-size-field pf-f-sku">
                   <span className="pf-size-label">SKU</span>
                   <input
-                    value={s.sku}
+                    value={s.sku || (skuContext ? generateVariantSku({ ...skuContext, color: v.color, size: s.size }) : "")}
                     onChange={(e) => onUpdateField(i, "sku", e.target.value)}
                     placeholder={skuFallback?.trim() || "—"}
+                    title="Otomatis dari kategori + nama varian. Bisa diedit."
                     className="pf-cell"
                   />
                 </label>
@@ -641,7 +645,7 @@ export default function TambahProdukPage({
           series,
         });
   const autoBaseSku =
-    isPaket || !category || !skuColor
+    !category || !skuColor
       ? ""
       : generateBaseSku({
           category,
@@ -1324,7 +1328,7 @@ export default function TambahProdukPage({
             }
           }
         }
-      } else if (!isPaket) {
+      } else {
         const base = sku.trim() || autoBaseSku;
         if (base) productSkus.push(base);
         for (const v of variants) {
@@ -1556,15 +1560,13 @@ export default function TambahProdukPage({
             price_override: s.priceOverride ? parseInt(s.priceOverride) : null,
             sku:
               s.sku.trim() ||
-              (isPaket
-                ? ""
-                : generateVariantSku({
-                    category,
-                    kain: kainName,
-                    color: resolveColorName({ color: v.color, productName: name, category, series }),
-                    series,
-                    size: s.size,
-                  })) ||
+              generateVariantSku({
+                category,
+                kain: kainName,
+                color: resolveColorName({ color: v.color, productName: name, category, series }),
+                series,
+                size: s.size,
+              }) ||
               productSku ||
               null,
             display_order: vi * 100 + si,
@@ -1727,7 +1729,9 @@ export default function TambahProdukPage({
                       SKU dasar tanpa ukuran.{" "}
                       {category === "Thobe"
                         ? "Kode series ditambahkan otomatis di SKU tiap series."
-                        : "Ukuran ditambahkan otomatis di SKU varian."}{" "}
+                        : isPaket
+                          ? "Kode varian ditambahkan otomatis di SKU tiap varian."
+                          : "Ukuran ditambahkan otomatis di SKU varian."}{" "}
                       Kosongkan untuk memakai otomatis.
                     </p>
                   </div>
@@ -2175,6 +2179,7 @@ export default function TambahProdukPage({
                     template={paketTemplate}
                     placeholder={paketPlaceholder}
                     skuFallback={sku}
+                    skuContext={{ category }}
                     onUpdateName={(i, value) => {
                       const oldName = String(variants[i]?.color || "").trim();
                       const nextName = String(value || "").trim();
