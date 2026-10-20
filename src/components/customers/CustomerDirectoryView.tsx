@@ -40,6 +40,40 @@ function money(n: number) {
   return "Rp " + (n || 0).toLocaleString("id-ID");
 }
 
+const initialsOf = (name: string) =>
+  name.trim().split(/\s+/).slice(0, 2).map((w) => w.charAt(0).toUpperCase()).join("") || "?";
+
+/** Badge status pelanggan — dipakai versi kartu (mobile) & tabel (desktop). */
+function CustomerBadges({ c }: { c: DirectoryCustomer }) {
+  return (
+    <>
+      {!c.registered && (
+        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+          Belum daftar
+        </span>
+      )}
+      {hanyaPesananBatal(c) && (
+        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300">
+          Hanya pesanan batal
+        </span>
+      )}
+      {c.addressIncomplete && (
+        <span
+          className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
+          title="Kecamatan tidak tersimpan di pesanannya (data lama checkout) — perlu dilengkapi manual"
+        >
+          Alamat belum lengkap
+        </span>
+      )}
+      {!c.hasAddress && (
+        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500">
+          Belum ada alamat
+        </span>
+      )}
+    </>
+  );
+}
+
 function parseBirth(iso: string) {
   const [y, m, d] = iso.split("-").map(Number);
   if (!y || !m || !d) return null;
@@ -61,7 +95,7 @@ function exportCsv(rows: DirectoryCustomer[]) {
 }
 
 function CustomerCard({ c, currentMonth, onDetail }: { c: DirectoryCustomer; currentMonth: number; onDetail: () => void }) {
-  const initials = c.name.trim().split(/\s+/).slice(0, 2).map((w) => w.charAt(0).toUpperCase()).join("") || "?";
+  const initials = initialsOf(c.name);
   const b = c.birthDate ? parseBirth(c.birthDate) : null;
   const isBirthdayMonth = !!b && b.m === currentMonth;
   const isBirthdayToday = !!b && b.m === currentMonth && b.d === new Date().getDate();
@@ -78,29 +112,7 @@ function CustomerCard({ c, currentMonth, onDetail }: { c: DirectoryCustomer; cur
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="text-sm lg:text-base font-bold truncate text-slate-900 dark:text-white">{c.name}</h3>
-                {!c.registered && (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                    Belum daftar
-                  </span>
-                )}
-                {hanyaPesananBatal(c) && (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300">
-                    Hanya pesanan batal
-                  </span>
-                )}
-                {c.addressIncomplete && (
-                  <span
-                    className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
-                    title="Kecamatan tidak tersimpan di pesanannya (data lama checkout) — perlu dilengkapi manual"
-                  >
-                    Alamat belum lengkap
-                  </span>
-                )}
-                {!c.hasAddress && (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500">
-                    Belum ada alamat
-                  </span>
-                )}
+                <CustomerBadges c={c} />
               </div>
               <p className="text-xs flex items-center gap-1.5 mt-0.5 text-slate-500 dark:text-slate-400">
                 <Phone size={12} strokeWidth={1.9} /> {c.whatsapp || "Tanpa nomor"}
@@ -313,11 +325,106 @@ export default function CustomerDirectoryView({
           ) : null}
         </div>
       ) : (
-        <div className="grid gap-3 xl:grid-cols-2">
-          {visible.map((c) => (
-            <CustomerCard key={c.key} c={c} currentMonth={currentMonth} onDetail={() => setSelected(c)} />
-          ))}
-        </div>
+        <>
+          {/* Desktop/tablet: tabel padat (tanpa garis vertikal/zebra) supaya angka antar
+              pelanggan mudah dibandingkan. Detail tetap lewat drawer yang sama. */}
+          <div className="hidden lg:block rounded-2xl border border-slate-200 bg-white overflow-hidden dark:border-slate-800 dark:bg-[#1a1d28]">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                  <th className="px-4 py-2.5 font-black">Pelanggan</th>
+                  <th className="px-3 py-2.5 font-black">Kota</th>
+                  <th className="px-3 py-2.5 font-black text-right">Pesanan</th>
+                  <th className="px-3 py-2.5 font-black text-right">Total Belanja</th>
+                  <th className="hidden xl:table-cell px-3 py-2.5 font-black">Terakhir Belanja</th>
+                  <th className="hidden xl:table-cell px-3 py-2.5 font-black">Ulang Tahun</th>
+                  <th className="px-4 py-2.5" aria-label="Detail" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                {visible.map((c) => {
+                  const b = c.birthDate ? parseBirth(c.birthDate) : null;
+                  const isBirthdayMonth = !!b && b.m === currentMonth;
+                  const isBirthdayToday = !!b && b.m === currentMonth && b.d === new Date().getDate();
+                  return (
+                    <tr
+                      key={c.key}
+                      onClick={() => setSelected(c)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          setSelected(c);
+                        }
+                      }}
+                      tabIndex={0}
+                      className="cursor-pointer hover:bg-slate-50 focus:bg-slate-50 focus:outline-none dark:hover:bg-slate-800/60 dark:focus:bg-slate-800/60"
+                    >
+                      <td className="px-4 py-2.5">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span className="w-8 h-8 shrink-0 rounded-full grid place-items-center text-[11px] font-extrabold text-white bg-slate-900 dark:bg-slate-700">
+                            {initialsOf(c.name)}
+                          </span>
+                          <div className="min-w-0">
+                            <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{c.name}</p>
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">{c.whatsapp || "Tanpa nomor"}</p>
+                            <div className="mt-1 flex flex-wrap items-center gap-1">
+                              <CustomerBadges c={c} />
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <p
+                          className="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate max-w-[130px]"
+                          title={c.cities.join(", ")}
+                        >
+                          {c.cities[0] || "-"}
+                          {c.cities.length > 1 ? (
+                            <span className="text-slate-400 dark:text-slate-500"> +{c.cities.length - 1}</span>
+                          ) : null}
+                        </p>
+                      </td>
+                      <td className="px-3 py-2.5 text-right whitespace-nowrap">
+                        <p className="text-sm font-bold text-slate-900 dark:text-white">{c.ordersCount}</p>
+                        {c.ordersCount > c.paidOrdersCount ? (
+                          <p className="text-[10px] text-slate-400 dark:text-slate-500">{c.paidOrdersCount} lunas</p>
+                        ) : null}
+                      </td>
+                      <td className="px-3 py-2.5 text-right whitespace-nowrap">
+                        <p className="text-sm font-extrabold text-slate-900 dark:text-white">{money(c.totalSpend)}</p>
+                      </td>
+                      <td className="hidden xl:table-cell px-3 py-2.5 whitespace-nowrap">
+                        <p className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                          {c.lastOrderAt ? formatDate(c.lastOrderAt) : "-"}
+                        </p>
+                      </td>
+                      <td className="hidden xl:table-cell px-3 py-2.5 whitespace-nowrap">
+                        <p
+                          className={`text-xs font-semibold ${
+                            isBirthdayMonth ? "text-amber-600 dark:text-amber-400" : "text-slate-600 dark:text-slate-300"
+                          }`}
+                        >
+                          {b ? `${b.d} ${BULAN_SHORT[b.m - 1]} ${b.y}` : "-"}
+                          {isBirthdayToday ? " 🎉" : ""}
+                        </p>
+                      </td>
+                      <td className="px-4 py-2.5 text-right">
+                        <ChevronRight size={16} strokeWidth={2} className="inline text-slate-400" />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile: tetap kartu, bukan tabel. */}
+          <div className="grid gap-3 lg:hidden">
+            {visible.map((c) => (
+              <CustomerCard key={c.key} c={c} currentMonth={currentMonth} onDetail={() => setSelected(c)} />
+            ))}
+          </div>
+        </>
       )}
 
       <CustomerDetailDrawer customer={selected} onClose={() => setSelected(null)} />
