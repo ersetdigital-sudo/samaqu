@@ -109,13 +109,16 @@ export async function POST(request: NextRequest) {
 
     // ── Lapis 2: verifikasi ulang ke API Mayar (body tidak dipercaya) ──
     let verifiedPaid = false;
+    let txId = transactionId;
     const refId = order.payment_ref || invoiceId;
     if (refId) {
       const inv = await getMayarInvoice(refId);
+      // invoice detail menyimpan transactionId — dipakai membaca channel pembayaran.
+      if (!txId) txId = asString(inv.data?.transactionId) || asString(inv.data?.transactions?.[0]?.id);
       const status = asString(inv.data?.status).toLowerCase();
       if (inv.ok && PAID_STATUSES.has(status)) verifiedPaid = true;
-      else if (!inv.ok && transactionId) {
-        const tx = await getMayarTransaction(transactionId);
+      else if (!inv.ok && txId) {
+        const tx = await getMayarTransaction(txId);
         if (tx.ok && PAID_STATUSES.has(asString(tx.data?.status).toLowerCase())) verifiedPaid = true;
       }
     }
@@ -125,11 +128,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ignored: true });
     }
 
+    // Channel yang dipilih customer (QRIS/VA/e-wallet). Body webhook kadang membawanya,
+    // kadang `null` — jadi cadangkan ke detail transaksi. Best-effort: gagal baca channel
+    // tidak boleh menahan penandaan lunas.
+    let channel = asString(data.paymentMethod).toLowerCase();
+    if (!channel && txId) {
+      const tx = await getMayarTransaction(txId);
+      if (tx.ok) channel = asString(tx.data?.paymentMethod).toLowerCase();
+    }
+
     // ── Tandai lunas (atomik: hanya proses pertama yang menang) ──
     // `paid_at is null` di WHERE membuat dua webhook paralel tidak bisa dua-duanya lolos.
     const paidAt = new Date().toISOString();
     const patch: Record<string, unknown> = { payment_status: "paid", paid_at: paidAt };
     if (order.status === "pending") patch.status = "diproses";
+    if (channel) patch.payment_channel = channel;
     const { data: paidRows, error: updateError } = await supabaseAdmin
       .from("orders")
       .update(patch)

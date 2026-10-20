@@ -47,6 +47,8 @@ interface Order {
   shipping_notes: string;
   shipping_method: string;
   payment_method: string;
+  /** Channel gateway (mayar), mis. "qris" / "va/bni" — rincian metode pembayaran online. */
+  payment_channel?: string | null;
   subtotal: number;
   shipping_cost: number;
   discount: number;

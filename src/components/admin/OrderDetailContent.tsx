@@ -68,6 +68,8 @@ export interface AdminDetailOrder {
   shipping_cost: number;
   shipping_method?: string | null;
   payment_method?: string | null;
+  /** Channel gateway (mayar), mis. "qris" / "va/bni" — rincian metode pembayaran online. */
+  payment_channel?: string | null;
   /** Pembayaran online (Mayar): provider, link bayar, status, dan jam lunas. */
   payment_provider?: string | null;
   payment_url?: string | null;

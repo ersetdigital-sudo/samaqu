@@ -13,6 +13,7 @@ import { NEUTRAL_ITEM_PHOTO } from "@/lib/order-photo";
 import { isPaketItem, variantName } from "@/lib/item-label";
 import { ORDER_STAGE_LABEL, SHIPPING_STATUS_LABEL, orderStage } from "@/lib/order-flow";
 import { usePaymentMethodName } from "@/lib/use-payment-methods";
+import { paymentChannelLabel } from "@/lib/payment-channel";
 import { formatWeightExact } from "@/lib/shipping-weight";
 import { formatTrackingTime } from "@/lib/jnt/track-status";
 import { formatRupiah, formatTanggalJamID } from "@/components/ops/transaksi/transaksi-format";
@@ -56,6 +57,11 @@ export default function OrderDetailPanel({
     .filter(Boolean)
     .join(", ");
   const { name: paymentName } = usePaymentMethodName(order.payment_method);
+  // Rincian channel gateway (mis. Mayar → "QRIS" / "BNI Virtual Account"), kalau sudah tercatat.
+  const channelLabel = paymentChannelLabel(order.payment_channel);
+  const paymentDetail = paymentName
+    ? `${paymentName}${channelLabel ? ` · ${channelLabel}` : ""}`
+    : channelLabel || "-";
   const accent = isMono ? "#0f172a" : "var(--panel-accent, #c2255c)";
   const minAccent = isMono ? "#475569" : "#B4552F";
 
@@ -224,7 +230,7 @@ export default function OrderDetailPanel({
         <div className="sh">
           <CreditCard />
           <b>Metode Pembayaran</b>
-          <span style={{ marginLeft: "auto", color: isMono ? "#0f172a" : "#6b4b5a", fontWeight: 600 }}>{paymentName || "-"}</span>
+          <span style={{ marginLeft: "auto", color: isMono ? "#0f172a" : "#6b4b5a", fontWeight: 600 }}>{paymentDetail}</span>
         </div>
       </div>
 
