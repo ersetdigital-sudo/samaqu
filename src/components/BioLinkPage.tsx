@@ -127,11 +127,11 @@ export default function BioLinkPage({ content }: { content: BioPageContent }) {
           {/* Hero — Best seller */}
           <a
             href={hero.href}
-            className="rv tilt group relative mt-5 block overflow-hidden rounded-[28px] bg-[#0B0B0B] text-white shadow-[0_24px_50px_-24px_rgba(0,0,0,.6)]"
+            className="rv tilt group relative mt-5 block aspect-[4/5] overflow-hidden rounded-[28px] bg-[#0B0B0B] text-white shadow-[0_24px_50px_-24px_rgba(0,0,0,.6)]"
           >
             {hasVideo ? (
               <video
-                className="h-[420px] w-full object-cover object-top"
+                className="h-full w-full object-cover object-top"
                 src={hero.video_url}
                 poster={videoPoster || undefined}
                 autoPlay
@@ -145,7 +145,7 @@ export default function BioLinkPage({ content }: { content: BioPageContent }) {
               <img
                 src={hero.image_url}
                 alt={hero.title}
-                className="bio-kb h-[420px] w-full object-cover object-top transition duration-700 group-hover:scale-105"
+                className="bio-kb h-full w-full object-cover object-top transition duration-700 group-hover:scale-105"
               />
             )}
             <div className="absolute inset-0 z-20 bg-gradient-to-t from-black via-black/30 to-transparent" />
