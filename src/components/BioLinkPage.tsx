@@ -1,5 +1,16 @@
 import type { BioPageContent } from "@/lib/bio-page-content";
 
+/** Video showcase untuk bio versi 2 (tanpa foto katalog). */
+const DEFAULT_BIO_VIDEO_URL =
+  "https://res.cloudinary.com/ddbq1mlsc/video/upload/v1792504744/1000375934_emagkl.mp4";
+
+type BioLinkPageProps = {
+  content: BioPageContent;
+  /** v1 = foto katalog (default), v2 = video showcase. */
+  variant?: "v1" | "v2";
+  videoUrl?: string;
+};
+
 const ICON_PATHS: Record<string, string[]> = {
   ruler: [
     "M3 16.5L16.5 3 21 7.5 7.5 21z",
@@ -79,8 +90,13 @@ function ArrowUpRight({ size = 16 }: { size?: number }) {
   );
 }
 
-export default function BioLinkPage({ content }: { content: BioPageContent }) {
+export default function BioLinkPage({
+  content,
+  variant = "v1",
+  videoUrl = DEFAULT_BIO_VIDEO_URL,
+}: BioLinkPageProps) {
   const { logo_url, eyebrow, description, hero, categories, belanja, rows, guarantee, socials, footer, marquee } = content;
+  const isVideo = variant === "v2";
 
   return (
     <>
@@ -113,11 +129,24 @@ export default function BioLinkPage({ content }: { content: BioPageContent }) {
             href={hero.href}
             className="bio-tilt group relative mt-5 block overflow-hidden rounded-[28px] bg-[#0B0B0B] text-white shadow-[0_24px_50px_-24px_rgba(0,0,0,.6)]"
           >
-            <img
-              src={hero.image_url}
-              alt={hero.title}
-              className="bio-kb h-[420px] w-full object-cover object-top transition duration-700 group-hover:scale-105"
-            />
+            {isVideo ? (
+              <video
+                className="h-[420px] w-full object-cover"
+                src={videoUrl}
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="auto"
+                aria-hidden="true"
+              />
+            ) : (
+              <img
+                src={hero.image_url}
+                alt={hero.title}
+                className="bio-kb h-[420px] w-full object-cover object-top transition duration-700 group-hover:scale-105"
+              />
+            )}
             <div
               className="absolute inset-0"
               style={{
@@ -166,33 +195,56 @@ export default function BioLinkPage({ content }: { content: BioPageContent }) {
               )}
             </div>
             <div className="mt-3 grid grid-cols-2 gap-2.5">
-              {categories.items.map((cat, i) => (
-                <a
-                  key={`${cat.label}-${i}`}
-                  href={cat.href}
-                  className="group relative block aspect-square overflow-hidden rounded-2xl bg-white"
-                >
-                  <img
-                    src={cat.image_url}
-                    alt={cat.label}
-                    className="h-full w-full object-cover transition duration-500 group-hover:scale-110"
-                    style={{ objectPosition: cat.position || "50% 50%" }}
-                  />
-                  <div
-                    className="absolute inset-0"
-                    style={{
-                      background:
-                        "linear-gradient(to top, rgba(0,0,0,.7), transparent)",
-                    }}
-                  />
-                  <div className="absolute inset-x-3 bottom-3 flex items-center justify-between text-white">
-                    <span className="font-bold">{cat.label}</span>
-                    <span className="grid h-7 w-7 place-items-center rounded-full bg-white/20 backdrop-blur">
-                      <ArrowUpRight />
-                    </span>
-                  </div>
-                </a>
-              ))}
+              {categories.items.map((cat, i) => {
+                if (isVideo) {
+                  return (
+                    <a
+                      key={`${cat.label}-${i}`}
+                      href={cat.href}
+                      className="bio-cat-v2 group relative flex aspect-square flex-col justify-between overflow-hidden rounded-2xl border border-white/80 bg-white/70 p-4 font-semibold backdrop-blur transition duration-300 hover:-translate-y-1 hover:bg-[#0B0B0B] hover:text-white hover:shadow-[0_18px_40px_-18px_rgba(0,0,0,.5)]"
+                    >
+                      <span className="text-[10px] font-bold tracking-[.2em] opacity-40">
+                        {String(i + 1).padStart(2, "0")}
+                      </span>
+                      <span className="flex items-end justify-between gap-2">
+                        <span className="text-xl font-extrabold leading-none tracking-[-.03em]">
+                          {cat.label}
+                        </span>
+                        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-black/5 transition group-hover:bg-white/15">
+                          <ArrowUpRight />
+                        </span>
+                      </span>
+                    </a>
+                  );
+                }
+                return (
+                  <a
+                    key={`${cat.label}-${i}`}
+                    href={cat.href}
+                    className="group relative block aspect-square overflow-hidden rounded-2xl bg-white"
+                  >
+                    <img
+                      src={cat.image_url}
+                      alt={cat.label}
+                      className="h-full w-full object-cover transition duration-500 group-hover:scale-110"
+                      style={{ objectPosition: cat.position || "50% 50%" }}
+                    />
+                    <div
+                      className="absolute inset-0"
+                      style={{
+                        background:
+                          "linear-gradient(to top, rgba(0,0,0,.7), transparent)",
+                      }}
+                    />
+                    <div className="absolute inset-x-3 bottom-3 flex items-center justify-between text-white">
+                      <span className="font-bold">{cat.label}</span>
+                      <span className="grid h-7 w-7 place-items-center rounded-full bg-white/20 backdrop-blur">
+                        <ArrowUpRight />
+                      </span>
+                    </div>
+                  </a>
+                );
+              })}
             </div>
           </section>
 
