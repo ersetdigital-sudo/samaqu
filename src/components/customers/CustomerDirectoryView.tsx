@@ -326,8 +326,8 @@ export default function CustomerDirectoryView({
                   <th className="px-3 py-2.5 font-black">Kota</th>
                   <th className="px-3 py-2.5 font-black text-right">Pesanan</th>
                   <th className="px-3 py-2.5 font-black text-right">Total Belanja</th>
-                  <th className="hidden xl:table-cell px-3 py-2.5 font-black">Terakhir Belanja</th>
-                  <th className="hidden xl:table-cell px-3 py-2.5 font-black">Ulang Tahun</th>
+                  <th className="hidden xl:table-cell px-3 py-2.5 font-black whitespace-nowrap">Terakhir Belanja</th>
+                  <th className="hidden xl:table-cell px-3 py-2.5 font-black whitespace-nowrap">Ulang Tahun</th>
                   <th className="px-4 py-2.5" aria-label="Detail" />
                 </tr>
               </thead>
