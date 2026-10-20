@@ -102,7 +102,7 @@ export async function GET(req: NextRequest) {
     // `weight` = berat produk (gram), fallback kalau berat per ukuran kosong.
     admin.from("products").select("id, name, series, price, hpp, category, weight, jenis_kain(name)"),
     // `weight` = berat per ukuran (gram) — sumber utama yang sama dengan cek ongkir & resi.
-    admin.from("product_variants").select("product_id, color, size, stock, price_override, hex, display_order, base_product_id, weight"),
+    admin.from("product_variants").select("product_id, color, size, stock, sku, price_override, hex, display_order, base_product_id, weight"),
   ]);
 
   const byId: Record<string, any> = {};
@@ -130,6 +130,8 @@ export async function GET(req: NextRequest) {
         price: prod.price ?? 0,
         hpp: prod.hpp ?? 0,
         stock: {},
+        /** SKU per ukuran (baris `product_variants`), dipakai form Barang Masuk. */
+        skus: {},
         /** Harga per ukuran (price_override → fallback harga produk). */
         prices: {},
         /** Berat per ukuran (gram) — dipakai ringkasan transaksi supaya angkanya sama
@@ -147,6 +149,7 @@ export async function GET(req: NextRequest) {
     const size = (r.size || "").toUpperCase();
     if (size) {
       grouped[key].stock[size] = Number(r.stock) || 0;
+      grouped[key].skus[size] = String(r.sku || "").trim();
       const override = Number(r.price_override);
       grouped[key].prices[size] = override > 0 ? override : Number(grouped[key].price) || 0;
     }

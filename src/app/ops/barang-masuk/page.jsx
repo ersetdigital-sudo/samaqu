@@ -4,12 +4,13 @@ import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "@/lib/ops-router";
 import { base44 } from "@/lib/ops-api";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, TrendingUp, Package, Search, Calendar as CalendarIcon, Hash, FileText, X, RotateCcw, Save, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, TrendingUp, Calendar as CalendarIcon, Hash, FileText, X, RotateCcw, Save, Plus, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { usePageUrl } from "@/lib/ops-router";
 import { useToast } from "@/components/ops/ui/use-toast";
 import { SIZES } from "@/lib/ops-variants";
 import { isPaketKategori, PAKET_SIZE, variantName } from "@/lib/item-label";
+import ProductCombobox from "@/components/ops/barang-masuk/ProductCombobox";
 
 const today = () => format(new Date(), "yyyy-MM-dd");
 
@@ -38,6 +39,34 @@ function stockAt(variant, size) {
   return Number(src[key] ?? 0) || 0;
 }
 
+function sizesFor(variant) {
+  const src = variant?.stock_efektif ?? variant?.stock ?? {};
+  const extras = Object.keys(src).filter(
+    (key) => !SIZES.some((size) => String(size).toUpperCase() === String(key).toUpperCase())
+  );
+  return [...SIZES, ...extras].sort((a, b) => {
+    const indexA = SIZES.indexOf(String(a).toUpperCase());
+    const indexB = SIZES.indexOf(String(b).toUpperCase());
+    if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+    if (indexA !== -1) return -1;
+    if (indexB !== -1) return 1;
+    return String(a).localeCompare(String(b));
+  });
+}
+
+function focusStep(itemKey, step) {
+  if (typeof document === "undefined") return;
+  setTimeout(() => {
+    const selector =
+      step === "color"
+        ? `[data-stockin-color="${itemKey}"]`
+        : step === "size"
+          ? `[data-stockin-size="${itemKey}"]`
+          : `[data-stockin-qty="${itemKey}"]`;
+    document.querySelector(selector)?.focus();
+  }, 0);
+}
+
 export default function TambahBarangMasuk() {
   const navigate = useNavigate();
   const pageUrl = usePageUrl();
@@ -50,8 +79,8 @@ export default function TambahBarangMasuk() {
     items: [emptyItem()],
   });
   const [errors, setErrors] = useState({});
-  const [productSearch, setProductSearch] = useState("");
   const requestIdRef = useRef(null);
+  const addButtonRef = useRef(null);
 
   const { data: products = [] } = useQuery({
     queryKey: ["products"],
@@ -136,7 +165,6 @@ export default function TambahBarangMasuk() {
   }
 
   function handleProductChange(item, productId) {
-    setProductSearch("");
     if (!productId) {
       updateItem(item.key, {
         product_id: "",
@@ -172,6 +200,7 @@ export default function TambahBarangMasuk() {
         ? product?.stok_bersama?.mengikuti || effectiveProduct?.series || effectiveProduct?.name || baseId
         : "",
     });
+    focusStep(item.key, groups.length > 1 ? "color" : pick ? (paket ? "qty" : "size") : "color");
   }
 
   function handleVariantChange(item, variantId) {
@@ -181,6 +210,12 @@ export default function TambahBarangMasuk() {
       variant_id: variantId,
       size: paket ? PAKET_SIZE : "",
     });
+    focusStep(item.key, paket ? "qty" : "size");
+  }
+
+  function handleSizeChange(item, size) {
+    updateItem(item.key, { size });
+    focusStep(item.key, "qty");
   }
 
   function handleQtyChange(item, value) {
@@ -188,7 +223,6 @@ export default function TambahBarangMasuk() {
   }
 
   function addItem() {
-    setProductSearch("");
     setFormData((prev) => {
       // Jangan biarkan dua baris kosong terbuka sekaligus.
       const blankEditing = prev.items.some(
@@ -265,10 +299,10 @@ export default function TambahBarangMasuk() {
         row.key === item.key ? { ...row, editing: false } : row
       ),
     }));
+    setTimeout(() => addButtonRef.current?.focus(), 0);
   }
 
   function editItem(key) {
-    setProductSearch("");
     setErrors((prev) => {
       const next = { ...prev };
       delete next[key];
@@ -350,7 +384,6 @@ export default function TambahBarangMasuk() {
   }
 
   function handleReset() {
-    setProductSearch("");
     requestIdRef.current = null;
     setFormData({ date: today(), notes: "", items: [emptyItem()] });
     setErrors({});
@@ -391,8 +424,8 @@ export default function TambahBarangMasuk() {
         </div>
 
         <form onSubmit={handleSubmit} noValidate className="space-y-6">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="bg-gradient-to-r from-green-500 to-emerald-600 px-6 py-5">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200">
+            <div className="bg-gradient-to-r from-green-500 to-emerald-600 px-6 py-5 rounded-t-2xl">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
                   <TrendingUp size={24} className="text-white" />
@@ -451,6 +484,7 @@ export default function TambahBarangMasuk() {
                   <p className="font-inter" style={{ fontSize: "12.5px", color: "#64748B", marginTop: 2 }}>Satu baris = satu produk + ukuran.</p>
                 </div>
                 <button
+                  ref={addButtonRef}
                   type="button"
                   onClick={addItem}
                   className="inline-flex items-center gap-2 rounded-xl border-2 border-green-500 bg-white px-4 py-2.5 text-sm font-bold text-green-700 transition hover:bg-green-50"
@@ -462,15 +496,7 @@ export default function TambahBarangMasuk() {
               <div className="space-y-4">
                 {formData.items.map((item, index) => {
                   const product = productOf(item);
-                  const searchQuery = productSearch.trim().toLowerCase();
-                  const matchedProducts = searchQuery
-                    ? pickerProducts.filter((p) => `${p.name} ${p.sku ?? ""}`.toLowerCase().includes(searchQuery))
-                    : pickerProducts;
                   const selectedProduct = pickerProducts.find((p) => p.id === item.product_id);
-                  const productOptions =
-                    selectedProduct && !matchedProducts.some((p) => p.id === selectedProduct.id)
-                      ? [selectedProduct, ...matchedProducts]
-                      : matchedProducts;
                   const variant = variantOf(item);
                   const groups = variantsOf(item.product_id);
                   const needsVariant = groups.length > 1;
@@ -480,6 +506,9 @@ export default function TambahBarangMasuk() {
                     ? stockAt(variant, item.size)
                     : product?.stock_efektif ?? product?.stock ?? 0;
                   const afterStock = currentStock + qty;
+                  const variantSku = item.size
+                    ? variant?.skus?.[String(item.size).toUpperCase()] || variant?.sku || product?.sku || ""
+                    : "";
                   const duplicate = duplicateKeys.has(effectiveKey(item, variant));
                   const error = errors[item.key];
 
@@ -507,42 +536,26 @@ export default function TambahBarangMasuk() {
                       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <div className="space-y-2 md:col-span-2">
                           <label className="block font-inter tracking-label" style={{ fontSize: "12px", fontWeight: 700, color: "#334155", textTransform: "uppercase", letterSpacing: "0.03em" }}>
-                            Pilih Produk <span className="text-red-500">*</span>
+                            Cari &amp; Pilih Produk <span className="text-red-500">*</span>
                           </label>
-                          <div className="relative">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10" size={17} />
-                            <input
-                              type="text"
-                              value={productSearch}
-                              onChange={(e) => setProductSearch(e.target.value)}
-                              onKeyDown={(e) => { if (e.key === "Enter") e.preventDefault(); }}
-                              placeholder="Cari produk (nama atau SKU)…"
-                              className="w-full pl-11 pr-4 py-2.5 bg-white border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all font-inter"
-                              style={{ fontSize: "14px", fontWeight: 600 }}
-                            />
-                          </div>
-                          <div className="relative">
-                            <Package className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10" size={19} />
-                            <select
-                              required
-                              value={item.product_id}
-                              onChange={(e) => handleProductChange(item, e.target.value)}
-                              className="w-full pl-12 pr-4 py-3.5 bg-white border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all appearance-none cursor-pointer font-inter"
-                              style={{ fontSize: "15px", fontWeight: 600 }}
-                            >
-                              <option value="">Pilih produk...</option>
-                              {productOptions.length === 0 ? (
-                                <option value="" disabled>
-                                  Tidak ada produk yang cocok
-                                </option>
+                          <ProductCombobox
+                            products={pickerProducts}
+                            variants={allVariants}
+                            value={item.product_id}
+                            onSelect={(productId) => handleProductChange(item, productId)}
+                            autoFocus
+                          />
+                          {selectedProduct ? (
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-0.5 font-inter text-[11px]">
+                              <span className="font-bold text-slate-700">SKU {selectedProduct.sku}</span>
+                              <span className="text-slate-500">
+                                Stok total {selectedProduct.stock_efektif ?? selectedProduct.stock ?? 0} pcs
+                              </span>
+                              {selectedProduct.jenis_kain?.name ? (
+                                <span className="text-slate-500">Kain {selectedProduct.jenis_kain.name}</span>
                               ) : null}
-                              {productOptions.map((p) => (
-                                <option key={p.id} value={p.id}>
-                                  {p.name} ({p.sku})
-                                </option>
-                              ))}
-                            </select>
-                          </div>
+                            </div>
+                          ) : null}
                           {item.product_id && sharedLabel(item.product_id) ? (
                             <p className="font-inter" style={{ fontSize: "12.5px", fontWeight: 600, color: "#047857", marginTop: 2 }}>
                               Stok bersama dengan {sharedLabel(item.product_id)}
@@ -551,48 +564,97 @@ export default function TambahBarangMasuk() {
                         </div>
 
                         {needsVariant ? (
-                          <div className="space-y-2">
+                          <div className="space-y-2 md:col-span-2">
                             <label className="block font-inter tracking-label" style={{ fontSize: "12px", fontWeight: 700, color: "#334155", textTransform: "uppercase", letterSpacing: "0.03em" }}>
                               {paket ? "Varian" : "Warna"} <span className="text-red-500">*</span>
                             </label>
-                            <select
-                              required
-                              value={item.variant_id}
-                              onChange={(e) => handleVariantChange(item, e.target.value)}
-                              disabled={!item.product_id}
-                              className="w-full px-4 py-3.5 bg-white border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all appearance-none cursor-pointer font-inter disabled:bg-gray-100"
-                              style={{ fontSize: "15px", fontWeight: 600 }}
-                            >
-                              <option value="">{item.product_id ? (paket ? "Pilih varian..." : "Pilih warna...") : "Pilih produk dulu"}</option>
-                              {groups.map((v) => (
-                                <option key={v.id} value={v.id}>
-                                  {[variantName(v.color), v.series_name].filter(Boolean).join(" · ") || "Varian"}
-                                </option>
-                              ))}
-                            </select>
+                            <div className="flex flex-wrap gap-2">
+                              {groups.map((v, groupIndex) => {
+                                const active = item.variant_id === v.id;
+                                const label = variantName(v.color) || v.series_name || "Varian";
+                                const total = Object.values(v.stock_efektif ?? v.stock ?? {}).reduce(
+                                  (sum, value) => sum + (Number(value) || 0),
+                                  0
+                                );
+                                return (
+                                  <button
+                                    key={v.id}
+                                    type="button"
+                                    data-stockin-color={groupIndex === 0 ? item.key : undefined}
+                                    onClick={() => handleVariantChange(item, v.id)}
+                                    aria-pressed={active}
+                                    className={`rounded-xl border-2 px-3.5 py-2 text-left transition ${
+                                      active
+                                        ? "border-green-600 bg-green-600 text-white shadow-sm"
+                                        : "border-gray-200 bg-white text-slate-700 hover:border-green-300 hover:bg-green-50"
+                                    }`}
+                                  >
+                                    <span className="block font-inter text-[12.5px] font-bold">{label}</span>
+                                    <span className={`block font-inter text-[10px] font-semibold ${active ? "text-green-100" : "text-slate-400"}`}>
+                                      stok {total}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
                           </div>
                         ) : null}
 
                         {!paket ? (
                           <div className="space-y-2">
-                            <label className="block font-inter tracking-label" style={{ fontSize: "12px", fontWeight: 700, color: "#334155", textTransform: "uppercase", letterSpacing: "0.03em" }}>
-                              Ukuran <span className="text-red-500">*</span>
-                            </label>
-                            <select
-                              required
-                              value={item.size}
-                              onChange={(e) => updateItem(item.key, { size: e.target.value })}
-                              disabled={!item.variant_id}
-                              className="w-full px-4 py-3.5 bg-white border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all appearance-none cursor-pointer font-inter disabled:bg-gray-100"
-                              style={{ fontSize: "15px", fontWeight: 600 }}
-                            >
-                              <option value="">{item.variant_id ? "Pilih ukuran..." : needsVariant ? "Pilih warna dulu" : "Pilih produk dulu"}</option>
-                              {SIZES.map((size) => (
-                                <option key={size} value={size}>
-                                  {size} — stok {stockAt(variant, size)} pcs
-                                </option>
-                              ))}
-                            </select>
+                            <div className="flex items-center justify-between gap-2">
+                              <label className="block font-inter tracking-label" style={{ fontSize: "12px", fontWeight: 700, color: "#334155", textTransform: "uppercase", letterSpacing: "0.03em" }}>
+                                Ukuran <span className="text-red-500">*</span>
+                              </label>
+                              {item.variant_id ? (
+                                <span className="font-inter text-[9.5px] font-semibold text-slate-400">
+                                  Stok 0 tetap bisa dipilih
+                                </span>
+                              ) : null}
+                            </div>
+                            {item.variant_id ? (
+                              <div className="flex flex-wrap gap-2">
+                                {sizesFor(variant).map((size, sizeIndex) => {
+                                  const stock = stockAt(variant, size);
+                                  const active = String(item.size || "").toUpperCase() === String(size).toUpperCase();
+                                  return (
+                                    <button
+                                      key={size}
+                                      type="button"
+                                      data-stockin-size={sizeIndex === 0 ? item.key : undefined}
+                                      onClick={() => handleSizeChange(item, size)}
+                                      aria-pressed={active}
+                                      className={`min-w-[58px] rounded-xl border-2 px-3 py-2 text-center transition ${
+                                        active
+                                          ? "border-green-600 bg-green-600 text-white shadow-sm"
+                                          : "border-gray-200 bg-white text-slate-700 hover:border-green-300 hover:bg-green-50"
+                                      }`}
+                                    >
+                                      <span className="block font-inter text-[13px] font-extrabold">{size}</span>
+                                      <span
+                                        className={`block font-inter text-[10px] font-semibold ${
+                                          active ? "text-green-100" : stock === 0 ? "text-rose-400" : "text-slate-400"
+                                        }`}
+                                      >
+                                        stok {stock}
+                                      </span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <div className="rounded-xl border-2 border-dashed border-gray-200 bg-white px-4 py-3 font-inter text-[12.5px] font-semibold text-slate-400">
+                                Pilih {needsVariant ? "warna" : "produk"} dulu.
+                              </div>
+                            )}
+                            {variantSku ? (
+                              <div className="rounded-xl border border-green-200 bg-green-50 px-3 py-2">
+                                <p className="font-inter text-[9.5px] font-extrabold uppercase tracking-[0.06em] text-green-700">
+                                  SKU varian
+                                </p>
+                                <p className="font-mono text-[12px] font-bold text-green-900 break-all">{variantSku}</p>
+                              </div>
+                            ) : null}
                           </div>
                         ) : (
                           <div className="space-y-2">
@@ -600,6 +662,14 @@ export default function TambahBarangMasuk() {
                             <div className="rounded-xl border-2 border-gray-200 bg-white px-4 py-3.5 font-inter" style={{ fontSize: "15px", fontWeight: 600, color: "#475569" }}>
                               {PAKET_SIZE}
                             </div>
+                            {variantSku ? (
+                              <div className="rounded-xl border border-green-200 bg-green-50 px-3 py-2">
+                                <p className="font-inter text-[9.5px] font-extrabold uppercase tracking-[0.06em] text-green-700">
+                                  SKU varian
+                                </p>
+                                <p className="font-mono text-[12px] font-bold text-green-900 break-all">{variantSku}</p>
+                              </div>
+                            ) : null}
                           </div>
                         )}
 
@@ -613,6 +683,7 @@ export default function TambahBarangMasuk() {
                               type="number"
                               required
                               min="0"
+                              data-stockin-qty={item.key}
                               value={item.qty}
                               onChange={(e) => handleQtyChange(item, e.target.value)}
                               placeholder="0"
@@ -694,12 +765,16 @@ export default function TambahBarangMasuk() {
                         const variantText = [variant ? variantName(variant.color) : null, product?.series]
                           .filter(Boolean)
                           .join(" · ");
+                        const variantSku = item.size
+                          ? variant?.skus?.[String(item.size).toUpperCase()] || variant?.sku || product?.sku || ""
+                          : "";
 
                         return (
                           <tr key={item.key} className={`border-b border-gray-100 last:border-0 align-top ${error ? "bg-red-50/60" : ""}`}>
                             <td className="px-4 py-3">
                               <p className="font-inter text-[13.5px] font-bold text-black">{product?.name || "Produk"}</p>
                               {variantText ? <p className="font-inter mt-0.5 text-[11.5px] text-slate-500">{variantText}</p> : null}
+                              {variantSku ? <p className="mt-0.5 font-mono text-[10.5px] text-slate-400">{variantSku}</p> : null}
                               {item.product_id && sharedLabel(item.product_id) ? (
                                 <p className="font-inter mt-0.5 text-[11px] font-semibold text-emerald-700">
                                   Stok bersama {sharedLabel(item.product_id)}
