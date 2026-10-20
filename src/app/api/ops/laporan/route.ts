@@ -129,15 +129,21 @@ function paymentLabelFor(raw: string, methodById: Map<string, string>): string {
  * harus sebanding dengan uang yang masuk lewat metode itu. Metode online (Mayar) dipecah
  * lagi per channel (QRIS/VA/e-wallet) supaya rinciannya terlihat.
  */
-function buildPaymentBreakdown(orders: OrderRow[], methodById: Map<string, string>) {
+function buildPaymentBreakdown(
+  orders: OrderRow[],
+  methodById: Map<string, string>,
+  bankMethodIds: Set<string> = new Set(),
+) {
   const groups = new Map<string, { key: string; label: string; count: number; amount: number }>();
   for (const order of orders) {
     const raw = String(order.payment_method || "").trim();
     const channel = String(order.payment_channel || "").trim().toLowerCase();
     const base = paymentLabelFor(raw, methodById);
     const channelLabel = channel ? paymentChannelLabel(channel) : "";
-    const label = channelLabel ? `${base} · ${channelLabel}` : base;
-    const key = `${raw}|${channel}`;
+    // Transfer bank lama (`bank`) dan metode bank baru digabung satu baris.
+    const isTransferBank = raw.toLowerCase() === "bank" || bankMethodIds.has(raw);
+    const label = isTransferBank ? "Transfer Bank" : channelLabel ? `${base} · ${channelLabel}` : base;
+    const key = isTransferBank ? "transfer-bank" : `${raw}|${channel}`;
     const entry = groups.get(key) || { key, label, count: 0, amount: 0 };
     entry.count += 1;
     entry.amount += Number(order.total) || 0;
@@ -524,8 +530,10 @@ export async function GET(req: NextRequest) {
       .from("payment_methods")
       .select("id, label, bank_name, method_type");
     const methodById = new Map<string, string>();
+    const bankMethodIds = new Set<string>();
     for (const pm of methodRows || []) {
       const type = String(pm.method_type || "");
+      if (type === "bank" && pm.id) bankMethodIds.add(String(pm.id));
       const fallback =
         type === "mayar"
           ? "Pembayaran Online"
@@ -542,7 +550,7 @@ export async function GET(req: NextRequest) {
         fallback;
       if (pm.id) methodById.set(String(pm.id), label);
     }
-    const payments = buildPaymentBreakdown(current.validOrders, methodById);
+    const payments = buildPaymentBreakdown(current.validOrders, methodById, bankMethodIds);
     const topProducts = buildTopProducts(current.validOrders, current.orderItems);
 
     const trend = buildTrend(
