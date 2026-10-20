@@ -130,27 +130,17 @@ export default function BioLinkPage({ content }: { content: BioPageContent }) {
             className="rv tilt group relative mt-5 block overflow-hidden rounded-[28px] bg-[#0B0B0B] text-white shadow-[0_24px_50px_-24px_rgba(0,0,0,.6)]"
           >
             {hasVideo ? (
-              <>
-                {videoPoster ? (
-                  <img
-                    src={videoPoster}
-                    alt=""
-                    aria-hidden="true"
-                    className="absolute inset-0 h-full w-full scale-110 object-cover blur-xl opacity-70"
-                  />
-                ) : null}
-                <video
-                  className="relative z-10 h-[420px] w-full object-contain"
-                  src={hero.video_url}
-                  poster={videoPoster || undefined}
-                  autoPlay
-                  muted
-                  loop
-                  playsInline
-                  preload="auto"
-                  aria-hidden="true"
-                />
-              </>
+              <video
+                className="h-[420px] w-full object-cover object-top"
+                src={hero.video_url}
+                poster={videoPoster || undefined}
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="auto"
+                aria-hidden="true"
+              />
             ) : (
               <img
                 src={hero.image_url}
