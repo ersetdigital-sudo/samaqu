@@ -16,6 +16,23 @@ import {
   type SocialPlatform,
 } from "@/lib/bio-page-content";
 
+const POSITION_OPTIONS = [
+  { label: "Atas", value: "50% 20%" },
+  { label: "Tengah", value: "50% 50%" },
+  { label: "Bawah", value: "50% 80%" },
+];
+
+/** Cocokkan nilai object-position lama (mis. "50% 30%") ke salah satu pilihan. */
+function positionBucket(value: string): string {
+  const parts = value.trim().split(/\s+/);
+  const vertical = parts[1] ?? parts[0] ?? "50%";
+  if (vertical === "top") return "50% 20%";
+  if (vertical === "bottom") return "50% 80%";
+  const n = Number.parseFloat(vertical);
+  if (Number.isNaN(n) || (n > 35 && n < 65)) return "50% 50%";
+  return n <= 35 ? "50% 20%" : "50% 80%";
+}
+
 const BELANJA_ICONS: BelanjaIcon[] = ["whatsapp", "globe"];
 const ROW_ICONS: RowIcon[] = ["ruler", "instagram", "link"];
 const GUARANTEE_ICONS: GuaranteeIcon[] = ["shield", "refund", "exchange", "chat"];
@@ -86,16 +103,58 @@ function SelectField<T extends string>({
   );
 }
 
+function PositionPicker({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const active = positionBucket(value);
+  return (
+    <div>
+      <span className="mb-1 block text-[11px] font-medium" style={{ color: "var(--text-muted)" }}>
+        Posisi Foto
+      </span>
+      <div className="inline-flex rounded-lg p-1" style={{ background: "#f4f4f5" }}>
+        {POSITION_OPTIONS.map((opt) => {
+          const isActive = active === opt.value;
+          return (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => onChange(opt.value)}
+              className="rounded-md px-3 py-1.5 text-xs font-medium transition-colors"
+              style={{
+                background: isActive ? "#ffffff" : "transparent",
+                color: isActive ? "var(--espresso)" : "var(--text-muted)",
+                boxShadow: isActive ? "0 1px 2px rgba(0,0,0,.08)" : "none",
+              }}
+            >
+              {opt.label}
+            </button>
+          );
+        })}
+      </div>
+      <p className="mt-1 text-[10px]" style={{ color: "var(--text-muted)" }}>
+        Bagian foto yang ditampilkan di kartu.
+      </p>
+    </div>
+  );
+}
+
 function ImageField({
   label,
   value,
   uploading,
   onChange,
+  objectPosition,
 }: {
   label: string;
   value: string;
   uploading: boolean;
   onChange: (file: File) => void;
+  objectPosition?: string;
 }) {
   return (
     <div>
@@ -104,7 +163,14 @@ function ImageField({
       </span>
       <div className="flex items-center gap-3">
         <div className="h-20 w-20 shrink-0 overflow-hidden rounded-lg" style={{ background: "#f4f4f5" }}>
-          {value && <img src={value} alt="" className="h-full w-full object-cover" />}
+          {value && (
+            <img
+              src={value}
+              alt=""
+              className="h-full w-full object-cover"
+              style={{ objectPosition: objectPosition || "50% 50%" }}
+            />
+          )}
         </div>
         <label
           className="inline-flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium"
@@ -369,6 +435,7 @@ export default function BiolinkPage() {
                   <ImageField
                     label="Foto"
                     value={item.image_url}
+                    objectPosition={item.position}
                     uploading={uploading === `cat-${index}`}
                     onChange={(file) =>
                       uploadImage(`cat-${index}`, file, (url) =>
@@ -415,8 +482,7 @@ export default function BiolinkPage() {
                         }))
                       }
                     />
-                    <Field
-                      label="Posisi Foto"
+                    <PositionPicker
                       value={item.position}
                       onChange={(value) =>
                         patch((c) => ({
