@@ -72,6 +72,19 @@ function Icon({
   );
 }
 
+/**
+ * Poster dari video Cloudinary: ganti ekstensi video → .jpg (frame pertama).
+ * URL non-Cloudinary memakai foto hero sebagai fallback latar blur.
+ */
+function videoPosterUrl(videoUrl: string, fallback: string): string {
+  const url = String(videoUrl || "").trim();
+  if (!url) return fallback;
+  if (url.includes("res.cloudinary.com") && url.includes("/video/upload/")) {
+    return url.replace(/\.(mp4|webm|m4v|mov)(\?.*)?$/i, ".jpg");
+  }
+  return fallback;
+}
+
 function ArrowUpRight({ size = 16 }: { size?: number }) {
   return (
     <svg viewBox="0 0 24 24" style={{ width: size, height: size }}>
@@ -83,6 +96,7 @@ function ArrowUpRight({ size = 16 }: { size?: number }) {
 export default function BioLinkPage({ content }: { content: BioPageContent }) {
   const { logo_url, eyebrow, description, hero, categories, belanja, rows, guarantee, socials, footer, marquee } = content;
   const hasVideo = Boolean(hero.video_url?.trim());
+  const videoPoster = videoPosterUrl(hero.video_url, hero.image_url);
 
   return (
     <>
@@ -116,17 +130,27 @@ export default function BioLinkPage({ content }: { content: BioPageContent }) {
             className="rv tilt group relative mt-5 block overflow-hidden rounded-[28px] bg-[#0B0B0B] text-white shadow-[0_24px_50px_-24px_rgba(0,0,0,.6)]"
           >
             {hasVideo ? (
-              <video
-                className="h-[420px] w-full object-cover"
-                src={hero.video_url}
-                poster={hero.image_url || undefined}
-                autoPlay
-                muted
-                loop
-                playsInline
-                preload="auto"
-                aria-hidden="true"
-              />
+              <>
+                {videoPoster ? (
+                  <img
+                    src={videoPoster}
+                    alt=""
+                    aria-hidden="true"
+                    className="absolute inset-0 h-full w-full scale-110 object-cover blur-xl opacity-70"
+                  />
+                ) : null}
+                <video
+                  className="relative z-10 h-[420px] w-full object-contain"
+                  src={hero.video_url}
+                  poster={videoPoster || undefined}
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  preload="auto"
+                  aria-hidden="true"
+                />
+              </>
             ) : (
               <img
                 src={hero.image_url}
@@ -134,13 +158,13 @@ export default function BioLinkPage({ content }: { content: BioPageContent }) {
                 className="bio-kb h-[420px] w-full object-cover object-top transition duration-700 group-hover:scale-105"
               />
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
+            <div className="absolute inset-0 z-20 bg-gradient-to-t from-black via-black/30 to-transparent" />
             {hero.badge && (
-              <span className="absolute left-5 top-5 rounded-full bg-white/90 px-3 py-1 text-[11px] font-bold tracking-[.2em] text-black backdrop-blur">
+              <span className="absolute left-5 top-5 z-20 rounded-full bg-white/90 px-3 py-1 text-[11px] font-bold tracking-[.2em] text-black backdrop-blur">
                 {hero.badge}
               </span>
             )}
-            <div className="absolute inset-x-0 bottom-0 p-6">
+            <div className="absolute inset-x-0 bottom-0 z-20 p-6">
               <p className="text-[40px] font-extrabold leading-[.95] tracking-[-.04em]">
                 {hero.title}
                 <br />
