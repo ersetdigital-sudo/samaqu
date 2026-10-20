@@ -3,6 +3,7 @@ import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { isOpsAdmin, unauthorized } from "@/lib/ops-auth";
 import { BIZ_OFFSET_MS } from "@/lib/ops-followup";
 import { SALE_STATUSES } from "@/lib/transaksi";
+import { paymentChannelLabel } from "@/lib/payment-channel";
 
 /**
  * Laporan keuangan owner.
@@ -94,6 +95,57 @@ function pctChange(current: number, previous: number): number | null {
   return Math.round(((current - previous) / previous) * 1000) / 10;
 }
 
+/** Label metode lama (sebelum `payment_method` menyimpan id tabel `payment_methods`). */
+const LEGACY_PAYMENT_LABELS: Record<string, string> = {
+  bank: "Transfer Bank",
+  qris: "QRIS / E-Wallet",
+  ewallet: "E-Wallet",
+  cod: "Bayar di Tempat (COD)",
+  cash: "Cash",
+  other: "Lainnya",
+};
+
+const UNKNOWN_PAYMENT_LABEL = "Belum tercatat";
+
+function paymentLabelFor(raw: string, methodById: Map<string, string>): string {
+  const key = String(raw || "").trim();
+  if (!key) return UNKNOWN_PAYMENT_LABEL;
+  const known = methodById.get(key);
+  if (known) return known;
+  return LEGACY_PAYMENT_LABELS[key.toLowerCase()] || "Metode Pembayaran";
+}
+
+/**
+ * Sebaran metode pembayaran pada pesanan sah (SALE_STATUSES).
+ *
+ * Porsi (%) dihitung dari NOMINAL omzet tiap metode, bukan jumlah transaksi — bar panjang
+ * harus sebanding dengan uang yang masuk lewat metode itu. Metode online (Mayar) dipecah
+ * lagi per channel (QRIS/VA/e-wallet) supaya rinciannya terlihat.
+ */
+function buildPaymentBreakdown(orders: OrderRow[], methodById: Map<string, string>) {
+  const groups = new Map<string, { key: string; label: string; count: number; amount: number }>();
+  for (const order of orders) {
+    const raw = String(order.payment_method || "").trim();
+    const channel = String(order.payment_channel || "").trim().toLowerCase();
+    const base = paymentLabelFor(raw, methodById);
+    const channelLabel = channel ? paymentChannelLabel(channel) : "";
+    const label = channelLabel ? `${base} · ${channelLabel}` : base;
+    const key = `${raw}|${channel}`;
+    const entry = groups.get(key) || { key, label, count: 0, amount: 0 };
+    entry.count += 1;
+    entry.amount += Number(order.total) || 0;
+    groups.set(key, entry);
+  }
+
+  const total = [...groups.values()].reduce((sum, row) => sum + row.amount, 0);
+  return [...groups.values()]
+    .map((row) => ({
+      ...row,
+      share: total > 0 ? Math.round((row.amount / total) * 1000) / 10 : 0,
+    }))
+    .sort((a, b) => b.amount - a.amount);
+}
+
 async function loadPeriod(
   admin: ReturnType<typeof getSupabaseAdmin>,
   from: string,
@@ -106,7 +158,7 @@ async function loadPeriod(
   const [ordersRes, returnsCreatedRes, refundsRes, exchangesRes] = await Promise.all([
     admin
       .from("orders")
-      .select("id, order_number, customer_name, customer_whatsapp, created_at, total, status, source, payment_method")
+      .select("id, order_number, customer_name, customer_whatsapp, created_at, total, status, source, payment_method, payment_provider, payment_channel")
       .gte("created_at", startIso)
       .lt("created_at", endIso)
       .order("created_at", { ascending: false })
@@ -366,6 +418,32 @@ export async function GET(req: NextRequest) {
       loadPeriod(admin, prevFrom, prevTo, false),
     ]);
 
+    // Label metode pembayaran (id → nama). Gagal membaca daftar ini tidak boleh menggagalkan
+    // laporan — metode yang tidak dikenal jatuh ke label cadangan.
+    const { data: methodRows } = await admin
+      .from("payment_methods")
+      .select("id, label, bank_name, method_type");
+    const methodById = new Map<string, string>();
+    for (const pm of methodRows || []) {
+      const type = String(pm.method_type || "");
+      const fallback =
+        type === "mayar"
+          ? "Pembayaran Online"
+          : type === "cod"
+            ? "Bayar di Tempat (COD)"
+            : type === "qris"
+              ? "QRIS"
+              : type === "ewallet"
+                ? "E-Wallet"
+                : "Transfer Bank";
+      const label =
+        String(pm.label || "").trim() ||
+        (pm.bank_name ? `Transfer Bank (${pm.bank_name})` : "") ||
+        fallback;
+      if (pm.id) methodById.set(String(pm.id), label);
+    }
+    const payments = buildPaymentBreakdown(current.validOrders, methodById);
+
     const trend = buildTrend(
       from,
       to,
@@ -427,6 +505,7 @@ export async function GET(req: NextRequest) {
         profit: pctChange(current.profit, previous.profit),
       },
       trend,
+      payments,
       tables: {
         sales: salesRows,
         returns: returnTable,
