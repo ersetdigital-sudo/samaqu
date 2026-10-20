@@ -108,7 +108,7 @@ function MediaDisplay({ item, poster, className, style, allMedia }: { item: Gall
 
   return (
     <div className={`relative ${className || ""}`} style={{ background: "#e5e5e5", ...style }}>
-      <img src={item.src} alt="" className="w-full h-full object-contain" loading="lazy" />
+      <img src={item.src} alt="" className="block w-full h-full object-cover object-center" loading="lazy" />
     </div>
   );
 }
