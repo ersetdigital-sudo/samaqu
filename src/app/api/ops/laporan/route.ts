@@ -23,6 +23,13 @@ import { paymentChannelLabel } from "@/lib/payment-channel";
 
 const DAY_MS = 86_400_000;
 
+/**
+ * Modul Pengeluaran (biaya operasional) belum ada di aplikasi — sidebar masih "SOON".
+ * Selama belum ada sumber datanya, biaya TIDAK boleh dianggap Rp0; laporan harus
+ * menandainya "belum tersedia" supaya laba tidak terlihat lebih besar dari kenyataan.
+ */
+const EXPENSES_AVAILABLE = false;
+
 function todayWibKey() {
   return new Date(Date.now() + BIZ_OFFSET_MS).toISOString().slice(0, 10);
 }
@@ -253,13 +260,34 @@ async function loadPeriod(
   }
 
   const hppByOrder = new Map<string, number>();
+  const validIds = new Set(validOrders.map((order) => String(order.id)));
+  const missingHppOrders = new Set<string>();
+  let totalQty = 0;
+  let knownQty = 0;
   for (const item of orderItems) {
     const qty = Number(item.quantity ?? item.qty) || 0;
     const lineHpp = Number(item.hpp);
     const unitHpp = Number.isFinite(lineHpp) && lineHpp > 0 ? lineHpp : productHpp.get(String(item.product_id)) || 0;
     const orderId = String(item.order_id || "");
     hppByOrder.set(orderId, (hppByOrder.get(orderId) || 0) + unitHpp * qty);
+
+    // Coverage hanya dihitung untuk pesanan yang masuk laporan (SALE_STATUSES).
+    if (!validIds.has(orderId)) continue;
+    totalQty += qty;
+    if (unitHpp > 0) knownQty += qty;
+    else missingHppOrders.add(orderId);
   }
+  const missingQty = Math.max(0, totalQty - knownQty);
+  const hppStatus: "complete" | "partial" | "missing" =
+    totalQty === 0
+      ? validOrders.length === 0
+        ? "complete"
+        : "missing"
+      : missingQty === 0
+        ? "complete"
+        : knownQty > 0
+          ? "partial"
+          : "missing";
 
   // Item untuk drawer detail (hanya periode aktif).
   let itemsByOrder: Record<string, any[]> = {};
@@ -297,7 +325,31 @@ async function loadPeriod(
   const exchangeTotal = sumBy(settledExchanges, (row) => Number(row.price_difference_total) || 0);
   const net = gross - refundTotal + exchangeTotal;
   const biaya = 0;
-  const profit = net - hpp - biaya;
+  const biayaAvailable = EXPENSES_AVAILABLE;
+
+  /**
+   * Laba hanya boleh disebut final kalau modal DAN biaya lengkap.
+   * - hpp missing/partial  → laba tidak dapat dihitung (jangan pakai net sebagai laba).
+   * - hpp complete, biaya belum ada → laba "sebagian": net − hpp (belum termasuk biaya).
+   */
+  const profitStatus: "valid" | "partial" | "unavailable" =
+    hppStatus !== "complete" ? "unavailable" : biayaAvailable ? "valid" : "partial";
+  const profit =
+    profitStatus === "unavailable" ? null : net - hpp - (biayaAvailable ? biaya : 0);
+  const margin = profitStatus === "valid" && profit !== null && net > 0 ? Math.round((profit / net) * 100) : null;
+
+  const hppNote =
+    hppStatus === "complete"
+      ? ""
+      : hppStatus === "partial"
+        ? `${missingQty} unit belum punya data modal; angka modal belum lengkap.`
+        : "Data modal barang terjual belum tersedia.";
+  const profitNote =
+    profitStatus === "valid"
+      ? ""
+      : profitStatus === "unavailable"
+        ? `${hppNote} Estimasi laba belum dapat dihitung.`
+        : "Data biaya operasional belum tersedia; estimasi laba belum final.";
 
   const pendingReturns = returnsCreated.filter(
     (row) =>
@@ -334,10 +386,21 @@ async function loadPeriod(
     exchangeTotal,
     net,
     biaya,
+    biayaAvailable,
+    hppStatus,
+    hppNote,
+    hppCoverage: {
+      totalQty,
+      knownQty,
+      missingQty,
+      missingOrders: missingHppOrders.size,
+    },
     profit,
+    profitStatus,
+    profitNote,
     transactions: validOrders.length,
     aov: validOrders.length > 0 ? Math.round(gross / validOrders.length) : 0,
-    margin: net > 0 ? Math.round((profit / net) * 100) : 0,
+    margin,
     pendingReturns,
     pendingExchanges,
     pendingRefundTotal: sumBy(pendingReturns, (row) => Number(row.refund_amount) || 0),
@@ -352,6 +415,7 @@ function buildTrend(
   orderHpp: Map<string, number>,
   refunds: ReturnRow[],
   exchanges: ReturnRow[],
+  hppComplete: boolean,
 ) {
   const days = daysBetween(from, to);
   const type: "day" | "week" | "month" = days <= 31 ? "day" : days <= 120 ? "week" : "month";
@@ -425,7 +489,9 @@ function buildTrend(
         label: bucket.label,
         gross: row.gross,
         net,
-        profit: net - row.hpp,
+        // Laba per titik hanya diisi kalau modal lengkap; kalau tidak, garis laba
+        // disembunyikan di UI supaya tidak menampilkan laba semu.
+        profit: hppComplete ? net - row.hpp : null,
       };
     }),
   };
@@ -486,6 +552,7 @@ export async function GET(req: NextRequest) {
       current.orderHpp,
       current.refunds,
       current.exchanges,
+      current.hppStatus === "complete",
     );
 
     const salesRows = current.orders.map((order) => ({
@@ -521,6 +588,12 @@ export async function GET(req: NextRequest) {
         biaya: current.biaya,
         profit: current.profit,
         margin: current.margin,
+        hppStatus: current.hppStatus,
+        hppNote: current.hppNote,
+        hppCoverage: current.hppCoverage,
+        biayaAvailable: current.biayaAvailable,
+        profitStatus: current.profitStatus,
+        profitNote: current.profitNote,
         transactions: current.transactions,
         aov: current.aov,
         hppReversal: false,
@@ -537,7 +610,10 @@ export async function GET(req: NextRequest) {
       deltas: {
         gross: pctChange(current.gross, previous.gross),
         net: pctChange(current.net, previous.net),
-        profit: pctChange(current.profit, previous.profit),
+        profit:
+          current.profit !== null && previous.profit !== null
+            ? pctChange(current.profit, previous.profit)
+            : null,
       },
       trend,
       payments,

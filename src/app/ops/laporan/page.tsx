@@ -39,6 +39,7 @@ const IconWallet: any =
   (LucideIcons as any).Wallet ?? (LucideIcons as any).WalletMinimal ?? (LucideIcons as any).Banknote;
 const IconPackage: any = (LucideIcons as any).Package;
 const IconReceipt: any = (LucideIcons as any).Receipt ?? (LucideIcons as any).FileText;
+const IconReturn: any = (LucideIcons as any).Undo2 ?? (LucideIcons as any).RotateCcw ?? (LucideIcons as any).Receipt;
 const IconProfit: any = (LucideIcons as any).TrendingUp ?? (LucideIcons as any).LineChart;
 
 /* ───────────────────────── types ───────────────────────── */
@@ -62,20 +63,32 @@ type Summary = {
   net: number;
   hpp: number;
   biaya: number;
-  profit: number;
-  margin: number;
+  /** null = laba belum dapat dihitung (modal/biaya belum lengkap). */
+  profit: number | null;
+  /** null = margin belum dapat dihitung secara valid. */
+  margin: number | null;
   transactions: number;
   aov: number;
   hppReversal: boolean;
   biayaNote: string;
+  hppStatus: HppStatus;
+  hppNote: string;
+  hppCoverage: { totalQty: number; knownQty: number; missingQty: number; missingOrders: number };
+  biayaAvailable: boolean;
+  profitStatus: ProfitStatus;
+  profitNote: string;
 };
+
+type HppStatus = "complete" | "partial" | "missing";
+type ProfitStatus = "valid" | "partial" | "unavailable";
 
 type TrendPoint = {
   key: string;
   label: string;
   gross: number;
   net: number;
-  profit: number;
+  /** null = modal belum lengkap, garis laba tidak ditampilkan. */
+  profit: number | null;
 };
 
 /** Sebaran omzet per metode pembayaran (dihitung di server). */
@@ -107,7 +120,7 @@ type ReportData = {
     exchange: number;
     net: number;
     hpp: number;
-    profit: number;
+    profit: number | null;
   };
   deltas: { gross: number | null; net: number | null; profit: number | null };
   trend: { type: "day" | "week" | "month"; points: TrendPoint[] };
@@ -313,8 +326,23 @@ export default function LaporanKeuanganPage() {
   const payments = data.payments || [];
   const topProducts = data.topProducts || { totalUnits: 0, rows: [] };
   const topRows = topProducts.rows || [];
-  const profitPositive = s.profit >= 0;
+  const profitPositive = (s.profit ?? 0) >= 0;
   const pendingEmpty = s.refundsPendingCount === 0 && s.exchangePendingCount === 0;
+  const profitBadge =
+    s.profitStatus === "valid"
+      ? profitPositive
+        ? { label: "PROFIT", cls: "bg-emerald-50 text-emerald-700 border-emerald-100" }
+        : { label: "RUGI", cls: "bg-red-50 text-red-700 border-red-100" }
+      : s.profitStatus === "partial"
+        ? { label: "BELUM FINAL", cls: "bg-amber-50 text-amber-700 border-amber-100" }
+        : { label: "BELUM TERSEDIA", cls: "bg-slate-50 text-slate-500 border-slate-200" };
+  const profitTone =
+    s.profitStatus === "valid" ? (profitPositive ? "text-emerald-600" : "text-red-600") : "text-slate-400";
+  const seriesOptions = [
+    { key: "gross", label: "Penjualan", color: "#94A3B8" },
+    { key: "net", label: "Setelah Retur", color: "#2563EB" },
+    ...(s.profitStatus === "valid" ? [{ key: "profit", label: "Estimasi Laba", color: "#10B981" }] : []),
+  ];
 
   return (
     <div className="space-y-5 bg-[#F9FAFB]">
@@ -328,7 +356,7 @@ export default function LaporanKeuanganPage() {
             <div>
               <h1 className="text-3xl font-bold tracking-tight text-slate-900">Laporan Keuangan</h1>
               <p className="text-slate-500 font-medium mt-1">
-                Pantau omzet, retur, biaya, dan profit SAMAQU.
+                Pantau penjualan, retur, biaya, dan estimasi laba SAMAQU.
               </p>
             </div>
           </div>
@@ -405,38 +433,87 @@ export default function LaporanKeuanganPage() {
           ) : null}
         </div>
 
-        <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <GlassCard icon={IconWallet} label="Total Omset" value={rp(s.gross)} caption="Pendapatan kotor" />
-          <GlassCard icon={IconPackage} label="Total HPP" value={rp(s.hpp)} caption="Modal produk terjual" />
-          <GlassCard icon={IconReceipt} label="Total Biaya" value={rp(s.biaya)} caption={s.biayaNote} />
-          <div className="relative bg-white border border-slate-200 rounded-2xl p-5 flex flex-col">
+        <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <GlassCard
+            icon={IconWallet}
+            label="Total Penjualan"
+            value={rp(s.gross)}
+            caption="Nilai transaksi diakui, bukan uang masuk."
+          />
+          <GlassCard
+            icon={IconReturn}
+            label="Retur"
+            value={`− ${rp(s.refunds)}`}
+            tone="negative"
+            caption="Retur/refund yang sudah diselesaikan."
+          />
+          <GlassCard
+            icon={IconReport}
+            label="Penjualan Setelah Retur"
+            value={rp(s.net)}
+            caption="Setelah retur & penyesuaian tukar size."
+          />
+          <GlassCard
+            icon={IconPackage}
+            label="Modal Barang Terjual"
+            value={s.hppStatus === "complete" ? rp(s.hpp) : "—"}
+            tone={s.hppStatus === "complete" ? "default" : "muted"}
+            caption={s.hppStatus === "complete" ? "Modal dari barang yang terjual." : s.hppNote}
+          />
+          <GlassCard
+            icon={IconReceipt}
+            label="Biaya Operasional"
+            value={s.biayaAvailable ? rp(s.biaya) : "—"}
+            tone={s.biayaAvailable ? "default" : "muted"}
+            caption={s.biayaAvailable ? "Biaya operasional tercatat." : "Data biaya operasional belum tersedia."}
+          />
+          <div
+            className="relative bg-white border border-slate-200 rounded-2xl p-5 flex flex-col"
+            title={s.profitNote || undefined}
+          >
             <span
-              className={`absolute top-3 right-3 px-2 py-0.5 rounded-md text-[10px] font-black tracking-wider ${
-                profitPositive
-                  ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
-                  : "bg-red-50 text-red-700 border border-red-100"
-              }`}
+              className={`absolute top-3 right-3 px-2 py-0.5 rounded-md text-[10px] font-black tracking-wider border ${profitBadge.cls}`}
             >
-              {profitPositive ? "PROFIT" : "RUGI"}
+              {profitBadge.label}
             </span>
-            <div className="flex items-center gap-2 text-slate-500 min-h-[20px] pr-16">
+            <div className="flex items-center gap-2 text-slate-500 min-h-[20px] pr-24">
               <IconProfit size={16} className="shrink-0" />
-              <span className="text-[11px] font-bold uppercase tracking-wider truncate">Laba Bersih</span>
+              <span className="text-[11px] font-bold uppercase tracking-wider truncate">Estimasi Laba</span>
             </div>
             <p
-              className={`font-black mt-3 whitespace-nowrap leading-tight text-[clamp(1.05rem,1.5vw,1.75rem)] ${
-                profitPositive ? "text-emerald-600" : "text-red-600"
-              }`}
+              className={`font-black mt-3 whitespace-nowrap leading-tight text-[clamp(1.05rem,1.5vw,1.75rem)] ${profitTone}`}
             >
-              {rp(s.profit)}
+              {s.profit !== null ? rp(s.profit) : "—"}
             </p>
-            <p className="text-slate-500 text-xs mt-auto pt-1.5">Omzet neto − HPP − biaya</p>
+            <p className="text-slate-500 text-xs mt-auto pt-1.5">
+              {s.profitStatus === "valid"
+                ? "Penjualan setelah retur − modal − biaya."
+                : s.profitStatus === "partial"
+                  ? "Belum termasuk biaya operasional."
+                  : "Belum dapat dihitung."}
+            </p>
           </div>
         </div>
 
+        {s.profitStatus !== "valid" ? (
+          <p
+            className={`mt-3 flex items-start gap-1.5 rounded-xl px-3 py-2 text-[11px] font-semibold ${
+              s.profitStatus === "partial" ? "bg-amber-50 text-amber-700" : "bg-slate-50 text-slate-600"
+            }`}
+          >
+            <AlertTriangle size={13} className="mt-px shrink-0" />
+            {s.profitNote}
+          </p>
+        ) : null}
+
+        <p className="mt-2 text-[11px] font-semibold text-slate-400">
+          Angka penjualan adalah nilai transaksi yang diakui (diproses/dikirim/selesai), bukan uang yang sudah
+          diterima. Pesanan COD atau yang belum dibayar tetap tercatat sebagai penjualan.
+        </p>
+
         <p className="mt-4 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px] font-semibold text-slate-400">
           <span>
-            Omzet Neto <b className="text-slate-700">{rp(s.net)}</b>
+            Penjualan Setelah Retur <b className="text-slate-700">{rp(s.net)}</b>
           </span>
           <span className="inline-flex items-center gap-1">
             <span className={data.deltas.net !== null && data.deltas.net < 0 ? "text-red-600" : "text-emerald-600"}>
@@ -448,25 +525,26 @@ export default function LaporanKeuanganPage() {
           </span>
           <span>· {s.transactions} transaksi</span>
           <span>· rata-rata {rp(s.aov)}/transaksi</span>
-          <span>· margin {s.margin}%</span>
+          <span>· margin {s.margin !== null ? `${s.margin}%` : "—"}</span>
         </p>
       </section>
 
-      {/* ALUR LABA */}
+      {/* PERHITUNGAN LABA */}
       <section className="rounded-3xl border border-[#E5E7EB] bg-white p-5 shadow-sm md:p-6">
-          <p className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-400">Alur Laba</p>
+          <p className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-400">Perhitungan Laba</p>
+          <p className="mt-0.5 text-sm font-medium text-slate-500">Dari penjualan sampai estimasi laba.</p>
           <div className="mt-3 divide-y divide-[#E5E7EB]">
             <BreakdownRow
-              label="Omzet Bruto"
+              label="Total Penjualan"
               value={rp(s.gross)}
-              hint="Total penjualan sah sebelum retur."
+              hint="Nilai transaksi yang diakui pada periode ini — bukan uang yang sudah diterima."
               onClick={() => goToTab("sales")}
             />
             <BreakdownRow
-              label="Retur Selesai"
+              label="Retur"
               value={`− ${rp(s.refunds)}`}
               tone="red"
-              hint="Refund yang uangnya sudah benar-benar keluar."
+              hint="Retur/refund yang sudah diselesaikan (uang benar-benar keluar)."
               onClick={() => goToTab("returns")}
             />
             <BreakdownRow
@@ -477,34 +555,43 @@ export default function LaporanKeuanganPage() {
               onClick={() => goToTab("exchanges")}
             />
             <BreakdownRow
-              label="Omzet Neto"
+              label="Penjualan Setelah Retur"
               value={rp(s.net)}
               emphasis
-              hint="Omzet Bruto − Retur Selesai + Penyesuaian Tukar Size."
+              hint="Total Penjualan − Retur + Penyesuaian Tukar Size."
             />
             <BreakdownRow
-              label="HPP"
-              value={`− ${rp(s.hpp)}`}
-              tone="red"
-              hint="Modal produk yang terjual (harga pokok penjualan)."
+              label="Modal Barang Terjual"
+              value={s.hppStatus === "complete" || s.hppStatus === "partial" ? `− ${rp(s.hpp)}` : "Belum tersedia"}
+              tone={s.hppStatus === "complete" ? "red" : "muted"}
+              hint="Harga pokok (HPP) barang yang masuk perhitungan penjualan."
+              caption={s.hppStatus === "complete" ? undefined : s.hppNote}
             />
             <BreakdownRow
               label="Biaya Operasional"
-              value={`− ${rp(s.biaya)}`}
-              caption="Modul Pengeluaran belum tersedia"
+              value={s.biayaAvailable ? `− ${rp(s.biaya)}` : "Belum tersedia"}
+              tone={s.biayaAvailable ? "red" : "muted"}
+              hint="Biaya operasional yang tercatat di sistem."
+              caption={s.biayaAvailable ? undefined : "Data biaya operasional belum tersedia."}
             />
             <BreakdownRow
-              label="Laba (Estimasi)"
-              value={rp(s.profit)}
-              tone={profitPositive ? "green" : "red"}
+              label="Estimasi Laba"
+              value={s.profit !== null ? rp(s.profit) : "Belum dapat dihitung"}
+              tone={s.profitStatus === "valid" ? (profitPositive ? "green" : "red") : "muted"}
               emphasis
-              hint="Omzet Neto − HPP − Biaya. Masih estimasi karena HPP retur belum dibalik."
-              caption={s.hppReversal ? undefined : "Belum termasuk pembalikan HPP retur"}
+              hint="Penjualan Setelah Retur − Modal Barang Terjual − Biaya Operasional."
+              caption={s.profitStatus === "valid" ? undefined : s.profitNote}
             />
           </div>
-          <p className="mt-3 flex items-start gap-1.5 rounded-xl bg-amber-50 px-3 py-2 text-[11px] font-semibold text-amber-700">
+          <p
+            className={`mt-3 flex items-start gap-1.5 rounded-xl px-3 py-2 text-[11px] font-semibold ${
+              s.profitStatus === "partial" ? "bg-amber-50 text-amber-700" : "bg-slate-50 text-slate-600"
+            }`}
+          >
             <AlertTriangle size={13} className="mt-px shrink-0" />
-            Laba masih estimasi: HPP barang retur belum dibalik dan biaya operasional belum tersedia.
+            {s.profitStatus === "valid"
+              ? "Laba adalah estimasi dari penjualan setelah retur − modal − biaya; komponen di luar pencatatan sistem belum termasuk."
+              : s.profitNote}
           </p>
       </section>
 
@@ -560,14 +647,12 @@ export default function LaporanKeuanganPage() {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-lg font-black tracking-tight text-[#374151]">Tren Keuangan</h2>
-            <p className="text-xs font-medium text-slate-500">Omzet bruto, neto, dan laba estimasi mengikuti periode.</p>
+            <p className="text-xs font-medium text-slate-500">
+              Penjualan, penjualan setelah retur, dan estimasi laba mengikuti periode.
+            </p>
           </div>
           <div className="flex flex-wrap items-center gap-1.5">
-            {[
-              { key: "gross", label: "Bruto", color: "#94A3B8" },
-              { key: "net", label: "Neto", color: "#2563EB" },
-              { key: "profit", label: "Laba", color: "#10B981" },
-            ].map((item) => (
+            {seriesOptions.map((item) => (
               <button
                 key={item.key}
                 type="button"
@@ -600,13 +685,13 @@ export default function LaporanKeuanganPage() {
                 <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#9CA3AF" }} tickLine={false} axisLine={false} minTickGap={18} />
                 <YAxis tickFormatter={compact} tick={{ fontSize: 11, fill: "#9CA3AF" }} tickLine={false} axisLine={false} width={54} />
                 <ChartTooltip content={<TrendTooltip />} />
-                {series.gross ? <Line type="monotone" dataKey="gross" name="Omzet Bruto" stroke="#94A3B8" strokeWidth={2} dot={false} /> : null}
-                {series.net ? <Line type="monotone" dataKey="net" name="Omzet Neto" stroke="#2563EB" strokeWidth={2.5} dot={false} /> : null}
-                {series.profit ? (
+                {series.gross ? <Line type="monotone" dataKey="gross" name="Penjualan" stroke="#94A3B8" strokeWidth={2} dot={false} /> : null}
+                {series.net ? <Line type="monotone" dataKey="net" name="Penjualan Setelah Retur" stroke="#2563EB" strokeWidth={2.5} dot={false} /> : null}
+                {s.profitStatus === "valid" && series.profit ? (
                   <Line
                     type="monotone"
                     dataKey="profit"
-                    name="Laba (estimasi)"
+                    name="Estimasi Laba"
                     stroke="#10B981"
                     strokeWidth={2}
                     strokeDasharray="5 4"
@@ -617,8 +702,10 @@ export default function LaporanKeuanganPage() {
             </ResponsiveContainer>
           )}
         </div>
-        {series.profit ? (
-          <p className="mt-2 text-[11px] font-semibold text-amber-600">Garis laba masih estimasi; HPP retur belum dibalik.</p>
+        {s.profitStatus !== "valid" ? (
+          <p className="mt-2 text-[11px] font-semibold text-slate-400">
+            Garis estimasi laba tidak ditampilkan. {s.profitNote}
+          </p>
         ) : null}
       </section>
 
@@ -814,10 +901,10 @@ export default function LaporanKeuanganPage() {
 
         <p className="mt-3 text-[11px] font-medium text-slate-400">
           {tab === "sales"
-            ? "Tabel menampilkan semua pesanan di periode. Omzet hanya menghitung status lunas/dikirim/selesai."
+            ? "Tabel menampilkan semua pesanan di periode. Angka penjualan hanya menghitung status diproses/dikirim/selesai — bukan status pembayaran."
             : tab === "returns"
               ? "Termasuk retur yang dibuat di periode dan retur lama yang refund-nya selesai di periode ini."
-              : "Selisih positif = customer bayar; negatif = refund. Pending tidak mengurangi Omzet Neto."}
+              : "Selisih positif = customer bayar; negatif = refund. Pending tidak mengurangi Penjualan Setelah Retur."}
         </p>
       </section>
 
@@ -840,13 +927,21 @@ function BreakdownRow({
   label: string;
   value: string;
   caption?: string;
-  tone?: "red" | "green" | "blue";
+  tone?: "red" | "green" | "blue" | "muted";
   emphasis?: boolean;
   hint?: string;
   onClick?: () => void;
 }) {
   const toneClass =
-    tone === "red" ? "text-red-600" : tone === "green" ? "text-emerald-600" : tone === "blue" ? "text-blue-600" : "text-slate-800";
+    tone === "red"
+      ? "text-red-600"
+      : tone === "green"
+        ? "text-emerald-600"
+        : tone === "blue"
+          ? "text-blue-600"
+          : tone === "muted"
+            ? "text-slate-400"
+            : "text-slate-800";
   const Wrapper = onClick ? "button" : "div";
   return (
     <Wrapper
@@ -975,7 +1070,7 @@ function TableBody({
                   {header("order_number", "No. Pesanan")}
                   {header("customer_name", "Pelanggan", "hidden md:table-cell")}
                   {header("created_at", "Tanggal", "hidden sm:table-cell")}
-                  {header("total", "Omzet", "text-right")}
+                  {header("total", "Penjualan", "text-right")}
                   {header("status", "Status")}
                   {header("source", "Sumber", "hidden lg:table-cell")}
                 </>
@@ -1124,7 +1219,7 @@ function DetailDrawer({ selected, onClose }: { selected: { kind: Tab; row: any }
 
           {selected.kind === "sales" ? (
             <div className="rounded-2xl border border-[#E5E7EB] p-3.5">
-              <div className="flex justify-between"><span className="text-slate-500">Omzet</span><span className="font-black tabular-nums">{rp(row.total)}</span></div>
+              <div className="flex justify-between"><span className="text-slate-500">Penjualan</span><span className="font-black tabular-nums">{rp(row.total)}</span></div>
               <div className="mt-1 flex justify-between"><span className="text-slate-500">Status</span><Badge tone={row.status === "dibatalkan" ? "red" : row.status === "pending" ? "amber" : "green"}>{statusLabel(row.status)}</Badge></div>
               <div className="mt-1 flex justify-between"><span className="text-slate-500">Tanggal</span><span className="text-xs font-semibold">{dateTime(row.created_at)}</span></div>
             </div>
