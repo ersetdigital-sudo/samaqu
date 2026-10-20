@@ -190,7 +190,12 @@ export default function BioLinkPage() {
 
         {/* Header */}
         <header className="px-6 pt-2 pb-7 text-center" style={{ background: "radial-gradient(120% 60% at 50% 0%,rgba(0,0,0,.05),transparent 70%)" }}>
-          <h1 className="text-4xl sm:text-5xl font-light tracking-[0.32em]" style={{ fontFamily: FONT_DISPLAY, color: INK, paddingLeft: "0.32em" }}>SAMAQU</h1>
+          {/* Logo — wordmark SAMAQU, senada tema monokrom halaman bio */}
+          <img
+            src="/logo.svg"
+            alt="SAMAQU"
+            className="h-10 sm:h-12 w-auto mx-auto"
+          />
           <p className="text-lg sm:text-xl mt-2" style={{ fontFamily: FONT_DISPLAY, color: INK }}>Untuk Orang Biasa yang Sedang Bertumbuh.</p>
           <p className="text-[13px] leading-relaxed mt-3 max-w-[380px] mx-auto" style={{ color: MUTED }}>
             Samaqu hadir untuk menemani perjalananmu, agar tampil lebih percaya diri dan terus bertumbuh untuk memberi manfaat.
