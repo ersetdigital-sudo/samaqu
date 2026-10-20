@@ -58,14 +58,16 @@ export default function ProductCombobox({ products = [], variants = [], value = 
       if (!grouped.has(option.category)) grouped.set(option.category, []);
       grouped.get(option.category).push(option);
     }
-    return [...grouped.entries()].map(([category, items]) => ({
-      category,
-      items: items.sort(
-        (a, b) =>
-          a.product.name.localeCompare(b.product.name, "id") ||
-          a.series.localeCompare(b.series, "id"),
-      ),
-    }));
+    return [...grouped.entries()]
+      .sort(([a], [b]) => a.localeCompare(b, "id"))
+      .map(([category, items]) => ({
+        category,
+        items: items.sort(
+          (a, b) =>
+            a.product.name.localeCompare(b.product.name, "id") ||
+            a.series.localeCompare(b.series, "id"),
+        ),
+      }));
   }, [options, query]);
 
   const flat = useMemo(() => groups.flatMap((group) => group.items), [groups]);
@@ -92,7 +94,7 @@ export default function ProductCombobox({ products = [], variants = [], value = 
     if (!open) return;
     const active = document.getElementById(`${listId}-opt-${activeIndex}`);
     active?.scrollIntoView({ block: "nearest" });
-  }, [activeIndex, open, listId]);
+  }, [activeIndex, open, listId, query]);
 
   const selectedLabel = selected ? [selected.name, selected.series].filter(Boolean).join(" · ") : "";
   const inputValue = open ? query : selectedLabel;
