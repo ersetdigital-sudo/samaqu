@@ -28,6 +28,7 @@ import {
 import {
   formatDateLabel,
   formatOpenOrderPeriod,
+  formatOpenOrderPeriodCompact,
   resolveOpenOrderState,
 } from "@/lib/open-order-window";
 import { useSafeLocale } from "@/lib/safe-i18n";
@@ -148,6 +149,7 @@ export default function OpenOrderWizard() {
   // Periode & status datang dari tanggal yang diatur admin; teks periode lama jadi fallback
   // selama tanggalnya belum diisi.
   const period = formatOpenOrderPeriod(settings, settings.open_order_period || OPEN_ORDER_PERIOD);
+  const periodCompact = formatOpenOrderPeriodCompact(settings, settings.open_order_period || OPEN_ORDER_PERIOD);
   const openState = resolveOpenOrderState(settings);
 
   // Produk + varian dibaca dari katalog yang sama dengan halaman detail (harga, warna, series,
@@ -553,17 +555,28 @@ export default function OpenOrderWizard() {
             >
               <Calendar size={20} />
             </span>
-            <p className="mt-4 text-[15px] font-semibold" style={{ color: "var(--espresso)" }}>
-              {openState === "before" ? "Open Order belum dibuka" : "Periode Open Order sudah ditutup"}
-            </p>
-            <p className="mt-2 text-[13px] leading-relaxed" style={{ color: MUTED }}>
-              {openState === "before"
-                ? `Jendela Open Order periode ini dibuka ${startLabel || "segera"}.`
-                : `Jendela periode ${period} sudah lewat.`}
-            </p>
-            <p className="mt-4 text-[13.5px] font-medium leading-relaxed" style={{ color: "var(--espresso)" }}>
-              Nanti Open Order berikutnya — pantau Instagram SAMAQU untuk jadwalnya.
-            </p>
+            {openState === "before" ? (
+              <>
+                <p className="mt-4 text-[15px] font-semibold" style={{ color: "var(--espresso)" }}>
+                  Open Order belum dibuka
+                </p>
+                <p className="mt-2 text-[13px] leading-relaxed" style={{ color: MUTED }}>
+                  Jendela Open Order periode ini dibuka {startLabel || "segera"}.
+                </p>
+                <p className="mt-4 text-[13.5px] font-medium leading-relaxed" style={{ color: "var(--espresso)" }}>
+                  Nanti Open Order berikutnya — pantau Instagram SAMAQU untuk jadwalnya.
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="mt-4 text-[15px] font-semibold" style={{ color: "var(--espresso)" }}>
+                  Periode Open Order Telah Berakhir
+                </p>
+                <p className="mt-2 text-[13px] leading-relaxed" style={{ color: MUTED }}>
+                  Periode Open Order {periodCompact} telah berakhir. Nantikan informasi periode Open Order berikutnya melalui Instagram SAMAQU.
+                </p>
+              </>
+            )}
           </div>
 
           <div className="mt-7 flex justify-center gap-2.5">

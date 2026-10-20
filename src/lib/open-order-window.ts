@@ -64,6 +64,32 @@ export function formatOpenOrderPeriod(window: OpenOrderWindow, fallback: string)
 }
 
 /**
+ * Rentang ringkas untuk kalimat, mis. "14–17 Oktober 2026" saat bulan & tahunnya sama.
+ * Kalau rentangnya beda bulan/tahun, tetap pakai `formatOpenOrderPeriod`.
+ */
+export function formatOpenOrderPeriodCompact(window: OpenOrderWindow, fallback: string): string {
+  const startMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec((window.open_order_start_date ?? "").trim());
+  const endMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec((window.open_order_end_date ?? "").trim());
+  if (!startMatch || !endMatch) return formatOpenOrderPeriod(window, fallback);
+
+  const startYear = startMatch[1];
+  const startMonth = MONTHS[Number(startMatch[2]) - 1];
+  const startDay = Number(startMatch[3]);
+  const endYear = endMatch[1];
+  const endMonth = MONTHS[Number(endMatch[2]) - 1];
+  const endDay = Number(endMatch[3]);
+  if (!startMonth || !endMonth) return formatOpenOrderPeriod(window, fallback);
+
+  if (startYear === endYear && startMonth === endMonth) {
+    return `${startDay}–${endDay} ${startMonth} ${startYear}`;
+  }
+  if (startYear === endYear) {
+    return `${startDay} ${startMonth} – ${endDay} ${endMonth} ${startYear}`;
+  }
+  return `${startDay} ${startMonth} ${startYear} – ${endDay} ${endMonth} ${endYear}`;
+}
+
+/**
  * Status Open Order dari tanggalnya:
  * - `before` — hari ini masih sebelum tanggal mulai,
  * - `open`   — hari ini di dalam rentang (atau rentangnya belum diatur sama sekali),
