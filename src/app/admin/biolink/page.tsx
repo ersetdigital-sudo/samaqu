@@ -5,7 +5,7 @@ import { Loader2, Plus, Save, Trash2, Upload } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import AdminShell from "@/components/AdminShell";
 import { useToast } from "@/components/AdminToast";
-import { uploadToCloudinary } from "@/lib/cloudinary";
+import { uploadToCloudinary, validateMediaFile } from "@/lib/cloudinary";
 import {
   DEFAULT_BIO_CONTENT,
   normalizeBioContent,
@@ -195,6 +195,90 @@ function ImageField({
   );
 }
 
+function VideoField({
+  label,
+  value,
+  uploading,
+  onChange,
+  onUrlChange,
+  onClear,
+}: {
+  label: string;
+  value: string;
+  uploading: boolean;
+  onChange: (file: File) => void;
+  onUrlChange: (url: string) => void;
+  onClear: () => void;
+}) {
+  return (
+    <div>
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <span className="block text-[11px] font-medium" style={{ color: "var(--text-muted)" }}>
+          {label}
+        </span>
+        {value ? (
+          <button
+            type="button"
+            onClick={onClear}
+            className="text-[11px] font-medium underline underline-offset-2"
+            style={{ color: "var(--text-muted)" }}
+          >
+            Pakai foto hero
+          </button>
+        ) : null}
+      </div>
+      <div className="flex items-center gap-3">
+        <div className="h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-black">
+          {value ? (
+            <video
+              src={value}
+              className="h-full w-full object-cover"
+              muted
+              loop
+              autoPlay
+              playsInline
+              preload="metadata"
+            />
+          ) : (
+            <span className="grid h-full w-full place-items-center text-[10px]" style={{ color: "#a1a1aa" }}>
+              Belum ada
+            </span>
+          )}
+        </div>
+        <label
+          className="inline-flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium"
+          style={{ border: "1px solid var(--bd)", color: "var(--espresso)" }}
+        >
+          {uploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+          {uploading ? "Uploading..." : "Ganti Video"}
+          <input
+            type="file"
+            accept="video/mp4,video/webm"
+            className="hidden"
+            disabled={uploading}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) onChange(file);
+              e.target.value = "";
+            }}
+          />
+        </label>
+      </div>
+      <input
+        value={value}
+        onChange={(e) => onUrlChange(e.target.value)}
+        placeholder="https://res.cloudinary.com/.../video.mp4"
+        className="mt-2 w-full rounded-lg px-3 py-2.5 text-sm outline-none"
+        style={inputStyle}
+      />
+      <p className="mt-1 text-[10px]" style={{ color: "var(--text-muted)" }}>
+        Kalau diisi, video menggantikan foto hero. Bingkai hero tetap 420px dan video dipotong
+        otomatis, jadi ukuran video tidak mengubah layout.
+      </p>
+    </div>
+  );
+}
+
 function Card({ title, subtitle, children }: { title: string; subtitle?: string; children: ReactNode }) {
   return (
     <section
@@ -264,6 +348,19 @@ export default function BiolinkPage() {
     setUploading(null);
   }
 
+  async function uploadVideo(file: File) {
+    setUploading("hero-video");
+    try {
+      await validateMediaFile(file);
+      const url = await uploadToCloudinary(file);
+      patch((c) => ({ ...c, hero: { ...c.hero, video_url: url } }));
+      toast.showToast("success", "Video berhasil diupload");
+    } catch (error) {
+      toast.showToast("error", error instanceof Error ? error.message : "Gagal upload video");
+    }
+    setUploading(null);
+  }
+
   async function save() {
     setSaving(true);
     const { error } = await supabase.from("bio_page_content").upsert(
@@ -297,7 +394,7 @@ export default function BiolinkPage() {
               Bio Link
             </h1>
             <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
-              Kelola semua foto & konten halaman samaqu.id/bio.
+              Kelola semua foto, video & konten halaman samaqu.id/bio.
             </p>
           </div>
           <button
@@ -336,9 +433,22 @@ export default function BiolinkPage() {
             />
           </Card>
 
-          <Card title="Hero / Best Seller">
+          <Card
+            title="Hero / Best Seller"
+            subtitle="Video (opsional) tampil menggantikan foto. Bingkai hero tetap sama."
+          >
+            <VideoField
+              label="Video Hero"
+              value={content.hero.video_url}
+              uploading={uploading === "hero-video"}
+              onChange={uploadVideo}
+              onUrlChange={(url) =>
+                patch((c) => ({ ...c, hero: { ...c.hero, video_url: url } }))
+              }
+              onClear={() => patch((c) => ({ ...c, hero: { ...c.hero, video_url: "" } }))}
+            />
             <ImageField
-              label="Foto Hero"
+              label="Foto Hero (fallback kalau video kosong)"
               value={content.hero.image_url}
               uploading={uploading === "hero"}
               onChange={(file) =>

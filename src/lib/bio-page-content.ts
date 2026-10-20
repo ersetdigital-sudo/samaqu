@@ -44,6 +44,8 @@ export interface BioPageContent {
   description: string;
   hero: {
     image_url: string;
+    /** Video showcase (opsional). Kalau diisi, video menggantikan foto hero. */
+    video_url: string;
     badge: string;
     title: string;
     title_accent: string;
@@ -76,6 +78,9 @@ const WHATSAPP =
   "https://wa.me/62895635965400?text=Halo%20Samaqu%2C%20saya%20mau%20order";
 const SITE = "https://samaqu.id";
 const INSTAGRAM = "https://instagram.com/samaqu.id";
+/** Video showcase default; bisa diganti dari Admin → Biolink. */
+const VIDEO =
+  "https://res.cloudinary.com/ddbq1mlsc/video/upload/v1792504744/1000375934_emagkl.mp4";
 
 export const DEFAULT_BIO_CONTENT: BioPageContent = {
   logo_url: "/bio/samaqu-logo.png",
@@ -83,6 +88,7 @@ export const DEFAULT_BIO_CONTENT: BioPageContent = {
   description: "Thobe untuk pria yang ingin tampil rapi, nyaman, dan berkelas.",
   hero: {
     image_url: "/bio/thobe.png",
+    video_url: VIDEO,
     badge: "BEST SELLER",
     title: "Thobe",
     title_accent: "Samaqu.",
@@ -146,7 +152,11 @@ export function normalizeBioContent(raw: unknown): BioPageContent {
     logo_url: pick(DEFAULT_BIO_CONTENT.logo_url, value.logo_url),
     eyebrow: pick(DEFAULT_BIO_CONTENT.eyebrow, value.eyebrow),
     description: pick(DEFAULT_BIO_CONTENT.description, value.description),
-    hero: { ...DEFAULT_BIO_CONTENT.hero, ...(value.hero ?? {}) },
+    hero: {
+      ...DEFAULT_BIO_CONTENT.hero,
+      ...(value.hero ?? {}),
+      video_url: pick(DEFAULT_BIO_CONTENT.hero.video_url, value.hero?.video_url),
+    },
     categories: {
       heading: pick(DEFAULT_BIO_CONTENT.categories.heading, value.categories?.heading),
       link_label: pick(DEFAULT_BIO_CONTENT.categories.link_label, value.categories?.link_label),

@@ -1,15 +1,5 @@
 import type { BioPageContent } from "@/lib/bio-page-content";
-
-/** Video showcase untuk bio versi 2 (tanpa foto katalog). */
-const DEFAULT_BIO_VIDEO_URL =
-  "https://res.cloudinary.com/ddbq1mlsc/video/upload/v1792504744/1000375934_emagkl.mp4";
-
-type BioLinkPageProps = {
-  content: BioPageContent;
-  /** v1 = foto katalog (default), v2 = video showcase. */
-  variant?: "v1" | "v2";
-  videoUrl?: string;
-};
+import BioLinkEffects from "@/components/BioLinkEffects";
 
 const ICON_PATHS: Record<string, string[]> = {
   ruler: [
@@ -90,13 +80,9 @@ function ArrowUpRight({ size = 16 }: { size?: number }) {
   );
 }
 
-export default function BioLinkPage({
-  content,
-  variant = "v1",
-  videoUrl = DEFAULT_BIO_VIDEO_URL,
-}: BioLinkPageProps) {
+export default function BioLinkPage({ content }: { content: BioPageContent }) {
   const { logo_url, eyebrow, description, hero, categories, belanja, rows, guarantee, socials, footer, marquee } = content;
-  const isVideo = variant === "v2";
+  const hasVideo = Boolean(hero.video_url?.trim());
 
   return (
     <>
@@ -127,12 +113,13 @@ export default function BioLinkPage({
           {/* Hero — Best seller */}
           <a
             href={hero.href}
-            className="bio-tilt group relative mt-5 block overflow-hidden rounded-[28px] bg-[#0B0B0B] text-white shadow-[0_24px_50px_-24px_rgba(0,0,0,.6)]"
+            className="rv tilt group relative mt-5 block overflow-hidden rounded-[28px] bg-[#0B0B0B] text-white shadow-[0_24px_50px_-24px_rgba(0,0,0,.6)]"
           >
-            {isVideo ? (
+            {hasVideo ? (
               <video
                 className="h-[420px] w-full object-cover"
-                src={videoUrl}
+                src={hero.video_url}
+                poster={hero.image_url || undefined}
                 autoPlay
                 muted
                 loop
@@ -147,13 +134,7 @@ export default function BioLinkPage({
                 className="bio-kb h-[420px] w-full object-cover object-top transition duration-700 group-hover:scale-105"
               />
             )}
-            <div
-              className="absolute inset-0"
-              style={{
-                background:
-                  "linear-gradient(to top, #000 0%, rgba(0,0,0,.3) 50%, transparent 100%)",
-              }}
-            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
             {hero.badge && (
               <span className="absolute left-5 top-5 rounded-full bg-white/90 px-3 py-1 text-[11px] font-bold tracking-[.2em] text-black backdrop-blur">
                 {hero.badge}
@@ -180,7 +161,7 @@ export default function BioLinkPage({
           </a>
 
           {/* Kategori */}
-          <section className="bio-up mt-8" style={{ animationDelay: "0.4s" }}>
+          <section className="rv mt-8">
             <div className="flex items-end justify-between">
               <p className="text-[11px] font-bold uppercase tracking-[.3em] text-black/45">
                 {categories.heading}
@@ -195,69 +176,40 @@ export default function BioLinkPage({
               )}
             </div>
             <div className="mt-3 grid grid-cols-2 gap-2.5">
-              {categories.items.map((cat, i) => {
-                if (isVideo) {
-                  return (
-                    <a
-                      key={`${cat.label}-${i}`}
-                      href={cat.href}
-                      className="bio-cat-v2 group relative flex aspect-square flex-col justify-between overflow-hidden rounded-2xl border border-white/80 bg-white/70 p-4 font-semibold backdrop-blur transition duration-300 hover:-translate-y-1 hover:bg-[#0B0B0B] hover:text-white hover:shadow-[0_18px_40px_-18px_rgba(0,0,0,.5)]"
-                    >
-                      <span className="text-[10px] font-bold tracking-[.2em] opacity-40">
-                        {String(i + 1).padStart(2, "0")}
-                      </span>
-                      <span className="flex items-end justify-between gap-2">
-                        <span className="text-xl font-extrabold leading-none tracking-[-.03em]">
-                          {cat.label}
-                        </span>
-                        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-black/5 transition group-hover:bg-white/15">
-                          <ArrowUpRight />
-                        </span>
-                      </span>
-                    </a>
-                  );
-                }
-                return (
-                  <a
-                    key={`${cat.label}-${i}`}
-                    href={cat.href}
-                    className="group relative block aspect-square overflow-hidden rounded-2xl bg-white"
-                  >
-                    <img
-                      src={cat.image_url}
-                      alt={cat.label}
-                      className="h-full w-full object-cover transition duration-500 group-hover:scale-110"
-                      style={{ objectPosition: cat.position || "50% 50%" }}
-                    />
-                    <div
-                      className="absolute inset-0"
-                      style={{
-                        background:
-                          "linear-gradient(to top, rgba(0,0,0,.7), transparent)",
-                      }}
-                    />
-                    <div className="absolute inset-x-3 bottom-3 flex items-center justify-between text-white">
-                      <span className="font-bold">{cat.label}</span>
-                      <span className="grid h-7 w-7 place-items-center rounded-full bg-white/20 backdrop-blur">
-                        <ArrowUpRight />
-                      </span>
-                    </div>
-                  </a>
-                );
-              })}
+              {categories.items.map((cat, i) => (
+                <a
+                  key={`${cat.label}-${i}`}
+                  href={cat.href}
+                  className="rv group relative block aspect-square overflow-hidden rounded-2xl bg-white"
+                >
+                  <img
+                    src={cat.image_url}
+                    alt={cat.label}
+                    className="h-full w-full object-cover transition duration-500 group-hover:scale-110"
+                    style={{ objectPosition: cat.position || "50% 50%" }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                  <div className="absolute inset-x-3 bottom-3 flex items-center justify-between text-white">
+                    <span className="font-bold">{cat.label}</span>
+                    <span className="grid h-7 w-7 place-items-center rounded-full bg-white/20 backdrop-blur">
+                      <ArrowUpRight />
+                    </span>
+                  </div>
+                </a>
+              ))}
             </div>
           </section>
 
           {/* Belanja */}
-          <p className="bio-up mt-8 text-[11px] font-bold uppercase tracking-[.3em] text-black/45">
+          <p className="mt-8 text-[11px] font-bold uppercase tracking-[.3em] text-black/45">
             {belanja.heading}
           </p>
-          <div className="bio-up mt-3 grid grid-cols-2 gap-2.5" style={{ animationDelay: "0.46s" }}>
+          <div className="mt-3 grid grid-cols-2 gap-2.5">
             {belanja.items.map((item, i) => (
               <a
                 key={`${item.label}-${i}`}
                 href={item.href}
-                className={`bio-tilt-btn flex min-h-[132px] flex-col justify-between gap-4 rounded-2xl p-4 font-semibold transition hover:-translate-y-1 hover:shadow-[0_18px_40px_-18px_rgba(0,0,0,.5)] ${
+                className={`rv bio-tilt-btn flex min-h-[132px] flex-col justify-between gap-4 rounded-2xl p-4 font-semibold transition hover:-translate-y-1 hover:shadow-[0_18px_40px_-18px_rgba(0,0,0,.5)] ${
                   item.icon === "whatsapp" ? "bg-[#0B0B0B] text-white" : "bg-white"
                 }`}
               >
@@ -286,12 +238,12 @@ export default function BioLinkPage({
           </div>
 
           {/* Baris link */}
-          <nav className="bio-up mt-2.5 space-y-2.5" style={{ animationDelay: "0.5s" }}>
+          <nav className="mt-2.5 space-y-2.5">
             {rows.map((row, i) => (
               <a
                 key={`${row.label}-${i}`}
                 href={row.href}
-                className="bio-row flex items-center gap-4 rounded-2xl bg-white p-2.5 pr-3 font-semibold"
+                className="rv bio-row flex items-center gap-4 rounded-2xl bg-white p-2.5 pr-3 font-semibold"
               >
                 <span className="bio-ic grid h-12 w-12 place-items-center rounded-xl bg-black/5 transition-colors">
                   <Icon name={row.icon} />
@@ -313,10 +265,7 @@ export default function BioLinkPage({
 
           {/* Garansi */}
           {guarantee.items.length > 0 && (
-            <section
-              className="bio-up mt-8 rounded-[24px] border border-white bg-white/60 p-5 backdrop-blur"
-              style={{ animationDelay: "0.54s" }}
-            >
+            <section className="rv mt-8 rounded-[24px] border border-white bg-white/60 p-5 backdrop-blur">
               <p className="text-[11px] font-bold uppercase tracking-[.3em] text-black/40">
                 {guarantee.heading}
               </p>
@@ -375,6 +324,11 @@ export default function BioLinkPage({
         </div>
       )}
 
+      <BioLinkEffects />
+      <noscript>
+        <style>{`.bio-root .rv { opacity: 1; transform: none; }`}</style>
+      </noscript>
+
       <style>{`
         .bio-root svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
         .bio-root .bio-fill { fill: currentColor; stroke: none; }
@@ -392,10 +346,12 @@ export default function BioLinkPage({
         .bio-row:hover .bio-ic { background: #fff; color: #0B0B0B; }
         .bio-row:hover .bio-ar { transform: translate(3px,-3px); background: #fff; color: #0B0B0B; }
         .bio-ar { transition: transform .25s; }
-        .bio-tilt { transition: transform .3s; }
+        .rv { opacity: 0; transform: translateY(28px) scale(.98); transition: opacity .8s cubic-bezier(.2,.8,.2,1), transform .8s cubic-bezier(.2,.8,.2,1); will-change: transform, opacity; }
+        .rv.in { opacity: 1; transform: none; }
+        .tilt { transition: transform .3s; }
         .bio-mq { animation: bio-mq 24s linear infinite; }
         @keyframes bio-mq { to { transform: translateX(-50%); } }
-        @media (prefers-reduced-motion: reduce) { .bio-root *, .bio-mq { animation: none !important; transition: none !important; } .bio-up { opacity: 1; transform: none; } }
+        @media (prefers-reduced-motion: reduce) { .bio-root *, .bio-mq { animation: none !important; transition: none !important; } .bio-up, .rv { opacity: 1; transform: none; } }
       `}</style>
     </>
   );
