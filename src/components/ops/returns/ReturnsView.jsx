@@ -26,7 +26,24 @@ import {
   X,
 } from "lucide-react";
 import { base44 } from "@/lib/ops-api";
+import { resolveColorName } from "@/lib/sku";
 import { formatRupiah, formatTanggalJamID, formatTanggalSingkatID } from "@/components/ops/transaksi/transaksi-format";
+
+/** Warna ops: warna asli, atau turunan dari nama produk (tanpa teks "default"). */
+const titleCaseColor = (value) =>
+  String(value || "").toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
+
+function displayColor(color, group) {
+  const raw = String(color || "").trim();
+  if (raw && raw.toLowerCase() !== "default") return raw;
+  const derived = resolveColorName({
+    color: "",
+    productName: group?.name,
+    category: group?.category,
+    series: group?.series,
+  });
+  return derived ? titleCaseColor(derived) : "-";
+}
 
 const TYPE_LABEL = { tukar_size: "Tukar Size", return: "Return" };
 
@@ -1090,7 +1107,7 @@ function CreateReturnDrawer({ type, isPanel, accent, accentSoft, variants, onClo
                                         : "border-slate-200 text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
                                     }`}
                                   >
-                                    {colorVariant.color && colorVariant.color !== "default" ? colorVariant.color : "Default"}
+                                    {displayColor(colorVariant.color, group)}
                                   </button>
                                 );
                               })}

@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 import { useNavigate } from "@/lib/ops-router";
 import { formatWeightExact } from "@/lib/shipping-weight";
+import { resolveColorName } from "@/lib/sku";
 import {
   Package,
   TrendingUp,
@@ -95,11 +96,50 @@ const stokNonStandar = (v) =>
 const varianKategori = (v) => String(v.category || "").trim();
 const varianKain = (v) => String(v.jenis_kain_name || "").trim();
 const varianSeries = (v) => String(v.series_name || "").trim();
-/** Warna asli saja; `default` adalah sisa struktur lama dan tidak ditampilkan. */
-const varianWarna = (v) => {
-  const color = String(v.color || "").trim();
-  return color && color.toLowerCase() !== "default" ? color : "";
-};
+/** Warna tampilan: warna asli, atau turunan dari nama produk untuk `default`. */
+const titleCaseColor = (value) =>
+  String(value || "").toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
+
+function displayVariantColor(color, product) {
+  const raw = String(color || "").trim();
+  if (raw && raw.toLowerCase() !== "default") return raw;
+  const derived = resolveColorName({
+    color: "",
+    productName: product?.name,
+    category: product?.category,
+    series: product?.series,
+  });
+  return derived ? titleCaseColor(derived) : "-";
+}
+
+function variantLabel(color, size, product) {
+  const label = displayVariantColor(color, product);
+  return [label === "-" ? "" : label, size].filter(Boolean).join(" / ");
+}
+
+function findLiveVariant(variants, productId, color, size) {
+  const wantedColor = String(color || "default").trim().toLowerCase();
+  const wantedSize = String(size || "").trim().toUpperCase();
+  return (
+    (variants || []).find(
+      (v) =>
+        String(v.product_id || "") === String(productId || "") &&
+        String(v.color || "default").trim().toLowerCase() === wantedColor &&
+        String(v.size || "").trim().toUpperCase() === wantedSize,
+    ) || null
+  );
+}
+
+/** SKU varian terkini lewat relasi; fallback ke SKU tersimpan/produk. */
+function displayVariantSku(variants, product, productId, color, size, storedSku) {
+  const variant = findLiveVariant(variants, productId, color, size);
+  return (
+    String(variant?.sku || "").trim() ||
+    String(storedSku || "").trim() ||
+    String(product?.sku || "").trim() ||
+    "-"
+  );
+}
 /** Status varian = aturan kartu ringkasan: 0 habis, 1..5 menipis, sisa aman. */
 const varianStatus = (v) => { const t = stokVarianTotal(v); return t === 0 ? "habis" : t <= 5 ? "menipis" : "aman"; };
 const varianSearchText = (v) =>
@@ -455,7 +495,7 @@ function ProductDetailModal({ isOpen, onClose, product, stockIns = [], transacti
                               <tr key={v.id || index} className="border-t border-slate-100 dark:border-slate-800">
                                 {hasRealColors ? (
                                   <td className="px-3 py-2 text-[13px] font-semibold text-slate-900 dark:text-white whitespace-nowrap">
-                                    {String(v.color || "").trim()}
+                                    {displayVariantColor(v.color, product)}
                                     {v.series_name ? <span className="block text-[10px] text-slate-400 font-medium">{v.series_name}</span> : null}
                                   </td>
                                 ) : null}
@@ -520,7 +560,7 @@ function ProductDetailModal({ isOpen, onClose, product, stockIns = [], transacti
                         <div className="min-w-0">
                           <p className="text-[13px] font-semibold text-slate-900 dark:text-white">{format(new Date(si.date), "dd MMM yyyy")}</p>
                           <p className="text-[11px] text-slate-500 truncate">
-                            {[si.variant_color, si.variant_size].filter(Boolean).join(" / ") || si.notes || "-"}
+                            {variantLabel(si.variant_color, si.variant_size, product) || si.notes || "-"}
                           </p>
                         </div>
                         <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 text-[13px] font-bold whitespace-nowrap">
@@ -545,7 +585,7 @@ function ProductDetailModal({ isOpen, onClose, product, stockIns = [], transacti
                           <div className="min-w-0">
                             <p className="text-[13px] font-semibold text-slate-900 dark:text-white">{format(new Date(t.date), "dd MMM yyyy")}</p>
                             <p className="text-[11px] text-slate-500 truncate">
-                              {t.order_id || "-"} · {[t.variant_color, t.variant_size].filter(Boolean).join(" / ") || "-"}
+                              {t.order_id || "-"} · {variantLabel(t.variant_color, t.variant_size, product) || "-"}
                             </p>
                           </div>
                           <div className="text-right whitespace-nowrap">
@@ -1665,6 +1705,7 @@ export default function MasterProduk() {
                     <thead className="sticky top-0 z-20">
                       <tr className="bg-[#1e3a5f]">
                         <th className="px-3 py-3.5 text-left font-inter text-xs font-bold text-white uppercase tracking-wide border-r border-[#2d4a6f]">Produk</th>
+                        <th className="w-[200px] px-3 py-3.5 text-left font-inter text-xs font-bold text-white uppercase tracking-wide border-r border-[#2d4a6f] whitespace-nowrap">SKU</th>
                         <th className="px-3 py-3.5 text-left font-inter text-xs font-bold text-white uppercase tracking-wide border-r border-[#2d4a6f] whitespace-nowrap">Kategori</th>
                         <th className="px-3 py-3.5 text-left font-inter text-xs font-bold text-white uppercase tracking-wide border-r border-[#2d4a6f] whitespace-nowrap">Jenis Kain</th>
                         <th className="px-3 py-3.5 text-left font-inter text-xs font-bold text-white uppercase tracking-wide border-r border-[#2d4a6f]">Series</th>
@@ -1683,7 +1724,7 @@ export default function MasterProduk() {
                     <tbody>
                       {reportRows.length === 0 ? (
                         <tr>
-                          <td colSpan={4 + (reportSizeLayout.showSizes ? SIZES.length : 0) + (reportSizeLayout.showExtra ? 1 : 0) + 1} className="px-6 py-12 text-center font-inter text-sm text-gray-400 dark:text-slate-500">
+                          <td colSpan={5 + (reportSizeLayout.showSizes ? SIZES.length : 0) + (reportSizeLayout.showExtra ? 1 : 0) + 1} className="px-6 py-12 text-center font-inter text-sm text-gray-400 dark:text-slate-500">
                             <div className="flex flex-col items-center gap-3">
                               <span>{hasReportFilter ? 'Tidak ada baris yang cocok dengan pencarian/filter.' : 'Belum ada baris — tambahkan produk dengan ukuran dulu'}</span>
                               {hasReportFilter && (
@@ -1714,16 +1755,17 @@ export default function MasterProduk() {
                             <tr key={v.id} className={`${rowBg} hover:bg-blue-100/50 dark:hover:bg-slate-800 transition-colors border-b border-gray-100 dark:border-slate-800/50 ${v.base_product_id ? 'opacity-60' : ''}`}>
                               <td className="px-3 py-3.5 text-left align-middle font-inter text-sm font-semibold text-gray-900 dark:text-white border-r border-gray-100 dark:border-slate-800/50">
                                 {product?.name || v.product_name || '-'}
-                                {varianWarna(v) ? (
-                                  <span className="block text-[10px] font-medium text-slate-500 dark:text-slate-400">
-                                    {varianWarna(v)}
-                                  </span>
-                                ) : null}
+                                <span className="block text-[10px] font-medium text-slate-500 dark:text-slate-400">
+                                  {displayVariantColor(v.color, product)}
+                                </span>
                                 {(v.base_series_name || v.base_product_name) ? (
                                   <span className="block text-[10px] font-medium text-amber-600 dark:text-amber-400">
                                     ikut {v.base_series_name || v.base_product_name}
                                   </span>
                                 ) : null}
+                              </td>
+                              <td className="px-3 py-3.5 text-left align-middle font-inter text-[12px] font-semibold text-slate-700 dark:text-slate-200 border-r border-gray-100 dark:border-slate-800/50 whitespace-nowrap">
+                                {v.sku || product?.sku || '-'}
                               </td>
                               <td className="px-3 py-3.5 text-left align-middle border-r border-gray-100 dark:border-slate-800/50">
                                 {varianKategori(v) ? (
@@ -1816,9 +1858,8 @@ export default function MasterProduk() {
                         <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-200/60">
                           <div>
                             <p className="font-inter text-sm font-semibold text-gray-900">{product?.name || v.product_name || '-'}</p>
-                            {varianWarna(v) ? (
-                              <p className="text-[10px] font-medium text-gray-500">{varianWarna(v)}</p>
-                            ) : null}
+                            <p className="text-[10px] font-medium text-gray-500">{displayVariantColor(v.color, product)}</p>
+                            <p className="text-[10px] font-semibold text-slate-500 break-all">SKU: {v.sku || product?.sku || '-'}</p>
                             {(v.base_series_name || v.base_product_name) ? (
                               <p className="text-[10px] font-medium text-amber-600">
                                 ikut {v.base_series_name || v.base_product_name}
@@ -1900,12 +1941,6 @@ export default function MasterProduk() {
             >
               {(() => {
                 const manualStockIns = stockIns.filter(si => !si.source || si.source === 'manual' || si.source === 'batal' || si.source === 'tukar_size' || si.source === 'return');
-                // Kolom Warna hanya bermakna kalau ada varian warna asli. Produk SAMAQU
-                // menyimpan `default` (warna ada di nama produk), jadi kolomnya disembunyikan.
-                const hasStockInColors = manualStockIns.some((si) => {
-                  const color = String(si.variant_color || '').trim().toLowerCase();
-                  return color !== '' && color !== 'default';
-                });
                 return (
                   <>
                     {/* Action Button */}
@@ -1927,23 +1962,21 @@ export default function MasterProduk() {
                     {/* Table - Google Sheet Style */}
                     <div className="bg-white dark:bg-[#1a1d28] rounded-xl shadow-sm border border-gray-200 dark:border-slate-800 overflow-hidden transition-colors duration-300">
                       <div className="overflow-x-auto">
-                        <table className="w-full border-collapse">
+                        <table className="w-full border-collapse min-w-[900px]">
                           <thead>
                             <tr className="bg-[#1e3a5f] dark:bg-[#1e3a5f]">
                               <th className="px-4 py-3.5 text-left font-inter text-xs font-bold text-white uppercase tracking-wide">
                                 Tanggal
                               </th>
-                              <th className="px-4 py-3.5 text-left font-inter text-xs font-bold text-white uppercase tracking-wide">
+                              <th className="w-[210px] px-4 py-3.5 text-left font-inter text-xs font-bold text-white uppercase tracking-wide whitespace-nowrap">
                                 SKU
                               </th>
                               <th className="px-4 py-3.5 text-left font-inter text-xs font-bold text-white uppercase tracking-wide">
                                 Nama Produk
                               </th>
-                              {hasStockInColors ? (
-                                <th className="px-4 py-3.5 text-center font-inter text-xs font-bold text-white uppercase tracking-wide">
-                                  Warna
-                                </th>
-                              ) : null}
+                              <th className="w-[130px] px-4 py-3.5 text-center font-inter text-xs font-bold text-white uppercase tracking-wide">
+                                Warna
+                              </th>
                               <th className="px-4 py-3.5 text-center font-inter text-xs font-bold text-white uppercase tracking-wide">
                                 Ukuran
                               </th>
@@ -1961,7 +1994,7 @@ export default function MasterProduk() {
                           <tbody>
                             {manualStockIns.length === 0 ? (
                               <tr>
-                                <td colSpan={hasStockInColors ? 8 : 7} className="px-6 py-12 text-center font-inter text-sm text-gray-400 dark:text-slate-500">
+                                <td colSpan={8} className="px-6 py-12 text-center font-inter text-sm text-gray-400 dark:text-slate-500">
                                   Belum ada data barang masuk
                                 </td>
                               </tr>
@@ -1971,20 +2004,18 @@ export default function MasterProduk() {
                                 const rowBg = index % 2 === 0 ? 'bg-white dark:bg-[#16171d]' : 'bg-blue-50/30 dark:bg-[#1a1d28]';
                                 return (
                                   <tr key={si.id} className={`${rowBg} hover:bg-blue-100/50 dark:hover:bg-slate-800 transition-colors border-b border-gray-100 dark:border-slate-800/50`}>
-                                    <td className="px-4 py-3.5 text-left align-middle font-inter text-sm text-gray-700 dark:text-slate-300">
+                                    <td className="px-4 py-3.5 text-left align-middle font-inter text-sm text-gray-700 dark:text-slate-300 whitespace-nowrap">
                                       {format(new Date(si.date), 'dd MMM yyyy')}
                                     </td>
-                                    <td className="px-4 py-3.5 text-left align-middle font-inter text-sm font-semibold text-gray-900 dark:text-white">
-                                      {si.sku || product?.sku || '-'}
+                                    <td className="px-4 py-3.5 text-left align-middle font-inter text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">
+                                      {displayVariantSku(variants, product, si.product_id, si.variant_color, si.variant_size, si.sku)}
                                     </td>
                                     <td className="px-4 py-3.5 text-left align-middle font-inter text-sm font-medium text-gray-700 dark:text-slate-300">
                                       {si.product_name || product?.name || '-'}
                                     </td>
-                                    {hasStockInColors ? (
-                                      <td className="px-4 py-3.5 text-center align-middle font-inter text-sm text-gray-500 dark:text-slate-400">
-                                        {si.variant_color || '-'}
-                                      </td>
-                                    ) : null}
+                                    <td className="px-4 py-3.5 text-center align-middle font-inter text-sm text-gray-500 dark:text-slate-400 whitespace-nowrap">
+                                      {displayVariantColor(si.variant_color, product)}
+                                    </td>
                                     <td className="px-4 py-3.5 text-center align-middle font-inter text-sm font-semibold text-gray-700 dark:text-slate-200">
                                       {si.variant_size || '-'}
                                     </td>
@@ -1994,7 +2025,9 @@ export default function MasterProduk() {
                                       </span>
                                     </td>
                                     <td className="px-4 py-3.5 text-center align-middle font-inter text-sm text-gray-500 dark:text-slate-400">
-                                      {si.notes || '-'}
+                                      <span className="block max-w-[180px] truncate" title={si.notes || undefined}>
+                                        {si.notes || '-'}
+                                      </span>
                                     </td>
                                     <td className="px-4 py-3.5 text-center align-middle">
                                       {['batal', 'tukar_size', 'return'].includes(si.source) ? (
@@ -2056,22 +2089,28 @@ export default function MasterProduk() {
               {/* Table - Google Sheet Style */}
               <div className="bg-white dark:bg-[#1a1d28] rounded-xl shadow-sm border border-gray-200 dark:border-slate-800 overflow-hidden transition-colors duration-300">
                 <div className="overflow-x-auto">
-                  <table className="w-full border-collapse table-fixed min-w-[640px]">
+                  <table className="w-full border-collapse table-fixed min-w-[880px]">
                     <thead>
                     <tr className="bg-[#1e3a5f] dark:bg-[#1e3a5f]">
-                    <th className="w-[14%] px-2.5 py-2.5 text-left font-inter text-[11px] font-bold text-white uppercase tracking-wide whitespace-nowrap">
+                    <th className="w-[10%] px-2.5 py-2.5 text-left font-inter text-[11px] font-bold text-white uppercase tracking-wide whitespace-nowrap">
                     Tanggal
                     </th>
-                    <th className="w-[22%] px-2.5 py-2.5 text-left font-inter text-[11px] font-bold text-white uppercase tracking-wide whitespace-nowrap">
+                    <th className="w-[15%] px-2.5 py-2.5 text-left font-inter text-[11px] font-bold text-white uppercase tracking-wide whitespace-nowrap">
                     Order ID
                     </th>
-                    <th className="px-2.5 py-2.5 text-left font-inter text-[11px] font-bold text-white uppercase tracking-wide">
+                    <th className="w-[19%] px-2.5 py-2.5 text-left font-inter text-[11px] font-bold text-white uppercase tracking-wide">
                     Produk
                     </th>
-                    <th className="w-[12%] px-2.5 py-2.5 text-center font-inter text-[11px] font-bold text-white uppercase tracking-wide">
+                    <th className="w-[12%] px-2.5 py-2.5 text-center font-inter text-[11px] font-bold text-white uppercase tracking-wide whitespace-nowrap">
+                    Warna
+                    </th>
+                    <th className="w-[22%] px-2.5 py-2.5 text-left font-inter text-[11px] font-bold text-white uppercase tracking-wide whitespace-nowrap">
+                    SKU
+                    </th>
+                    <th className="w-[7%] px-2.5 py-2.5 text-center font-inter text-[11px] font-bold text-white uppercase tracking-wide">
                     Qty
                     </th>
-                    <th className="w-[20%] px-2.5 py-2.5 text-right font-inter text-[11px] font-bold text-white uppercase tracking-wide whitespace-nowrap">
+                    <th className="w-[15%] px-2.5 py-2.5 text-right font-inter text-[11px] font-bold text-white uppercase tracking-wide whitespace-nowrap">
                     Total
                     </th>
                     </tr>
@@ -2079,7 +2118,7 @@ export default function MasterProduk() {
                     <tbody>
                     {transactions.length === 0 ? (
                     <tr>
-                    <td colSpan="5" className="px-4 py-10 text-center font-inter text-sm text-gray-400 dark:text-slate-500">
+                    <td colSpan="7" className="px-4 py-10 text-center font-inter text-sm text-gray-400 dark:text-slate-500">
                     Belum ada data barang keluar
                     </td>
                     </tr>
@@ -2113,6 +2152,12 @@ export default function MasterProduk() {
                     </td>
                     <td className="px-2.5 py-1.5 align-middle font-inter text-[13px] font-medium text-gray-900 dark:text-white break-words">
                     {t.product_name || product?.name || '-'}
+                    </td>
+                    <td className="px-2.5 py-1.5 text-center align-middle font-inter text-[12px] text-gray-600 dark:text-slate-300 whitespace-nowrap">
+                    {displayVariantColor(t.variant_color, product)}
+                    </td>
+                    <td className="px-2.5 py-1.5 align-middle font-inter text-[11px] font-semibold text-gray-700 dark:text-slate-200 whitespace-nowrap overflow-hidden text-ellipsis">
+                    {displayVariantSku(variants, product, t.product_id, t.variant_color, t.variant_size, t.sku)}
                     </td>
                     <td className="px-2.5 py-1.5 text-center align-middle">
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-400 text-[13px] font-bold">
