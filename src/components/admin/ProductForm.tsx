@@ -1176,9 +1176,7 @@ export default function TambahProdukPage({
           const uploadedMedia = block.media.filter((m) => m.url && !m.uploading);
           if (uploadedMedia.length === 0) e[`series_${sn}_media`] = `Media ${sn} wajib diisi (min 1)`;
         }
-        const hasStock = block.variants.some((v) => v.sizes.some((s) => s.stock > 0));
-        const isLinked = !!block.baseProductId;
-        if (!hasStock && !isLinked) e[`series_${sn}_stock`] = `Stok ${sn} wajib ada minimal 1 ukuran`;
+        // Stok boleh 0 — stok bisa diisi menyusul lewat Barang Masuk.
         // Berat per ukuran (opsional): kalau diisi harus bilangan bulat 100–5000 gram.
         for (const v of block.variants) {
           for (const s of v.sizes) {
@@ -1206,11 +1204,8 @@ export default function TambahProdukPage({
           if (names.some((n) => n === "")) e.variants = "Nama varian wajib diisi";
           else if (duplicatePaketNames(variants).size > 0) e.variants = "Nama varian tidak boleh kembar";
         }
-        if (!variants.some((v) => v.sizes.some((s) => s.stock > 0))) e.variants = "Minimal 1 varian dengan stok > 0";
       } else {
         if (variants.length === 0) e.variants = "Minimal 1 varian warna";
-        const hasSize = variants.some((v) => v.sizes.some((s) => s.stock > 0));
-        if (!hasSize) e.variants = "Minimal 1 ukuran dengan stok > 0";
       }
       // Berat per varian/ukuran (opsional): kalau diisi harus bilangan bulat 100–5000 gram.
       for (const v of variants) {
