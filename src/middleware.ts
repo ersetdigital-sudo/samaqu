@@ -57,9 +57,10 @@ export const config = {
   // kalau tidak middleware locale mengalihkannya ke /<locale>/… (404).
   // `.*\..*` mengecualikan semua file statis (robots.txt, sitemap.xml, llms.txt,
   // llms-full.txt, favicon.ico, gambar, .well-known/…) dari redirect locale.
+  // `affiliate` = portal partner (tanpa locale), `r/` = halaman tujuan tautan referral.
   matcher: [
     "/",
     "/(id|en)/:path*",
-    "/((?!_next|admin|panel-admin|ops|api|opengraph-image|twitter-image|icon|apple-icon|manifest|\\.well-known|.*\\..*).*)",
+    "/((?!_next|admin|panel-admin|ops|affiliate|r/|api|opengraph-image|twitter-image|icon|apple-icon|manifest|\\.well-known|.*\\..*).*)",
   ],
 };

@@ -3,6 +3,7 @@ import type { TrackHistoryItem, TrackResponse } from "./types";
 import { isDelivered, isShipped, orderRank, shippingRank } from "./track-status";
 import { notifyCustomerOrderDelivered, notifyCustomerOrderShipped } from "../fonnte";
 import { claimOrderNotification, recordShippedNotifyStatus, sendOnce } from "../order-notify";
+import { syncCommissionStatus } from "../affiliate/commission";
 
 /**
  * Terapkan hasil tracking J&T ke satu pesanan — SATU sumber logika, dipakai cron
@@ -225,6 +226,15 @@ export async function applyTrackingToOrder(
         customerWhatsapp: order.customer_whatsapp || "",
       })
     );
+  }
+
+  // 9) Komisi affiliate diselaraskan dengan status pengiriman (baru "disetujui" setelah masa
+  //    validasi habis, lihat src/lib/affiliate/commission.ts). Kegagalan tidak boleh mengganggu
+  //    sinkronisasi tracking.
+  try {
+    await syncCommissionStatus(supabase, order.id, { actor: "tracking-sync" });
+  } catch (e) {
+    console.error("[TRACKING-SYNC] Gagal menyelaraskan komisi affiliate:", e);
   }
 
   return {

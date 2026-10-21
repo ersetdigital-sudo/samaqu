@@ -2,6 +2,7 @@ import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { cancelOrder } from "@/lib/jnt";
 import { notifyAdminOrderCancelled, notifyCustomerOrderCancelled } from "@/lib/fonnte";
 import { claimOrderNotification } from "@/lib/order-notify";
+import { syncCommissionStatus } from "@/lib/affiliate/commission";
 
 /**
  * Satu jalur pembatalan pesanan untuk semua pemanggil: customer (`/api/orders/cancel`),
@@ -138,6 +139,14 @@ export async function cancelOrderCompletely(
   }
 
   console.log("[CANCEL] Order cancelled:", order.order_number);
+
+  // Komisi affiliate: pesanan batal → komisi dibatalkan/reversal (audit trail tetap tersimpan).
+  // Status pesanan tidak diubah oleh modul ini — hanya baris komisi yang diselaraskan.
+  try {
+    await syncCommissionStatus(supabase, order.id, { actor: "cancel-order" });
+  } catch (e) {
+    console.error("[CANCEL] Gagal menyelaraskan komisi affiliate:", e);
+  }
 
   // Notifikasi pembatalan: customer (token Fonnte Customer) dan admin (token Fonnte Admin)
   // dikirim bersamaan dan saling terpisah. Klaim `cancelled_notified_at` memastikan hanya sekali

@@ -4,6 +4,7 @@ import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { getMayarConfig, getMayarInvoice, getMayarTransaction } from "@/lib/mayar";
 import { notifyCustomerOrderPaid } from "@/lib/fonnte";
 import { sendOnce } from "@/lib/order-notify";
+import { syncCommissionStatus } from "@/lib/affiliate/commission";
 
 /**
  * POST /api/webhooks/mayar — notifikasi pembayaran dari Mayar.
@@ -171,6 +172,13 @@ export async function POST(request: NextRequest) {
           total: Number(order.total) || 0,
         })
       );
+    }
+
+    // Komisi affiliate diselaraskan (pesanan lunas → komisi keluar dari masa "menunggu pembayaran").
+    try {
+      await syncCommissionStatus(supabaseAdmin, order.id, { actor: "mayar-webhook" });
+    } catch (e) {
+      console.error("[MAYAR] Gagal menyelaraskan komisi affiliate:", e);
     }
 
     return NextResponse.json({ success: true, orderNumber: order.order_number });

@@ -8,6 +8,7 @@ import {
   LayoutDashboard, ShoppingBag, Package, Users, FileText, Settings,
   Search, Bell, Menu, X, ChevronDown, Plus, TrendingUp, Eye, Edit,
   DollarSign, ShoppingCart, UserPlus, Box, LogOut, Lock, Mail, Trash2, Ticket, Star, Ruler, Image, Shirt, MessageCircle, Camera,
+  Users2, CreditCard, Percent,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { supabase } from "@/lib/supabase";
@@ -129,6 +130,15 @@ const navGroups: { title: string; items: NavItem[] }[] = [
       { label: "Testimoni", icon: Star, href: "/admin/testimoni" },
       { label: "Panduan Ukuran", icon: Ruler, href: "/admin/ukuran-produk" },
       { label: "Halaman Garansi & Retur", icon: FileText, href: "/admin/garansi-retur-page" },
+    ],
+  },
+  {
+    title: "Affiliate",
+    items: [
+      { label: "Data Affiliate", icon: Users2, href: "/admin/affiliate/data" },
+      { label: "Transaksi & Komisi", icon: TrendingUp, href: "/admin/affiliate/transaksi" },
+      { label: "Pencairan Komisi", icon: CreditCard, href: "/admin/affiliate/pencairan" },
+      { label: "Pengaturan Komisi", icon: Percent, href: "/admin/affiliate/pengaturan" },
     ],
   },
   {

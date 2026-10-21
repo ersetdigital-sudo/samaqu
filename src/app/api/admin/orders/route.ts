@@ -8,6 +8,7 @@ import { notifyCustomerOrderPaid } from "@/lib/fonnte";
 import { sendOnce } from "@/lib/order-notify";
 import { isCodOrderPayment } from "@/lib/payment-methods";
 import { isOpsAdmin, unauthorized } from "@/lib/ops-auth";
+import { syncCommissionStatus } from "@/lib/affiliate/commission";
 
 export async function PATCH(request: NextRequest) {
   if (!(await isOpsAdmin(request))) return unauthorized();
@@ -239,6 +240,21 @@ export async function PATCH(request: NextRequest) {
           })
         );
       }
+    }
+
+    // Komisi affiliate diselaraskan dengan status pesanan (mis. "diproses" = pembayaran
+    // terverifikasi). Kegagalan sinkronisasi tidak boleh menggagalkan update status.
+    try {
+      const { data: affected } = await supabaseAdmin
+        .from("orders")
+        .select("id")
+        .eq("order_number", identifier)
+        .maybeSingle();
+      if (affected) {
+        await syncCommissionStatus(supabaseAdmin, (affected as { id: string }).id, { actor: "admin-status" });
+      }
+    } catch (e) {
+      console.error("[ADMIN] Gagal menyelaraskan komisi affiliate:", e);
     }
 
     return NextResponse.json({ success: true });
