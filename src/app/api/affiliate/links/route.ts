@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { affiliateSession, affiliateUnauthorized } from "@/lib/affiliate/auth";
+import { referralUrl } from "@/lib/affiliate/site";
 import { AFFILIATE_LINK_SOURCES } from "@/lib/affiliate/settings";
 import { loadAffiliateLinks } from "@/lib/affiliate/queries";
 import type { AffiliateLinkRow } from "@/lib/affiliate/types";

@@ -15,6 +15,7 @@ import {
 } from "@/components/affiliate/ui";
 import LinkFormModal from "@/components/affiliate/LinkFormModal";
 import { affiliateFetch } from "@/lib/affiliate/client";
+import { referralUrl } from "@/lib/affiliate/site";
 import { num, tgl } from "@/lib/affiliate/format";
 
 /**
@@ -128,8 +129,7 @@ export default function AffiliateLinksPage() {
     }
   };
 
-  const absolute = (link: AffiliateLink) =>
-    typeof window !== "undefined" ? `${window.location.origin}${link.url}` : link.url;
+  const absolute = (link: AffiliateLink) => referralUrl(link.code);
 
   return (
     <div className="split" style={{ gridTemplateColumns: "minmax(0,1fr) minmax(0,2fr)" }}>
@@ -217,7 +217,7 @@ export default function AffiliateLinksPage() {
                   render: (l) => (
                     <div className="row" style={{ gap: 6 }}>
                       <code className="small" style={{ color: "var(--af-pri)" }}>
-                        samaqu.id/r/{l.code}
+                        {referralUrl(l.code).replace(/^https?:\/\//, "")}
                       </code>
                       <CopyButton value={absolute(l)} label="" />
                     </div>
@@ -294,8 +294,7 @@ function LinkFormInline({
         method: "POST",
         body: JSON.stringify({ productId, campaign: campaign.trim(), source, note: note.trim() }),
       });
-      const origin = typeof window !== "undefined" ? window.location.origin : "";
-      setLastUrl(`${origin}/r/${res.link.code}`);
+      setLastUrl(referralUrl(res.link.code));
       setCampaign("");
       setNote("");
       toast("Tautan affiliate berhasil dibuat");

@@ -8,6 +8,8 @@ const intlMiddleware = createMiddleware(routing);
 const ADMIN_HOST = "admin.samaqu.id";
 /** Subdomain dashboard internal: office.samaqu.id/<halaman> → /ops/<halaman> */
 const OPS_HOST = "office.samaqu.id";
+/** Subdomain portal affiliate: affiliate.samaqu.id/<halaman> → /affiliate/<halaman> */
+const AFFILIATE_HOST = "affiliate.samaqu.id";
 const LOCALES = ["id", "en"];
 
 export default function middleware(request: NextRequest) {
@@ -17,6 +19,22 @@ export default function middleware(request: NextRequest) {
   headers.set("x-pathname", request.nextUrl.pathname);
 
   const host = (request.headers.get("host") || "").split(":")[0].toLowerCase();
+  if (host === AFFILIATE_HOST) {
+    // Portal affiliate: tanpa locale, URL bersih (affiliate.samaqu.id/komisi, dst).
+    // Semua path diarahkan ke /affiliate/* supaya subdomain ini hanya berisi portal
+    // partner — bukan halaman toko.
+    const url = request.nextUrl.clone();
+    const firstSegment = url.pathname.split("/")[1];
+    if (LOCALES.includes(firstSegment)) {
+      url.pathname = "/";
+      return NextResponse.redirect(url);
+    }
+    if (!url.pathname.startsWith("/affiliate")) {
+      url.pathname = url.pathname === "/" ? "/affiliate" : `/affiliate${url.pathname}`;
+    }
+    return NextResponse.rewrite(url, { request: { headers } });
+  }
+
   if (host === OPS_HOST) {
     // Dashboard internal: tanpa locale, URL bersih (office.samaqu.id/leads, dst).
     const url = request.nextUrl.clone();
