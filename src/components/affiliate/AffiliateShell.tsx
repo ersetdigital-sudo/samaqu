@@ -148,23 +148,25 @@ export default function AffiliateShell({ children }: { children: ReactNode }) {
 
   if (!me) {
     return (
-      <div className="auth">
-        <div className="frm">
-          <div>
-            <div className="brand" style={{ padding: "0 0 26px" }}>
-              <div className="logo">S</div>
-              <div>
-                <b>SAMAQU</b>
-                <small>AFFILIATE CENTER</small>
-              </div>
+      <div className="aw-wrap">
+        <div className="aw-slice" aria-hidden="true">
+          <div />
+        </div>
+        <div className="aw-card" style={{ maxWidth: 560, minHeight: 0 }}>
+          <div className="aw-form-wrap" style={{ width: "100%" }}>
+            <div className="aw-form-top">
+              <span className="aw-wordmark">SAMAQU</span>
+              <span className="aw-lang">🇮🇩 ID</span>
             </div>
-            <h1 style={{ fontSize: 24, fontWeight: 800, color: "#111827" }}>Masuk ke akun affiliate</h1>
-            <p className="muted" style={{ margin: "4px 0 22px" }}>
-              {authError || "Sesi affiliate tidak ditemukan. Silakan masuk kembali."}
-            </p>
-            <Link href="/affiliate/login" className="btn p w">
-              Masuk
-            </Link>
+            <div className="aw-form">
+              <div className="aw-title">
+                <h1>Masuk ke akun affiliate</h1>
+                <p>{authError || "Sesi affiliate tidak ditemukan. Silakan masuk kembali."}</p>
+              </div>
+              <Link href="/affiliate/login" className="aw-cta" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                Masuk
+              </Link>
+            </div>
           </div>
         </div>
       </div>

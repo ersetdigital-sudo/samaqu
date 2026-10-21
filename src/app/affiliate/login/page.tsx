@@ -3,13 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import AuthLayout from "@/components/affiliate/AuthLayout";
 import { Icon } from "@/components/affiliate/icons";
-import { Field } from "@/components/affiliate/ui";
 import { supabaseAffiliate as supabase } from "@/lib/supabase-affiliate";
 
 /**
- * Halaman masuk portal Affiliate.
- * Tampilan mengikuti mockup (dua kolom: foto produk + formulir).
+ * Halaman masuk portal affiliate — wireframe "Dark Slanted Auth" (tanpa foto produk).
  */
 export default function AffiliateLoginPage() {
   const router = useRouter();
@@ -52,91 +51,73 @@ export default function AffiliateLoginPage() {
   };
 
   return (
-    <div className="auth">
-      <div className="side">
-        <img src="/bio/thobe.png" alt="Koleksi SAMAQU" />
-        <div className="cap">
-          <div className="small b" style={{ color: "var(--af-pri)", letterSpacing: ".12em" }}>
-            SAMAQU AFFILIATE CENTER
-          </div>
-          <div className="b dark" style={{ fontSize: 20, marginTop: 6, lineHeight: 1.35 }}>
-            Promosikan fashion SAMAQU, pantau komisi kamu dalam satu tempat.
-          </div>
-        </div>
-      </div>
-
-      <div className="frm">
-        <div>
-          <div className="brand" style={{ padding: "0 0 26px" }}>
-            <div className="logo">S</div>
-            <div>
-              <b>SAMAQU</b>
-              <small>AFFILIATE CENTER</small>
-            </div>
-          </div>
-
-          <h1 style={{ fontSize: 24, fontWeight: 800, color: "#111827" }}>Masuk ke akun affiliate</h1>
-          <p className="muted" style={{ margin: "4px 0 22px" }}>
-            Gunakan akun yang kamu daftarkan untuk masuk ke portal affiliate.
-          </p>
-
-          {err.form ? (
-            <div className="note" style={{ marginBottom: 14 }}>
-              <Icon name="info" className="sm" />
-              <span>{err.form}</span>
-            </div>
-          ) : null}
-
-          <Field label="Email" error={err.email}>
-            <input
-              className={`inp ${err.email ? "e" : ""}`}
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="nama@email.com"
-            />
-          </Field>
-
-          <Field label="Kata Sandi" error={err.pw}>
-            <div className="pwd">
-              <input
-                className={`inp ${err.pw ? "e" : ""}`}
-                type={show ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-              />
-              <button type="button" onClick={() => setShow((v) => !v)} aria-label="Tampilkan kata sandi">
-                <Icon name={show ? "eyeoff" : "eye"} className="sm" />
-              </button>
-            </div>
-          </Field>
-
-          <button
-            className="btn p w"
-            onClick={submit}
-            disabled={busy}
-            type="button"
-            style={{ marginTop: 6 }}
-          >
-            {busy ? "Memproses…" : "Masuk"}
-          </button>
-
-          <p className="small muted" style={{ textAlign: "center", marginTop: 20 }}>
+    <AuthLayout
+      title="Masuk ke akun affiliate"
+      subtitle="Selamat datang di SAMAQU Affiliate Center"
+      navLink={{ href: "/affiliate/daftar", label: "Daftar" }}
+      navCta={{ href: "/affiliate/daftar", label: "Jadi Affiliate" }}
+      footer={
+        <div className="aw-foot">
+          <p>
             Belum menjadi affiliate?{" "}
-            <Link href="/affiliate/daftar" style={{ color: "var(--af-pri)", fontWeight: 700 }}>
-              Daftar Affiliate
-            </Link>
+            <Link href="/affiliate/daftar">Daftar Affiliate</Link>
           </p>
-
-          <div className="note i mt">
-            <Icon name="info" className="sm" />
-            <span>
-              Akun affiliate menunggu persetujuan admin sebelum fitur promosi bisa dipakai.
-            </span>
-          </div>
         </div>
+      }
+    >
+      {err.form ? (
+        <div className="aw-note" style={{ marginTop: 0, marginBottom: 16 }}>
+          <Icon name="info" className="sm" />
+          <span>{err.form}</span>
+        </div>
+      ) : null}
+
+      <div className="aw-field">
+        <label className="aw-label" htmlFor="aw-email">
+          Email
+        </label>
+        <input
+          id="aw-email"
+          className={`aw-input ${err.email ? "e" : ""}`}
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="nama@email.com"
+          autoComplete="email"
+        />
+        {err.email ? <div className="aw-err">{err.email}</div> : null}
       </div>
-    </div>
+
+      <div className="aw-field">
+        <label className="aw-label" htmlFor="aw-password">
+          Kata Sandi
+        </label>
+        <div className="aw-pwd">
+          <input
+            id="aw-password"
+            className={`aw-input ${err.pw ? "e" : ""}`}
+            type={show ? "text" : "password"}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="••••••••"
+            autoComplete="current-password"
+            style={{ paddingRight: 48 }}
+          />
+          <button type="button" onClick={() => setShow((v) => !v)} aria-label="Tampilkan kata sandi">
+            <Icon name={show ? "eyeoff" : "eye"} className="sm" />
+          </button>
+        </div>
+        {err.pw ? <div className="aw-err">{err.pw}</div> : null}
+      </div>
+
+      <button className="aw-cta" onClick={submit} disabled={busy} type="button">
+        {busy ? "Memproses…" : "Masuk"}
+      </button>
+
+      <div className="aw-note">
+        <Icon name="info" className="sm" />
+        <span>Akun affiliate menunggu persetujuan admin sebelum fitur promosi bisa dipakai.</span>
+      </div>
+    </AuthLayout>
   );
 }
