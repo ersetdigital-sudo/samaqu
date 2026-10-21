@@ -155,22 +155,54 @@ export default function AffiliateShell({ children }: { children: ReactNode }) {
 
   if (!me) {
     return (
-      <div className="aw-wrap">
-        <div className="aw-slice" aria-hidden="true">
-          <div />
+      <div
+        className="min-h-screen flex items-center justify-center p-5 relative"
+        style={{ background: "#f0f2f5" }}
+      >
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div
+            className="absolute left-0 top-0 w-[65%] h-full"
+            style={{ clipPath: "polygon(0 0, 55% 0, 48% 100%, 0 100%)" }}
+          >
+            <img
+              src="/affiliate/auth-hero.jpg"
+              alt=""
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-black/30" />
+          </div>
         </div>
-        <div className="aw-card" style={{ maxWidth: 560, minHeight: 0 }}>
-          <div className="aw-form-wrap" style={{ width: "100%" }}>
-            <div className="aw-form-top">
-              <span className="aw-wordmark">SAMAQU</span>
-              <span className="aw-lang">🇮🇩 ID</span>
+
+        <div className="main-card relative w-full max-w-[520px] bg-white rounded-[2.5rem] shadow-lg p-4 md:p-5">
+          <div className="w-full px-4 py-6 flex flex-col justify-center">
+            <div className="flex items-center justify-between mb-12">
+              <span className="font-extrabold text-xl tracking-widest text-gray-900 uppercase">
+                SAMAQU
+              </span>
+              <span className="flex items-center gap-2 border border-gray-200 rounded-full px-3 py-1 text-xs font-medium text-gray-600">
+                🇮🇩 ID
+              </span>
             </div>
-            <div className="aw-form">
-              <div className="aw-title">
-                <h1>Masuk ke akun affiliate</h1>
-                <p>{authError || "Sesi affiliate tidak ditemukan. Silakan masuk kembali."}</p>
-              </div>
-              <Link href="/affiliate/login" className="aw-cta" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+
+            <div className="w-full max-w-[340px] mx-auto text-center mb-10">
+              <h1 className="text-4xl font-extrabold text-gray-900 mb-2">
+                Masuk ke akun affiliate
+              </h1>
+              <p className="text-sm text-gray-500 font-medium">
+                {authError || "Sesi affiliate tidak ditemukan. Silakan masuk kembali."}
+              </p>
+            </div>
+
+            <div className="w-full max-w-[340px] mx-auto">
+              <Link
+                href="/affiliate/login"
+                className="w-full rounded-xl py-3.5 text-sm font-semibold flex items-center justify-center"
+                style={{
+                  backgroundColor: "#eb4d4b",
+                  color: "white",
+                  boxShadow: "0 10px 15px -3px rgba(235,77,75,0.2)",
+                }}
+              >
                 Masuk
               </Link>
             </div>
