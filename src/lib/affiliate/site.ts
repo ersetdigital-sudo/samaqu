@@ -20,3 +20,21 @@ export function siteOrigin(): string {
 export function referralUrl(code: string): string {
   return `${siteOrigin()}/r/${code}`;
 }
+
+/**
+ * Host portal partner. Di host ini middleware me-rewrite path ke /affiliate/*,
+ * jadi link portal cukup "/komisi" (URL bersih), bukan "/affiliate/komisi".
+ */
+export const AFFILIATE_HOST = "affiliate.samaqu.id";
+
+/** Prefix path portal: "" di subdomain portal, "/affiliate" di domain utama. */
+export function portalBaseFor(hostname: string): string {
+  return hostname === AFFILIATE_HOST ? "" : "/affiliate";
+}
+
+/** Path portal yang bersih untuk link internal. */
+export function portalPath(base: string, path = ""): string {
+  const clean = path.replace(/^\/+/, "").replace(/\/+$/, "");
+  if (!clean) return base || "/";
+  return `${base}/${clean}`;
+}

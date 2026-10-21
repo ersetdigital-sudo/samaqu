@@ -14,6 +14,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Icon } from "./icons";
 import { Badge } from "./ui";
 import { affiliateFetch, type MePayload } from "@/lib/affiliate/client";
+import { portalBaseFor, portalPath } from "@/lib/affiliate/site";
 import { supabaseAffiliate as supabase } from "@/lib/supabase-affiliate";
 
 /**
@@ -60,12 +61,21 @@ function initials(name: string): string {
 }
 
 function isAuthPath(pathname: string): boolean {
-  return pathname === "/affiliate/login" || pathname === "/affiliate/daftar";
+  // Di subdomain portal middleware me-rewrite path, jadi yang dicek adalah segmen
+  // terakhir ("/login", "/daftar") — bukan path lengkap.
+  const seg = pathname.replace(/\/+$/, "").split("/").filter(Boolean).pop() || "";
+  return seg === "login" || seg === "daftar";
 }
 
 export default function AffiliateShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  // Prefix path portal: "" di affiliate.samaqu.id, "/affiliate" di domain utama.
+  // Di-set setelah mount supaya render server & klien sama (nggak hydration mismatch).
+  const [base, setBase] = useState("/affiliate");
+  useEffect(() => {
+    setBase(portalBaseFor(window.location.hostname));
+  }, []);
   const [me, setMe] = useState<MePayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState("");
@@ -195,7 +205,7 @@ export default function AffiliateShell({ children }: { children: ReactNode }) {
 
             <div className="w-full max-w-[340px] mx-auto">
               <Link
-                href="/affiliate/login"
+                href={portalPath(base, "login")}
                 className="w-full rounded-xl py-3.5 text-sm font-semibold flex items-center justify-center"
                 style={{
                   backgroundColor: "#eb4d4b",
@@ -215,13 +225,15 @@ export default function AffiliateShell({ children }: { children: ReactNode }) {
   const affiliate = me.affiliate;
   const displayName = affiliate.display_name || affiliate.full_name;
   const initial = initials(displayName);
-  const seg = pathname.replace(/^\/affiliate\/?/, "").split("/")[0] || "";
+  const seg = (base && pathname.startsWith(base) ? pathname.slice(base.length) : pathname)
+    .split("/")
+    .filter(Boolean)[0] || "";
   const current = AFFILIATE_NAV.find((n) => n[0] === seg) || AFFILIATE_NAV[0];
 
   const navItem = ([key, label, icon]: [string, string, string]) => (
     <Link
       key={key}
-      href={key ? `/affiliate/${key}` : "/affiliate"}
+      href={portalPath(base, key)}
       className={`ni ${key === seg ? "on" : ""}`}
       data-tip={label}
       onClick={() => {
@@ -237,7 +249,7 @@ export default function AffiliateShell({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     await supabase.auth.signOut();
-    router.push("/affiliate/login");
+    router.push(portalPath(base, "login"));
   };
 
   return (
@@ -312,12 +324,12 @@ export default function AffiliateShell({ children }: { children: ReactNode }) {
 
             <div style={{ flex: 1, minWidth: 0 }}>
               <div className="bc">
-                <Link href="/affiliate">Affiliate Center</Link>
+                <Link href={portalPath(base)}>Affiliate Center</Link>
                 {seg ? (
                   <>
                     {" "}
                     <Icon name="chevr" className="sm" />{" "}
-                    <Link href={`/affiliate/${seg}`}>{current[1]}</Link>
+                    <Link href={portalPath(base, seg)}>{current[1]}</Link>
                   </>
                 ) : null}
               </div>
@@ -325,7 +337,7 @@ export default function AffiliateShell({ children }: { children: ReactNode }) {
             </div>
 
             {seg ? (
-              <Link href="/affiliate" className="btn s sm hide-m">
+              <Link href={portalPath(base)} className="btn s sm hide-m">
                 <Icon name="back" className="sm" />
                 Ringkasan
               </Link>
@@ -335,7 +347,7 @@ export default function AffiliateShell({ children }: { children: ReactNode }) {
               Halo, <b className="dark">{displayName.split(" ")[0]}</b>
             </span>
 
-            <Link href="/affiliate/notifikasi" className="iconbtn" aria-label="Notifikasi">
+            <Link href={portalPath(base, "notifikasi")} className="iconbtn" aria-label="Notifikasi">
               <Icon name="bell" />
               {unread ? <span className="dot">{unread}</span> : null}
             </Link>
@@ -365,15 +377,15 @@ export default function AffiliateShell({ children }: { children: ReactNode }) {
                     <div className="b dark">{affiliate.full_name}</div>
                     <div className="small muted">{affiliate.email}</div>
                   </div>
-                  <Link href="/affiliate/pengaturan" onClick={() => setMenu(false)}>
+                  <Link href={portalPath(base, "pengaturan")} onClick={() => setMenu(false)}>
                     <Icon name="user" className="sm" />
                     Lihat Profil
                   </Link>
-                  <Link href="/affiliate/pengaturan" onClick={() => setMenu(false)}>
+                  <Link href={portalPath(base, "pengaturan")} onClick={() => setMenu(false)}>
                     <Icon name="gear" className="sm" />
                     Pengaturan Akun
                   </Link>
-                  <Link href="/affiliate/bantuan" onClick={() => setMenu(false)}>
+                  <Link href={portalPath(base, "bantuan")} onClick={() => setMenu(false)}>
                     <Icon name="help" className="sm" />
                     Pusat Bantuan
                   </Link>
