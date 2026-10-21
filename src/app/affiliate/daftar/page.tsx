@@ -1,17 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AuthLayout from "@/components/affiliate/AuthLayout";
-import { Icon } from "@/components/affiliate/icons";
 import { useToast } from "@/components/affiliate/ui";
 
 /**
- * Pendaftaran akun affiliate — wireframe "Dark Slanted Auth" (tanpa foto produk).
+ * Pendaftaran akun affiliate — wireframe "Dark Slanted Auth" (1:1).
  * Data dikirim ke /api/affiliate/register (server membuat akun auth + profil
  * affiliate berstatus "menunggu" sampai disetujui admin).
  */
+const INPUT =
+  "input-field w-full px-5 py-3.5 rounded-xl text-sm font-medium text-gray-700 placeholder-gray-400 border";
+const INPUT_BORDER = { borderColor: "#e5e7eb" };
+const INPUT_ERROR = { borderColor: "#f87171" };
+
 export default function AffiliateRegisterPage() {
   const router = useRouter();
   const { toast } = useToast();
@@ -80,118 +83,125 @@ export default function AffiliateRegisterPage() {
       subtitle="Jadilah affiliate resmi SAMAQU dan dapatkan komisi dari setiap penjualan"
       navLink={{ href: "/affiliate/login", label: "Masuk" }}
       navCta={{ href: "/affiliate/login", label: "Cek Status" }}
-      footer={
-        <div className="aw-foot">
-          <p>
-            Sudah punya akun?{" "}
-            <Link href="/affiliate/login">Masuk</Link>
-          </p>
-        </div>
-      }
+      footerLink={{
+        text: "Sudah punya akun?",
+        link: "/affiliate/login",
+        linkLabel: "Masuk",
+      }}
     >
-      {err.form ? (
-        <div className="aw-note" style={{ marginTop: 0, marginBottom: 16 }}>
-          <Icon name="info" className="sm" />
-          <span>{err.form}</span>
-        </div>
-      ) : null}
+      <form
+        className="space-y-4"
+        onSubmit={(e) => {
+          e.preventDefault();
+          submit();
+        }}
+      >
+        {err.form ? (
+          <div className="rounded-xl bg-blue-50 border border-blue-200 px-4 py-3 text-xs text-blue-900">
+            {err.form}
+          </div>
+        ) : null}
 
-      <div className="aw-field">
-        <label className="aw-label" htmlFor="aw-name">
-          Nama Lengkap
-        </label>
-        <input
-          id="aw-name"
-          className={`aw-input ${err.name ? "e" : ""}`}
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
-          placeholder="Nama sesuai identitas"
-        />
-        {err.name ? <div className="aw-err">{err.name}</div> : null}
-      </div>
-
-      <div className="aw-field">
-        <label className="aw-label" htmlFor="aw-email">
-          Email
-        </label>
-        <input
-          id="aw-email"
-          className={`aw-input ${err.email ? "e" : ""}`}
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="nama@email.com"
-          autoComplete="email"
-        />
-        {err.email ? <div className="aw-err">{err.email}</div> : null}
-      </div>
-
-      <div className="aw-field">
-        <label className="aw-label" htmlFor="aw-phone">
-          Nomor Telepon
-        </label>
-        <input
-          id="aw-phone"
-          className={`aw-input ${err.phone ? "e" : ""}`}
-          inputMode="tel"
-          placeholder="08xxxxxxxxxx"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          autoComplete="tel"
-        />
-        {err.phone ? <div className="aw-err">{err.phone}</div> : null}
-      </div>
-
-      <div className="aw-field">
-        <label className="aw-label" htmlFor="aw-password">
-          Kata Sandi
-        </label>
-        <div className="aw-pwd">
+        <div>
           <input
-            id="aw-password"
-            className={`aw-input ${err.pw ? "e" : ""}`}
+            placeholder="Nama Lengkap"
+            className={INPUT}
+            style={err.name ? INPUT_ERROR : INPUT_BORDER}
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+          />
+          {err.name ? <p className="mt-1 text-xs text-red-600">{err.name}</p> : null}
+        </div>
+
+        <div>
+          <input
+            type="email"
+            placeholder="Email"
+            className={INPUT}
+            style={err.email ? INPUT_ERROR : INPUT_BORDER}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
+          />
+          {err.email ? <p className="mt-1 text-xs text-red-600">{err.email}</p> : null}
+        </div>
+
+        <div>
+          <input
+            placeholder="Nomor Telepon"
+            inputMode="tel"
+            className={INPUT}
+            style={err.phone ? INPUT_ERROR : INPUT_BORDER}
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            autoComplete="tel"
+          />
+          {err.phone ? <p className="mt-1 text-xs text-red-600">{err.phone}</p> : null}
+        </div>
+
+        <div className="relative">
+          <input
             type={show ? "text" : "password"}
+            placeholder="Password"
+            className={`${INPUT} pr-12`}
+            style={err.pw ? INPUT_ERROR : INPUT_BORDER}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             autoComplete="new-password"
-            style={{ paddingRight: 48 }}
           />
-          <button type="button" onClick={() => setShow((v) => !v)} aria-label="Tampilkan kata sandi">
-            <Icon name={show ? "eyeoff" : "eye"} className="sm" />
+          <button
+            type="button"
+            onClick={() => setShow((v) => !v)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+            aria-label={show ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
           </button>
+          {err.pw ? <p className="mt-1 text-xs text-red-600">{err.pw}</p> : null}
         </div>
-        {err.pw ? <div className="aw-err">{err.pw}</div> : null}
-      </div>
 
-      <div className="aw-field">
-        <label className="aw-label" htmlFor="aw-confirm">
-          Konfirmasi Kata Sandi
+        <div>
+          <input
+            type={show ? "text" : "password"}
+            placeholder="Konfirmasi Password"
+            className={INPUT}
+            style={err.cf ? INPUT_ERROR : INPUT_BORDER}
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            autoComplete="new-password"
+          />
+          {err.cf ? <p className="mt-1 text-xs text-red-600">{err.cf}</p> : null}
+        </div>
+
+        <label className="flex items-start gap-2 text-xs text-gray-700">
+          <input
+            type="checkbox"
+            checked={tos}
+            onChange={(e) => setTos(e.target.checked)}
+            className="mt-0.5 w-4 h-4 accent-[#eb4d4b]"
+          />
+          <span>
+            Saya menyetujui Ketentuan Program Affiliate dan Kebijakan Privasi SAMAQU.
+          </span>
         </label>
-        <input
-          id="aw-confirm"
-          className={`aw-input ${err.cf ? "e" : ""}`}
-          type={show ? "text" : "password"}
-          value={confirm}
-          onChange={(e) => setConfirm(e.target.value)}
-          autoComplete="new-password"
-        />
-        {err.cf ? <div className="aw-err">{err.cf}</div> : null}
-      </div>
+        {err.tos ? <p className="text-xs text-red-600">{err.tos}</p> : null}
 
-      <label className="aw-chk">
-        <input type="checkbox" checked={tos} onChange={(e) => setTos(e.target.checked)} />
-        <span>Saya menyetujui Ketentuan Program Affiliate dan Kebijakan Privasi SAMAQU.</span>
-      </label>
-      {err.tos ? <div className="aw-err" style={{ marginTop: -10, marginBottom: 12 }}>{err.tos}</div> : null}
-
-      <button className="aw-cta" onClick={submit} disabled={busy} type="button">
-        {busy ? "Mengirim…" : "Daftar"}
-      </button>
-
-      <div className="aw-note">
-        <Icon name="info" className="sm" />
-        <span>Pendaftaran diverifikasi tim SAMAQU sebelum akun aktif dan bisa membuat tautan.</span>
-      </div>
+        <button
+          type="submit"
+          disabled={busy}
+          className="btn-red w-full rounded-xl py-3.5 mt-2 text-sm font-semibold disabled:opacity-60"
+          style={{
+            backgroundColor: "#eb4d4b",
+            color: "white",
+            boxShadow: "0 10px 15px -3px rgba(235,77,75,0.2)",
+          }}
+        >
+          {busy ? "Mengirim…" : "Daftar"}
+        </button>
+      </form>
     </AuthLayout>
   );
 }
