@@ -5,7 +5,7 @@ import { supabaseAffiliate as supabase } from "@/lib/supabase-affiliate";
 /**
  * Helper fetch untuk portal affiliate (browser).
  * Token sesi Supabase dipakai sebagai header Authorization; server memverifikasi
- * bahwa token itu milik baris `affiliates` â€” jadi data antar-affiliate tidak
+ * bahwa token itu milik baris `affiliates` — jadi data antar-affiliate tidak
  * mungkin saling bocor.
  */
 export async function affiliateFetch<T>(url: string, init?: RequestInit): Promise<T> {

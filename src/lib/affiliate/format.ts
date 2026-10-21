@@ -58,7 +58,7 @@ export const WITHDRAWAL_STATUS_LABEL: Record<string, string> = {
 
 export const AFFILIATE_STATUS_LABEL: Record<string, string> = {
   menunggu: "Menunggu Persetujuan",
-  aktif: "Mitra Aktif",
+  aktif: "Affiliate Aktif",
   ditolak: "Ditolak",
   nonaktif: "Nonaktif",
 };

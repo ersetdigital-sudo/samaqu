@@ -75,7 +75,7 @@ export default function AffiliateLoginPage() {
             </div>
           </div>
 
-          <h1 style={{ fontSize: 24, fontWeight: 800, color: "#111827" }}>Masuk ke akun mitra</h1>
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: "#111827" }}>Masuk ke akun affiliate</h1>
           <p className="muted" style={{ margin: "4px 0 22px" }}>
             Gunakan akun yang kamu daftarkan untuk masuk ke portal affiliate.
           </p>
@@ -104,7 +104,7 @@ export default function AffiliateLoginPage() {
                 type={show ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                placeholder="••••••••"
               />
               <button type="button" onClick={() => setShow((v) => !v)} aria-label="Tampilkan kata sandi">
                 <Icon name={show ? "eyeoff" : "eye"} className="sm" />
@@ -119,13 +119,13 @@ export default function AffiliateLoginPage() {
             type="button"
             style={{ marginTop: 6 }}
           >
-            {busy ? "Memprosesâ€¦" : "Masuk"}
+            {busy ? "Memproses…" : "Masuk"}
           </button>
 
           <p className="small muted" style={{ textAlign: "center", marginTop: 20 }}>
-            Belum menjadi mitra?{" "}
+            Belum menjadi affiliate?{" "}
             <Link href="/affiliate/daftar" style={{ color: "var(--af-pri)", fontWeight: 700 }}>
-              Daftar Mitra
+              Daftar Affiliate
             </Link>
           </p>
 

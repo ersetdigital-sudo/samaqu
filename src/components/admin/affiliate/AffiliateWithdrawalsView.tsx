@@ -123,7 +123,7 @@ export default function AffiliateWithdrawalsView() {
     <div className="space-y-5">
       <AdminPageHeader
         title="Pencairan Komisi"
-        sub="Pengajuan pencairan dari mitra affiliate, persetujuan admin, dan bukti pembayaran."
+        sub="Pengajuan pencairan dari affiliate, persetujuan admin, dan bukti pembayaran."
       />
 
       {error && <ErrorBlock message={error} />}

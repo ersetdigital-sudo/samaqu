@@ -17,7 +17,7 @@ import { affiliateFetch, type MePayload } from "@/lib/affiliate/client";
 import { supabaseAffiliate as supabase } from "@/lib/supabase-affiliate";
 
 /**
- * Kerangka portal Affiliate â€” sidebar + header, mengikuti mockup
+ * Kerangka portal Affiliate — sidebar + header, mengikuti mockup
  * "SAMAQU Affiliate Center" (struktur class & urutan menu sama persis).
  */
 
@@ -110,7 +110,7 @@ export default function AffiliateShell({ children }: { children: ReactNode }) {
         const unreadCount = (res.notifications || []).filter((n) => !readIds.includes(n.id)).length;
         setUnread(unreadCount);
       } catch {
-        /* abaikan â€” notifikasi bukan hal kritis */
+        /* abaikan — notifikasi bukan hal kritis */
       }
     })();
     return () => {
@@ -158,7 +158,7 @@ export default function AffiliateShell({ children }: { children: ReactNode }) {
                 <small>AFFILIATE CENTER</small>
               </div>
             </div>
-            <h1 style={{ fontSize: 24, fontWeight: 800, color: "#111827" }}>Masuk ke akun mitra</h1>
+            <h1 style={{ fontSize: 24, fontWeight: 800, color: "#111827" }}>Masuk ke akun affiliate</h1>
             <p className="muted" style={{ margin: "4px 0 22px" }}>
               {authError || "Sesi affiliate tidak ditemukan. Silakan masuk kembali."}
             </p>
@@ -217,12 +217,12 @@ export default function AffiliateShell({ children }: { children: ReactNode }) {
             <div className="av">{initial}</div>
             <div style={{ minWidth: 0 }}>
               <div className="n">{displayName}</div>
-              <div className="id">ID Mitra: {affiliate.affiliate_code}</div>
+              <div className="id">ID Affiliate: {affiliate.affiliate_code}</div>
               <div style={{ marginTop: 5 }}>
                 <Badge
                   label={
                     affiliate.status === "aktif"
-                      ? "Mitra Aktif"
+                      ? "Affiliate Aktif"
                       : affiliate.status === "menunggu"
                         ? "Menunggu Persetujuan"
                         : affiliate.status === "ditolak"
