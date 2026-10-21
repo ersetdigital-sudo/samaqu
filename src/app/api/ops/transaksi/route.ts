@@ -347,6 +347,8 @@ export async function GET(req: NextRequest) {
       subtotal: Number(order.subtotal) || 0,
       discount: Number(order.discount) || 0,
       shipping_cost: Number(order.shipping_cost) || 0,
+      // Layanan tersimpan ("J&T EZ"/"J&T ECO"/"J&T HBO") — dipakai drawer & form Ubah.
+      shipping_method: order.shipping_method || "",
       total: Number(order.total) || 0,
       // Metode & waktu pembayaran — dipakai drawer Detail Transaksi (panel admin).
       payment_method: order.payment_method || "",
@@ -456,6 +458,7 @@ export async function POST(req: NextRequest) {
       shipping_postal_code: shipping.postal_code,
       shipping_notes: notes || null,
       shipping_cost: shippingCost,
+      ...(String(body?.shipping_method || "").trim() === "J&T HBO" ? { shipping_method: "J&T HBO" } : {}),
       payment_method: paymentMethod,
       payment_status: paid ? "paid" : "unpaid",
       paid_at: paid ? createdAt.toISOString() : null,
@@ -699,6 +702,7 @@ export async function PATCH(req: NextRequest) {
         shipping_postal_code: shipping.postal_code,
         shipping_notes: notes || null,
         shipping_cost: shippingCost,
+        ...(String(body?.shipping_method || "").trim() === "J&T HBO" ? { shipping_method: "J&T HBO" } : {}),
         discount: finalDiscount,
         subtotal,
         total,

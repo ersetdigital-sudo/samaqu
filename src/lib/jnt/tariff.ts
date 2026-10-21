@@ -1,7 +1,7 @@
 import { getJntConfig, getJntBaseUrl } from "./config";
 import { generateSignature } from "./signature";
 import type { TariffRequest, TariffResponse, TariffService } from "./types";
-import { JNT_LAYANAN } from "./layanan";
+import { JNT_LAYANAN_API } from "./layanan";
 
 /**
  * Check J&T shipping tariff (Tariff Check API).
@@ -80,7 +80,8 @@ export async function checkTariffSemua(params: {
     .split(",")
     .map((code) => code.trim().toUpperCase())
     .filter(Boolean);
-  const seeds = [...new Set([...JNT_LAYANAN.map((layanan) => layanan.code), ...extra])];
+  // Layanan manual (HBO) tidak pernah dicek ke Tariff Check.
+  const seeds = [...new Set([...JNT_LAYANAN_API.map((layanan) => layanan.code), ...extra])];
 
   const byCode = new Map<string, { serviceCode: string; name: string; cost: number; etd: string }>();
   for (const requestCode of seeds) {

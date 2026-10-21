@@ -11,6 +11,7 @@ import {
   trackingSummary,
 } from "@/lib/jnt/track-status";
 import { shippingStatusOf, SHIPPING_STATUS_LABEL } from "@/lib/order-flow";
+import { jntServiceCodeFromShippingMethod } from "@/lib/jnt/layanan";
 import { useSafeTranslations } from "@/lib/safe-i18n";
 import { PaymentMethodValue } from "@/components/admin/PaymentMethodsManager";
 import OrderDetailPanel from "@/components/ops/transaksi/OrderDetailPanel";
@@ -153,6 +154,15 @@ const OD_CSS = `
  .od-root .rp-act{padding:16px 20px 20px}
  .od-acts{border-top-color:rgba(42,33,27,.09)}
 }
+/* Resi HBO: form input nomor resi manual — gaya sama dengan chip/tombol admin di atas. */
+.od-manual{margin-top:16px}
+.od-hint{font-size:12px;font-weight:600;color:#757575;line-height:1.5;margin:-4px 0 10px}
+.od-input{width:100%;margin-bottom:8px;font-size:13px;font-weight:600;padding:11px 12px;border-radius:12px;border:1px solid #E1E3E5;background:#fff;color:#1B1B1B}
+.od-input:focus{outline:none;border-color:#0f172a}
+.od-input:disabled{opacity:.6}
+.od-error{font-size:12px;font-weight:700;color:#c0392b;margin:2px 0 8px}
+.od-link{width:100%;background:none;border:0;padding:8px 0 0;font-size:12px;font-weight:700;color:#757575;cursor:pointer}
+.od-link:hover{color:#1B1B1B}
 `;
 
 function Pin() {
@@ -188,7 +198,12 @@ export default function OrderDetailContent({
   /** "Atur Pesanan": buat resi J&T setelah pembayaran diverifikasi (ala Shopee). */
   onArrangeOrder?: () => Promise<void> | void;
   /** Dipanggil setelah "Lacak Paket" menyinkronkan status dari J&T (server). */
-  onSynced?: (patch: { status?: string; shipping_status?: string | null }) => void;
+  onSynced?: (patch: {
+    status?: string;
+    shipping_status?: string | null;
+    awb_no?: string;
+    shipping_method?: string;
+  }) => void;
 }) {
   const sc = strukStatus(order.status);
   const steps = strukSteps(order);
@@ -402,6 +417,86 @@ export default function OrderDetailContent({
   // tidak boleh lagi menampilkan tombol pembatalan/cetak label/hapus.
   const shipped = SHIPPED_STATES.includes(shippingStatusOf(order) || "") || SHIPPED_STATES.includes(order.status);
 
+  // ── Resi HBO ── dibuat admin langsung di J&T VIP (di luar sistem), jadi nomor resinya
+  // diinput manual di sini. Alur statusnya sama dengan resi EZ/ECO: resi tersimpan → menunggu
+  // pickup → "Tandai Dikirim" (notifikasi "dikirim" memakai klaim atomik yang sama, jadi
+  // menyimpan ulang nomor resi tidak pernah mengirim pesan dobel).
+  // Layanan tersimpan menang untuk HBO: resi HBO dibuat di J&T VIP, jadi bukan dari API J&T
+  // yang dipakai jalur tracking ini.
+  const storedService = jntServiceCodeFromShippingMethod(order.shipping_method);
+  const serviceCode = storedService === "HBO" ? "HBO" : liveTrack?.serviceCode || storedService;
+  const isHbo = serviceCode === "HBO";
+  const [manualOpen, setManualOpen] = useState(false);
+  const [manualAwb, setManualAwb] = useState("");
+  const [manualShipped, setManualShipped] = useState("belum");
+  const [manualBusy, setManualBusy] = useState(false);
+  const [manualError, setManualError] = useState("");
+  const manualFormOpen = manualOpen || (isHbo && !resi);
+  const canMarkShipped =
+    !!resi &&
+    !shipped &&
+    order.status !== "dibatalkan" &&
+    order.status !== "dikirim" &&
+    order.status !== "selesai" &&
+    shippingStatusOf(order) !== "dikirim" &&
+    shippingStatusOf(order) !== "selesai";
+
+  async function patchOrder(body: Record<string, unknown>) {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    const res = await fetch("/api/admin/orders", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token || ""}` },
+      body: JSON.stringify({ orderNumber: order.order_number, ...body }),
+    });
+    const json = await res.json().catch(() => null);
+    if (!res.ok) throw new Error(json?.error || "Gagal menyimpan perubahan.");
+    return json as { status?: string; shippingStatus?: string | null; awbNo?: string };
+  }
+
+  async function submitManualResi() {
+    if (manualBusy) return;
+    const nomor = manualAwb.trim();
+    setManualError("");
+    if (!nomor) {
+      setManualError("Nomor resi wajib diisi.");
+      return;
+    }
+    setManualBusy(true);
+    try {
+      const json = await patchOrder({ action: "manualResi", awbNo: nomor, shipped: manualShipped === "sudah" });
+      setManualOpen(false);
+      onSynced?.({
+        awb_no: json?.awbNo || nomor,
+        shipping_method: "J&T HBO",
+        ...(json?.status ? { status: json.status } : {}),
+        ...(json?.shippingStatus ? { shipping_status: json.shippingStatus } : {}),
+      });
+    } catch (error) {
+      setManualError(error instanceof Error ? error.message : "Gagal menyimpan nomor resi. Coba lagi.");
+    } finally {
+      setManualBusy(false);
+    }
+  }
+
+  async function markShipped() {
+    if (manualBusy) return;
+    setManualBusy(true);
+    setManualError("");
+    try {
+      const json = await patchOrder({ action: "markShipped" });
+      onSynced?.({
+        ...(json?.status ? { status: json.status } : {}),
+        shipping_status: json?.shippingStatus || "dikirim",
+      });
+    } catch (error) {
+      setManualError(error instanceof Error ? error.message : "Gagal menandai dikirim. Coba lagi.");
+    } finally {
+      setManualBusy(false);
+    }
+  }
+
   // Pesanan yang sudah selesai tidak lagi menampilkan tombol "Lacak Paket" (lihat area aksi).
   // Riwayat pengirimannya dibuka otomatis SEKALI supaya informasi penerimaan — termasuk
   // "Diterima oleh" dari J&T — tetap terlihat tanpa menambah tombol.
@@ -416,7 +511,7 @@ export default function OrderDetailContent({
 
   // Tombol aksi admin dipecah jadi variabel supaya bisa disusun ulang per kondisi (dua aksi saat
   // paket dikirim, aksi lengkap sebelum dikirim) tanpa menyalin markahnya.
-  const arrangeAction = canArrange ? (
+  const arrangeAction = canArrange && !isHbo ? (
     <button type="button" className="od-a od-a-primary" onClick={handleArrange} disabled={arranging}>
       <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="M21 8 12 3 3 8v8l9 5 9-5z" />
@@ -519,6 +614,80 @@ export default function OrderDetailContent({
                 </>
               ) : null}
 
+              {/* Resi HBO — pesanan dibuat admin di J&T VIP, resinya diinput manual di sini. */}
+              {order.status !== "dibatalkan" && (isHbo || manualFormOpen) ? (
+                <div className="od-manual">
+                  <p className="od-title">Resi J&amp;T HBO</p>
+                  <p className="od-hint">Pesanan HBO dibuat manual di J&amp;T VIP, masukkan nomor resi di sini.</p>
+                  {manualFormOpen ? (
+                    <>
+                      <input
+                        className="od-input"
+                        type="text"
+                        value={manualAwb}
+                        onChange={(event) => setManualAwb(event.target.value)}
+                        placeholder="Nomor resi HBO"
+                        disabled={manualBusy}
+                      />
+                      <select
+                        className="od-input"
+                        value={manualShipped}
+                        onChange={(event) => setManualShipped(event.target.value)}
+                        disabled={manualBusy}
+                      >
+                        <option value="belum">Baru dibuat, belum dijemput</option>
+                        <option value="sudah">Sudah dikirim</option>
+                      </select>
+                      {manualError ? <p className="od-error">{manualError}</p> : null}
+                      <div className="od-acts">
+                        {resi ? (
+                          <button
+                            type="button"
+                            className="od-a"
+                            onClick={() => {
+                              setManualOpen(false);
+                              setManualError("");
+                            }}
+                            disabled={manualBusy}
+                          >
+                            Batal
+                          </button>
+                        ) : null}
+                        <button type="button" className="od-a od-a-primary" onClick={submitManualResi} disabled={manualBusy}>
+                          {manualBusy ? "Menyimpan…" : "Simpan Resi"}
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="od-acts">
+                      {canMarkShipped ? (
+                        <button type="button" className="od-a od-a-primary" onClick={markShipped} disabled={manualBusy}>
+                          {manualBusy ? "Memproses…" : "Tandai Dikirim"}
+                        </button>
+                      ) : null}
+                      <button
+                        type="button"
+                        className="od-a"
+                        onClick={() => {
+                          setManualOpen(true);
+                          setManualAwb(resi);
+                          setManualError("");
+                          // Pesanan yang paketnya sudah jalan jangan dimundurkan saat resinya diedit.
+                          setManualShipped(
+                            shippingStatusOf(order) === "dikirim" || shippingStatusOf(order) === "selesai"
+                              ? "sudah"
+                              : "belum",
+                          );
+                        }}
+                        disabled={manualBusy}
+                      >
+                        Ubah Nomor Resi
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : null}
+
               <div className="od-acts">
                 {/* Paket sudah dikirim → hanya dua aksi utama (Lacak Paket + Hubungi via
                     WhatsApp). Pembatalan J&T, cetak label, dan hapus pesanan dikeluarkan dari
@@ -544,6 +713,21 @@ export default function OrderDetailContent({
                   </>
                 )}
               </div>
+
+              {/* Pesanan EZ/ECO yang ternyata dikirim lewat HBO: resinya diinput manual. */}
+              {!resi && !isHbo && !manualOpen && order.status === "diproses" ? (
+                <button
+                  type="button"
+                  className="od-link"
+                  onClick={() => {
+                    setManualOpen(true);
+                    setManualError("");
+                  }}
+                >
+                  Input resi manual (HBO)
+                </button>
+              ) : null}
+              {!manualFormOpen && manualError ? <p className="od-error">{manualError}</p> : null}
 
               {/* Pelacakan J&T: riwayat perjalanan paket. Begitu J&T melaporkan paket
                   diterima (status_code 200), status pesanan otomatis diubah ke selesai. */}

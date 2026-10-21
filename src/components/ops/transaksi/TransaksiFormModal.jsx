@@ -363,6 +363,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
         date: parts.date,
         time: parts.time,
         shipping_cost: String(initialData.shipping_cost || ""),
+        shipping_method: initialData.shipping_method || "",
         discount: String(initialData.discount || ""),
         payment_status: initialData.payment_status === "unpaid" ? "unpaid" : "paid",
         notes: initialData.notes || "",
@@ -386,6 +387,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
         date: now.date,
         time: now.time,
         shipping_cost: "",
+        shipping_method: "",
         discount: "",
         payment_status: "paid",
         notes: "",
@@ -837,7 +839,13 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
   const applyOngkir = (service) => {
     setTouched(true);
     setSelectedService(`${service?.service}|${service?.cost}`);
-    updateForm({ shipping_cost: digits(service?.cost) });
+    // HBO dibuat manual di J&T VIP: tarifnya tidak lewat Tariff Check, jadi ongkirnya tetap
+    // diisi admin sendiri — yang disimpan hanya penanda layanannya.
+    if (service?.manual) {
+      updateForm({ shipping_method: "J&T HBO" });
+      return;
+    }
+    updateForm({ shipping_cost: digits(service?.cost), shipping_method: "" });
   };
 
   /** Setelah resi dibuat dari panel "Transaksi tercatat", simpan nomor resinya di panel. */
@@ -1390,6 +1398,7 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
       source: form.source,
       created_at: createdAt,
       shipping_cost: shippingValue,
+      ...(form.shipping_method === "J&T HBO" ? { shipping_method: "J&T HBO" } : {}),
       discount: Math.min(discountValue, subtotal),
       // "Belum Lunas" → server menyimpan status `pending` (di luar SALE_STATUSES, jadi tidak
       // ikut omset) dan otomatis mengirim invoice berisi nomor rekening ke WA pembeli.
@@ -2969,6 +2978,38 @@ export default function TransaksiFormModal({ isOpen, onClose, initialData = null
                           </button>
                         );
                       })}
+                      {/* HBO tidak ada di Tariff Check: pesanannya dibuat admin di J&T VIP. */}
+                      {(() => {
+                        const active = selectedService === "J&T HBO|";
+                        return (
+                          <button
+                            type="button"
+                            onClick={() => applyOngkir({ service: "J&T HBO", manual: true })}
+                            aria-pressed={active}
+                            className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-left hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors"
+                          >
+                            <span
+                              className={`shrink-0 inline-flex items-center justify-center h-5 w-5 rounded-full border-2 transition-all ${
+                                active
+                                  ? isPanelForm
+                                    ? "border-[#c2255c] bg-[#c2255c] text-white"
+                                    : "border-slate-900 bg-slate-900 text-white dark:border-white dark:bg-white dark:text-slate-900"
+                                  : "border-slate-300 dark:border-slate-600 text-transparent"
+                              }`}
+                            >
+                              <Check size={12} strokeWidth={3} />
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <span className="block text-sm font-bold text-slate-900 dark:text-white truncate">
+                                J&amp;T HBO
+                              </span>
+                              <span className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 truncate">
+                                Dibuat manual di J&amp;T VIP — isi ongkir manual
+                              </span>
+                            </span>
+                          </button>
+                        );
+                      })()}
                     </div>
                     <p className="px-3.5 py-2 text-[10px] font-semibold text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800">
                       Pilih layanan untuk mengisi ongkir otomatis. Nominalnya masih bisa diedit.

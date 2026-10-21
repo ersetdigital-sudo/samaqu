@@ -4,16 +4,58 @@ import { createJntOrderForOrder } from "@/lib/jnt/order-from-order";
 import { trackShipment } from "@/lib/jnt/track";
 import { applyTrackingToOrder } from "@/lib/jnt/tracking-sync";
 import { cancelOrderCompletely } from "@/lib/cancel-order";
-import { notifyCustomerOrderPaid } from "@/lib/fonnte";
-import { sendOnce } from "@/lib/order-notify";
+import { notifyCustomerOrderPaid, notifyCustomerOrderShipped } from "@/lib/fonnte";
+import { claimOrderNotification, recordShippedNotifyStatus, sendOnce } from "@/lib/order-notify";
 import { isCodOrderPayment } from "@/lib/payment-methods";
 import { isOpsAdmin, unauthorized } from "@/lib/ops-auth";
 import { syncCommissionStatus } from "@/lib/affiliate/commission";
 
+/**
+ * Notifikasi "pesanan dikirim" untuk resi yang disimpan manual (HBO) — memakai klaim atomik
+ * `orders.shipped_notified_at` yang sama dengan jalur tracking, jadi menyimpan ulang nomor resi
+ * atau menekan "Tandai Dikirim" berulang tidak pernah mengirim pesan dobel.
+ */
+async function notifyShippedOnce(
+  supabaseAdmin: ReturnType<typeof getSupabaseAdmin>,
+  order: {
+    id: string;
+    order_number?: string | null;
+    customer_name?: string | null;
+    customer_whatsapp?: string | null;
+    awb_no: string;
+  }
+) {
+  if (!(await claimOrderNotification(order.id, "shipped"))) return;
+  let sent = false;
+  try {
+    sent = await notifyCustomerOrderShipped({
+      orderNumber: order.order_number || "",
+      customerName: order.customer_name || "",
+      customerWhatsapp: order.customer_whatsapp || "",
+      awbNo: order.awb_no,
+    });
+  } catch (e) {
+    console.error("[ADMIN] Notifikasi 'dikirim' error:", order.order_number, e);
+  }
+  await recordShippedNotifyStatus(order.id, sent);
+}
+
+/** Penyelarasan komisi affiliate — kegagalan tidak boleh menggagalkan aksi resi. */
+async function syncCommissionStatusSafe(
+  supabaseAdmin: ReturnType<typeof getSupabaseAdmin>,
+  orderId: string
+) {
+  try {
+    await syncCommissionStatus(supabaseAdmin, orderId, { actor: "admin-manual-resi" });
+  } catch (e) {
+    console.error("[ADMIN] Gagal menyelaraskan komisi affiliate:", e);
+  }
+}
+
 export async function PATCH(request: NextRequest) {
   if (!(await isOpsAdmin(request))) return unauthorized();
   try {
-    const { orderId, orderNumber, status, action } = await request.json();
+    const { orderId, orderNumber, status, action, awbNo, shipped } = await request.json();
     const identifier = orderNumber || orderId;
     console.log("[ADMIN] PATCH request:", { identifier, status, action });
 
@@ -58,7 +100,7 @@ export async function PATCH(request: NextRequest) {
       const { data: order, error: fetchError } = await supabaseAdmin
         .from("orders")
         .select(
-          "id, order_number, customer_name, customer_whatsapp, shipping_address, shipping_city, shipping_kecamatan, shipping_postal_code, total, shipping_cost, weight, payment_method, awb_no, status, order_items(product_id, product_name, color, size, quantity)"
+          "id, order_number, customer_name, customer_whatsapp, shipping_address, shipping_city, shipping_kecamatan, shipping_postal_code, total, shipping_cost, weight, payment_method, awb_no, status, shipping_method, order_items(product_id, product_name, color, size, quantity)"
         )
         .eq("order_number", identifier)
         .single();
@@ -92,6 +134,7 @@ export async function PATCH(request: NextRequest) {
         shipping_cost: order.shipping_cost,
         weight: order.weight,
         payment_method: order.payment_method,
+        shipping_method: order.shipping_method,
         order_items: order.order_items ?? [],
       });
 
@@ -131,6 +174,150 @@ export async function PATCH(request: NextRequest) {
         status: "diproses",
         shippingStatus: "menunggu_pickup",
         serviceCode: result.serviceCode,
+      });
+    }
+
+    // ── "Buat Resi" manual untuk pesanan HBO ──
+    // Pesanan HBO dibuat admin langsung di J&T VIP (di luar sistem), jadi resinya bukan dari
+    // API J&T: admin mengetik nomor resinya di sini. Alur statusnya SAMA dengan resi EZ/ECO
+    // (menunggu_pickup → dikirim), termasuk notifikasi "dikirim" lewat klaim atomik yang sama,
+    // sehingga nomor resi/status yang sama tidak pernah memicu pesan dobel.
+    if (action === "manualResi") {
+      const { data: order, error: fetchError } = await supabaseAdmin
+        .from("orders")
+        .select(
+          "id, order_number, status, awb_no, shipping_status, shipping_method, customer_name, customer_whatsapp"
+        )
+        .eq("order_number", identifier)
+        .single();
+
+      if (fetchError || !order) {
+        return NextResponse.json({ error: "Pesanan tidak ditemukan" }, { status: 404 });
+      }
+
+      if (order.status === "dibatalkan") {
+        return NextResponse.json({ error: "Pesanan sudah dibatalkan, resi tidak bisa disimpan." }, { status: 400 });
+      }
+
+      const resi = String(awbNo || "").trim();
+      if (!resi) {
+        return NextResponse.json({ error: "Nomor resi wajib diisi." }, { status: 400 });
+      }
+
+      // Nomor resi tidak boleh dipakai pesanan lain (data tersimpan = sumber kebenaran).
+      const { data: dipakai } = await supabaseAdmin
+        .from("orders")
+        .select("order_number")
+        .eq("awb_no", resi)
+        .neq("id", order.id)
+        .limit(1)
+        .maybeSingle();
+      if (dipakai?.order_number) {
+        return NextResponse.json(
+          { error: `Nomor resi sudah dipakai pesanan lain (${dipakai.order_number}).` },
+          { status: 400 }
+        );
+      }
+
+      const sudahDikirim = shipped === true;
+      // "Sudah dikirim" → status kirim naik sekarang (notif keluar). "Belum dijemput" → hanya
+      // resi + penanda menunggu pickup; status pesanan tidak dipaksa maju (mis. masih pending).
+      // Resi yang sudah pernah dikirim tidak pernah dimundurkan saat nomornya diedit.
+      const sudahJalan = order.status === "dikirim" || order.status === "selesai";
+      const nextStatus = sudahDikirim ? (order.status === "selesai" ? "selesai" : "dikirim") : order.status;
+      const nextShip = sudahDikirim
+        ? "dikirim"
+        : sudahJalan || order.shipping_status === "dikirim" || order.shipping_status === "selesai"
+          ? order.shipping_status || "dikirim"
+          : "menunggu_pickup";
+
+      const { error: updateError } = await supabaseAdmin
+        .from("orders")
+        .update({
+          awb_no: resi,
+          shipping_method: "J&T HBO",
+          status: nextStatus,
+          shipping_status: nextShip,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", order.id);
+
+      if (updateError) {
+        console.error("[ADMIN] Gagal simpan resi manual HBO:", identifier, updateError);
+        return NextResponse.json({ error: "Gagal menyimpan nomor resi. Coba lagi." }, { status: 500 });
+      }
+
+      const justShipped = sudahDikirim && order.status !== "dikirim" && order.status !== "selesai";
+      if (justShipped) {
+        await notifyShippedOnce(supabaseAdmin, {
+          id: order.id,
+          order_number: order.order_number,
+          customer_name: order.customer_name,
+          customer_whatsapp: order.customer_whatsapp,
+          awb_no: resi,
+        });
+        await syncCommissionStatusSafe(supabaseAdmin, order.id);
+      }
+
+      console.log("[ADMIN] Resi HBO disimpan:", identifier, resi, sudahDikirim ? "(dikirim)" : "(menunggu pickup)");
+      return NextResponse.json({
+        success: true,
+        awbNo: resi,
+        status: nextStatus,
+        shippingStatus: nextShip,
+        serviceCode: "HBO",
+      });
+    }
+
+    // ── "Tandai Dikirim" untuk resi HBO yang sebelumnya "belum dijemput" ──
+    if (action === "markShipped") {
+      const { data: order, error: fetchError } = await supabaseAdmin
+        .from("orders")
+        .select("id, order_number, status, awb_no, shipping_status, customer_name, customer_whatsapp")
+        .eq("order_number", identifier)
+        .single();
+
+      if (fetchError || !order) {
+        return NextResponse.json({ error: "Pesanan tidak ditemukan" }, { status: 404 });
+      }
+      if (!order.awb_no) {
+        return NextResponse.json({ error: "Pesanan ini belum punya nomor resi." }, { status: 400 });
+      }
+      if (order.status === "dibatalkan") {
+        return NextResponse.json({ error: "Pesanan sudah dibatalkan." }, { status: 400 });
+      }
+
+      const nextStatus = order.status === "selesai" ? "selesai" : "dikirim";
+      const { error: updateError } = await supabaseAdmin
+        .from("orders")
+        .update({
+          status: nextStatus,
+          shipping_status: "dikirim",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", order.id);
+
+      if (updateError) {
+        console.error("[ADMIN] Gagal menandai dikirim:", identifier, updateError);
+        return NextResponse.json({ error: "Gagal menandai pesanan dikirim. Coba lagi." }, { status: 500 });
+      }
+
+      if (order.status !== "dikirim" && order.status !== "selesai") {
+        await notifyShippedOnce(supabaseAdmin, {
+          id: order.id,
+          order_number: order.order_number,
+          customer_name: order.customer_name,
+          customer_whatsapp: order.customer_whatsapp,
+          awb_no: order.awb_no,
+        });
+        await syncCommissionStatusSafe(supabaseAdmin, order.id);
+      }
+
+      return NextResponse.json({
+        success: true,
+        awbNo: order.awb_no,
+        status: nextStatus,
+        shippingStatus: "dikirim",
       });
     }
 

@@ -254,6 +254,28 @@ export const base44 = {
         );
       },
 
+      /**
+       * Simpan nomor resi pesanan HBO (dibuat manual di J&T VIP). `shipped` true = paket sudah
+       * dikirim (status langsung `dikirim` + notifikasi), false = resi dibuat, menunggu pickup.
+       * Memakai route admin yang sama: `PATCH /api/admin/orders { action: "manualResi" }`.
+       */
+      async createManualResi(orderNumber: string, awbNo: string, shipped: boolean) {
+        return call<{ success: boolean; awbNo: string; status: string; shippingStatus: string; serviceCode?: string }>(
+          "PATCH",
+          ADMIN_ORDERS,
+          { orderNumber, action: "manualResi", awbNo, shipped },
+        );
+      },
+
+      /** "Tandai Dikirim" untuk resi HBO yang masih menunggu pickup. */
+      async markShipped(orderNumber: string) {
+        return call<{ success: boolean; awbNo: string; status: string; shippingStatus: string }>(
+          "PATCH",
+          ADMIN_ORDERS,
+          { orderNumber, action: "markShipped" },
+        );
+      },
+
       /** Detail pesanan + item (dipakai form pengajuan retur). */
       async getOrder(orderNumber: string) {
         const params = new URLSearchParams({ order_number: orderNumber });

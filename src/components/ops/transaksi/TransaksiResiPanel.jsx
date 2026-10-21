@@ -23,6 +23,7 @@ import { AlertCircle, Clipboard, ClipboardCheck, Truck } from "lucide-react";
 import { base44 } from "@/lib/ops-api";
 import { formatWeightExact } from "@/lib/shipping-weight";
 import { formatTrackingTime } from "@/lib/jnt/track-status";
+import { jntServiceCodeFromShippingMethod } from "@/lib/jnt/layanan";
 
 /** Label status kirim yang dipakai layar (nilainya dari `orders.shipping_status`). */
 const SHIPPING_STATUS_LABEL = { menunggu_pickup: "Menunggu pickup", dikirim: "Dikirim", selesai: "Selesai" };
@@ -61,6 +62,16 @@ const TransaksiResiPanel = forwardRef(function TransaksiResiPanel(
   const [printSize, setPrintSize] = useState("");
   /** Kunci proses per transaksi: klik beruntun / Enter berulang tidak mengirim dua panggilan. */
   const resiLock = useRef(false);
+  /**
+   * Resi manual (HBO): pesanannya sudah dibuat admin di J&T VIP, jadi nomor resinya diketik di
+   * sini. Form dibuka otomatis kalau layanan tersimpan memang HBO.
+   */
+  const [manualOpen, setManualOpen] = useState(false);
+  const [manualAwb, setManualAwb] = useState("");
+  const [manualShipped, setManualShipped] = useState("belum");
+  const [manualBusy, setManualBusy] = useState(false);
+  const [manualError, setManualError] = useState("");
+  const [shippingBusy, setShippingBusy] = useState(false);
 
   const awb = createdAwb || order?.awb_no || "";
   const cancelled = order?.status === "dibatalkan";
@@ -80,6 +91,16 @@ const TransaksiResiPanel = forwardRef(function TransaksiResiPanel(
   if (!order) return null;
 
   const shippingStatus = createdAwb ? "menunggu_pickup" : order.shipping_status || "";
+  /** Layanan tersimpan — HBO = pesanan dibuat manual di J&T VIP, resinya diinput admin. */
+  const isHbo = jntServiceCodeFromShippingMethod(order.shipping_method) === "HBO";
+  const manualFormOpen = manualOpen || (isHbo && !awb);
+  const bisaTandaiDikirim =
+    !!awb &&
+    !cancelled &&
+    order.status !== "dikirim" &&
+    order.status !== "selesai" &&
+    shippingStatus !== "dikirim" &&
+    shippingStatus !== "selesai";
 
   /** Langkah 1: pra-cek baca-saja (server memeriksa alamat, nomor, kode area J&T, berat). */
   const openResiConfirm = async () => {
@@ -169,6 +190,119 @@ const TransaksiResiPanel = forwardRef(function TransaksiResiPanel(
 
   const sizeLabel = (size) => (size === "78x100" ? "Cetak 78 × 100 mm" : "Cetak 100 × 150 mm");
 
+  /** Simpan nomor resi yang dibuat manual di J&T VIP (HBO). Bisa dipakai untuk mengedit resi. */
+  const submitManualResi = async () => {
+    if (manualBusy) return;
+    const resi = manualAwb.trim();
+    setManualError("");
+    if (!resi) {
+      setManualError("Nomor resi wajib diisi.");
+      return;
+    }
+    setManualBusy(true);
+    try {
+      const result = await base44.entities.Transaction.createManualResi(
+        order.order_number,
+        resi,
+        manualShipped === "sudah",
+      );
+      const awbNo = result?.awbNo || resi;
+      setCreatedAwb(awbNo);
+      setManualOpen(false);
+      onResiCreated?.({
+        awb_no: awbNo,
+        shipping_status: result?.shippingStatus || (manualShipped === "sudah" ? "dikirim" : "menunggu_pickup"),
+        ...(result?.status ? { status: result.status } : {}),
+        shipping_method: "J&T HBO",
+      });
+    } catch (error) {
+      setManualError(error instanceof Error ? error.message : "Gagal menyimpan nomor resi. Coba lagi.");
+    } finally {
+      setManualBusy(false);
+    }
+  };
+
+  /** "Tandai Dikirim" untuk resi HBO yang sebelumnya belum dijemput. */
+  const tandaiDikirim = async () => {
+    if (shippingBusy) return;
+    setShippingBusy(true);
+    setManualError("");
+    try {
+      const result = await base44.entities.Transaction.markShipped(order.order_number);
+      onResiCreated?.({
+        awb_no: result?.awbNo || awb,
+        shipping_status: "dikirim",
+        ...(result?.status ? { status: result.status } : {}),
+      });
+    } catch (error) {
+      setManualError(error instanceof Error ? error.message : "Gagal menandai dikirim. Coba lagi.");
+    } finally {
+      setShippingBusy(false);
+    }
+  };
+
+  const inputClass =
+    "mt-1 w-full px-3 py-2 bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 rounded-lg text-sm font-semibold text-slate-900 dark:text-white focus:border-slate-400 dark:focus:border-slate-500 focus:outline-none disabled:opacity-60";
+
+  const manualForm = (
+    <div className="space-y-2.5">
+      <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+        Pesanan HBO dibuat manual di J&amp;T VIP, masukkan nomor resi di sini.
+      </p>
+      <label className="block">
+        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+          Nomor Resi HBO
+        </span>
+        <input
+          type="text"
+          value={manualAwb}
+          onChange={(event) => setManualAwb(event.target.value)}
+          placeholder="Mis. JP1234567890"
+          disabled={manualBusy}
+          className={`${inputClass} font-mono`}
+        />
+      </label>
+      <label className="block">
+        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+          Status paket
+        </span>
+        <select
+          value={manualShipped}
+          onChange={(event) => setManualShipped(event.target.value)}
+          disabled={manualBusy}
+          className={inputClass}
+        >
+          <option value="belum">Baru dibuat, belum dijemput</option>
+          <option value="sudah">Sudah dikirim</option>
+        </select>
+      </label>
+      {manualError ? <p className="text-xs font-semibold text-red-600 dark:text-red-400">{manualError}</p> : null}
+      <div className="flex gap-2">
+        {awb ? (
+          <button
+            type="button"
+            onClick={() => {
+              setManualOpen(false);
+              setManualError("");
+            }}
+            disabled={manualBusy}
+            className="flex-1 px-3 py-2.5 border-2 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-xl text-sm hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-60 transition-all"
+          >
+            Batal
+          </button>
+        ) : null}
+        <button
+          type="button"
+          onClick={submitManualResi}
+          disabled={manualBusy}
+          className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold rounded-xl text-sm hover:bg-slate-800 dark:hover:bg-slate-100 disabled:opacity-60 transition-all"
+        >
+          <Truck size={15} /> {manualBusy ? "Menyimpan…" : "Simpan Resi"}
+        </button>
+      </div>
+    </div>
+  );
+
   return (
     <>
       {awb ? (
@@ -228,11 +362,50 @@ const TransaksiResiPanel = forwardRef(function TransaksiResiPanel(
               Cetak Resi
             </button>
           ) : null}
+
+          {/* Resi HBO: dibuat manual di J&T VIP — admin bisa mengedit nomornya dan menandai
+              paket sudah dikirim (notifikasi menyusul lewat jalur yang sama dengan EZ/ECO). */}
+          {!cancelled ? (
+            manualOpen ? (
+              manualForm
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setManualOpen(true);
+                  setManualAwb(awb);
+                  setManualError("");
+                  // Pesanan yang paketnya sudah jalan jangan dimundurkan saat resinya diedit.
+                  setManualShipped(shippingStatus === "dikirim" || shippingStatus === "selesai" ? "sudah" : "belum");
+                }}
+                className="w-full text-[11px] font-bold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 transition-colors"
+              >
+                {isHbo ? "Ubah nomor resi" : "Ganti ke resi HBO (input manual)"}
+              </button>
+            )
+          ) : null}
+
+          {!manualOpen && manualError ? (
+            <p className="text-xs font-semibold text-red-600 dark:text-red-400">{manualError}</p>
+          ) : null}
+
+          {bisaTandaiDikirim ? (
+            <button
+              type="button"
+              onClick={tandaiDikirim}
+              disabled={shippingBusy}
+              className="w-full inline-flex items-center justify-center gap-2 px-3 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold rounded-xl text-sm hover:bg-slate-800 dark:hover:bg-slate-100 disabled:opacity-60 transition-all"
+            >
+              <Truck size={15} /> {shippingBusy ? "Memproses…" : "Tandai Dikirim"}
+            </button>
+          ) : null}
         </>
       ) : cancelled ? (
         <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
           Pesanan ini sudah dibatalkan, jadi resi tidak dibuat dari sini.
         </p>
+      ) : manualFormOpen ? (
+        manualForm
       ) : order.status === "diproses" ? (
         <>
           <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
@@ -245,6 +418,18 @@ const TransaksiResiPanel = forwardRef(function TransaksiResiPanel(
             className="w-full inline-flex items-center justify-center gap-2 px-3 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold rounded-xl text-sm hover:bg-slate-800 dark:hover:bg-slate-100 disabled:opacity-60 transition-all"
           >
             <Truck size={15} /> {resiChecking ? "Memeriksa data…" : "Buat Resi"}
+          </button>
+          {/* Pesanan HBO tidak dibuat lewat API J&T — resinya diinput dari J&T VIP. */}
+          <button
+            type="button"
+            onClick={() => {
+              setManualOpen(true);
+              setManualAwb("");
+              setManualError("");
+            }}
+            className="w-full text-[11px] font-bold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 transition-colors"
+          >
+            Input resi manual (HBO)
           </button>
         </>
       ) : (

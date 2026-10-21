@@ -43,7 +43,12 @@ export default function OrderDetailDrawer({
   /** "Atur Pesanan" — buat resi J&T untuk pesanan yang belum punya resi. */
   onArrangeOrder?: () => Promise<void> | void;
   /** Setelah tracking J&T disinkronkan (server) — dipakai memperbarui daftar/drawer. */
-  onSynced?: (patch: { status?: string; shipping_status?: string | null }) => void;
+  onSynced?: (patch: {
+    status?: string;
+    shipping_status?: string | null;
+    awb_no?: string;
+    shipping_method?: string;
+  }) => void;
 }) {
   useEffect(() => {
     if (!order) return;

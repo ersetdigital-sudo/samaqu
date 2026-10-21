@@ -17,6 +17,11 @@ export type JntLayanan = {
   note: string;
   /** Estimasi standar layanan J&T. Tariff Check API tidak mengirim ETA per rute. */
   estimate: string;
+  /**
+   * Layanan manual: TIDAK pernah dicek ke Tariff Check dan TIDAK dibuatkan resi otomatis —
+   * pesanannya dibuat admin langsung di J&T VIP, lalu nomor resinya diinput di dashboard.
+   */
+  manual?: boolean;
 };
 
 /**
@@ -27,7 +32,22 @@ export type JntLayanan = {
 export const JNT_LAYANAN: JntLayanan[] = [
   { code: "EZ", label: "J&T EZ (Reguler)", note: "Cepat, 2-4 hari", estimate: "2-4 hari" },
   { code: "ECO", label: "J&T ECO (Hemat)", note: "Lebih murah, 3-7 hari", estimate: "3-7 hari" },
+  {
+    code: "HBO",
+    label: "J&T HBO",
+    note: "Dibuat manual di J&T VIP",
+    estimate: "-",
+    manual: true,
+  },
 ];
+
+/** Layanan yang bisa dibuatkan resi otomatis lewat API J&T (EZ/ECO). */
+export const JNT_LAYANAN_API = JNT_LAYANAN.filter((layanan) => !layanan.manual);
+
+/** True kalau layanan ini manual (HBO) — resi diinput admin, bukan lewat API. */
+export function isManualService(code?: string | null): boolean {
+  return layananByCode(code)?.manual === true;
+}
 
 export function layananByCode(code?: string | null): JntLayanan | null {
   const cari = String(code ?? "").trim().toUpperCase();
@@ -53,6 +73,8 @@ export function expressTypeUntuk(code?: string | null): string {
  */
 export function jntServiceCodeFromShippingMethod(value?: string | null): string | null {
   const text = String(value ?? "").toUpperCase();
+  // HBO dicek lebih dulu: teksnya "J&T HBO", tidak mengandung EZ/ECO.
+  if (text.includes("HBO")) return "HBO";
   if (text.includes("ECO")) return "ECO";
   if (text.includes("EZ")) return "EZ";
   return null;

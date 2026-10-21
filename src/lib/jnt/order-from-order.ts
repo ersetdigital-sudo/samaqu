@@ -3,7 +3,7 @@ import { isPaymentMethodId, legacyPaymentType } from "../payment-methods";
 import { createOrder } from "./order";
 import { getDestinationCode, getOriginCode, getReceiverArea, getSendSiteCode, resolveTariffCodes } from "./area-mapping";
 import { checkTariffSemua } from "./tariff";
-import { expressTypeUntuk } from "./layanan";
+import { expressTypeUntuk, isManualService, jntServiceCodeFromShippingMethod } from "./layanan";
 import type { OrderResponse } from "./types";
 import { sumWeightGramsBySize, productWeightMapFromRows, variantWeightMapFromRows } from "../shipping-weight";
 
@@ -49,6 +49,8 @@ export interface JntOrderSource {
   shipping_postal_code?: string | null;
   total: number;
   weight?: number | null;
+  /** Layanan tersimpan (`orders.shipping_method`) — dipakai menolak resi otomatis untuk HBO. */
+  shipping_method?: string | null;
   payment_method?: string | null;
   /** Ongkir yang ditagih ke pembeli — dipakai menebak layanan J&T yang harus dipakai resinya. */
   shipping_cost?: number | null;
@@ -146,6 +148,15 @@ async function resolveWeightGrams(
 }
 
 export async function createJntOrderForOrder(order: JntOrderSource): Promise<JntOrderResult> {
+  // Pesanan HBO dibuat manual di J&T VIP: jangan pernah membuat resi lewat API.
+  if (isManualService(jntServiceCodeFromShippingMethod(order.shipping_method))) {
+    return {
+      success: false,
+      awbNo: null,
+      error: "Pesanan HBO dibuat manual di J&T VIP. Masukkan nomor resinya lewat form resi manual.",
+    };
+  }
+
   const items = order.order_items || [];
   const split = splitCityDistrict(order.shipping_city);
   const city = split.city;
