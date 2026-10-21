@@ -194,14 +194,14 @@ export async function PATCH(req: NextRequest) {
 
   await supabase
     .from("affiliate_withdrawals")
-    .update({ status: "ditolak", reason: "Dibatalkan oleh mitra.", updated_at: new Date().toISOString() })
+    .update({ status: "ditolak", reason: "Dibatalkan oleh affiliate.", updated_at: new Date().toISOString() })
     .eq("id", id);
 
   await supabase.from("affiliate_withdrawal_events").insert({
     withdrawal_id: id,
     from_status: "menunggu",
     to_status: "ditolak",
-    note: "Penarikan dibatalkan oleh mitra · saldo dikembalikan.",
+    note: "Penarikan dibatalkan oleh affiliate · saldo dikembalikan.",
     actor: session.userId,
   });
 

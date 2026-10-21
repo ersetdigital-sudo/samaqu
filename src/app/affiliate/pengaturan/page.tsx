@@ -9,7 +9,7 @@ import { supabaseAffiliate as supabase } from "@/lib/supabase-affiliate";
 import { tgl } from "@/lib/affiliate/format";
 
 /**
- * Pengaturan Akun â€” profil, rekening pencairan, keamanan, dan preferensi notifikasi.
+ * Pengaturan Akun — profil, rekening pencairan, keamanan, dan preferensi notifikasi.
  * Struktur mengikuti mockup (tabs + form per tab).
  */
 
@@ -73,7 +73,7 @@ export default function AffiliateSettingsPage() {
     const next: Record<string, string> = {};
     if (fullName.trim().length < 3) next.fullName = "Nama lengkap minimal 3 karakter.";
     if (displayName.trim() && displayName.trim().length < 3) next.displayName = "Nama tampilan minimal 3 karakter.";
-    if (phone && !/^0\d{8,13}$/.test(phone.replace(/\D/g, ""))) next.phone = "Nomor telepon harus diawali 0 dan berisi 9â€“14 digit.";
+    if (phone && !/^0\d{8,13}$/.test(phone.replace(/\D/g, ""))) next.phone = "Nomor telepon harus diawali 0 dan berisi 9–14 digit.";
     setErr(next);
     if (Object.keys(next).length) {
       toast("Gagal menyimpan, periksa kembali isian profil", "err");
@@ -221,11 +221,11 @@ export default function AffiliateSettingsPage() {
               <div>
                 <div className="b dark">{affiliate.full_name}</div>
                 <div className="small muted">
-                  {affiliate.affiliate_code} Â·{" "}
+                  {affiliate.affiliate_code} ·{" "}
                   <Badge
                     label={
                       affiliate.status === "aktif"
-                        ? "Mitra Aktif"
+                        ? "Affiliate Aktif"
                         : affiliate.status === "menunggu"
                           ? "Menunggu Persetujuan"
                           : affiliate.status === "ditolak"
@@ -272,7 +272,7 @@ export default function AffiliateSettingsPage() {
 
             <div className="row" style={{ justifyContent: "flex-end", marginTop: 8 }}>
               <button className="btn p" onClick={saveProfile} disabled={saving} type="button">
-                {saving ? "Menyimpanâ€¦" : "Simpan Perubahan"}
+                {saving ? "Menyimpan…" : "Simpan Perubahan"}
               </button>
             </div>
           </div>
@@ -308,11 +308,11 @@ export default function AffiliateSettingsPage() {
                     </div>
                     <div>
                       <div className="b dark">
-                        {a.bank} Â· {a.number}{" "}
+                        {a.bank} · {a.number}{" "}
                         {a.isPrimary ? <span className="badge b-pri">Utama</span> : null}
                       </div>
                       <div className="small muted">
-                        {a.method} Â· a.n. {a.holder}
+                        {a.method} · a.n. {a.holder}
                       </div>
                     </div>
                   </div>
@@ -371,7 +371,7 @@ export default function AffiliateSettingsPage() {
                     value={accountForm.bank}
                     onChange={(v) => setAccountForm({ ...accountForm, bank: v })}
                     options={[
-                      ["", "â€” Pilih â€”"],
+                      ["", "— Pilih —"],
                       ...(accountForm.method === "E-wallet"
                         ? ["DANA", "OVO", "GoPay", "ShopeePay", "LinkAja"]
                         : ["BCA", "BRI", "Mandiri", "BNI", "BSI", "CIMB Niaga", "Permata", "Danamon"]

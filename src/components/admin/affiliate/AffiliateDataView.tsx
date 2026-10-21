@@ -125,7 +125,7 @@ export default function AffiliateDataView() {
     <div className="space-y-5">
       <AdminPageHeader
         title="Data Affiliate"
-        sub="Daftar mitra affiliate, status pendaftaran, kode referral, dan performa penjualan."
+        sub="Daftar affiliate, status pendaftaran, kode referral, dan performa penjualan."
       />
 
       {error && <ErrorBlock message={error} />}

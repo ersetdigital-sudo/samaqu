@@ -48,7 +48,7 @@ const FAQ: [string, string, string][] = [
   [
     "Penarikan Dana",
     "Kenapa penarikan saya ditolak?",
-    "Penarikan dapat ditolak jika nama pemilik rekening tidak sesuai dengan data mitra. Perbarui rekening di Pengaturan Akun lalu ajukan kembali.",
+    "Penarikan dapat ditolak jika nama pemilik rekening tidak sesuai dengan data affiliate. Perbarui rekening di Pengaturan Akun lalu ajukan kembali.",
   ],
   [
     "Ketentuan Promosi",
@@ -166,7 +166,7 @@ export default function AffiliateHelpPage() {
           </div>
           <h3 className="b dark mt">Masih butuh bantuan?</h3>
           <p className="small muted" style={{ marginTop: 4, lineHeight: 1.6 }}>
-            Tim kemitraan siap membantu pertanyaan seputar akun dan komisi.
+            Tim affiliate SAMAQU siap membantu pertanyaan seputar akun dan komisi.
           </p>
           <button
             className="btn p w mt"

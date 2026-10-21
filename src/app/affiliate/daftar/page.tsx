@@ -82,7 +82,7 @@ export default function AffiliateRegisterPage() {
             SAMAQU AFFILIATE CENTER
           </div>
           <div className="b dark" style={{ fontSize: 20, marginTop: 6, lineHeight: 1.35 }}>
-            Jadilah mitra resmi SAMAQU dan dapatkan komisi dari setiap penjualan.
+            Jadilah affiliate resmi SAMAQU dan dapatkan komisi dari setiap penjualan.
           </div>
         </div>
       </div>
@@ -97,7 +97,7 @@ export default function AffiliateRegisterPage() {
             </div>
           </div>
 
-          <h1 style={{ fontSize: 24, fontWeight: 800, color: "#111827" }}>Daftar Mitra Affiliate</h1>
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: "#111827" }}>Daftar Affiliate</h1>
           <p className="muted" style={{ margin: "4px 0 20px" }}>
             Pendaftaran dikirim ke tim SAMAQU dan diverifikasi sebelum akun aktif.
           </p>
