@@ -21,6 +21,9 @@ import { sendOnce } from "@/lib/order-notify";
 import { orderItemPhoto } from "@/lib/order-photo";
 import { loadOrderPhotoLookup } from "@/lib/order-photo-data";
 import { createOrderPaymentLink } from "@/lib/mayar";
+import { formatProductLabel } from "@/lib/item-label";
+import { resolveAttribution } from "@/lib/affiliate/referral";
+import { recordCommissionForOrder } from "@/lib/affiliate/commission";
 
 /**
  * Pesanan dari alur Open Order Samaqu (halaman /open-order, 6 langkah).
@@ -363,6 +366,12 @@ export async function POST(request: NextRequest) {
       itemsWeight + itemsWeightMissing * DEFAULT_OPEN_ORDER_WEIGHT + (extraCover ? addonWeight : 0)
     );
 
+    // ── Atribusi referral (server-side, sama seperti /api/orders) ──
+    const referral = await resolveAttribution(supabaseAdmin, request, {
+      email: authData?.user?.email ?? rawCustomer.email ?? null,
+      whatsapp,
+    });
+
     const { data: order, error: orderError } = await supabaseAdmin
       .from("orders")
       .insert({
@@ -389,6 +398,11 @@ export async function POST(request: NextRequest) {
         // Pesanan ini sudah memotong stok → pembatalan wajib mengembalikannya.
         stock_reserved: true,
         shipping_notes: shippingNotes,
+        // Atribusi affiliate (nullable — pesanan tanpa referral tetap normal).
+        affiliate_id: referral?.affiliateId ?? null,
+        referral_code: referral?.code ?? null,
+        referral_link_id: referral?.linkId ?? null,
+        referral_attributed_at: referral ? new Date().toISOString() : null,
       })
       .select("id, order_number")
       .single();
@@ -459,6 +473,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Gagal menyimpan detail pesanan" }, { status: 500 });
     }
 
+    // Catat komisi affiliate (idempoten — order_id UNIQUE di tabel komisi).
+    if (referral) {
+      const commission = await recordCommissionForOrder(supabaseAdmin, {
+        orderId: order.id,
+        orderNumber,
+        affiliateId: referral.affiliateId,
+        linkId: referral.linkId,
+        items: validatedItems.map((item) => ({
+          productId: item.productId,
+          price: item.price,
+          quantity: item.quantity,
+        })),
+      });
+      if (commission) {
+        await supabaseAdmin
+          .from("orders")
+          .update({ affiliate_commission_amount: commission.amount })
+          .eq("id", order.id);
+      }
+    }
+
     // Resi J&T tidak dibuat di sini — admin menekan "Atur Pesanan" setelah pembayaran
     // diverifikasi (PATCH /api/admin/orders action=createJnt).
 
@@ -495,7 +530,15 @@ export async function POST(request: NextRequest) {
     const paymentInstruction = paymentRow ? paymentInstructionFrom(paymentRow) : null;
     const invoiceItemLines = [
       ...validatedItems.map((item) => ({
-        label: `${item.productName}${item.size ? ` (Uk. ${item.size})` : ""}`,
+        // Format sama dengan notifikasi WA: nama · series · warna · kain · size.
+        label: formatProductLabel({
+          name: item.productName,
+          series: item.series,
+          kain: item.kain,
+          color: item.color,
+          size: item.size,
+          quantity: item.quantity,
+        }),
         quantity: item.quantity || 1,
       })),
       ...(extraCover ? [{ label: OPEN_ORDER_ADDON.name, quantity: 1 }] : []),

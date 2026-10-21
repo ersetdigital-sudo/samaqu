@@ -93,6 +93,8 @@
 .panel-tx .packf.on em { background: rgba(255, 255, 255, .26); color: #fff; }
 .panel-tx .btn { background: #c2255c; color: #fff; border: 0; border-radius: 20px; padding: 11px 22px; font-weight: 600; font-family: inherit; font-size: 13px; cursor: pointer; }
 .panel-tx .btn:hover { background: #9d174d; }
+.panel-tx .btn-sec { background: #fff; color: #c2255c; border: 1px solid #f3c7d6; border-radius: 20px; padding: 11px 18px; font-weight: 600; font-family: inherit; font-size: 13px; cursor: pointer; }
+.panel-tx .btn-sec:hover { background: #fdf3f7; }
 
 /* Navigasi bulan (pertahankan kemampuan lihat bulan lain; tidak ada di mockup). */
 .panel-tx .ptx-month { display: inline-flex; align-items: center; gap: 2px; border: 1px solid #eee2e7; border-radius: 12px; padding: 2px 4px; background: #fff; }
@@ -103,15 +105,25 @@
 /* ── Tabel ── */
 /* `table-layout: fixed` + lebar kolom persen (`<colgroup>` di komponen) supaya SEMUA tab
  * memakai lebar kolom yang sama dan tabel menyusut proporsional mengikuti lebar konten.
- * `min-width` 900px: di bawah itu tabel menggulir mendatar (`.tw` overflow-x) — bukan
- * memotong isi. Padding/font dirapatkan lagi lewat media query di bawah. */
-.panel-tx .tw { padding: 0; overflow-x: auto; }
-.panel-tx table { width: 100%; border-collapse: collapse; min-width: 900px; table-layout: fixed; }
-.panel-tx th { text-align: left; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: #8a7d83; padding: 14px; background: #fdf8fa; border-bottom: 1px solid #f1e6ea; white-space: nowrap; }
-.panel-tx td { padding: 14px; border-bottom: 1px solid #f6eef1; vertical-align: middle; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13px; }
+ * Tanpa scroll mendatar: kolom menyusut mengikuti lebar konten, dan di layar sempit
+ * tabel berubah menjadi kartu per transaksi (lihat media query di bawah). */
+.panel-tx .tw { padding: 0; overflow-x: visible; }
+.panel-tx table { width: 100%; border-collapse: collapse; min-width: 0; table-layout: fixed; }
+.panel-tx th { text-align: left; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: #8a7d83; padding: 14px; background: #fdf8fa; border-bottom: 1px solid #f1e6ea; white-space: normal; overflow-wrap: anywhere; }
+/* Nama pelanggan & produk boleh membungkus — teks panjang tidak dipotong ellipsis. */
+.panel-tx td { padding: 12px 14px; border-bottom: 1px solid #f6eef1; vertical-align: middle; white-space: normal; overflow-wrap: anywhere; font-size: 13px; }
 .panel-tx tbody tr { cursor: pointer; transition: background .15s; }
 .panel-tx tbody tr:hover { background: #fdf3f7; }
-.panel-tx td small { display: block; color: #8a7d83; font-size: 11px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.panel-tx td small { display: block; color: #8a7d83; font-size: 11px; margin-top: 2px; white-space: normal; overflow-wrap: anywhere; }
+/* Kolom nomor, total, resi, status, dan panah tetap satu baris supaya rapi. */
+.panel-tx td:nth-child(1),
+.panel-tx td:nth-child(4),
+.panel-tx td:nth-child(5),
+.panel-tx td:nth-child(6),
+.panel-tx td:nth-child(7) { white-space: nowrap; overflow-wrap: normal; }
+.panel-tx td:nth-child(1) small,
+.panel-tx td:nth-child(4) small,
+.panel-tx td:nth-child(5) small { white-space: nowrap; }
 .panel-tx .id { font-weight: 700; color: #c2255c; white-space: nowrap; font-size: 13px; }
 /* Sumber pesanan kini jadi baris kecil di bawah nominal Total — bukan kolom sendiri. */
 .panel-tx .mono small { font-weight: 400; font-variant-numeric: normal; color: #8a7d83; }
@@ -294,4 +306,38 @@
   .panel-tx .kv { font-size: 12.5px; align-items: flex-start; }
   .panel-tx .stp { gap: 4px; }
   .panel-tx .stp span { font-size: 10px; }
+}
+
+/* Layar sempit: tabel jadi kartu per transaksi — tidak ada scroll mendatar. */
+@media (max-width: 720px) {
+  .panel-tx .tw { overflow: visible; }
+  .panel-tx table,
+  .panel-tx thead,
+  .panel-tx tbody,
+  .panel-tx tr,
+  .panel-tx td { display: block; width: 100%; }
+  .panel-tx colgroup,
+  .panel-tx thead { display: none; }
+  .panel-tx tbody tr {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 10px 14px; padding: 14px;
+    border-bottom: 1px solid #f1e6ea;
+  }
+  .panel-tx tbody tr:last-child { border-bottom: 0; }
+  .panel-tx td { padding: 0; border: 0; }
+  .panel-tx td,
+  .panel-tx td small { white-space: normal !important; }
+  .panel-tx .id { white-space: normal; overflow-wrap: anywhere; }
+  .panel-tx td:before {
+    content: attr(data-label); display: block; margin-bottom: 2px;
+    font-size: 10px; font-weight: 700; letter-spacing: .06em;
+    text-transform: uppercase; color: #8a7d83;
+  }
+  .panel-tx td:nth-child(1),
+  .panel-tx td:nth-child(2),
+  .panel-tx td:nth-child(3) { grid-column: 1 / -1; }
+  .panel-tx td.chev { display: none; }
+  .panel-tx td.mono { text-align: left !important; }
+  .panel-tx td.mono small { text-align: left !important; }
+  .panel-tx .resi-no { overflow: visible; text-overflow: clip; }
 }

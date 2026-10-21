@@ -7,6 +7,8 @@ interface OrderDetailPanelProps {
   trackingState?: string;
   shippingContent?: ReactNode;
   onOpenTrack?: () => void;
+  /** Kode layanan J&T dari tracking (EZ/ECO) — fallback ke order.shipping_method. */
+  serviceCode?: string | null;
 }
 
 export default function OrderDetailPanel(props: OrderDetailPanelProps): ReactNode;

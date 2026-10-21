@@ -247,7 +247,7 @@ export const base44 = {
        * gagal melempar Error dengan pesan server apa adanya.
        */
       async createResi(orderNumber: string) {
-        return call<{ success: boolean; awbNo: string; status: string; shippingStatus: string }>(
+        return call<{ success: boolean; awbNo: string; status: string; shippingStatus: string; serviceCode?: string }>(
           "PATCH",
           ADMIN_ORDERS,
           { orderNumber, action: "createJnt" },

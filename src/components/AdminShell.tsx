@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, ShoppingBag, Package, Users, FileText, Settings,
   Search, Bell, Menu, LogOut, X, Ticket, Ruler, Image, Shirt, ChevronDown,
-  MessageCircle, Star, Camera,
+  MessageCircle, Star, Camera, Users2, TrendingUp, CreditCard, Percent,
 } from "lucide-react";
 import { ADMIN_SHELL_CSS } from "@/components/admin/admin-theme";
 
@@ -38,6 +38,15 @@ const navGroups = [
       { href: "/admin/testimoni", label: "Testimoni", icon: Star },
       { href: "/admin/ukuran-produk", label: "Panduan Ukuran", icon: Ruler },
       { href: "/admin/garansi-retur-page", label: "Halaman Garansi & Retur", icon: FileText },
+    ],
+  },
+  {
+    title: "Affiliate",
+    items: [
+      { href: "/admin/affiliate/data", label: "Data Affiliate", icon: Users2 },
+      { href: "/admin/affiliate/transaksi", label: "Transaksi & Komisi", icon: TrendingUp },
+      { href: "/admin/affiliate/pencairan", label: "Pencairan Komisi", icon: CreditCard },
+      { href: "/admin/affiliate/pengaturan", label: "Pengaturan Komisi", icon: Percent },
     ],
   },
   {

@@ -159,7 +159,7 @@ export async function createMayarInvoice(input: {
   description: string;
   orderNumber: string;
   expiresAt?: string;
-  /** Deskripsi baris item di invoice/email Mayar (mis. "SMQ-… — Thobe Superblack (Uk. M) x1"). */
+  /** Deskripsi baris item di invoice/email Mayar (mis. "SMQ-… — Thobe Jiharkah Series Soft Grey Kain A-02 size L x1"). */
   itemLabel?: string;
 }): Promise<MayarResult<MayarInvoiceData>> {
   const amount = Math.round(Number(input.amount) || 0);
@@ -275,7 +275,7 @@ const REQUEST_TIMEOUT_MS = 8000;
 
 /**
  * Keterangan baris item invoice Mayar: nomor pesanan + daftar produk, mis.
- * `SMQ-20261015-144 — Thobe Superblack (Uk. M) x1, Extra Cover & Hanger x1`.
+ * `SMQ-20261015-144 — Thobe Jiharkah Series Soft Grey Kain A-02 size L x1, Extra Cover & Hanger x1`.
  *
  * Nominal invoice tetap memakai total pesanan (satu baris item), jadi nama produk hanya menempel
  * di keterangan — tidak ada risiko total invoice meleset.

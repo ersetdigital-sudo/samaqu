@@ -40,9 +40,43 @@ export function isShipped(data: { history?: TrackHistoryItem[] | null } | null |
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Tampilan riwayat — ATURAN: yang berasal dari J&T ditampilkan APA ADANYA.
-// Tidak ada parafrase, terjemahan, label pengganti, atau kesimpulan buatan kita.
+// Tampilan riwayat — teks J&T ditampilkan apa adanya, dengan satu pengecualian:
+// kode site yang dikenal (mis. PLM_GATEWAY / TCBAO121) diberi label manusiawi, dan kode
+// aslinya tetap ditulis dalam kurung. Kode yang tidak dikenal dibiarkan apa adanya.
 // ─────────────────────────────────────────────────────────────────────────────
+
+/** Label untuk kode site/gateway J&T yang sudah dikenal. Kode asli selalu ikut ditampilkan. */
+const SITE_LABELS: Record<string, string> = {
+  DPK_GATEWAY: "Gateway Depok",
+  JKT_GATEWAY: "Gateway Jakarta",
+  PLM_GATEWAY: "Gateway Palembang",
+  BDG_GATEWAY: "Gateway Bandung",
+  SBY_GATEWAY: "Gateway Surabaya",
+  MDN_GATEWAY: "Gateway Medan",
+  MKS_GATEWAY: "Gateway Makassar",
+  SMG_GATEWAY: "Gateway Semarang",
+  YOG_GATEWAY: "Gateway Yogyakarta",
+};
+
+/**
+ * Kode site → teks yang lebih enak dibaca. Kode yang tidak dikenal dikembalikan apa adanya.
+ * Kode asli selalu ada di dalam kurung supaya pembaca tetap bisa mencocokkannya ke J&T.
+ */
+export function readableSiteCode(code?: string | null): string {
+  const clean = String(code ?? "").trim();
+  if (!clean) return "";
+  const label = SITE_LABELS[clean];
+  if (label) return `${label} (${clean})`;
+  if (/^TC[A-Z0-9]{2,}$/.test(clean)) return `Transit Center (${clean})`;
+  return clean;
+}
+
+/** Ganti kode site yang muncul di teks status J&T dengan labelnya; kode asli tetap di kurung. */
+export function readableJntStatus(text?: string | null): string {
+  return String(text ?? "").replace(/\b([A-Z0-9]{2,}_GATEWAY|TC[A-Z0-9]{2,})\b/g, (code) =>
+    readableSiteCode(code),
+  );
+}
 
 /** Entri riwayat yang boleh tampil sebagian (hanya field yang kita pakai). */
 export interface TrackScan {
@@ -58,11 +92,13 @@ export interface TrackScan {
   receiver?: string | null;
 }
 
-/** Satu baris riwayat siap tampil. Semua teks berasal langsung dari respons J&T. */
+/** Satu baris riwayat siap tampil. Teks asli J&T tetap disimpan untuk pemeriksaan. */
 export interface TrackingRow {
-  /** Teks `status` J&T, persis (mis. "Paket telah sampai di DPK_GATEWAY", "Manifes"). */
+  /** Teks `status` yang sudah diberi label site (kode asli tetap di kurung). */
   status: string;
-  /** `storeName` J&T apa adanya — hanya diisi bila teks status belum memuatnya. */
+  /** Teks `status` J&T persis, tanpa perubahan — untuk tooltip/pemeriksaan. */
+  statusRaw: string;
+  /** `storeName` J&T yang sudah diberi label; kosong bila teks status sudah memuatnya. */
   location: string;
   /** `note` J&T apa adanya; null bila kosong. */
   note: string | null;
@@ -77,15 +113,17 @@ export interface TrackingRow {
 }
 
 export function trackingRow(item: TrackScan | null | undefined): TrackingRow {
-  const status = String(item?.status ?? "").trim();
+  const statusRaw = String(item?.status ?? "").trim();
+  const status = readableJntStatus(statusRaw);
   const rawNote = String(item?.note ?? "").trim();
-  // `storeName` ditampilkan apa adanya, dan disembunyikan kalau teks status sudah memuatnya
-  // (mis. "Paket telah sampai di DPK_GATEWAY" + storeName "DPK_GATEWAY" → cukup sekali).
+  // `storeName` diberi label yang sama, dan disembunyikan kalau teks status sudah memuat
+  // kodenya (mis. "Paket telah sampai di DPK_GATEWAY" + storeName "DPK_GATEWAY" → cukup sekali).
   const site = String(item?.storeName ?? "").trim();
-  const location = site && !status.toLowerCase().includes(site.toLowerCase()) ? site : "";
+  const location = site && !statusRaw.toLowerCase().includes(site.toLowerCase()) ? readableSiteCode(site) : "";
 
   return {
     status,
+    statusRaw,
     location,
     note: rawNote || null,
     warning: Number(item?.status_code) === 150,
@@ -125,8 +163,10 @@ export function formatTrackingTime(value?: string | null): string {
  * diambil dari event J&T TERBARU (bukan teks buatan kita).
  */
 export interface TrackingSummary {
-  /** Teks `status` event terbaru, persis dari J&T. */
+  /** Teks `status` event terbaru, sudah diberi label site (kode asli tetap di kurung). */
   status: string;
+  /** Teks `status` J&T persis, tanpa perubahan. */
+  statusRaw: string;
   /** `note` event terbaru (persis), null bila kosong. */
   note: string | null;
   /** Nama penerima (`receiver`) event terbaru — mis. siapa yang menerima paket. */
@@ -140,8 +180,10 @@ export function trackingSummary(history: TrackHistoryItem[] | null | undefined):
   if (desc.length === 0) return null;
 
   const latest = desc[0];
+  const statusRaw = String(latest?.status ?? "").trim();
   return {
-    status: String(latest?.status ?? "").trim(),
+    status: readableJntStatus(statusRaw),
+    statusRaw,
     note: String(latest?.note ?? "").trim() || null,
     receiver: String(latest?.receiver ?? "").trim() || null,
     updatedAt: latest?.date_time ?? null,

@@ -8,6 +8,7 @@ import { notifyCustomerOrderPaid } from "@/lib/fonnte";
 import { sendOnce } from "@/lib/order-notify";
 import { isCodOrderPayment } from "@/lib/payment-methods";
 import { isOpsAdmin, unauthorized } from "@/lib/ops-auth";
+import { syncCommissionStatus } from "@/lib/affiliate/commission";
 
 export async function PATCH(request: NextRequest) {
   if (!(await isOpsAdmin(request))) return unauthorized();
@@ -112,6 +113,9 @@ export async function PATCH(request: NextRequest) {
           // Berat yang benar-benar dipakai resi (dihitung ulang dari berat per ukuran). Pesanan ini
           // belum punya resi, jadi aman diselaraskan — bukan penulisan ulang massal.
           ...(result.weightGrams && result.weightGrams !== order.weight ? { weight: result.weightGrams } : {}),
+          // Layanan J&T yang benar-benar dipakai resi — dipakai badge "Service EZ/ECO"
+          // di detail pesanan & label pengiriman.
+          ...(result.serviceCode ? { shipping_method: `J&T ${result.serviceCode}` } : {}),
         })
         .eq("id", order.id);
 
@@ -121,7 +125,13 @@ export async function PATCH(request: NextRequest) {
       }
 
       console.log("[ADMIN] J&T AWB created:", identifier, result.awbNo);
-      return NextResponse.json({ success: true, awbNo: result.awbNo, status: "diproses", shippingStatus: "menunggu_pickup" });
+      return NextResponse.json({
+        success: true,
+        awbNo: result.awbNo,
+        status: "diproses",
+        shippingStatus: "menunggu_pickup",
+        serviceCode: result.serviceCode,
+      });
     }
 
     // ── Sinkronkan status pengiriman dari tracking J&T (dipicu admin saat "Lacak Paket") ──
@@ -230,6 +240,21 @@ export async function PATCH(request: NextRequest) {
           })
         );
       }
+    }
+
+    // Komisi affiliate diselaraskan dengan status pesanan (mis. "diproses" = pembayaran
+    // terverifikasi). Kegagalan sinkronisasi tidak boleh menggagalkan update status.
+    try {
+      const { data: affected } = await supabaseAdmin
+        .from("orders")
+        .select("id")
+        .eq("order_number", identifier)
+        .maybeSingle();
+      if (affected) {
+        await syncCommissionStatus(supabaseAdmin, (affected as { id: string }).id, { actor: "admin-status" });
+      }
+    } catch (e) {
+      console.error("[ADMIN] Gagal menyelaraskan komisi affiliate:", e);
     }
 
     return NextResponse.json({ success: true });

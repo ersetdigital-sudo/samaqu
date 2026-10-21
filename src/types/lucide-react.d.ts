@@ -102,5 +102,12 @@ declare module "lucide-react" {
   export const AlertTriangle: FC<IconProps>;
   export const LayoutGrid: FC<IconProps>;
   export const Save: FC<IconProps>;
+  // Modul Affiliate (dashboard admin + portal affiliate)
+  export const Coins: FC<IconProps>;
+  export const Handshake: FC<IconProps>;
+  export const Wallet: FC<IconProps>;
+  export const Link2: FC<IconProps>;
+  export const Receipt: FC<IconProps>;
+  export const MousePointerClick: FC<IconProps>;
   export type LucideIcon = FC<IconProps>;
 }

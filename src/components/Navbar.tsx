@@ -78,6 +78,7 @@ function getBantuanLinks(t: (key: string) => string) {
     { label: t("nav.panduan"), href: "/panduan-ukuran", Icon: Ruler },
     { label: t("nav.cara_pesan"), href: "/cara-pesan", Icon: ListChecks },
     { label: t("nav.faq"), href: "/faq", Icon: Question },
+    { label: t("nav.cek_resi"), href: "/cek-resi", Icon: Bag },
     { label: t("nav.garansi_retur"), href: "/garansi-retur", Icon: Question },
     { label: t("nav.cyp"), href: "/create-your-price", Icon: Question },
   ];

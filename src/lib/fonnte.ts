@@ -222,10 +222,13 @@ export async function sendFonnteMessage(
  * - Nama yang sudah diawali "Ka"/"Kak"/"Kakak" (tanpa memperhatikan huruf besar/kecil) dipakai
  *   apa adanya, supaya tidak muncul "Ka Kak Lea".
  * - Nama kosong → "Ka" (jadi pesannya "Halo Ka,").
+ * - Penanda template ({nama}) dikembalikan apa adanya: nilai aslinya SUDAH berisi "Ka <nama>",
+ *   jadi template tidak boleh menambah "Ka" lagi.
  */
 export function greetingName(name?: string | null): string {
   const full = String(name ?? "").trim();
   if (!full) return "Ka";
+  if (/^\{[a-zA-Z0-9_]+\}$/.test(full)) return full;
   const firstName = full.split(/\s+/)[0];
   if (/^ka(kak)?$/i.test(firstName)) return full;
   return `Ka ${firstName}`;
@@ -622,6 +625,16 @@ export function buildOrderPaidMessage(order: OrderPaidNotification): string {
   ].join("\n");
 }
 
+/**
+ * Link publik Cek Resi untuk pesan WA. Fonnte tidak menyediakan tombol interaktif yang
+ * reliable (fitur button-nya deprecated), jadi link ini yang bisa langsung diketuk pembeli.
+ * Placeholder `{resi}` dibiarkan utuh supaya editor template di panel admin tetap valid.
+ */
+function trackingUrl(awb: string): string {
+  const safe = encodeURIComponent(String(awb ?? "")).replace(/%7B/gi, "{").replace(/%7D/gi, "}");
+  return `${SITE_URL}/cek-resi?awb=${safe}`;
+}
+
 /** Pesan "pesanan sudah dikirim lewat J&T Express" + nomor resi. */
 export function buildOrderShippedMessage(order: ShippedNotification): string {
   const ka = greetingName(order.customerName);
@@ -634,6 +647,8 @@ export function buildOrderShippedMessage(order: ShippedNotification): string {
     `Nomor Resi: ${order.awbNo}`,
     "",
     `Silakan gunakan nomor resi tersebut untuk memantau perjalanan paket ${ka}.`,
+    "",
+    `Lacak resi: ${trackingUrl(order.awbNo)}`,
     "",
     `Terima kasih telah mempercayakan kebutuhan ${ka} kepada SAMAQU.`,
   ].join("\n");
@@ -746,14 +761,16 @@ export async function notifyCustomerOrderPaid(order: OrderPaidNotification): Pro
 }
 
 export async function notifyCustomerOrderShipped(order: ShippedNotification): Promise<boolean> {
-  return sendToCustomer(
-    order.customerWhatsapp,
-    await buildNotifikasi("pesanan-dikirim", buildOrderShippedMessage(order), {
-      nama: greetingName(order.customerName),
-      nomor: order.orderNumber,
-      resi: order.awbNo,
-    }),
-  );
+  const link = trackingUrl(order.awbNo);
+  const message = await buildNotifikasi("pesanan-dikirim", buildOrderShippedMessage(order), {
+    nama: greetingName(order.customerName),
+    nomor: order.orderNumber,
+    resi: order.awbNo,
+  });
+  // Template custom dari admin mungkin belum memuat link. Pastikan pembeli selalu punya
+  // jalan untuk membuka Cek Resi, tanpa menggandakan link kalau template sudah memuatnya.
+  const finalMessage = message.includes(link) ? message : `${message}\n\nLacak resi: ${link}`;
+  return sendToCustomer(order.customerWhatsapp, finalMessage);
 }
 
 export async function notifyCustomerOrderDelivered(order: DeliveredNotification): Promise<boolean> {
@@ -837,7 +854,7 @@ export function buildInvoiceMessage(invoice: InvoiceNotification, banks: Payment
     "🧾 *INVOICE SAMAQU*",
     `No. ${invoice.orderNumber}`,
     "",
-    `Halo Ka ${ka},`,
+    `Halo ${ka},`,
     "",
     "Berikut rincian pesanan Ka di SAMAQU:",
     "",
@@ -1062,7 +1079,7 @@ export function templateBawaanNotifikasi(): Record<string, string> {
   hasil["nota-transaksi-lunas"] = [
     "USULAN FORMAT (belum jalan):",
     "",
-    "Halo Ka {nama},",
+    "Halo {nama},",
     "",
     "Pesanan {nomor} sudah kami catat dan berstatus LUNAS.",
     "",

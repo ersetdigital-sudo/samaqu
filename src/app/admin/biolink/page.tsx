@@ -1,385 +1,976 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Plus, Edit, Trash2, X, Loader2, GripVertical } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
+import { Loader2, Plus, Save, Trash2, Upload } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import AdminShell from "@/components/AdminShell";
 import { useToast } from "@/components/AdminToast";
-import ConfirmModal from "@/components/ConfirmModal";
+import { uploadToCloudinary, validateMediaFile } from "@/lib/cloudinary";
+import {
+  DEFAULT_BIO_CONTENT,
+  normalizeBioContent,
+  type BelanjaIcon,
+  type BioPageContent,
+  type GuaranteeIcon,
+  type RowIcon,
+  type SocialPlatform,
+} from "@/lib/bio-page-content";
 
-interface BioLink {
-  id: string;
-  section: string;
-  label: string;
-  subtitle: string;
-  href: string;
-  icon: string;
-  sort_order: number;
-  enabled: boolean;
-  target: string;
-}
-
-const SECTIONS = ["Belanja", "Informasi", "Tentang", "Ikuti"];
-
-const ICON_OPTIONS = [
-  { value: "shopping-bag", label: "Shopping Bag" },
-  { value: "whatsapp", label: "WhatsApp" },
-  { value: "tag", label: "Tag / Promo" },
-  { value: "ruler", label: "Panduan Ukuran" },
-  { value: "star", label: "Bintang / Review" },
-  { value: "clipboard", label: "Clipboard" },
-  { value: "shield", label: "Shield / Garansi" },
-  { value: "info", label: "Info" },
-  { value: "book", label: "Buku" },
-  { value: "instagram", label: "Instagram" },
-  { value: "globe", label: "Globe / Website" },
-  { value: "link", label: "Link Default" },
-  { value: "home", label: "Home" },
-  { value: "heart", label: "Heart" },
+const POSITION_OPTIONS = [
+  { label: "Atas", value: "50% 20%" },
+  { label: "Tengah", value: "50% 50%" },
+  { label: "Bawah", value: "50% 80%" },
 ];
 
-function getIconSVG(name: string) {
-  const map: Record<string, string> = {
-    "shopping-bag": "M6 8h12l1 12H5L6 8zM9 8V6a3 3 0 0 1 6 0v2",
-    whatsapp: "M21 11.5a8.5 8.5 0 0 1-12.6 7.4L3 20l1.2-5.2A8.5 8.5 0 1 1 21 11.5zM8.7 9.2c.3 2.6 3.5 5.4 5.9 5.7l1.2-1.4 1.7 1-.8 1.5c-2.9.6-7.6-3.3-8.6-6.6l1.4-.9 1 1.6-1.8-.9z",
-    tag: "M20 12l-8 8-8-8V4h8l8 8zM8.5 8.5h.01",
-    ruler: "M15 4l5 5L8 21H3v-5L15 4z",
-    star: "M12 4l2.4 5 5.6.7-4 3.8 1 5.5-5-2.7-5 2.7 1-5.5-4-3.8 5.6-.7L12 4z",
-    clipboard: "M5 4h14a1 1 0 0 1 1 1v15a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a1 1 0 0 1 1-1zM9 3h6v3H9zM9 11h6M9 15h4",
-    shield: "M12 3l7 3v6c0 4.4-3 7.8-7 9-4-1.2-7-4.6-7-9V6l7-3zM9 12l2 2 4-4",
-    info: "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM13 17h-2v-6h2v6zM13 9h-2V7h2v2z",
-    book: "M3 5h6a3 3 0 0 1 3 3v11a3 3 0 0 0-3-3H3V5zM21 5h-6a3 3 0 0 0-3 3v11a3 3 0 0 1 3-3h6V5z",
-    instagram: "M3 3h18a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM8 21a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM17 7h.01",
-    globe: "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM2 12h20M12 2c2.5 2.7 2.5 15.3 0 18M12 2c-2.5 2.7-2.5 15.3 0 18",
-    home: "M4 21V7l8-4 8 4v14M10 21v-6h4v6",
-    heart: "M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z",
-    link: "M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71",
-  };
-  return map[name] || map.link;
+/** Cocokkan nilai object-position lama (mis. "50% 30%") ke salah satu pilihan. */
+function positionBucket(value: string): string {
+  const parts = value.trim().split(/\s+/);
+  const vertical = parts[1] ?? parts[0] ?? "50%";
+  if (vertical === "top") return "50% 20%";
+  if (vertical === "bottom") return "50% 80%";
+  const n = Number.parseFloat(vertical);
+  if (Number.isNaN(n) || (n > 35 && n < 65)) return "50% 50%";
+  return n <= 35 ? "50% 20%" : "50% 80%";
 }
 
-const emptyForm = {
-  section: "Belanja",
-  label: "",
-  subtitle: "",
-  href: "#",
-  icon: "link",
-  sort_order: 0,
-  enabled: true,
-  target: "",
-};
+const BELANJA_ICONS: BelanjaIcon[] = ["whatsapp", "globe"];
+const ROW_ICONS: RowIcon[] = ["ruler", "instagram", "link"];
+const GUARANTEE_ICONS: GuaranteeIcon[] = ["shield", "refund", "exchange", "chat"];
+const SOCIAL_PLATFORMS: SocialPlatform[] = ["instagram", "whatsapp", "website"];
+
+const inputStyle = {
+  border: "1px solid var(--bd)",
+  background: "white",
+  color: "var(--espresso)",
+} as const;
+
+function Field({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-[11px] font-medium" style={{ color: "var(--text-muted)" }}>
+        {label}
+      </span>
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full rounded-lg px-3 py-2.5 text-sm outline-none"
+        style={inputStyle}
+      />
+    </label>
+  );
+}
+
+function SelectField<T extends string>({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: T;
+  options: readonly T[];
+  onChange: (value: T) => void;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-[11px] font-medium" style={{ color: "var(--text-muted)" }}>
+        {label}
+      </span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value as T)}
+        className="w-full rounded-lg px-3 py-2.5 text-sm outline-none"
+        style={inputStyle}
+      >
+        {options.map((opt) => (
+          <option key={opt} value={opt}>
+            {opt}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+function PositionPicker({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const active = positionBucket(value);
+  return (
+    <div>
+      <span className="mb-1 block text-[11px] font-medium" style={{ color: "var(--text-muted)" }}>
+        Posisi Foto
+      </span>
+      <div className="inline-flex rounded-lg p-1" style={{ background: "#f4f4f5" }}>
+        {POSITION_OPTIONS.map((opt) => {
+          const isActive = active === opt.value;
+          return (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => onChange(opt.value)}
+              className="rounded-md px-3 py-1.5 text-xs font-medium transition-colors"
+              style={{
+                background: isActive ? "#ffffff" : "transparent",
+                color: isActive ? "var(--espresso)" : "var(--text-muted)",
+                boxShadow: isActive ? "0 1px 2px rgba(0,0,0,.08)" : "none",
+              }}
+            >
+              {opt.label}
+            </button>
+          );
+        })}
+      </div>
+      <p className="mt-1 text-[10px]" style={{ color: "var(--text-muted)" }}>
+        Bagian foto yang ditampilkan di kartu.
+      </p>
+    </div>
+  );
+}
+
+function ImageField({
+  label,
+  value,
+  uploading,
+  onChange,
+  objectPosition,
+}: {
+  label: string;
+  value: string;
+  uploading: boolean;
+  onChange: (file: File) => void;
+  objectPosition?: string;
+}) {
+  return (
+    <div>
+      <span className="mb-1 block text-[11px] font-medium" style={{ color: "var(--text-muted)" }}>
+        {label}
+      </span>
+      <div className="flex items-center gap-3">
+        <div className="h-20 w-20 shrink-0 overflow-hidden rounded-lg" style={{ background: "#f4f4f5" }}>
+          {value && (
+            <img
+              src={value}
+              alt=""
+              className="h-full w-full object-cover"
+              style={{ objectPosition: objectPosition || "50% 50%" }}
+            />
+          )}
+        </div>
+        <label
+          className="inline-flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium"
+          style={{ border: "1px solid var(--bd)", color: "var(--espresso)" }}
+        >
+          {uploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+          {uploading ? "Uploading..." : "Ganti Foto"}
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            disabled={uploading}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) onChange(file);
+              e.target.value = "";
+            }}
+          />
+        </label>
+      </div>
+    </div>
+  );
+}
+
+function VideoField({
+  label,
+  value,
+  uploading,
+  onChange,
+  onUrlChange,
+  onClear,
+}: {
+  label: string;
+  value: string;
+  uploading: boolean;
+  onChange: (file: File) => void;
+  onUrlChange: (url: string) => void;
+  onClear: () => void;
+}) {
+  return (
+    <div>
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <span className="block text-[11px] font-medium" style={{ color: "var(--text-muted)" }}>
+          {label}
+        </span>
+        {value ? (
+          <button
+            type="button"
+            onClick={onClear}
+            className="text-[11px] font-medium underline underline-offset-2"
+            style={{ color: "var(--text-muted)" }}
+          >
+            Pakai foto hero
+          </button>
+        ) : null}
+      </div>
+      <div className="flex items-center gap-3">
+        <div className="h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-black">
+          {value ? (
+            <video
+              src={value}
+              className="h-full w-full object-cover"
+              muted
+              loop
+              autoPlay
+              playsInline
+              preload="metadata"
+            />
+          ) : (
+            <span className="grid h-full w-full place-items-center text-[10px]" style={{ color: "#a1a1aa" }}>
+              Belum ada
+            </span>
+          )}
+        </div>
+        <label
+          className="inline-flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium"
+          style={{ border: "1px solid var(--bd)", color: "var(--espresso)" }}
+        >
+          {uploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+          {uploading ? "Uploading..." : "Ganti Video"}
+          <input
+            type="file"
+            accept="video/mp4,video/webm"
+            className="hidden"
+            disabled={uploading}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) onChange(file);
+              e.target.value = "";
+            }}
+          />
+        </label>
+      </div>
+      <input
+        value={value}
+        onChange={(e) => onUrlChange(e.target.value)}
+        placeholder="https://res.cloudinary.com/.../video.mp4"
+        className="mt-2 w-full rounded-lg px-3 py-2.5 text-sm outline-none"
+        style={inputStyle}
+      />
+      <p className="mt-1 text-[10px]" style={{ color: "var(--text-muted)" }}>
+        Kalau diisi, video menggantikan foto hero. Bingkai hero tetap 420px dan video dipotong
+        otomatis, jadi ukuran video tidak mengubah layout.
+      </p>
+    </div>
+  );
+}
+
+function Card({ title, subtitle, children }: { title: string; subtitle?: string; children: ReactNode }) {
+  return (
+    <section
+      className="rounded-2xl p-5"
+      style={{ background: "#ffffff", border: "1px solid var(--bd)", boxShadow: "0 1px 2px rgba(0,0,0,.05)" }}
+    >
+      <h2 className="text-sm font-semibold" style={{ color: "var(--espresso)" }}>
+        {title}
+      </h2>
+      {subtitle && (
+        <p className="mt-0.5 text-[11px]" style={{ color: "var(--text-muted)" }}>
+          {subtitle}
+        </p>
+      )}
+      <div className="mt-4 space-y-3">{children}</div>
+    </section>
+  );
+}
+
+function IconButton({ onClick, label, danger }: { onClick: () => void; label: string; danger?: boolean }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={label}
+      className="rounded-lg p-2 transition-colors hover:bg-black/5"
+      style={{ color: danger ? "#dc2626" : "var(--text-muted)" }}
+    >
+      {danger ? <Trash2 size={14} /> : <Plus size={14} />}
+    </button>
+  );
+}
 
 export default function BiolinkPage() {
-  const [links, setLinks] = useState<BioLink[]>([]);
+  const [content, setContent] = useState<BioPageContent>(DEFAULT_BIO_CONTENT);
   const [loading, setLoading] = useState(true);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editing, setEditing] = useState<BioLink | null>(null);
-  const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
-  const [confirmModal, setConfirmModal] = useState<{ open: boolean; onConfirm: () => void }>({ open: false, onConfirm: () => {} });
-  const [dragTarget, setDragTarget] = useState<string | null>(null);
+  const [uploading, setUploading] = useState<string | null>(null);
   const toast = useToast();
 
   useEffect(() => {
-    loadLinks();
+    async function load() {
+      const { data, error } = await supabase
+        .from("bio_page_content")
+        .select("content")
+        .eq("id", 1)
+        .maybeSingle();
+      if (!error && data?.content) setContent(normalizeBioContent(data.content));
+      setLoading(false);
+    }
+    load();
   }, []);
 
-  async function loadLinks() {
-    setLoading(true);
-    const { data } = await supabase.from("bio_links").select("*").order("section").order("sort_order");
-    if (data) setLinks(data);
-    setLoading(false);
+  function patch(updater: (draft: BioPageContent) => BioPageContent) {
+    setContent((prev) => updater(prev));
   }
 
-  function openAdd(section: string) {
-    setEditing(null);
-    const maxOrder = links.filter((l) => l.section === section).reduce((max, l) => Math.max(max, l.sort_order), 0);
-    setForm({ ...emptyForm, section, sort_order: maxOrder + 1 });
-    setModalOpen(true);
+  async function uploadImage(key: string, file: File, apply: (url: string) => void) {
+    setUploading(key);
+    try {
+      const url = await uploadToCloudinary(file);
+      apply(url);
+      toast.showToast("success", "Foto berhasil diupload");
+    } catch {
+      toast.showToast("error", "Gagal upload foto");
+    }
+    setUploading(null);
   }
 
-  function openEdit(link: BioLink) {
-    setEditing(link);
-    setForm({
-      section: link.section,
-      label: link.label,
-      subtitle: link.subtitle || "",
-      href: link.href || "#",
-      icon: link.icon || "link",
-      sort_order: link.sort_order,
-      enabled: link.enabled,
-      target: link.target || "",
-    });
-    setModalOpen(true);
+  async function uploadVideo(file: File) {
+    setUploading("hero-video");
+    try {
+      await validateMediaFile(file);
+      const url = await uploadToCloudinary(file);
+      patch((c) => ({ ...c, hero: { ...c.hero, video_url: url } }));
+      toast.showToast("success", "Video berhasil diupload");
+    } catch (error) {
+      toast.showToast("error", error instanceof Error ? error.message : "Gagal upload video");
+    }
+    setUploading(null);
   }
 
-  async function handleSave() {
-    if (!form.label.trim()) {
-      toast.showToast("error", "Label wajib diisi");
+  async function save() {
+    setSaving(true);
+    const { error } = await supabase.from("bio_page_content").upsert(
+      { id: 1, content, updated_at: new Date().toISOString() },
+      { onConflict: "id" }
+    );
+    setSaving(false);
+    if (error) {
+      toast.showToast("error", "Gagal menyimpan. Pastikan tabel bio_page_content sudah dibuat.");
       return;
     }
-    setSaving(true);
-
-    if (editing) {
-      const { error } = await supabase.from("bio_links").update(form).eq("id", editing.id);
-      if (error) {
-        toast.showToast("error", "Gagal menyimpan");
-        setSaving(false);
-        return;
-      }
-      setLinks(links.map((l) => (l.id === editing.id ? { ...l, ...form } : l)));
-      toast.showToast("success", "Link berhasil diperbarui");
-    } else {
-      const { data, error } = await supabase.from("bio_links").insert(form).select().single();
-      if (error) {
-        toast.showToast("error", "Gagal menyimpan");
-        setSaving(false);
-        return;
-      }
-      setLinks([...links, data]);
-      toast.showToast("success", "Link berhasil ditambahkan");
-    }
-    setModalOpen(false);
-    setSaving(false);
+    toast.showToast("success", "Halaman bio berhasil disimpan");
   }
 
-  function handleDelete(link: BioLink) {
-    setConfirmModal({
-      open: true,
-      onConfirm: async () => {
-        await supabase.from("bio_links").delete().eq("id", link.id);
-        setLinks(links.filter((l) => l.id !== link.id));
-        toast.showToast("success", "Link berhasil dihapus");
-        setConfirmModal({ open: false, onConfirm: () => {} });
-      },
-    });
-  }
-
-  async function toggleEnabled(link: BioLink) {
-    const newVal = !link.enabled;
-    await supabase.from("bio_links").update({ enabled: newVal }).eq("id", link.id);
-    setLinks(links.map((l) => (l.id === link.id ? { ...l, enabled: newVal } : l)));
-  }
-
-  async function moveLink(link: BioLink, direction: "up" | "down") {
-    const sectionLinks = links.filter((l) => l.section === link.section).sort((a, b) => a.sort_order - b.sort_order);
-    const idx = sectionLinks.findIndex((l) => l.id === link.id);
-    if (direction === "up" && idx === 0) return;
-    if (direction === "down" && idx === sectionLinks.length - 1) return;
-
-    const swapIdx = direction === "up" ? idx - 1 : idx + 1;
-    const swapLink = sectionLinks[swapIdx];
-
-    await supabase.from("bio_links").update({ sort_order: swapLink.sort_order }).eq("id", link.id);
-    await supabase.from("bio_links").update({ sort_order: link.sort_order }).eq("id", swapLink.id);
-
-    setLinks((prev) =>
-      prev.map((l) => {
-        if (l.id === link.id) return { ...l, sort_order: swapLink.sort_order };
-        if (l.id === swapLink.id) return { ...l, sort_order: link.sort_order };
-        return l;
-      })
+  if (loading) {
+    return (
+      <AdminShell>
+        <div className="flex h-64 items-center justify-center">
+          <Loader2 className="animate-spin" size={24} />
+        </div>
+      </AdminShell>
     );
   }
 
   return (
     <AdminShell>
-      <section className="p-5 lg:p-8 max-w-5xl">
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold" style={{ color: "var(--espresso)" }}>Biolink</h1>
-          <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>Kelola link di halaman samaqu.id/bio</p>
+      <section className="max-w-4xl p-5 lg:p-8">
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-semibold" style={{ color: "var(--espresso)" }}>
+              Bio Link
+            </h1>
+            <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
+              Kelola semua foto, video & konten halaman samaqu.id/bio.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={save}
+            disabled={saving}
+            className="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white"
+            style={{ background: "var(--gold)" }}
+          >
+            {saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
+            {saving ? "Menyimpan..." : "Simpan"}
+          </button>
         </div>
 
-        {loading ? (
-          <div className="card p-12 flex justify-center">
-            <Loader2 size={24} className="animate-spin" style={{ color: "var(--gold)" }} />
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {SECTIONS.map((section) => {
-              const sectionLinks = links.filter((l) => l.section === section).sort((a, b) => a.sort_order - b.sort_order);
-              return (
-                <div key={section} className="rounded-2xl overflow-hidden" style={{ background: "#ffffff", border: "1px solid var(--bd)", boxShadow: "0 1px 2px rgba(0,0,0,.05)" }}>
-                  <div className="flex items-center justify-between px-5 py-3.5" style={{ borderBottom: "1px solid var(--bd)", background: "var(--sub)" }}>
-                    <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "var(--sub)" }}>
-                        <GripVertical size={14} style={{ color: "var(--gold)" }} />
-                      </div>
-                      <h2 className="text-sm font-semibold" style={{ color: "var(--espresso)" }}>{section}</h2>
-                      <span className="text-[11px] px-2 py-0.5 rounded-full font-medium" style={{ background: "var(--bd)", color: "var(--text-muted)" }}>{sectionLinks.length}</span>
-                    </div>
-                    <button
-                      onClick={() => openAdd(section)}
-                      className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
-                      style={{ color: "var(--gold)", border: "1px solid var(--bd)" }}
-                    >
-                      <Plus size={14} /> Tambah
-                    </button>
-                  </div>
+        <div className="space-y-4">
+          <Card title="Header">
+            <ImageField
+              label="Logo"
+              value={content.logo_url}
+              uploading={uploading === "logo"}
+              onChange={(file) =>
+                uploadImage("logo", file, (url) =>
+                  patch((c) => ({ ...c, logo_url: url }))
+                )
+              }
+            />
+            <Field
+              label="Eyebrow"
+              value={content.eyebrow}
+              onChange={(value) => patch((c) => ({ ...c, eyebrow: value }))}
+            />
+            <Field
+              label="Deskripsi"
+              value={content.description}
+              onChange={(value) => patch((c) => ({ ...c, description: value }))}
+            />
+          </Card>
 
-                  <div className="divide-y" style={{ borderColor: "var(--bd)" }}>
-                    {sectionLinks.map((link) => (
-                      <div key={link.id} className="flex items-center gap-3 px-5 py-3.5 group" style={{ opacity: link.enabled ? 1 : 0.5 }}>
-                        {/* Icon preview */}
-                        <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: "var(--sub)" }}>
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a1613" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                            <path d={getIconSVG(link.icon)} />
-                          </svg>
-                        </div>
-
-                        {/* Info */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium truncate" style={{ color: "var(--espresso)" }}>{link.label}</span>
-                            {link.target === "_blank" && (
-                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M15 3h6v6M10 14L21 3M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
-                              </svg>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-[11px] truncate" style={{ color: "var(--text-muted)" }}>{link.href}</span>
-                            {link.subtitle && <span className="text-[11px]" style={{ color: "var(--gold)" }}>| {link.subtitle}</span>}
-                          </div>
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button onClick={() => moveLink(link, "up")} className="p-1.5 rounded-lg text-[11px]" style={{ color: "var(--text-muted)" }} title="Naik">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 15l-6-6-6 6" /></svg>
-                          </button>
-                          <button onClick={() => moveLink(link, "down")} className="p-1.5 rounded-lg text-[11px]" style={{ color: "var(--text-muted)" }} title="Turun">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6" /></svg>
-                          </button>
-                        </div>
-
-                        <button
-                          onClick={() => toggleEnabled(link)}
-                          className="w-9 h-5 rounded-full transition-colors relative shrink-0"
-                          style={{ background: link.enabled ? "var(--gold)" : "var(--bd)" }}
-                          title={link.enabled ? "Nonaktifkan" : "Aktifkan"}
-                        >
-                          <div
-                            className="w-4 h-4 rounded-full bg-white absolute top-0.5 transition-all"
-                            style={{ left: link.enabled ? "18px" : "2px", boxShadow: "0 1px 3px rgba(0,0,0,.2)" }}
-                          />
-                        </button>
-
-                        <button onClick={() => openEdit(link)} className="p-1.5 rounded-lg transition-colors" style={{ color: "var(--gold)", border: "1px solid var(--bd)" }} title="Edit">
-                          <Edit size={14} />
-                        </button>
-                        <button onClick={() => handleDelete(link)} className="p-1.5 rounded-lg transition-colors" style={{ color: "#dc2626", border: "1px solid rgba(231,76,60,.15)" }} title="Hapus">
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    ))}
-
-                    {sectionLinks.length === 0 && (
-                      <div className="px-5 py-6 text-center text-[13px]" style={{ color: "var(--text-muted)" }}>
-                        Belum ada link. Klik "Tambah" untuk menambahkan.
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Add/Edit Modal */}
-        {modalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(42,33,27,.4)", backdropFilter: "blur(4px)" }} onClick={() => setModalOpen(false)}>
-            <div className="w-full max-w-lg rounded-2xl p-6 max-h-[85vh] overflow-y-auto" style={{ background: "var(--cream)", boxShadow: "0 25px 60px -12px rgba(42,33,27,.5)" }} onClick={(e) => e.stopPropagation()}>
-              <div className="flex items-center justify-between mb-5">
-                <h2 className="text-lg font-semibold" style={{ color: "var(--espresso)" }}>{editing ? "Edit Link" : "Tambah Link"}</h2>
-                <button onClick={() => setModalOpen(false)} className="p-1.5 rounded-lg" style={{ color: "var(--text-muted)" }}><X size={18} /></button>
-              </div>
-
-              <div className="space-y-4">
-                {/* Section */}
-                <div>
-                  <label className="block text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>Section</label>
-                  <select value={form.section} onChange={(e) => setForm({ ...form, section: e.target.value })} className="w-full rounded-lg px-3 py-2.5 text-sm outline-none" style={{ border: "1px solid var(--bd)", background: "white", color: "var(--espresso)" }}>
-                    {SECTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
-
-                {/* Label */}
-                <div>
-                  <label className="block text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>Label *</label>
-                  <input value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value })} className="w-full rounded-lg px-3 py-2.5 text-sm outline-none" style={{ border: "1px solid var(--bd)", background: "white", color: "var(--espresso)" }} placeholder="Lihat Koleksi Samaqu" />
-                </div>
-
-                {/* Subtitle */}
-                <div>
-                  <label className="block text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>Subtitle (opsional)</label>
-                  <input value={form.subtitle} onChange={(e) => setForm({ ...form, subtitle: e.target.value })} className="w-full rounded-lg px-3 py-2.5 text-sm outline-none" style={{ border: "1px solid var(--bd)", background: "white", color: "var(--espresso)" }} placeholder="Official Website" />
-                </div>
-
-                {/* Href */}
-                <div>
-                  <label className="block text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>URL</label>
-                  <input value={form.href} onChange={(e) => setForm({ ...form, href: e.target.value })} className="w-full rounded-lg px-3 py-2.5 text-sm outline-none" style={{ border: "1px solid var(--bd)", background: "white", color: "var(--espresso)" }} placeholder="https://..." />
-                </div>
-
-                {/* Target */}
-                <div>
-                  <label className="block text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>Buka di</label>
-                  <select value={form.target} onChange={(e) => setForm({ ...form, target: e.target.value })} className="w-full rounded-lg px-3 py-2.5 text-sm outline-none" style={{ border: "1px solid var(--bd)", background: "white", color: "var(--espresso)" }}>
-                    <option value="">Tab yang sama</option>
-                    <option value="_blank">Tab baru</option>
-                  </select>
-                </div>
-
-                {/* Icon */}
-                <div>
-                  <label className="block text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>Ikon</label>
-                  <div className="grid grid-cols-7 gap-2">
-                    {ICON_OPTIONS.map((opt) => (
-                      <button
-                        key={opt.value}
-                        onClick={() => setForm({ ...form, icon: opt.value })}
-                        className="flex flex-col items-center gap-1 p-2 rounded-lg transition-all"
-                        style={{
-                          border: form.icon === opt.value ? "2px solid var(--gold)" : "1px solid var(--bd)",
-                          background: form.icon === opt.value ? "var(--sub)" : "white",
-                        }}
-                        title={opt.label}
-                      >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={form.icon === opt.value ? "var(--gold)" : "var(--espresso)"} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                          <path d={getIconSVG(opt.value)} />
-                        </svg>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Sort order */}
-                <div>
-                  <label className="block text-[11px] font-medium mb-1" style={{ color: "var(--text-muted)" }}>Urutan</label>
-                  <input type="number" value={form.sort_order} onChange={(e) => setForm({ ...form, sort_order: Number(e.target.value) })} className="w-full rounded-lg px-3 py-2.5 text-sm outline-none" style={{ border: "1px solid var(--bd)", background: "white", color: "var(--espresso)" }} />
-                </div>
-
-                {/* Enabled */}
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={form.enabled} onChange={(e) => setForm({ ...form, enabled: e.target.checked })} className="rounded" />
-                  <span className="text-sm" style={{ color: "var(--espresso)" }}>Aktif</span>
-                </label>
-              </div>
-
-              <div className="flex gap-3 mt-6">
-                <button onClick={() => setModalOpen(false)} className="flex-1 py-2.5 rounded-xl text-sm font-medium" style={{ border: "1px solid var(--bd)", color: "var(--espresso)" }}>Batal</button>
-                <button onClick={handleSave} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: "var(--gold)" }}>
-                  {saving ? <Loader2 size={14} className="animate-spin inline mr-1" /> : null}
-                  {editing ? "Simpan" : "Tambah"}
-                </button>
-              </div>
+          <Card
+            title="Hero / Best Seller"
+            subtitle="Video (opsional) tampil menggantikan foto. Bingkai hero tetap sama."
+          >
+            <VideoField
+              label="Video Hero"
+              value={content.hero.video_url}
+              uploading={uploading === "hero-video"}
+              onChange={uploadVideo}
+              onUrlChange={(url) =>
+                patch((c) => ({ ...c, hero: { ...c.hero, video_url: url } }))
+              }
+              onClear={() => patch((c) => ({ ...c, hero: { ...c.hero, video_url: "" } }))}
+            />
+            <ImageField
+              label="Foto Hero (fallback kalau video kosong)"
+              value={content.hero.image_url}
+              uploading={uploading === "hero"}
+              onChange={(file) =>
+                uploadImage("hero", file, (url) =>
+                  patch((c) => ({ ...c, hero: { ...c.hero, image_url: url } }))
+                )
+              }
+            />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field
+                label="Badge"
+                value={content.hero.badge}
+                onChange={(value) => patch((c) => ({ ...c, hero: { ...c.hero, badge: value } }))}
+              />
+              <Field
+                label="Harga"
+                value={content.hero.price}
+                onChange={(value) => patch((c) => ({ ...c, hero: { ...c.hero, price: value } }))}
+              />
+              <Field
+                label="Judul"
+                value={content.hero.title}
+                onChange={(value) => patch((c) => ({ ...c, hero: { ...c.hero, title: value } }))}
+              />
+              <Field
+                label="Judul (aksen)"
+                value={content.hero.title_accent}
+                onChange={(value) => patch((c) => ({ ...c, hero: { ...c.hero, title_accent: value } }))}
+              />
+              <Field
+                label="Label Harga"
+                value={content.hero.price_label}
+                onChange={(value) => patch((c) => ({ ...c, hero: { ...c.hero, price_label: value } }))}
+              />
+              <Field
+                label="Teks Tombol"
+                value={content.hero.cta}
+                onChange={(value) => patch((c) => ({ ...c, hero: { ...c.hero, cta: value } }))}
+              />
             </div>
-          </div>
-        )}
+            <Field
+              label="Link Hero"
+              value={content.hero.href}
+              onChange={(value) => patch((c) => ({ ...c, hero: { ...c.hero, href: value } }))}
+            />
+          </Card>
 
-        <ConfirmModal open={confirmModal.open} title="Hapus Link?" message="Link yang dihapus tidak bisa dikembalikan." onConfirm={confirmModal.onConfirm} onCancel={() => setConfirmModal({ open: false, onConfirm: () => {} })} />
+          <Card title="Kategori" subtitle="Foto produk di grid kategori.">
+            <div className="grid gap-3 sm:grid-cols-3">
+              <Field
+                label="Judul Section"
+                value={content.categories.heading}
+                onChange={(value) =>
+                  patch((c) => ({ ...c, categories: { ...c.categories, heading: value } }))
+                }
+              />
+              <Field
+                label="Teks Link"
+                value={content.categories.link_label}
+                onChange={(value) =>
+                  patch((c) => ({ ...c, categories: { ...c.categories, link_label: value } }))
+                }
+              />
+              <Field
+                label="Link 'Lihat semua'"
+                value={content.categories.link_href}
+                onChange={(value) =>
+                  patch((c) => ({ ...c, categories: { ...c.categories, link_href: value } }))
+                }
+              />
+            </div>
+
+            <div className="space-y-3">
+              {content.categories.items.map((item, index) => (
+                <div key={index} className="rounded-xl p-3" style={{ border: "1px solid var(--bd)" }}>
+                  <div className="mb-3 flex items-center justify-between">
+                    <span className="text-xs font-semibold" style={{ color: "var(--espresso)" }}>
+                      Kategori {index + 1}
+                    </span>
+                    <IconButton
+                      danger
+                      label="Hapus kategori"
+                      onClick={() =>
+                        patch((c) => ({
+                          ...c,
+                          categories: {
+                            ...c.categories,
+                            items: c.categories.items.filter((_, i) => i !== index),
+                          },
+                        }))
+                      }
+                    />
+                  </div>
+                  <ImageField
+                    label="Foto"
+                    value={item.image_url}
+                    objectPosition={item.position}
+                    uploading={uploading === `cat-${index}`}
+                    onChange={(file) =>
+                      uploadImage(`cat-${index}`, file, (url) =>
+                        patch((c) => ({
+                          ...c,
+                          categories: {
+                            ...c.categories,
+                            items: c.categories.items.map((it, i) =>
+                              i === index ? { ...it, image_url: url } : it
+                            ),
+                          },
+                        }))
+                      )
+                    }
+                  />
+                  <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                    <Field
+                      label="Label"
+                      value={item.label}
+                      onChange={(value) =>
+                        patch((c) => ({
+                          ...c,
+                          categories: {
+                            ...c.categories,
+                            items: c.categories.items.map((it, i) =>
+                              i === index ? { ...it, label: value } : it
+                            ),
+                          },
+                        }))
+                      }
+                    />
+                    <Field
+                      label="Link"
+                      value={item.href}
+                      onChange={(value) =>
+                        patch((c) => ({
+                          ...c,
+                          categories: {
+                            ...c.categories,
+                            items: c.categories.items.map((it, i) =>
+                              i === index ? { ...it, href: value } : it
+                            ),
+                          },
+                        }))
+                      }
+                    />
+                    <PositionPicker
+                      value={item.position}
+                      onChange={(value) =>
+                        patch((c) => ({
+                          ...c,
+                          categories: {
+                            ...c.categories,
+                            items: c.categories.items.map((it, i) =>
+                              i === index ? { ...it, position: value } : it
+                            ),
+                          },
+                        }))
+                      }
+                    />
+                  </div>
+                </div>
+              ))}
+              <AddButton
+                label="Tambah Kategori"
+                onClick={() =>
+                  patch((c) => ({
+                    ...c,
+                    categories: {
+                      ...c.categories,
+                      items: [
+                        ...c.categories.items,
+                        { label: "Kategori Baru", image_url: "", href: "https://samaqu.id", position: "50% 50%" },
+                      ],
+                    },
+                  }))
+                }
+              />
+            </div>
+          </Card>
+
+          <Card title="Belanja" subtitle="Dua kartu besar (WhatsApp & Website).">
+            <Field
+              label="Judul Section"
+              value={content.belanja.heading}
+              onChange={(value) =>
+                patch((c) => ({ ...c, belanja: { ...c.belanja, heading: value } }))
+              }
+            />
+            {content.belanja.items.map((item, index) => (
+              <div key={index} className="rounded-xl p-3" style={{ border: "1px solid var(--bd)" }}>
+                <div className="mb-3 flex items-center justify-between">
+                  <span className="text-xs font-semibold" style={{ color: "var(--espresso)" }}>
+                    Kartu {index + 1}
+                  </span>
+                  <IconButton
+                    danger
+                    label="Hapus kartu"
+                    onClick={() =>
+                      patch((c) => ({
+                        ...c,
+                        belanja: { ...c.belanja, items: c.belanja.items.filter((_, i) => i !== index) },
+                      }))
+                    }
+                  />
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field
+                    label="Label"
+                    value={item.label}
+                    onChange={(value) =>
+                      patch((c) => ({
+                        ...c,
+                        belanja: {
+                          ...c.belanja,
+                          items: c.belanja.items.map((it, i) => (i === index ? { ...it, label: value } : it)),
+                        },
+                      }))
+                    }
+                  />
+                  <Field
+                    label="Subtitle"
+                    value={item.subtitle}
+                    onChange={(value) =>
+                      patch((c) => ({
+                        ...c,
+                        belanja: {
+                          ...c.belanja,
+                          items: c.belanja.items.map((it, i) => (i === index ? { ...it, subtitle: value } : it)),
+                        },
+                      }))
+                    }
+                  />
+                  <Field
+                    label="Link"
+                    value={item.href}
+                    onChange={(value) =>
+                      patch((c) => ({
+                        ...c,
+                        belanja: {
+                          ...c.belanja,
+                          items: c.belanja.items.map((it, i) => (i === index ? { ...it, href: value } : it)),
+                        },
+                      }))
+                    }
+                  />
+                  <SelectField
+                    label="Ikon"
+                    value={item.icon}
+                    options={BELANJA_ICONS}
+                    onChange={(value) =>
+                      patch((c) => ({
+                        ...c,
+                        belanja: {
+                          ...c.belanja,
+                          items: c.belanja.items.map((it, i) => (i === index ? { ...it, icon: value } : it)),
+                        },
+                      }))
+                    }
+                  />
+                </div>
+              </div>
+            ))}
+            <AddButton
+              label="Tambah Kartu"
+              onClick={() =>
+                patch((c) => ({
+                  ...c,
+                  belanja: {
+                    ...c.belanja,
+                    items: [
+                      ...c.belanja.items,
+                      { label: "Kartu Baru", subtitle: "", href: "https://samaqu.id", icon: "globe" },
+                    ],
+                  },
+                }))
+              }
+            />
+          </Card>
+
+          <Card title="Baris Link" subtitle="Daftar link ringkas (ikon + judul + subtitle).">
+            {content.rows.map((item, index) => (
+              <div key={index} className="rounded-xl p-3" style={{ border: "1px solid var(--bd)" }}>
+                <div className="mb-3 flex items-center justify-between">
+                  <span className="text-xs font-semibold" style={{ color: "var(--espresso)" }}>
+                    Baris {index + 1}
+                  </span>
+                  <IconButton
+                    danger
+                    label="Hapus baris"
+                    onClick={() => patch((c) => ({ ...c, rows: c.rows.filter((_, i) => i !== index) }))}
+                  />
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field
+                    label="Label"
+                    value={item.label}
+                    onChange={(value) =>
+                      patch((c) => ({ ...c, rows: c.rows.map((it, i) => (i === index ? { ...it, label: value } : it)) }))
+                    }
+                  />
+                  <Field
+                    label="Subtitle"
+                    value={item.subtitle}
+                    onChange={(value) =>
+                      patch((c) => ({ ...c, rows: c.rows.map((it, i) => (i === index ? { ...it, subtitle: value } : it)) }))
+                    }
+                  />
+                  <Field
+                    label="Link"
+                    value={item.href}
+                    onChange={(value) =>
+                      patch((c) => ({ ...c, rows: c.rows.map((it, i) => (i === index ? { ...it, href: value } : it)) }))
+                    }
+                  />
+                  <SelectField
+                    label="Ikon"
+                    value={item.icon}
+                    options={ROW_ICONS}
+                    onChange={(value) =>
+                      patch((c) => ({ ...c, rows: c.rows.map((it, i) => (i === index ? { ...it, icon: value } : it)) }))
+                    }
+                  />
+                </div>
+              </div>
+            ))}
+            <AddButton
+              label="Tambah Baris"
+              onClick={() =>
+                patch((c) => ({
+                  ...c,
+                  rows: [...c.rows, { label: "Link Baru", subtitle: "", href: "https://samaqu.id", icon: "link" }],
+                }))
+              }
+            />
+          </Card>
+
+          <Card title="Garansi">
+            <Field
+              label="Judul Section"
+              value={content.guarantee.heading}
+              onChange={(value) =>
+                patch((c) => ({ ...c, guarantee: { ...c.guarantee, heading: value } }))
+              }
+            />
+            <div className="grid gap-3 sm:grid-cols-2">
+              {content.guarantee.items.map((item, index) => (
+                <div key={index} className="rounded-xl p-3" style={{ border: "1px solid var(--bd)" }}>
+                  <div className="mb-3 flex items-center justify-between">
+                    <span className="text-xs font-semibold" style={{ color: "var(--espresso)" }}>
+                      Item {index + 1}
+                    </span>
+                    <IconButton
+                      danger
+                      label="Hapus item"
+                      onClick={() =>
+                        patch((c) => ({
+                          ...c,
+                          guarantee: {
+                            ...c.guarantee,
+                            items: c.guarantee.items.filter((_, i) => i !== index),
+                          },
+                        }))
+                      }
+                    />
+                  </div>
+                  <div className="space-y-3">
+                    <Field
+                      label="Judul"
+                      value={item.title}
+                      onChange={(value) =>
+                        patch((c) => ({
+                          ...c,
+                          guarantee: {
+                            ...c.guarantee,
+                            items: c.guarantee.items.map((it, i) => (i === index ? { ...it, title: value } : it)),
+                          },
+                        }))
+                      }
+                    />
+                    <Field
+                      label="Subtitle"
+                      value={item.subtitle}
+                      onChange={(value) =>
+                        patch((c) => ({
+                          ...c,
+                          guarantee: {
+                            ...c.guarantee,
+                            items: c.guarantee.items.map((it, i) => (i === index ? { ...it, subtitle: value } : it)),
+                          },
+                        }))
+                      }
+                    />
+                    <SelectField
+                      label="Ikon"
+                      value={item.icon}
+                      options={GUARANTEE_ICONS}
+                      onChange={(value) =>
+                        patch((c) => ({
+                          ...c,
+                          guarantee: {
+                            ...c.guarantee,
+                            items: c.guarantee.items.map((it, i) => (i === index ? { ...it, icon: value } : it)),
+                          },
+                        }))
+                      }
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <AddButton
+              label="Tambah Item Garansi"
+              onClick={() =>
+                patch((c) => ({
+                  ...c,
+                  guarantee: {
+                    ...c.guarantee,
+                    items: [...c.guarantee.items, { title: "Item Baru", subtitle: "", icon: "shield" }],
+                  },
+                }))
+              }
+            />
+          </Card>
+
+          <Card title="Ikon Sosial">
+            {content.socials.map((item, index) => (
+              <div key={index} className="flex items-end gap-3">
+                <div className="w-40">
+                  <SelectField
+                    label="Platform"
+                    value={item.platform}
+                    options={SOCIAL_PLATFORMS}
+                    onChange={(value) =>
+                      patch((c) => ({
+                        ...c,
+                        socials: c.socials.map((it, i) => (i === index ? { ...it, platform: value } : it)),
+                      }))
+                    }
+                  />
+                </div>
+                <div className="flex-1">
+                  <Field
+                    label="Link"
+                    value={item.href}
+                    onChange={(value) =>
+                      patch((c) => ({
+                        ...c,
+                        socials: c.socials.map((it, i) => (i === index ? { ...it, href: value } : it)),
+                      }))
+                    }
+                  />
+                </div>
+                <IconButton
+                  danger
+                  label="Hapus sosial"
+                  onClick={() =>
+                    patch((c) => ({ ...c, socials: c.socials.filter((_, i) => i !== index) }))
+                  }
+                />
+              </div>
+            ))}
+            <AddButton
+              label="Tambah Ikon Sosial"
+              onClick={() =>
+                patch((c) => ({
+                  ...c,
+                  socials: [...c.socials, { platform: "instagram", href: "https://instagram.com/samaqu.id" }],
+                }))
+              }
+            />
+          </Card>
+
+          <Card title="Footer & Marquee">
+            <Field
+              label="Teks Footer"
+              value={content.footer}
+              onChange={(value) => patch((c) => ({ ...c, footer: value }))}
+            />
+            <label className="block">
+              <span className="mb-1 block text-[11px] font-medium" style={{ color: "var(--text-muted)" }}>
+                Marquee (satu baris = satu item)
+              </span>
+              <textarea
+                value={content.marquee.join("\n")}
+                onChange={(e) =>
+                  patch((c) => ({
+                    ...c,
+                    marquee: e.target.value.split("\n").filter((line) => line.trim() !== ""),
+                  }))
+                }
+                rows={4}
+                className="w-full rounded-lg px-3 py-2.5 text-sm outline-none"
+                style={inputStyle}
+              />
+            </label>
+          </Card>
+        </div>
+
+        <div className="mt-5 flex justify-end">
+          <button
+            type="button"
+            onClick={save}
+            disabled={saving}
+            className="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white"
+            style={{ background: "var(--gold)" }}
+          >
+            {saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
+            {saving ? "Menyimpan..." : "Simpan"}
+          </button>
+        </div>
       </section>
     </AdminShell>
+  );
+}
+
+function AddButton({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium"
+      style={{ border: "1px dashed var(--bd)", color: "var(--text-muted)" }}
+    >
+      <Plus size={14} /> {label}
+    </button>
   );
 }

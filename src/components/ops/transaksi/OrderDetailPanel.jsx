@@ -16,6 +16,8 @@ import { usePaymentMethodName } from "@/lib/use-payment-methods";
 import { paymentChannelLabel } from "@/lib/payment-channel";
 import { formatWeightExact } from "@/lib/shipping-weight";
 import { formatTrackingTime } from "@/lib/jnt/track-status";
+import { jntServiceTag } from "@/lib/jnt/layanan";
+import JntBadge from "@/components/JntBadge";
 import { formatRupiah, formatTanggalJamID } from "@/components/ops/transaksi/transaksi-format";
 
 const STAGE_KEY = {
@@ -30,7 +32,7 @@ const STAGE_KEY = {
 const BANNER = {
   belum_bayar: ["Menunggu pembayaran", "Pesanan akan dibatalkan otomatis jika belum dibayar dalam 24 jam."],
   belum_dipacking: ["Pesanan perlu dipacking", "Kemas pesanan, lalu buat resi supaya paket siap diserahkan ke kurir."],
-  sudah_dipacking: ["Pesanan siap dikirim", "Paket sudah dipacking dan resinya sudah dibuat — serahkan ke kurir."],
+  sudah_dipacking: ["Menunggu pickup", "Resi sudah dibuat — paket menunggu dijemput kurir J&T."],
   dikirim: ["Pesanan dalam perjalanan", "Paket sedang diantar oleh kurir ke alamat pembeli."],
   selesai: ["Pesanan selesai", "Pesanan telah diterima oleh pembeli."],
   dibatalkan: ["Pesanan dibatalkan", ""],
@@ -45,6 +47,7 @@ export default function OrderDetailPanel({
   trackingState = "idle",
   shippingContent = null,
   onOpenTrack,
+  serviceCode = "",
 }) {
   const isMono = theme === "mono";
   const stage = orderStage(order);
@@ -62,6 +65,7 @@ export default function OrderDetailPanel({
   const paymentDetail = paymentName
     ? `${paymentName}${channelLabel ? ` · ${channelLabel}` : ""}`
     : channelLabel || "-";
+  const serviceTag = jntServiceTag(serviceCode || order.shipping_method);
   const accent = isMono ? "#0f172a" : "var(--panel-accent, #c2255c)";
   const minAccent = isMono ? "#475569" : "#B4552F";
 
@@ -105,7 +109,15 @@ export default function OrderDetailPanel({
         </div>
         <div className="kv">
           <span>Kurir</span>
-          <b>J&amp;T Express</b>
+          <b style={{ display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
+            <JntBadge label="J&T Express" />
+          </b>
+        </div>
+        <div className="kv">
+          <span>Layanan</span>
+          <b>
+            <span className="bd s-siap">{serviceTag}</span>
+          </b>
         </div>
 
         {shippingContent ? (

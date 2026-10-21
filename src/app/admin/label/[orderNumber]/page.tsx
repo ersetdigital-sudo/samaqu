@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { maskPhoneLast4 } from "@/lib/mask-phone";
 import { fetchPaymentMethodById, isPaymentMethodId, legacyPaymentType, normalizeMethodType } from "@/lib/payment-methods";
 import { sumWeightGramsBySize, productWeightMapFromRows, variantWeightMapFromRows } from "@/lib/shipping-weight";
+import { jntServiceCodeFromShippingMethod } from "@/lib/jnt/layanan";
 
 interface OrderData {
   order_number: string;
@@ -32,6 +33,8 @@ export default function LabelPage() {
   const [order, setOrder] = useState<OrderData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  /** Kode layanan J&T dari tracking (EZ/ECO) — untuk pesanan lama yang shipping_method-nya "reguler". */
+  const [trackedService, setTrackedService] = useState("");
   const [paymentType, setPaymentType] = useState<string | null>(null);
   // Ukuran label yang dipilih: "100x150" (desain existing) atau "78x100" (format baru).
   // Query string `?size=` (mis. dari tombol Cetak Resi di ops) hanya menentukan PILIHAN AWAL;
@@ -205,13 +208,32 @@ export default function LabelPage() {
     });
   }, [order, size]);
 
+  // Layanan J&T sebenarnya: tracking menang (EZ/ECO), lalu teks shipping_method, lalu fallback EZ.
+  useEffect(() => {
+    if (!order?.awb_no) {
+      setTrackedService("");
+      return;
+    }
+    let cancelled = false;
+    fetch(`/api/jnt/track?awb=${encodeURIComponent(order.awb_no)}`)
+      .then((res) => res.json())
+      .then((json) => {
+        if (!cancelled) setTrackedService(String(json?.data?.detail?.services_code || "").toUpperCase());
+      })
+      .catch(() => {
+        if (!cancelled) setTrackedService("");
+      });
+    return () => { cancelled = true; };
+  }, [order?.awb_no]);
+
   if (loading) return <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", fontFamily: "sans-serif" }}>Memuat label...</div>;
   if (error || !order) return <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", fontFamily: "sans-serif", color: "red" }}>{error || "Pesanan tidak ditemukan"}</div>;
 
   const isCod = paymentType === "cod";
   const weightKg = order.weight ? (order.weight / 1000).toFixed(2) : "1.00";
   const printDate = new Date().toLocaleString("id-ID", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
-  const serviceLabel = order.shipping_method?.toUpperCase() || "EZ";
+  const serviceCode = trackedService || jntServiceCodeFromShippingMethod(order.shipping_method) || "EZ";
+  const serviceLabel = `Service ${serviceCode}`;
 
   return (
     <>
@@ -350,7 +372,7 @@ export default function LabelPage() {
           </div>
           <div style={{ padding: "1.5mm 0 1.5mm 3mm" }}>
             <div style={{ fontSize: "7px", fontWeight: "700", color: "#333", textTransform: "uppercase", letterSpacing: "0.3px" }}>Layanan</div>
-            <div style={{ fontSize: "9px", fontWeight: "800" }}>{serviceLabel} / Regular Service</div>
+            <div style={{ fontSize: "9px", fontWeight: "800" }}>{serviceLabel}</div>
           </div>
           <div style={{ padding: "1.5mm 3mm 1.5mm 0", borderRight: "1.5px solid #000", borderTop: "1.5px solid #000" }}>
             <div style={{ fontSize: "7px", fontWeight: "700", color: "#333", textTransform: "uppercase", letterSpacing: "0.3px" }}>Biaya (Ongkir)</div>
@@ -453,7 +475,7 @@ export default function LabelPage() {
           </div>
           <div style={{ padding: "0.8mm 0 0.8mm 2mm", borderBottom: "1.5px solid #000" }}>
             <div style={{ fontSize: "5.5px", fontWeight: "700", color: "#333", textTransform: "uppercase", letterSpacing: "0.3px" }}>Layanan</div>
-            <div style={{ fontSize: "7.5px", fontWeight: "800" }}>{serviceLabel} / Regular</div>
+            <div style={{ fontSize: "7.5px", fontWeight: "800" }}>{serviceLabel}</div>
           </div>
           <div style={{ padding: "0.8mm 2mm 0.8mm 0", borderRight: "1px solid #000" }}>
             <div style={{ fontSize: "5.5px", fontWeight: "700", color: "#333", textTransform: "uppercase", letterSpacing: "0.3px" }}>Biaya (Ongkir)</div>

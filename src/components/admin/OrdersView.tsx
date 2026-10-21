@@ -1,40 +1,29 @@
 "use client";
 
 /**
- * Panel "Order Management" — daftar pesanan dashboard admin, disusun ala Shopee Seller Centre.
+ * Panel "Order Management" — daftar pesanan dashboard admin.
  *
- * Dulu seluruh panel ini inline di `src/app/admin/page.tsx` (dan file itu sudah ~1000 baris);
- * sekarang alur pesanan tinggal di satu komponen: tab sumber (Pesanan Website / Open Order) →
- * kotak cari → tab tahap → daftar. Dipakai **kedua** dashboard admin karena `/admin` dan
- * `/id/admin` merender `src/app/admin/page.tsx` yang sama.
+ * Tampilannya mengikuti menu Transaksi dashboard ops: kartu KPI → tab tahap → bar filter →
+ * tabel (berubah jadi kartu di layar ≤720px). Datanya tetap dari prop `orders` yang sudah
+ * diambil halaman admin; tidak ada query baru.
  *
- * Yang bikin "setara Shopee": daftar dipecah per **tahap** (Belum Bayar / Perlu Dikirim /
- * Dikirim / Selesai / Dibatalkan) yang diturunkan `src/lib/order-flow.ts` dari status + resi,
- * bukan per nama status mentah.
- *
- * Listing-nya sengaja **tanpa tombol aksi di tiap baris**: dulu baris pesanan membawa tombol
- * "Atur Pesanan" / "Cetak Label" / "Hubungi Pembeli" sehingga kolom aksi berisi sampai dua tombol
- * dan tabelnya jadi berantakan (permintaan pemilik: "atur pesanan hubungi pembeli di detail aja").
- * Semua aksi pesanan sekarang hidup **hanya di drawer detail** (`OrderDetailContent`), jadi
- * halaman admin tidak lagi mengoper `arrangeOrder` ke sini — komponen ini cuma menyaring,
- * menampilkan, dan membuka detail. Tidak ada status baru yang ditulis ke database dan query-nya
- * tidak berubah.
+ * Aksi pesanan tetap hanya ada di drawer detail (`OrderDetailContent`); baris tabel cuma
+ * membuka detail lewat `onSelect`.
  */
 import { useMemo, useState } from "react";
-import { Search, X } from "lucide-react";
-import OrdersMobileList from "@/components/admin/OrdersMobileList";
 import {
   ORDER_STAGE_LABEL,
-  ORDER_STAGE_STYLE,
   ORDER_STAGE_TABS,
   matchesStage,
   orderStage,
-  shippingLine,
-  stageNeedsAdminAction,
   type OrderStageFilter,
 } from "@/lib/order-flow";
+import { SALE_STATUSES } from "@/lib/transaksi";
+import StageIcon from "@/components/ops/transaksi/StageIcon";
+import AnimatedNumber from "@/components/AnimatedNumber";
+import "@/app/ops/ops-transaksi.css";
 
-/** Field yang benar-benar dipakai daftar; `Order` di halaman admin memenuhinya. */
+/** Field yang dipakai daftar; `Order` di halaman admin memenuhinya. */
 export interface AdminOrderRow {
   id: string;
   order_number: string;
@@ -48,18 +37,56 @@ export interface AdminOrderRow {
   status: string;
   total: number;
   created_at: string;
+  order_items?: {
+    product_name: string;
+    color?: string | null;
+    size?: string | null;
+    series?: string | null;
+    kain?: string | null;
+    quantity: number;
+  }[];
 }
+
+const STAGE_BADGE: Record<string, string> = {
+  belum_bayar: "bayar",
+  belum_dipacking: "packing",
+  sudah_dipacking: "siap",
+  dikirim: "kirim",
+  selesai: "selesai",
+  dibatalkan: "batal",
+};
 
 function tanggal(iso: string) {
   return new Date(iso).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
 }
 
-/** Pill tahap — istilah yang sama dengan tab di atasnya, jadi tab dan baris tidak beda bahasa. */
+function jam(iso: string) {
+  return new Date(iso)
+    .toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" })
+    .replace(":", ".");
+}
+
+function rupiah(n: number) {
+  return "Rp " + Math.round(Number(n) || 0).toLocaleString("id-ID");
+}
+
+/** "Kain X · Series · Warna · Ukuran" — bagian yang sama dengan kolom Produk di ops. */
+function itemVariant(item?: NonNullable<AdminOrderRow["order_items"]>[number]) {
+  if (!item) return "";
+  return [
+    item.kain ? `Kain ${item.kain}` : null,
+    item.series,
+    item.color && item.color !== "default" ? item.color : null,
+    item.size,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
+
 function StageBadge({ order }: { order: AdminOrderRow }) {
   const stage = orderStage(order);
-  const s = ORDER_STAGE_STYLE[stage];
   return (
-    <span className="badge" style={{ background: s.bg, color: s.color, border: `1px solid ${s.border}` }}>
+    <span className={`bd s-${STAGE_BADGE[stage] || "batal"}`}>
       {ORDER_STAGE_LABEL[stage]}
     </span>
   );
@@ -68,165 +95,271 @@ function StageBadge({ order }: { order: AdminOrderRow }) {
 export default function OrdersView({
   orders,
   onSelect,
+  loading = false,
+  periodLabel,
+  onPrevMonth,
+  onNextMonth,
 }: {
   orders: AdminOrderRow[];
   onSelect: (order: AdminOrderRow) => void;
+  loading?: boolean;
+  /** Label periode (mis. "Oktober 2026") — caption KPI, sama seperti menu Transaksi ops. */
+  periodLabel?: string;
+  onPrevMonth?: () => void;
+  onNextMonth?: () => void;
 }) {
-  const [orderSource, setOrderSource] = useState<"website" | "open">("website");
+  const [orderSource, setOrderSource] = useState<"all" | "website" | "open">("all");
   const [orderFilter, setOrderFilter] = useState<OrderStageFilter>("semua");
   const [orderSearch, setOrderSearch] = useState("");
 
-  // Pesanan Open Order (Create Your Price) bernomor `CYO-`; sisanya pesanan checkout website.
-  const sourceOrders = orders.filter((o) =>
-    orderSource === "open" ? o.order_number.startsWith("CYO-") : !o.order_number.startsWith("CYO-")
+  // Tabel boleh disaring per sumber; KPI & hitungan tab selalu memakai SELURUH pesanan
+  // periode itu — aturan yang sama dengan menu Transaksi ops.
+  const sourceOrders = useMemo(
+    () =>
+      orders.filter((o) => {
+        if (orderSource === "all") return true;
+        const open = o.order_number.startsWith("CYO-");
+        return orderSource === "open" ? open : !open;
+      }),
+    [orders, orderSource],
   );
-  // Kotak "Cari pesanan": cocokkan nomor pesanan, nama pelanggan, email, atau nomor WhatsApp.
-  // Pencarian dan tab tahap dipakai bersamaan (AND), jadi admin bisa menyaring dua arah.
+
   const orderQuery = orderSearch.trim().toLowerCase();
-  const searchedOrders = orderQuery
-    ? sourceOrders.filter((o) =>
-        [o.order_number, o.customer_name, o.customer_email, o.customer_whatsapp]
-          .some((v) => (v || "").toLowerCase().includes(orderQuery))
-      )
-    : sourceOrders;
-  const visibleOrders = searchedOrders.filter((o) => matchesStage(o, orderFilter));
-  // Pesan kosong dibedakan: "pencarian tidak ketemu" vs "belum ada pesanan sama sekali".
+  const searchedOrders = useMemo(() => {
+    if (!orderQuery) return sourceOrders;
+    return sourceOrders.filter((o) =>
+      [
+        o.order_number,
+        o.customer_name,
+        o.customer_email,
+        o.customer_whatsapp,
+        ...(o.order_items || []).map((item) => item.product_name),
+      ].some((value) => (value || "").toLowerCase().includes(orderQuery))
+    );
+  }, [sourceOrders, orderQuery]);
+
+  const visibleOrders = useMemo(
+    () => searchedOrders.filter((o) => matchesStage(o, orderFilter)),
+    [searchedOrders, orderFilter],
+  );
+
+  const kpis = useMemo(() => {
+    const sold = orders.filter((o) => (SALE_STATUSES as readonly string[]).includes(o.status));
+    return {
+      total: orders.length,
+      revenue: sold.reduce((sum, o) => sum + (Number(o.total) || 0), 0),
+      unpaid: orders.filter((o) => orderStage(o) === "belum_bayar").length,
+      toProcess: orders.filter((o) => {
+        const stage = orderStage(o);
+        return stage === "belum_dipacking" || stage === "sudah_dipacking";
+      }).length,
+    };
+  }, [orders]);
+
+  const stageTabs = useMemo(
+    () =>
+      ORDER_STAGE_TABS.map((tab) => ({
+        ...tab,
+        count:
+          tab.key === "semua"
+            ? orders.length
+            : orders.filter((o) => orderStage(o) === tab.key).length,
+      })),
+    [orders],
+  );
+
+  const sourceLabelText =
+    orderSource === "open" ? "Open Order" : orderSource === "website" ? "Pesanan Website" : "Semua sumber";
+  const filtersActive = Boolean(orderQuery) || orderFilter !== "semua" || orderSource !== "all";
+  const resetFilters = () => {
+    setOrderSearch("");
+    setOrderFilter("semua");
+    setOrderSource("all");
+  };
   const ordersEmptyText = orderQuery
     ? "Tidak ada pesanan yang cocok dengan pencarian"
-    : orderSource === "open" ? "Belum ada pesanan Open Order" : "Tidak ada pesanan";
-  // Jumlah per tahap ikut tab sumber **dan** kotak pencarian, jadi angka di tab selalu cocok
-  // dengan daftar di bawahnya (bukan query terpisah).
-  const stageCounts = useMemo(() => {
-    const counts: Partial<Record<string, number>> = {};
-    for (const o of searchedOrders) {
-      const s = orderStage(o);
-      counts[s] = (counts[s] || 0) + 1;
-    }
-    return counts;
-  }, [searchedOrders]);
-
-  // Judul ikut tab yang aktif, mis. "Pesanan Perlu Dikirim" / "Open Order Selesai".
-  const listTitle = orderSource === "open"
-    ? orderFilter === "semua" ? "Semua Open Order" : `Open Order ${ORDER_STAGE_LABEL[orderFilter]}`
-    : orderFilter === "semua" ? "Semua Pesanan" : `Pesanan ${ORDER_STAGE_LABEL[orderFilter]}`;
+    : orderSource === "open"
+      ? "Belum ada pesanan Open Order"
+      : orderSource === "website"
+        ? "Tidak ada pesanan Website"
+        : "Tidak ada pesanan";
 
   return (
-    <div className="card overflow-hidden">
-      <div className="px-5 pt-4">
-        <div className="flex gap-6" style={{ borderBottom: "1px solid #f1f1f3" }}>
-          {([{ id: "website", label: "Pesanan Website" }, { id: "open", label: "Open Order" }] as const).map((t) => (
-            <button key={t.id} onClick={() => setOrderSource(t.id)} className="pb-3 -mb-px text-sm font-medium transition-colors" style={{ color: orderSource === t.id ? "var(--espresso)" : "var(--text-muted)", borderBottom: orderSource === t.id ? "2px solid var(--gold)" : "2px solid transparent" }}>
-              {t.label}
-            </button>
-          ))}
+    <div className="ops-tx">
+      <section className="ks">
+        <div className="card k">
+          <small>Total transaksi</small>
+          <b><AnimatedNumber value={loading ? 0 : kpis.total} /></b>
+          <i>{periodLabel || sourceLabelText}</i>
         </div>
-      </div>
-      <div className="p-5" style={{ borderBottom: "1px solid #f1f1f3" }}>
-        {/* Judul bagian — area tersendiri supaya panjang judul tidak menggeser deretan tab. */}
-        <h2 className="text-xl font-extrabold" style={{ color: "var(--fg)" }}>{listTitle}</h2>
-        {/* Tab tahap: area TETAP di bawah judul — posisinya tidak berubah walau judul atau tab
-            aktif berganti. Urutannya mengikuti pekerjaan penjual; "Perlu Dikirim" disorot (amber)
-            selama masih ada pesanan yang menunggu resi dibuat. */}
-        <div className="flex flex-wrap gap-2 mt-3">
-          {ORDER_STAGE_TABS.map((t) => {
-            const active = orderFilter === t.key;
-            const count = t.key === "semua" ? searchedOrders.length : stageCounts[t.key] || 0;
-            const attention = !active && count > 0 && stageNeedsAdminAction(t.key);
-            const style = active
-              ? { background: "var(--gold)", color: "#fff", border: "1px solid var(--gold)" }
-              : attention
-                ? { background: "#fff7ed", color: "#c2410c", border: "1px solid #ffedd5" }
-                : { background: "transparent", color: "var(--text-secondary)", border: "1px solid #d4d4d8" };
-            return (
+        <div className="card k">
+          <small>Omset bulan ini</small>
+          <b><AnimatedNumber value={loading ? 0 : kpis.revenue} format={(n) => rupiah(n)} /></b>
+          <i>Tidak termasuk dibatalkan</i>
+        </div>
+        <div className="card k">
+          <small>Belum bayar</small>
+          <b style={{ color: "#c76f00" }}><AnimatedNumber value={loading ? 0 : kpis.unpaid} /></b>
+          <i>Perlu follow-up</i>
+        </div>
+        <div className="card k">
+          <small>Perlu diproses</small>
+          <b style={{ color: "#2e64c9" }}><AnimatedNumber value={loading ? 0 : kpis.toProcess} /></b>
+          <i>Packing + siap kirim</i>
+        </div>
+      </section>
+
+      <div className="bar">
+        <div className="tabs">
+          {stageTabs
+            .filter((tab) => tab.key !== "belum_dipacking")
+            .map((tab) => (
               <button
-                key={t.key}
-                onClick={() => setOrderFilter(t.key)}
-                className="text-sm px-3 py-1.5 rounded-lg font-medium transition-colors"
-                style={style}
+                key={tab.key}
+                type="button"
+                className={`tab${orderFilter === tab.key ? " on" : ""}`}
+                onClick={() => setOrderFilter(tab.key)}
               >
-                {t.label} ({count})
+                <span className="ti">
+                  <StageIcon stage={tab.key} />
+                </span>
+                <span className="tl2">{tab.label}</span>
+                <em>{tab.count}</em>
               </button>
-            );
-          })}
+            ))}
         </div>
-        <div className="relative mt-4 w-full sm:max-w-sm">
-          <Search className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2" size={16} strokeWidth={2} style={{ color: "var(--fg3)" }} />
+
+        <div className="f">
           <input
-            type="text"
             value={orderSearch}
-            onChange={(e) => setOrderSearch(e.target.value)}
-            placeholder="Cari no. pesanan, nama, atau WhatsApp"
+            onChange={(event) => setOrderSearch(event.target.value)}
+            placeholder="Cari no. pesanan / nama / WhatsApp..."
             aria-label="Cari pesanan"
-            className="w-full rounded-xl pl-10 pr-10 py-2.5 text-sm outline-none transition-shadow focus:ring-2"
-            style={{ border: "1px solid var(--bd)", background: "var(--sub)", color: "var(--fg)", "--tw-ring-color": "var(--gold)" } as React.CSSProperties}
           />
-          {orderSearch && (
-            <button
-              type="button"
-              onClick={() => setOrderSearch("")}
-              aria-label="Bersihkan pencarian"
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-full transition-colors hover:bg-[var(--bg-secondary)]"
-              style={{ color: "var(--fg3)" }}
-            >
-              <X size={15} />
+          <button
+            type="button"
+            className={`packf${orderFilter === "belum_dipacking" ? " on" : ""}`}
+            onClick={() =>
+              setOrderFilter((current) => (current === "belum_dipacking" ? "semua" : "belum_dipacking"))
+            }
+            aria-pressed={orderFilter === "belum_dipacking"}
+          >
+            Belum di packing
+            <em>{stageTabs.find((tab) => tab.key === "belum_dipacking")?.count ?? 0}</em>
+          </button>
+          {onPrevMonth || onNextMonth ? (
+            <div className="ptx-month">
+              <button type="button" onClick={onPrevMonth} aria-label="Bulan sebelumnya">
+                ‹
+              </button>
+              <b>{periodLabel || "Bulan ini"}</b>
+              <button type="button" onClick={onNextMonth} aria-label="Bulan berikutnya">
+                ›
+              </button>
+            </div>
+          ) : null}
+          <select
+            value={orderSource}
+            onChange={(event) => setOrderSource(event.target.value as "all" | "website" | "open")}
+            aria-label="Sumber pesanan"
+          >
+            <option value="all">Semua sumber</option>
+            <option value="website">Pesanan Website</option>
+            <option value="open">Open Order</option>
+          </select>
+          {filtersActive ? (
+            <button type="button" className="btn-sec" onClick={resetFilters}>
+              Reset
             </button>
-          )}
+          ) : null}
         </div>
       </div>
-      <div className="overflow-x-auto">
-        <OrdersMobileList
-          orders={visibleOrders}
-          onSelect={onSelect}
-          emptyText={ordersEmptyText}
-        />
-        <table className="w-full text-sm min-w-[860px] hidden lg:table">
-          <thead>
-            <tr className="text-left" style={{ color: "var(--text-muted)", background: "var(--bg-secondary)" }}>
-              <th className="font-medium px-5 py-3">ID</th>
-              <th className="font-medium px-5 py-3">Pelanggan</th>
-              <th className="font-medium px-5 py-3">Tanggal</th>
-              <th className="font-medium px-5 py-3">Pengiriman</th>
-              <th className="font-medium px-5 py-3">Status</th>
-              <th className="font-medium px-5 py-3 text-right">Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            {visibleOrders.map((o) => {
-              const ship = shippingLine(o);
-              return (
-                <tr key={o.id} className="cursor-pointer transition-colors hover:bg-[#fafafa]" style={{ borderTop: "1px solid #f1f1f3" }} onClick={() => onSelect(o)}>
-                  {/* Tiap sel dipepetkan satu baris (`whitespace-nowrap`, nama pelanggan dipotong
-                      dengan `truncate`) supaya baris tidak tumbuh tinggi sendiri-sendiri — nomor
-                      `CYO-…` dan nama panjang tidak lagi bikin tabel berantakan. */}
-                  <td className="px-5 py-3.5 font-semibold whitespace-nowrap">{o.order_number}</td>
-                  <td className="px-5 py-3.5 max-w-[200px] truncate" title={o.customer_name}>{o.customer_name}</td>
-                  <td className="px-5 py-3.5 whitespace-nowrap" style={{ color: "var(--text-muted)" }}>{tanggal(o.created_at)}</td>
-                  <td className="px-5 py-3.5 min-w-[170px]">
-                    <span className="block text-xs whitespace-nowrap" style={{ color: "var(--text-muted)" }}>{ship.courier}</span>
-                    <span className="block text-xs font-semibold mt-0.5 whitespace-nowrap" style={{ color: ship.awaiting ? "#c2410c" : "var(--espresso)" }}>{ship.resi}</span>
-                  </td>
-                  <td className="px-5 py-3.5"><StageBadge order={o} /></td>
-                  <td className="px-5 py-3.5 text-right">
-                    {/* Satu-satunya tombol di daftar: buka detail. Aksi lain (Atur Pesanan, Cetak
-                        Label, Hubungi Pembeli) ada di drawer detail. `stopPropagation` supaya klik
-                        tombol tidak ikut memanggil handler barisnya. */}
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); onSelect(o); }}
-                      className="text-xs px-3 py-1.5 rounded-lg font-medium whitespace-nowrap"
-                      style={{ border: "1px solid #d4d4d8", color: "var(--gold)" }}
-                    >
-                      Detail
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
-            {visibleOrders.length === 0 && (
-              <tr><td colSpan={6} className="px-5 py-8 text-center" style={{ color: "var(--text-muted)" }}>{ordersEmptyText}</td></tr>
-            )}
-          </tbody>
-        </table>
+
+      <div className="card tw">
+        {loading ? (
+          <div style={{ padding: 48, textAlign: "center", color: "#64748b" }}>Memuat…</div>
+        ) : visibleOrders.length === 0 ? (
+          <div style={{ padding: 48, textAlign: "center", color: "#64748b" }}>
+            <b style={{ color: "#0f172a" }}>{ordersEmptyText}</b>
+            <p style={{ fontSize: 13, marginTop: 4 }}>
+              {filtersActive ? "Ubah pencarian atau filter, atau tampilkan semua." : "Pesanan akan muncul di sini."}
+            </p>
+          </div>
+        ) : (
+          <table>
+            <colgroup>
+              <col style={{ width: "16%" }} />
+              <col style={{ width: "20%" }} />
+              <col style={{ width: "24%" }} />
+              <col style={{ width: "11%" }} />
+              <col style={{ width: "13%" }} />
+              <col style={{ width: "12%" }} />
+              <col style={{ width: "4%" }} />
+            </colgroup>
+            <thead>
+              <tr>
+                <th>No. Pesanan</th>
+                <th>Pelanggan</th>
+                <th>Produk</th>
+                <th style={{ textAlign: "right" }}>Total</th>
+                <th>No. Resi</th>
+                <th>Status</th>
+                <th className="chev" />
+              </tr>
+            </thead>
+            <tbody>
+              {visibleOrders.map((o) => {
+                const stage = orderStage(o);
+                const firstItem = o.order_items?.[0];
+                const extraItems = Math.max(0, (o.order_items?.length || 0) - 1);
+                const variantText = itemVariant(firstItem);
+                const sourceLabel = o.order_number.startsWith("CYO-") ? "Open Order" : "Website";
+                return (
+                  <tr key={o.id} onClick={() => onSelect(o)}>
+                    <td data-label="No. Pesanan">
+                      <span className="id">{o.order_number}</span>
+                      <small>
+                        {tanggal(o.created_at)} · {jam(o.created_at)}
+                      </small>
+                    </td>
+                    <td data-label="Pelanggan">
+                      <b>{o.customer_name}</b>
+                      <small>{o.customer_whatsapp || o.customer_email || "-"}</small>
+                    </td>
+                    <td data-label="Produk">
+                      <span style={{ fontWeight: 600 }}>{firstItem?.product_name || "-"}</span>
+                      <small>
+                        {variantText ? `${variantText} × ${firstItem?.quantity || 1}` : `× ${firstItem?.quantity || 0}`}
+                        {extraItems > 0 ? ` · +${extraItems} lainnya` : ""}
+                      </small>
+                    </td>
+                    <td className="mono" style={{ textAlign: "right" }} data-label="Total">
+                      {rupiah(o.total)}
+                      <small style={{ textAlign: "right" }}>{sourceLabel}</small>
+                    </td>
+                    <td data-label="No. Resi">
+                      {o.awb_no ? (
+                        <span className="resi-no" title={`No. Resi J&T ${o.awb_no}`}>
+                          {o.awb_no}
+                        </span>
+                      ) : (
+                        <span className="resi-empty">–</span>
+                      )}
+                      {stage === "belum_dipacking" ? <small className="pack-todo">Belum di packing</small> : null}
+                      {stage === "sudah_dipacking" ? <small className="pack-done">Menunggu pickup</small> : null}
+                    </td>
+                    <td data-label="Status">
+                      <StageBadge order={o} />
+                    </td>
+                    <td className="chev" style={{ textAlign: "right" }}>
+                      ›
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );

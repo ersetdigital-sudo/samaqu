@@ -8,6 +8,7 @@ import {
   LayoutDashboard, ShoppingBag, Package, Users, FileText, Settings,
   Search, Bell, Menu, X, ChevronDown, Plus, TrendingUp, Eye, Edit,
   DollarSign, ShoppingCart, UserPlus, Box, LogOut, Lock, Mail, Trash2, Ticket, Star, Ruler, Image, Shirt, MessageCircle, Camera,
+  Users2, CreditCard, Percent,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { supabase } from "@/lib/supabase";
@@ -17,6 +18,7 @@ import { useToast } from "@/components/AdminToast";
 import OrderDetailDrawer from "@/components/admin/OrderDetailDrawer";
 import CustomersView from "@/components/admin/CustomersView";
 import SettingsPanel from "@/components/admin/SettingsSections";
+import NotifikasiKatalog from "@/components/admin/NotifikasiKatalog";
 import OrdersView from "@/components/admin/OrdersView";
 import DashboardView from "@/components/admin/DashboardView";
 import { rankTopProducts } from "@/lib/top-products";
@@ -26,7 +28,7 @@ import ProductDetailDrawer from "@/components/admin/ProductDetailDrawer";
 import LiveChatView from "@/components/admin/LiveChatView";
 import { ADMIN_WF_VARS } from "@/components/admin/admin-theme";
 
-type Panel = "dashboard" | "orders" | "products" | "customers" | "chats" | "content" | "settings";
+type Panel = "dashboard" | "orders" | "products" | "customers" | "chats" | "content" | "notif-template" | "settings";
 
 // Route /api/admin/* digerbangi isOpsAdmin (sesi admin terdaftar di tabel `admins`),
 // jadi setiap request admin wajib membawa Bearer token.
@@ -131,9 +133,19 @@ const navGroups: { title: string; items: NavItem[] }[] = [
     ],
   },
   {
+    title: "Affiliate",
+    items: [
+      { label: "Data Affiliate", icon: Users2, href: "/admin/affiliate/data" },
+      { label: "Transaksi & Komisi", icon: TrendingUp, href: "/admin/affiliate/transaksi" },
+      { label: "Pencairan Komisi", icon: CreditCard, href: "/admin/affiliate/pencairan" },
+      { label: "Pengaturan Komisi", icon: Percent, href: "/admin/affiliate/pengaturan" },
+    ],
+  },
+  {
     title: "Lainnya",
     items: [
       { label: "Voucher", icon: Ticket, href: "/admin/voucher" },
+      { label: "Template Notif", icon: Bell, panel: "notif-template" },
       { label: "Pengaturan", icon: Settings, panel: "settings" },
     ],
   },
@@ -146,6 +158,7 @@ const panelTitles: Record<Panel, { title: string; sub: string }> = {
   customers: { title: "Pelanggan", sub: "Data dan riwayat belanja pelanggan." },
   chats: { title: "Live Chat", sub: "Percakapan asisten AI di website — cari pertanyaan yang belum terjawab." },
   content: { title: "Konten Website", sub: "Atur tampilan halaman publik SAMAQU." },
+  "notif-template": { title: "Template Notif", sub: "Atur isi pesan WhatsApp otomatis untuk pelanggan dan admin." },
   settings: { title: "Pengaturan", sub: "Konfigurasi informasi toko." },
 };
 
@@ -485,6 +498,7 @@ function AdminPageInner() {
     setUser(null);
     setRole(null);
     setOrders([]);
+    setDashOrders([]);
     setProducts([]);
     setActivePanel("dashboard");
   }
@@ -560,6 +574,7 @@ function AdminPageInner() {
         ? { status: newStatus, cancelled_at: changedAt, updated_at: changedAt }
         : { status: newStatus, updated_at: changedAt };
       setOrders((prev) => prev.map((o) => o.order_number === orderNumber ? { ...o, ...patch } : o));
+      setDashOrders((prev) => prev.map((o) => o.order_number === orderNumber ? { ...o, ...patch } : o));
       setSelectedOrder((prev) => prev && prev.order_number === orderNumber ? { ...prev, ...patch } : prev);
       toast.showToast("success", "Status pesanan berhasil diperbarui");
     } catch (err) {
@@ -575,7 +590,7 @@ function AdminPageInner() {
   async function arrangeOrder(order: { order_number: string }) {
     showConfirm(
       "Atur Pesanan?",
-      `Buat nomor resi J&T untuk pesanan ${order.order_number}? Pengiriman dibuat & paket menunggu pickup kurir (status pesanan tetap "diproses", tahapnya jadi "Sudah di Packing").`,
+      `Buat nomor resi J&T untuk pesanan ${order.order_number}? Pengiriman dibuat & paket menunggu pickup kurir (status pesanan tetap "diproses", tahapnya jadi "Menunggu Pickup").`,
       async () => {
         try {
           const res = await fetch("/api/admin/orders", {
@@ -591,8 +606,14 @@ function AdminPageInner() {
           const awbNo = data.awbNo as string;
           // Resi terbit ≠ paket dikirim: status pesanan tetap "diproses", status pengiriman
           // jadi "menunggu_pickup". Baru naik ke "dikirim" setelah J&T melaporkan pemindaian.
-          const patch = { awb_no: awbNo, status: "diproses", shipping_status: "menunggu_pickup" };
+          const patch = {
+            awb_no: awbNo,
+            status: "diproses",
+            shipping_status: "menunggu_pickup",
+            ...(data.serviceCode ? { shipping_method: `J&T ${data.serviceCode}` } : {}),
+          };
           setOrders((prev) => prev.map((o) => o.order_number === order.order_number ? { ...o, ...patch } : o));
+          setDashOrders((prev) => prev.map((o) => o.order_number === order.order_number ? { ...o, ...patch } : o));
           setSelectedOrder((prev) => prev && prev.order_number === order.order_number ? { ...prev, ...patch } : prev);
           toast.showToast("success", `Resi J&T terbit: ${awbNo} — pengiriman dibuat, menunggu pickup kurir`);
         } catch (err) {
@@ -618,6 +639,7 @@ function AdminPageInner() {
           return;
         }
         setOrders((prev) => prev.filter((o) => o.order_number !== orderNumber));
+        setDashOrders((prev) => prev.filter((o) => o.order_number !== orderNumber));
         setSelectedOrder(null);
         setDeleteConfirmOrder(null);
         toast.showToast("success", "Pesanan berhasil dihapus");
@@ -643,6 +665,7 @@ function AdminPageInner() {
         }
         const cancelledAt = new Date().toISOString();
         setOrders((prev) => prev.map((o) => o.order_number === order.order_number ? { ...o, status: "dibatalkan", cancelled_at: cancelledAt, updated_at: cancelledAt } : o));
+        setDashOrders((prev) => prev.map((o) => o.order_number === order.order_number ? { ...o, status: "dibatalkan", cancelled_at: cancelledAt, updated_at: cancelledAt } : o));
         setSelectedOrder((prev) => prev && prev.order_number === order.order_number ? { ...prev, status: "dibatalkan", cancelled_at: cancelledAt, updated_at: cancelledAt } : prev);
         toast.showToast("success", "Berhasil membatalkan pesanan di J&T");
       } catch (err) {
@@ -926,8 +949,12 @@ function AdminPageInner() {
                   drawer detail, jadi halaman ini tidak mengoper `arrangeOrder` ke daftarnya. */}
               {activePanel === "orders" && (
                 <OrdersView
-                  orders={orders}
-                  onSelect={(row) => setSelectedOrder(orders.find((o) => o.id === row.id) || null)}
+                  orders={dashOrders}
+                  loading={dashLoading}
+                  periodLabel={periodLabel}
+                  onPrevMonth={() => shiftDashMonth(-1)}
+                  onNextMonth={() => shiftDashMonth(1)}
+                  onSelect={(row) => setSelectedOrder(dashOrders.find((o) => o.id === row.id) || null)}
                 />
               )}
 
@@ -966,6 +993,9 @@ function AdminPageInner() {
                 </div>
               )}
 
+              {/* TEMPLATE NOTIF — dipisah dari Pengaturan; logic simpan tetap sama. */}
+              {activePanel === "notif-template" && <NotifikasiKatalog />}
+
               {/* SETTINGS */}
               {activePanel === "settings" && <SettingsPanel />}
 
@@ -989,6 +1019,7 @@ function AdminPageInner() {
           // Tracking J&T (server) menaikkan status → segarkan baris daftar & drawer.
           if (!selectedOrder) return;
           setOrders((prev) => prev.map((o) => o.order_number === selectedOrder.order_number ? { ...o, ...patch } : o));
+          setDashOrders((prev) => prev.map((o) => o.order_number === selectedOrder.order_number ? { ...o, ...patch } : o));
           setSelectedOrder((prev) => (prev ? { ...prev, ...patch } : prev));
         }}
       />

@@ -169,8 +169,8 @@ function SizeGrid({
       return;
     }
     const w = Number(raw);
-    if (!Number.isInteger(w) || w < 100 || w > 5000) {
-      setBulkError("Berat harus bilangan bulat 100–5000 gram.");
+    if (!Number.isInteger(w) || w < 1 || w > 5000) {
+      setBulkError("Berat harus bilangan bulat 1–5000 gram.");
       return;
     }
     setBulkError("");
@@ -207,7 +207,7 @@ function SizeGrid({
           <span className={`pf-adorn pf-adorn--g${bulkError ? " invalid" : ""}`}>
             <input
               type="number"
-              min={100}
+              min={1}
               max={5000}
               inputMode="numeric"
               value={bulkWeight}
@@ -287,7 +287,7 @@ function SizeGrid({
                   {weightEmpty ? <span className="pf-dot-warn" title="belum diisi" aria-label="belum diisi" /> : null}
                   <input
                     type="number"
-                    min={100}
+                    min={1}
                     max={5000}
                     inputMode="numeric"
                     value={s.weight ?? ""}
@@ -461,7 +461,7 @@ function PaketVariantList({
                     {weightEmpty ? <span className="pf-dot-warn" title="belum diisi" aria-label="belum diisi" /> : null}
                     <input
                       type="number"
-                      min={100}
+                      min={1}
                       max={5000}
                       inputMode="numeric"
                       value={s.weight ?? ""}
@@ -1247,14 +1247,14 @@ export default function TambahProdukPage({
           if (uploadedMedia.length === 0) e[`series_${sn}_media`] = `Media ${sn} wajib diisi (min 1)`;
         }
         // Stok boleh 0 — stok bisa diisi menyusul lewat Barang Masuk.
-        // Berat per ukuran (opsional): kalau diisi harus bilangan bulat 100–5000 gram.
+        // Berat per ukuran (opsional): kalau diisi harus bilangan bulat 1–5000 gram.
         for (const v of block.variants) {
           for (const s of v.sizes) {
             const raw = String(s.weight ?? "").trim();
             if (raw === "") continue;
             const w = Number(raw);
-            if (!Number.isInteger(w) || w < 100 || w > 5000) {
-              e[`series_${sn}_weight`] = `Berat ${sn} harus bilangan bulat 100–5000 gram`;
+            if (!Number.isInteger(w) || w < 1 || w > 5000) {
+              e[`series_${sn}_weight`] = `Berat ${sn} harus bilangan bulat 1–5000 gram`;
             }
           }
         }
@@ -1277,14 +1277,14 @@ export default function TambahProdukPage({
       } else {
         if (variants.length === 0) e.variants = "Minimal 1 varian warna";
       }
-      // Berat per varian/ukuran (opsional): kalau diisi harus bilangan bulat 100–5000 gram.
+      // Berat per varian/ukuran (opsional): kalau diisi harus bilangan bulat 1–5000 gram.
       for (const v of variants) {
         for (const s of v.sizes) {
           const raw = String(s.weight ?? "").trim();
           if (raw === "") continue;
           const w = Number(raw);
-          if (!Number.isInteger(w) || w < 100 || w > 5000) {
-            e.variants = isPaket ? "Berat varian harus bilangan bulat 100–5000 gram" : "Berat per ukuran harus bilangan bulat 100–5000 gram";
+          if (!Number.isInteger(w) || w < 1 || w > 5000) {
+            e.variants = isPaket ? "Berat varian harus bilangan bulat 1–5000 gram" : "Berat per ukuran harus bilangan bulat 1–5000 gram";
           }
         }
       }
@@ -1611,7 +1611,10 @@ export default function TambahProdukPage({
         }
       }
 
-      router.push(backHref);
+      // Hard navigation: daftar produk di /admin memuat stok lewat useEffect di client.
+      // `router.push` bisa memulihkan cache route lama sehingga stok hasil simpan baru
+      // terlihat setelah refresh manual — paksa muat ulang supaya data langsung segar.
+      window.location.assign(backHref);
     } catch (err) {
       console.error("Save error:", err);
       alert("Gagal menyimpan produk");

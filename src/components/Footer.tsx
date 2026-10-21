@@ -19,6 +19,7 @@ function getNavLinks(t: (key: string) => string) {
 
 function getHelpLinks(t: (key: string) => string) {
   return [
+    { href: "/cek-resi", label: t("nav.cek_resi") },
     { href: "/cara-pesan", label: t("nav.cara_pesan") },
     { href: "/faq", label: t("nav.faq") },
     { href: "/panduan-ukuran", label: t("nav.panduan") },

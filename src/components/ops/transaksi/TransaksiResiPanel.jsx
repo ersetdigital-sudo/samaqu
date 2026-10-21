@@ -122,7 +122,11 @@ const TransaksiResiPanel = forwardRef(function TransaksiResiPanel(
       setResiBusy(false);
       setResiCheck(null);
       resiLock.current = false;
-      onResiCreated?.({ awb_no: awbNo, shipping_status: result?.shippingStatus || "menunggu_pickup" });
+      onResiCreated?.({
+        awb_no: awbNo,
+        shipping_status: result?.shippingStatus || "menunggu_pickup",
+        ...(result?.serviceCode ? { shipping_method: `J&T ${result.serviceCode}` } : {}),
+      });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Gagal membuat resi. Coba lagi.";
       setResiBusy(false);

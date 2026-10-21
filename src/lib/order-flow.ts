@@ -10,10 +10,8 @@
  *
  * Tahap daftar diturunkan dari `orders.status` + `orders.awb_no`:
  * `pending` = Belum Bayar; `diproses` = **Belum di Packing** (resi belum dibuat) atau
- * **Sudah di Packing** (resi sudah dibuat → paket siap diserahkan kurir); `dikirim` = Dikirim
- * (J&T sudah memindai/menjemput); `selesai`; `dibatalkan`. "Sudah di Pick Up" sengaja TIDAK
- * dipisah dari `dikirim` karena J&T hanya memberi satu sinyal pindai (jemput = transit).
- * Detail pengiriman lain ("Menunggu Pickup" dsb.) ditampilkan lewat `shippingLine()`, bukan tahap.
+ * **Menunggu Pickup** (resi sudah dibuat, paket belum dipindai/dijemput J&T); `dikirim` =
+ * Dikirim (J&T sudah memindai/menjemput); `selesai`; `dibatalkan`.
  *
  * Modul ini murni lapisan tampilan: tidak menulis status apa pun ke database.
  */
@@ -23,7 +21,7 @@ export type OrderStage = "belum_bayar" | "belum_dipacking" | "sudah_dipacking" |
 /** Field minimum untuk menentukan tahap: status pesanan + ada/tidaknya resi. */
 export interface StageSource {
   status: string;
-  /** Nomor resi J&T — pembeda "Belum di Packing" (belum dibuat) vs "Sudah di Packing". */
+  /** Nomor resi J&T — pembeda "Belum di Packing" (belum dibuat) vs "Menunggu Pickup". */
   awb_no?: string | null;
 }
 
@@ -39,8 +37,8 @@ export function orderStage(order: StageSource): OrderStage {
       return "dibatalkan";
     default:
       // `diproses` (sudah dibayar, belum diserahkan ke kurir) dan status tak dikenal. Resi yang
-      // sudah terbit menandakan paket selesai dipacking & siap diserahkan — itulah penanda
-      // "Sudah di Packing"; tanpa resi berarti masih "Belum di Packing".
+      // sudah terbit berarti paket selesai dipacking dan menunggu dijemput kurir — itulah
+      // "Menunggu Pickup"; tanpa resi berarti masih "Belum di Packing".
       return order.awb_no ? "sudah_dipacking" : "belum_dipacking";
   }
 }
@@ -48,7 +46,7 @@ export function orderStage(order: StageSource): OrderStage {
 export const ORDER_STAGE_LABEL: Record<OrderStage, string> = {
   belum_bayar: "Belum Bayar",
   belum_dipacking: "Belum di Packing",
-  sudah_dipacking: "Sudah di Packing",
+  sudah_dipacking: "Menunggu Pickup",
   dikirim: "Dikirim",
   selesai: "Selesai",
   dibatalkan: "Dibatalkan",

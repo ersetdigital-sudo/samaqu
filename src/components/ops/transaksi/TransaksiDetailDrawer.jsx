@@ -19,6 +19,8 @@ import { paymentChannelLabel } from "@/lib/payment-channel";
 import { supabase } from "@/lib/supabase";
 import { formatWeightExact } from "@/lib/shipping-weight";
 import { formatTrackingTime, sortHistoryDesc, trackingRow, trackingSummary } from "@/lib/jnt/track-status";
+import { jntServiceTag } from "@/lib/jnt/layanan";
+import JntBadge from "@/components/JntBadge";
 import { SOURCE_STYLES, STATUS_STYLES, formatRupiah, formatTanggalJamID } from "@/components/ops/transaksi/transaksi-format";
 import TransaksiResiPanel from "@/components/ops/transaksi/TransaksiResiPanel";
 
@@ -43,7 +45,7 @@ export default function TransaksiDetailDrawer({ open, order, variant = "ops", on
   // Data lama `order` bisa berubah setelah resi dibuat; panel resi di-reset saat drawer ditutup.
   useEffect(() => {
     if (open) return undefined;
-    setTrack({ status: "idle", history: [], error: "" });
+    setTrack({ status: "idle", history: [], error: "", serviceCode: "" });
     setTrackOpen(false);
     setTrackBusy(false);
     setTrackModal(false);
@@ -51,7 +53,7 @@ export default function TransaksiDetailDrawer({ open, order, variant = "ops", on
   }, [open]);
 
   /** Riwayat pengiriman (Lacak Resi): hasil baca dari endpoint tracking publik — read-only. */
-  const [track, setTrack] = useState({ status: "idle", history: [], error: "" });
+  const [track, setTrack] = useState({ status: "idle", history: [], error: "", serviceCode: "" });
   const [trackOpen, setTrackOpen] = useState(false);
   const [trackBusy, setTrackBusy] = useState(false);
   // Modal Lacak (khusus tampilan panel ala mockup).
@@ -63,6 +65,8 @@ export default function TransaksiDetailDrawer({ open, order, variant = "ops", on
   const lastScan = historyRows[0] || null;
   // Ringkasan sama seperti yang dipakai dashboard admin (mis. "Diterima oleh: Lea").
   const trackSummary = trackOpen ? trackingSummary(track.history) : null;
+  // Badge layanan: tracking J&T (EZ/ECO) → teks shipping_method → fallback EZ.
+  const serviceTag = jntServiceTag(track.serviceCode || order?.shipping_method);
 
   /** Ambil riwayat dari J&T. `force` = lewati cache 5 menit di endpoint. Tanpa tulis DB. */
   const loadTrack = async (force = false) => {
@@ -83,12 +87,14 @@ export default function TransaksiDetailDrawer({ open, order, variant = "ops", on
         status: "done",
         history: Array.isArray(json.data?.history) ? json.data.history : [],
         error: "",
+        serviceCode: String(json.data?.detail?.services_code || "").toUpperCase(),
       });
     } catch (error) {
       setTrack({
         status: "error",
         history: [],
         error: error instanceof Error ? error.message : "Gagal mengambil riwayat dari J&T.",
+        serviceCode: "",
       });
     } finally {
       setTrackBusy(false);
@@ -145,7 +151,7 @@ export default function TransaksiDetailDrawer({ open, order, variant = "ops", on
       {
         belum_bayar: ["Menunggu pembayaran", "Pesanan akan dibatalkan otomatis jika belum dibayar dalam 24 jam."],
         belum_dipacking: ["Pesanan perlu dipacking", "Kemas pesanan, lalu buat resi supaya paket siap diserahkan ke kurir."],
-        sudah_dipacking: ["Pesanan siap dikirim", "Paket sudah dipacking dan resinya sudah dibuat — serahkan ke kurir."],
+        sudah_dipacking: ["Menunggu pickup", "Resi sudah dibuat — paket menunggu dijemput kurir J&T."],
         dikirim: ["Pesanan dalam perjalanan", "Paket sedang diantar oleh kurir ke alamat pembeli."],
         selesai: ["Pesanan selesai", "Pesanan telah diterima oleh pembeli."],
         dibatalkan: ["Pesanan dibatalkan", order.notes || "Pesanan dibatalkan."],
@@ -214,7 +220,15 @@ export default function TransaksiDetailDrawer({ open, order, variant = "ops", on
                   </div>
                   <div className="kv">
                     <span>Kurir</span>
-                    <b>J&amp;T Express</b>
+                    <b style={{ display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
+                      <JntBadge label="J&T Express" />
+                    </b>
+                  </div>
+                  <div className="kv">
+                    <span>Layanan</span>
+                    <b>
+                      <span className="bd s-siap">{serviceTag}</span>
+                    </b>
                   </div>
                   {/* Panel resi (nomor + salin + buat resi) — komponen bersama. Tombol cetak
                       dipindah ke footer drawer lewat ref supaya berdampingan dengan "Ubah". */}

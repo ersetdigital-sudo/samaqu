@@ -14,7 +14,9 @@ import { createOrderPaymentLink } from "@/lib/mayar";
 import { markLeadBoughtForOrder } from "@/lib/ops-lead-sync";
 import { sumWeightGramsBySize, productWeightMapFromRows, variantWeightMapFromRows } from "@/lib/shipping-weight";
 import { orderLookupToken } from "@/lib/order-token";
-import { isPaketItem, itemDisplayName } from "@/lib/item-label";
+import { formatProductLabel } from "@/lib/item-label";
+import { resolveAttribution } from "@/lib/affiliate/referral";
+import { recordCommissionForOrder } from "@/lib/affiliate/commission";
 
 /**
  * Semua baca/tulis pesanan di route ini memakai service role (server-side), supaya policy RLS
@@ -269,6 +271,15 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
     const linkedCustomerId = linkedCustomer?.id || null;
 
+    // ── Atribusi referral (server-side) ──
+    // Kode referral diambil dari cookie `sq_ref` yang diset route /r/[code], lalu divalidasi
+    // ULANG ke database di sini. Nilai dari browser tidak pernah dipercaya apa adanya, dan
+    // self-referral (email/WA sama dengan affiliate) dibuang.
+    const referral = await resolveAttribution(supabase, request, {
+      email: customer.email,
+      whatsapp: customer.whatsapp,
+    });
+
     const { data: order, error: orderError } = await supabase
       .from("orders")
       .insert({
@@ -298,6 +309,11 @@ export async function POST(request: NextRequest) {
         // Stok sudah dipotong di atas → pembatalan wajib mengembalikannya (lihat src/lib/cancel-order.ts).
         stock_reserved: true,
         weight: weightGrams || null,
+        // Atribusi affiliate (nullable — pesanan tanpa referral tetap normal).
+        affiliate_id: referral?.affiliateId ?? null,
+        referral_code: referral?.code ?? null,
+        referral_link_id: referral?.linkId ?? null,
+        referral_attributed_at: referral ? new Date().toISOString() : null,
       })
       .select()
       .single();
@@ -353,6 +369,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Gagal menyimpan detail pesanan" }, { status: 500 });
     }
 
+    // Catat komisi affiliate (idempoten: `orders.affiliate_commissions.order_id` UNIQUE).
+    // Komisi BELUM otomatis tersedia — statusnya "menunggu" sampai pesanan selesai &
+    // masa validasi habis (lihat src/lib/affiliate/commission.ts).
+    if (referral) {
+      const commission = await recordCommissionForOrder(supabase, {
+        orderId: order.id,
+        orderNumber,
+        affiliateId: referral.affiliateId,
+        linkId: referral.linkId,
+        items: validatedItems.map((item) => ({
+          productId: item.productId,
+          price: item.price,
+          quantity: item.quantity,
+        })),
+      });
+      if (commission) {
+        await supabase
+          .from("orders")
+          .update({ affiliate_commission_amount: commission.amount })
+          .eq("id", order.id);
+      }
+    }
+
     // Increment voucher used_count + save usage
     if (body.voucherCode) {
       const { data: vData } = await supabase.from("vouchers").select("used_count").eq("code", body.voucherCode).single();
@@ -395,8 +434,8 @@ export async function POST(request: NextRequest) {
         customerWhatsapp: customer.whatsapp,
         total,
         items: validatedItems.map((item) => ({
-          // Cover & Hanger: "Cover Hanger - Hanger saja"; produk lain tetap format lama.
-          label: isPaketItem(item) ? itemDisplayName(item) : `${item.name}${item.size ? ` (Uk. ${item.size})` : ""}`,
+          // Format sama dengan notifikasi WA: nama · series · warna · kain · size.
+          label: formatProductLabel(item),
           quantity: item.quantity || 1,
         })),
       });
