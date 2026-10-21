@@ -81,7 +81,14 @@ export default function AffiliateShell({ children }: { children: ReactNode }) {
       setAuthError("");
     } catch (e) {
       setMe(null);
-      setAuthError(e instanceof Error ? e.message : "Gagal memuat data affiliate.");
+      const message = e instanceof Error ? e.message : "";
+      // 401 = sesi tidak valid / bukan akun affiliate → pakai kalimat yang ramah,
+      // bukan "Unauthorized" mentah dari API.
+      setAuthError(
+        !message || /unauthorized|401/i.test(message)
+          ? ""
+          : message,
+      );
     } finally {
       setLoading(false);
     }
