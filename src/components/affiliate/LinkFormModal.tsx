@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Icon } from "./icons";
 import { CopyButton, Field, Select, useModal, useToast } from "./ui";
 import { affiliateFetch } from "@/lib/affiliate/client";
+import { referralUrl } from "@/lib/affiliate/site";
 
 /**
  * Formulir "Buat Tautan Affiliate" (dipakai di katalog, detail produk, dan
@@ -64,8 +65,7 @@ export default function LinkFormModal({ products, initialProductId }: {
           note: note.trim(),
         }),
       });
-      const origin = typeof window !== "undefined" ? window.location.origin : "";
-      setCreated({ code: res.link.code, url: `${origin}/r/${res.link.code}` });
+      setCreated({ code: res.link.code, url: referralUrl(res.link.code) });
       toast("Tautan affiliate berhasil dibuat");
     } catch (e) {
       toast(e instanceof Error ? e.message : "Gagal membuat tautan", "err");
