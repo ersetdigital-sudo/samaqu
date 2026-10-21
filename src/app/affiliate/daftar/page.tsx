@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import AuthLayout from "@/components/affiliate/AuthLayout";
 import { useToast } from "@/components/affiliate/ui";
+import { portalBaseFor, portalPath } from "@/lib/affiliate/site";
 
 /**
  * Pendaftaran akun affiliate — wireframe "Dark Slanted Auth" (1:1).
@@ -17,6 +18,11 @@ const INPUT_ERROR = { borderColor: "#f87171" };
 
 export default function AffiliateRegisterPage() {
   const router = useRouter();
+  // Prefix path portal: "" di affiliate.samaqu.id, "/affiliate" di domain utama.
+  const [base, setBase] = useState("/affiliate");
+  useEffect(() => {
+    setBase(portalBaseFor(window.location.hostname));
+  }, []);
   const { toast } = useToast();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -81,11 +87,11 @@ export default function AffiliateRegisterPage() {
     <AuthLayout
       title="Daftar Affiliate"
       subtitle="Jadilah affiliate resmi SAMAQU dan dapatkan komisi dari setiap penjualan"
-      navLink={{ href: "/affiliate/login", label: "Masuk" }}
-      navCta={{ href: "/affiliate/login", label: "Cek Status" }}
+      navLink={{ href: portalPath(base, "login"), label: "Masuk" }}
+      navCta={{ href: portalPath(base, "login"), label: "Cek Status" }}
       footerLink={{
         text: "Sudah punya akun?",
-        link: "/affiliate/login",
+        link: portalPath(base, "login"),
         linkLabel: "Masuk",
       }}
     >
